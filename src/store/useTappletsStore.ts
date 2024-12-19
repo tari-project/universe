@@ -21,12 +21,13 @@ interface State {
 interface Actions {
     installRegisteredTapp: (tappletId: string) => Promise<void>;
     fetchRegisteredTapps: () => Promise<void>;
+    getInstalledTapps: () => Promise<void>;
     setActiveTapp: (tapplet?: ActiveTapplet) => Promise<void>;
     addDevTapp: (endpoint: string) => Promise<void>;
     deleteDevTapp: (devTappletId: number) => Promise<void>;
     deleteInstalledTapp: (tappletId: number) => Promise<void>;
-    updateInstalledTapp: (tappletId: number, installedTappletId: string) => Promise<void>;
-    fetchDevTappDb: () => Promise<void>;
+    updateInstalledTapp: (tappletId: number, installedTappletId: number) => Promise<void>;
+    getDevTapps: () => Promise<void>;
     getTappById: (id?: number) => ActiveTapplet | undefined;
 }
 
@@ -44,14 +45,14 @@ const initialState: State = {
 export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     ...initialState,
     fetchRegisteredTapps: async () => {
-        console.log('[STORE TAPP] fetch registered tapp');
+        console.info('[STORE TAPP] fetch registered tapp');
         set({ isFetching: true });
         try {
             // TODO invoke to fetch tapplets
-            await invoke('fetch_tapplets');
-            console.log('[STORE TAPP] fetch tapp done');
+            await invoke('fetch_registered_tapplets');
+            console.info('[STORE TAPP] fetch tapp done');
             const registeredTapplets: RegisteredTapplet[] = await invoke('read_tapp_registry_db');
-            console.log('[STORE TAPP] read db tapp done', registeredTapplets);
+            console.info('[STORE TAPP] read db tapp done', registeredTapplets);
             const assetsServerAddr = await invoke('get_assets_server_addr');
             const tappletsWithAssets = registeredTapplets.map((tapp) => ({
                 ...tapp,
@@ -66,14 +67,26 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
             appStateStore.setError(`'Error fetching registered tapplets: ${error}`);
         }
     },
-
+    getInstalledTapps: async () => {
+        console.info('[STORE TAPP] fetch registered tapp');
+        set({ isFetching: true });
+        try {
+            const installedTapplets = await invoke('read_installed_tapp_db');
+            console.info('[STORE] get installed tapp success', installedTapplets);
+            set({ installedTapplets });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error fetching registered tapplets: ', error);
+            appStateStore.setError(`'Error fetching registered tapplets: ${error}`);
+        }
+    },
     installRegisteredTapp: async (tappletId: string) => {
-        console.log('[STORE] fetch tapp');
+        console.info('[STORE] fetch tapp');
         try {
             // TODO invoke to add tapplet
             const tapplet = await invoke('download_and_extract_tapp', { tappletId });
             const installedTapplet = await invoke('insert_installed_tapp_db', { tappletId });
-            console.log('[STORE] fetch tapp success', tapplet, installedTapplet);
+            console.info('[STORE] fetch tapp success', tapplet, installedTapplet);
             // set({ isInitialized: true, installedTapplets: [... state.items] });
             const tst: InstalledTappletWithAssets = {
                 display_name: tapplet.display_name,
@@ -98,7 +111,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set({ activeTapplet: tapplet });
     },
     getTappById: (id?: number) => {
-        console.log('[STORE] get active tapp - id', id);
+        console.info('[STORE] get active tapp - id', id);
         // const tapp = get().installedTapplets.find((tapp) => tapp.installed_tapplet.id === id); TODO
         const devTapp = get().devTapplets.find((tapp) => tapp.id === id);
         if (!devTapp) return undefined;
@@ -114,8 +127,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     addDevTapp: async (endpoint) => {
         const devTapp = await invoke('add_dev_tapplet', { endpoint });
         const devTapplets = await invoke('read_dev_tapplets');
-        console.log('[STORE] add dev tapp', devTapp);
-        console.log('[STORE] add dev tapplets', devTapplets);
+        console.info('[STORE] add dev tapp', devTapp);
+        console.info('[STORE] add dev tapplets', devTapplets);
         // set((state) => ({
         //     devTapplets: [...state.devTapplets, devTapp],
         // }));
@@ -123,24 +136,24 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     },
     deleteDevTapp: async (devTappletId) => {
         const removedTappSize = await invoke('delete_dev_tapplet', { devTappletId });
-        console.log('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
+        console.info('[STORE] delete dev tapp: id | db removedTappSize', devTappletId, removedTappSize);
         set((state) => ({ devTapplets: state.devTapplets.filter((tapp) => tapp.id !== devTappletId) }));
     },
-    fetchDevTappDb: async () => {
+    getDevTapps: async () => {
         const devTapplets = await invoke('read_dev_tapplets');
-        console.log('[STORE] add dev tapplets', devTapplets);
+        console.info('[STORE] add dev tapplets', devTapplets);
         set({ devTapplets });
     },
     deleteInstalledTapp: async (tappletId) => {
         const removedTappSize = await invoke('delete_installed_tapplet', { tappletId });
-        console.log('[STORE] delete installed tapp: id | db removedTappSize', tappletId, removedTappSize);
+        console.info('[STORE] delete installed tapp: id | db removedTappSize', tappletId, removedTappSize);
         set((state) => ({
             installedTapplets: state.installedTapplets.filter((tapp) => tapp.installed_tapplet.id !== tappletId),
         }));
     },
     updateInstalledTapp: async (tappletId, installedTappletId) => {
         const installedTapplets = await invoke('update_installed_tapplet', { tappletId, installedTappletId });
-        console.log('[STORE] update installed tapp: id | db removedTappSize', tappletId);
+        console.info('[STORE] update tapp: id | installedTappId', tappletId, installedTappletId);
         set({ installedTapplets });
     },
 }));

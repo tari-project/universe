@@ -54,12 +54,12 @@ export default function TappletsDev() {
     const { t } = useTranslation('ootle');
     const initialDevTappEndpoint = '';
 
-    const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, fetchDevTappDb } = useTappletsStore();
+    const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
     // const devTapplets = useTappletsStore((s) => s.devTapplets);
     // const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
     // const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
-    // const fetchDevTappDb = useTappletsStore((s) => s.fetchDevTappDb);
+    // const getDevTapps = useTappletsStore((s) => s.getDevTapps);
     const devTappletsCount = devTapplets?.length || 0;
     console.log('fethch dev tapp', devTapplets);
 
@@ -109,29 +109,36 @@ export default function TappletsDev() {
         trigger('endpoint');
     }, [endpoint, trigger]);
 
-    const handleLaunch = useCallback(async (tapplet: DevTapplet) => {
-        try {
-            // const tapplet = await invoke('launch_tapplet', { tappletId: id });
-            console.log('SET ACTIVE TAP', tapplet);
-            const activeTapplet: ActiveTapplet = {
-                tapplet_id: tapplet.id,
-                version: '0.0.1', //TODO
-                display_name: tapplet.display_name,
-                source: tapplet.endpoint,
-                permissions: undefined,
-                supportedChain: [],
-            };
-            setActiveTapp(activeTapplet);
-            setIsSettingsOpen(!isSettingsOpen);
-        } catch (e) {
-            console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
-        }
+    useEffect(() => {
+        getDevTapps();
     }, []);
+
+    const handleLaunch = useCallback(
+        async (tapplet: DevTapplet) => {
+            try {
+                // const tapplet = await invoke('launch_tapplet', { tappletId: id });
+                console.log('SET ACTIVE TAP', tapplet);
+                const activeTapplet: ActiveTapplet = {
+                    tapplet_id: tapplet.id,
+                    version: '0.0.1', //TODO
+                    display_name: tapplet.display_name,
+                    source: tapplet.endpoint,
+                    permissions: undefined,
+                    supportedChain: [],
+                };
+                setActiveTapp(activeTapplet);
+                setIsSettingsOpen(!isSettingsOpen);
+            } catch (e) {
+                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            }
+        },
+        [isSettingsOpen, setActiveTapp, setIsSettingsOpen]
+    );
 
     return (
         <TappletsGroupWrapper $category="Dev Tapplets">
             <SquaredButton
-                onClick={() => fetchDevTappDb()}
+                onClick={() => getDevTapps()}
                 color="tariPurple"
                 size="medium"
                 style={{ width: '25%', alignContent: 'center', marginBottom: 10 }}

@@ -21,7 +21,7 @@ export type RegisteredTappletWithAssets = RegisteredTapplet & {
 
 export interface InstalledTapplet {
     id: number;
-    tapplet_id: string; //TODO change to number because of rust i32
+    tapplet_id: number; //TODO change to number because of rust i32
     tapplet_version_id: string;
 }
 

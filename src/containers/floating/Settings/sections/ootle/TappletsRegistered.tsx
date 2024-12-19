@@ -9,6 +9,7 @@ import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from
 import { MdDownload } from 'react-icons/md';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { useCallback, useEffect } from 'react';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -36,10 +37,21 @@ export default function TappletsRegistered() {
         ? registeredTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
         : null;
 
-    const handleInstall = async (tappletId: string) => {
-        console.log('instal tapp with id', tappletId);
-        await installRegisteredTapp(tappletId);
-    };
+    // const handleInstall = async (tappletId: string) => {
+    //     console.log('instal tapp with id', tappletId);
+    //     await installRegisteredTapp(tappletId);
+    // };
+
+    const handleInstall = useCallback(
+        async (id: string) => {
+            try {
+                await installRegisteredTapp(id);
+            } catch (e) {
+                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            }
+        },
+        [installRegisteredTapp]
+    );
     // TODO can be used if fetching from db works
     // useEffect(() => {
     //     const fetchTappletsInterval = setInterval(async () => {
@@ -54,6 +66,10 @@ export default function TappletsRegistered() {
     //         clearInterval(fetchTappletsInterval);
     //     };
     // }, [fetchTapplets]);
+
+    useEffect(() => {
+        fetchRegisteredTapplets();
+    }, []);
 
     return (
         <TappletsGroupWrapper $category="Tapplets Registered">
@@ -82,7 +98,10 @@ export default function TappletsRegistered() {
                                 <ListItemAvatar>
                                     <Avatar src={item.logoAddr} />
                                 </ListItemAvatar>
-                                <ListItemText primary={item.display_name} />
+                                <ListItemText
+                                    primary={item.display_name}
+                                    secondary={`id: ${item.id} | registry id: ${item.registry_id}`}
+                                />
                                 <IconButton
                                     aria-label="install"
                                     onClick={() => handleInstall(item.id)}

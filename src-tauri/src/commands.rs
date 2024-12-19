@@ -1705,7 +1705,7 @@ pub async fn launch_tapplet(
  *  REGISTERED TAPPLETS - FETCH DATA FROM MANIFEST JSON
  */
 #[tauri::command]
-pub async fn fetch_tapplets(
+pub async fn fetch_registered_tapplets(
     app_handle: tauri::AppHandle,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<(), String> {
@@ -1925,23 +1925,20 @@ pub async fn update_installed_tapplet(
     installed_tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
     app_handle: tauri::AppHandle,
-) -> Result<Vec<InstalledTappletWithName>, String> {
+) -> Result<Vec<InstalledTappletWithName>, Error> {
     let _ = delete_installed_tapplet(
         installed_tapplet_id,
         db_connection.clone(),
         app_handle.clone(),
     )
-    .inspect_err(|e| error!("❌ Delete installed tappled from db error: {:?}", e))
-    .unwrap();
+    .inspect_err(|e| error!("❌ Delete installed tapplet from db error: {:?}", e));
 
     let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())
         .await
-        .inspect_err(|e| error!("❌ Download and extract tapp process error: {:?}", e))
-        .unwrap();
+        .inspect_err(|e| error!("❌ Download and extract tapplet process error: {:?}", e));
 
     let _ = insert_installed_tapp_db(tapplet_id, db_connection.clone())
-        .inspect_err(|e| error!("❌ Insert installed tappled to db error: {:?}", e))
-        .unwrap();
+        .inspect_err(|e| error!("❌ Insert installed tapplet to db error: {:?}", e));
 
     let mut store = SqliteStore::new(db_connection.0.clone());
     let installed_tapplets = store.get_installed_tapplets_with_display_name().unwrap();

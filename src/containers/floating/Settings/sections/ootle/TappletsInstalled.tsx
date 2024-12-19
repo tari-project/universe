@@ -7,7 +7,7 @@ import { Avatar, IconButton, List, ListItem, ListItemAvatar, ListItemText } from
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { MdUpdate, MdDelete, MdLaunch } from 'react-icons/md';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
@@ -36,6 +36,7 @@ export default function TappletsInstalled() {
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
     const deleteInstalledTapp = useTappletsStore((s) => s.deleteInstalledTapp);
     const updateInstalledTapp = useTappletsStore((s) => s.updateInstalledTapp);
+    const getInstalledTapps = useTappletsStore((s) => s.getInstalledTapps);
     const installedTapplets = useTappletsStore((s) => s.installedTapplets);
     const installedTappletsCount = installedTapplets?.length || 0;
     console.log('fethch installed tapp', installedTapplets);
@@ -72,8 +73,9 @@ export default function TappletsInstalled() {
     //     [setActiveTapp]
     // );
     const updateInstalledTappletHandler = useCallback(
-        async (id: number, installedTappletId: string) => {
+        async (id: number, installedTappletId: number) => {
             try {
+                console.info('Update id, tapp id ', id, installedTappletId);
                 updateInstalledTapp(id, installedTappletId);
             } catch (e) {
                 console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
@@ -93,15 +95,22 @@ export default function TappletsInstalled() {
         [deleteInstalledTapp]
     );
 
-    const handleLaunch = useCallback(async (id: number) => {
-        try {
-            const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
-            console.log('SET ACTIVE TAP', tapplet);
-            setActiveTapp(tapplet);
-            setIsSettingsOpen(!isSettingsOpen);
-        } catch (e) {
-            console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
-        }
+    const handleLaunch = useCallback(
+        async (id: number) => {
+            try {
+                const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
+                console.log('SET ACTIVE TAP', tapplet);
+                setActiveTapp(tapplet);
+                setIsSettingsOpen(!isSettingsOpen);
+            } catch (e) {
+                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            }
+        },
+        [isSettingsOpen, setActiveTapp, setIsSettingsOpen]
+    );
+
+    useEffect(() => {
+        getInstalledTapps();
     }, []);
 
     return (
@@ -124,7 +133,10 @@ export default function TappletsInstalled() {
                                     <ListItemAvatar>
                                         <Avatar src={item.logoAddr} />
                                     </ListItemAvatar>
-                                    <ListItemText primary={`${item.display_name} ver ${item.installed_version}`} />
+                                    <ListItemText
+                                        primary={`${item.display_name} ver ${item.installed_version}`}
+                                        secondary={`id: ${item.installed_tapplet.id} | tapplet id: ${item.installed_tapplet.tapplet_id}`}
+                                    />
                                     <IconButton
                                         aria-label="launch"
                                         style={{ marginRight: 10 }}
@@ -132,7 +144,7 @@ export default function TappletsInstalled() {
                                     >
                                         <MdLaunch color="primary" />
                                     </IconButton>
-                                    {item.installed_version !== item.latest_version && (
+                                    {item.latest_version && item.installed_version !== item.latest_version && (
                                         <IconButton
                                             aria-label="update"
                                             style={{ marginRight: 10 }}

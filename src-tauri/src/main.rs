@@ -905,7 +905,7 @@ fn main() {
             commands::stop_mining,
             commands::update_applications,
             commands::get_network,
-            commands::fetch_tapplets,
+            commands::fetch_registered_tapplets,
             commands::launch_tapplet,
             commands::insert_tapp_registry_db,
             commands::read_tapp_registry_db,
