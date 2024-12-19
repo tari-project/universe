@@ -1,6 +1,5 @@
 export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
-    COOKIE_CLAIMED = 'cookie_claimed',
     MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
     MINING_STATUS_CREW_DISCONNECTED = 'mining_status_crew_disconnected',
     MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
@@ -52,16 +51,8 @@ export interface MiningStatusCrewDisconnectedEvent {
     };
 }
 
-export interface CookieClaimedEvent {
-    name: WebsocketEventNames.COOKIE_CLAIMED;
-    data: {
-        totalTimeBonusMs: number;
-    };
-}
-
 export type WebsocketUserEvent =
     | QuestCompletedEvent
-    | CookieClaimedEvent
     | MiningStatusCrewUpdateEvent
     | MiningStatusUserUpdateEvent
     | MiningStatusCrewDisconnectedEvent;
