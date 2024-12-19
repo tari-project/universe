@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { startTransition, useCallback, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import {
@@ -28,22 +28,26 @@ const P2PoolStats = () => {
     const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
     const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
 
-    useEffect(() => {
-        const fetchP2pStatsInterval = setInterval(async () => {
-            await fetchP2pStats?.();
-            await fetchP2poolConnections?.();
-        }, 5000);
+    const handleFetchP2pStats = useCallback(() => {
+        startTransition(() => {
+            fetchP2pStats?.();
+            fetchP2poolConnections?.();
+        });
+    }, [fetchP2pStats, fetchP2poolConnections]);
 
+    useEffect(() => {
+        handleFetchP2pStats();
+        const fetchP2pStatsInterval = setInterval(handleFetchP2pStats, 5000);
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
-    }, [fetchP2pStats, fetchP2poolConnections]);
+    }, [handleFetchP2pStats]);
 
     const displayPeers = useMemo(() => {
         const sha3Height = sha3Stats?.height;
         const randomXHeight = randomXStats?.height;
         return peers?.map((peer) => {
-            const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
+            const { current_sha3x_height, current_random_x_height } = peer?.peer_info || {};
             const sha3Diff = sha3Height ? sha3Height - current_sha3x_height : undefined;
             const randomxDiff = randomXHeight ? randomXHeight - current_random_x_height : undefined;
 
