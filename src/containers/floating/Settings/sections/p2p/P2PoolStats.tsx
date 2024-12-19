@@ -28,20 +28,17 @@ const P2PoolStats = () => {
     const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
     const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
 
-    const handleFetchP2pStats = useCallback(() => {
-        startTransition(() => {
-            fetchP2pStats?.();
-            fetchP2poolConnections?.();
-        });
-    }, [fetchP2pStats, fetchP2poolConnections]);
-
     useEffect(() => {
+        const handleFetchP2pStats = async () => {
+            await fetchP2pStats?.();
+            await fetchP2poolConnections?.();
+        };
         handleFetchP2pStats();
         const fetchP2pStatsInterval = setInterval(handleFetchP2pStats, 5000);
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
-    }, [handleFetchP2pStats]);
+    }, [fetchP2pStats, fetchP2poolConnections]);
 
     const displayPeers = useMemo(() => {
         const sha3Height = sha3Stats?.height;
