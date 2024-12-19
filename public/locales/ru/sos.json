@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "предстоящая награда / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Вы приближаетесь",
+      "days": "дни",
+      "hours": "часы"
+    },
+    "friends": {
+      "reduceTimer": "Сократите таймер, пригласив друзей",
+      "linkCopied": "Ссылка скопирована!",
+      "growCrew": "расширяйте свою команду"
+    }
+  },
+  "superCharger": {
+    "title": "Супер Зарядное Устройство",
+    "placeholder": "Введите ваш код",
+    "success": "Бонус ко времени добавлен {{time}}.",
+    "error": "Неверный код.",
+    "submit": "Вперед"
+  },
+  "mainTimer": {
+    "title": "Ваш таймер",
+    "days": "ДНИ",
+    "hours": "ЧАСЫ",
+    "minutes": "МИНУТЫ",
+    "seconds": "СЕКУНДЫ"
+  },
+  "progress": {
+    "message": "Вы в <span>{{hours}} часах</span> от следующего ранга. Продолжайте добычу!"
+  },
+  "leaserboardEntry": {
+    "mining": "Добыча сейчас",
+    "idle": "Последняя добыча {{time}} назад"
+  },
+  "leaderboard": {
+    "title": "Таблица лидеров",
+    "viewFull": "ПОСМОТРЕТЬ полную ТАБЛИЦУ ЛИДЕРОВ"
+  },
+  "member": {
+    "new": "Новый",
+    "nudge": "Подтолкнуть",
+    "minHr": "мин/ч"
+  },
+  "crewMining": {
+    "title": "Добыча в команде",
+    "rate": "+{{rate}}мин/ч",
+    "mining": "{{current}}/{{total}} Добыча"
+  },
+  "crewList": {
+    "placeholder": "Пригласите первого члена команды"
+  }
+}

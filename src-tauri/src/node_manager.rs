@@ -22,7 +22,7 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info};
@@ -79,7 +79,9 @@ impl NodeManager {
         // }
 
         let adapter = MinotariNodeAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.health_timeout = Duration::from_secs(10);
+        process_watcher.expected_startup_time = Duration::from_secs(120);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

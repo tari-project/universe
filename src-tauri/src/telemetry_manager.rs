@@ -195,6 +195,7 @@ pub struct TelemetryData {
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
+    pub current_os: String,
 }
 
 pub struct TelemetryManager {
@@ -261,7 +262,8 @@ impl TelemetryManager {
         let mut sha256_hasher = sha2::Sha256::new();
         sha2::Digest::update(&mut sha256_hasher, id_as_bytes);
         let id_sha256 = sha256_hasher.finalize();
-        let id_base64_sha256 = BASE64_STANDARD.encode(id_sha256);
+        let id_base64_sha256 = BASE64_STANDARD_NO_PAD.encode(id_sha256);
+
         let unique_string = format!(
             "v3,{},{},{}",
             buf.to_monero_base58(),
@@ -576,6 +578,7 @@ async fn get_telemetry_data(
         gpu_tribe_name: None,
         gpu_tribe_id: None,
         extra_data,
+        current_os: std::env::consts::OS.to_string(),
     })
 }
 
