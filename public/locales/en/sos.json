@@ -13,43 +13,5 @@
       "linkCopied": "Link copied!",
       "growCrew": "grow your crew"
     }
-  },
-  "superCharger": {
-    "title": "Super Charger",
-    "placeholder": "Enter Your Code",
-    "success": "Time bonus added {{time}}.",
-    "error": "Invalid code.",
-    "submit": "Go"
-  },
-  "mainTimer": {
-    "title": "Your Timer",
-    "days": "DAYS",
-    "hours": "HOURS",
-    "minutes": "MINUTES",
-    "seconds": "SECONDS"
-  },
-  "progress": {
-    "message": "You’re <span>{{hours}} hours</span> away from the next rank. Keep mining!"
-  },
-  "leaserboardEntry": {
-    "mining": "Mining now",
-    "idle": "Last mined {{time}} ago"
-  },
-  "leaderboard": {
-    "title": "Leaderboard",
-    "viewFull": "VIEW full LEADERBOARD"
-  },
-  "member": {
-    "new": "New",
-    "nudge": "Nudge",
-    "minHr": "min/hr"
-  },
-  "crewMining": {
-    "title": "Crew mining",
-    "rate": "+{{rate}}min/hr",
-    "mining": "{{current}}/{{total}} Mining"
-  },
-  "crewList": {
-    "placeholder": "Invite your first crew member"
   }
 }
