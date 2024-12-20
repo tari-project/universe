@@ -40,7 +40,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
-use crate::process_watcher::ProcessWatcher;
+use crate::process_watcher::{self, ProcessWatcher};
 use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
@@ -80,7 +80,8 @@ impl NodeManager {
 
         let adapter = MinotariNodeAdapter::new(status_broadcast);
         let mut process_watcher = ProcessWatcher::new(adapter);
-        process_watcher.health_timeout = Duration::from_secs(10);
+        process_watcher.poll_time = Duration::from_secs(10);
+        process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.expected_startup_time = Duration::from_secs(120);
 
         Self {

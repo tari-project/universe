@@ -277,21 +277,34 @@ impl MinotariNodeStatusMonitor {
                 .await
                 .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
-        let res = client
-            .get_new_block_template(NewBlockTemplateRequest {
-                algo: Some(PowAlgo { pow_algo: 1 }),
-                max_weight: 0,
-            })
-            .await
-            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-        let res = res.into_inner();
+        let mut reward = 0;
+        // The base node returns a stupid error if the template is out of sync, so try multiple times
+        let max_template_retries = 5;
 
-        let reward = res
-            .miner_data
-            .ok_or_else(|| {
-                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
-            })?
-            .reward;
+        for _ in 0..max_template_retries {
+            let res = match client
+                .get_new_block_template(NewBlockTemplateRequest {
+                    algo: Some(PowAlgo { pow_algo: 1 }),
+                    max_weight: 0,
+                })
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to get new block template: {}", e);
+                    continue;
+                }
+            };
+            let res = res.into_inner();
+
+            reward = res
+                .miner_data
+                .ok_or_else(|| {
+                    MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+                })?
+                .reward;
+            break;
+        }
 
         let res = client
             .get_tip_info(Empty {})
