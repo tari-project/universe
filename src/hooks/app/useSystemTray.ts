@@ -45,7 +45,7 @@ export function useUpdateSystemTray() {
     }, []);
 
     useEffect(() => {
-        const interval = setInterval(async () => {
+        const handleUpdateMenu = () => {
             const { cpu, gpu } = cachedMetrics.current || {};
 
             // --- Update CPU
@@ -60,7 +60,9 @@ export function useUpdateSystemTray() {
             const total = cpu_est + gpu_est;
             const totalFormatted = total > 0 ? formatNumber(total, FormatPreset.TXTM_COMPACT) : '-';
             updateMenuItem(EARNINGS_ITEM_ID, SysTrayCopy[EARNINGS_ITEM_ID](totalFormatted));
-        }, 1000 * 10); // 10s
+        };
+        handleUpdateMenu();
+        const interval = setInterval(handleUpdateMenu, 1000 * 10); // 10s
 
         return () => clearInterval(interval);
     }, [updateMenuItem]);
