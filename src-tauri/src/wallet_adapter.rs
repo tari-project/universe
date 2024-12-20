@@ -39,6 +39,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
@@ -53,10 +54,11 @@ pub struct WalletAdapter {
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
+    balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool) -> Self {
+    pub fn new(use_tor: bool, balance_broadcast: watch::Sender<Option<WalletBalance>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -67,6 +69,7 @@ impl WalletAdapter {
             spend_key: "".to_string(),
             tcp_listener_port,
             grpc_port,
+            balance_broadcast,
         }
     }
 }
@@ -196,6 +199,7 @@ impl ProcessAdapter for WalletAdapter {
             },
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
+                latest_balance_broadcast: self.balance_broadcast.clone(),
             },
         ))
     }
@@ -222,15 +226,21 @@ pub enum WalletStatusMonitorError {
 #[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
+    latest_balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_balance().await.is_ok() {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Unhealthy
+        match self.get_balance().await {
+            Ok(b) => {
+                let _result = self.latest_balance_broadcast.send(Some(b));
+                HealthStatus::Healthy
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }
