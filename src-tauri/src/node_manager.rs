@@ -39,7 +39,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
-use crate::process_watcher::{ProcessWatcher};
+use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
