@@ -28,7 +28,7 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
 use p2pool::models::Connections;
-use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
+use std::fs::{remove_dir_all, remove_file};
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 
@@ -712,14 +712,8 @@ fn main() {
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
             let logs_cleared_file = log_path.join("logs_cleared");
-            if !logs_cleared_file.exists() {
-                match remove_dir_all(&log_path) {
-                    Ok(()) => {
-                        create_dir_all(&log_path).map_err(|e| e.to_string())?;
-                        File::create(&logs_cleared_file).map_err(|e| e.to_string())?;
-                    },
-                    Err(e) => warn!(target: LOG_TARGET, "Could not clear log folder: {}", e)
-                }
+            if logs_cleared_file.exists() {
+                remove_file(&logs_cleared_file).map_err(|e| e.to_string())?;
             }
 
             let contents = setup_logging(
