@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::{path::PathBuf, sync::Arc};
-
+use std::time::Duration;
 use log::info;
 use serde::Deserialize;
 use tari_common_types::tari_address::TariAddress;
@@ -66,7 +66,10 @@ pub(crate) struct GpuMiner {
 impl GpuMiner {
     pub fn new(status_broadcast: watch::Sender<GpuMinerStatus>) -> Self {
         let adapter = GpuMinerAdapter::new(vec![], status_broadcast);
-        let process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(10);
+
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
