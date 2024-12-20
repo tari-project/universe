@@ -1,6 +1,7 @@
+/* eslint-disable i18next/no-literal-string */
 import { useEffect, useState } from 'react';
 import { getVersion } from '@tauri-apps/api/app';
-import { Typography } from '@app/components/elements/Typography';
+import { Wrapper } from './styles';
 
 export default function AppVersion() {
     const [tariVersion, setTariVersion] = useState<string | null>(null);
@@ -11,9 +12,11 @@ export default function AppVersion() {
         });
     }, []);
 
-    return tariVersion ? (
-        <Typography variant="span" style={{ zIndex: 1000, position: 'absolute', right: 12, bottom: 6 }}>
-            {tariVersion}
-        </Typography>
-    ) : null;
+    if (!tariVersion) return null;
+
+    return (
+        <Wrapper>
+            Testnet <span>v{tariVersion}</span>
+        </Wrapper>
+    );
 }

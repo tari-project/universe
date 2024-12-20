@@ -5,6 +5,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Container, LottieWrapper, StatusWrapper } from './Footer.styles';
 import animationData from './lil-soon-cookies.json';
 import AirdropPermission from './AirdropPermission/AirdropPermission';
+import AppVersion from './AppVersion/AppVersion';
 
 export default function Footer() {
     const created_at = useAppConfigStore((s) => s.created_at);
@@ -22,6 +23,9 @@ export default function Footer() {
                 </LottieWrapper>
                 <SetupProgress />
             </StatusWrapper>
+
+            <AppVersion />
+
             {isFirstLoad ? <AirdropPermission /> : null}
         </Container>
     );
