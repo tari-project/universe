@@ -25,12 +25,14 @@ export default function Flare({ gems, animationType }: Props) {
     const clearFlareAnimationType = useCallback(() => setFlareAnimationType(), [setFlareAnimationType]);
 
     useEffect(() => {
+        if (!animationType) return;
         const duration = durations[animationType] || 0;
-        const animationTimeout = setTimeout(clearFlareAnimationType, duration);
+        const animationTimeout = setTimeout(() => setFlareAnimationType(), duration);
         return () => {
             clearTimeout(animationTimeout);
         };
-    }, [animationType, clearFlareAnimationType]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [animationType]);
 
     return (
         <Wrapper
