@@ -25,7 +25,6 @@ use std::{path::PathBuf, sync::Arc};
 use log::info;
 use serde::Deserialize;
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::{watch, RwLock};
 
@@ -39,7 +38,6 @@ use crate::{
     process_watcher::ProcessWatcher,
 };
 
-const SHA_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 #[derive(Debug, Deserialize)]

@@ -436,7 +436,7 @@ impl MinotariNodeStatusMonitor {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
                 .await
-                .map_err(|e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
+                .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         loop {
             if self.shutdown_signal.is_triggered() {

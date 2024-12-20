@@ -63,7 +63,7 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
-use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
+use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;

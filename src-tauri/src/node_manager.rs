@@ -29,7 +29,6 @@ use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
 use serde_json::json;
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
@@ -40,7 +39,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
-use crate::process_watcher::{self, ProcessWatcher};
+use crate::process_watcher::{ProcessWatcher};
 use crate::ProgressTracker;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";

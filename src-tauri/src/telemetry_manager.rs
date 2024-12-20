@@ -28,8 +28,6 @@ use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
-    gpu_miner::GpuMiner,
-    node_manager::NodeManager,
 };
 use anyhow::Result;
 use base64::prelude::*;
@@ -48,7 +46,6 @@ use std::ops::Div;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
@@ -380,7 +377,6 @@ async fn get_telemetry_data(
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
-        sha_network_hashrate,
         randomx_network_hashrate,
         block_reward,
         block_height,
