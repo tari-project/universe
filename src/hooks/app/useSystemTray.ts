@@ -24,6 +24,7 @@ const SysTrayCopy = {
 
 export function useUpdateSystemTray() {
     const cachedMetrics = useRef<MinerMetrics>();
+    const minimizedRef = useRef<boolean>();
 
     const updateMenuItemEnabled = useCallback(async (itemId: string, enabled: boolean) => {
         const item = await menu.get(itemId);
@@ -74,8 +75,11 @@ export function useUpdateSystemTray() {
             }
 
             const minimized = await currentWindow.isMinimized();
-            await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, minimized);
-            await updateMenuItemEnabled(MINIMIZE_ITEM_ID, !minimized);
+            if (minimizedRef.current !== minimized) {
+                minimizedRef.current = minimized;
+                await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, minimized);
+                await updateMenuItemEnabled(MINIMIZE_ITEM_ID, !minimized);
+            }
         });
         return () => {
             ul.then((unlisten) => unlisten());
