@@ -45,6 +45,7 @@ export default function AppWrapper() {
     useListenForCriticalProblem();
 
     useEffect(() => {
+        console.log('App.tsx: useEffect');
         async function initialize() {
             await fetchAppConfig();
             await initSystray();
