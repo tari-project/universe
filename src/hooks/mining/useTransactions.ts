@@ -21,7 +21,8 @@ export default function useFetchTx() {
                 setTransactions(newTx);
             }
         },
-        [setTransactions, transactions]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [transactions]
     );
 
     return useCallback(async () => {
@@ -54,5 +55,6 @@ export default function useFetchTx() {
         } finally {
             setTransactionsLoading(false);
         }
-    }, [isTransactionLoading, setItems, setTransactionsLoading, setupProgress]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isTransactionLoading, setupProgress]);
 }

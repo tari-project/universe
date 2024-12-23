@@ -20,22 +20,15 @@ export function useMiningStatesSync() {
     useUiMiningStateMachine();
     useEarningsRecap();
 
-    const callIntervalItems = useCallback(async () => {
-        if (setupProgress >= 0.75) {
-            await fetchWalletDetails();
-        }
-    }, [fetchWalletDetails, setupProgress]);
-
     // intervalItems
     useEffect(() => {
-        const fetchInterval = setInterval(async () => {
-            await callIntervalItems();
-        }, 1000);
-
+        if (setupProgress < 0.75) return;
+        const fetchInterval = setInterval(fetchWalletDetails, 1000);
         return () => {
             clearInterval(fetchInterval);
         };
-    }, [callIntervalItems]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [setupProgress]);
 
     useEffect(() => {
         if (isSettingUp) return;
