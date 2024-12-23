@@ -33,13 +33,7 @@ export default function useFetchTx() {
             const txs = await invoke('get_transaction_history');
             const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
             const mapped = sortedTransactions?.map((tx) => {
-                const blockHeight = tx.message.split(': ')[1];
-
-                if (blockHeight) {
-                    return { ...tx, blockHeight };
-                }
-
-                return tx;
+                return { ...tx, blockHeight: tx.mined_in_block_height };
             }) as Transaction[];
 
             if (mapped?.length) {
