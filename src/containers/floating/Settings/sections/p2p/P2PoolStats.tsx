@@ -38,7 +38,8 @@ const P2PoolStats = () => {
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
-    }, [fetchP2pStats, fetchP2poolConnections]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const displayPeers = useMemo(() => {
         const sha3Height = sha3Stats?.height;
