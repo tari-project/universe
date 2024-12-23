@@ -9,7 +9,7 @@ import {
     RewardWrapper,
     Title,
     Value,
-    WinnerPill,
+    // WinnerPill,
     Number,
     Copied,
     GemPill,
@@ -71,9 +71,11 @@ export default function ShareRewardModal() {
 
                     <ContentWrapper>
                         <Title>{t('share.title')}</Title>
-                        <WinnerPill>
-                            {t('share.winner-pill')} #{block.toLocaleString()}
-                        </WinnerPill>
+                        {
+                            // <WinnerPill>
+                            //     {t('share.winner-pill')} #{block.toLocaleString()}
+                            // </WinnerPill>
+                        }
 
                         <BlackButton onClick={handleCopy}>
                             <AnimatePresence>

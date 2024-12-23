@@ -71,11 +71,11 @@ export default function HistoryItem({ item }: HistoryItemProps) {
         handleWinReplay(item);
     }, [handleWinReplay, item]);
 
-    if (!item.blockHeight || item.payment_id?.length > 0) {
-        return null;
-    }
+    // if (!item.blockHeight || item.payment_id?.length > 0) {
+    //     return null;
+    // }
 
-    const itemTitle = `${t('block')} #${item.blockHeight}`;
+    const itemTitle = `${t('block')}`;
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',
@@ -122,8 +122,11 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    <Typography>{itemTitle}</Typography>
-                    <Typography variant="p">{itemTime}</Typography>
+                    {
+                        // <Typography>{itemTitle}</Typography>
+                        // <Typography variant="p">{itemTime}</Typography>
+                    }
+                    <Typography>{itemTime}</Typography>
                 </InfoWrapper>
             </LeftContent>
             <EarningsWrapper>
