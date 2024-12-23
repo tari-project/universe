@@ -27,7 +27,6 @@ export default function useEarningsRecap() {
     useEffect(() => {
         // Debounced function to check if the window is minimized
         const debouncedIsMinimized = debounce(async () => {
-            console.log('Checking if window is minimized');
             const minimized = await appWindow?.isMinimized();
             const documentIsVisible = document?.visibilityState === 'visible' || false;
             if (documentIsVisible && !minimized) {
@@ -38,7 +37,6 @@ export default function useEarningsRecap() {
         const listener = listen<string>(
             'tauri://focus',
             () => {
-                console.log('Focus event received');
                 debouncedIsMinimized();
             },
             { target: { kind: 'WebviewWindow', label: 'main' } }
