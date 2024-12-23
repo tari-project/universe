@@ -1,6 +1,6 @@
 import { MinerMetrics } from '@app/types/app-status';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
