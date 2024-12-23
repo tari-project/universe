@@ -63,12 +63,12 @@ export default function Wallet() {
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
 
     const handleShowClick = useCallback(async () => {
-        // if (balance && !transactions.length && !isTransactionLoading) {
-        //     await fetchTx();
-        // } else {
-        //     setRecapCount(undefined);
-        // }
-        await fetchTx();
+        console.log({ balance, transactions, isTransactionLoading });
+        if (balance && !transactions.length && !isTransactionLoading) {
+            await fetchTx();
+        } else {
+            setRecapCount(undefined);
+        }
 
         setShowHistory((c) => !c);
         // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -21,14 +21,14 @@ import { useCallback, useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
-import { Transaction } from '@app/types/wallet.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay';
 import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { TransactionInfo } from '@app/types/app-status.ts';
 
 interface HistoryItemProps {
-    item: Transaction;
+    item: TransactionInfo;
 }
 
 const randomGradientColours = [
@@ -71,11 +71,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
         handleWinReplay(item);
     }, [handleWinReplay, item]);
 
-    // if (!item.blockHeight || item.payment_id?.length > 0) {
-    //     return null;
-    // }
-
-    const itemTitle = `${t('block')} #${item.blockHeight}`;
+    const itemTitle = `${t('block')} #${item.mined_in_block_height}`;
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',
@@ -122,7 +118,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    {item.blockHeight ? (
+                    {item.mined_in_block_height ? (
                         <>
                             <Typography>{itemTitle}</Typography>
                             <Typography variant="p">{itemTime}</Typography>

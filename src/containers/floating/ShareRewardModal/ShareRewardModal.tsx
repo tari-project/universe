@@ -52,7 +52,7 @@ export default function ShareRewardModal() {
 
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
-    const block = item?.blockHeight || 0;
+    const block = item?.mined_in_block_height || 0;
     const reward = item?.amount || 0;
     const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.TXTM_COMPACT).toLowerCase(), [reward]);
 
