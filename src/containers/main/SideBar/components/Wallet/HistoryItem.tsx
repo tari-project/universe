@@ -117,7 +117,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     </HoverWrapper>
                 )}
             </AnimatePresence>
-
             <LeftContent>
                 <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
                     <TariSvg />

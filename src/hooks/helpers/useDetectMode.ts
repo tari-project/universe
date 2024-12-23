@@ -20,5 +20,6 @@ export function useDetectMode() {
         return () => {
             listener.then((unlisten) => unlisten());
         };
-    }, [setTheme, configTheme]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [configTheme]);
 }

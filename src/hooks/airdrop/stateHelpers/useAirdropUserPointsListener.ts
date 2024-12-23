@@ -22,7 +22,8 @@ export const useAirdropUserPointsListener = () => {
                 setUserPoints(pointsPayload);
             }
         },
-        [bonusTiers, currentReferralData?.count, setFlareAnimationType, setUserPoints]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [bonusTiers, currentReferralData?.count]
     );
 
     useEffect(() => {
