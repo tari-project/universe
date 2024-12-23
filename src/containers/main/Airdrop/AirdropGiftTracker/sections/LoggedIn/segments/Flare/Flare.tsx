@@ -22,22 +22,22 @@ const durations = {
 
 export default function Flare({ gems, animationType }: Props) {
     const setFlareAnimationType = useAirdropStore((s) => s.setFlareAnimationType);
-    const clearFlareAnimationType = useCallback(() => setFlareAnimationType(), [setFlareAnimationType]);
 
     useEffect(() => {
         const duration = durations[animationType] || 0;
-        const animationTimeout = setTimeout(clearFlareAnimationType, duration);
+        const animationTimeout = setTimeout(setFlareAnimationType, duration);
         return () => {
             clearTimeout(animationTimeout);
         };
-    }, [animationType, clearFlareAnimationType]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [animationType]);
 
     return (
         <Wrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={clearFlareAnimationType}
+            onClick={() => setFlareAnimationType()}
         >
             {animationType === 'GoalComplete' && <GoalComplete gems={gems} />}
             {animationType === 'FriendAccepted' && <FriendAccepted gems={gems} />}
