@@ -248,25 +248,6 @@ export const InputGems = styled('div')`
     }
 `;
 
-export const XLogo = styled('div')`
-    width: 48px;
-    height: 48px;
-    border-radius: 100%;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    background-color: ${({ theme }) => theme.palette.background.accent};
-    color: #000;
-
-    position: absolute;
-    top: 50%;
-    right: 16px;
-
-    transform: translateY(-50%);
-`;
-
 export const FinePrint = styled('div')`
     color: #000;
     text-align: center;
