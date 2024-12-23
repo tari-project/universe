@@ -43,7 +43,6 @@ interface Actions {
 type BlockchainVisualisationStoreState = State & Actions;
 
 const checkCanAnimate = async () => {
-    console.log('checkCanAnimate');
     const focused = await appWindow?.isFocused();
     const minimized = await appWindow?.isMinimized();
     const documentIsVisible = document?.visibilityState === 'visible' || false;
