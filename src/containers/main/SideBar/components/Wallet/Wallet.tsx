@@ -63,7 +63,6 @@ export default function Wallet() {
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
 
     const handleShowClick = useCallback(async () => {
-        console.log({ balance, transactions, isTransactionLoading });
         if (balance && !transactions.length && !isTransactionLoading) {
             await fetchTx();
         } else {
