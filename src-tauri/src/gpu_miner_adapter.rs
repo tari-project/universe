@@ -61,7 +61,7 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
     pub(crate) gpu_devices: Vec<GpuConfig>,
-    latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+    pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
 }
 
 impl GpuMinerAdapter {
