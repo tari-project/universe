@@ -75,7 +75,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     //     return null;
     // }
 
-    const itemTitle = `${t('block')}`;
+    const itemTitle = `${t('block')} #${item.blockHeight}`;
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',
@@ -122,11 +122,14 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <TariSvg />
                 </SquadIconWrapper>
                 <InfoWrapper>
-                    {
-                        // <Typography>{itemTitle}</Typography>
-                        // <Typography variant="p">{itemTime}</Typography>
-                    }
-                    <Typography>{itemTime}</Typography>
+                    {item.blockHeight ? (
+                        <>
+                            <Typography>{itemTitle}</Typography>
+                            <Typography variant="p">{itemTime}</Typography>
+                        </>
+                    ) : (
+                        <Typography>{itemTime}</Typography>
+                    )}
                 </InfoWrapper>
             </LeftContent>
             <EarningsWrapper>
