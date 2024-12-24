@@ -1,4 +1,3 @@
-import { AwardedTimeBonus } from '@app/types/sosTypes';
 import i18n from 'i18next';
 
 export enum FormatPreset {
@@ -65,13 +64,3 @@ export function formatHashrate(hashrate: number, joinUnit = true): string {
         return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
     }
 }
-
-export const sosFormatAwardedBonusTime = (props: AwardedTimeBonus) => {
-    const units: string[] = [];
-    if (props.days) units.push(`${props.days}d`);
-    if (props.hours) units.push(`${props.hours}h`);
-    if (props.minutes) units.push(`${props.minutes}m`);
-    if (props.seconds) units.push(`${props.seconds}s`);
-    if (units.length === 0) units.push('0s');
-    return units.join(' ');
-};
