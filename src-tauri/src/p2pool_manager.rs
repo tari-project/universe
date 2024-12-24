@@ -111,7 +111,8 @@ pub struct P2poolManager {
 impl P2poolManager {
     pub fn new() -> Self {
         let adapter = P2poolAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
