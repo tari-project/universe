@@ -14,7 +14,7 @@ import { useEffect, useState } from 'react';
 
 export default function Timer() {
     const { t } = useTranslation('sos', { useSuspense: false });
-    const { getTimeRemaining } = useShellOfSecretsStore();
+    const getTimeRemaining = useShellOfSecretsStore((s) => s.getTimeRemaining);
     const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, totalRemainingMs: 0 });
 
     useEffect(() => {
@@ -24,7 +24,8 @@ export default function Timer() {
         return () => {
             clearInterval(intervalId);
         };
-    }, [getTimeRemaining]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <Wrapper>
