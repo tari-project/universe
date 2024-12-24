@@ -30,6 +30,7 @@ use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 #[derive(thiserror::Error, Debug)]
@@ -57,11 +58,14 @@ impl Clone for WalletManager {
 }
 
 impl WalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+    pub fn new(
+        node_manager: NodeManager,
+        wallet_watch_tx: watch::Sender<Option<WalletBalance>>,
+    ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
-        let adapter = WalletAdapter::new(use_tor);
+        let adapter = WalletAdapter::new(use_tor, wallet_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter);
 
         Self {

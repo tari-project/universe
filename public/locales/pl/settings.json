@@ -6,8 +6,8 @@
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
   "change-language": "Zmień język",
-  "confirm": "Confirm",
-  "confirm-action": "Confirm action",
+  "confirm": "Potwierdź",
+  "confirm-action": "Potwierdź działanie",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Połączone węzły",
@@ -49,9 +49,9 @@
     "title": "Czas po którym urządzenie jest uważane za bezczynne"
   },
   "importing-wallet": "Importowanie portfela",
-  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
+  "importing-wallet-copy": "Tari Universe uruchomi się ponownie automatycznie po zaimportowaniu portfela",
   "invalid-seed-words": "Wprowadź 24 słowa oddzielone spacjami",
-  "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port": "Nieprawidłowy port serwera statystyk",
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
@@ -88,15 +88,15 @@
   "pool-mining": "Kopanie w puli",
   "pool-mining-description": "Po włączeniu tej opcji będziesz wydobywać w puli i dołączać do grupy górników (plemienia).",
   "pre-release": {
-    "description": "Explore the latest features before they go live and provide feedback",
-    "title": "Use pre-release version"
+    "description": "Odkryj najnowsze funkcje przed ich oficjalnym wydaniem i przekaż opinię",
+    "title": "Użyj wersji przedpremierowej"
   },
-  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
+  "pre-release-note": "Zamierzasz przełączyć się na wersję przedpremierową aplikacji. Ta wersja może oferować ekscytujące nowe funkcje i ulepszenia, z możliwością napotkania obszarów, które mogą być jeszcze w trakcie dopracowywania.",
   "randomx-network-hash-rate": "Hashrate sieci Randomx",
   "refresh-versions": "Odśwież wersje",
   "release-notes": {
-    "loading": "Loading release notes...",
-    "upgrade-available": "⚠️ Upgrade Available"
+    "loading": "Ładowanie notatek o wydaniu...",
+    "upgrade-available": "⚠️ Dostępna aktualizacja"
   },
   "report-issue": "Zgłoś problem",
   "reset-permanently": "Czy na pewno chcesz trwale zresetować ustawienia?",
@@ -117,8 +117,8 @@
     "title": "Automatyczne uruchamianie przy starcie systemu"
   },
   "should-use-system-language": "Użyj języka systemowego",
-  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
-  "stats-server-port": "Stats server port",
+  "stable-version-note": "Wyłączając wersję przedpremierową aplikacji, powrócisz do stabilnego wydania, które priorytetowo traktuje niezawodność i spójność. Możesz jednak przegapić najnowsze funkcje i ulepszenia.",
+  "stats-server-port": "Port serwera statystyk",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Połączenia",
@@ -126,7 +126,7 @@
     "general": "Ogólne",
     "mining": "Wydobycie",
     "p2p": "Kopanie w puli",
-    "releaseNotes": "Release Notes",
+    "releaseNotes": "Notatki o wydaniu",
     "very_experimental": "Bardzo Eksperymentalne",
     "wallet": "Portfel"
   },
@@ -145,7 +145,7 @@
   },
   "use-dynamic-fail-data": "Użyj dynamicznych danych o błędach",
   "use-random-control-port": "Użyj losowego portu kontrolnego",
-  "use-random-port": "Use random port",
+  "use-random-port": "Użyj losowego portu",
   "use-tor": "Używaj Tor",
   "use-tor-bridges": "Użyj mostów Tor",
   "visual-mode": "Tryb wizualny",

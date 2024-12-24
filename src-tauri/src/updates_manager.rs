@@ -211,11 +211,11 @@ impl UpdatesManager {
                     }
                 },
                 || {
-                    app.restart();
+                    info!(target: LOG_TARGET, "Latest version download finished");
                 },
             )
             .await?;
 
-        Ok(())
+        app.restart();
     }
 }

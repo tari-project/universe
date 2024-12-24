@@ -38,6 +38,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
+    /// Health timeout should always be less than poll time otherwise you will have overlapping calls
     pub health_timeout: tokio::time::Duration,
     pub expected_startup_time: tokio::time::Duration,
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
@@ -76,7 +77,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         log_path: PathBuf,
         binary: Binaries,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "App shutdown triggered or terminated status for {} = {} | {}", self.adapter.name(),app_shutdown.is_triggered(),app_shutdown.is_terminated());
         if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
             return Ok(());
         }
@@ -221,7 +221,7 @@ async fn do_health_check<T: StatusMonitor>(
                     }
                 }
                 HealthStatus::Unhealthy => {
-                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
+                    warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
                 }
             }
         }

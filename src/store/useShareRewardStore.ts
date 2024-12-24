@@ -1,14 +1,14 @@
+import { TransactionInfo } from '@app/types/app-status.ts';
 import { create } from './create.ts';
-import { Transaction } from '@app/types/wallet.ts';
 
 interface State {
     showModal: boolean;
-    item: Transaction | null;
+    item: TransactionInfo | null;
 }
 
 interface Actions {
     setShowModal: (showModal: boolean) => void;
-    setItemData: (item: Transaction | null) => void;
+    setItemData: (item: TransactionInfo | null) => void;
 }
 
 const initialState: State = {

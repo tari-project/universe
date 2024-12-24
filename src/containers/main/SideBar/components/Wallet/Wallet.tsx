@@ -62,16 +62,16 @@ export default function Wallet() {
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
     const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
 
-    const handleShowClick = useCallback(() => {
+    const handleShowClick = useCallback(async () => {
         if (balance && !transactions.length && !isTransactionLoading) {
-            fetchTx().then(() => setShowHistory((c) => !c));
-            return;
+            await fetchTx();
+        } else {
+            setRecapCount(undefined);
         }
 
-        setRecapCount(undefined);
-
         setShowHistory((c) => !c);
-    }, [balance, fetchTx, isTransactionLoading, setRecapCount, transactions?.length]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [balance, fetchTx, isTransactionLoading, transactions?.length]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);

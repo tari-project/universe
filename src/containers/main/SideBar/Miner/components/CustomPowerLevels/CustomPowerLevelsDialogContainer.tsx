@@ -19,7 +19,8 @@ export const CustomPowerLevelsDialogContainer = () => {
         if (!maxThreads) {
             fetchMaxThreads();
         }
-    }, [fetchMaxThreads, maxThreads]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [maxThreads]);
 
     return (
         <Dialog

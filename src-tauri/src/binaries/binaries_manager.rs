@@ -36,7 +36,7 @@ use super::{
     Binaries,
 };
 
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 
@@ -102,7 +102,7 @@ impl BinaryManager {
                 VersionReq::default()
             });
 
-        info!(target: LOG_TARGET, "Version requirements for {:?}: {:?}", binary_name, version_requirement);
+        debug!(target: LOG_TARGET, "Version requirements for {:?}: {:?}", binary_name, version_requirement);
 
         version_requirement
     }
@@ -514,7 +514,7 @@ impl BinaryManager {
     }
 
     pub async fn read_local_versions(&mut self) {
-        info!(target: LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
+        debug!(target: LOG_TARGET,"Reading local versions for binary: {:?}", self.binary_name);
 
         let binary_folder = match self.adapter.get_binary_folder() {
             Ok(path) => path,

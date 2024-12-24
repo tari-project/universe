@@ -40,7 +40,8 @@ export function useHandleAirdropTokensRefresh() {
             }
             await setAirdropTokens(fetchedAirdropTokens);
         },
-        [airdropTokens, setAirdropTokens, syncedAidropWithBackend]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [airdropTokens, syncedAidropWithBackend]
     );
 }
 export function useAirdropTokensRefresh() {

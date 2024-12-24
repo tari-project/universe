@@ -6,8 +6,8 @@
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
   "change-language": "भाषा",
-  "confirm": "Confirm",
-  "confirm-action": "Confirm action",
+  "confirm": "पुष्टि करें",
+  "confirm-action": "क्रिया की पुष्टि करें",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "जुड़े हुए सहकर्मी",
@@ -48,9 +48,9 @@
     "title": "समय जिसके बाद मशीन को निष्क्रिय माना जाता है"
   },
   "importing-wallet": "वॉलेट आयात किया जा रहा है",
-  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
+  "importing-wallet-copy": "एक बार आपका वॉलेट आयात हो जाने पर Tari Universe स्वचालित रूप से पुनः आरंभ होगा",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
-  "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port": "अमान्य सांख्यिकी सर्वर पोर्ट",
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
@@ -86,15 +86,15 @@
   "pool-mining": "पूल माइनिंग",
   "pool-mining-description": "सक्षम होने पर, आप एक पूल में माइन करेंगे और माइनर्स के समूह में शामिल होंगे।",
   "pre-release": {
-    "description": "Explore the latest features before they go live and provide feedback",
-    "title": "Use pre-release version"
+    "description": "नवीनतम सुविधाओं का अन्वेषण करें इससे पहले कि वे लाइव हों और प्रतिक्रिया दें",
+    "title": "पूर्व-रिलीज़ संस्करण का उपयोग करें"
   },
-  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
+  "pre-release-note": "आप एप्लिकेशन के पूर्व-रिलीज़ संस्करण पर स्विच करने वाले हैं। यह संस्करण रोमांचक नई सुविधाएँ और संवर्द्धन प्रदान कर सकता है, जिसमें उन क्षेत्रों का सामना करने की संभावना है जो अभी भी परिष्कृत हो सकते हैं।",
   "randomx-network-hash-rate": "Randomx नेटवर्क हैशरेट",
   "refresh-versions": "संस्करण ताज़ा करें",
   "release-notes": {
-    "loading": "Loading release notes...",
-    "upgrade-available": "⚠️ Upgrade Available"
+    "loading": "रिलीज़ नोट्स लोड हो रहे हैं...",
+    "upgrade-available": "⚠️ उन्नयन उपलब्ध"
   },
   "report-issue": "समस्या की रिपोर्ट करें",
   "reset-permanently": "क्या आप वाकई सभी सेटिंग्स को स्थायी रूप से रीसेट करना चाहते हैं?",
@@ -115,8 +115,8 @@
     "title": "सिस्टम बूट पर स्वचालित शुरूआत"
   },
   "should-use-system-language": "सिस्टम भाषा का उपयोग करें",
-  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
-  "stats-server-port": "Stats server port",
+  "stable-version-note": "एप्लिकेशन के पूर्व-रिलीज़ संस्करण को बंद करके, आप स्थिर रिलीज़ पर लौट आएंगे, जो विश्वसनीयता और स्थिरता को प्राथमिकता देता है। जबकि आप नवीनतम सुविधाओं और संवर्द्धनों को याद कर सकते हैं।",
+  "stats-server-port": "सांख्यिकी सर्वर पोर्ट",
   "tabs": {
     "airdrop": "एयरड्रॉप",
     "connections": "कनेक्शन्स",
@@ -124,7 +124,7 @@
     "general": "सामान्य",
     "mining": "माइनिंग",
     "p2p": "पूल माइनिंग",
-    "releaseNotes": "Release Notes",
+    "releaseNotes": "रिलीज़ नोट्स",
     "very_experimental": "बहुत प्रयोगात्मक",
     "wallet": "वॉलेट"
   },
@@ -143,7 +143,7 @@
   },
   "use-dynamic-fail-data": "डायनामिक फेल डेटा का उपयोग करें",
   "use-random-control-port": "रैंडम कंट्रोल पोर्ट का उपयोग करें",
-  "use-random-port": "Use random port",
+  "use-random-port": "रैंडम पोर्ट का उपयोग करें",
   "use-tor": "टोर का उपयोग करें",
   "use-tor-bridges": "टोर ब्रिज का उपयोग करें",
   "visual-mode": "दृश्य मोड",

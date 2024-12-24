@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "आगामी पुरस्कार / मैकबुक प्रो 16’"
+    },
+    "timer": {
+      "gettingClose": "आप करीब आ रहे हैं",
+      "days": "दिन",
+      "hours": "घंटे"
+    },
+    "friends": {
+      "reduceTimer": "मित्रों को आमंत्रित करके अपना टाइमर कम करें",
+      "linkCopied": "लिंक कॉपी हो गया!",
+      "growCrew": "अपनी टीम बढ़ाएं"
+    }
+  },
+  "superCharger": {
+    "title": "सुपर चार्जर",
+    "placeholder": "अपना कोड दर्ज करें",
+    "success": "समय बोनस जोड़ा गया {{time}}.",
+    "error": "अमान्य कोड।",
+    "submit": "जाएं"
+  },
+  "mainTimer": {
+    "title": "आपका टाइमर",
+    "days": "दिन",
+    "hours": "घंटे",
+    "minutes": "मिनट",
+    "seconds": "सेकंड"
+  },
+  "progress": {
+    "message": "आप अगले रैंक से <span>{{hours}} घंटे</span> दूर हैं। खनन जारी रखें!"
+  },
+  "leaserboardEntry": {
+    "mining": "अभी खनन हो रहा है",
+    "idle": "अंतिम खनन {{time}} पहले"
+  },
+  "leaderboard": {
+    "title": "लीडरबोर्ड",
+    "viewFull": "पूरा लीडरबोर्ड देखें"
+  },
+  "member": {
+    "new": "नया",
+    "nudge": "हल्का धक्का",
+    "minHr": "मिन/घंटा"
+  },
+  "crewMining": {
+    "title": "टीम खनन",
+    "rate": "+{{rate}}मिन/घंटा",
+    "mining": "{{current}}/{{total}} खनन"
+  },
+  "crewList": {
+    "placeholder": "अपने पहले टीम सदस्य को आमंत्रित करें"
+  }
+}

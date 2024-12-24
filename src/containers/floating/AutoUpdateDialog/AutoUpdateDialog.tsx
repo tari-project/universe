@@ -61,12 +61,14 @@ export default function AutoUpdateDialog() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [open, setDialogToShow]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [open]);
 
     const handleClose = useCallback(() => {
         console.info('Update declined');
         setDialogToShow(null);
-    }, [setDialogToShow]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleUpdate = useCallback(() => {
         console.info('Proceed with update');

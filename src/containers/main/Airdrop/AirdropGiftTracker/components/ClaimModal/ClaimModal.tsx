@@ -13,7 +13,6 @@ import {
     Text,
     TextWrapper,
     Title,
-    XLogo,
 } from './styles';
 import gemImage from './images/gems.png';
 import gemLargeImage from './images/gem-large.png';
@@ -21,7 +20,6 @@ import { useCallback, useState } from 'react';
 import { GIFT_GEMS, MAX_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { Trans, useTranslation } from 'react-i18next';
 import { GemImage } from '../Gems/styles';
-import XLogoIcon from './icons/XLogoIcon';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import GreenModal from '@app/components/GreenModal/GreenModal';
 
@@ -38,10 +36,15 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
 
     const [claimCode, setClaimCode] = useState('');
 
-    const handleSubmit = useCallback(async () => {
-        await setAllowTelemetry(true);
-        return onSubmit(claimCode);
-    }, [claimCode, onSubmit, setAllowTelemetry]);
+    const handleSubmit = useCallback(
+        async (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await setAllowTelemetry(true);
+            return onSubmit(claimCode);
+        },
+        [claimCode, onSubmit, setAllowTelemetry]
+    );
 
     return (
         <GreenModal onClose={onClose}>
@@ -78,12 +81,7 @@ export default function ClaimModal({ onSubmit, onClose }: ClaimModalProps) {
                     </InputGems>
                 </InputWrapper>
 
-                <ClaimButton onClick={handleSubmit}>
-                    {t('claimGems')}
-                    <XLogo>
-                        <XLogoIcon />
-                    </XLogo>
-                </ClaimButton>
+                <ClaimButton onClick={handleSubmit}>{t('claimGems')}</ClaimButton>
 
                 {!allowTelemetry && (
                     <FinePrint>
