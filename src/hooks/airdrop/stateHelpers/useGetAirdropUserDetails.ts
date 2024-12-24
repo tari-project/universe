@@ -13,19 +13,29 @@ export const useGetAirdropUserDetails = () => {
     const setBonusTiers = useAirdropStore((state) => state.setBonusTiers);
     const logout = useAirdropStore((state) => state.logout);
 
+    const handleErrorLogout = useCallback(() => {
+        console.error('Error fetching user details, logging out');
+        logout();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     // GET USER DETAILS
     const fetchUserDetails = useCallback(async () => {
         return handleRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
-            onError: logout,
-        }).then((data) => {
-            if (data?.user?.id) {
-                setUserDetails(data);
-                return data.user;
-            }
-        });
-    }, [handleRequest, logout, setUserDetails]);
+            onError: handleErrorLogout,
+        })
+            .then((data) => {
+                if (data?.user?.id) {
+                    setUserDetails(data);
+                    return data.user;
+                } else {
+                    handleErrorLogout();
+                }
+            })
+            .catch(() => handleErrorLogout());
+    }, [handleRequest, setUserDetails, handleErrorLogout]);
 
     // GET USER POINTS
     const fetchUserPoints = useCallback(async () => {
@@ -83,9 +93,9 @@ export const useGetAirdropUserDetails = () => {
             await Promise.all(requests);
         };
 
-        if (!userDetails?.user?.id && airdropToken) {
+        if (airdropToken) {
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airdropToken, userDetails, baseUrl]);
+    }, [airdropToken, baseUrl]);
 };
