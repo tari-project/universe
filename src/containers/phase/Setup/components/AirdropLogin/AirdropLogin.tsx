@@ -1,4 +1,3 @@
-/* eslint-disable i18next/no-literal-string */
 import { ClaimButton, Gem1, Gem2, Gem3, GemsWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
 import gemLargeImage from '../../../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 import { useTranslation } from 'react-i18next';
@@ -30,14 +29,12 @@ export default function AirdropLogin() {
 
             <TextWrapper>
                 <Title>{t('claimModalTitle')}</Title>
-
-                <Text>
-                    Earn gems while mining to increase your airdrop reward during testnet! Connect your airdrop account
-                    to start earning.
-                </Text>
+                <Text>{t('claimSetlupText')}</Text>
             </TextWrapper>
 
-            <ClaimButton onClick={handleSubmit}>{t('claimGems')}</ClaimButton>
+            <ClaimButton onClick={handleSubmit}>
+                <span>{t('claimGems')}</span>
+            </ClaimButton>
         </Wrapper>
     );
 }

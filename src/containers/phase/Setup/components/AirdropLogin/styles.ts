@@ -1,4 +1,4 @@
-import styled, { css, keyframes } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export const Wrapper = styled.div`
     position: fixed;
@@ -42,39 +42,33 @@ export const GemsWrapper = styled('div')`
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
-
-    @media (max-height: 800px) {
-        width: 80%;
-        top: -90px;
-        transform: scale(0.7) translateX(-71%);
-    }
 `;
 
 export const Gem1 = styled('img')`
     position: absolute;
     top: 0;
-    left: 0;
+    left: 10px;
     animation: ${float} 3s ease-in-out infinite;
-    width: 111px;
+    width: 121px;
     rotate: -40deg;
 `;
 
 export const Gem2 = styled('img')`
     position: absolute;
-    top: 30px;
+    top: 20px;
     right: 60px;
 
-    width: 32px;
-    rotate: -40deg;
+    width: 42px;
+    rotate: -20deg;
     animation: ${float} 3.2s ease-in-out infinite;
 `;
 
 export const Gem3 = styled('img')`
     position: absolute;
-    bottom: 10px;
-    right: 0px;
-    width: 70px;
-    rotate: 15deg;
+    bottom: 0px;
+    right: 10px;
+    width: 80px;
+    rotate: 18deg;
     animation: ${float} 3.8s ease-in-out infinite;
 `;
 
@@ -85,7 +79,7 @@ export const TextWrapper = styled('div')`
     align-items: center;
     gap: 10px;
 
-    padding-top: 80px;
+    padding-top: 78px;
 `;
 
 export const Title = styled('div')`
@@ -106,39 +100,36 @@ export const Text = styled('div')<{ $isError?: boolean }>`
     font-style: normal;
     font-weight: 400;
     line-height: 120.7%;
-
     max-width: 468px;
-
-    ${({ $isError }) =>
-        $isError &&
-        css`
-            font-weight: bold;
-            margin-top: 10px;
-            font-size: 14px;
-            text-transform: uppercase;
-            max-width: unset;
-            color: red;
-        `};
 `;
 
 export const ClaimButton = styled('button')`
-    transition: transform 0.2s ease;
-    text-transform: uppercase;
     color: #c9eb00;
+
     font-size: 14px;
     text-align: center;
     font-family: DrukWide, sans-serif;
     font-weight: 800;
-    width: 100%;
+    text-transform: uppercase;
+
     border-radius: 60px;
     background: #000;
     box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
-    min-height: 45px;
+
+    width: 100%;
+    height: 45px;
 
     position: relative;
     cursor: pointer;
 
+    span {
+        display: block;
+        transition: transform 0.2s ease;
+    }
+
     &:hover {
-        transform: scale(1.05);
+        span {
+            transform: scale(1.075);
+        }
     }
 `;
