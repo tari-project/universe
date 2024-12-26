@@ -72,15 +72,8 @@ export const useWebsocket = () => {
                 console.error(e);
             }
         },
-        [
-            connectedSocket,
-            appId,
-            height,
-            applicationsVersions?.tari_universe,
-            network,
-            userId,
-            registerWsConnectionEvent,
-        ]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
     );
 
     useEffect(() => {
