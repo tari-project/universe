@@ -14,7 +14,7 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
     const sha3Height = sha3Stats?.height;
     const randomXHeight = randomXStats?.height;
 
-    const headingMarkup = headings.map((heading, idx) => {
+    const headingMarkup = headings?.map((heading, idx) => {
         const alignment = idx === 1 ? 'start' : 'end';
         return (
             <Cell key={heading} $alignment={alignment}>
@@ -22,7 +22,7 @@ export default function PeerTable({ peers }: { peers: ConnectedPeerInfoExtended[
             </Cell>
         );
     });
-    const peerMarkup = peers.map(({ peer_id, peer_info, last_ping, randomxDiff, sha3Diff }, idx) => {
+    const peerMarkup = peers?.map(({ peer_id, peer_info, last_ping, randomxDiff, sha3Diff }, idx) => {
         const count = idx + 2;
         const displayId = truncateMiddle(peer_id, 9);
         const { current_sha3x_height: sha3x_height, current_random_x_height: random_x_height } = peer_info || {};

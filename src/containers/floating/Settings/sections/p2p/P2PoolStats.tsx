@@ -13,6 +13,7 @@ import { Divider } from '@app/components/elements/Divider.tsx';
 import { ConnectedPeerInfo } from '@app/types/app-status.ts';
 import P2PConnectionData from './P2PConnectionData.tsx';
 import { timeAgo } from '@app/utils/getTimeAgo.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 export type ConnectedPeerInfoExtended = ConnectedPeerInfo & {
     sha3Diff?: number;
@@ -27,19 +28,24 @@ const P2PoolStats = () => {
     const peers = useP2poolStatsStore((s) => s?.peers);
     const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
     const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
+    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
 
     useEffect(() => {
+        if (!(isCPUMining || isGPUMining)) return;
+
         const handleFetchP2pStats = async () => {
-            await fetchP2pStats?.();
-            await fetchP2poolConnections?.();
+            fetchP2pStats();
+            fetchP2poolConnections();
         };
+
         handleFetchP2pStats();
         const fetchP2pStatsInterval = setInterval(handleFetchP2pStats, 5000);
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [isCPUMining, isGPUMining]);
 
     const displayPeers = useMemo(() => {
         const sha3Height = sha3Stats?.height;
