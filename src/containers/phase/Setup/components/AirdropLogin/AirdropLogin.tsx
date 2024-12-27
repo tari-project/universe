@@ -1,18 +1,14 @@
 import { ClaimButton, Gem1, Gem2, Gem3, GemsWrapper, Text, TextWrapper, Title, Wrapper } from './styles';
 import gemLargeImage from '../../../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useAirdropAuth } from '@app/containers/main/Airdrop/AirdropGiftTracker/hooks/useAirdropAuth';
 
 export default function AirdropLogin() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
-    const { handleAuth, checkAuth } = useAirdropAuth();
-
-    useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
+    const { handleAuth } = useAirdropAuth();
 
     const handleSubmit = useCallback(
         async (e: React.MouseEvent<HTMLButtonElement>) => {

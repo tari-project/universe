@@ -1,6 +1,6 @@
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import ClaimModal from '../../components/ClaimModal/ClaimModal';
 import { useTranslation } from 'react-i18next';
 import gemImage from '../../images/gem.png';
@@ -11,11 +11,7 @@ export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const { referralQuestPoints } = useAirdropStore();
 
-    const { handleAuth, checkAuth } = useAirdropAuth();
-
-    useEffect(() => {
-        checkAuth();
-    }, [checkAuth]);
+    const { handleAuth } = useAirdropAuth();
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 

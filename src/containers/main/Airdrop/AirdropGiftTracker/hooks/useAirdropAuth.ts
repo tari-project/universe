@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
@@ -22,7 +22,7 @@ export const useAirdropAuth = () => {
         [backendInMemoryConfig?.airdropTwitterAuthUrl]
     );
 
-    const checkAuth = useCallback(() => {
+    useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
@@ -58,5 +58,5 @@ export const useAirdropAuth = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
-    return { handleAuth, checkAuth };
+    return { handleAuth };
 };
