@@ -24,6 +24,6 @@ export const Wrapper = styled.div`
     line-height: 245.455%;
 
     span {
-        opacity: 0.5;
+        opacity: 0.6;
     }
 `;

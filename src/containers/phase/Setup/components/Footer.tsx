@@ -13,8 +13,9 @@ import { AnimatePresence } from 'framer-motion';
 
 export default function Footer() {
     const { airdropTokens } = useAirdropStore();
-    const isLoggedIn = !!airdropTokens;
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+
+    const isLoggedIn = !!airdropTokens;
 
     /*
     // @peps: Im disabling this for now, 
