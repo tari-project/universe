@@ -18,7 +18,8 @@ export const useAirdropAuth = () => {
                 );
             }
         },
-        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [backendInMemoryConfig?.airdropTwitterAuthUrl]
     );
 
     const checkAuth = useCallback(() => {
@@ -54,7 +55,8 @@ export const useAirdropAuth = () => {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, restartMining, setAirdropTokens, setAuthUuid]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     return { handleAuth, checkAuth };
 };

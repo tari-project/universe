@@ -14,13 +14,18 @@ export default function AirdropLogin() {
         checkAuth();
     }, [checkAuth]);
 
-    const handleSubmit = useCallback(async () => {
-        await setAllowTelemetry(true);
-        return handleAuth();
-    }, [handleAuth, setAllowTelemetry]);
+    const handleSubmit = useCallback(
+        async (e: React.MouseEvent<HTMLButtonElement>) => {
+            e.preventDefault();
+            e.stopPropagation();
+            await setAllowTelemetry(true);
+            return handleAuth();
+        },
+        [handleAuth, setAllowTelemetry]
+    );
 
     return (
-        <Wrapper>
+        <Wrapper initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
             <GemsWrapper>
                 <Gem1 src={gemLargeImage} alt="" />
                 <Gem2 src={gemLargeImage} alt="" />
@@ -29,7 +34,7 @@ export default function AirdropLogin() {
 
             <TextWrapper>
                 <Title>{t('claimModalTitle')}</Title>
-                <Text>{t('claimSetlupText')}</Text>
+                <Text>{t('setupLoginText')}</Text>
             </TextWrapper>
 
             <ClaimButton onClick={handleSubmit}>

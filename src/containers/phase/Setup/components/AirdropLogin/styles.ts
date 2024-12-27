@@ -1,6 +1,7 @@
+import { m } from 'framer-motion';
 import styled, { keyframes } from 'styled-components';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled(m.div)`
     position: fixed;
     top: 47px;
     right: 40px;
@@ -91,6 +92,11 @@ export const Title = styled('div')`
     font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
+    max-width: 262px;
+
+    span {
+        color: #ff4a55;
+    }
 `;
 
 export const Text = styled('div')<{ $isError?: boolean }>`
@@ -100,7 +106,7 @@ export const Text = styled('div')<{ $isError?: boolean }>`
     font-style: normal;
     font-weight: 400;
     line-height: 120.7%;
-    max-width: 468px;
+    max-width: 282px;
 `;
 
 export const ClaimButton = styled('button')`
