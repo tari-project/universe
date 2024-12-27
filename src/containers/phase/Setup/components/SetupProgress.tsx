@@ -1,6 +1,7 @@
 import { LinearProgress } from '@app/components/elements/LinearProgress';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
+import NumberFlow from '@number-flow/react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
@@ -29,7 +30,9 @@ export default function SetupProgress() {
 
     return (
         <Wrapper>
-            <Percentage>{progressPercentage}%</Percentage>
+            <Percentage>
+                <NumberFlow value={setupProgress} willChange={true} format={{ style: 'percent' }} />
+            </Percentage>
             <InfoText variant="p">{setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : ''}</InfoText>
             <LinearProgress value={progressPercentage} variant="small" />
         </Wrapper>

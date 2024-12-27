@@ -2,6 +2,7 @@ import { Wrapper, Number, Label, GemImage, GemsAnimation, GemAnimatedImage } fro
 import gemImage from '../../images/gem.png';
 import { AnimatePresence, useSpring } from 'framer-motion';
 import { useEffect, useState } from 'react';
+import NumberFlow from '@number-flow/react';
 
 interface Props {
     number: number;
@@ -9,7 +10,6 @@ interface Props {
 }
 
 export default function Gems({ number, label }: Props) {
-    const [displayValue, setDisplayValue] = useState(number);
     const [animate, setAnimate] = useState(false);
 
     const getRandomX = (() => {
@@ -28,28 +28,18 @@ export default function Gems({ number, label }: Props) {
         };
     })();
 
-    const spring = useSpring(0, { mass: 0.8, stiffness: 50, damping: 20 });
-
-    spring.on('change', (latest: number) => {
-        setDisplayValue(Math.round(latest));
-    });
-
-    useEffect(() => {
-        spring.set(number);
-    }, [spring, number]);
-
     useEffect(() => {
         setAnimate(true);
         const timer = setTimeout(() => setAnimate(false), 1000);
         return () => clearTimeout(timer);
-    }, [displayValue]);
+    }, [number]);
 
     return (
         <Wrapper>
             <Number>
                 <GemImage src={gemImage} alt="" />
 
-                {displayValue.toLocaleString()}
+                <NumberFlow value={number} continuous={true} willChange={true} />
 
                 <AnimatePresence>
                     {animate && (
