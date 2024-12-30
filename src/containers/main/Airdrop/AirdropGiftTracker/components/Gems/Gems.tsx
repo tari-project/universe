@@ -30,7 +30,7 @@ export default function Gems({ number, label }: Props) {
 
     useEffect(() => {
         setAnimate(true);
-        const timer = setTimeout(() => setAnimate(false), 1000);
+        const timer = setTimeout(() => setAnimate(false), 2000);
         return () => clearTimeout(timer);
     }, [number]);
 
