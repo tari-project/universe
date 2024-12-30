@@ -31,7 +31,7 @@ export default function SetupProgress() {
     return (
         <Wrapper>
             <Percentage>
-                <NumberFlow value={setupProgress} willChange={true} format={{ style: 'percent' }} />
+                <NumberFlow value={setupProgress} willChange={true} continuous={true} format={{ style: 'percent' }} />
             </Percentage>
             <InfoText variant="p">{setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : ''}</InfoText>
             <LinearProgress value={progressPercentage} variant="small" />

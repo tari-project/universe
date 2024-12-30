@@ -58,23 +58,29 @@ export const TimerColumn = styled('div')`
     display: flex;
     flex-direction: column;
     padding-left: 30px;
-    gap: 4px;
+    gap: 6px;
 `;
 
 export const NumberGroup = styled('div')`
     display: flex;
-    gap: 2px;
     align-items: flex-end;
+    height: 50px;
+    position: relative;
 `;
 
 export const Number = styled('div')`
     font-size: 64px;
-    line-height: 80%;
-    text-transform: uppercase;
+    line-height: 100%;
+    height: 50px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: translateY(-22px);
 `;
 
 export const Label = styled('div')`
     font-size: 16px;
     line-height: 100%;
     text-transform: uppercase;
+    padding-left: 79px;
 `;

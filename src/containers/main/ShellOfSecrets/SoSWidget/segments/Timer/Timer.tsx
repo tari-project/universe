@@ -11,6 +11,7 @@ import {
 } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState } from 'react';
+import NumberFlow from '@number-flow/react';
 
 export default function Timer() {
     const { t } = useTranslation('sos', { useSuspense: false });
@@ -37,12 +38,38 @@ export default function Timer() {
 
             <TimerColumn>
                 <NumberGroup>
-                    <Number>{reminingTime.days}</Number>
+                    <Number>
+                        <NumberFlow
+                            value={reminingTime.days}
+                            willChange={true}
+                            continuous={true}
+                            trend={-1}
+                            format={{
+                                style: 'decimal',
+                                minimumIntegerDigits: 2,
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                            }}
+                        />
+                    </Number>
                     <Label>{t('widget.timer.days')}</Label>
                 </NumberGroup>
 
                 <NumberGroup>
-                    <Number>{reminingTime.hours}</Number>
+                    <Number>
+                        <NumberFlow
+                            value={reminingTime.hours}
+                            willChange={true}
+                            continuous={true}
+                            trend={-1}
+                            format={{
+                                style: 'decimal',
+                                minimumIntegerDigits: 2,
+                                minimumFractionDigits: 0,
+                                maximumFractionDigits: 0,
+                            }}
+                        />
+                    </Number>
                     <Label>{t('widget.timer.hours')}</Label>
                 </NumberGroup>
             </TimerColumn>
