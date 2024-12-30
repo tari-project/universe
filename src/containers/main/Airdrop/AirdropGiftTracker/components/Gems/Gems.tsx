@@ -1,6 +1,6 @@
 import { Wrapper, Number, Label, GemImage, GemsAnimation, GemAnimatedImage } from './styles';
 import gemImage from '../../images/gem.png';
-import { AnimatePresence, useSpring } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import NumberFlow from '@number-flow/react';
 
