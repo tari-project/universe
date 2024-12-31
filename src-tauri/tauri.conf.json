@@ -84,6 +84,15 @@
             "windows": {
                 "installMode": "passive"
             }
+        },
+        "cli": {
+            "args": [
+                {
+                    "name": "import-backup",
+                    "description": "Imports a minotari node backup file",
+                    "takesValue": true
+                }
+            ]
         }
     }
 }
