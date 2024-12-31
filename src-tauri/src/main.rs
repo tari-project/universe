@@ -441,10 +441,12 @@ async fn setup_inner(
         )
         .await?;
 
-    progress.set_max(75).await;
+    progress.set_max(45).await;
+    progress.update("wallet-started".to_string(), None, 0).await;
     progress
-        .update("preparing-for-initial-sync".to_string(), None, 0)
+        .update("waiting-for-node".to_string(), None, 0)
         .await;
+    progress.set_max(75).await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
@@ -776,7 +778,7 @@ fn main() {
                     error!(target: LOG_TARGET, "Could not get cli matches: {:?}", e);
                    return Err(Box::new(e));
                 }
-            };            
+            };
 
             let splash_window = app
                 .get_webview_window("splashscreen")
