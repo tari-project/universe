@@ -6899,7 +6899,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.37"
+version = "0.8.38"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6956,6 +6956,7 @@ dependencies = [
  "tari_utilities",
  "tauri",
  "tauri-build 2.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "tauri-plugin-cli",
  "tauri-plugin-os",
  "tauri-plugin-process",
  "tauri-plugin-sentry",
@@ -7576,6 +7577,20 @@ dependencies = [
  "tauri-utils 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "toml 0.8.19",
  "walkdir",
+]
+
+[[package]]
+name = "tauri-plugin-cli"
+version = "2.2.0"
+source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+dependencies = [
+ "clap 4.5.23",
+ "log",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.6",
 ]
 
 [[package]]
