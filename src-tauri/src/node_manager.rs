@@ -79,8 +79,8 @@ impl NodeManager {
 
         let adapter = MinotariNodeAdapter::new(status_broadcast);
         let mut process_watcher = ProcessWatcher::new(adapter);
-        process_watcher.poll_time = Duration::from_secs(10);
-        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(5);
+        process_watcher.health_timeout = Duration::from_secs(4);
         process_watcher.expected_startup_time = Duration::from_secs(120);
 
         Self {
