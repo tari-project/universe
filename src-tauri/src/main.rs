@@ -725,7 +725,6 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
-           
             let config_path = app
                 .path()
                 .app_config_dir()
@@ -778,8 +777,6 @@ fn main() {
                    return Err(Box::new(e));
                 }
             };            
-
-
 
             let splash_window = app
                 .get_webview_window("splashscreen")

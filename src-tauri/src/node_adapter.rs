@@ -45,6 +45,7 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
+use tokio::time::timeout;
 
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
@@ -255,13 +256,20 @@ pub struct MinotariNodeStatusMonitor {
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        match self.get_network_hash_rate_and_block_reward().await {
-            Ok(res) => {
-                let _res = self.latest_status_broadcast.send(res);
-                HealthStatus::Healthy
-            }
+        let duration = std::time::Duration::from_secs(1);
+        match timeout(duration, self.get_network_hash_rate_and_block_reward()).await {
+            Ok(res) => match res {
+                Ok(status) => {
+                    let _res = self.latest_status_broadcast.send(status.clone());
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
                 match self.get_identity().await {
                     Ok(_) => {
                         return HealthStatus::Healthy;
