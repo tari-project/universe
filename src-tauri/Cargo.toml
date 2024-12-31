@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.8.37"
+version = "0.8.38"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -76,6 +76,7 @@ tauri = { git = "https://github.com/tari-project/tauri.git", rev = "67a06c8a9bae
   "devtools",          # TODO: Remove this before mainnet
   "tracing",           # TODO: Remove this before mainnet
 ] }
+tauri-plugin-cli = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-os = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-sentry = { git = "https://github.com/tari-project/sentry-tauri", rev = "7554b9a8738d6442d175aa2add55ecc11c52842d" }
 tauri-plugin-shell = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
@@ -106,6 +107,8 @@ log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"
+
+
 # tonic = "0.12.0"
 
 [features]

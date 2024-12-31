@@ -1,5 +1,5 @@
 {
-    "version": "0.8.37",
+    "version": "0.8.38",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -84,6 +84,15 @@
             "windows": {
                 "installMode": "passive"
             }
+        },
+        "cli": {
+            "args": [
+                {
+                    "name": "import-backup",
+                    "description": "Imports a minotari node backup file",
+                    "takesValue": true
+                }
+            ]
         }
     }
 }
