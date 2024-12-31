@@ -6899,7 +6899,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.37"
+version = "0.8.38"
 dependencies = [
  "anyhow",
  "async-trait",
