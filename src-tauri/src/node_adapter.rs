@@ -261,8 +261,16 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
                 HealthStatus::Healthy
             }
             Err(e) => {
-                warn!(target: LOG_TARGET, "Error checking base node health: {:?}", e);
-                HealthStatus::Unhealthy
+                warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                match self.get_identity().await {
+                    Ok(_) => {
+                        return HealthStatus::Healthy;
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Error checking base node identity: {:?}", e);
+                        return HealthStatus::Unhealthy;
+                    }
+                }
             }
         }
     }

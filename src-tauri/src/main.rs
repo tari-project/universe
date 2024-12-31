@@ -23,6 +23,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use anyhow::anyhow;
 use auto_launcher::AutoLauncher;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -31,12 +32,15 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
+use std::path::Path;
+use tauri_plugin_cli::CliExt;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use wallet_adapter::WalletBalance;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
+use std::fs;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -384,6 +388,10 @@ async fn setup_inner(
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
+    progress.set_max(37).await;
+    progress
+        .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
+        .await;
     for _i in 0..2 {
         match state
             .node_manager
@@ -403,6 +411,10 @@ async fn setup_inner(
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
+                        progress.set_max(38).await;
+                        progress
+                            .update("minotari-node-restarting".to_string(), None, 0)
+                            .await;
                         continue;
                     }
                 }
@@ -696,6 +708,7 @@ fn main() {
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
+    let app_state2 = app_state.clone();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -710,8 +723,9 @@ fn main() {
                 );
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .manage(app_state.clone())
+        .plugin(tauri_plugin_cli::init())
         .setup(|app| {
+           
             let config_path = app
                 .path()
                 .app_config_dir()
@@ -736,6 +750,36 @@ fn main() {
             let config: RawConfig = serde_yaml::from_str(&contents)
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
+
+            // Do this after logging has started otherwise we can't actually see any errors
+            app.manage(app_state2);
+            match app.cli().matches() {
+                Ok(matches) => {
+                    if let Some(backup_path) = matches.args.get("import-backup") {
+                        if let Some(backup_path)  = backup_path.value.as_str() {
+                            info!(target: LOG_TARGET, "Trying to copy backup to existing db: {:?}", backup_path);
+                            let backup_path = Path::new(backup_path);
+                            if !backup_path.exists() {
+                                warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
+                            } else {
+                              let existing_db = app.path().app_local_data_dir().map_err(|e| Box::new(e))?.join("node").join(Network::get_current_or_user_setting_or_default().to_string())
+                               .join("data").join("base_node").join("db");
+
+                            info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
+                                 let _ = fs::remove_dir_all(&existing_db).inspect_err(|e| warn!(target: LOG_TARGET, "Could not remove existing db when importing backup: {:?}", e));
+                                    let _ =fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
+                                    let _ = fs::copy(backup_path, &existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
+                            }
+                        }
+                    }
+                },
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Could not get cli matches: {:?}", e);
+                   return Err(Box::new(e));
+                }
+            };            
+
+
 
             let splash_window = app
                 .get_webview_window("splashscreen")
