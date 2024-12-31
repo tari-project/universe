@@ -23,7 +23,6 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use anyhow::anyhow;
 use auto_launcher::AutoLauncher;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -760,16 +759,21 @@ fn main() {
                         if let Some(backup_path)  = backup_path.value.as_str() {
                             info!(target: LOG_TARGET, "Trying to copy backup to existing db: {:?}", backup_path);
                             let backup_path = Path::new(backup_path);
-                            if !backup_path.exists() {
-                                warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
-                            } else {
-                              let existing_db = app.path().app_local_data_dir().map_err(|e| Box::new(e))?.join("node").join(Network::get_current_or_user_setting_or_default().to_string())
-                               .join("data").join("base_node").join("db");
+                            if backup_path.exists() {
+                               let existing_db = app.path()
+                                    .app_local_data_dir()
+                                    .map_err(Box::new)?
+                                    .join("node")
+                                    .join(Network::get_current_or_user_setting_or_default().to_string())
+                                    .join("data").join("base_node").join("db");
 
-                            info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
-                                 let _ = fs::remove_dir_all(&existing_db).inspect_err(|e| warn!(target: LOG_TARGET, "Could not remove existing db when importing backup: {:?}", e));
-                                    let _ =fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
-                                    let _ = fs::copy(backup_path, &existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
+                                info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
+                                let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| warn!(target: LOG_TARGET, "Could not remove existing db when importing backup: {:?}", e));
+                                let _unused=fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
+                                let _unused = fs::copy(backup_path, existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
+                            } else {
+                                
+                                warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
                             }
                         }
                     }
