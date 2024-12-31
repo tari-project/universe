@@ -772,7 +772,6 @@ fn main() {
                                 let _unused=fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
                                 let _unused = fs::copy(backup_path, existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
                             } else {
-                                
                                 warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
                             }
                         }
