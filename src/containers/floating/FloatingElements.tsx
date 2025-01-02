@@ -11,6 +11,7 @@ import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
 import { CriticalProblemDialog } from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
+import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -27,6 +28,7 @@ export default function FloatingElements() {
             <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
+            <ReleaseNotesDialog />
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );

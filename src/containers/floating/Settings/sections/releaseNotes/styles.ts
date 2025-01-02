@@ -46,7 +46,7 @@ export const MarkdownWrapper = styled('div')`
     overflow: hidden;
     overflow-y: auto;
     height: calc(70vh - 210px);
-    padding: 0px 20px 60px 0;
+    padding: 0px 0px 60px 0;
 
     @media (min-width: 1200px) {
         height: calc(80vh - 210px);
