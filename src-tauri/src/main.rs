@@ -35,8 +35,8 @@ use std::path::Path;
 use tauri_plugin_cli::CliExt;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use wallet_adapter::WalletBalance;
 use utils::system_status::SystemStatus;
+use wallet_adapter::WalletBalance;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
