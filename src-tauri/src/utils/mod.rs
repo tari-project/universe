@@ -25,6 +25,8 @@ pub mod file_utils;
 pub mod logging_utils;
 pub mod macos_utils;
 pub mod platform_utils;
-pub mod setup_utils;
+
 pub mod shutdown_utils;
 pub mod system_status;
+#[cfg(windows)]
+pub mod windows_setup_utils;

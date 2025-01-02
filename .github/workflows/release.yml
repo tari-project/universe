@@ -34,16 +34,18 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: ''
           - platform: 'windows-latest'
-            args: ''
+            args: '--bundles msi,updater'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+
       - name: BETA Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
           choco upgrade yq -y
+
       - name: BETA Builds - Install dependencies (linux) [yq]
         if: ${{ startsWith(runner.os,'Linux') }}
         shell: bash
@@ -57,6 +59,7 @@ jobs:
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA_AIRDROP_TWITTER_AUTH_URL }}
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.DEV_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -65,6 +68,7 @@ jobs:
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           echo "TS_FEATURES=release-ci-beta, airdrop-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
@@ -80,8 +84,11 @@ jobs:
             -i tauri.conf.json
           cat tauri.conf.json
           sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
+
       - name: RELEASE Builds - Set environment variables
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -91,11 +98,14 @@ jobs:
           #echo "releaseId=" >> $GITHUB_ENV
           echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
+          TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
           yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe | Testnet\"" -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
+          yq eval ".app.windows[1].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe\"" -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             -i tauri.conf.json
@@ -186,7 +196,7 @@ jobs:
 
       - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@v0.5.17
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
@@ -220,7 +230,7 @@ jobs:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
-          echo "Artifact paths:\n ${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
 
       - name: BETA Builds - Upload assets
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}

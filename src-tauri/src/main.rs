@@ -24,17 +24,23 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::trace;
 use log::{debug, error, info, warn};
+use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
-use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
+use std::fs::{remove_dir_all, remove_file};
+use std::path::Path;
+use tauri_plugin_cli::CliExt;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use wallet_adapter::WalletBalance;
 use utils::system_status::SystemStatus;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
+use std::fs;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -61,7 +67,7 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::app_config::WindowSettings;
-use crate::commands::{CpuMinerConnection, MinerMetrics, TariWalletDetails};
+use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
 use crate::feedback::Feedback;
@@ -393,6 +399,10 @@ async fn setup_inner(
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
+    progress.set_max(37).await;
+    progress
+        .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
+        .await;
     for _i in 0..2 {
         match state
             .node_manager
@@ -412,6 +422,10 @@ async fn setup_inner(
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
+                        progress.set_max(38).await;
+                        progress
+                            .update("minotari-node-restarting".to_string(), None, 0)
+                            .await;
                         continue;
                     }
                 }
@@ -438,10 +452,12 @@ async fn setup_inner(
         )
         .await?;
 
-    progress.set_max(75).await;
+    progress.set_max(45).await;
+    progress.update("wallet-started".to_string(), None, 0).await;
     progress
-        .update("preparing-for-initial-sync".to_string(), None, 0)
+        .update("waiting-for-node".to_string(), None, 0)
         .await;
+    progress.set_max(75).await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
@@ -574,7 +590,9 @@ async fn setup_inner(
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
-    is_getting_wallet_balance: Arc<AtomicBool>,
+    base_node_latest_status: Arc<watch::Receiver<BaseNodeStatus>>,
+    wallet_latest_balance: Arc<watch::Receiver<Option<WalletBalance>>>,
+    gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     is_getting_p2pool_stats: Arc<AtomicBool>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
@@ -598,7 +616,6 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
-    cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
 }
@@ -630,8 +647,10 @@ fn main() {
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
-    let node_manager = NodeManager::new();
-    let wallet_manager = WalletManager::new(node_manager.clone());
+    let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let node_manager = NodeManager::new(base_node_watch_tx);
+    let (wallet_watch_tx, wallet_watch_rx) = watch::channel::<Option<WalletBalance>>(None);
+    let wallet_manager = WalletManager::new(node_manager.clone(), wallet_watch_tx);
     let wallet_manager2 = wallet_manager.clone();
     let p2pool_manager = P2poolManager::new();
 
@@ -648,20 +667,21 @@ fn main() {
     let app_in_memory_config =
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
+    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new().into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(gpu_status_tx).into());
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
-        node_manager.clone(),
         cpu_miner.clone(),
-        gpu_miner.clone(),
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
         p2pool_manager.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
     );
 
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
@@ -674,7 +694,9 @@ fn main() {
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
-        is_getting_wallet_balance: Arc::new(AtomicBool::new(false)),
+        base_node_latest_status: Arc::new(base_node_watch_rx),
+        wallet_latest_balance: Arc::new(wallet_watch_rx),
+        gpu_latest_status: Arc::new(gpu_status_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
@@ -695,11 +717,11 @@ fn main() {
         updates_manager,
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
-        cached_wallet_details: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
+    let app_state2 = app_state.clone();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -714,7 +736,7 @@ fn main() {
                 );
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .manage(app_state.clone())
+        .plugin(tauri_plugin_cli::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -724,14 +746,8 @@ fn main() {
             // Remove this after it's been rolled out for a few versions
             let log_path = app.path().app_log_dir().map_err(|e| e.to_string())?;
             let logs_cleared_file = log_path.join("logs_cleared");
-            if !logs_cleared_file.exists() {
-                match remove_dir_all(&log_path) {
-                    Ok(()) => {
-                        create_dir_all(&log_path).map_err(|e| e.to_string())?;
-                        File::create(&logs_cleared_file).map_err(|e| e.to_string())?;
-                    },
-                    Err(e) => warn!(target: LOG_TARGET, "Could not clear log folder: {}", e)
-                }
+            if logs_cleared_file.exists() {
+                remove_file(&logs_cleared_file).map_err(|e| e.to_string())?;
             }
 
             let contents = setup_logging(
@@ -746,6 +762,38 @@ fn main() {
             let config: RawConfig = serde_yaml::from_str(&contents)
                 .expect("Could not parse the contents of the log file as yaml");
             log4rs::init_raw_config(config).expect("Could not initialize logging");
+
+            // Do this after logging has started otherwise we can't actually see any errors
+            app.manage(app_state2);
+            match app.cli().matches() {
+                Ok(matches) => {
+                    if let Some(backup_path) = matches.args.get("import-backup") {
+                        if let Some(backup_path)  = backup_path.value.as_str() {
+                            info!(target: LOG_TARGET, "Trying to copy backup to existing db: {:?}", backup_path);
+                            let backup_path = Path::new(backup_path);
+                            if backup_path.exists() {
+                               let existing_db = app.path()
+                                    .app_local_data_dir()
+                                    .map_err(Box::new)?
+                                    .join("node")
+                                    .join(Network::get_current_or_user_setting_or_default().to_string())
+                                    .join("data").join("base_node").join("db");
+
+                                info!(target: LOG_TARGET, "Existing db path: {:?}", existing_db);
+                                let _unused = fs::remove_dir_all(&existing_db).inspect_err(|e| warn!(target: LOG_TARGET, "Could not remove existing db when importing backup: {:?}", e));
+                                let _unused=fs::create_dir_all(&existing_db).inspect_err(|e| error!(target: LOG_TARGET, "Could not create existing db when importing backup: {:?}", e));
+                                let _unused = fs::copy(backup_path, existing_db.join("data.mdb")).inspect_err(|e| error!(target: LOG_TARGET, "Could not copy backup to existing db: {:?}", e));
+                            } else {
+                                warn!(target: LOG_TARGET, "Backup file does not exist: {:?}", backup_path);
+                            }
+                        }
+                    }
+                },
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Could not get cli matches: {:?}", e);
+                   return Err(Box::new(e));
+                }
+            };
 
             let splash_window = app
                 .get_webview_window("splashscreen")
@@ -910,6 +958,8 @@ fn main() {
             commands::set_pre_release,
             commands::check_for_updates,
             commands::try_update,
+            commands::get_network,
+            commands::sign_ws_data,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

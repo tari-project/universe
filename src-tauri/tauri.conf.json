@@ -1,5 +1,5 @@
 {
-    "version": "0.8.13",
+    "version": "0.8.38",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -11,7 +11,7 @@
     },
     "bundle": {
         "active": true,
-        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+        "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -35,7 +35,11 @@
     },
     "app": {
         "security": {
-            "capabilities": ["desktop-capability", "default", "migrated"],
+            "capabilities": [
+                "desktop-capability",
+                "default",
+                "migrated"
+            ],
             "csp": null
         },
         "trayIcon": {
@@ -52,7 +56,8 @@
                 "height": 780,
                 "label": "splashscreen",
                 "url": "/splash.html",
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             },
             {
                 "title": "Tari Universe (Alpha) | Testnet",
@@ -65,17 +70,29 @@
                 "fullscreen": false,
                 "transparent": false,
                 "visible": false,
-                "center": true
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
+            "endpoints": [
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
+            ],
             "windows": {
                 "installMode": "passive"
             }
+        },
+        "cli": {
+            "args": [
+                {
+                    "name": "import-backup",
+                    "description": "Imports a minotari node backup file",
+                    "takesValue": true
+                }
+            ]
         }
     }
 }
