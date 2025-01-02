@@ -48,14 +48,7 @@ export default function useMiningMetricsUpdater() {
                 setMiningMetrics(metrics);
             }
         },
-        [
-            baseNodeConnected,
-            currentBlockHeight,
-            displayBlockHeight,
-            fetchTx,
-            handleNewBlock,
-            setDisplayBlockHeight,
-            setMiningMetrics,
-        ]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [baseNodeConnected, currentBlockHeight, displayBlockHeight, fetchTx]
     );
 }

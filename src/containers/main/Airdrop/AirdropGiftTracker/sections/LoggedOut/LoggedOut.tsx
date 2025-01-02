@@ -25,7 +25,8 @@ export default function LoggedOut() {
                 );
             }
         },
-        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [backendInMemoryConfig?.airdropTwitterAuthUrl]
     );
 
     useEffect(() => {
@@ -61,7 +62,8 @@ export default function LoggedOut() {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, restartMining, setAirdropTokens, setAuthUuid, setUserPoints]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 

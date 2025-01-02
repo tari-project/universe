@@ -25,13 +25,11 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
     const { removeToast } = useToastStore();
     const [finished, setFinished] = useState(false);
 
-    const handleHide = useCallback(
-        (id: number | string = 0) => {
-            setShow(false);
-            removeToast(id);
-        },
-        [removeToast]
-    );
+    const handleHide = useCallback((id: number | string = 0) => {
+        setShow(false);
+        removeToast(id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         setShow(true);

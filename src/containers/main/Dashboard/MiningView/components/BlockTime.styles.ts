@@ -17,9 +17,9 @@ export const TitleTypography = styled(Typography)`
 
 export const TimerTypography = styled.div`
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
     font-size: 18px;
-    font-weight: 700;
     color: ${({ theme }) => theme.palette.text.primary};
     gap: 2px;
     display: flex;

@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "即将到来的奖励 / MacBook Pro 16’"
+    },
+    "timer": {
+      "gettingClose": "您快到了",
+      "days": "天",
+      "hours": "小时"
+    },
+    "friends": {
+      "reduceTimer": "通过邀请朋友来减少计时器",
+      "linkCopied": "链接已复制！",
+      "growCrew": "扩大您的团队"
+    }
+  },
+  "superCharger": {
+    "title": "超级充电器",
+    "placeholder": "输入您的代码",
+    "success": "时间奖励已添加 {{time}}。",
+    "error": "无效的代码。",
+    "submit": "开始"
+  },
+  "mainTimer": {
+    "title": "您的计时器",
+    "days": "天",
+    "hours": "小时",
+    "minutes": "分钟",
+    "seconds": "秒"
+  },
+  "progress": {
+    "message": "您距离下一个等级还有 <span>{{hours}} 小时</span>。继续挖矿！"
+  },
+  "leaserboardEntry": {
+    "mining": "正在挖矿",
+    "idle": "上次挖矿于 {{time}} 前"
+  },
+  "leaderboard": {
+    "title": "排行榜",
+    "viewFull": "查看完整排行榜"
+  },
+  "member": {
+    "new": "新",
+    "nudge": "提醒",
+    "minHr": "分钟/小时"
+  },
+  "crewMining": {
+    "title": "团队挖矿",
+    "rate": "+{{rate}}分钟/小时",
+    "mining": "{{current}}/{{total}} 挖矿"
+  },
+  "crewList": {
+    "placeholder": "邀请您的第一个团队成员"
+  }
+}

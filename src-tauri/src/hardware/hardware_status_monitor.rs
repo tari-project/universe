@@ -38,7 +38,7 @@ use super::{
     },
 };
 use anyhow::Error;
-use log::{error, info, warn};
+use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
@@ -171,7 +171,7 @@ impl HardwareStatusMonitor {
     ) -> Result<GpuStatusFileContent, Error> {
         let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
             let content = tokio::fs::read_to_string(file).await?;
             let gpu_status: GpuStatusFileContent = serde_json::from_str(&content)?;
             Ok(gpu_status)
@@ -205,7 +205,7 @@ impl HardwareStatusMonitor {
         let mut platform_devices = Vec::new();
 
         for gpu_device in &gpu_status_file_content.gpu_devices {
-            info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
+            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
@@ -221,7 +221,7 @@ impl HardwareStatusMonitor {
                     },
                     parameters: None,
                     // parameters: if device_reader.clone().get_is_reader_implemented() {
-                    //     info!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
+                    //     debug!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
                     //     device_reader.clone().get_device_parameters(None).await.ok()
                     // } else {
                     //     None
@@ -257,9 +257,9 @@ impl HardwareStatusMonitor {
         let mut cpu_devices = vec![];
 
         for cpu_device in system.cpus() {
-            info!(target: LOG_TARGET, "CPU brand: {:?}", cpu_device.brand());
-            info!(target: LOG_TARGET, "CPU vendor: {:?}", cpu_device.vendor_id());
-            info!(target: LOG_TARGET, "CPU model: {:?}", cpu_device.name());
+            debug!(target: LOG_TARGET, "CPU brand: {:?}", cpu_device.brand());
+            debug!(target: LOG_TARGET, "CPU vendor: {:?}", cpu_device.vendor_id());
+            debug!(target: LOG_TARGET, "CPU model: {:?}", cpu_device.name());
 
             let vendor = HardwareVendor::Intel;
             let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;

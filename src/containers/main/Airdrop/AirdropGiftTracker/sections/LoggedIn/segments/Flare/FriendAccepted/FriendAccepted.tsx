@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import GemsAnimation from '../GemsAnimation/GemsAnimation';
 import { Background, Wrapper } from './styles';
 import { Number, Text, TextBottom, TextBottomPosition } from '../styles';
@@ -6,19 +5,10 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
     gems: number;
-    onAnimationComplete: () => void;
 }
 
-export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
+export default function FriendAccepted({ gems }: Props) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
-
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            onAnimationComplete();
-        }, 10000);
-
-        return () => clearTimeout(timer);
-    }, [onAnimationComplete]);
 
     return (
         <Wrapper>

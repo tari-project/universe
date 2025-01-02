@@ -10,16 +10,14 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
     gems: number;
-    onAnimationComplete: () => void;
 }
 
-export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
+export default function GoalComplete({ gems }: Props) {
     const { t } = useTranslation('airdrop', { useSuspense: false });
     const [showIntro, setShowIntro] = useState(true);
     const [showGiftBox, setShowGiftBox] = useState(true);
 
     const introDuration = 2000;
-    const mainDuration = 11500;
 
     useEffect(() => {
         const introTimer = setTimeout(() => {
@@ -27,15 +25,10 @@ export default function FriendAccepted({ gems, onAnimationComplete }: Props) {
             setShowGiftBox(false);
         }, introDuration);
 
-        const mainTimer = setTimeout(() => {
-            onAnimationComplete();
-        }, mainDuration);
-
         return () => {
             clearTimeout(introTimer);
-            clearTimeout(mainTimer);
         };
-    }, [onAnimationComplete]);
+    }, []);
 
     return (
         <Wrapper>

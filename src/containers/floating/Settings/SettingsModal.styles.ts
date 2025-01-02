@@ -1,4 +1,3 @@
-import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 export const Container = styled.div`
@@ -58,11 +57,8 @@ export const variants = {
         transition,
     },
 };
-export const SectionWrapper = styled(m.div).attrs({
-    initial: 'initial',
-    animate: 'visible',
-    exit: 'exit',
-})`
+
+export const SectionWrapper = styled.div`
     max-width: 100%;
     display: flex;
     flex-direction: column;

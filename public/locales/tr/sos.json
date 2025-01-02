@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "yaklaşan ödül / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Yaklaşıyorsunuz",
+      "days": "günler",
+      "hours": "saatler"
+    },
+    "friends": {
+      "reduceTimer": "Arkadaşlarınızı davet ederek zamanlayıcınızı azaltın",
+      "linkCopied": "Bağlantı kopyalandı!",
+      "growCrew": "ekibinizi büyütün"
+    }
+  },
+  "superCharger": {
+    "title": "Süper Şarj",
+    "placeholder": "Kodunuzu Girin",
+    "success": "Zaman bonusu eklendi {{time}}.",
+    "error": "Geçersiz kod.",
+    "submit": "Git"
+  },
+  "mainTimer": {
+    "title": "Zamanlayıcınız",
+    "days": "GÜNLER",
+    "hours": "SAATLER",
+    "minutes": "DAKİKALAR",
+    "seconds": "SANİYELER"
+  },
+  "progress": {
+    "message": "Bir sonraki rütbeye <span>{{hours}} saat</span> uzaktasınız. Madenciliğe devam edin!"
+  },
+  "leaserboardEntry": {
+    "mining": "Şu anda madencilik yapılıyor",
+    "idle": "Son madencilik {{time}} önce yapıldı"
+  },
+  "leaderboard": {
+    "title": "Lider Tablosu",
+    "viewFull": "TAM LİDER TABLOSUNU GÖRÜNTÜLE"
+  },
+  "member": {
+    "new": "Yeni",
+    "nudge": "Dürt",
+    "minHr": "dk/sa"
+  },
+  "crewMining": {
+    "title": "Ekip madenciliği",
+    "rate": "+{{rate}}dk/sa",
+    "mining": "{{current}}/{{total}} Madencilik"
+  },
+  "crewList": {
+    "placeholder": "İlk ekip üyenizi davet edin"
+  }
+}

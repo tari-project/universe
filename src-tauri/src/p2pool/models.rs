@@ -71,6 +71,7 @@ pub struct Stats {
     pub connected_since: Option<EpochTime>,
     pub randomx_stats: ChainStats,
     pub sha3x_stats: ChainStats,
+    pub last_gossip_message: EpochTime,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

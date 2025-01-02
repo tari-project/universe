@@ -18,13 +18,13 @@
     "waiting-for-idle": "निष्क्रिय होने की प्रतीक्षा"
   },
   "orphan-chain-tooltip": {
-    "heading": "Things to try:",
-    "step_1": "Check your Internet connection",
-    "step_2": "Wait 30 mins",
-    "step_3": "Restart the app",
-    "step_4": "Try using a Tor Bridge (in Settings)",
-    "step_5": "Try disabling Tor (in Settings)",
-    "step_6": "Try an app reset (in Settings)"
+    "heading": "कोशिश करने के लिए चीजें:",
+    "step_1": "अपना इंटरनेट कनेक्शन जांचें",
+    "step_2": "30 मिनट प्रतीक्षा करें",
+    "step_3": "ऐप को पुनः आरंभ करें",
+    "step_4": "Tor ब्रिज का उपयोग करने का प्रयास करें (सेटिंग्स में)",
+    "step_5": "Tor को अक्षम करने का प्रयास करें (सेटिंग्स में)",
+    "step_6": "ऐप रीसेट करने का प्रयास करें (सेटिंग्स में)"
   },
   "you-earn-rewards-separately": "आप CPU और GPU माइनिंग के लिए अलग-अलग पुरस्कार अर्जित करते हैं",
   "you-won-block": "आप <span>ब्लॉक #{{ blockHeight }}</span> के विजेता थे",

@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "récompense à venir / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Vous vous rapprochez",
+      "days": "jours",
+      "hours": "heures"
+    },
+    "friends": {
+      "reduceTimer": "Réduisez votre minuteur en invitant des amis",
+      "linkCopied": "Lien copié !",
+      "growCrew": "agrandissez votre équipe"
+    }
+  },
+  "superCharger": {
+    "title": "Super Chargeur",
+    "placeholder": "Entrez votre code",
+    "success": "Bonus de temps ajouté {{time}}.",
+    "error": "Code invalide.",
+    "submit": "Aller"
+  },
+  "mainTimer": {
+    "title": "Votre Minuteur",
+    "days": "JOURS",
+    "hours": "HEURES",
+    "minutes": "MINUTES",
+    "seconds": "SECONDES"
+  },
+  "progress": {
+    "message": "Vous êtes à <span>{{hours}} heures</span> du prochain rang. Continuez à miner !"
+  },
+  "leaserboardEntry": {
+    "mining": "Minage en cours",
+    "idle": "Dernier minage il y a {{time}}"
+  },
+  "leaderboard": {
+    "title": "Classement",
+    "viewFull": "VOIR le CLASSEMENT complet"
+  },
+  "member": {
+    "new": "Nouveau",
+    "nudge": "Encourager",
+    "minHr": "min/hr"
+  },
+  "crewMining": {
+    "title": "Minage en équipe",
+    "rate": "+{{rate}}min/hr",
+    "mining": "{{current}}/{{total}} Minage"
+  },
+  "crewList": {
+    "placeholder": "Invitez votre premier membre d\"équipe"
+  }
+}

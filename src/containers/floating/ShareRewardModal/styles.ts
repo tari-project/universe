@@ -34,8 +34,8 @@ export const Title = styled('div')`
     color: #000;
     text-align: center;
     font-family: DrukWide, sans-serif;
-    font-size: 30px;
     font-weight: 800;
+    font-size: 30px;
     line-height: 99.7%;
     text-transform: uppercase;
     max-width: 276px;
@@ -69,9 +69,9 @@ export const BlackButton = styled('button')`
     color: #c9eb00;
     text-align: center;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     font-size: 21px;
     font-style: normal;
-    font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
     cursor: pointer;
@@ -108,7 +108,7 @@ export const Text = styled('div')`
     text-transform: uppercase;
 
     strong {
-        font-weight: 800;
+        font-weight: 700;
     }
 `;
 
@@ -132,7 +132,7 @@ export const Label = styled('div')`
     text-align: center;
     font-size: 14px;
     font-style: normal;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 50%;
     text-transform: uppercase;
 `;
@@ -140,9 +140,9 @@ export const Label = styled('div')`
 export const Value = styled('div')`
     color: #000;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     font-size: 12px;
     font-style: normal;
-    font-weight: 800;
     line-height: 50%;
     text-transform: uppercase;
 `;

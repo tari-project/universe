@@ -22,24 +22,23 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info};
 use minotari_node_grpc_client::grpc::Peer;
 use serde_json::json;
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
-use crate::node_adapter::{MinotariNodeAdapter, MinotariNodeStatusMonitorError};
+use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
 
@@ -68,7 +67,7 @@ impl Clone for NodeManager {
 }
 
 impl NodeManager {
-    pub fn new() -> Self {
+    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         // TODO: wire up to front end
         // let mut use_tor = true;
 
@@ -78,8 +77,11 @@ impl NodeManager {
         // use_tor = false;
         // }
 
-        let adapter = MinotariNodeAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let adapter = MinotariNodeAdapter::new(status_broadcast);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.poll_time = Duration::from_secs(5);
+        process_watcher.health_timeout = Duration::from_secs(4);
+        process_watcher.expected_startup_time = Duration::from_secs(120);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -162,7 +164,19 @@ impl NodeManager {
             .status_monitor
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("wait_synced: Node not started"))?;
-        status_monitor.wait_synced(progress_tracker).await
+        loop {
+            match status_monitor.wait_synced(progress_tracker.clone()).await {
+                Ok(_) => return Ok(()),
+                Err(e) => match e {
+                    MinotariNodeStatusMonitorError::NodeNotStarted => {
+                        continue;
+                    }
+                    _ => {
+                        return Err(NodeManagerError::UnknownError(e.into()).into());
+                    }
+                },
+            }
+        }
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
@@ -196,27 +210,6 @@ impl NodeManager {
         Ok(0)
     }
 
-    /// Returns Sha hashrate, Rx hashrate and block reward
-    pub async fn get_network_hash_rate_and_block_reward(
-        &self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), NodeManagerError> {
-        let mut status_monitor_lock = self.watcher.write().await;
-        let status_monitor = status_monitor_lock
-            .status_monitor
-            .as_mut()
-            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
-        status_monitor
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .map_err(|e| {
-                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
-                    NodeManagerError::NodeNotStarted
-                } else {
-                    NodeManagerError::UnknownError(e.into())
-                }
-            })
-    }
-
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
         let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
@@ -246,12 +239,16 @@ impl NodeManager {
         &self,
         report_to_sentry: bool,
     ) -> Result<bool, anyhow::Error> {
-        let mut status_monitor_lock = self.watcher.write().await;
+        let status_monitor_lock = self.watcher.read().await;
         let status_monitor = status_monitor_lock
             .status_monitor
-            .as_mut()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
-        let (_, _, _, local_tip, _, is_synced) = status_monitor
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("check_if_is_orphan_chain: Node not started"))?;
+        let BaseNodeStatus {
+            is_synced,
+            block_height: local_tip,
+            ..
+        } = status_monitor
             .get_network_hash_rate_and_block_reward()
             .await
             .map_err(|e| {

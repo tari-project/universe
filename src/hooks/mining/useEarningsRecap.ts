@@ -3,6 +3,7 @@ import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { debounce } from '@app/utils/debounce';
 const appWindow = getCurrentWebviewWindow();
 
 export default function useEarningsRecap() {
@@ -20,17 +21,23 @@ export default function useEarningsRecap() {
                 handleWinRecap({ count, totalEarnings });
             }
         }
-    }, [handleWinRecap, recapIds, transactions]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [recapIds, transactions]);
 
     useEffect(() => {
+        // Debounced function to check if the window is minimized
+        const debouncedIsMinimized = debounce(async () => {
+            const minimized = await appWindow?.isMinimized();
+            const documentIsVisible = document?.visibilityState === 'visible' || false;
+            if (documentIsVisible && !minimized) {
+                getMissedEarnings();
+            }
+        }, 1000); // 1 second debounce
+
         const listener = listen<string>(
             'tauri://focus',
-            async () => {
-                const minimized = await appWindow?.isMinimized();
-                const documentIsVisible = document?.visibilityState === 'visible' || false;
-                if (documentIsVisible && !minimized) {
-                    getMissedEarnings();
-                }
+            () => {
+                debouncedIsMinimized();
             },
             { target: { kind: 'WebviewWindow', label: 'main' } }
         );

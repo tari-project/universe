@@ -197,7 +197,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 }
             },
             setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints }),
+            setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
             setUserGems: (userGems: number) =>
                 set((state) => {
                     const userPointsFormatted = {

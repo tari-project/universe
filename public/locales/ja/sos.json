@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "次の報酬 / MacBook Pro 16’"
+    },
+    "timer": {
+      "gettingClose": "もうすぐです",
+      "days": "日",
+      "hours": "時間"
+    },
+    "friends": {
+      "reduceTimer": "友達を招待してタイマーを短縮",
+      "linkCopied": "リンクがコピーされました！",
+      "growCrew": "クルーを成長させる"
+    }
+  },
+  "superCharger": {
+    "title": "スーパー チャージャー",
+    "placeholder": "コードを入力",
+    "success": "時間ボーナスが追加されました {{time}}。",
+    "error": "無効なコードです。",
+    "submit": "実行"
+  },
+  "mainTimer": {
+    "title": "あなたのタイマー",
+    "days": "日",
+    "hours": "時間",
+    "minutes": "分",
+    "seconds": "秒"
+  },
+  "progress": {
+    "message": "次のランクまであと<span>{{hours}}時間</span>です。マイニングを続けてください！"
+  },
+  "leaserboardEntry": {
+    "mining": "現在マイニング中",
+    "idle": "最後にマイニングしたのは{{time}}前"
+  },
+  "leaderboard": {
+    "title": "リーダーボード",
+    "viewFull": "完全なリーダーボードを表示"
+  },
+  "member": {
+    "new": "新規",
+    "nudge": "促す",
+    "minHr": "分/時"
+  },
+  "crewMining": {
+    "title": "クルーマイニング",
+    "rate": "+{{rate}}分/時",
+    "mining": "{{current}}/{{total}} マイニング中"
+  },
+  "crewList": {
+    "placeholder": "最初のクルーメンバーを招待"
+  }
+}

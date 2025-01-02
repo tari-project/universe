@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "hadiah mendatang / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Anda sudah hampir sampai",
+      "days": "hari",
+      "hours": "jam"
+    },
+    "friends": {
+      "reduceTimer": "Kurangi waktu Anda dengan mengundang teman",
+      "linkCopied": "Tautan disalin!",
+      "growCrew": "kembangkan kru Anda"
+    }
+  },
+  "superCharger": {
+    "title": "Pengisi Daya Super",
+    "placeholder": "Masukkan Kode Anda",
+    "success": "Bonus waktu ditambahkan {{time}}.",
+    "error": "Kode tidak valid.",
+    "submit": "Pergi"
+  },
+  "mainTimer": {
+    "title": "Timer Anda",
+    "days": "HARI",
+    "hours": "JAM",
+    "minutes": "MENIT",
+    "seconds": "DETIK"
+  },
+  "progress": {
+    "message": "Anda <span>{{hours}} jam</span> lagi dari peringkat berikutnya. Terus menambang!"
+  },
+  "leaserboardEntry": {
+    "mining": "Sedang menambang",
+    "idle": "Terakhir menambang {{time}} yang lalu"
+  },
+  "leaderboard": {
+    "title": "Papan Peringkat",
+    "viewFull": "LIHAT Papan Peringkat lengkap"
+  },
+  "member": {
+    "new": "Baru",
+    "nudge": "Dorong",
+    "minHr": "menit/jam"
+  },
+  "crewMining": {
+    "title": "Penambangan kru",
+    "rate": "+{{rate}}menit/jam",
+    "mining": "{{current}}/{{total}} Menambang"
+  },
+  "crewList": {
+    "placeholder": "Undang anggota kru pertama Anda"
+  }
+}

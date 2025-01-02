@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
 
 const TEXT_STYLE_BASE = css`
-    font-family: 'Druk', sans-serif;
+    font-family: Druk, sans-serif;
     font-size: calc(5rem + 15vmin);
     font-weight: 700;
     line-height: 0.8;

@@ -32,10 +32,10 @@ export const BlackButton = styled('button')`
     color: #c9eb00;
     text-align: center;
     font-size: 21px;
-    font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
 
     border-radius: 49px;
     background: #000;

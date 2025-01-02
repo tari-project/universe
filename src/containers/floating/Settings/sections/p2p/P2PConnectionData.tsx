@@ -20,7 +20,7 @@ import { useEffect, useState } from 'react';
 import { CardComponent } from '@app/containers/floating/Settings/components/Card.component.tsx';
 
 export default function P2PConnectionData() {
-    const { t } = useTranslation('p2p');
+    const { t } = useTranslation('p2p', { useSuspense: false });
     const [copiedId, setCopiedId] = useState<string>();
     const { copyToClipboard } = useCopyToClipboard();
 

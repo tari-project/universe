@@ -36,9 +36,10 @@ use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
+// use tari_utilities::epoch_time::EpochTime;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
@@ -163,7 +164,30 @@ impl P2poolStatusMonitor {
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
-            Ok(_) => HealthStatus::Healthy,
+            Ok(_stats) => {
+                // if stats
+                //     .connection_info
+                //     .network_info
+                //     .connection_counters
+                //     .established_outgoing
+                //     + stats
+                //         .connection_info
+                //         .network_info
+                //         .connection_counters
+                //         .established_incoming
+                //     < 1
+                // {
+                //     warn!(target: LOG_TARGET, "P2pool has no connections, health check warning");
+                //     return HealthStatus::Warning;
+                // }
+
+                // if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 {
+                //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
+                //     return HealthStatus::Warning;
+                // }
+
+                HealthStatus::Healthy
+            }
             Err(e) => {
                 warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
                 HealthStatus::Unhealthy

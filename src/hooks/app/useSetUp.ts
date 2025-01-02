@@ -42,10 +42,12 @@ export function useSetUp() {
             localStorage.setItem('airdrop-store', airdropStorage);
         }
     }, []);
+
     const handlePostSetup = useCallback(async () => {
         await fetchApplicationsVersionsWithRetry();
         await setSettingUpFinished();
-    }, [fetchApplicationsVersionsWithRetry, setSettingUpFinished]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
@@ -75,5 +77,6 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, handlePostSetup, setCriticalError, setSetupDetails, adminShow, syncedAidropWithBackend]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [clearStorage, handlePostSetup, adminShow, syncedAidropWithBackend]);
 }
