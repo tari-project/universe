@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "Ожидание синхронизации блоков. Синхронизировано {{local_height}}/{{tip_height}} блоков",
     "waiting-for-header-sync": "Ожидание синхронизации заголовков. Синхронизировано {{local_height}}/{{tip_height}} заголовков",
     "waiting-for-node": "Ожидание синхронизации узла",
-    "waiting-for-wallet": "Ожидание кошелька"
+    "waiting-for-wallet": "Ожидание кошелька",
+    "waiting-for-minotari-node-to-start": "Ожидание запуска узла Minotari",
+    "minotari-node-restarting": "Данные узла Minotari были повреждены, очистка старых данных",
+    "wallet-started": "Кошелек запущен"
   },
   "would-you-like-to-install": "Хотите установить Tari Universe {{version}} сейчас?",
   "yes": "Да"

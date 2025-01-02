@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "Oczekiwanie na synchronizację bloków. {{local_height}}/{{tip_height}} zsynchronizowano",
     "waiting-for-header-sync": "Oczekiwanie na synchronizację nagłówków. {{local_height}}/{{tip_height}} zsynchronizowano",
     "waiting-for-node": "Oczekiwanie na synchronizację węzła",
-    "waiting-for-wallet": "Oczekiwanie na portfel"
+    "waiting-for-wallet": "Oczekiwanie na portfel",
+    "waiting-for-minotari-node-to-start": "Oczekiwanie na uruchomienie węzła Minotari",
+    "wallet-started": "Portfel uruchomiony",
+    "minotari-node-restarting": "Dane węzła Minotari były uszkodzone, czyszczenie starych danych"
   },
   "would-you-like-to-install": "Czy chciałbys zainstalować Tari Universe {{version}} teraz?",
   "yes": "Tak"

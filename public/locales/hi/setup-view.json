@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "ब्लॉक सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} ब्लॉक सिंक हो गए हैं",
     "waiting-for-header-sync": "हेडर सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} हेडर सिंक हो गए हैं",
     "waiting-for-node": "नोड के सिंक होने की प्रतीक्षा कर रहा है",
-    "waiting-for-wallet": "वॉलेट की प्रतीक्षा कर रहा है"
+    "waiting-for-wallet": "वॉलेट की प्रतीक्षा कर रहा है",
+    "waiting-for-minotari-node-to-start": "मिनोटारी नोड शुरू होने की प्रतीक्षा कर रहा है",
+    "minotari-node-restarting": "मिनोटारी नोड डेटा भ्रष्ट था, पुराने डेटा को साफ कर रहा है",
+    "wallet-started": "वॉलेट शुरू हो गया"
   },
   "would-you-like-to-install": "क्या आप अब Tari Universe {{version}} स्थापित करना चाहेंगे?",
   "yes": "हाँ"
