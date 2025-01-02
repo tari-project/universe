@@ -841,6 +841,7 @@ pub async fn reset_settings<'r>(
 
     if !reset_wallet {
         folder_block_list.push("wallet");
+        folder_block_list.push("credentials_backup.bin");
     }
 
     for dir_path in dirs_to_remove.iter().flatten() {
