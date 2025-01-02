@@ -16,10 +16,10 @@ import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
+import { useReleaseNotes } from './useReleaseNotes';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
-const CHANGELOG_URL = `https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
     const sections = markdown.split(/\n---\n/);
@@ -52,15 +52,15 @@ export const ReleaseNotes = () => {
 
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
+    const { fetchReleaseNotes } = useReleaseNotes();
+
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
                 setIsLoading(true);
-                const response = await fetch(CHANGELOG_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const text = await response.text();
+
+                const text = await fetchReleaseNotes();
+
                 const parsedSections = parseMarkdownSections(text);
                 setSections(parsedSections);
             } catch (err) {
@@ -71,6 +71,8 @@ export const ReleaseNotes = () => {
         };
 
         loadReleaseNotes();
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {

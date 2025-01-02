@@ -5,9 +5,12 @@ import InfoNav from './components/InfoNav/InfoNav';
 import { SetupWrapper } from '@app/containers/phase/Setup/Setup.styles';
 import grain from '/assets/img/grain.png';
 import AppVersion from './components/AppVersion';
+import { useReleaseNotes } from '@app/containers/floating/Settings/sections/releaseNotes/useReleaseNotes';
 
 export default function Setup() {
     useSetUp();
+    useReleaseNotes({ triggerEffect: true });
+
     return (
         <SetupWrapper $bg={grain}>
             <HeroText />
