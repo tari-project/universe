@@ -39,7 +39,7 @@ use crate::utils::file_utils::convert_to_string;
 // use tari_utilities::epoch_time::EpochTime;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
