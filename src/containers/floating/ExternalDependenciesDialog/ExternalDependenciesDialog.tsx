@@ -37,15 +37,17 @@ export const ExternalDependenciesDialog = () => {
         setShowExternalDependenciesDialog(false);
         if (isInitializing) return;
         setIsInitializing(true);
-        invoke('setup_application')
-            .catch((e) => {
-                setCriticalError(`Failed to setup application: ${e}`);
-                setView('mining');
-            })
-            .then(() => {
-                setIsInitializing(false);
-            });
-    }, [setCriticalError, setShowExternalDependenciesDialog, setView, isInitializing]);
+        // Setup now done in rust
+        // invoke('setup_application')
+        // .catch((e) => {
+        // setCriticalError(`Failed to setup application: ${e}`);
+        // setView('mining');
+        // })
+        // .then(() => {
+        // setIsInitializing(false);
+        // });
+        setIsInitializing(false);
+    }, [setShowExternalDependenciesDialog, isInitializing]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed

@@ -77,7 +77,6 @@ use crate::node_manager::NodeManager;
 use crate::p2pool::models::Stats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
-use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
@@ -156,7 +155,6 @@ struct CriticalProblemEvent {
 
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
@@ -243,7 +241,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone(), window.clone())
+        .initialize(state.airdrop_access_token.clone(), app.clone())
         .await?;
 
     let mut binary_resolver = BinaryResolver::current().write().await;
@@ -605,7 +603,6 @@ struct UniverseAppState {
     cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
-    setup_counter: Arc<RwLock<AutoRollback<bool>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -706,7 +703,6 @@ fn main() {
         cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
-        setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
     let app_state2 = app_state.clone();
@@ -935,7 +931,6 @@ fn main() {
             commands::set_tor_config,
             commands::set_use_tor,
             commands::set_visual_mode,
-            commands::setup_application,
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
@@ -962,6 +957,16 @@ fn main() {
     );
 
     app.run(move |app_handle, event| match event {
+        tauri::RunEvent::Ready  => {
+            let a = app_handle.clone();
+            tauri::async_runtime::spawn( async move  {
+            let state = a.state::<UniverseAppState>().clone();
+                    let _res = setup_inner(state, a.clone()).await
+                        .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+            });
+            // setup_inner(app_handle.state::<UniverseAppState>().clone(), app_handle.clone())
+                // .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+        }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
