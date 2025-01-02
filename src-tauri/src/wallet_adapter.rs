@@ -42,7 +42,7 @@ use tari_utilities::hex::Hex;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 

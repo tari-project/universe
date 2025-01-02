@@ -39,7 +39,7 @@ use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 use crate::{
     app_config::MiningMode,
