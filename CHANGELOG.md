@@ -1,3 +1,54 @@
+# Tari Universe - Testnet v0.8.38
+
+_January 2, 2025_
+
+## 🎢 Staged Rollout
+
+- Rolling out gradually over 24 hours to monitor network synchronization
+- No immediate action required from users
+
+## 📊 Project Status
+
+- Successfully delivered 80+ releases since mid-September
+- Win rate increased from 10% to 60%
+- Network synchronization achieving ~60% success rate
+
+## 🎯 Strategic Objectives
+
+- Aiming for 90%+ network synchronization rate
+- Implementing balanced hash rate distribution
+- Preparing infrastructure for thousands of miners
+- Enhancing cross-device performance stability
+
+## 🆕 P2Pool Enhancements
+
+- **Chain Optimization**  
+    - Initiated fresh p2pool chain
+    - Enhanced resource management system
+    - Optimized balance between disk and memory usage
+    - Reduced frequency of node resets
+
+- **Stability Improvements**  
+    - Resolved extended runtime crash issues
+    - Eliminated unnecessary restart cycles
+    - Optimized libp2p configuration
+    - Improved sync reliability beyond 30% (now reaching 40%)
+
+## ⚠️ Known Issues
+
+- **Application Stability**  
+    - Hanging during wallet import operations
+    - Freezing during settings reset
+    - Closure complications
+
+- **Wallet Functionality**  
+    - History update interruptions
+    - Delayed initialization process
+
+- **Hardware Compatibility**  
+    - Apple M-series GPU recognition issues persist
+
+
 # Tari Universe - Testnet v0.8.25
 
 _December 17, 2024_
