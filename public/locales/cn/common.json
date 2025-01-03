@@ -28,5 +28,7 @@
   "utilization": "利用率",
   "version": "版本",
   "versions": "版本",
-  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。"
+  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。",
+  "close": "Close",
+  "update": "Update"
 }
