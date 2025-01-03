@@ -46,6 +46,12 @@ export function DialogsGroup() {
                 >
                     External Dependencies
                 </Button>
+                <Button
+                    onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
+                    $isActive={dialogToShow === 'releaseNotes'}
+                >
+                    Release Notes
+                </Button>
             </ButtonGroup>
         </>
     );
