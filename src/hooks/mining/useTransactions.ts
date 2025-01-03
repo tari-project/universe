@@ -15,7 +15,7 @@ export default function useFetchTx() {
         setTransactionsLoading(true);
 
         try {
-            const txs = await invoke('get_transaction_history');
+            const txs = await invoke('get_transaction_history', { continuation: false, itemsLength: 20 });
             const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
             if (sortedTransactions?.length) {
                 setTransactions(sortedTransactions);
