@@ -97,6 +97,8 @@ ring-compat = "0.8.0"
 der = "0.7.9"
 
 [target.'cfg(windows)'.dependencies]
+planif = "1.0.0"
+whoami = "1.5.2"
 winreg = "0.52.0"
 
 # needed for keymanager. TODO: Find a way of creating a keymanager without bundling sqlite
