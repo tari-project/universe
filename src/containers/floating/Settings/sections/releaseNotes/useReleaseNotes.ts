@@ -18,9 +18,6 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
     const { triggerEffect } = options;
     const { setDialogToShow } = useUIStore();
 
-    const appVersion = packageInfo.version;
-    //const appVertion = '0.8.25';
-
     const fetchReleaseNotes = async () => {
         const response = await fetch(CHANGELOG_URL);
         if (!response.ok) {
@@ -31,6 +28,9 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
 
     useEffect(() => {
         if (!triggerEffect) return;
+
+        const appVersion = packageInfo.version;
+        //const appVersion = '0.8.25';
 
         // TODO: Need to save the fetched releaseNotesVersion to persistant storage
         //       and compare it with the appVersion to determine if the release notes
