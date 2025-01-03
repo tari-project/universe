@@ -167,6 +167,36 @@ impl BinaryResolver {
             ),
         );
 
+        binary_manager.insert(
+            Binaries::TariValidatorNode,
+            BinaryManager::new(
+                Binaries::TariValidatorNode.name().to_string(),
+                Some("tari_validator_node".to_string()),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-dan".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                true,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::TariIndexer,
+            BinaryManager::new(
+                Binaries::TariIndexer.name().to_string(),
+                Some("tari_indexer".to_string()),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-dan".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                true,
+            ),
+        );
+
         Self {
             managers: binary_manager,
         }

@@ -11,6 +11,8 @@ pub enum Binaries {
     ShaP2pool,
     GpuMiner,
     Tor,
+    TariValidatorNode,
+    TariIndexer,
 }
 
 impl Binaries {
@@ -23,6 +25,8 @@ impl Binaries {
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "xtrgpuminer",
             Binaries::Tor => "tor",
+            Binaries::TariValidatorNode => "tari_validator_node",
+            Binaries::TariIndexer => "tari_indexer",
         }
     }
 
@@ -35,6 +39,8 @@ impl Binaries {
             "sha-p2pool" => Binaries::ShaP2pool,
             "xtrgpuminer" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
+            "tari_validator_node" => Binaries::TariValidatorNode,
+            "tari_indexer" => Binaries::TariIndexer,
             _ => panic!("Unknown binary name: {}", name),
         }
     }
@@ -69,6 +75,14 @@ impl Binaries {
                 let file_name = "tor";
                 PathBuf::from(file_name)
             }
+            Binaries::TariValidatorNode => {
+                let file_name = "tari_validator_node";
+                PathBuf::from(file_name)
+            }
+            Binaries::TariIndexer => {
+                let file_name = "tari_indexer";
+                PathBuf::from(file_name)
+            }
         }
     }
 
@@ -82,6 +96,8 @@ impl Binaries {
             Binaries::ShaP2pool,
             Binaries::GpuMiner,
             Binaries::Tor,
+            Binaries::TariValidatorNode,
+            Binaries::TariIndexer,
         ]
         .iter()
         .copied()

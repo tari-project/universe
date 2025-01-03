@@ -327,6 +327,34 @@ async fn setup_inner(
             .await?;
     }
 
+    //TODO tari validator node binary
+    // should check for update is for now set to false
+    progress.set_max(35).await;
+    progress
+        .update(
+            "checking-latest-version-tari-validator-node".to_string(),
+            None,
+            0,
+        )
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::TariValidatorNode, progress.clone(), false)
+        .await?;
+    sleep(Duration::from_secs(1));
+    info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
+
+    //TODO tari ootle indexer binary
+    // should check for update is for now set to false
+    progress.set_max(38).await;
+    progress
+        .update("checking-latest-version-tari-indexer".to_string(), None, 0)
+        .await;
+    binary_resolver
+        .initalize_binary(Binaries::TariIndexer, progress.clone(), false)
+        .await?;
+    sleep(Duration::from_secs(1));
+    info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
+
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
