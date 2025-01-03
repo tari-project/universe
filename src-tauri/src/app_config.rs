@@ -86,6 +86,8 @@ pub struct AppConfigFromFile {
     window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
+    #[serde(default = "default_true")]
+    ootle_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -126,6 +128,7 @@ impl Default for AppConfigFromFile {
             visual_mode: true,
             window_settings: default_window_settings(),
             show_experimental_settings: false,
+            ootle_enabled: true,
         }
     }
 }
@@ -237,6 +240,7 @@ pub(crate) struct AppConfig {
     visual_mode: bool,
     window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
+    ootle_enabled: bool,
 }
 
 impl AppConfig {
@@ -280,6 +284,7 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
+            ootle_enabled: true,
         }
     }
 
@@ -355,6 +360,7 @@ impl AppConfig {
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
                 self.show_experimental_settings = config.show_experimental_settings;
+                self.ootle_enabled = config.ootle_enabled;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -728,6 +734,7 @@ impl AppConfig {
             visual_mode: self.visual_mode,
             window_settings: self.window_settings.clone(),
             show_experimental_settings: self.show_experimental_settings,
+            ootle_enabled: self.ootle_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
