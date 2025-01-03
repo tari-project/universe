@@ -689,6 +689,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn ootle_enabled(&self) -> bool {
+        self.ootle_enabled
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]

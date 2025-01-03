@@ -11,6 +11,7 @@ use ootle::{
     setup_tari_universe, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
 };
 use std::fs::{remove_dir_all, remove_file};
+use validator_node_manager::{ValidatorNodeConfig, ValidatorNodeManager};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -99,6 +100,8 @@ mod tor_adapter;
 mod tor_manager;
 mod user_listener;
 mod utils;
+mod validator_node_adapter;
+mod validator_node_manager;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
@@ -455,6 +458,29 @@ async fn setup_inner(
             )
             .await?;
     }
+
+    //TODO RUN OOTLE
+    if state.config.read().await.ootle_enabled() {
+        progress.set_max(88).await;
+        progress.update("starting-ootle".to_string(), None, 0).await;
+
+        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let validator_node_config = ValidatorNodeConfig::builder()
+            .with_base_node(base_node_grpc)
+            .build()?;
+
+        state
+            .validator_node_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                validator_node_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+    }
+
     progress.set_max(90).await;
     //TODO add translation for db
     progress
@@ -489,14 +515,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
         .map_err(|e| e.to_string());
-    // match tauri::async_runtime::block_on(thread_tokens).expect("Could not set tokens") {
-    //     Ok(_) => {
-    //         info!(target: LOG_TARGET, "🚀 Tokens initialized successfully");
-    //     }
-    //     Err(e) => {
-    //         error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e)
-    //     }
-    // };
+
     let thread_ootle = tauri::async_runtime::spawn(async move {
         setup_tari_universe(
             app_handle_clone,
@@ -512,14 +531,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e))
         .map_err(|e| e.to_string());
-    // match tauri::async_runtime::block_on(thread_ootle).expect("Could not set tokens") {
-    //     Ok(_) => {
-    //         info!(target: LOG_TARGET, "🚀 Tari Universe setup completed successfully");
-    //     }
-    //     Err(e) => {
-    //         error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e)
-    //     }
-    // };
+
     let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
     let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
     app.manage(AssetServer { addr, cancel_token });
@@ -632,7 +644,8 @@ struct UniverseAppState {
     cached_wallet_details: Arc<RwLock<Option<TariWalletDetails>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
-    tokens: Arc<RwLock<Tokens>>, //TODO
+    tokens: Arc<RwLock<Tokens>>,                  //TODO
+    validator_node_manager: ValidatorNodeManager, //TODO
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -664,6 +677,7 @@ fn main() {
     let wallet_manager = WalletManager::new(node_manager.clone());
     let wallet_manager2 = wallet_manager.clone();
     let p2pool_manager = P2poolManager::new();
+    let validator_node_manager = ValidatorNodeManager::new();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -737,6 +751,7 @@ fn main() {
             auth: std::sync::Mutex::new("".to_string()),
             permission: std::sync::Mutex::new("".to_string()),
         })),
+        validator_node_manager,
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();
