@@ -15,13 +15,46 @@ const removeTXTMCryptoDecimals = (value: number) => {
     return removeDecimals(value, 6);
 };
 
+/**
+    ## Workaround for forced rounding up by Intl.NumberFormat
+    ** 1234 => 0
+    ** 1234567 => 1230000
+    ** 123456789 => 123450000
+    ** 12345678987654 => 12345678980000
+*/
+const roundToTwoDecimals = (val: number, decimals = 6) => {
+    if (decimals <= 2) return val;
+    return val - (val % Math.pow(10, decimals - 2));
+};
+
+/**
+    ## Workaround for forced rounding up by Intl.NumberFormat
+    ** 1234 => 0
+    ** 1234567 => 1230000
+    ** 123456789 => 123450000
+    ** 12345678987654 => 12340000000000
+*/
+const roundCompactDecimals = (value: number, decimals = 6) => {
+    if (value < Math.pow(10, decimals - 2)) return 0;
+    if (value < Math.pow(10, decimals)) return roundToTwoDecimals(value, decimals);
+
+    let unitIndex = 0;
+    let formattedValue = value;
+    while (formattedValue >= 1000) {
+        formattedValue /= 1000;
+        unitIndex++;
+    }
+    formattedValue = Math.floor(formattedValue * 100) / 100;
+    return formattedValue * Math.pow(1000, unitIndex);
+};
+
 const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): string =>
     Intl.NumberFormat(i18n.language, options).format(value);
 
 const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
 
 const formatTXTMCompact = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(value), {
+    formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
         notation: 'compact',
@@ -29,7 +62,11 @@ const formatTXTMCompact = (value: number) =>
     });
 
 const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(value), { maximumFractionDigits: 2, notation: 'standard', style: 'decimal' });
+    formatValue(removeTXTMCryptoDecimals(roundToTwoDecimals(value)), {
+        maximumFractionDigits: 2,
+        notation: 'standard',
+        style: 'decimal',
+    });
 
 const formatDecimalCompact = (value: number) => formatValue(value, { maximumFractionDigits: 2, style: 'decimal' });
 
