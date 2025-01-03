@@ -1399,38 +1399,6 @@ pub async fn set_visual_mode<'r>(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn setup_application(
-    window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<bool, String> {
-    let timer = Instant::now();
-    let rollback = state.setup_counter.write().await;
-    if rollback.get_value() {
-        warn!(target: LOG_TARGET, "setup_application has already been initialized, debouncing");
-        let res = state.config.read().await.auto_mining();
-        return Ok(res);
-    }
-    rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
-        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        sentry::capture_event(Event {
-            level: sentry::Level::Error,
-            message: Some(e.to_string()),
-            culprit: Some("setup-inner".to_string()),
-            ..Default::default()
-        });
-        e.to_string()
-    })?;
-
-    let res = state.config.read().await.auto_mining();
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
-}
-
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn start_mining<'r>(

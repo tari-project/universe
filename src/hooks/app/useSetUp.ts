@@ -69,10 +69,10 @@ export function useSetUp() {
         if (syncedAidropWithBackend && !isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
-            invoke('setup_application').catch((e) => {
-                console.error(`Failed to setup application: ${e}`);
-                setCriticalError(`Failed to setup application: ${e}`);
-            });
+            // invoke('setup_application').catch((e) => {
+            //     console.error(`Failed to setup application: ${e}`);
+            //     setCriticalError(`Failed to setup application: ${e}`);
+            // });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
