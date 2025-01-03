@@ -714,6 +714,8 @@ pub async fn get_tor_entry_guards(
 #[tauri::command]
 pub async fn get_transaction_history(
     state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    items_length: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transaction_history.load(Ordering::SeqCst) {
@@ -725,7 +727,7 @@ pub async fn get_transaction_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transaction_history()
+        .get_transaction_history(continuation, items_length)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {

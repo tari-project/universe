@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
-import { FixedSizeList as List } from 'react-window';
+import InfiniteScroll from 'react-infinite-scroll-component';
 
 import { ListLabel } from './HistoryItem.styles';
 import { HistoryContainer, HistoryPadding } from './Wallet.styles';
@@ -20,24 +20,24 @@ const History = () => {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
     const transactions = useWalletStore((s) => s.transactions);
-
-    const Row = ({ index, style }) => (
-        <div style={style}>
-            <HistoryItem key={transactions[index].tx_id} item={transactions[index]} />
-        </div>
-    );
+    const fetchMoreTransactions = useWalletStore((s) => s.fetchMoreTransactions);
 
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
-            <HistoryPadding>
+            <HistoryPadding id="history-padding">
                 <ListLabel>{t('recent-wins')}</ListLabel>
-                {isTransactionLoading && !transactions?.length ? (
-                    <CircularProgress />
-                ) : (
-                    <List height={310} itemCount={transactions.length} itemSize={62} width="100%">
-                        {Row}
-                    </List>
-                )}
+                {isTransactionLoading && !transactions?.length && <CircularProgress />}
+                <InfiniteScroll
+                    dataLength={transactions?.length || 0}
+                    next={fetchMoreTransactions}
+                    hasMore={true}
+                    loader={<CircularProgress />}
+                    scrollableTarget="history-padding"
+                >
+                    {transactions.map((tx) => (
+                        <HistoryItem key={tx.tx_id} item={tx} />
+                    ))}
+                </InfiniteScroll>
             </HistoryPadding>
         </HistoryContainer>
     );

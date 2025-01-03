@@ -30,7 +30,9 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
+use minotari_node_grpc_client::grpc::{
+    GetBalanceRequest, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
+};
 use serde::Serialize;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
@@ -39,7 +41,8 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::sync::watch;
+use tokio::sync::{watch, Mutex};
+use tonic::Streaming;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -200,6 +203,7 @@ impl ProcessAdapter for WalletAdapter {
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
                 latest_balance_broadcast: self.balance_broadcast.clone(),
+                completed_transactions_stream: Mutex::new(None),
             },
         ))
     }
@@ -223,10 +227,20 @@ pub enum WalletStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
 }
 
-#[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
     latest_balance_broadcast: watch::Sender<Option<WalletBalance>>,
+    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
+}
+
+impl Clone for WalletStatusMonitor {
+    fn clone(&self) -> Self {
+        Self {
+            grpc_port: self.grpc_port,
+            latest_balance_broadcast: self.latest_balance_broadcast.clone(),
+            completed_transactions_stream: Mutex::new(None),
+        }
+    }
 }
 
 #[async_trait]
@@ -294,15 +308,26 @@ impl WalletStatusMonitor {
 
     pub async fn get_transaction_history(
         &self,
+        continuation: bool,
+        items_length: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_completed_transactions(GetCompletedTransactionsRequest {})
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let mut stream = res.into_inner();
+        let mut stream =
+            if continuation && self.completed_transactions_stream.lock().await.is_some() {
+                self.completed_transactions_stream
+                    .lock()
+                    .await
+                    .take()
+                    .unwrap()
+            } else {
+                let mut client = WalletClient::connect(self.wallet_grpc_address())
+                    .await
+                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+                let res = client
+                    .get_completed_transactions(GetCompletedTransactionsRequest {})
+                    .await
+                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+                res.into_inner()
+            };
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
 
@@ -312,7 +337,7 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
         {
             let tx = message.transaction.expect("Transaction not found");
-
+            println!("=========== TX BLOCK: {:?}", tx.mined_in_block_height);
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
@@ -327,6 +352,10 @@ impl WalletStatusMonitor {
                 payment_id: tx.payment_id.to_hex(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
+
+            if transactions.len() >= items_length.unwrap_or(20).try_into().unwrap() {
+                break;
+            }
         }
         Ok(transactions)
     }

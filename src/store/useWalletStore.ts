@@ -11,6 +11,7 @@ interface State extends WalletBalance {
     transactions: TransactionInfo[];
     isTransactionLoading: boolean;
     is_wallet_importing: boolean;
+    has_more_transactions: boolean;
 }
 
 interface Actions {
@@ -18,6 +19,7 @@ interface Actions {
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
     setTransactions: (transactions?: TransactionInfo[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
+    fetchMoreTransactions: () => Promise<void>;
 }
 
 type WalletStoreState = State & Actions;
@@ -31,6 +33,7 @@ const initialState: State = {
     pending_incoming_balance: 0,
     pending_outgoing_balance: 0,
     transactions: [],
+    has_more_transactions: true,
     isTransactionLoading: false,
     is_wallet_importing: false,
 };
@@ -60,7 +63,18 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             }
         }
     },
-    setTransactions: (transactions) => set({ transactions }),
+    fetchMoreTransactions: async () => {
+        try {
+            const moreTxs = await invoke('get_transaction_history', { continuation: true });
+            set((state) => ({
+                has_more_transactions: moreTxs.length > 0,
+                transactions: [...state.transactions, ...moreTxs.sort((a, b) => b.timestamp - a.timestamp)],
+            }));
+        } catch (error) {
+            console.error('Could not fetch more transactions: ', error);
+        }
+    },
+    setTransactions: (transactions = []) => set({ has_more_transactions: transactions.length >= 20, transactions }),
     setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
     importSeedWords: async (seedWords: string[]) => {
         try {
