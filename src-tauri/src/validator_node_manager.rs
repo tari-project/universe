@@ -14,11 +14,66 @@ use crate::validator_node_adapter::ValidatorNodeAdapter;
 
 const LOG_TARGET: &str = "tari::universe::validator_node_manager";
 
+/**
+ * FULL CONFIG FROM TARI-DAN REPO
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(deny_unknown_fields)]
+#[allow(clippy::struct_excessive_bools)]
+pub struct ValidatorNodeConfig {
+    override_from: Option<String>,
+    pub shard_key_file: PathBuf,
+    /// A path to the file that stores your node identity and secret key
+    pub identity_file: PathBuf,
+    //// The node's publicly-accessible hostname
+    // pub public_address: Option<Multiaddr>,
+    /// The Tari base node's GRPC URL
+    pub base_node_grpc_url: Option<Url>,
+    /// If set to false, there will be no base layer scanning at all
+    pub scan_base_layer: bool,
+    /// How often do we want to scan the base layer for changes
+    #[serde(with = "serializers::seconds")]
+    pub base_layer_scanning_interval: Duration,
+    /// The relative path to store persistent data
+    pub data_dir: PathBuf,
+    /// The p2p configuration settings
+    pub p2p: P2pConfig,
+    /// P2P RPC configuration
+    pub rpc: RpcConfig,
+    /// GRPC address of the validator node  application
+    pub grpc_address: Option<Multiaddr>,
+    /// JSON-RPC address of the validator node  application
+    pub json_rpc_listener_address: Option<SocketAddr>,
+    /// The jrpc address where the UI should connect (it can be the same as the json_rpc_address, but doesn't have to
+    /// be), if this will be None, then the listen_addr will be used.
+    pub json_rpc_public_address: Option<String>,
+    /// The address of the HTTP UI
+    pub http_ui_listener_address: Option<SocketAddr>,
+    /// Template config
+    pub templates: TemplateConfig,
+    /// Fee claim public key
+    pub fee_claim_public_key: RistrettoPublicKey,
+    /// Create identity file if not exists
+    pub dont_create_id: bool,
+    /// The (optional) sidechain to run this on
+    pub validator_node_sidechain_id: Option<RistrettoPublicKey>,
+    /// The templates sidechain id
+    pub template_sidechain_id: Option<RistrettoPublicKey>,
+    /// The burnt utxo sidechain id
+    pub burnt_utxo_sidechain_id: Option<RistrettoPublicKey>,
+    /// The path to store layer one transactions.
+    pub layer_one_transaction_path: PathBuf,
+}
+ */
+
 #[derive(Clone)]
 pub struct ValidatorNodeConfig {
+    pub base_path: String,
+    pub json_rpc_address: String,
+    pub json_rpc_public_address: String,
     pub grpc_port: u16,
-    pub stats_server_port: u16,
-    pub base_node_address: String,
+    pub base_node_grpc_url: String,
+    pub web_ui_address: String,
+    pub base_layer_scanning_interval: u16,
 }
 
 pub struct ValidatorNodeConfigBuilder {
@@ -32,18 +87,26 @@ impl ValidatorNodeConfigBuilder {
         }
     }
 
-    pub fn with_base_node(&mut self, grpc_port: u16) -> &mut Self {
-        self.config.base_node_address = format!("http://127.0.0.1:{}", grpc_port);
+    pub fn with_base_node(&mut self, jrpc_port: u16) -> &mut Self {
+        self.config.json_rpc_address = format!("http://127.0.0.1:{}", jrpc_port);
+        self.config.json_rpc_public_address = format!("http://127.0.0.1:{}", jrpc_port);
         self
     }
 
     pub fn build(&self) -> Result<ValidatorNodeConfig, anyhow::Error> {
+        let jrpc_port = PortAllocator::new().assign_port_with_fallback();
+        let web_ui_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let stats_server_port = PortAllocator::new().assign_port_with_fallback();
+        // TODO set proper values - below is just random test
         Ok(ValidatorNodeConfig {
+            base_path: self.config.base_path.clone(),
+            json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),
+            json_rpc_public_address: format!("http://127.0.0.1:{}", jrpc_port),
+            base_node_grpc_url: format!("/ip4/127.0.0.1/tcp/{}", grpc_port),
+            web_ui_address: format!("http://127.0.0.1:{}", web_ui_port),
+            base_layer_scanning_interval: 1,
             grpc_port,
-            stats_server_port,
-            base_node_address: self.config.base_node_address.clone(),
         })
     }
 }
@@ -56,10 +119,15 @@ impl ValidatorNodeConfig {
 
 impl Default for ValidatorNodeConfig {
     fn default() -> Self {
+        //TODO SET DEFAULT
         Self {
-            grpc_port: 18145,
-            stats_server_port: 19000,
-            base_node_address: String::from("http://127.0.0.1:18142"),
+            base_path: String::from(""),
+            json_rpc_address: String::from("http://127.0.0.1:19000"),
+            json_rpc_public_address: String::from("http://127.0.0.1:19000"),
+            base_node_grpc_url: String::from("http://127.0.0.1:19000"),
+            web_ui_address: String::from("http://127.0.0.1:19000"),
+            base_layer_scanning_interval: 1,
+            grpc_port: 18146,
         }
     }
 }

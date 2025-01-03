@@ -60,26 +60,37 @@ impl ProcessAdapter for ValidatorNodeAdapter {
             .as_ref()
             .ok_or_else(|| anyhow!("ValidatorNodeAdapter config is not set"))?;
         let log_path_string = convert_to_string(log_path.join("sha-validator_node"))?;
+        let network = Network::get_current_or_user_setting_or_default();
 
-        let mut args: Vec<String> = vec![
+        let args: Vec<String> = vec![
             "start".to_string(),
-            "--grpc-port".to_string(),
-            config.grpc_port.to_string(),
-            "--stats-server-port".to_string(),
-            config.stats_server_port.to_string(),
-            "--base-node-address".to_string(),
-            config.base_node_address.clone(),
-            // "--mdns-disabled".to_string(),
             "-b".to_string(),
-            log_path_string,
-            "--stable-peer".to_string(),
-            "--private-key-folder".to_string(),
-            working_dir.to_string_lossy().to_string(),
+            config.base_path.to_string(),
+            "--network".to_string(),
+            network.to_string(),
+            format!(
+                "--json-rpc-public-address={}",
+                config.json_rpc_public_address
+            ),
+            format!(
+                "-pvalidator_node.base_node_grpc_url={}",
+                config.base_node_grpc_url
+            ),
+            format!(
+                "-pvalidator_node.json_rpc_listener_address={}",
+                config.json_rpc_address
+            ),
+            format!(
+                "-pvalidator_node.http_ui_listener_address={}",
+                config.web_ui_address
+            ),
+            format!(
+                "-pvalidator_node.base_layer_scanning_interval={}",
+                config.base_layer_scanning_interval
+            ),
         ];
         let pid_file_name = self.pid_file_name().to_string();
 
-        args.push("--squad".to_string());
-        args.push("default_2".to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
@@ -109,10 +120,10 @@ impl ProcessAdapter for ValidatorNodeAdapter {
                     args,
                     data_dir,
                     pid_file_name,
-                    name: "ValidatorNode".to_string(),
+                    name: self.name().to_string(),
                 },
             },
-            ValidatorNodeStatusMonitor::new(config.stats_server_port),
+            ValidatorNodeStatusMonitor::new(config.grpc_port),
         ))
     }
 
