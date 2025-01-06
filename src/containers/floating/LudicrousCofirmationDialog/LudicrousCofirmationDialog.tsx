@@ -21,9 +21,9 @@ function Countdown({ onComplete }: { onComplete: () => void }) {
     return <CountdownNumber>{count < 10 ? `0${count}` : count}</CountdownNumber>;
 }
 
-export default function PowerLevelResetDialog() {
+export default function LudicrousCofirmationDialog() {
     const { t } = useTranslation('components', { useSuspense: false });
-    const open = useUIStore((s) => s.dialogToShow === 'powerLevelReset');
+    const open = useUIStore((s) => s.dialogToShow === 'ludicrousConfirmation');
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
 
@@ -41,17 +41,19 @@ export default function PowerLevelResetDialog() {
             <DialogContent>
                 <Wrapper>
                     <TextWrapper>
-                        <Title>{t('powerLevelResetDialog.title')}</Title>
+                        <Title>{t('ludicrousConfirmationDialog.title')}</Title>
                         <Text>
-                            {t('powerLevelResetDialog.description')} <Countdown onComplete={handleClose} />{' '}
-                            {t('powerLevelResetDialog.seconds')}.
+                            {t('ludicrousConfirmationDialog.description')} <Countdown onComplete={handleClose} />{' '}
+                            {t('ludicrousConfirmationDialog.seconds')}.
                         </Text>
                     </TextWrapper>
                     <ButtonWrapper>
                         <KeepButton onClick={handleChange}>
-                            <span>🔥</span> {t('powerLevelResetDialog.keepChanges')}
+                            <span>🔥</span> {t('ludicrousConfirmationDialog.keepChanges')}
                         </KeepButton>
-                        <RevertButton onClick={handleClose}>{t('powerLevelResetDialog.revertToEco')}</RevertButton>
+                        <RevertButton onClick={handleClose}>
+                            {t('ludicrousConfirmationDialog.revertToEco')}
+                        </RevertButton>
                     </ButtonWrapper>
                 </Wrapper>
             </DialogContent>

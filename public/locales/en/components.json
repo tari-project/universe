@@ -8,7 +8,7 @@
     "password-too-short": "Password must have at least 8 characters",
     "required": "Field required"
   },
-  "powerLevelResetDialog": {
+  "ludicrousConfirmationDialog": {
     "title": "Stay in Ludicrous Mode?",
     "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
     "seconds": "seconds",

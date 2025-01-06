@@ -47,10 +47,12 @@ export function DialogsGroup() {
                     External Dependencies
                 </Button>
                 <Button
-                    onClick={() => setDialogToShow(dialogToShow === 'powerLevelReset' ? undefined : 'powerLevelReset')}
-                    $isActive={dialogToShow === 'powerLevelReset'}
+                    onClick={() =>
+                        setDialogToShow(dialogToShow === 'ludicrousConfirmation' ? undefined : 'ludicrousConfirmation')
+                    }
+                    $isActive={dialogToShow === 'ludicrousConfirmation'}
                 >
-                    Power Level Reset
+                    Ludicrous Confirmation
                 </Button>
             </ButtonGroup>
         </>

@@ -38,7 +38,7 @@ function ModeSelect() {
             }
 
             if (newMode === 'Ludicrous') {
-                setDialogToShow('powerLevelReset');
+                setDialogToShow('ludicrousConfirmation');
                 return;
             }
 
