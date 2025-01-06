@@ -21,10 +21,14 @@ export default function useMiningMetricsUpdater() {
             if (metrics) {
                 const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
                 // Pause animation when lost connection to the Tari Network
-                if (isMining && !metrics.base_node?.is_connected && baseNodeConnected) {
-                    setAnimationState('stop');
-                } else if (isMining && metrics.base_node?.is_connected && !baseNodeConnected) {
-                    setAnimationState('start');
+
+                if (isMining) {
+                    if (!metrics.base_node?.is_connected && baseNodeConnected) {
+                        setAnimationState('stop');
+                    }
+                    if (metrics.base_node?.is_connected && !baseNodeConnected) {
+                        setAnimationState('start');
+                    }
                 }
 
                 const blockHeight = metrics.base_node.block_height;
