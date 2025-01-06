@@ -37,7 +37,6 @@ export function useMiningStatesSync() {
         const ul = listen('miner_metrics', async ({ payload }) => {
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as MinerMetrics, prevPayload.current);
-            console.log('Payload changed', payloadChanged);
             if (payloadChanged) {
                 prevPayload.current = payload as MinerMetrics;
                 await handleMiningMetrics(payload as MinerMetrics);
