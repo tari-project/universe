@@ -4,7 +4,7 @@
         "mmproxy": "=1.9.1-rc.3",
         "minotari_node": "=1.9.1-rc.3",
         "wallet": "=1.9.1-rc.3",
-        "sha-p2pool": "=0.18.0",
+        "sha-p2pool": "=0.18.1",
         "xtrgpuminer": "=0.2.10",
         "tor": "=13.5.7"
     }
