@@ -30,7 +30,6 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
         if (!triggerEffect) return;
 
         const appVersion = packageInfo.version;
-        //const appVersion = '0.8.25';
 
         // TODO: Need to save the fetched releaseNotesVersion to persistant storage
         //       and compare it with the appVersion to determine if the release notes
@@ -43,9 +42,6 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
                 if (releaseNotesVersion === appVersion) {
                     setDialogToShow('releaseNotes');
                 }
-
-                //console.log('Fetched Release Notes version:', releaseNotesVersion);
-                //console.log('App version:', appVersion);
             })
             .catch((error) => {
                 console.error('Failed to fetch release notes:', error);
