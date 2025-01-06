@@ -6,7 +6,6 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 import useFetchTx from './useTransactions.ts';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 export default function useMiningMetricsUpdater() {
     const fetchTx = useFetchTx();
