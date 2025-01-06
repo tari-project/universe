@@ -45,6 +45,5 @@ export function useMiningStatesSync() {
         return () => {
             ul.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isSettingUp]);
+    }, [isSettingUp, handleMiningMetrics]);
 }
