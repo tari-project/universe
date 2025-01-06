@@ -28,6 +28,8 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use std::time::Duration;
+use tokio::time::timeout;
 
 use crate::p2pool;
 use crate::p2pool::models::{Connections, Stats};
@@ -163,36 +165,26 @@ impl P2poolStatusMonitor {
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        match self.stats_client.stats().await {
-            Ok(_stats) => {
-                // if stats
-                //     .connection_info
-                //     .network_info
-                //     .connection_counters
-                //     .established_outgoing
-                //     + stats
-                //         .connection_info
-                //         .network_info
-                //         .connection_counters
-                //         .established_incoming
-                //     < 1
-                // {
-                //     warn!(target: LOG_TARGET, "P2pool has no connections, health check warning");
-                //     return HealthStatus::Warning;
-                // }
-
-                // if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 {
-                //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
-                //     return HealthStatus::Warning;
-                // }
-
+        match timeout(Duration::from_secs(1), self.stats_client.stats()).await {
+            Ok(res) => {
+                match res {
+                    Ok(_stats) => {
+                        HealthStatus::Healthy
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                        HealthStatus::Unhealthy
+                    }
+                }
+            }
+            Err(_elapsed) => {
+                // Note: P2pool v0.17.4 is really slow to respond sometimes, but still is healthy, so 
+                // we ignore timeouts
+                warn!(target: LOG_TARGET, "P2pool health check timed out, but will assume healthy");
                 HealthStatus::Healthy
             }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
-                HealthStatus::Unhealthy
-            }
         }
+      
     }
 }
 
