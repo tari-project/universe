@@ -12,6 +12,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { modeType } from '@app/store/types';
 import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
+import { useUIStore } from '@app/store/useUIStore';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
@@ -27,6 +28,7 @@ function ModeSelect() {
     const isMining = isCPUMining || isGPUMining;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
     const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleChange = useCallback(
         async (newMode: string) => {
@@ -34,9 +36,15 @@ function ModeSelect() {
                 setCustomLevelsDialog(true);
                 return;
             }
+
+            if (newMode === 'Ludicrous') {
+                setDialogToShow('powerLevelReset');
+                return;
+            }
+
             await changeMiningMode({ mode: newMode as modeType });
         },
-        [changeMiningMode, setCustomLevelsDialog]
+        [changeMiningMode, setCustomLevelsDialog, setDialogToShow]
     );
 
     const tabOptions = useMemo(() => {

@@ -29,16 +29,12 @@ export default function PowerLevelResetDialog() {
 
     const handleClose = useCallback(() => {
         setDialogToShow(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    const handleCountdownComplete = useCallback(() => {
-        setDialogToShow(null);
     }, [setDialogToShow]);
 
     const handleChange = useCallback(async () => {
         await changeMiningMode({ mode: 'Ludicrous' });
-    }, [changeMiningMode]);
+        setDialogToShow(null);
+    }, [changeMiningMode, setDialogToShow]);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -47,7 +43,7 @@ export default function PowerLevelResetDialog() {
                     <TextWrapper>
                         <Title>{t('powerLevelResetDialog.title')}</Title>
                         <Text>
-                            {t('powerLevelResetDialog.description')} <Countdown onComplete={handleCountdownComplete} />{' '}
+                            {t('powerLevelResetDialog.description')} <Countdown onComplete={handleClose} />{' '}
                             {t('powerLevelResetDialog.seconds')}.
                         </Text>
                     </TextWrapper>
