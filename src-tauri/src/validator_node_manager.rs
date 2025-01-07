@@ -122,12 +122,12 @@ impl Default for ValidatorNodeConfig {
         //TODO SET DEFAULT
         Self {
             base_path: String::from(""),
-            json_rpc_address: String::from("http://127.0.0.1:19000"),
+            json_rpc_address: String::from("http://127.0.0.1:18200"),
             json_rpc_public_address: String::from("http://127.0.0.1:19000"),
-            base_node_grpc_url: String::from("http://127.0.0.1:19000"),
-            web_ui_address: String::from("http://127.0.0.1:19000"),
-            base_layer_scanning_interval: 1,
-            grpc_port: 18146,
+            base_node_grpc_url: String::from("http://127.0.0.1:18142"),
+            web_ui_address: String::from("http://127.0.0.1:5001"),
+            base_layer_scanning_interval: 10,
+            grpc_port: 18144,
         }
     }
 }

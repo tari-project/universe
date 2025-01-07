@@ -479,6 +479,8 @@ async fn setup_inner(
                 log_dir.clone(),
             )
             .await?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
     }
 
     progress.set_max(90).await;
