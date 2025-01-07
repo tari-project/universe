@@ -470,6 +470,7 @@ async fn setup_inner(
         let base_node_grpc = state.node_manager.get_grpc_port().await?;
         let validator_node_config = ValidatorNodeConfig::builder()
             .with_base_node(base_node_grpc)
+            .with_base_path(data_dir.clone())
             .build()?;
 
         state
@@ -487,6 +488,7 @@ async fn setup_inner(
 
         let indexer_config = IndexerConfig::builder()
             .with_base_node(base_node_grpc)
+            .with_base_path(data_dir.clone())
             .build()?;
 
         state

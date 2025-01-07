@@ -87,23 +87,27 @@ impl ValidatorNodeConfigBuilder {
         }
     }
 
-    pub fn with_base_node(&mut self, jrpc_port: u16) -> &mut Self {
-        self.config.json_rpc_address = format!("http://127.0.0.1:{}", jrpc_port);
-        self.config.json_rpc_public_address = format!("http://127.0.0.1:{}", jrpc_port);
+    pub fn with_base_node(&mut self, grpc_port: u16) -> &mut Self {
+        self.config.base_node_grpc_url = format!("http://127.0.0.1:{}", grpc_port);
+        self
+    }
+
+    pub fn with_base_path(&mut self, base_path: PathBuf) -> &mut Self {
+        self.config.base_path = base_path.to_string_lossy().to_string();
         self
     }
 
     pub fn build(&self) -> Result<ValidatorNodeConfig, anyhow::Error> {
-        let jrpc_port = PortAllocator::new().assign_port_with_fallback();
-        let web_ui_port = PortAllocator::new().assign_port_with_fallback();
+        // let jrpc_port = PortAllocator::new().assign_port_with_fallback();
+        let jrpc_port = 18005;
+        let web_ui_port = 18006;
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
-        let stats_server_port = PortAllocator::new().assign_port_with_fallback();
         // TODO set proper values - below is just random test
         Ok(ValidatorNodeConfig {
             base_path: self.config.base_path.clone(),
             json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),
             json_rpc_public_address: format!("http://127.0.0.1:{}", jrpc_port),
-            base_node_grpc_url: format!("/ip4/127.0.0.1/tcp/{}", grpc_port),
+            base_node_grpc_url: self.config.base_node_grpc_url.clone(),
             web_ui_address: format!("http://127.0.0.1:{}", web_ui_port),
             base_layer_scanning_interval: 1,
             grpc_port,
