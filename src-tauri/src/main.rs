@@ -4,6 +4,7 @@
 use auto_launcher::AutoLauncher;
 use consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR};
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
+use indexer_manager::{IndexerConfig, IndexerManager};
 use log::trace;
 use log::{debug, error, info, warn};
 use ootle::tapplet_server::start;
@@ -75,6 +76,8 @@ mod gpu_miner;
 mod gpu_miner_adapter;
 mod hardware;
 mod hardware_monitor;
+mod indexer_adapter;
+mod indexer_manager;
 mod interface;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -481,6 +484,23 @@ async fn setup_inner(
             .await?;
 
         info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+
+        let indexer_config = IndexerConfig::builder()
+            .with_base_node(base_node_grpc)
+            .build()?;
+
+        state
+            .indexer_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                indexer_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
     }
 
     progress.set_max(90).await;
@@ -648,6 +668,7 @@ struct UniverseAppState {
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
     tokens: Arc<RwLock<Tokens>>,                  //TODO
     validator_node_manager: ValidatorNodeManager, //TODO
+    indexer_manager: IndexerManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -680,6 +701,7 @@ fn main() {
     let wallet_manager2 = wallet_manager.clone();
     let p2pool_manager = P2poolManager::new();
     let validator_node_manager = ValidatorNodeManager::new();
+    let indexer_manager = IndexerManager::new();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -754,6 +776,7 @@ fn main() {
             permission: std::sync::Mutex::new("".to_string()),
         })),
         validator_node_manager,
+        indexer_manager,
     };
 
     let systray = SystemtrayManager::current().get_systray().clone();

@@ -12,29 +12,29 @@ use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
 
+use crate::indexer_manager::IndexerConfig;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
-use crate::validator_node_manager::ValidatorNodeConfig;
 
-const LOG_TARGET: &str = "tari::universe::validator_node_adapter";
+const LOG_TARGET: &str = "tari::universe::indexer_adapter";
 
-pub struct ValidatorNodeAdapter {
-    pub(crate) config: Option<ValidatorNodeConfig>,
+pub struct IndexerAdapter {
+    pub(crate) config: Option<IndexerConfig>,
 }
 
-impl ValidatorNodeAdapter {
+impl IndexerAdapter {
     pub fn new() -> Self {
         Self { config: None }
     }
 
     #[allow(dead_code)]
-    pub fn config(&self) -> Option<&ValidatorNodeConfig> {
+    pub fn config(&self) -> Option<&IndexerConfig> {
         self.config.as_ref()
     }
 }
 
-impl ProcessAdapter for ValidatorNodeAdapter {
-    type StatusMonitor = ValidatorNodeStatusMonitor;
+impl ProcessAdapter for IndexerAdapter {
+    type StatusMonitor = IndexerStatusMonitor;
 
     fn spawn_inner(
         &self,
@@ -47,19 +47,19 @@ impl ProcessAdapter for ValidatorNodeAdapter {
 
         info!(target: LOG_TARGET, "Starting validator node");
 
-        let working_dir = data_dir.join("sha-validator_node");
+        let working_dir = data_dir.join("sha-indexer");
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
-            warn!(target: LOG_TARGET, "Could not create validator_node working directory - {}", error);
+            warn!(target: LOG_TARGET, "Could not create indexer working directory - {}", error);
         });
 
         if self.config.is_none() {
-            return Err(anyhow!("ValidatorNodeAdapter config is not set"));
+            return Err(anyhow!("IndexerAdapter config is not set"));
         }
         let config = self
             .config
             .as_ref()
-            .ok_or_else(|| anyhow!("ValidatorNodeAdapter config is not set"))?;
-        let log_path_string = convert_to_string(log_path.join("sha-validator_node"))?;
+            .ok_or_else(|| anyhow!("IndexerAdapter config is not set"))?;
+        let log_path_string = convert_to_string(log_path.join("sha-indexer"))?;
         let network = Network::get_current_or_user_setting_or_default();
 
         let args: Vec<String> = vec![
@@ -68,24 +68,15 @@ impl ProcessAdapter for ValidatorNodeAdapter {
             config.base_path.to_string(),
             "--network".to_string(),
             network.to_string(),
+            format!("-pindexer.base_node_grpc_url={}", config.base_node_grpc_url),
+            format!("-pindexer.json_rpc_address={}", config.json_rpc_address),
+            format!("-pindexer.http_ui_address={}", config.web_ui_address),
             format!(
-                "--json-rpc-public-address={}",
+                "-pindexer.ui_connect_address={}",
                 config.json_rpc_public_address
             ),
             format!(
-                "-pvalidator_node.base_node_grpc_url={}",
-                config.base_node_grpc_url
-            ),
-            format!(
-                "-pvalidator_node.json_rpc_listener_address={}",
-                config.json_rpc_address
-            ),
-            format!(
-                "-pvalidator_node.http_ui_listener_address={}",
-                config.web_ui_address
-            ),
-            format!(
-                "-pvalidator_node.base_layer_scanning_interval={}",
+                "-pindexer.base_layer_scanning_interval={}",
                 config.base_layer_scanning_interval
             ),
         ];
@@ -105,12 +96,9 @@ impl ProcessAdapter for ValidatorNodeAdapter {
         };
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule(
-            "sha_validator_node.exe".to_string(),
-            binary_version_path.clone(),
-        )?;
+        add_firewall_rule("sha_indexer.exe".to_string(), binary_version_path.clone())?;
 
-        debug!(target: LOG_TARGET, "🚀 Tari Validator Node args {:?}", &args);
+        debug!(target: LOG_TARGET, "🚀 Tari Indexer args {:?}", &args);
 
         Ok((
             ProcessInstance {
@@ -125,25 +113,25 @@ impl ProcessAdapter for ValidatorNodeAdapter {
                     name: self.name().to_string(),
                 },
             },
-            ValidatorNodeStatusMonitor::new(config.grpc_port),
+            IndexerStatusMonitor::new(config.grpc_port),
         ))
     }
 
     fn name(&self) -> &str {
-        "validator_node"
+        "indexer"
     }
 
     fn pid_file_name(&self) -> &str {
-        "validator_node_pid"
+        "indexer_pid"
     }
 }
 
 #[derive(Clone)]
-pub struct ValidatorNodeStatusMonitor {
+pub struct IndexerStatusMonitor {
     grpc_port: u16,
 }
 
-impl ValidatorNodeStatusMonitor {
+impl IndexerStatusMonitor {
     pub fn new(port: u16) -> Self {
         Self { grpc_port: port }
     }
@@ -154,7 +142,7 @@ impl ValidatorNodeStatusMonitor {
 }
 
 #[async_trait]
-impl StatusMonitor for ValidatorNodeStatusMonitor {
+impl StatusMonitor for IndexerStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         if self.get_identity().await.is_ok() {
             HealthStatus::Healthy
@@ -164,7 +152,7 @@ impl StatusMonitor for ValidatorNodeStatusMonitor {
     }
 }
 
-impl ValidatorNodeStatusMonitor {
+impl IndexerStatusMonitor {
     pub async fn status(&self) -> Result<u16, Error> {
         Ok(self.grpc_port) //TODO
     }
