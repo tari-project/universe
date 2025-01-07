@@ -32,10 +32,6 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
 
         const currentAppVersion = packageInfo.version;
 
-        // TODO: Need to save the fetched releaseNotesVersion to persistant storage
-        //       and compare it with the appVersion to determine if the release notes
-        //       dialog has already been shown to the user.
-
         fetchReleaseNotes()
             .then((notes) => {
                 const releaseNotesVersion = getLatestVersionFromChangelog(notes);
