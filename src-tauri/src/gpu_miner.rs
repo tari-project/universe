@@ -20,14 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{path::PathBuf, sync::Arc};
-
 use log::info;
 use serde::Deserialize;
+use std::time::Duration;
+use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -39,7 +38,6 @@ use crate::{
     process_watcher::ProcessWatcher,
 };
 
-const SHA_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
 #[derive(Debug, Deserialize)]
@@ -66,9 +64,12 @@ pub(crate) struct GpuMiner {
 }
 
 impl GpuMiner {
-    pub fn new() -> Self {
-        let adapter = GpuMinerAdapter::new(vec![]);
-        let process_watcher = ProcessWatcher::new(adapter);
+    pub fn new(status_broadcast: watch::Sender<GpuMinerStatus>) -> Self {
+        let adapter = GpuMinerAdapter::new(vec![], status_broadcast);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(10);
+
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
@@ -119,6 +120,13 @@ impl GpuMiner {
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Stopping xtrgpuminer");
         let mut process_watcher = self.watcher.write().await;
+        let _res = process_watcher
+            .adapter
+            .latest_status_broadcast
+            .send(GpuMinerStatus {
+                is_mining: false,
+                ..GpuMinerStatus::default()
+            });
         process_watcher.status_monitor = None;
         process_watcher.stop().await?;
         info!(target: LOG_TARGET, "xtrgpuminer stopped");
@@ -133,53 +141,6 @@ impl GpuMiner {
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
-    }
-
-    pub async fn status(
-        &self,
-        network_hash_rate: u64,
-        block_reward: MicroMinotari,
-    ) -> Result<GpuMinerStatus, anyhow::Error> {
-        let process_watcher = self.watcher.read().await;
-        if !process_watcher.is_running() {
-            return Ok(GpuMinerStatus {
-                hash_rate: 0,
-                estimated_earnings: 0,
-                is_mining: false,
-                is_available: self.is_available,
-            });
-        }
-        match &process_watcher.status_monitor {
-            Some(status_monitor) => {
-                let mut status = status_monitor.status().await?;
-                let hash_rate = status.hash_rate;
-                let estimated_earnings = if network_hash_rate == 0 {
-                    0
-                } else {
-                    #[allow(clippy::cast_possible_truncation)]
-                    {
-                        ((block_reward.as_u64() as f64)
-                            * (hash_rate as f64 / network_hash_rate as f64)
-                            * (SHA_BLOCKS_PER_DAY as f64))
-                            .floor() as u64
-                    }
-                };
-                // Can't be more than the max reward for a day
-                let estimated_earnings = std::cmp::min(
-                    estimated_earnings,
-                    block_reward.as_u64() * SHA_BLOCKS_PER_DAY,
-                );
-                status.estimated_earnings = estimated_earnings;
-                status.is_available = self.is_available;
-                Ok(status)
-            }
-            None => Ok(GpuMinerStatus {
-                hash_rate: 0,
-                estimated_earnings: 0,
-                is_mining: false,
-                is_available: self.is_available,
-            }),
-        }
     }
 
     pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {

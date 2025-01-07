@@ -81,7 +81,7 @@ root:
 loggers:
   # Route log events common to every application to all appenders
   tari::universe:
-    level: debug
+    level: info
     appenders:
       - stdout
       - default

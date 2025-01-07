@@ -20,6 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::anyhow;
+use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
+use ring::signature::{Ed25519KeyPair, KeyPair};
+use ring_compat::pkcs8::{spki::AlgorithmIdentifier, SubjectPublicKeyInfo};
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "airdrop-env")]
@@ -76,6 +80,39 @@ impl Default for AppInMemoryConfig {
             telemetry_api_url: "https://ut.tari.com/push".into(),
         }
     }
+}
+
+const AIRDROP_WEBSOCKET_CRYPTO_KEY: &str = match option_env!("AIRDROP_WEBSOCKET_CRYPTO_KEY") {
+    Some(value) => value,
+    None => "302e020100300506032b65700422042030f9f3e8ba7cac3d648b059f2fd5c5a6394caab46bdbb002e6989c883137b799",
+};
+
+pub fn get_websocket_key() -> anyhow::Result<Ed25519KeyPair> {
+    let decoded_str = hex::decode(AIRDROP_WEBSOCKET_CRYPTO_KEY)?;
+    match Ed25519KeyPair::from_pkcs8_maybe_unchecked(&decoded_str) {
+        Ok(key) => Ok(key),
+        Err(e) => Err(anyhow!(e.to_string())),
+    }
+}
+
+pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<String> {
+    let pub_key_bytes = key_pair.public_key().as_ref();
+
+    let algorithm_identifier: AlgorithmIdentifier<()> = AlgorithmIdentifier {
+        oid: ObjectIdentifier::new("1.3.101.112").map_err(|e| anyhow::anyhow!(e.to_string()))?,
+        parameters: None, // No parameters for Ed25519
+    };
+
+    let subject_public_key =
+        BitString::from_bytes(pub_key_bytes).map_err(|e| anyhow::anyhow!(e.to_string()))?;
+
+    let spki = SubjectPublicKeyInfo {
+        algorithm: algorithm_identifier,
+        subject_public_key,
+    };
+
+    let der_encoded = spki.to_der().map_err(|e| anyhow::anyhow!(e.to_string()))?;
+    Ok(hex::encode(der_encoded))
 }
 
 impl AppInMemoryConfig {
