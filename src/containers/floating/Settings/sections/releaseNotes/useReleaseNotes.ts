@@ -32,20 +32,22 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
 
         const currentAppVersion = packageInfo.version;
 
-        fetchReleaseNotes()
-            .then((notes) => {
-                const releaseNotesVersion = getLatestVersionFromChangelog(notes);
+        invoke('get_last_changelog_version').then((lastSavedChangelogVersion: unknown) => {
+            if (lastSavedChangelogVersion === currentAppVersion) return;
 
-                invoke('get_last_changelog_version').then((lastSavedChangelogVersion: unknown) => {
+            fetchReleaseNotes()
+                .then((notes) => {
+                    const releaseNotesVersion = getLatestVersionFromChangelog(notes);
+
                     if (releaseNotesVersion != lastSavedChangelogVersion && currentAppVersion === releaseNotesVersion) {
-                        invoke('set_last_changelog_version', { version: releaseNotesVersion });
                         setDialogToShow('releaseNotes');
+                        invoke('set_last_changelog_version', { version: releaseNotesVersion });
                     }
+                })
+                .catch((error) => {
+                    console.error('Failed to fetch release notes:', error);
                 });
-            })
-            .catch((error) => {
-                console.error('Failed to fetch release notes:', error);
-            });
+        });
     }, [triggerEffect, setDialogToShow]);
 
     return { fetchReleaseNotes, CHANGELOG_URL };
