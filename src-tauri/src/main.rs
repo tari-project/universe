@@ -31,7 +31,7 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use serde_json::json;
-use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
+use std::fs::{remove_dir_all, remove_file};
 use std::ops::Deref;
 use std::path::Path;
 use tauri_plugin_cli::CliExt;
