@@ -211,9 +211,8 @@ impl BinaryManager {
 
         self.adapter
             .find_version_for_platform(version_info)
-            .map(|asset| {
+            .inspect(|_asset| {
                 debug!(target: LOG_TARGET, "Found asset for version: {:?}", selected_version);
-                asset
             })
             .map_err(|error| {
                 anyhow!(
