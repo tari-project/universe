@@ -947,7 +947,9 @@ fn main() {
             commands::try_update,
             commands::get_network,
             commands::sign_ws_data,
-        ])
+            commands::get_last_changelog_version,
+            commands::set_last_changelog_version
+            ])
         .build(tauri::generate_context!())
         .inspect_err(
             |e| error!(target: LOG_TARGET, "Error while building tauri application: {:?}", e),

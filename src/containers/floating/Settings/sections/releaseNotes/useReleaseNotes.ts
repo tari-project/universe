@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useUIStore } from '@app/store/useUIStore';
 import packageInfo from '../../../../../../package.json';
+import { invoke } from '@tauri-apps/api/core';
 
 interface UseReleaseNotesOptions {
     triggerEffect?: boolean;
@@ -29,7 +30,7 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
     useEffect(() => {
         if (!triggerEffect) return;
 
-        const appVersion = packageInfo.version;
+        const currentAppVersion = packageInfo.version;
 
         // TODO: Need to save the fetched releaseNotesVersion to persistant storage
         //       and compare it with the appVersion to determine if the release notes
@@ -39,9 +40,12 @@ export function useReleaseNotes(options: UseReleaseNotesOptions = {}) {
             .then((notes) => {
                 const releaseNotesVersion = getLatestVersionFromChangelog(notes);
 
-                if (releaseNotesVersion === appVersion) {
-                    setDialogToShow('releaseNotes');
-                }
+                invoke('get_last_changelog_version').then((lastSavedChangelogVersion: unknown) => {
+                    if (releaseNotesVersion != lastSavedChangelogVersion && currentAppVersion === releaseNotesVersion) {
+                        invoke('set_last_changelog_version', { version: releaseNotesVersion });
+                        setDialogToShow('releaseNotes');
+                    }
+                });
             })
             .catch((error) => {
                 console.error('Failed to fetch release notes:', error);

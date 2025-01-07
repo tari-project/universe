@@ -36,6 +36,7 @@ use tari_common::configuration::Network;
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
+const UNIVERSE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::struct_excessive_bools)]
@@ -112,6 +113,8 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default = "default_changelog_version")]
+    last_changelog_version: String,
 }
 
 impl Default for AppConfigFromFile {
@@ -154,6 +157,7 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
         }
     }
 }
@@ -267,6 +271,7 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    last_changelog_version: String,
 }
 
 impl AppConfig {
@@ -312,6 +317,7 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
         }
     }
 
@@ -389,6 +395,7 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.last_changelog_version = config.last_changelog_version;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -466,6 +473,10 @@ impl AppConfig {
 
     pub fn anon_id(&self) -> &str {
         &self.anon_id
+    }
+
+    pub fn last_changelog_version(&self) -> &str {
+        &self.last_changelog_version
     }
 
     pub async fn set_mode(
@@ -744,6 +755,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_last_changelog_version(
+        &mut self,
+        version: String,
+    ) -> Result<(), anyhow::Error> {
+        self.last_changelog_version = version;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -791,6 +811,7 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            last_changelog_version: self.last_changelog_version.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -885,4 +906,8 @@ fn default_window_settings() -> Option<WindowSettings> {
 
 fn default_p2pool_stats_server_port() -> Option<u16> {
     None
+}
+
+fn default_changelog_version() -> String {
+    UNIVERSE_VERSION.clone().into()
 }

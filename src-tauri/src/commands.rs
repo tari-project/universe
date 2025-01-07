@@ -745,6 +745,18 @@ pub async fn get_transaction_history(
 }
 
 #[tauri::command]
+pub async fn get_last_changelog_version(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    let timer = Instant::now();
+    let last_changelog_version = state.config.read().await.last_changelog_version().into();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_last_changelog_version took too long: {:?}", timer.elapsed());
+    }
+    Ok(last_changelog_version)
+}
+
+#[tauri::command]
 pub async fn import_seed_words(
     seed_words: Vec<String>,
     _window: tauri::Window,
@@ -1727,5 +1739,28 @@ pub async fn proceed_with_update(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_last_changelog_version(
+    version: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+
+    state
+        .config
+        .write()
+        .await
+        .set_last_changelog_version(version)
+        .await
+        .inspect_err(|e| error!("error at set_last_changelog_version{:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_last_changelog_version took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
