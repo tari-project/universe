@@ -614,19 +614,19 @@ async fn handle_telemetry_data(
                             window
                                 .emit("UserPoints", emit_data)
                                 .map_err(|e| {
-                                    error!("could not send user points as an event: {:?}", e)
+                                    error!("could not send user points as an event: {}", e)
                                 })
                                 .unwrap_or(());
                         }
                     }
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET,"Error sending telemetry data: {:?}", e);
+                    error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
                 }
             }
         }
         Err(e) => {
-            error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
+            error!(target: LOG_TARGET,"Error getting telemetry data: {}", e);
         }
     }
 }
