@@ -337,7 +337,6 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
         {
             let tx = message.transaction.expect("Transaction not found");
-            println!("=========== TX BLOCK: {:?}", tx.mined_in_block_height);
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
@@ -357,6 +356,8 @@ impl WalletStatusMonitor {
                 break;
             }
         }
+
+        self.completed_transactions_stream.lock().await.replace(stream);
         Ok(transactions)
     }
 
