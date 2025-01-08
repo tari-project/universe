@@ -58,17 +58,6 @@ pub enum HardwareVendor {
 }
 
 impl HardwareVendor {
-    #[allow(clippy::inherent_to_string)]
-    pub fn to_string(&self) -> String {
-        match self {
-            HardwareVendor::Nvidia => "Nvidia".to_string(),
-            HardwareVendor::Amd => "Amd".to_string(),
-            HardwareVendor::Intel => "Intel".to_string(),
-            HardwareVendor::Apple => "Apple".to_string(),
-            HardwareVendor::Unknown => "Unknown".to_string(),
-        }
-    }
-
     pub fn is_nvidia(&self, vendor: &str) -> bool {
         vendor.to_lowercase().contains("nvidia")
     }
