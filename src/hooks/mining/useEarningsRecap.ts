@@ -1,4 +1,4 @@
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { handleWinRecap, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
@@ -8,7 +8,6 @@ const appWindow = getCurrentWindow();
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const handleWinRecap = useBlockchainVisualisationStore((s) => s.handleWinRecap);
     const transactions = useWalletStore((s) => s.transactions);
 
     const getMissedEarnings = useCallback(() => {
@@ -21,7 +20,7 @@ export default function useEarningsRecap() {
                 handleWinRecap({ count, totalEarnings });
             }
         }
-    }, [handleWinRecap, recapIds, transactions]);
+    }, [recapIds, transactions]);
 
     useEffect(() => {
         const handler = async () => {

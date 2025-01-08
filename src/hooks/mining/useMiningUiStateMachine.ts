@@ -2,12 +2,13 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { setAnimationState } from '@app/visuals';
 import { useEffect } from 'react';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const cpuIsMining = useMiningStore((s) => s.cpu.mining.is_mining);
-    const gpuIsMining = useMiningStore((s) => s.gpu.mining.is_mining);
+    const cpuIsMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
+    const gpuIsMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const isMining = cpuIsMining || gpuIsMining;
 
