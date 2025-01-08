@@ -30,6 +30,7 @@ use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 #[derive(thiserror::Error, Debug)]
@@ -57,11 +58,14 @@ impl Clone for WalletManager {
 }
 
 impl WalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+    pub fn new(
+        node_manager: NodeManager,
+        wallet_watch_tx: watch::Sender<Option<WalletBalance>>,
+    ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
-        let adapter = WalletAdapter::new(use_tor);
+        let adapter = WalletAdapter::new(use_tor, wallet_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter);
 
         Self {
@@ -114,20 +118,6 @@ impl WalletManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.view_private_key = view_private_key;
         process_watcher.adapter.spend_key = spend_key;
-    }
-
-    pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        process_watcher
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_balance()
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
     }
 
     pub async fn get_transaction_history(

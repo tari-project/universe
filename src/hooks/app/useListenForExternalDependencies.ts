@@ -17,5 +17,6 @@ export function useListenForExternalDependencies() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [loadExternalDependencies, setShowExternalDependenciesDialog]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 }

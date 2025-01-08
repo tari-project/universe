@@ -12,8 +12,7 @@ export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const restartMining = useMiningStore((s) => s.restartMining);
-    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } =
-        useAirdropStore();
+    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
@@ -25,7 +24,8 @@ export default function LoggedOut() {
                 );
             }
         },
-        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [backendInMemoryConfig?.airdropTwitterAuthUrl]
     );
 
     useEffect(() => {
@@ -61,7 +61,8 @@ export default function LoggedOut() {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, restartMining, setAirdropTokens, setAuthUuid, setUserPoints]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 

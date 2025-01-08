@@ -1,12 +1,14 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
+import { deepEqual } from '@app/utils/objectDeepEqual';
 import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export const useAirdropUserPointsListener = () => {
     const setUserPoints = useAirdropStore((state) => state?.setUserPoints);
     const currentReferralData = useAirdropStore((state) => state?.referralCount);
     const bonusTiers = useAirdropStore((state) => state.bonusTiers);
     const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
+    const cachedUserPoints = useRef<UserPoints>();
 
     const handleAirdropPoints = useCallback(
         (pointsPayload: UserPoints) => {
@@ -22,12 +24,15 @@ export const useAirdropUserPointsListener = () => {
                 setUserPoints(pointsPayload);
             }
         },
-        [bonusTiers, currentReferralData?.count, setFlareAnimationType, setUserPoints]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [bonusTiers, currentReferralData?.count]
     );
 
     useEffect(() => {
         const ul = listen('UserPoints', ({ payload }) => {
-            if (payload) {
+            if (!payload) return;
+            const payloadChanged = !deepEqual(payload as UserPoints, cachedUserPoints.current);
+            if (payloadChanged) {
                 handleAirdropPoints(payload as UserPoints);
             }
         });

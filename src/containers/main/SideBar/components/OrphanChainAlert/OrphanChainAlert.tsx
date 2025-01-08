@@ -47,7 +47,7 @@ export const OrphanChainAlert = () => {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setIsOrphanChain]);
+    }, []);
 
     const steps = Array.from({ length: 6 }).map((_, i) => t(`mining-view:orphan-chain-tooltip.step_${i + 1}`));
 

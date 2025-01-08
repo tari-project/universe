@@ -60,15 +60,6 @@ pub struct AskForUpdatePayload {
     pub version: String,
 }
 
-impl AskForUpdatePayload {
-    pub fn new(version: String) -> Self {
-        Self {
-            event_type: "ask_for_update".to_string(),
-            version,
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct UpdatesManager {
     config: Arc<RwLock<AppConfig>>,
@@ -211,11 +202,11 @@ impl UpdatesManager {
                     }
                 },
                 || {
-                    app.restart();
+                    info!(target: LOG_TARGET, "Latest version download finished");
                 },
             )
             .await?;
 
-        Ok(())
+        app.restart();
     }
 }
