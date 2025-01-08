@@ -1,6 +1,5 @@
-import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
-import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { TariWalletDetails, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 interface State extends WalletBalance {
@@ -14,7 +13,7 @@ interface State extends WalletBalance {
 }
 
 interface Actions {
-    fetchWalletDetails: () => Promise<void>;
+    setWalletDetails: (tari_wallet_details: TariWalletDetails) => void;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
     setTransactions: (transactions?: TransactionInfo[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
@@ -37,28 +36,21 @@ const initialState: State = {
 
 export const useWalletStore = create<WalletStoreState>()((set) => ({
     ...initialState,
-    fetchWalletDetails: async () => {
-        try {
-            const tari_wallet_details = await invoke('get_tari_wallet_details');
-            const {
-                available_balance = 0,
-                timelocked_balance = 0,
-                pending_incoming_balance = 0,
-            } = tari_wallet_details.wallet_balance || {};
-            // Q: Should we subtract pending_outgoing_balance here?
-            const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+    setWalletDetails: (tari_wallet_details) => {
+        const {
+            available_balance = 0,
+            timelocked_balance = 0,
+            pending_incoming_balance = 0,
+        } = tari_wallet_details.wallet_balance || {};
+        // Q: Should we subtract pending_outgoing_balance here?
+        const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
 
-            set({
-                ...tari_wallet_details.wallet_balance,
-                tari_address_base58: tari_wallet_details.tari_address_base58,
-                tari_address_emoji: tari_wallet_details.tari_address_emoji,
-                balance: tari_wallet_details?.wallet_balance ? newBalance : null,
-            });
-        } catch (error) {
-            if (error !== ALREADY_FETCHING.BALANCE) {
-                console.error('Could not get tari wallet details: ', error);
-            }
-        }
+        set({
+            ...tari_wallet_details.wallet_balance,
+            tari_address_base58: tari_wallet_details.tari_address_base58,
+            tari_address_emoji: tari_wallet_details.tari_address_emoji,
+            balance: tari_wallet_details?.wallet_balance ? newBalance : null,
+        });
     },
     setTransactions: (transactions) => set({ transactions }),
     setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),

@@ -1,14 +1,13 @@
-import { GpuThreads, MaxConsumptionLevels, MinerMetrics } from '@app/types/app-status';
+import { MaxConsumptionLevels } from '@app/types/app-status';
 import { create } from './create';
 import * as Sentry from '@sentry/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from './appStateStore';
-import { useAppConfigStore } from './useAppConfigStore';
-import { modeType } from './types';
 
-import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { pauseMining, startMining } from '@app/store/miningStoreActions.ts';
 
-interface State extends MinerMetrics {
+interface State {
     hashrateReady?: boolean;
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
@@ -21,16 +20,7 @@ interface State extends MinerMetrics {
 }
 
 interface Actions {
-    setMiningMetrics: (metrics: MinerMetrics, isNewBlock?: boolean) => void;
-    startMining: () => Promise<void>;
-    stopMining: () => Promise<void>;
-    pauseMining: () => Promise<void>;
     restartMining: () => Promise<void>;
-    changeMiningMode: (params: {
-        mode: modeType;
-        customGpuLevels?: GpuThreads[];
-        customCpuLevels?: number;
-    }) => Promise<void>;
     setMiningNetwork: () => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
     setIsChangingMode: (isChangingMode: boolean) => void;
@@ -42,8 +32,6 @@ type MiningStoreState = State & Actions;
 
 const initialState: State = {
     customLevelsDialogOpen: false,
-    sha_network_hash_rate: 0,
-    randomx_network_hash_rate: 0,
     maxAvailableThreads: undefined,
     counter: 0,
     hashrateReady: false,
@@ -53,37 +41,11 @@ const initialState: State = {
 
     network: 'unknown',
     excludedGpuDevices: [],
-    cpu: {
-        hardware: [],
-        mining: {
-            is_mining: false,
-            hash_rate: 0,
-            estimated_earnings: 0,
-            connection: { is_connected: false },
-        },
-    },
-    gpu: {
-        hardware: [],
-        mining: {
-            is_mining: false,
-            hash_rate: 0,
-            estimated_earnings: 0,
-            is_available: true,
-        },
-    },
-    base_node: {
-        block_height: 0,
-        block_time: 0,
-        is_synced: false,
-        is_connected: false,
-        connected_peers: [],
-    },
 };
 
-export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
+export const useMiningStore = create<MiningStoreState>()((set) => ({
     ...initialState,
     setCustomLevelsDialogOpen: (customLevelsDialogOpen) => set({ customLevelsDialogOpen }),
-    setMiningMetrics: (metrics) => set({ ...metrics }),
     setMiningNetwork: async () => {
         try {
             const network = (await invoke('get_network', {})) as string;
@@ -94,47 +56,6 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             console.error('Could not get network: ', e);
             appStateStore.setError(e as string);
             set({ excludedGpuDevices: undefined });
-        }
-    },
-    startMining: async () => {
-        console.info('Mining starting....');
-        set({ miningInitiated: true });
-        useBlockchainVisualisationStore
-            .getState()
-            .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
-        try {
-            await invoke('start_mining', {});
-            console.info('Mining started.');
-        } catch (e) {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Failed to start mining: ', e);
-            appStateStore.setError(e as string);
-            set({ miningInitiated: false });
-        }
-    },
-    stopMining: async () => {
-        console.info('Mining stopping...');
-        set({ miningInitiated: false });
-        try {
-            await invoke('stop_mining', {});
-            console.info('Mining stopped.');
-        } catch (e) {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Failed to stop mining: ', e);
-            appStateStore.setError(e as string);
-            set({ miningInitiated: true });
-        }
-    },
-    pauseMining: async () => {
-        console.info('Mining pausing...');
-        try {
-            await invoke('stop_mining', {});
-            console.info('Mining paused.');
-        } catch (e) {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Failed to pause (stop) mining: ', e);
-            appStateStore.setError(e as string);
-            set({ miningInitiated: true });
         }
     },
     getMaxAvailableThreads: async () => {
@@ -148,46 +69,19 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
             appStateStore.setError(e as string);
         }
     },
-    changeMiningMode: async (params) => {
-        const { mode, customGpuLevels, customCpuLevels } = params;
-        console.info(`Changing mode to ${mode}...`);
-        const state = getState();
-        set({ isChangingMode: true });
 
-        if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
-            console.info('Pausing mining...');
-            await state.pauseMining();
-        }
-        try {
-            const appConfigState = useAppConfigStore.getState();
-            await appConfigState.setMode({
-                mode: mode as modeType,
-                customGpuLevels: customGpuLevels || [],
-                customCpuLevels,
-            });
-            console.info(`Mode changed to ${mode}`);
-            if (state.miningInitiated) {
-                console.info('Restarting mining...');
-                await state.startMining();
-            }
-        } catch (e) {
-            console.error('Failed to change mode: ', e);
-        } finally {
-            set({ isChangingMode: false });
-        }
-    },
     restartMining: async () => {
-        const state = getState();
+        const state = useMiningMetricsStore.getState();
         if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
             console.info('Restarting mining...');
             try {
-                await state.pauseMining();
+                await pauseMining();
             } catch (e) {
                 console.error('Failed to pause(restart) mining: ', e);
             }
 
             try {
-                await state.startMining();
+                await startMining();
             } catch (e) {
                 console.error('Failed to start(restart) mining: ', e);
             }

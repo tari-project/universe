@@ -1,17 +1,22 @@
-import { useCallback } from 'react';
+import { useCallback, useDeferredValue } from 'react';
 import { MinerMetrics } from '@app/types/app-status';
 
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import useFetchTx from '@app/hooks/mining/useTransactions.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function useMiningMetricsUpdater() {
     const fetchTx = useFetchTx();
-    const currentBlockHeight = useMiningStore((s) => s.base_node.block_height);
-    const setMiningMetrics = useMiningStore((s) => s.setMiningMetrics);
+
+    const setMiningMetrics = useMiningMetricsStore((s) => s.setMiningMetrics);
+    const setBaseNodeMetrics = useMiningMetricsStore((s) => s.setBaseNodeMetrics);
+    const currentBlockHeight = useMiningStore((s) => s.base_node_metrics.block_height);
     const handleNewBlock = useBlockchainVisualisationStore((s) => s.handleNewBlock);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
+
+    const deferredblock = useDeferredValue(currentBlockHeight);
 
     return useCallback(
         async (metrics: MinerMetrics) => {
@@ -20,8 +25,11 @@ export default function useMiningMetricsUpdater() {
                 if (isMining) {
                     await fetchTx();
                 }
-                const blockHeight = metrics.base_node.block_height;
-                const isNewBlock = blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight;
+                const blockHeight = metrics.base_node_metrics.block_height;
+                const isNewBlock = blockHeight > 0 && deferredblock > 0 && blockHeight > deferredblock;
+                console.debug(`isNewBlock= ${isNewBlock}`);
+                console.debug(`blockHeight= ${blockHeight}`);
+                console.debug(`deferredBlock= ${deferredblock}`);
                 if (isNewBlock) {
                     try {
                         await handleNewBlock(blockHeight, isMining);
@@ -38,6 +46,6 @@ export default function useMiningMetricsUpdater() {
                 }
             }
         },
-        [currentBlockHeight, displayBlockHeight, fetchTx, handleNewBlock, setDisplayBlockHeight, setMiningMetrics]
+        [deferredblock, displayBlockHeight, fetchTx, handleNewBlock, setDisplayBlockHeight, setMiningMetrics]
     );
 }

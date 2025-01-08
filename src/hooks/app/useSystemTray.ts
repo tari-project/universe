@@ -6,13 +6,13 @@ import {
     UNMINIMIZE_ITEM_ID,
     MINIMIZE_ITEM_ID,
 } from '@app/utils';
-import { listen } from '@tauri-apps/api/event';
-import { useCallback, useEffect, useRef } from 'react';
+
+import { useCallback, useDeferredValue, useEffect, useRef } from 'react';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { MenuItem } from '@tauri-apps/api/menu/menuItem';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { MinerMetrics } from '@app/types/app-status.ts';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 const SysTrayCopy = {
     [CPU_HASH_ITEM_ID]: (cpu: string) => `CPU Hashrate: ${cpu}`,
@@ -20,9 +20,11 @@ const SysTrayCopy = {
     [EARNINGS_ITEM_ID]: (earnings: string) => `Est earning: ${earnings} tXTM/day`,
 };
 
+const currentWindow = getCurrentWindow();
 export function useUpdateSystemTray() {
     const metrics = useMiningStore();
-    const cachedMetrics = useRef<MinerMetrics>(metrics);
+    const deferredMetrics = useDeferredValue(metrics);
+    const minimizedRef = useRef<boolean>();
 
     const updateMenuItemEnabled = useCallback(async (itemId: string, enabled: boolean) => {
         const item = await menu.get(itemId);
@@ -43,9 +45,16 @@ export function useUpdateSystemTray() {
         }
     }, []);
 
-    useEffect(() => {
-        const handleUpdateMenu = async () => {
-            const { cpu, gpu } = cachedMetrics.current || {};
+    const handleUpdateMenu = useCallback(
+        async (metrics) => {
+            const { cpu, gpu } = metrics || {};
+            const minimized = await currentWindow.isMinimized();
+
+            if (minimizedRef.current !== minimized) {
+                minimizedRef.current = minimized;
+                await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, minimized);
+                await updateMenuItemEnabled(MINIMIZE_ITEM_ID, !minimized);
+            }
 
             // --- Update CPU
             const cpuHashItemText = cpu?.mining?.hash_rate ? `${formatHashrate(cpu?.mining?.hash_rate)}` : '-';
@@ -59,22 +68,13 @@ export function useUpdateSystemTray() {
             const total = cpu_est + gpu_est;
             const totalFormatted = total > 0 ? formatNumber(total, FormatPreset.TXTM_COMPACT) : '-';
             await updateMenuItem(EARNINGS_ITEM_ID, SysTrayCopy[EARNINGS_ITEM_ID](totalFormatted));
-        };
-        void handleUpdateMenu();
-        const interval = setInterval(handleUpdateMenu, 1000 * 10); // 10s
-
-        return () => clearInterval(interval);
-    }, [updateMenuItem]);
+        },
+        [updateMenuItem, updateMenuItemEnabled]
+    );
 
     useEffect(() => {
-        const ul = listen('tray-event', async ({ payload }: { payload?: { itemId: string } }) => {
-            if (payload) {
-                await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, payload.itemId !== UNMINIMIZE_ITEM_ID);
-                await updateMenuItemEnabled(MINIMIZE_ITEM_ID, payload.itemId !== MINIMIZE_ITEM_ID);
-            }
-        });
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, [updateMenuItemEnabled]);
+        if (metrics !== deferredMetrics) {
+            handleUpdateMenu(deferredMetrics);
+        }
+    }, [deferredMetrics, handleUpdateMenu, metrics]);
 }

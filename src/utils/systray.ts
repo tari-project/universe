@@ -3,7 +3,6 @@ import { TrayIcon } from '@tauri-apps/api/tray';
 import { MenuItemOptions } from '@tauri-apps/api/menu/menuItem';
 import { PredefinedMenuItemOptions } from '@tauri-apps/api/menu/predefinedMenuItem';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { emitTo } from '@tauri-apps/api/event';
 
 const TRAY_ID = 'universe-tray-id';
 const TRAY_MENU_ID = 'universe-tray-menu-id';
@@ -31,8 +30,6 @@ async function handleMinimize(itemId: string): Promise<void> {
     if (itemId === MINIMIZE_ITEM_ID) {
         await currentWindow.minimize();
     }
-
-    await emitTo('main', 'tray-event', { itemId });
 }
 
 // TODO use translations

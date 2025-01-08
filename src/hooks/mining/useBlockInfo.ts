@@ -12,7 +12,7 @@ export function useBlockInfo() {
     const setDisplayBlockTime = useBlockchainVisualisationStore((s) => s.setDisplayBlockTime);
     const setDebugBlockTime = useBlockchainVisualisationStore((s) => s.setDebugBlockTime);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const block_time = useMiningStore((s) => s.base_node.block_time);
+    const block_time = useMiningStore((s) => s.base_node_metrics.block_time);
 
     const diff = useMemo(() => {
         const now = new Date();

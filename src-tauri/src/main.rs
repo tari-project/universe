@@ -160,7 +160,7 @@ async fn setup_inner(
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
     app.emit(
-        "message",
+        "setup_message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "starting-up".to_string(),
@@ -168,7 +168,7 @@ async fn setup_inner(
             progress: 0.0,
         },
     )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
@@ -510,7 +510,7 @@ async fn setup_inner(
     drop(
         app.clone()
             .emit(
-                "message",
+                "setup_message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title: "application-started".to_string(),
@@ -518,7 +518,9 @@ async fn setup_inner(
                     progress: 1.0,
                 },
             )
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
+            ),
     );
 
     let move_handle = app.clone();
@@ -534,6 +536,27 @@ async fn setup_inner(
             interval.tick().await;
             if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
                 drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+            }
+        }
+    });
+
+    let wallet_move_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut interval: time::Interval = time::interval(Duration::from_secs(1));
+        loop {
+            let app_state = wallet_move_handle.state::<UniverseAppState>().clone();
+
+            if app_state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
+            if let Ok(ret_wallet) = commands::get_tari_wallet_details(app_state).await {
+                drop(
+                    wallet_move_handle
+                        .clone()
+                        .emit("wallet_details", ret_wallet),
+                );
             }
         }
     });
@@ -904,7 +927,6 @@ fn main() {
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
-            commands::get_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transaction_history,
