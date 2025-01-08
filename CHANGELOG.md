@@ -1,4 +1,42 @@
-# Tari Universe - Testnet v0.8.7: "The Deep Conclave"
+# Tari Universe - Testnet v0.8.25
+
+_December 17, 2024_
+
+## 🎮 GPU Mining Enhancements
+
+-   **Mac Optimization**  
+    -   Resolved 60% nonce discard issue  
+    -   Enhanced proof of work processing efficiency  
+    -   Improved true hash rate efficiency by 60%
+
+-   **OpenSSL Updates**  
+    -   Enhanced GPU recognition system  
+    -   Fixed M Mac-specific issues
+
+## 🛠️ Platform Updates
+
+-   **Framework Improvements**  
+    -   Upgraded to Tauri V2  
+    -   Enhanced backend library integration  
+    -   Added opt-in alpha release channel in Settings  
+    -   Reduced installation error rate by 30%
+
+-   **UI Enhancements**  
+    -   Improved p2pool statistics display  
+    -   Resolved full-screen window issues  
+    -   Added orphan chain fix suggestions
+
+## ⚠️ Known Issues
+
+-   P2pool optimization pending for low hash mining (<~1000 h/s CPU)
+-   Latent shares may occur until next update
+-   30-60 minute sync time with auto solo mining during sync
+-   Intermittent hash power cycling
+-   Minor window sizing issues persist
+
+---
+
+# Tari Universe - Testnet v0.8.7
 
 _December 6, 2024_
 

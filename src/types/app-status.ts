@@ -115,6 +115,7 @@ export interface TransactionInfo {
     timestamp: number;
     message: string;
     payment_id: string;
+    mined_in_block_height?: number;
 }
 
 export interface P2poolStatsResult {
