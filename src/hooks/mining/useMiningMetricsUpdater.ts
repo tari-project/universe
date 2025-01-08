@@ -20,6 +20,7 @@ export default function useMiningMetricsUpdater() {
                 const isNewBlock = blockHeight > 0 && deferredblock > 0 && blockHeight > deferredblock;
 
                 if (isNewBlock) {
+                    console.debug('isNewBlock', deferredblock, blockHeight);
                     try {
                         await handleNewBlock(blockHeight, isMining);
                     } catch (_) {

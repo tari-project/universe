@@ -1,6 +1,8 @@
 import { create } from './create';
 import { TariWalletDetails, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
@@ -63,3 +65,28 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
         }
     },
 }));
+
+export const handleTransactions = async () => {
+    let transactions: TransactionInfo[] = [];
+    const setupProgress = useAppStateStore.getState().setupProgress;
+    if (useWalletStore.getState().isTransactionLoading || setupProgress < 0.75) {
+        return;
+    }
+    try {
+        useWalletStore.setState({ isTransactionLoading: true });
+        const txs = await invoke('get_transaction_history');
+        const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
+        if (sortedTransactions?.length) {
+            useWalletStore.setState({ transactions: sortedTransactions });
+            transactions = sortedTransactions;
+        }
+    } catch (error) {
+        if (error !== ALREADY_FETCHING.HISTORY) {
+            console.error('Could not get transaction history: ', error);
+        }
+    } finally {
+        useWalletStore.setState({ isTransactionLoading: false });
+    }
+
+    return transactions;
+};

@@ -4,7 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useWalletStore } from './useWalletStore.ts';
+import { handleTransactions } from './useWalletStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -121,11 +121,12 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
 };
 export const handleNewBlock = async (newBlockHeight: number, isMining?: boolean) => {
     if (isMining) {
+        const tx = await handleTransactions();
         const canAnimate = await checkCanAnimate();
-        const latestTransaction = useWalletStore.getState().transactions?.[0];
-        const latestTxBlock = latestTransaction?.message?.split(': ')?.[1];
-        if (latestTxBlock === newBlockHeight.toString()) {
-            await handleWin({ latestTx: latestTransaction, canAnimate });
+        const latestTx = tx?.[0];
+        const latestTxBlock = latestTx?.mined_in_block_height;
+        if (latestTx && latestTxBlock === newBlockHeight) {
+            await handleWin({ latestTx, canAnimate });
         } else {
             await handleFail(newBlockHeight, canAnimate);
         }
