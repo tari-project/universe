@@ -11,8 +11,9 @@ import { useCallback, useDeferredValue, useEffect, useRef } from 'react';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { MenuItem } from '@tauri-apps/api/menu/menuItem';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { MinerMetrics } from '@app/types/app-status.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const SysTrayCopy = {
     [CPU_HASH_ITEM_ID]: (cpu: string) => `CPU Hashrate: ${cpu}`,
@@ -22,7 +23,7 @@ const SysTrayCopy = {
 
 const currentWindow = getCurrentWindow();
 export function useUpdateSystemTray() {
-    const metrics = useMiningStore();
+    const metrics = useMiningMetricsStore((s) => s);
     const deferredMetrics = useDeferredValue(metrics);
     const minimizedRef = useRef<boolean>();
 
@@ -46,7 +47,7 @@ export function useUpdateSystemTray() {
     }, []);
 
     const handleUpdateMenu = useCallback(
-        async (metrics) => {
+        async (metrics: MinerMetrics) => {
             const { cpu, gpu } = metrics || {};
             const minimized = await currentWindow.isMinimized();
 
@@ -73,7 +74,7 @@ export function useUpdateSystemTray() {
     );
 
     useEffect(() => {
-        if (metrics !== deferredMetrics) {
+        if (deferredMetrics && metrics !== deferredMetrics) {
             handleUpdateMenu(deferredMetrics);
         }
     }, [deferredMetrics, handleUpdateMenu, metrics]);

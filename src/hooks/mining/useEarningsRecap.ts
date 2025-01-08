@@ -3,9 +3,6 @@ import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
-import { getCurrentWindow } from '@tauri-apps/api/window';
-const appWindow = getCurrentWindow();
-
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
     const transactions = useWalletStore((s) => s.transactions);
@@ -23,16 +20,11 @@ export default function useEarningsRecap() {
     }, [recapIds, transactions]);
 
     useEffect(() => {
-        const handler = async () => {
-            const minimized = await appWindow?.isMinimized();
+        const listener = listen<string>('tauri://focus', () => {
             const documentIsVisible = document?.visibilityState === 'visible' || false;
-            if (documentIsVisible && !minimized) {
+            if (documentIsVisible) {
                 getMissedEarnings();
             }
-        };
-
-        const listener = listen<string>('tauri://focus', async () => {
-            await handler();
         });
 
         return () => {

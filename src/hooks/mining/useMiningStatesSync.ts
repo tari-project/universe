@@ -1,6 +1,6 @@
 import { MinerMetrics, TariWalletDetails } from '@app/types/app-status';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect, useRef } from 'react';
+import { useDeferredValue, useEffect, useRef } from 'react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -16,7 +16,6 @@ export function useMiningStatesSync() {
     const setWalletDetails = useWalletStore((s) => s.setWalletDetails);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
-
     const prevMetricsPayload = useRef<MinerMetrics>();
     const prevWalletPayload = useRef<TariWalletDetails>();
 

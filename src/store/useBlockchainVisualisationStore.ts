@@ -35,14 +35,6 @@ interface Actions {
 
 type BlockchainVisualisationStoreState = State & Actions;
 
-const checkCanAnimate = async () => {
-    const focused = await appWindow?.isFocused();
-    const minimized = await appWindow?.isMinimized();
-    const documentIsVisible = document?.visibilityState === 'visible' || false;
-
-    return !minimized && (focused || documentIsVisible);
-};
-
 const getSuccessTier = (earnings: number) => {
     const humanValue = earnings / 1_000_000;
     if (humanValue < 100) {
@@ -122,9 +114,12 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
 export const handleNewBlock = async (newBlockHeight: number, isMining?: boolean) => {
     if (isMining) {
         const tx = await handleTransactions();
-        const canAnimate = await checkCanAnimate();
+        const minimized = await appWindow?.isMinimized();
+        const documentIsVisible = document?.visibilityState === 'visible' || false;
+        const canAnimate = !minimized && documentIsVisible;
         const latestTx = tx?.[0];
         const latestTxBlock = latestTx?.mined_in_block_height;
+
         if (latestTx && latestTxBlock === newBlockHeight) {
             await handleWin({ latestTx, canAnimate });
         } else {
