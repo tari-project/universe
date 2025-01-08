@@ -123,7 +123,7 @@ impl ProgressTrackerInner {
         }
         self.app_handle
             .emit(
-                "setup_message",
+                "message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title,
@@ -131,9 +131,7 @@ impl ProgressTrackerInner {
                     progress: progress_percentage,
                 },
             )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            )
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))
             .ok();
     }
 }

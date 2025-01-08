@@ -26,7 +26,6 @@ export function useMiningStatesSync() {
     useEffect(() => {
         if (setupProgress < 0.75) return;
         const ul = listen('wallet_details', ({ payload }) => {
-            console.debug(payload);
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as TariWalletDetails, prevWalletPayload.current);
             if (payloadChanged) {

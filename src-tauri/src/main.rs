@@ -536,6 +536,23 @@ async fn setup_inner(
         }
     });
 
+    let w_move_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut interval: time::Interval = time::interval(Duration::from_secs(10));
+        loop {
+            let app_state = w_move_handle.state::<UniverseAppState>().clone();
+
+            if app_state.shutdown.is_triggered() {
+                break;
+            }
+
+            interval.tick().await;
+            if let Ok(wallet) = commands::emit_tari_wallet_details(app_state).await {
+                drop(w_move_handle.emit("wallet_details", wallet));
+            }
+        }
+    });
+
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
@@ -902,6 +919,7 @@ fn main() {
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
+            commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transaction_history,
