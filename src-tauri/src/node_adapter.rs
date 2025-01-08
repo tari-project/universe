@@ -468,7 +468,7 @@ impl MinotariNodeStatusMonitor {
                 .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
-            if tip_res.initial_sync_achieved {
+            if tip_res.initial_sync_achieved && sync_progress.initial_connected_peers > 0 {
                 break Ok(());
             }
 
