@@ -125,7 +125,7 @@ jobs:
         run: |
           cargo install tauri-cli --version "2.1.0" --locked
           cargo tauri --version
-          cargo tauri build --ci --bundles deb
+          cargo tauri build --ci --no-bundle
 
   file-licenses:
     name: file-licenses
