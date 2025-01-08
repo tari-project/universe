@@ -1,6 +1,6 @@
 import { MinerMetrics, TariWalletDetails } from '@app/types/app-status';
 import { listen } from '@tauri-apps/api/event';
-import { useDeferredValue, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -25,7 +25,8 @@ export function useMiningStatesSync() {
 
     useEffect(() => {
         if (setupProgress < 0.75) return;
-        const ul = listen('wallet_details', async ({ payload }) => {
+        const ul = listen('wallet_details', ({ payload }) => {
+            console.debug(payload);
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as TariWalletDetails, prevWalletPayload.current);
             if (payloadChanged) {

@@ -53,7 +53,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 
@@ -659,25 +659,6 @@ pub async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
-}
-
-#[tauri::command]
-pub async fn get_tari_wallet_details(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<TariWalletDetails, String> {
-    let timer = Instant::now();
-    let tari_address = state.tari_address.read().await;
-    let wallet_balance = state.wallet_latest_balance.borrow().clone();
-    let result = TariWalletDetails {
-        wallet_balance,
-        tari_address_base58: tari_address.to_base58(),
-        tari_address_emoji: tari_address.to_emoji_string(),
-    };
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(result)
 }
 
 #[tauri::command]
@@ -1401,7 +1382,6 @@ pub async fn set_visual_mode<'r>(
 
 #[tauri::command]
 pub async fn setup_application(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<bool, String> {
@@ -1413,7 +1393,7 @@ pub async fn setup_application(
         return Ok(res);
     }
     rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
+    setup_inner(state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         sentry::capture_event(Event {
             level: sentry::Level::Error,

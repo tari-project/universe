@@ -119,7 +119,6 @@ mod tests;
 mod tor_adapter;
 mod tor_manager;
 mod updates_manager;
-mod user_listener;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
@@ -155,12 +154,11 @@ struct CriticalProblemEvent {
 
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
     app.emit(
-        "setup_message",
+        "message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "starting-up".to_string(),
@@ -168,7 +166,7 @@ async fn setup_inner(
             progress: 0.0,
         },
     )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
+    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
@@ -242,7 +240,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone(), window.clone())
+        .initialize(state.airdrop_access_token.clone(), app.clone())
         .await?;
 
     let mut binary_resolver = BinaryResolver::current().write().await;
@@ -510,7 +508,7 @@ async fn setup_inner(
     drop(
         app.clone()
             .emit(
-                "setup_message",
+                "message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title: "application-started".to_string(),
@@ -518,9 +516,7 @@ async fn setup_inner(
                     progress: 1.0,
                 },
             )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            ),
+            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
     );
 
     let move_handle = app.clone();
@@ -536,27 +532,6 @@ async fn setup_inner(
             interval.tick().await;
             if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
                 drop(move_handle.clone().emit("miner_metrics", metrics_ret));
-            }
-        }
-    });
-
-    let wallet_move_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let mut interval: time::Interval = time::interval(Duration::from_secs(1));
-        loop {
-            let app_state = wallet_move_handle.state::<UniverseAppState>().clone();
-
-            if app_state.shutdown.is_triggered() {
-                break;
-            }
-
-            interval.tick().await;
-            if let Ok(ret_wallet) = commands::get_tari_wallet_details(app_state).await {
-                drop(
-                    wallet_move_handle
-                        .clone()
-                        .emit("wallet_details", ret_wallet),
-                );
             }
         }
     });

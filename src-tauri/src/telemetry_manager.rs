@@ -281,11 +281,11 @@ impl TelemetryManager {
     pub async fn initialize(
         &mut self,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
-        window: tauri::Window,
+        app: tauri::AppHandle,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
         self.airdrop_access_token = airdrop_access_token.clone();
-        self.start_telemetry_process(TelemetryFrequency::default().into(), window)
+        self.start_telemetry_process(TelemetryFrequency::default().into(), app.clone())
             .await?;
         Ok(())
     }
@@ -293,7 +293,7 @@ impl TelemetryManager {
     async fn start_telemetry_process(
         &mut self,
         timeout: Duration,
-        window: tauri::Window,
+        app: tauri::AppHandle,
     ) -> Result<(), TelemetryManagerError> {
         let cpu_miner = self.cpu_miner.clone();
         let gpu_status = self.gpu_status.clone();
@@ -315,7 +315,7 @@ impl TelemetryManager {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_manager_cloned, &config, network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app.clone()).await;
                         }
                         sleep(timeout);
                     }
@@ -578,7 +578,7 @@ async fn handle_telemetry_data(
     telemetry: Result<TelemetryData, TelemetryManagerError>,
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
-    window: tauri::Window,
+    app: tauri::AppHandle,
 ) {
     match telemetry {
         Ok(telemetry) => {
@@ -611,8 +611,7 @@ async fn handle_telemetry_data(
                                 referral_count: response_inner,
                             };
 
-                            window
-                                .emit("UserPoints", emit_data)
+                            app.emit("UserPoints", emit_data)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {:?}", e)
                                 })
