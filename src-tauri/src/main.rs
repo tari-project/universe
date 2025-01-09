@@ -97,7 +97,6 @@ mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
 mod hardware;
-mod hardware_monitor;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
