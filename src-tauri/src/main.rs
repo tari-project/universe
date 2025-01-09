@@ -522,17 +522,19 @@ async fn setup_inner(
 
     let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
+        let app_state = move_handle.state::<UniverseAppState>().clone();
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
         loop {
-            let app_state = move_handle.state::<UniverseAppState>().clone();
-
-            if app_state.shutdown.is_triggered() {
-                break;
-            }
-
-            interval.tick().await;
-            if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
-                drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone()).await {
+                        drop(move_handle.emit("miner_metrics", metrics_ret));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
         }
     });

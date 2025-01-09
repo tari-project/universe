@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StagedSecuritySectionType } from '../../StagedSecurity';
 import { BlackButton, Text, Title } from '../../styles';
 import {
@@ -28,11 +28,18 @@ interface Props {
     words: string[];
 }
 
+const seedWordGroups = (words: string[]) => {
+    const groups: string[][] = [];
+    for (let i = 0; i < words.length; i += 6) {
+        groups.push(words.slice(i, i + 6));
+    }
+    return groups;
+};
+
 const SeedPhrase = ({ setSection, words }: Props) => {
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const [checked, setChecked] = useState(false);
-    const [wordGroups, setWordGroups] = useState<string[][]>([]);
 
     const handleCopy = () => {
         copyToClipboard(words.join(' '));
@@ -41,16 +48,6 @@ const SeedPhrase = ({ setSection, words }: Props) => {
     const handleCheckboxClick = () => {
         setChecked(!checked);
     };
-
-    useEffect(() => {
-        const groups: string[][] = [];
-        for (let i = 0; i < words.length; i += 6) {
-            groups.push(words.slice(i, i + 6));
-        }
-        if (groups.length) {
-            setWordGroups(groups);
-        }
-    }, [words]);
 
     return (
         <Wrapper>
@@ -61,7 +58,7 @@ const SeedPhrase = ({ setSection, words }: Props) => {
 
             <PhraseWrapper>
                 <WordList>
-                    {wordGroups.map((group, groupIndex) => (
+                    {seedWordGroups(words).map((group, groupIndex) => (
                         <GroupCol key={groupIndex}>
                             <WordColumn key={groupIndex}>
                                 {group.map((word, index) => (
