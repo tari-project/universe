@@ -173,10 +173,6 @@ impl ProcessAdapter for WalletAdapter {
             warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
         }
 
-        //  Delete any old wallets on startup
-        if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
-        }
 
         #[cfg(target_os = "windows")]
         add_firewall_rule(
