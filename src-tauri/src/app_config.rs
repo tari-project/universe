@@ -86,8 +86,11 @@ pub struct AppConfigFromFile {
     window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
-    #[serde(default = "default_false")]
+    #[serde(default = "default_true")]
     ootle_enabled: bool,
+    // enable localnet: check binaries and run base node + Ootle locally
+    #[serde(default = "default_false")]
+    ootle_localnet_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -128,7 +131,8 @@ impl Default for AppConfigFromFile {
             visual_mode: true,
             window_settings: default_window_settings(),
             show_experimental_settings: false,
-            ootle_enabled: false,
+            ootle_enabled: true,
+            ootle_localnet_enabled: false,
         }
     }
 }
@@ -241,6 +245,7 @@ pub(crate) struct AppConfig {
     window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
     ootle_enabled: bool,
+    ootle_localnet_enabled: bool,
 }
 
 impl AppConfig {
@@ -284,7 +289,8 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
-            ootle_enabled: false,
+            ootle_enabled: true,
+            ootle_localnet_enabled: false,
         }
     }
 
@@ -693,6 +699,10 @@ impl AppConfig {
         self.ootle_enabled
     }
 
+    pub fn ootle_localnet_enabled(&self) -> bool {
+        self.ootle_localnet_enabled
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -739,6 +749,7 @@ impl AppConfig {
             window_settings: self.window_settings.clone(),
             show_experimental_settings: self.show_experimental_settings,
             ootle_enabled: self.ootle_enabled,
+            ootle_localnet_enabled: self.ootle_localnet_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

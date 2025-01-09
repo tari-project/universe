@@ -333,33 +333,35 @@ async fn setup_inner(
             .await?;
     }
 
-    //TODO tari validator node binary
-    // should check for update is for now set to false
-    progress.set_max(35).await;
-    progress
-        .update(
-            "checking-latest-version-tari-validator-node".to_string(),
-            None,
-            0,
-        )
-        .await;
-    binary_resolver
-        .initalize_binary(Binaries::TariValidatorNode, progress.clone(), false)
-        .await?;
-    sleep(Duration::from_secs(1));
-    info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
+    if state.config.read().await.ootle_localnet_enabled() {
+        //TODO tari validator node binary
+        // should check for update - for now is set to false because of local build
+        progress.set_max(36).await;
+        progress
+            .update(
+                "checking-latest-version-tari-validator-node".to_string(),
+                None,
+                0,
+            )
+            .await;
+        binary_resolver
+            .initalize_binary(Binaries::TariValidatorNode, progress.clone(), false)
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
 
-    //TODO tari ootle indexer binary
-    // should check for update is for now set to false
-    progress.set_max(38).await;
-    progress
-        .update("checking-latest-version-tari-indexer".to_string(), None, 0)
-        .await;
-    binary_resolver
-        .initalize_binary(Binaries::TariIndexer, progress.clone(), false)
-        .await?;
-    sleep(Duration::from_secs(1));
-    info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
+        //TODO tari ootle indexer binary
+        // should check for update - for now is set to false because of local build
+        progress.set_max(38).await;
+        progress
+            .update("checking-latest-version-tari-indexer".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initalize_binary(Binaries::TariIndexer, progress.clone(), false)
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
+    }
 
     //drop binary resolver to release the lock
     drop(binary_resolver);
@@ -468,44 +470,48 @@ async fn setup_inner(
         progress.set_max(90).await;
         progress.update("starting-ootle".to_string(), None, 0).await;
 
-        let base_node_grpc = state.node_manager.get_grpc_port().await?;
-        let validator_node_config = ValidatorNodeConfig::builder()
-            .with_base_node(base_node_grpc)
-            .with_base_path(&data_dir)
-            .build()?;
-        info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT VN {:?}", &base_node_grpc);
+        // run localnet
+        if state.config.read().await.ootle_localnet_enabled() {
+            let base_node_grpc = state.node_manager.get_grpc_port().await?;
+            let validator_node_config = ValidatorNodeConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(&data_dir)
+                .build()?;
+            info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT VN {:?}", &base_node_grpc);
 
-        state
-            .validator_node_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                validator_node_config,
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
+            state
+                .validator_node_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    validator_node_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
 
-        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
 
-        let indexer_config = IndexerConfig::builder()
-            .with_base_node(base_node_grpc)
-            .with_base_path(data_dir.clone())
-            .build()?;
+            let indexer_config = IndexerConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(data_dir.clone())
+                .build()?;
 
-        state
-            .indexer_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                indexer_config,
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
-            .await?;
+            state
+                .indexer_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    indexer_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
 
-        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+        }
 
+        // run ootle wallet daemon & db
         progress.set_max(90).await;
         progress
             .update("establishing-db-connection".to_string(), None, 0)
@@ -557,7 +563,7 @@ async fn setup_inner(
         let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
         app.manage(AssetServer { addr, cancel_token });
     }
-    
+
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)
