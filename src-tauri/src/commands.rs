@@ -39,7 +39,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -54,8 +54,6 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -1064,10 +1062,10 @@ pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
 
     let signature = key.sign(data.as_bytes());
 
-    return Ok(SignWsDataResponse {
+    Ok(SignWsDataResponse {
         signature: BASE64_STANDARD.encode(signature.as_ref()),
         pub_key,
-    });
+    })
 }
 
 #[tauri::command]

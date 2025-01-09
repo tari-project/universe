@@ -47,7 +47,7 @@ use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
-use tauri::{AppHandle, Emitter};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio_util::sync::CancellationToken;
 
