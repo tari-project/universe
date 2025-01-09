@@ -151,10 +151,8 @@ struct CriticalProblemEvent {
 }
 
 #[allow(clippy::too_many_lines)]
-async fn setup_inner(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), anyhow::Error> {
+async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    let state = app.state::<UniverseAppState>().clone();
     app.emit(
         "message",
         SetupStatusEvent {
@@ -703,7 +701,6 @@ fn main() {
     };
 
     let app_state2 = app_state.clone();
-    let app_state_token_moved = app_state.clone();
 
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
@@ -778,13 +775,6 @@ fn main() {
                 }
             };
 
-            app.once("startup-token", move |event| {
-                _ = async {
-                    let token_payload = event.payload();
-                    let mut token = app_state_token_moved.airdrop_access_token.write().await;
-                    *token = Some(token_payload.to_string().clone());
-                }
-            });
 
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
@@ -952,11 +942,24 @@ fn main() {
 
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
-            let a = app_handle.clone();
+            let window = app_handle.get_webview_window("main").unwrap();
+            let app_state = app_handle.state::<UniverseAppState>().clone();
+            window.listen("startup-token", move |event| {
+                _ = async {
+                    let token_payload = event.payload();
+                    info!(target: LOG_TARGET, "Getting token payload");
+
+                    let mut token = app_state.airdrop_access_token.write().await;
+                    *token = Some(token_payload.to_string().clone());
+
+                    let mut in_memory_app_config = app_state.in_memory_config.write().await;
+                    in_memory_app_config.airdrop_access_token = Some(token_payload.to_string().clone());
+                }
+            });
             tauri::async_runtime::spawn( async move  {
-            let state = a.state::<UniverseAppState>().clone();
-                    let _res = setup_inner(state, a.clone()).await
-                        .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+                let app_clone = app_handle.clone();
+                let _res = setup_inner(app_clone.clone()).await
+                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {

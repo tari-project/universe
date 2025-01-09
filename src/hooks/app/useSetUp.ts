@@ -6,30 +6,14 @@ import { TauriEvent } from '../../types.ts';
 import { useAppStateStore } from '../../store/appStateStore.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { useHandleAirdropTokensRefresh } from '../airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
-    const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
-
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
-
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
     const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
-
-    const fetchBackendInMemoryConfig = useAirdropStore((s) => s.fetchBackendInMemoryConfig);
-
-    useEffect(() => {
-        const refreshTokens = async () => {
-            const backendInMemoryConfig = await fetchBackendInMemoryConfig();
-            if (backendInMemoryConfig?.airdropApiUrl) {
-                await handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl, true);
-            }
-        };
-        refreshTokens();
-    }, [fetchBackendInMemoryConfig, handleRefreshAirdropTokens]);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data

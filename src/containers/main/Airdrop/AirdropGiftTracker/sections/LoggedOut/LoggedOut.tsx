@@ -1,4 +1,4 @@
-import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
+import { GIFT_GEMS, setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import { useCallback, useEffect, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
@@ -12,7 +12,7 @@ export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const restartMining = useMiningStore((s) => s.restartMining);
-    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
+    const { referralQuestPoints, authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
