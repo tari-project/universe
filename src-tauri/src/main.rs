@@ -827,15 +827,16 @@ fn main() {
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
 
+                    // TODO: This is a temporary removal, we will need to add this back in working state
                     // Set splashscreen windows position and size here so it won't jump around
-                    if let Some(w_settings) = app_conf.window_settings() {
-                        let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
-                        let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
+                    // if let Some(w_settings) = app_conf.window_settings() {
+                    //     let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
+                    //     let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
 
-                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
-                            error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
-                        }
-                    }
+                    //     if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
+                    //         error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
+                    //     }
+                    // }
                     Ok(())
                 });
 
@@ -974,29 +975,30 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        RunEvent::WindowEvent { label, event, .. } => {
-            trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
-            if let WindowEvent::CloseRequested { .. } = event {
-                if let Some(window) = app_handle.get_webview_window(&label) {
-                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.inner_size()) {
-                        let window_settings = WindowSettings {
-                            x: window_position.x,
-                            y: window_position.y,
-                            width: window_size.width,
-                            height: window_size.height,
-                        };
-                        let mut app_config = block_on(app_state.config.write());
-                        if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
-                            error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
-                        }
-                    } else {
-                        error!(target: LOG_TARGET, "Could not get window position or size");
-                    }
-                } else {
-                    error!(target: LOG_TARGET, "Could not get main window");
-                }
-            }
-        }
+        // TODO: This is a temporary removal, we will need to add this back in working state
+        // RunEvent::WindowEvent { label, event, .. } => {
+        //     trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
+        //     if let WindowEvent::CloseRequested { .. } = event {
+        //         if let Some(window) = app_handle.get_webview_window(&label) {
+        //             if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.inner_size()) {
+        //                 let window_settings = WindowSettings {
+        //                     x: window_position.x,
+        //                     y: window_position.y,
+        //                     width: window_size.width,
+        //                     height: window_size.height,
+        //                 };
+        //                 let mut app_config = block_on(app_state.config.write());
+        //                 if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
+        //                     error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
+        //                 }
+        //             } else {
+        //                 error!(target: LOG_TARGET, "Could not get window position or size");
+        //             }
+        //         } else {
+        //             error!(target: LOG_TARGET, "Could not get main window");
+        //         }
+        //     }
+        // }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
