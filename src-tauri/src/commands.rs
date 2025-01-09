@@ -146,7 +146,6 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
     
     let mut retries = 0;
     
-    // TODO: This is a temporary removal, we will need to add this back in working state
     let (splashscreen_window, main_window) = loop {
         let splashscreen_window = app.get_webview_window("splashscreen");
         let main_window = app.get_webview_window("main");
