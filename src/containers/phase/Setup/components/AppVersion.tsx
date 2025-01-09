@@ -6,16 +6,9 @@ export default function AppVersion() {
     const [tariVersion, setTariVersion] = useState<string | null>(null);
 
     useEffect(() => {
-        let fetched = false;
         getVersion().then((version) => {
-            if (!fetched) {
-                setTariVersion(version);
-            }
+            setTariVersion(version);
         });
-
-        return () => {
-            fetched = true;
-        };
     }, []);
 
     return tariVersion ? (
