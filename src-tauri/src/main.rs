@@ -26,7 +26,6 @@
 use auto_launcher::AutoLauncher;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
-use log::trace;
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
@@ -48,7 +47,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
+use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
@@ -65,7 +64,6 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
@@ -781,10 +779,6 @@ fn main() {
                    return Err(Box::new(e));
                 }
             };
-
-            let splash_window = app
-                .get_webview_window("splashscreen")
-                .expect("Main window not found");
 
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
