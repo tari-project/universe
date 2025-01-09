@@ -6,13 +6,20 @@ export default function AppVersion() {
     const [tariVersion, setTariVersion] = useState<string | null>(null);
 
     useEffect(() => {
+        let fetched = false;
         getVersion().then((version) => {
-            setTariVersion(version);
+            if (!fetched) {
+                setTariVersion(version);
+            }
         });
+
+        return () => {
+            fetched = true;
+        };
     }, []);
 
     return tariVersion ? (
-        <Typography variant="span" style={{ zIndex: 1000, position: 'absolute', right: 12, bottom: 6 }}>
+        <Typography style={{ zIndex: 1000, position: 'absolute', right: 12, bottom: 6, fontWeight: 500 }}>
             {tariVersion}
         </Typography>
     ) : null;
