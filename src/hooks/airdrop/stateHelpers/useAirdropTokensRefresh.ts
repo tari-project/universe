@@ -1,6 +1,7 @@
 import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
-
+import { getCurrentWindow } from '@tauri-apps/api/window';
+const currentWindow = getCurrentWindow();
 export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
     const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
         method: 'POST',
@@ -24,7 +25,7 @@ export function useHandleAirdropTokensRefresh() {
     const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
 
     return useCallback(
-        async (airdropApiUrl: string) => {
+        async (airdropApiUrl: string, emit = false) => {
             let fetchedAirdropTokens: AirdropTokens | undefined;
             // 5 hours from now
             const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
@@ -37,6 +38,10 @@ export function useHandleAirdropTokensRefresh() {
                 } catch (error) {
                     console.error('Error refreshing airdrop tokens:', error);
                 }
+            }
+
+            if (emit && fetchedAirdropTokens?.token) {
+                await currentWindow.emit('startup-token', fetchedAirdropTokens?.token);
             }
             await setAirdropTokens(fetchedAirdropTokens);
         },

@@ -48,7 +48,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
+use tauri::{Emitter, Listener, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
@@ -705,6 +705,8 @@ fn main() {
     };
 
     let app_state2 = app_state.clone();
+    let app_state_token_moved = app_state.clone();
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -781,6 +783,14 @@ fn main() {
             let splash_window = app
                 .get_webview_window("splashscreen")
                 .expect("Main window not found");
+
+            app.once("startup-token", move |event| {
+                _ = async {
+                    let token_payload = event.payload();
+                    let mut token = app_state_token_moved.airdrop_access_token.write().await;
+                    *token = Some(token_payload.to_string().clone());
+                }
+            });
 
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
@@ -963,8 +973,6 @@ fn main() {
                     let _res = setup_inner(state, a.clone()).await
                         .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
-            // setup_inner(app_handle.state::<UniverseAppState>().clone(), app_handle.clone())
-                // .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");

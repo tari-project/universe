@@ -3,8 +3,6 @@ import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
-import { invoke } from '@tauri-apps/api/core';
-
 import { useAppStateStore } from '../../store/appStateStore.ts';
 
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
@@ -15,7 +13,7 @@ export function useSetUp() {
     const handleRefreshAirdropTokens = useHandleAirdropTokensRefresh();
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
-    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
+
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
 
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
@@ -27,12 +25,11 @@ export function useSetUp() {
         const refreshTokens = async () => {
             const backendInMemoryConfig = await fetchBackendInMemoryConfig();
             if (backendInMemoryConfig?.airdropApiUrl) {
-                await handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl);
+                await handleRefreshAirdropTokens(backendInMemoryConfig.airdropApiUrl, true);
             }
         };
         refreshTokens();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchBackendInMemoryConfig, handleRefreshAirdropTokens]);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
@@ -69,14 +66,9 @@ export function useSetUp() {
         if (syncedAidropWithBackend && !isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
-            // invoke('setup_application').catch((e) => {
-            //     console.error(`Failed to setup application: ${e}`);
-            //     setCriticalError(`Failed to setup application: ${e}`);
-            // });
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [clearStorage, handlePostSetup, adminShow, syncedAidropWithBackend]);
+    }, [clearStorage, handlePostSetup, adminShow, syncedAidropWithBackend, setSetupDetails]);
 }

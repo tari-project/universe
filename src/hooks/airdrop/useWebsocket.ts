@@ -115,7 +115,7 @@ export const useWebsocket = () => {
                 socket.on(userId as string, handleWsUserIdEvent);
             });
 
-            socket.on('connect_error', (e) => {
+            socket.on('connect_error', (_e) => {
                 registerWsConnectionEvent({
                     state: 'error',
                     error: 'could not connect to server',
@@ -128,7 +128,7 @@ export const useWebsocket = () => {
                 });
                 console.error(reason, details);
             });
-            socket.io.on('reconnect', (e) => {
+            socket.io.on('reconnect', (_e) => {
                 registerWsConnectionEvent({
                     state: 'up',
                 });
