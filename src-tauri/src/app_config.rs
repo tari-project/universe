@@ -564,18 +564,19 @@ impl AppConfig {
         Ok(())
     }
 
-    pub async fn set_window_settings(
-        &mut self,
-        window_settings: WindowSettings,
-    ) -> Result<(), anyhow::Error> {
-        self.window_settings = Some(window_settings);
-        self.update_config_file().await?;
-        Ok(())
-    }
+    // Config temporarily unused
+    // pub async fn set_window_settings(
+    //     &mut self,
+    //     window_settings: WindowSettings,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.window_settings = Some(window_settings);
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
 
-    pub fn window_settings(&self) -> &Option<WindowSettings> {
-        &self.window_settings
-    }
+    // pub fn window_settings(&self) -> &Option<WindowSettings> {
+    //     &self.window_settings
+    // }
 
     pub async fn set_show_experimental_settings(
         &mut self,
