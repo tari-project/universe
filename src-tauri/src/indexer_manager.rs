@@ -1,4 +1,3 @@
-use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
@@ -6,11 +5,8 @@ use std::time::Duration;
 use futures_util::future::FusedFuture;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
-use tauri::Url;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
-
-use serde::{Deserialize, Serialize};
 
 use crate::indexer_adapter::IndexerAdapter;
 use crate::port_allocator::PortAllocator;
@@ -96,11 +92,10 @@ impl IndexerConfigBuilder {
     }
 
     pub fn build(&self) -> Result<IndexerConfig, anyhow::Error> {
-        // let jrpc_port = PortAllocator::new().assign_port_with_fallback();
+        // TODO set proper values not hardcoded now
         let jrpc_port = 18007;
         let web_ui_port = 18008;
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
-        // TODO set proper values - below is just random test
         Ok(IndexerConfig {
             base_path: self.config.base_path.clone(),
             json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),
@@ -121,7 +116,6 @@ impl IndexerConfig {
 
 impl Default for IndexerConfig {
     fn default() -> Self {
-        //TODO SET DEFAULT
         Self {
             base_path: String::from(""),
             json_rpc_address: String::from("http://127.0.0.1:18300"),

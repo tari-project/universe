@@ -92,17 +92,16 @@ impl ValidatorNodeConfigBuilder {
         self
     }
 
-    pub fn with_base_path(&mut self, base_path: PathBuf) -> &mut Self {
+    pub fn with_base_path(&mut self, base_path: &PathBuf) -> &mut Self {
         self.config.base_path = base_path.to_string_lossy().to_string();
         self
     }
 
     pub fn build(&self) -> Result<ValidatorNodeConfig, anyhow::Error> {
-        // let jrpc_port = PortAllocator::new().assign_port_with_fallback();
+        // TODO set proper values not hardcoded ones
         let jrpc_port = 18005;
         let web_ui_port = 18006;
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
-        // TODO set proper values - below is just random test
         Ok(ValidatorNodeConfig {
             base_path: self.config.base_path.clone(),
             json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),

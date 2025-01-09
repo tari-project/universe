@@ -10,9 +10,9 @@ use tari_shutdown::Shutdown;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::utils::file_utils::convert_to_string;
 
 use crate::indexer_manager::IndexerConfig;
+use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
@@ -40,14 +40,14 @@ impl ProcessAdapter for IndexerAdapter {
         &self,
         data_dir: PathBuf,
         _config_dir: PathBuf,
-        log_path: PathBuf,
+        log_dir: PathBuf,
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET, "Starting validator node");
 
-        let working_dir = data_dir.join("sha-indexer");
+        let working_dir = data_dir.join("indexer");
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create indexer working directory - {}", error);
         });
@@ -59,7 +59,16 @@ impl ProcessAdapter for IndexerAdapter {
             .config
             .as_ref()
             .ok_or_else(|| anyhow!("IndexerAdapter config is not set"))?;
-        let log_path_string = convert_to_string(log_path.join("sha-indexer"))?;
+
+        let config_dir = &log_dir
+            .join("indexer")
+            .join("configs")
+            .join("log4rs_config_indexer.yml");
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/universe_sample.yml"),
+        )?;
         let network = Network::get_current_or_user_setting_or_default();
 
         let args: Vec<String> = vec![
@@ -69,16 +78,16 @@ impl ProcessAdapter for IndexerAdapter {
             "--network".to_string(),
             network.to_string(),
             format!("-pindexer.base_node_grpc_url={}", config.base_node_grpc_url),
-            format!("-pindexer.json_rpc_address={}", config.json_rpc_address),
-            format!("-pindexer.http_ui_address={}", config.web_ui_address),
+            // format!("-pindexer.json_rpc_address={}", config.json_rpc_address),
+            // format!("-pindexer.http_ui_address={}", config.web_ui_address),
             format!(
                 "-pindexer.ui_connect_address={}",
                 config.json_rpc_public_address
             ),
-            format!(
-                "-pindexer.base_layer_scanning_interval={}",
-                config.base_layer_scanning_interval
-            ),
+            // format!(
+            //     "-pindexer.base_layer_scanning_interval={}",
+            //     config.base_layer_scanning_interval
+            // ),
         ];
         let pid_file_name = self.pid_file_name().to_string();
 
@@ -135,16 +144,12 @@ impl IndexerStatusMonitor {
     pub fn new(port: u16) -> Self {
         Self { grpc_port: port }
     }
-    pub async fn get_identity(&self) -> Result<(), Error> {
-        //TODO
-        Ok(())
-    }
 }
 
 #[async_trait]
 impl StatusMonitor for IndexerStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_identity().await.is_ok() {
+        if self.status().await.is_ok() {
             HealthStatus::Healthy
         } else {
             HealthStatus::Unhealthy

@@ -1,6 +1,6 @@
 use std::{fs, net::SocketAddr, panic, path::PathBuf, process, str::FromStr};
 
-use crate::{port_allocator::PortAllocator, utils::logging_utils::setup_logging};
+use crate::utils::logging_utils::setup_logging;
 use log::{info, warn};
 use tari_common_dan2::configuration::Network;
 use tari_dan_app_utilities::configuration::load_configuration;
@@ -20,13 +20,13 @@ pub async fn start_wallet_daemon(
         process::exit(1);
     }));
     let wallet_daemon_config_file = wallet_daemon_config_file.to_str().unwrap().to_owned();
-    let log_config_file = &log_dir
+    let log_config_file = log_dir
         .join("wallet_daemon")
         .join("configs")
         .join("log4rs_config_wallet.yml");
     let _contents = setup_logging(
         &log_config_file.clone(),
-        &log_dir.clone(),
+        &log_dir,
         include_str!("../../log4rs/universe_sample.yml"),
     )?;
 
@@ -39,13 +39,13 @@ pub async fn start_wallet_daemon(
 
     let cfg = load_configuration(wallet_daemon_config_file, true, &cli, None).unwrap();
     let mut config = ApplicationConfig::load_from(&cfg).unwrap();
-    let json_rpc_port = PortAllocator::new().assign_port_with_fallback();
+    let json_rpc_port = 18010; //TODO set port from the swarm config
     let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
 
     config.dan_wallet_daemon.indexer_node_json_rpc_url =
         "http://localhost:18007/json_rpc".to_string();
     config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&jrpc_address).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
-    config.dan_wallet_daemon.ui_connect_address = Some("0.0.0.0:19000".to_string());
+    config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
 
     // Remove the file if it was left behind by a previous run
     let _file = fs::remove_file(data_dir_path.join("pid"));
@@ -55,9 +55,7 @@ pub async fn start_wallet_daemon(
 
     info!(target: LOG_TARGET, "🚀 Wallet daemon configuration completed successfully");
 
-    // run_tari_dan_wallet_daemon(config, shutdown_signal).await
     tokio::spawn(async move {
-        // TODO RIGHT HERE RUN
         match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
             Ok(_) => {
                 info!(target: LOG_TARGET, "🚀 Running wallet daemon");

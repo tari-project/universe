@@ -2,7 +2,7 @@ use crate::ootle::error::{
     Error::{self, TappletServerError},
     TappletServerError::*,
 };
-use crate::utils::logging_utils::setup_logging;
+
 use axum::Router;
 use log::{error, info};
 use std::{net::SocketAddr, path::PathBuf};
@@ -57,19 +57,4 @@ async fn shutdown_signal(cancel_token: CancellationToken) {
     select! {
         _ = cancel_token.cancelled() => {}
     }
-}
-
-pub async fn setup_log(log_dir: PathBuf) -> Result<(), anyhow::Error> {
-    // setup tapplet logging
-    // TODO create separate dirs for different tapplets: https://github.com/tari-project/tari-universe/issues/138
-    let log_config_file = &log_dir
-        .join("tapplet")
-        .join("configs")
-        .join("log4rs_config_tapplet.yml");
-    let _contents = setup_logging(
-        &log_config_file,
-        &log_dir,
-        include_str!("../../log4rs/universe_sample.yml"),
-    )?;
-    Ok(())
 }

@@ -9,7 +9,7 @@ use log::trace;
 use log::{debug, error, info, warn};
 use ootle::tapplet_server::start;
 use ootle::{
-    setup_tari_universe, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
+    setup_ootle_wallet, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
 };
 use std::fs::{remove_dir_all, remove_file};
 use validator_node_manager::{ValidatorNodeConfig, ValidatorNodeManager};
@@ -449,6 +449,7 @@ async fn setup_inner(
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
             .build()?;
+        info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT p2p {:?}", &base_node_grpc);
 
         state
             .p2pool_manager
@@ -464,14 +465,15 @@ async fn setup_inner(
 
     //TODO RUN OOTLE
     if state.config.read().await.ootle_enabled() {
-        progress.set_max(88).await;
+        progress.set_max(90).await;
         progress.update("starting-ootle".to_string(), None, 0).await;
 
         let base_node_grpc = state.node_manager.get_grpc_port().await?;
         let validator_node_config = ValidatorNodeConfig::builder()
             .with_base_node(base_node_grpc)
-            .with_base_path(data_dir.clone())
+            .with_base_path(&data_dir)
             .build()?;
+        info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT VN {:?}", &base_node_grpc);
 
         state
             .validator_node_manager
@@ -503,62 +505,59 @@ async fn setup_inner(
             .await?;
 
         info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
-    }
 
-    progress.set_max(90).await;
-    //TODO add translation for db
-    progress
-        .update("establishing-db-connection".to_string(), None, 0)
-        .await;
+        progress.set_max(90).await;
+        progress
+            .update("establishing-db-connection".to_string(), None, 0)
+            .await;
 
-    // TODO RUN TARI UNI
-    let app_handle_clone_tokens = app.clone();
-    let app_handle_clone: tauri::AppHandle = app.clone();
-    let data_dir_clone = data_dir.clone();
-    let log_dir_clone = log_dir.clone();
-    let config_dir_clone = config_dir.clone();
-    let db_path = app_data_dir.join(DB_FILE_NAME);
+        let app_handle_clone = app.clone();
+        let data_dir_clone = data_dir.clone();
+        let log_dir_clone = log_dir.clone();
+        let config_dir_clone = config_dir.clone();
+        let db_path = app_data_dir.join(DB_FILE_NAME);
 
-    app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
-        database::establish_connection(db_path.to_str().unwrap()),
-    ))));
-    info!(target: LOG_TARGET, "🚀 DB connection established successfully");
+        app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+            database::establish_connection(db_path.to_str().unwrap()),
+        ))));
+        info!(target: LOG_TARGET, "🚀 DB connection established successfully");
 
-    app.manage(Tokens {
-        auth: std::sync::Mutex::new("".to_string()),
-        permission: std::sync::Mutex::new("".to_string()),
-    });
-    app.manage(ShutdownTokens::default());
-    let thread_tokens = tauri::async_runtime::spawn(async move {
-        setup_tokens(app_handle_clone_tokens)
+        app.manage(Tokens {
+            auth: std::sync::Mutex::new("".to_string()),
+            permission: std::sync::Mutex::new("".to_string()),
+        });
+        app.manage(ShutdownTokens::default());
+        let thread_tokens = tauri::async_runtime::spawn(async move {
+            setup_tokens(app_handle_clone)
+                .await
+                .inspect_err(|e| error!(target: LOG_TARGET, "Could not set tokens: {:?}", e))
+                .map_err(|e| e.to_string())
+        });
+        let _ = thread_tokens
             .await
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not set tokens: {:?}", e))
-            .map_err(|e| e.to_string())
-    });
-    let _ = thread_tokens
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
-        .map_err(|e| e.to_string());
+            .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
+            .map_err(|e| e.to_string());
 
-    let thread_ootle = tauri::async_runtime::spawn(async move {
-        setup_tari_universe(
-            app_handle_clone,
-            data_dir_clone,
-            log_dir_clone,
-            config_dir_clone,
-        )
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e))
-        .map_err(|e| e.to_string())
-    });
-    let _ = thread_ootle
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e))
-        .map_err(|e| e.to_string());
+        let thread_ootle = tauri::async_runtime::spawn(async move {
+            setup_ootle_wallet(data_dir_clone, log_dir_clone, config_dir_clone)
+                .await
+                .inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e),
+                )
+                .map_err(|e| e.to_string())
+        });
+        let _ = thread_ootle
+            .await
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e),
+            )
+            .map_err(|e| e.to_string());
 
-    let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
-    let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
-    app.manage(AssetServer { addr, cancel_token });
+        let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
+        let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
+        app.manage(AssetServer { addr, cancel_token });
+    }
+    
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)

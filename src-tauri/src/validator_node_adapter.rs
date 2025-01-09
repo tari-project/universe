@@ -10,8 +10,8 @@ use tari_shutdown::Shutdown;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::utils::file_utils::convert_to_string;
 
+use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 use crate::validator_node_manager::ValidatorNodeConfig;
@@ -40,14 +40,14 @@ impl ProcessAdapter for ValidatorNodeAdapter {
         &self,
         data_dir: PathBuf,
         _config_dir: PathBuf,
-        log_path: PathBuf,
+        log_dir: PathBuf,
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
         info!(target: LOG_TARGET, "Starting validator node");
 
-        let working_dir = data_dir.join("sha-validator_node");
+        let working_dir = data_dir.join("validator_node");
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create validator_node working directory - {}", error);
         });
@@ -59,7 +59,17 @@ impl ProcessAdapter for ValidatorNodeAdapter {
             .config
             .as_ref()
             .ok_or_else(|| anyhow!("ValidatorNodeAdapter config is not set"))?;
-        let log_path_string = convert_to_string(log_path.join("sha-validator_node"))?;
+
+        let config_dir = &log_dir
+            .join("validator_node")
+            .join("configs")
+            .join("log4rs_config_validator_node.yml");
+        setup_logging(
+            &config_dir.clone(),
+            &log_dir,
+            include_str!("../log4rs/universe_sample.yml"),
+        )?;
+
         let network = Network::get_current_or_user_setting_or_default();
 
         let args: Vec<String> = vec![
@@ -147,16 +157,12 @@ impl ValidatorNodeStatusMonitor {
     pub fn new(port: u16) -> Self {
         Self { grpc_port: port }
     }
-    pub async fn get_identity(&self) -> Result<(), Error> {
-        //TODO
-        Ok(())
-    }
 }
 
 #[async_trait]
 impl StatusMonitor for ValidatorNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_identity().await.is_ok() {
+        if self.status().await.is_ok() {
             HealthStatus::Healthy
         } else {
             HealthStatus::Unhealthy

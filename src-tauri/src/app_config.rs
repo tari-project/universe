@@ -86,7 +86,7 @@ pub struct AppConfigFromFile {
     window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
-    #[serde(default = "default_true")]
+    #[serde(default = "default_false")]
     ootle_enabled: bool,
 }
 
@@ -128,7 +128,7 @@ impl Default for AppConfigFromFile {
             visual_mode: true,
             window_settings: default_window_settings(),
             show_experimental_settings: false,
-            ootle_enabled: true,
+            ootle_enabled: false,
         }
     }
 }
@@ -284,7 +284,7 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
-            ootle_enabled: true,
+            ootle_enabled: false,
         }
     }
 
