@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StagedSecuritySectionType } from '../../StagedSecurity';
 import { BlackButton, Text, Title } from '../../styles';
 import {
@@ -32,6 +32,7 @@ const SeedPhrase = ({ setSection, words }: Props) => {
     const { t } = useTranslation('staged-security');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const [checked, setChecked] = useState(false);
+    const [wordGroups, setWordGroups] = useState<string[][]>([]);
 
     const handleCopy = () => {
         copyToClipboard(words.join(' '));
@@ -41,11 +42,15 @@ const SeedPhrase = ({ setSection, words }: Props) => {
         setChecked(!checked);
     };
 
-    const wordGroups: string[][] = [];
-
-    for (let i = 0; i < words.length; i += 6) {
-        wordGroups.push(words.slice(i, i + 6));
-    }
+    useEffect(() => {
+        const groups: string[][] = [];
+        for (let i = 0; i < words.length; i += 6) {
+            groups.push(words.slice(i, i + 6));
+        }
+        if (groups.length) {
+            setWordGroups(groups);
+        }
+    }, [words]);
 
     return (
         <Wrapper>
