@@ -22,6 +22,7 @@
 
 use std::fmt::Display;
 
+#[derive(Clone)]
 pub enum CurrentOperatingSystem {
     Windows,
     Linux,

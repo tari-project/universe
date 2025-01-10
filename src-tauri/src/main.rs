@@ -31,7 +31,6 @@ use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
-use std::ops::Deref;
 use std::path::Path;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
@@ -275,8 +274,7 @@ async fn setup_inner(
         .init(app_version.to_string(), telemetry_id.clone())
         .await?;
     let telemetry_service = state.telemetry_service.clone();
-    let telemetry_service = telemetry_service.read().await;
-    let telemetry_service = telemetry_service.deref();
+    let telemetry_service = &telemetry_service.read().await;
 
     let mut binary_resolver = BinaryResolver::current().write().await;
     let should_check_for_update = now
@@ -816,7 +814,6 @@ fn main() {
     );
     let telemetry_service = TelemetryService::new(
         app_config_raw.anon_id().to_string(),
-        "0.0.0".to_string(),
         app_config.clone(),
         app_in_memory_config.clone(),
     );
