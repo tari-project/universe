@@ -150,11 +150,33 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
+async fn get_token(app: tauri::AppHandle) {
+    info!(target: LOG_TARGET, "LISTEN: hello hi when??");
+    let app_move = app.clone();
+    app.listen("startup-token", move |event| {
+        info!(target: LOG_TARGET, "LISTEN + Payload: hello {:?}", event.payload());
+        _ = async {
+            let app_state = app_move.state::<UniverseAppState>().clone();
+            let token_payload = event.payload();
+            info!(target: LOG_TARGET, "Getting token payload");
+
+            let mut token = app_state.airdrop_access_token.write().await;
+            *token = Some(token_payload.to_string().clone());
+
+            let mut in_memory_app_config = app_state.in_memory_config.write().await;
+            in_memory_app_config.airdrop_access_token = Some(token_payload.to_string().clone());
+        }
+    });
+}
+
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    dbg!("1: BEFORE");
     let state = app.state::<UniverseAppState>().clone();
+    get_token(app.clone()).await;
+    dbg!("2: AFTER");
     app.emit(
-        "message",
+        "setup_message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "starting-up".to_string(),
@@ -162,7 +184,7 @@ async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
             progress: 0.0,
         },
     )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
@@ -232,6 +254,7 @@ async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
+    info!(target: LOG_TARGET, "TEL token: {:?}", state.airdrop_access_token.clone());
     state
         .telemetry_manager
         .write()
@@ -504,7 +527,7 @@ async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     drop(
         app.clone()
             .emit(
-                "message",
+                "setup_message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title: "application-started".to_string(),
@@ -512,7 +535,9 @@ async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
                     progress: 1.0,
                 },
             )
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
+            ),
     );
 
     let move_handle = app.clone();
@@ -942,23 +967,9 @@ fn main() {
 
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
-            let window = app_handle.get_webview_window("main").unwrap();
-            let app_state = app_handle.state::<UniverseAppState>().clone();
-            window.listen("startup-token", move |event| {
-                _ = async {
-                    let token_payload = event.payload();
-                    info!(target: LOG_TARGET, "Getting token payload");
-
-                    let mut token = app_state.airdrop_access_token.write().await;
-                    *token = Some(token_payload.to_string().clone());
-
-                    let mut in_memory_app_config = app_state.in_memory_config.write().await;
-                    in_memory_app_config.airdrop_access_token = Some(token_payload.to_string().clone());
-                }
-            });
+            let a = app_handle.clone();
             tauri::async_runtime::spawn( async move  {
-                let app_clone = app_handle.clone();
-                let _res = setup_inner(app_clone.clone()).await
+                let _res = setup_inner(a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
