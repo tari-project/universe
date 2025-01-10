@@ -70,7 +70,7 @@ impl MinotariNodeAdapter {
             grpc_port: port,
             tcp_listener_port,
             use_pruned_mode: false,
-            required_initial_peers: 3,
+            required_initial_peers: 2,
             use_tor: false,
             tor_control_port: None,
             latest_status_broadcast: status_broadcast,
