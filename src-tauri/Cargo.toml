@@ -77,10 +77,10 @@ tauri = { version = "2", features = [
 ] }
 tauri-plugin-cli = "2"
 tauri-plugin-os = "2"
-tauri-plugin-sentry = "0"
+tauri-plugin-sentry = "0.3"
 tauri-plugin-shell = "2"
 tauri-plugin-updater = "2"
-thiserror = "1.0.26"
+thiserror = "2.0.10"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
