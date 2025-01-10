@@ -839,9 +839,11 @@ pub async fn reset_settings<'r>(
     let mut folder_block_list = Vec::new();
     folder_block_list.push("EBWebView");
 
+    let mut files_block_list = Vec::new();
+
     if !reset_wallet {
         folder_block_list.push("wallet");
-        folder_block_list.push("credentials_backup.bin");
+        files_block_list.push("credentials_backup.bin");
     }
 
     for dir_path in dirs_to_remove.iter().flatten() {
@@ -887,6 +889,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
