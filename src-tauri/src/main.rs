@@ -26,7 +26,6 @@
 use auto_launcher::AutoLauncher;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
-use log::trace;
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
@@ -51,7 +50,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize, RunEvent, WindowEvent};
+use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
@@ -68,7 +67,6 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::app_config::WindowSettings;
 use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
@@ -934,10 +932,6 @@ fn main() {
                 }
             };
 
-            let splash_window = app
-                .get_webview_window("splashscreen")
-                .expect("Main window not found");
-
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
@@ -979,15 +973,6 @@ fn main() {
                         app_conf.ludicrous_mode_cpu_options().clone();
                     cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
 
-                    // Set splashscreen windows position and size here so it won't jump around
-                    if let Some(w_settings) = app_conf.window_settings() {
-                        let window_position = PhysicalPosition::new(w_settings.x, w_settings.y);
-                        let window_size = PhysicalSize::new(w_settings.width, w_settings.height);
-
-                        if let Err(e) = splash_window.set_position(window_position).and_then(|_| splash_window.set_size(window_size)) {
-                            error!(target: LOG_TARGET, "Could not set splashscreen window position or size: {:?}", e);
-                        }
-                    }
                     Ok(())
                 });
 
@@ -1126,29 +1111,6 @@ fn main() {
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
-        }
-        RunEvent::WindowEvent { label, event, .. } => {
-            trace!(target: LOG_TARGET, "Window event: {:?} {:?}", label, event);
-            if let WindowEvent::CloseRequested { .. } = event {
-                if let Some(window) = app_handle.get_webview_window(&label) {
-                    if let (Ok(window_position), Ok(window_size)) = (window.outer_position(), window.inner_size()) {
-                        let window_settings = WindowSettings {
-                            x: window_position.x,
-                            y: window_position.y,
-                            width: window_size.width,
-                            height: window_size.height,
-                        };
-                        let mut app_config = block_on(app_state.config.write());
-                        if let Err(e) = block_on(app_config.set_window_settings(window_settings.clone())) {
-                            error!(target: LOG_TARGET, "Could not set window settings: {:?}", e);
-                        }
-                    } else {
-                        error!(target: LOG_TARGET, "Could not get window position or size");
-                    }
-                } else {
-                    error!(target: LOG_TARGET, "Could not get main window");
-                }
-            }
         }
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
