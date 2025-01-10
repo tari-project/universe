@@ -6899,7 +6899,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.40"
+version = "0.8.41"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7470,7 +7470,6 @@ dependencies = [
  "tauri-utils 2.1.0 (git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25)",
  "thiserror 2.0.6",
  "tokio",
- "tracing",
  "tray-icon",
  "url",
  "urlpattern",
@@ -7733,7 +7732,6 @@ dependencies = [
  "tao",
  "tauri-runtime",
  "tauri-utils 2.1.0 (git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25)",
- "tracing",
  "url",
  "webkit2gtk",
  "webview2-com",
@@ -9414,7 +9412,6 @@ dependencies = [
  "soup3",
  "tao-macros",
  "thiserror 1.0.69",
- "tracing",
  "url",
  "webkit2gtk",
  "webkit2gtk-sys",
