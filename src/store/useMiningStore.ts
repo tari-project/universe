@@ -199,6 +199,12 @@ export const useMiningStore = create<MiningStoreState>()((set, getState) => ({
     setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
     setIsReplaying: (isReplaying) => set({ isReplaying }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
+        const hardware = getState().gpu.hardware;
+        if (excludedGpuDevices.length === hardware.length) {
+            set({ gpu: { ...getState().gpu, mining: { ...getState().gpu.mining, is_available: false } } });
+        } else {
+            set({ gpu: { ...getState().gpu, mining: { ...getState().gpu.mining, is_available: true } } });
+        }
         set({ excludedGpuDevices });
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
