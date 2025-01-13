@@ -579,12 +579,12 @@ async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::E
         let app_clone: tauri::AppHandle = app.clone();
         tauri::async_runtime::spawn(async move {
             time::sleep(Duration::from_secs(3)).await;
-            app_clone.get_webview_window("main")
+            app_clone
+                .get_webview_window("main")
                 .expect("Could not get main window")
                 .emit("app_ready", ())
                 .expect("Could not emit event 'app_ready'");
         });
-
     });
 
     Ok(())
