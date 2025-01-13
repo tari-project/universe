@@ -26,7 +26,7 @@
 use auto_launcher::AutoLauncher;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
-use log::{debug, error, info, warn,trace};
+use log::{debug, error, info, trace, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
@@ -57,9 +57,9 @@ use app_config::{AppConfig, WindowSettings};
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
+use events::SetupStatusEvent;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
-use events::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -90,6 +90,7 @@ mod consts;
 mod cpu_miner;
 mod credential_manager;
 mod download_utils;
+mod events;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -111,7 +112,6 @@ mod process_killer;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
-mod events;
 mod telemetry_manager;
 mod tests;
 mod tor_adapter;
@@ -573,13 +573,11 @@ async fn setup_inner(
 }
 
 async fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    app
-            .get_webview_window("main")
-            .expect("Could not get main window")
-            .emit("app_ready", ())
-            .expect("Could not emit event 'app_ready'");
+    app.get_webview_window("main")
+        .expect("Could not get main window")
+        .emit("app_ready", ())
+        .expect("Could not emit event 'app_ready'");
     Ok(())
-
 }
 
 async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
