@@ -35,7 +35,7 @@ export const ApplyInviteCode = () => {
 
             setAllowTelemetry(true).then(() => {
                 setAuthUuid(token);
-                open(refUrl);
+                void open(refUrl);
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,8 +52,13 @@ export const ApplyInviteCode = () => {
                 .then((response) => response.json())
                 .then((data) => {
                     if (!data.error) {
-                        setAirdropTokens(data);
-                        return true;
+                        setAirdropTokens(data)
+                            .then(() => {
+                                return true;
+                            })
+                            .catch(() => {
+                                return false;
+                            });
                     }
                 })
                 .catch((e) => {
@@ -87,7 +92,7 @@ export const ApplyInviteCode = () => {
             };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, {}]);
 
     return (
         <SettingsGroupWrapper>

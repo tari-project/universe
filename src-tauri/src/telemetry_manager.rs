@@ -285,6 +285,7 @@ impl TelemetryManager {
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
         self.airdrop_access_token = airdrop_access_token.clone();
+        info!(target: LOG_TARGET, "TEL SELF token: {:?}", self.airdrop_access_token.clone());
         self.start_telemetry_process(TelemetryFrequency::default().into(), app_handle)
             .await?;
         Ok(())

@@ -12,6 +12,7 @@ export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: A
             refreshToken: airdropTokens.refreshToken,
         }),
     });
+    console.debug(response);
     if (!response.ok) {
         throw new Error('Failed to refresh token');
     }
@@ -24,22 +25,29 @@ export async function handleRefreshAirdropTokens(airdropApiUrl: string, emit = f
     const airdropTokens = useAirdropStore.getState().airdropTokens;
     const syncedAidropWithBackend = useAirdropStore.getState().syncedWithBackend;
     let fetchedAirdropTokens: AirdropTokens | undefined;
+    let startupToken: AirdropTokens['token'] | undefined;
     // 5 hours from now
     const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
     const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
 
     const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
+    console.debug(airdropTokens);
+    console.debug(`tokenHasExpired= ${tokenHasExpired}`);
+    console.debug(`syncedAidropWithBackend= ${syncedAidropWithBackend}`);
     if (airdropTokens && (!syncedAidropWithBackend || tokenHasExpired)) {
         try {
             fetchedAirdropTokens = await fetchAirdropTokens(airdropApiUrl, airdropTokens);
+            if (fetchedAirdropTokens?.token) {
+                startupToken = fetchedAirdropTokens.token;
+            }
         } catch (error) {
             console.error('Error refreshing airdrop tokens:', error);
         }
     }
 
-    if (emit && fetchedAirdropTokens?.token) {
+    if (emit && startupToken) {
         console.debug('emitting');
-        await currentWindow.emit('startup-token', fetchedAirdropTokens?.token);
+        await currentWindow.emit('startup-token', startupToken);
     }
     await setAirdropTokens(fetchedAirdropTokens);
 }
