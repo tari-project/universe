@@ -25,7 +25,6 @@ use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
-use crate::p2pool_manager::{self, P2poolManager};
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
