@@ -47,7 +47,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Listener, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
@@ -59,7 +59,7 @@ use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
-use setup_status_event::SetupStatusEvent;
+use events::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -111,7 +111,7 @@ mod process_killer;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
-mod setup_status_event;
+mod events;
 mod telemetry_manager;
 mod tests;
 mod tor_adapter;
@@ -572,6 +572,28 @@ async fn setup_inner(
     Ok(())
 }
 
+async fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    app
+            .get_webview_window("main")
+            .expect("Could not get main window")
+            .emit("app_ready", ())
+            .expect("Could not emit event 'app_ready'");
+    Ok(())
+
+}
+
+async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    let app_clone = app.clone();
+    app_clone.listen("frontend_ready", move |event| {
+        let app_clone = app.clone();
+        let _unused = async move {
+            let _unused = on_frontend_ready(app_clone).await;
+        };
+    });
+
+    Ok(())
+}
+
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -946,6 +968,13 @@ fn main() {
     );
 
     app.run(move |app_handle, event| match event {
+        tauri::RunEvent::Ready { .. } => {
+            info!(target: LOG_TARGET, "App is ready");
+            let app_handle_clone = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let _unused = on_frontend_ready(app_handle_clone).await;
+            });
+        }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));

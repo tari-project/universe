@@ -52,15 +52,6 @@
         "windows": [
             {
                 "title": "Tari Universe (Alpha) | Testnet",
-                "width": 1380,
-                "height": 780,
-                "label": "splashscreen",
-                "url": "/splash.html",
-                "center": true,
-                "useHttpsScheme": true
-            },
-            {
-                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
@@ -69,7 +60,7 @@
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
-                "visible": false,
+                "visible": true,
                 "center": true,
                 "useHttpsScheme": true
             }
