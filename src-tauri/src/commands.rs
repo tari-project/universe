@@ -73,6 +73,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -995,6 +996,23 @@ pub async fn set_allow_telemetry(
         .set_allow_telemetry(allow_telemetry)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_data_telemetry_service(
+    state: tauri::State<'_, UniverseAppState>,
+    event_name: String,
+    data: Value,
+) -> Result<(), String> {
+    state
+        .telemetry_service
+        .read()
+        .await
+        .send(event_name, data)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
