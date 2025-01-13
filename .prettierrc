@@ -5,5 +5,13 @@
     "singleQuote": true,
     "bracketSpacing": true,
     "printWidth": 120,
-    "endOfLine": "auto"
+    "endOfLine": "auto",
+    "overrides": [
+        {
+            "files": "*.yml",
+            "options": {
+                "tabWidth": 2
+            }
+        }
+    ]
 }

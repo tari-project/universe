@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "다가오는 보상 / 맥북 프로 16’"
+    },
+    "timer": {
+      "gettingClose": "거의 다 왔습니다",
+      "days": "일",
+      "hours": "시간"
+    },
+    "friends": {
+      "reduceTimer": "친구를 초대하여 타이머를 줄이세요",
+      "linkCopied": "링크가 복사되었습니다!",
+      "growCrew": "팀을 성장시키세요"
+    }
+  },
+  "superCharger": {
+    "title": "슈퍼 충전기",
+    "placeholder": "코드를 입력하세요",
+    "success": "시간 보너스가 추가되었습니다 {{time}}.",
+    "error": "잘못된 코드입니다.",
+    "submit": "시작"
+  },
+  "mainTimer": {
+    "title": "당신의 타이머",
+    "days": "일",
+    "hours": "시간",
+    "minutes": "분",
+    "seconds": "초"
+  },
+  "progress": {
+    "message": "다음 등급까지 <span>{{hours}} 시간</span> 남았습니다. 계속 채굴하세요!"
+  },
+  "leaserboardEntry": {
+    "mining": "현재 채굴 중",
+    "idle": "마지막 채굴 {{time}} 전"
+  },
+  "leaderboard": {
+    "title": "리더보드",
+    "viewFull": "전체 리더보드 보기"
+  },
+  "member": {
+    "new": "새로운",
+    "nudge": "살짝 밀기",
+    "minHr": "분/시간"
+  },
+  "crewMining": {
+    "title": "팀 채굴",
+    "rate": "+{{rate}}분/시간",
+    "mining": "{{current}}/{{total}} 채굴 중"
+  },
+  "crewList": {
+    "placeholder": "첫 번째 팀원을 초대하세요"
+  }
+}

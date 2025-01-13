@@ -17,6 +17,15 @@
     "stop-mining": "マイニングを停止",
     "waiting-for-idle": "アイドル待機中"
   },
+  "orphan-chain-tooltip": {
+    "heading": "試すべきこと:",
+    "step_1": "インターネット接続を確認",
+    "step_2": "30分待つ",
+    "step_3": "アプリを再起動",
+    "step_4": "Torブリッジを使用してみてください（設定で）",
+    "step_5": "Torを無効にしてみてください（設定で）",
+    "step_6": "アプリをリセットしてみてください（設定で）"
+  },
   "you-earn-rewards-separately": "CPUとGPUのマイニングで別々に報酬を得ます",
   "you-won-block": "<span>ブロック #{{ blockHeight }}</span> の勝者です",
   "you-won-while-away": "<span>不在中に{{ blocks }}を獲得しました</span>",

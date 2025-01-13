@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
@@ -86,6 +108,10 @@ pub struct AppConfigFromFile {
     window_settings: Option<WindowSettings>,
     #[serde(default = "default_false")]
     show_experimental_settings: bool,
+    #[serde(default = "default_p2pool_stats_server_port")]
+    p2pool_stats_server_port: Option<u16>,
+    #[serde(default = "default_false")]
+    pre_release: bool,
     #[serde(default = "default_true")]
     ootle_enabled: bool,
     // enable localnet: check binaries and run base node + Ootle locally
@@ -131,6 +157,8 @@ impl Default for AppConfigFromFile {
             visual_mode: true,
             window_settings: default_window_settings(),
             show_experimental_settings: false,
+            p2pool_stats_server_port: default_p2pool_stats_server_port(),
+            pre_release: false,
             ootle_enabled: true,
             ootle_localnet_enabled: false,
         }
@@ -244,6 +272,8 @@ pub(crate) struct AppConfig {
     visual_mode: bool,
     window_settings: Option<WindowSettings>,
     show_experimental_settings: bool,
+    p2pool_stats_server_port: Option<u16>,
+    pre_release: bool,
     ootle_enabled: bool,
     ootle_localnet_enabled: bool,
 }
@@ -289,6 +319,8 @@ impl AppConfig {
             window_settings: default_window_settings(),
             show_experimental_settings: false,
             keyring_accessed: false,
+            p2pool_stats_server_port: default_p2pool_stats_server_port(),
+            pre_release: false,
             ootle_enabled: true,
             ootle_localnet_enabled: false,
         }
@@ -366,6 +398,8 @@ impl AppConfig {
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
                 self.show_experimental_settings = config.show_experimental_settings;
+                self.p2pool_stats_server_port = config.p2pool_stats_server_port;
+                self.pre_release = config.pre_release;
                 self.ootle_enabled = config.ootle_enabled;
 
                 KEYRING_ACCESSED.store(
@@ -544,18 +578,19 @@ impl AppConfig {
         Ok(())
     }
 
-    pub async fn set_window_settings(
-        &mut self,
-        window_settings: WindowSettings,
-    ) -> Result<(), anyhow::Error> {
-        self.window_settings = Some(window_settings);
-        self.update_config_file().await?;
-        Ok(())
-    }
+    // Config temporarily unused
+    // pub async fn set_window_settings(
+    //     &mut self,
+    //     window_settings: WindowSettings,
+    // ) -> Result<(), anyhow::Error> {
+    //     self.window_settings = Some(window_settings);
+    //     self.update_config_file().await?;
+    //     Ok(())
+    // }
 
-    pub fn window_settings(&self) -> &Option<WindowSettings> {
-        &self.window_settings
-    }
+    // pub fn window_settings(&self) -> &Option<WindowSettings> {
+    //     &self.window_settings
+    // }
 
     pub async fn set_show_experimental_settings(
         &mut self,
@@ -678,6 +713,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn auto_update(&self) -> bool {
+        self.auto_update
+    }
+
     pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
         self.auto_update = auto_update;
         self.update_config_file().await?;
@@ -691,6 +730,29 @@ impl AppConfig {
     ) -> Result<(), anyhow::Error> {
         self.mmproxy_use_monero_fail = use_monero_fail;
         self.mmproxy_monero_nodes = monero_nodes;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn p2pool_stats_server_port(&self) -> Option<u16> {
+        self.p2pool_stats_server_port
+    }
+
+    pub async fn set_p2pool_stats_server_port(
+        &mut self,
+        port: Option<u16>,
+    ) -> Result<(), anyhow::Error> {
+        self.p2pool_stats_server_port = port;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn pre_release(&self) -> bool {
+        self.pre_release
+    }
+
+    pub async fn set_pre_release(&mut self, pre_release: bool) -> Result<(), anyhow::Error> {
+        self.pre_release = pre_release;
         self.update_config_file().await?;
         Ok(())
     }
@@ -748,6 +810,8 @@ impl AppConfig {
             visual_mode: self.visual_mode,
             window_settings: self.window_settings.clone(),
             show_experimental_settings: self.show_experimental_settings,
+            p2pool_stats_server_port: self.p2pool_stats_server_port,
+            pre_release: self.pre_release,
             ootle_enabled: self.ootle_enabled,
             ootle_localnet_enabled: self.ootle_localnet_enabled,
         };
@@ -839,5 +903,9 @@ fn default_monero_nodes() -> Vec<String> {
 }
 
 fn default_window_settings() -> Option<WindowSettings> {
+    None
+}
+
+fn default_p2pool_stats_server_port() -> Option<u16> {
     None
 }

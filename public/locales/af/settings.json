@@ -6,6 +6,8 @@
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
   "change-language": "Verander taal",
+  "confirm": "Bevestig",
+  "confirm-action": "Bevestig aksie",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Gekoppelde Eweknieë",
@@ -46,7 +48,9 @@
     "title": "Tyd waarna masjien as onaktief beskou word"
   },
   "importing-wallet": "Beursie invoer",
+  "importing-wallet-copy": "Tari Universe sal outomaties herbegin sodra jou beursie ingevoer is",
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
+  "invalid-stats-server-port": "Ongeldige statistieke bedienerpoort",
   "inviteCode": "Uitnodigingskode",
   "is-on-orphan-chain": "Dit lyk of jy aan \"n vurk gekoppel is, en nie die hoofketting nie. Enige blokke wat jy wen, mag ongeldig verklaar word.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "Poel Mynbou",
   "pool-mining-description": "Wanneer geaktiveer, sal u in \"n poel myn en by \"n groep mynwerkers aansluit.",
+  "pre-release": {
+    "description": "Verken die nuutste kenmerke voordat hulle lewendig gaan en gee terugvoer",
+    "title": "Gebruik voorafvrystelling weergawe"
+  },
+  "pre-release-note": "Jy is op die punt om oor te skakel na die voorafvrystelling weergawe van die toepassing. Hierdie weergawe kan opwindende nuwe kenmerke en verbeterings bied, met die moontlikheid om gebiede teë te kom wat dalk nog verfyn word.",
   "randomx-network-hash-rate": "Randomx netwerk hashrate",
   "refresh-versions": "Verfris weergawes",
+  "release-notes": {
+    "loading": "Laai vrystellingsnotas...",
+    "upgrade-available": "⚠️ Opgradering Beskikbaar"
+  },
   "report-issue": "Rapporteer \"n probleem",
   "reset-permanently": "Is jy seker jy wil alle instellings permanent terugstel?",
   "reset-settings": "Stel Instellings Terug",
@@ -102,6 +115,8 @@
     "title": "Outomatiese begin by stelsel opstart"
   },
   "should-use-system-language": "Gebruik stelsel taal",
+  "stable-version-note": "Deur die voorafvrystelling weergawe van die toepassing af te skakel, sal jy terugkeer na die stabiele weergawe, wat betroubaarheid en konsekwentheid prioritiseer. Jy mag dalk die nuutste kenmerke en verbeterings mis.",
+  "stats-server-port": "Statistieke bedienerpoort",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Verbindings",
@@ -110,6 +125,7 @@
     "mining": "Mynbou",
     "ootle": "Tari Ootle",
     "p2p": "Poel Mynbou",
+    "releaseNotes": "Vrystellingsnotas",
     "very_experimental": "Baie Eksperimenteel",
     "wallet": "Beursie"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "Gebruik dinamiese mislukdata",
   "use-random-control-port": "Gebruik ewekansige beheerpoort",
+  "use-random-port": "Gebruik ewekansige poort",
   "use-tor": "Gebruik Tor",
   "use-tor-bridges": "Gebruik Tor Brûe",
   "visual-mode": "Visuele modus",

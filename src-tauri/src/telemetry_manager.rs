@@ -1,11 +1,33 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
-use crate::p2pool_manager::{self, P2poolManager};
+use crate::node_adapter::BaseNodeStatus;
+use crate::p2pool::models::P2poolStats;
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
-    gpu_miner::GpuMiner,
-    node_manager::NodeManager,
 };
 use anyhow::Result;
 use base64::prelude::*;
@@ -24,9 +46,9 @@ use std::ops::Div;
 use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_utilities::encoding::MBase58;
-use tokio::sync::RwLock;
+use tauri::Emitter;
+use tokio::sync::{watch, RwLock};
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -172,41 +194,42 @@ pub struct TelemetryData {
     pub gpu_tribe_name: Option<String>,
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
+    pub current_os: String,
 }
 
 pub struct TelemetryManager {
-    node_manager: NodeManager,
     cpu_miner: Arc<RwLock<CpuMiner>>,
-    gpu_miner: Arc<RwLock<GpuMiner>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
-    p2pool_manager: P2poolManager,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
+    gpu_status: watch::Receiver<GpuMinerStatus>,
+    node_status: watch::Receiver<BaseNodeStatus>,
+    p2pool_status: watch::Receiver<Option<P2poolStats>>,
 }
 
 impl TelemetryManager {
     pub fn new(
-        node_manager: NodeManager,
         cpu_miner: Arc<RwLock<CpuMiner>>,
-        gpu_miner: Arc<RwLock<GpuMiner>>,
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
-        p2pool_manager: P2poolManager,
+        gpu_status: watch::Receiver<GpuMinerStatus>,
+        node_status: watch::Receiver<BaseNodeStatus>,
+        p2pool_status: watch::Receiver<Option<P2poolStats>>,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
-            node_manager,
             cpu_miner,
-            gpu_miner,
             config,
             cancellation_token,
             node_network: network,
             in_memory_config,
-            p2pool_manager,
             airdrop_access_token: Arc::new(RwLock::new(None)),
+            gpu_status,
+            node_status,
+            p2pool_status,
         }
     }
 
@@ -238,7 +261,8 @@ impl TelemetryManager {
         let mut sha256_hasher = sha2::Sha256::new();
         sha2::Digest::update(&mut sha256_hasher, id_as_bytes);
         let id_sha256 = sha256_hasher.finalize();
-        let id_base64_sha256 = BASE64_STANDARD.encode(id_sha256);
+        let id_base64_sha256 = BASE64_STANDARD_NO_PAD.encode(id_sha256);
+
         let unique_string = format!(
             "v3,{},{},{}",
             buf.to_monero_base58(),
@@ -271,15 +295,15 @@ impl TelemetryManager {
         timeout: Duration,
         window: tauri::Window,
     ) -> Result<(), TelemetryManagerError> {
-        let node_manager = self.node_manager.clone();
         let cpu_miner = self.cpu_miner.clone();
-        let gpu_miner = self.gpu_miner.clone();
+        let gpu_status = self.gpu_status.clone();
+        let node_status = self.node_status.clone();
+        let p2pool_status = self.p2pool_status.clone();
         let config = self.config.clone();
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
-        let p2pool_manager_cloned = self.p2pool_manager.clone();
         let airdrop_access_token = self.airdrop_access_token.clone();
         tokio::spawn(async move {
             tokio::select! {
@@ -289,7 +313,7 @@ impl TelemetryManager {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
-                            let telemetry_data = get_telemetry_data(cpu_miner.clone(), gpu_miner.clone(), node_manager.clone(), p2pool_manager_cloned.clone(), config.clone(), network).await;
+                            let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
                         }
@@ -345,40 +369,33 @@ fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
 
 #[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
-    cpu_miner: Arc<RwLock<CpuMiner>>,
-    gpu_miner: Arc<RwLock<GpuMiner>>,
-    node_manager: NodeManager,
-    p2pool_manager: p2pool_manager::P2poolManager,
-    config: Arc<RwLock<AppConfig>>,
+    cpu_miner: &RwLock<CpuMiner>,
+    gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
+    node_latest_status: &watch::Receiver<BaseNodeStatus>,
+    p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
+    config: &RwLock<AppConfig>,
     network: Option<Network>,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, _block_time, is_synced) =
-        node_manager
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .unwrap_or((0, 0, MicroMinotari(0), 0, 0, false));
+    let BaseNodeStatus {
+        randomx_network_hashrate,
+        block_reward,
+        block_height,
+        is_synced,
+        ..
+    } = node_latest_status.borrow().clone();
 
     let cpu_miner = cpu_miner.read().await;
-    let cpu = match cpu_miner.status(randomx_hash_rate, block_reward).await {
+    let cpu = match cpu_miner
+        .status(randomx_network_hashrate, block_reward)
+        .await
+    {
         Ok(cpu) => cpu,
         Err(e) => {
             warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
             return Err(TelemetryManagerError::Other(e));
         }
     };
-    let gpu_miner_lock = gpu_miner.read().await;
-    let gpu_status = match gpu_miner_lock.status(sha_hash_rate, block_reward).await {
-        Ok(gpu) => gpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
-            return Err(TelemetryManagerError::Other(e));
-        }
-    };
-
-    // let hardware_status = HardwareMonitor::current()
-    //     .write()
-    //     .await
-    //     .read_hardware_parameters();
+    let gpu_status = gpu_latest_miner_stats.borrow().clone();
 
     let gpu_hardware_parameters = HardwareStatusMonitor::current()
         .get_gpu_public_properties()
@@ -389,10 +406,7 @@ async fn get_telemetry_data(
         .await
         .ok();
 
-    let p2pool_stats = p2pool_manager.get_stats().await.inspect_err(|e| {
-        warn!(target: LOG_TARGET, "Error getting p2pool stats: {:?}", e);
-    });
-    let p2pool_stats = p2pool_stats.unwrap_or_default();
+    let p2pool_stats = p2pool_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
     let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
@@ -467,7 +481,7 @@ async fn get_telemetry_data(
 
     // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
     // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
-    let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_manager.is_running().await;
+    let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_stats.is_some();
     // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
     //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
     //         (
@@ -511,6 +525,7 @@ async fn get_telemetry_data(
         "config_tor_enabled".to_string(),
         config_guard.use_tor().to_string(),
     );
+    let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {
         extra_data.insert(
             "p2pool_connected_peers".to_string(),
@@ -524,6 +539,8 @@ async fn get_telemetry_data(
             "p2pool_sha3_height".to_string(),
             stats.sha3x_stats.height.to_string(),
         );
+        extra_data.insert("p2pool_squad".to_string(), stats.squad.clone());
+        squad = Some(stats.squad.clone());
     }
 
     if !all_cpus.is_empty() {
@@ -548,11 +565,12 @@ async fn get_telemetry_data(
         resource_used,
         version,
         p2pool_enabled,
-        cpu_tribe_name: None,
+        cpu_tribe_name: squad.clone(),
         cpu_tribe_id: None,
-        gpu_tribe_name: None,
+        gpu_tribe_name: squad.clone(),
         gpu_tribe_id: None,
         extra_data,
+        current_os: std::env::consts::OS.to_string(),
     })
 }
 
@@ -596,19 +614,19 @@ async fn handle_telemetry_data(
                             window
                                 .emit("UserPoints", emit_data)
                                 .map_err(|e| {
-                                    error!("could not send user points as an event: {:?}", e)
+                                    error!("could not send user points as an event: {}", e)
                                 })
                                 .unwrap_or(());
                         }
                     }
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET,"Error sending telemetry data: {:?}", e);
+                    error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
                 }
             }
         }
         Err(e) => {
-            error!(target: LOG_TARGET,"Error getting telemetry data: {:?}", e);
+            error!(target: LOG_TARGET,"Error getting telemetry data: {}", e);
         }
     }
 }

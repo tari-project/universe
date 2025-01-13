@@ -17,6 +17,15 @@
     "stop-mining": "Zatrzymaj kopanie",
     "waiting-for-idle": "Oczekiwanie na bezczynność"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Rzeczy do wypróbowania:",
+    "step_1": "Sprawdź swoje połączenie internetowe",
+    "step_2": "Poczekaj 30 minut",
+    "step_3": "Uruchom ponownie aplikację",
+    "step_4": "Spróbuj użyć mostu Tor (w Ustawieniach)",
+    "step_5": "Spróbuj wyłączyć Tor (w Ustawieniach)",
+    "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
+  },
   "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
   "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",

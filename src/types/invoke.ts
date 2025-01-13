@@ -9,6 +9,7 @@ import {
     TransactionInfo,
     MaxConsumptionLevels,
     GpuThreads,
+    P2poolConnections,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -23,7 +24,7 @@ import {
 } from './ootle/tapplet';
 import { AccountsGetBalancesResponse } from '@tari-project/wallet_jrpc_client';
 
-declare module '@tauri-apps/api/tauri' {
+declare module '@tauri-apps/api/core' {
     function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
@@ -60,6 +61,8 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
+    function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
+    function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
     function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
     function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
@@ -78,6 +81,10 @@ declare module '@tauri-apps/api/tauri' {
     function invoke(param: 'fetch_tor_bridges'): Promise<string[]>;
     function invoke(param: 'get_tor_entry_guards'): Promise<string[]>;
     function invoke(param: 'set_visual_mode', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
+    function invoke(param: 'proceed_with_update'): Promise<void>;
+    function invoke(param: 'check_for_updates'): Promise<string | undefined>;
+    function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }

@@ -17,6 +17,15 @@
     "stop-mining": "Madenciliği Durdur",
     "waiting-for-idle": "Boşta Bekliyor"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Denenecek şeyler:",
+    "step_1": "İnternet bağlantınızı kontrol edin",
+    "step_2": "30 dakika bekleyin",
+    "step_3": "Uygulamayı yeniden başlatın",
+    "step_4": "Tor Köprüsü kullanmayı deneyin (Ayarlar\"da)",
+    "step_5": "Tor\"u devre dışı bırakmayı deneyin (Ayarlar\"da)",
+    "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
+  },
   "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
   "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
   "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",

@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_watcher::ProcessWatcher;
@@ -8,6 +30,7 @@ use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 #[derive(thiserror::Error, Debug)]
@@ -35,11 +58,14 @@ impl Clone for WalletManager {
 }
 
 impl WalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+    pub fn new(
+        node_manager: NodeManager,
+        wallet_watch_tx: watch::Sender<Option<WalletBalance>>,
+    ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
-        let adapter = WalletAdapter::new(use_tor);
+        let adapter = WalletAdapter::new(use_tor, wallet_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter);
 
         Self {
@@ -92,20 +118,6 @@ impl WalletManager {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.view_private_key = view_private_key;
         process_watcher.adapter.spend_key = spend_key;
-    }
-
-    pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        process_watcher
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_balance()
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
     }
 
     pub async fn get_transaction_history(

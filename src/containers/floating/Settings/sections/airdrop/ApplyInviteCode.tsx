@@ -15,7 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { open } from '@tauri-apps/api/shell';
+import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 export const ApplyInviteCode = () => {
@@ -38,7 +38,8 @@ export const ApplyInviteCode = () => {
                 open(refUrl);
             });
         }
-    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, claimCode, setAllowTelemetry, setAuthUuid]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, claimCode]);
 
     const handleToken = useCallback(() => {
         if (authUuid) {
@@ -62,7 +63,8 @@ export const ApplyInviteCode = () => {
 
             return false;
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setAirdropTokens]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
@@ -85,7 +87,8 @@ export const ApplyInviteCode = () => {
                 setLoading(false);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken, setAuthUuid]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken]);
 
     return (
         <SettingsGroupWrapper>

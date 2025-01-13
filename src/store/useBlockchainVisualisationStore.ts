@@ -1,12 +1,12 @@
-import { Transaction } from '@app/types/wallet';
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 
-import { appWindow } from '@tauri-apps/api/window';
+import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useWalletStore } from './useWalletStore.ts';
+const appWindow = getCurrentWebviewWindow();
 
 interface Recap {
     count: number;
@@ -20,7 +20,7 @@ interface State {
     recapData?: Recap;
     recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
-    replayItem?: Transaction;
+    replayItem?: TransactionInfo;
 }
 
 interface WinAnimation {
@@ -31,7 +31,7 @@ interface WinAnimation {
 interface Actions {
     handleWin: ({ latestTx, canAnimate, isRecap }: WinAnimation) => Promise<void>;
     handleWinRecap: (recapData: Recap) => void;
-    handleWinReplay: (txItem: Transaction) => void;
+    handleWinReplay: (txItem: TransactionInfo) => void;
     handleFail: (blockHeight: number, canAnimate?: boolean) => Promise<void>;
     handleNewBlock: (newBlockHeight: number, isMining?: boolean) => Promise<void>;
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
@@ -99,7 +99,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
         }
     },
     handleWin: async ({ latestTx, canAnimate }) => {
-        const blockHeight = Number(latestTx?.message?.split(': ')[1]);
+        const blockHeight = Number(latestTx?.mined_in_block_height);
         const earnings = latestTx.amount;
 
         console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);

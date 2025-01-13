@@ -6,6 +6,8 @@
   "applyInviteCode": "Apply Invite Code",
   "cancel": "Cancel",
   "change-language": "Language",
+  "confirm": "Confirm",
+  "confirm-action": "Confirm action",
   "confirm-import-wallet": "Import new wallet",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?\nYour current wallet will be abandoned.",
   "connected-peers": "Connected Peers",
@@ -46,7 +48,9 @@
     "title": "Time after which mdchine is considered idle"
   },
   "importing-wallet": "Importing wallet",
+  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Enter 24 words separated by spaces",
+  "invalid-stats-server-port": "Invalid stats server port",
   "inviteCode": "Invite Code",
   "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Last block added to chain time",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "Pool Mining",
   "pool-mining-description": "When enabled, you will mine in a pool and join a group of miners.",
+  "pre-release": {
+    "description": "Explore the latest features before they go live and provide feedback",
+    "title": "Use pre-release version"
+  },
+  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
   "randomx-network-hash-rate": "Randomx network hashrate",
   "refresh-versions": "Refresh versions",
+  "release-notes": {
+    "loading": "Loading release notes...",
+    "upgrade-available": "⚠️ Upgrade Available"
+  },
   "report-issue": "Report an issue",
   "reset-permanently": "Are you sure you want to reset all settings permanently?",
   "reset-settings": "Reset Settings",
@@ -102,6 +115,8 @@
     "title": "Auto-start on system boot"
   },
   "should-use-system-language": "Use system language",
+  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
+  "stats-server-port": "Stats server port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Connections",
@@ -110,6 +125,7 @@
     "mining": "Mining",
     "ootle": "Tari Ootle",
     "p2p": "Pool Mining",
+    "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",
     "wallet": "Wallet"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "Use dynamic fail data",
   "use-random-control-port": "Use random control port",
+  "use-random-port": "Use random port",
   "use-tor": "Use Tor",
   "use-tor-bridges": "Use Tor Bridges",
   "visual-mode": "Visual mode",

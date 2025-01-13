@@ -1,15 +1,14 @@
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
-import { WalletBalance } from '../types/app-status.ts';
-import { invoke } from '@tauri-apps/api';
-import { Transaction } from '@app/types/wallet.ts';
+import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { invoke } from '@tauri-apps/api/core';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address?: string;
     balance: number | null;
-    transactions: Transaction[];
+    transactions: TransactionInfo[];
     isTransactionLoading: boolean;
     is_wallet_importing: boolean;
 }
@@ -17,7 +16,7 @@ interface State extends WalletBalance {
 interface Actions {
     fetchWalletDetails: () => Promise<void>;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
-    setTransactions: (transactions?: Transaction[]) => void;
+    setTransactions: (transactions?: TransactionInfo[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 

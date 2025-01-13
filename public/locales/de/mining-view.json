@@ -16,6 +16,15 @@
     "stop-mining": "Mining stoppen",
     "waiting-for-idle": "Warten auf Leerlauf"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Dinge, die du versuchen kannst:",
+    "step_1": "Überprüfe deine Internetverbindung",
+    "step_2": "Warte 30 Minuten",
+    "step_3": "App neu starten",
+    "step_4": "Versuche, eine Tor-Bridge zu verwenden (in den Einstellungen)",
+    "step_5": "Versuche, Tor zu deaktivieren (in den Einstellungen)",
+    "step_6": "Versuche einen App-Reset (in den Einstellungen)"
+  },
   "you-earn-rewards-separately": "Sie verdienen Belohnungen für das Mining von CPU und GPU separat",
   "you-won-block": "Sie waren der Gewinner von <span>Block #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Sie haben {{ blocks }} gewonnen</span>, während Sie weg waren",

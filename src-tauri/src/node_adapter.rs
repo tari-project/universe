@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::node_manager::NodeIdentity;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
@@ -8,7 +30,7 @@ use crate::utils::logging_utils::setup_logging;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::info;
+use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
     BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
     SyncState,
@@ -22,9 +44,11 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
+use tokio::sync::watch;
+use tokio::time::timeout;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -35,10 +59,11 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
+    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new() -> Self {
+    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -48,6 +73,7 @@ impl MinotariNodeAdapter {
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
+            latest_status_broadcast: status_broadcast,
         }
     }
 }
@@ -187,9 +213,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
-                last_block_height: 0,
-                last_sha3_estimated_hashrate: 0,
-                last_randomx_estimated_hashrate: 0,
+                latest_status_broadcast: self.latest_status_broadcast.clone(),
             },
         ))
     }
@@ -211,52 +235,92 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
+#[derive(Clone, Debug, Default)]
+pub(crate) struct BaseNodeStatus {
+    pub sha_network_hashrate: u64,
+    pub randomx_network_hashrate: u64,
+    pub block_reward: MicroMinotari,
+    pub block_height: u64,
+    pub block_time: u64,
+    pub is_synced: bool,
+}
+
 #[derive(Clone)]
 pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
-    last_block_height: u64,
-    last_sha3_estimated_hashrate: u64,
-    last_randomx_estimated_hashrate: u64,
+    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_identity().await.is_ok() {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Unhealthy
+        let duration = std::time::Duration::from_secs(1);
+        match timeout(duration, self.get_network_hash_rate_and_block_reward()).await {
+            Ok(res) => match res {
+                Ok(status) => {
+                    let _res = self.latest_status_broadcast.send(status.clone());
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
+                match self.get_identity().await {
+                    Ok(_) => {
+                        return HealthStatus::Healthy;
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Error checking base node identity: {:?}", e);
+                        return HealthStatus::Unhealthy;
+                    }
+                }
+            }
         }
     }
 }
 
 impl MinotariNodeStatusMonitor {
     pub async fn get_network_hash_rate_and_block_reward(
-        &mut self,
-    ) -> Result<(u64, u64, MicroMinotari, u64, u64, bool), MinotariNodeStatusMonitorError> {
-        // TODO: use GRPC port returned from process
+        &self,
+    ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
                 .await
                 .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
-        let res = client
-            .get_new_block_template(NewBlockTemplateRequest {
-                algo: Some(PowAlgo { pow_algo: 1 }),
-                max_weight: 0,
-            })
-            .await
-            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-        let res = res.into_inner();
+        let mut reward = 0;
+        // The base node returns a stupid error if the template is out of sync, so try multiple times
+        let max_template_retries = 5;
 
-        let reward = res
-            .miner_data
-            .ok_or_else(|| {
-                MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
-            })?
-            .reward;
+        for _ in 0..max_template_retries {
+            let res = match client
+                .get_new_block_template(NewBlockTemplateRequest {
+                    algo: Some(PowAlgo { pow_algo: 1 }),
+                    max_weight: 0,
+                })
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to get new block template: {}", e);
+                    continue;
+                }
+            };
+            let res = res.into_inner();
+
+            reward = res
+                .miner_data
+                .ok_or_else(|| {
+                    MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
+                })?
+                .reward;
+            break;
+        }
 
         let res = client
             .get_tip_info(Empty {})
@@ -278,16 +342,16 @@ impl MinotariNodeStatusMonitor {
             metadata.timestamp,
         );
 
-        if sync_achieved && (block_height <= self.last_block_height) {
-            return Ok((
-                self.last_sha3_estimated_hashrate,
-                self.last_randomx_estimated_hashrate,
-                MicroMinotari(reward),
-                block_height,
-                block_time,
-                sync_achieved,
-            ));
-        }
+        // if sync_achieved && (block_height <= self.last_block_height) {
+        //     return Ok((
+        //         self.last_sha3_estimated_hashrate,
+        //         self.last_randomx_estimated_hashrate,
+        //         MicroMinotari(reward),
+        //         block_height,
+        //         block_time,
+        //         sync_achieved,
+        //     ));
+        // }
 
         // First try with 10 blocks
         let blocks = [10, 100];
@@ -320,23 +384,20 @@ impl MinotariNodeStatusMonitor {
                     last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
                 }
 
-                result = Ok((
-                    last_sha3_estimated_hashrate,
-                    last_randomx_estimated_hashrate,
-                    MicroMinotari(reward),
+                result = Ok(BaseNodeStatus {
+                    sha_network_hashrate: last_sha3_estimated_hashrate,
+                    randomx_network_hashrate: last_randomx_estimated_hashrate,
+                    block_reward: MicroMinotari(reward),
                     block_height,
                     block_time,
-                    sync_achieved,
-                ));
+                    is_synced: sync_achieved,
+                });
             }
             if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
-                self.last_sha3_estimated_hashrate = last_sha3_estimated_hashrate;
-                self.last_randomx_estimated_hashrate = last_randomx_estimated_hashrate;
                 break;
             }
         }
 
-        self.last_block_height = block_height;
         Ok(result?)
     }
 
@@ -384,16 +445,27 @@ impl MinotariNodeStatusMonitor {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub async fn wait_synced(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
+    pub async fn wait_synced(
+        &self,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), MinotariNodeStatusMonitorError> {
         let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
+                .await
+                .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         loop {
             if self.shutdown_signal.is_triggered() {
                 break Ok(());
             }
-            let tip = client.get_tip_info(Empty {}).await?;
-            let sync_progress = client.get_sync_progress(Empty {}).await?;
+            let tip = client
+                .get_tip_info(Empty {})
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
+            let sync_progress = client
+                .get_sync_progress(Empty {})
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {

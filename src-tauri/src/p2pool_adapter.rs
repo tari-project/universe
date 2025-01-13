@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use anyhow::anyhow;
 use anyhow::Error;
 use async_trait::async_trait;
@@ -6,27 +28,33 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use tokio::sync::watch;
 
 use crate::p2pool;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
+// use tari_utilities::epoch_time::EpochTime;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
 pub struct P2poolAdapter {
     pub(crate) config: Option<P2poolConfig>,
+    stats_broadcast: watch::Sender<Option<P2poolStats>>,
 }
 
 impl P2poolAdapter {
-    pub fn new() -> Self {
-        Self { config: None }
+    pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
+        Self {
+            config: None,
+            stats_broadcast,
+        }
     }
 
     #[allow(dead_code)]
@@ -80,8 +108,10 @@ impl ProcessAdapter for P2poolAdapter {
         ];
         let pid_file_name = self.pid_file_name().to_string();
 
-        args.push("--squad".to_string());
-        args.push("default_2".to_string());
+        args.push("--squad-prefix".to_string());
+        args.push("default".to_string());
+        args.push("--num-squads".to_string());
+        args.push("2".to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
@@ -111,7 +141,10 @@ impl ProcessAdapter for P2poolAdapter {
                     name: "P2pool".to_string(),
                 },
             },
-            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", config.stats_server_port)),
+            P2poolStatusMonitor::new(
+                format!("http://127.0.0.1:{}", config.stats_server_port),
+                self.stats_broadcast.clone(),
+            ),
         ))
     }
 
@@ -127,12 +160,17 @@ impl ProcessAdapter for P2poolAdapter {
 #[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
+    latest_status_broadcast: watch::Sender<Option<P2poolStats>>,
 }
 
 impl P2poolStatusMonitor {
-    pub fn new(stats_server_addr: String) -> Self {
+    pub fn new(
+        stats_server_addr: String,
+        stats_broadcast: watch::Sender<Option<P2poolStats>>,
+    ) -> Self {
         Self {
             stats_client: p2pool::stats_client::Client::new(stats_server_addr),
+            latest_status_broadcast: stats_broadcast,
         }
     }
 }
@@ -141,7 +179,31 @@ impl P2poolStatusMonitor {
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
-            Ok(_) => HealthStatus::Healthy,
+            Ok(stats) => {
+                // if stats
+                //     .connection_info
+                //     .network_info
+                //     .connection_counters
+                //     .established_outgoing
+                //     + stats
+                //         .connection_info
+                //         .network_info
+                //         .connection_counters
+                //         .established_incoming
+                //     < 1
+                // {
+                //     warn!(target: LOG_TARGET, "P2pool has no connections, health check warning");
+                //     return HealthStatus::Warning;
+                // }
+
+                // if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 {
+                //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
+                //     return HealthStatus::Warning;
+                // }
+                let _unused = self.latest_status_broadcast.send(Some(stats));
+
+                HealthStatus::Healthy
+            }
             Err(e) => {
                 warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
                 HealthStatus::Unhealthy
@@ -151,7 +213,11 @@ impl StatusMonitor for P2poolStatusMonitor {
 }
 
 impl P2poolStatusMonitor {
-    pub async fn status(&self) -> Result<Stats, Error> {
+    pub async fn status(&self) -> Result<P2poolStats, Error> {
         self.stats_client.stats().await
+    }
+
+    pub async fn connections(&self) -> Result<Connections, Error> {
+        self.stats_client.connections().await
     }
 }

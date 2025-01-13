@@ -6,6 +6,8 @@
   "applyInviteCode": "초대 코드 적용",
   "cancel": "취소",
   "change-language": "언어",
+  "confirm": "확인",
+  "confirm-action": "작업 확인",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "연결된 피어",
@@ -46,7 +48,9 @@
     "title": "기기가 유휴 상태로 간주되는 시간"
   },
   "importing-wallet": "지갑 가져오기",
+  "importing-wallet-copy": "지갑이 가져오면 Tari Universe가 자동으로 재시작됩니다",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
+  "invalid-stats-server-port": "잘못된 통계 서버 포트",
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "풀 채굴",
   "pool-mining-description": "활성화되면 풀에서 채굴하고 마이너 그룹에 참여합니다.",
+  "pre-release": {
+    "description": "최신 기능을 라이브 전에 탐색하고 피드백을 제공하세요",
+    "title": "사전 릴리스 버전 사용"
+  },
+  "pre-release-note": "애플리케이션의 사전 릴리스 버전으로 전환하려고 합니다. 이 버전은 흥미로운 새로운 기능과 개선 사항을 제공할 수 있으며, 아직 개선 중인 부분을 만날 가능성이 있습니다.",
   "randomx-network-hash-rate": "Randomx 네트워크 해시레이트",
   "refresh-versions": "버전 새로고침",
+  "release-notes": {
+    "loading": "릴리스 노트 로딩 중...",
+    "upgrade-available": "⚠️ 업그레이드 가능"
+  },
   "report-issue": "문제 보고",
   "reset-permanently": "모든 설정을 영구적으로 초기화하시겠습니까?",
   "reset-settings": "설정 초기화",
@@ -102,6 +115,8 @@
     "title": "시스템 부팅 시 자동 시작"
   },
   "should-use-system-language": "시스템 언어 사용",
+  "stable-version-note": "애플리케이션의 사전 릴리스 버전을 끄면 안정 릴리스로 돌아가며, 이는 신뢰성과 일관성을 우선시합니다. 최신 기능과 개선 사항을 놓칠 수 있습니다.",
+  "stats-server-port": "통계 서버 포트",
   "tabs": {
     "airdrop": "에어드롭",
     "connections": "연결",
@@ -110,6 +125,7 @@
     "mining": "채굴",
     "ootle": "Tari Ootle",
     "p2p": "풀 채굴",
+    "releaseNotes": "릴리스 노트",
     "very_experimental": "매우 실험적",
     "wallet": "지갑"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "동적 실패 데이터 사용",
   "use-random-control-port": "랜덤 제어 포트 사용",
+  "use-random-port": "임의의 포트 사용",
   "use-tor": "Tor 사용하기",
   "use-tor-bridges": "Tor 브리지 사용",
   "visual-mode": "시각 모드",

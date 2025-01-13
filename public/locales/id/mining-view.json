@@ -17,6 +17,15 @@
     "stop-mining": "Hentikan Penambangan",
     "waiting-for-idle": "Menunggu Tidak Aktif"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Hal-hal yang bisa dicoba:",
+    "step_1": "Periksa koneksi Internet Anda",
+    "step_2": "Tunggu 30 menit",
+    "step_3": "Mulai ulang aplikasi",
+    "step_4": "Coba gunakan Tor Bridge (di Pengaturan)",
+    "step_5": "Coba nonaktifkan Tor (di Pengaturan)",
+    "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
+  },
   "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
   "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",

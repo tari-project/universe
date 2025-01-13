@@ -6,6 +6,8 @@
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
   "change-language": "Sprache",
+  "confirm": "Bestätigen",
+  "confirm-action": "Aktion bestätigen",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Verbundenen Peers",
@@ -46,7 +48,9 @@
     "title": "Zeit nach der die Maschine als inaktiv betrachtet wird"
   },
   "importing-wallet": "Wallet wird importiert",
+  "importing-wallet-copy": "Tari Universe wird automatisch neu starten, sobald dein Wallet importiert wurde",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
+  "invalid-stats-server-port": "Ungültiger Statistik-Server-Port",
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "Pool-Mining",
   "pool-mining-description": "Wenn aktiviert, wirst du in einem Pool minen und einer Gruppe von Minern beitreten.",
+  "pre-release": {
+    "description": "Erkunde die neuesten Funktionen, bevor sie live gehen, und gib Feedback",
+    "title": "Vorabversion verwenden"
+  },
+  "pre-release-note": "Du bist dabei, zur Vorabversion der Anwendung zu wechseln. Diese Version kann spannende neue Funktionen und Verbesserungen bieten, mit der Möglichkeit, auf Bereiche zu stoßen, die noch in der Verfeinerung sind.",
   "randomx-network-hash-rate": "Randomx-Netzwerk-Hashrate",
   "refresh-versions": "Versionen aktualisieren",
+  "release-notes": {
+    "loading": "Lade Versionshinweise...",
+    "upgrade-available": "⚠️ Upgrade verfügbar"
+  },
   "report-issue": "Ein Problem melden",
   "reset-permanently": "Bist du sicher, dass du alle Einstellungen dauerhaft zurücksetzen möchtest?",
   "reset-settings": "Einstellungen zurücksetzen",
@@ -102,6 +115,8 @@
     "title": "Automatischer Start beim Systemstart"
   },
   "should-use-system-language": "Systemsprache verwenden",
+  "stable-version-note": "Wenn du die Vorabversion der Anwendung ausschaltest, kehrst du zur stabilen Version zurück, die Zuverlässigkeit und Konsistenz priorisiert. Dabei könntest du die neuesten Funktionen und Verbesserungen verpassen.",
+  "stats-server-port": "Statistik-Server-Port",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Verbindungen",
@@ -110,6 +125,7 @@
     "mining": "Mining",
     "ootle": "Tari Ootle",
     "p2p": "Pool-Mining",
+    "releaseNotes": "Versionshinweise",
     "very_experimental": "Sehr experimentell",
     "wallet": "Wallet"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "Dynamische Fehlerdaten verwenden",
   "use-random-control-port": "Zufälligen Steuerport verwenden",
+  "use-random-port": "Zufälligen Port verwenden",
   "use-tor": "Tor verwenden",
   "use-tor-bridges": "Tor-Brücken verwenden",
   "visual-mode": "Visueller Modus",

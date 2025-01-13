@@ -1,7 +1,7 @@
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import { useCallback, useEffect, useState } from 'react';
-import { open } from '@tauri-apps/api/shell';
+import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
 import ClaimModal from '../../components/ClaimModal/ClaimModal';
 import { useTranslation } from 'react-i18next';
@@ -25,7 +25,8 @@ export default function LoggedOut() {
                 );
             }
         },
-        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [backendInMemoryConfig?.airdropTwitterAuthUrl]
     );
 
     useEffect(() => {
@@ -61,7 +62,8 @@ export default function LoggedOut() {
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, restartMining, setAirdropTokens, setAuthUuid, setUserPoints]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 

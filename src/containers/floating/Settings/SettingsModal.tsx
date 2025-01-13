@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
@@ -21,9 +20,10 @@ import {
     OotleSettings,
     PoolMiningSettings,
     WalletSettings,
+    ReleaseNotes,
 } from './sections';
 
-import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
+import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 
 const markups = {
     general: <GeneralSettings />,
@@ -33,6 +33,7 @@ const markups = {
     wallet: <WalletSettings />,
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
+    releaseNotes: <ReleaseNotes />,
     ootle: <OotleSettings />,
 };
 
@@ -65,11 +66,7 @@ export default function SettingsModal() {
                             </IconButton>
                         </HeaderContainer>
 
-                        <AnimatePresence mode="wait">
-                            <SectionWrapper variants={variants} key={activeSection}>
-                                {sectionMarkup}
-                            </SectionWrapper>
-                        </AnimatePresence>
+                        <SectionWrapper key={activeSection}>{sectionMarkup}</SectionWrapper>
                     </ContentContainer>
                 </Container>
                 <RestartDialog />

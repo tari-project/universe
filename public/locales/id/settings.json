@@ -6,6 +6,8 @@
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
   "change-language": "Bahasa",
+  "confirm": "Konfirmasi",
+  "confirm-action": "Konfirmasi tindakan",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Rekan Terhubung",
@@ -46,7 +48,9 @@
     "title": "Waktu setelah mesin dianggap tidak aktif"
   },
   "importing-wallet": "Mengimpor dompet",
+  "importing-wallet-copy": "Tari Universe akan memulai ulang secara otomatis setelah dompet Anda diimpor",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
+  "invalid-stats-server-port": "Port server statistik tidak valid",
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "Penambangan Pool",
   "pool-mining-description": "Ketika diaktifkan, Anda akan menambang dalam pool dan bergabung dengan kelompok penambang.",
+  "pre-release": {
+    "description": "Jelajahi fitur terbaru sebelum diluncurkan dan berikan umpan balik",
+    "title": "Gunakan versi pra-rilis"
+  },
+  "pre-release-note": "Anda akan beralih ke versi pra-rilis aplikasi. Versi ini dapat menawarkan fitur dan peningkatan baru yang menarik, dengan kemungkinan menemukan area yang mungkin masih dalam penyempurnaan.",
   "randomx-network-hash-rate": "Hashrate jaringan Randomx",
   "refresh-versions": "Segarkan versi",
+  "release-notes": {
+    "loading": "Memuat catatan rilis...",
+    "upgrade-available": "⚠️ Pembaruan Tersedia"
+  },
   "report-issue": "Laporkan masalah",
   "reset-permanently": "Apakah Anda yakin ingin mengatur ulang semua pengaturan secara permanen?",
   "reset-settings": "Atur Ulang Pengaturan",
@@ -102,6 +115,8 @@
     "title": "Mulai otomatis saat boot sistem"
   },
   "should-use-system-language": "Gunakan bahasa sistem",
+  "stable-version-note": "Dengan mematikan versi pra-rilis aplikasi, Anda akan kembali ke rilis stabil, yang memprioritaskan keandalan dan konsistensi. Meskipun Anda mungkin melewatkan fitur dan peningkatan terbaru.",
+  "stats-server-port": "Port server statistik",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Koneksi",
@@ -110,6 +125,7 @@
     "mining": "Penambangan",
     "ootle": "Tari Ootle",
     "p2p": "Penambangan Pool",
+    "releaseNotes": "Catatan Rilis",
     "very_experimental": "Sangat Eksperimental",
     "wallet": "Dompet"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "Gunakan data gagal dinamis",
   "use-random-control-port": "Gunakan port kontrol acak",
+  "use-random-port": "Gunakan port acak",
   "use-tor": "Gunakan Tor",
   "use-tor-bridges": "Gunakan Jembatan Tor",
   "visual-mode": "Mode visual",

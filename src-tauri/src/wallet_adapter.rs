@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -17,9 +39,10 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -31,10 +54,11 @@ pub struct WalletAdapter {
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
+    balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool) -> Self {
+    pub fn new(use_tor: bool, balance_broadcast: watch::Sender<Option<WalletBalance>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -45,6 +69,7 @@ impl WalletAdapter {
             spend_key: "".to_string(),
             tcp_listener_port,
             grpc_port,
+            balance_broadcast,
         }
     }
 }
@@ -174,6 +199,7 @@ impl ProcessAdapter for WalletAdapter {
             },
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
+                latest_balance_broadcast: self.balance_broadcast.clone(),
             },
         ))
     }
@@ -200,15 +226,21 @@ pub enum WalletStatusMonitorError {
 #[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
+    latest_balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_balance().await.is_ok() {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Unhealthy
+        match self.get_balance().await {
+            Ok(b) => {
+                let _result = self.latest_balance_broadcast.send(Some(b));
+                HealthStatus::Healthy
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }
@@ -233,8 +265,8 @@ pub struct TransactionInfo {
     pub is_cancelled: bool,
     pub excess_sig: String,
     pub timestamp: u64,
-    pub message: String,
     pub payment_id: String,
+    pub mined_in_block_height: u64,
 }
 
 impl WalletStatusMonitor {
@@ -292,8 +324,8 @@ impl WalletStatusMonitor {
                 is_cancelled: tx.is_cancelled,
                 excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
-                message: "Tx message not found".to_string(), //TODO tx message
                 payment_id: tx.payment_id.to_hex(),
+                mined_in_block_height: tx.mined_in_block_height,
             });
         }
         Ok(transactions)

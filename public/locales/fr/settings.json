@@ -6,6 +6,8 @@
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
   "change-language": "Langue",
+  "confirm": "Confirmer",
+  "confirm-action": "Confirmer l\"action",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Pairs connectés",
@@ -46,7 +48,9 @@
     "title": "Temps après lequel la machine est considérée comme inactive"
   },
   "importing-wallet": "Importation du portefeuille",
+  "importing-wallet-copy": "Tari Universe redémarrera automatiquement une fois que votre portefeuille aura été importé",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
+  "invalid-stats-server-port": "Port du serveur de statistiques invalide",
   "inviteCode": "Code d\"invitation",
   "is-on-orphan-chain": "Vous semblez être connecté à une branche secondaire, et non à la chaîne principale. Tout bloc que vous gagnez pourrait être invalidé.",
   "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",
@@ -81,8 +85,17 @@
   },
   "pool-mining": "Minage en pool",
   "pool-mining-description": "Lorsqu\"il est activé, vous minerez dans un pool et rejoindrez un groupe de mineurs.",
+  "pre-release": {
+    "description": "Explorez les dernières fonctionnalités avant leur mise en ligne et donnez votre avis",
+    "title": "Utiliser la version préliminaire"
+  },
+  "pre-release-note": "Vous êtes sur le point de passer à la version préliminaire de l\"application. Cette version peut offrir de nouvelles fonctionnalités et améliorations passionnantes, avec la possibilité de rencontrer des zones qui peuvent encore être en cours de perfectionnement.",
   "randomx-network-hash-rate": "Taux de hachage du réseau Randomx",
   "refresh-versions": "Rafraîchir les versions",
+  "release-notes": {
+    "loading": "Chargement des notes de version...",
+    "upgrade-available": "⚠️ Mise à jour disponible"
+  },
   "report-issue": "Signaler un problème",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
   "reset-settings": "Réinitialiser les paramètres",
@@ -102,6 +115,8 @@
     "title": "Démarrage automatique au démarrage du système"
   },
   "should-use-system-language": "Utiliser la langue du système",
+  "stable-version-note": "En désactivant la version préliminaire de l\"application, vous reviendrez à la version stable, qui privilégie la fiabilité et la cohérence. Vous pourriez manquer les dernières fonctionnalités et améliorations.",
+  "stats-server-port": "Port du serveur de statistiques",
   "tabs": {
     "airdrop": "Airdrop",
     "connections": "Connexions",
@@ -110,6 +125,7 @@
     "mining": "Minage",
     "ootle": "Tari Ootle",
     "p2p": "Minage en pool",
+    "releaseNotes": "Notes de version",
     "very_experimental": "Très Expérimental",
     "wallet": "Portefeuille"
   },
@@ -128,6 +144,7 @@
   },
   "use-dynamic-fail-data": "Utiliser des données d\"échec dynamiques",
   "use-random-control-port": "Utiliser un port de contrôle aléatoire",
+  "use-random-port": "Utiliser un port aléatoire",
   "use-tor": "Utiliser Tor",
   "use-tor-bridges": "Utiliser les ponts Tor",
   "visual-mode": "Mode visuel",

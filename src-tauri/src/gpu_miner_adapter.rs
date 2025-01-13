@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use crate::app_config::GpuThreads;
 use crate::gpu_miner::GpuConfig;
 use crate::port_allocator::PortAllocator;
@@ -14,9 +36,10 @@ use std::time::Instant;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 use crate::{
     app_config::MiningMode,
@@ -38,10 +61,14 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) coinbase_extra: String,
     pub(crate) excluded_gpu_devices: Vec<u8>,
     pub(crate) gpu_devices: Vec<GpuConfig>,
+    pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
 }
 
 impl GpuMinerAdapter {
-    pub fn new(gpu_devices: Vec<GpuConfig>) -> Self {
+    pub fn new(
+        gpu_devices: Vec<GpuConfig>,
+        latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+    ) -> Self {
         Self {
             tari_address: TariAddress::default(),
             gpu_grid_size: gpu_devices
@@ -55,6 +82,7 @@ impl GpuMinerAdapter {
             coinbase_extra: "tari-universe".to_string(),
             excluded_gpu_devices: vec![],
             gpu_devices,
+            latest_status_broadcast,
         }
     }
 
@@ -211,6 +239,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             GpuMinerStatusMonitor {
                 http_api_port,
                 start_time: Instant::now(),
+                latest_status_broadcast: self.latest_status_broadcast.clone(),
             },
         ))
     }
@@ -228,12 +257,14 @@ impl ProcessAdapter for GpuMinerAdapter {
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
     start_time: Instant,
+    latest_status_broadcast: watch::Sender<GpuMinerStatus>,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         if let Ok(status) = self.status().await {
+            let _result = self.latest_status_broadcast.send(status.clone());
             // GPU returns 0 for first 10 seconds until it has an average
             if status.hash_rate > 0 || self.start_time.elapsed().as_secs() < 11 {
                 HealthStatus::Healthy
@@ -263,14 +294,12 @@ impl GpuMinerStatusMonitor {
                         is_mining: false,
                         hash_rate: 0,
                         estimated_earnings: 0,
-                        is_available: false,
                     });
                 }
                 return Ok(GpuMinerStatus {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
-                    is_available: false,
                 });
             }
         };
@@ -283,7 +312,6 @@ impl GpuMinerStatusMonitor {
                     is_mining: false,
                     hash_rate: 0,
                     estimated_earnings: 0,
-                    is_available: false,
                 });
             }
         };
@@ -292,7 +320,6 @@ impl GpuMinerStatusMonitor {
             is_mining: true,
             estimated_earnings: 0,
             hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0) as u64,
-            is_available: true,
         })
     }
 }
@@ -312,10 +339,9 @@ pub(crate) struct AverageHashrate {
     one_minute: Option<f64>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
     pub hash_rate: u64,
     pub estimated_earnings: u64,
-    pub is_available: bool,
 }

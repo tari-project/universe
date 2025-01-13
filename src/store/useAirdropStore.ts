@@ -1,8 +1,7 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { useMiningStore } from './useMiningStore';
-import { Socket } from 'socket.io-client';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -198,7 +197,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 }
             },
             setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints }),
+            setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
             setUserGems: (userGems: number) =>
                 set((state) => {
                     const userPointsFormatted = {

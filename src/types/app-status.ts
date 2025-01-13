@@ -46,6 +46,8 @@ export interface AppConfig {
     show_experimental_settings: boolean;
     monero_address_is_generated?: boolean;
     created_at: string;
+    p2pool_stats_server_port: number | null;
+    pre_release: boolean;
     ootle_enabled: boolean;
     local_tari_indexer: boolean;
 }
@@ -113,11 +115,10 @@ export interface TransactionInfo {
     timestamp: number;
     message: string;
     payment_id: string;
+    mined_in_block_height?: number;
 }
 
 export interface P2poolStatsResult {
-    connected: boolean;
-    peer_count: number;
     connection_info: P2poolConnectionInfo;
     connected_since?: number;
     randomx_stats: P2poolStats;
@@ -146,7 +147,33 @@ export interface P2poolStats {
     squad: P2poolSquadDetails;
     num_of_miners: number;
     share_chain_height: number;
+    height?: number;
     p2pool_block_stats: P2poolBlockStats;
+}
+
+export interface PeerInfo {
+    version: number;
+    peer_id?: string;
+    current_sha3x_height: number;
+    current_random_x_height: number;
+    current_sha3x_pow: number;
+    current_random_x_pow: number;
+    squad: string;
+    timestamp: number;
+    user_agent?: string;
+    user_agent_version?: string;
+    public_addresses: string[];
+}
+
+export interface ConnectedPeerInfo {
+    peer_id: string;
+    peer_info: PeerInfo;
+    last_grey_list_reason?: string;
+    last_ping?: string;
+}
+
+export interface P2poolConnections {
+    peers: ConnectedPeerInfo[];
 }
 
 export interface P2poolSquadDetails {

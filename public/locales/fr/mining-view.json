@@ -16,6 +16,15 @@
     "stop-mining": "Arrêtez le minage",
     "waiting-for-idle": "En attente d'inactivité"
   },
+  "orphan-chain-tooltip": {
+    "heading": "Choses à essayer :",
+    "step_1": "Vérifiez votre connexion Internet",
+    "step_2": "Attendez 30 minutes",
+    "step_3": "Redémarrez l\"application",
+    "step_4": "Essayez d\"utiliser un pont Tor (dans les paramètres)",
+    "step_5": "Essayez de désactiver Tor (dans les paramètres)",
+    "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
+  },
   "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
   "you-won-block": "Vous avez gagné le <span>bloc #{{ blockHeight }}</span>",
   "you-won-while-away": "<span>Vous avez gagné {{ blocks }}</span> pendant votre absence",

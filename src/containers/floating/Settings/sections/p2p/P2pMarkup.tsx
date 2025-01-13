@@ -15,7 +15,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 
-const P2pMarkup = () => {
+interface P2pMarkupProps {
+    setDisabledStats: (value: boolean) => void;
+}
+
+const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
     const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
@@ -26,9 +30,10 @@ const P2pMarkup = () => {
     const handleP2poolEnabled = useCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
             await setP2poolEnabled(event.target.checked);
+            setDisabledStats(!event.target.checked);
             setDialogToShow('restart');
         },
-        [setDialogToShow, setP2poolEnabled]
+        [setDialogToShow, setDisabledStats, setP2poolEnabled]
     );
 
     return (
