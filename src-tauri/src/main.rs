@@ -307,7 +307,7 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
     }
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-node".to_string(),
             json!({
@@ -330,7 +330,7 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-mmproxy".to_string(),
             json!({
@@ -353,7 +353,7 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-wallet".to_string(),
             json!({
@@ -376,7 +376,7 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-gpuminer".to_string(),
             json!({
@@ -399,7 +399,7 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-xmrig".to_string(),
             json!({
@@ -422,7 +422,7 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "checking-latest-version-sha-p2pool".to_string(),
             json!({
@@ -470,7 +470,7 @@ async fn setup_inner(
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "waiting-for-minotari-node-to-start".to_string(),
             json!({
@@ -502,7 +502,7 @@ async fn setup_inner(
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
-                        let _ = telemetry_service
+                        let _unused = telemetry_service
                             .send(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
@@ -527,7 +527,7 @@ async fn setup_inner(
     }
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "waiting-for-wallet".to_string(),
             json!({
@@ -550,7 +550,7 @@ async fn setup_inner(
         )
         .await?;
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "wallet-started".to_string(),
             json!({
@@ -564,7 +564,7 @@ async fn setup_inner(
     progress
         .update("waiting-for-node".to_string(), None, 0)
         .await;
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "preparing-for-initial-sync".to_string(),
             json!({
@@ -577,7 +577,7 @@ async fn setup_inner(
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
-        let _ = telemetry_service
+        let _unused = telemetry_service
             .send(
                 "starting-p2pool".to_string(),
                 json!({
@@ -609,7 +609,7 @@ async fn setup_inner(
             .await?;
     }
 
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "starting-mmproxy".to_string(),
             json!({
@@ -644,7 +644,7 @@ async fn setup_inner(
         .await?;
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
-    let _ = telemetry_service
+    let _unused = telemetry_service
         .send(
             "setup-finished".to_string(),
             json!({
