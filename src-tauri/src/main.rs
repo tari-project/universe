@@ -307,17 +307,15 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
     }
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-node".to_string(),
-                json!({
-                    "service": "node_manager",
-                    "percentage": 5,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-node".to_string(),
+            json!({
+                "service": "node_manager",
+                "percentage": 5,
+            }),
+        )
+        .await;
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -332,17 +330,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-mmproxy".to_string(),
-                json!({
-                    "service": "mmproxy",
-                    "percentage": 10,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-mmproxy".to_string(),
+            json!({
+                "service": "mmproxy",
+                "percentage": 10,
+            }),
+        )
+        .await;
     progress.set_max(15).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
@@ -357,17 +353,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-wallet".to_string(),
-                json!({
-                    "service": "wallet",
-                    "percentage": 15,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-wallet".to_string(),
+            json!({
+                "service": "wallet",
+                "percentage": 15,
+            }),
+        )
+        .await;
     progress.set_max(20).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
@@ -382,17 +376,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-gpuminer".to_string(),
-                json!({
-                    "service": "gpuminer",
-                    "percentage":20,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-gpuminer".to_string(),
+            json!({
+                "service": "gpuminer",
+                "percentage":20,
+            }),
+        )
+        .await;
     progress.set_max(25).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
@@ -407,17 +399,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-xmrig".to_string(),
-                json!({
-                    "service": "xmrig",
-                    "percentage":25,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-xmrig".to_string(),
+            json!({
+                "service": "xmrig",
+                "percentage":25,
+            }),
+        )
+        .await;
     progress.set_max(30).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -432,17 +422,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    drop(
-        telemetry_service
-            .send(
-                "checking-latest-version-sha-p2pool".to_string(),
-                json!({
-                    "service": "sha_p2pool",
-                    "percentage":30,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "checking-latest-version-sha-p2pool".to_string(),
+            json!({
+                "service": "sha_p2pool",
+                "percentage":30,
+            }),
+        )
+        .await;
     progress.set_max(35).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
@@ -482,6 +470,15 @@ async fn setup_inner(
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
+    let _ = telemetry_service
+        .send(
+            "waiting-for-minotari-node-to-start".to_string(),
+            json!({
+                "service": "minotari_node",
+                "percentage":35,
+            }),
+        )
+        .await;
     progress.set_max(37).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
@@ -505,6 +502,15 @@ async fn setup_inner(
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
+                        let _ = telemetry_service
+                            .send(
+                                "resetting-minotari-node-database".to_string(),
+                                json!({
+                                    "service": "minotari_node",
+                                    "percentage":37,
+                                }),
+                            )
+                            .await;
                         progress.set_max(38).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
@@ -521,17 +527,15 @@ async fn setup_inner(
     }
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-    drop(
-        telemetry_service
-            .send(
-                "waiting-for-wallet".to_string(),
-                json!({
-                    "service": "wallet",
-                    "percentage":35,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "waiting-for-wallet".to_string(),
+            json!({
+                "service": "wallet",
+                "percentage":35,
+            }),
+        )
+        .await;
     progress.set_max(40).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
@@ -546,37 +550,42 @@ async fn setup_inner(
         )
         .await?;
 
+    let _ = telemetry_service
+        .send(
+            "wallet-started".to_string(),
+            json!({
+                "service": "wallet",
+                "percentage":40,
+            }),
+        )
+        .await;
     progress.set_max(45).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
         .await;
+    let _ = telemetry_service
+        .send(
+            "preparing-for-initial-sync".to_string(),
+            json!({
+                "service": "initial_sync",
+                "percentage":45,
+            }),
+        )
+        .await;
     progress.set_max(75).await;
-    drop(
-        telemetry_service
-            .send(
-                "preparing-for-initial-sync".to_string(),
-                json!({
-                    "service": "initial_sync",
-                    "percentage":45,
-                }),
-            )
-            .await,
-    );
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
-        drop(
-            telemetry_service
-                .send(
-                    "starting-p2pool".to_string(),
-                    json!({
-                        "service": "starting_p2pool",
-                        "percentage":75,
-                    }),
-                )
-                .await,
-        );
+        let _ = telemetry_service
+            .send(
+                "starting-p2pool".to_string(),
+                json!({
+                    "service": "starting_p2pool",
+                    "percentage":75,
+                }),
+            )
+            .await;
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
@@ -600,17 +609,15 @@ async fn setup_inner(
             .await?;
     }
 
-    drop(
-        telemetry_service
-            .send(
-                "starting-mmproxy".to_string(),
-                json!({
-                    "service": "starting_mmproxy",
-                    "percentage":85,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "starting-mmproxy".to_string(),
+            json!({
+                "service": "starting_mmproxy",
+                "percentage":85,
+            }),
+        )
+        .await;
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)
@@ -637,17 +644,15 @@ async fn setup_inner(
         .await?;
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
-    drop(
-        telemetry_service
-            .send(
-                "setup-finished".to_string(),
-                json!({
-                    "service": "setup_finished",
-                    "percentage":100,
-                }),
-            )
-            .await,
-    );
+    let _ = telemetry_service
+        .send(
+            "setup-finished".to_string(),
+            json!({
+                "service": "setup_finished",
+                "percentage":100,
+            }),
+        )
+        .await;
     drop(
         app.clone()
             .emit(
