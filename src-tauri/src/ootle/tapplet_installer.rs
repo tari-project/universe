@@ -17,6 +17,7 @@ use std::{
     io::Write,
     path::PathBuf,
 };
+use tauri::Manager;
 pub const LOG_TARGET: &str = "tari::universe";
 
 pub fn delete_tapplet(tapplet_path: PathBuf) -> Result<(), Error> {
@@ -53,7 +54,7 @@ pub fn get_tapp_download_path(
 ) -> Result<PathBuf, Error> {
     // app_path = /home/user/.local/share/universe.tari
     let app_path = app_handle
-        .path_resolver()
+        .path()
         .app_data_dir()
         .expect("Could not get data dir");
 
@@ -126,7 +127,7 @@ pub async fn download_asset(
 ) -> Result<TappletAssets, Error> {
     // let tapp_root_dir: PathBuf = app_handle.path().app_data_dir().unwrap().to_path_buf();
     let tapp_root_dir: PathBuf = app_handle
-        .path_resolver()
+        .path()
         .app_data_dir()
         .expect("Could not get data dir");
     let tapp_asset_dir = get_or_create_tapp_asset_dir(tapp_root_dir, &tapplet_name)?;

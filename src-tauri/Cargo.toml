@@ -92,6 +92,7 @@ tauri-plugin-updater = { git = "https://github.com/tari-project/tauri-plugins-wo
 thiserror = "1.0.26"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }
+tower-http = { version = "0.5.2", features = ["fs", "trace"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"

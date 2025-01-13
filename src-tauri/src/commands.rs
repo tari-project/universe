@@ -1920,7 +1920,7 @@ pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<St
 pub async fn download_and_extract_tapp(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
-    app_handle: tauri::AppHandle,
+    app: tauri::AppHandle,
 ) -> Result<Tapplet, String> {
     let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
     // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
@@ -1935,19 +1935,14 @@ pub async fn download_and_extract_tapp(
     let tapplet_path = get_tapp_download_path(
         tapp.registry_id.clone(),
         tapp_version.version.clone(),
-        app_handle.clone(),
+        app.clone(),
     )
     .unwrap_or_default();
     // download tarball
     let url = tapp_version.registry_url.clone();
     let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
     let destination_dir = file_path.clone();
-    let progress_tracker = ProgressTracker::new(
-        app_handle
-            .get_window("main")
-            .expect("Could not get main window")
-            .clone(),
-    );
+    let progress_tracker = ProgressTracker::new(app.clone(), None);
     let handle_download = tauri::async_runtime::spawn(async move {
         download_file_with_retries(&url, &destination_dir, progress_tracker).await
     });

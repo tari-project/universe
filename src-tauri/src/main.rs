@@ -24,24 +24,24 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-use gpu_miner_adapter::GpuMinerStatus;
 use consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR};
+use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use indexer_manager::{IndexerConfig, IndexerManager};
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
-use p2pool::models::Connections;
 use ootle::tapplet_server::start;
 use ootle::{
     setup_ootle_wallet, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
 };
+use p2pool::models::Connections;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use tauri_plugin_cli::CliExt;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use wallet_adapter::WalletBalance;
 use validator_node_manager::{ValidatorNodeConfig, ValidatorNodeManager};
+use wallet_adapter::WalletBalance;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -212,7 +212,7 @@ async fn setup_inner(
         .expect("Could not get config dir");
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
     let app_data_dir = app
-        .path_resolver()
+        .path()
         .app_data_dir()
         .expect("Could not get app data dir");
 
@@ -388,7 +388,12 @@ async fn setup_inner(
             )
             .await;
         binary_resolver
-            .initalize_binary(Binaries::TariValidatorNode, progress.clone(), false)
+            .initialize_binary_timeout(
+                Binaries::TariValidatorNode,
+                progress.clone(),
+                false,
+                rx.clone(),
+            )
             .await?;
         sleep(Duration::from_secs(1));
         info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
@@ -400,7 +405,7 @@ async fn setup_inner(
             .update("checking-latest-version-tari-indexer".to_string(), None, 0)
             .await;
         binary_resolver
-            .initalize_binary(Binaries::TariIndexer, progress.clone(), false)
+            .initialize_binary_timeout(Binaries::TariIndexer, progress.clone(), false, rx.clone())
             .await?;
         sleep(Duration::from_secs(1));
         info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
@@ -1089,7 +1094,7 @@ fn main() {
             commands::check_for_updates,
             commands::try_update,
             commands::get_network,
-            commands::sign_ws_data,,
+            commands::sign_ws_data,
             commands::fetch_registered_tapplets,
             commands::launch_tapplet,
             commands::insert_tapp_registry_db,
