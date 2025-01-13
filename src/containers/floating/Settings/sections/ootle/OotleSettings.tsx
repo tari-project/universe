@@ -22,11 +22,11 @@ export const OotleSettings = () => {
 
     const handleOotleSwitch = useCallback(() => {
         setOotleMode(!ootleMode);
-    }, [setOotleMode, ootleMode]);
+    }, [ootleMode, setOotleMode]);
 
     const handleIndexerSwitch = useCallback(() => {
         setLocalTariIndexer(!localIndexer);
-    }, [setLocalTariIndexer, localIndexer]);
+    }, [localIndexer, setLocalTariIndexer]);
 
     return (
         <>

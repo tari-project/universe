@@ -10,12 +10,11 @@ import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { MdLaunch, MdDelete } from 'react-icons/md';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input.tsx';
 import { Controller, useForm } from 'react-hook-form';
-import { IoCheckmarkOutline, IoCloseOutline, IoRemoveOutline } from 'react-icons/io5';
-import { invoke } from '@tauri-apps/api';
+import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
 

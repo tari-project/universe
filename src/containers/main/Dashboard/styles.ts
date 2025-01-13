@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { m } from 'framer-motion';
 
 export const DashboardContentContainer = styled(m.div)<{ $ootleModeOn?: boolean }>`

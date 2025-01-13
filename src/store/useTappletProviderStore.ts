@@ -1,4 +1,3 @@
-import { invoke } from '@tauri-apps/api';
 import { create } from './create.ts';
 import { ActiveTapplet } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
@@ -28,7 +27,6 @@ const initialState: State = {
 export const useTappletProviderStore = create<TappletProviderStoreState>()((set, get) => ({
     ...initialState,
     setTappletProvider: async (id: string, launchedTapplet: ActiveTapplet) => {
-        console.log('[STORE][tapp provider] set tapp', launchedTapplet);
         try {
             // TODO tmp solution
             const requiredPermissions = new TariPermissions();
@@ -56,11 +54,8 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
     },
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
         const { methodName, args, id } = event.data;
-        console.log('YEEEEY', methodName);
         const provider = get().tappletProvider;
         const result = await provider?.runOne(methodName, args);
-        console.log('YEEEEY PROVIDER', provider);
-        console.log('YEEEEY RESPONSE', result);
         if (event.source) {
             event.source.postMessage({ id, result, type: 'provider-call' }, { targetOrigin: event.origin });
         }

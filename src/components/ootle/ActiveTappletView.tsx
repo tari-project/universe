@@ -1,5 +1,5 @@
-import { ActiveTapplet, TappletConfig } from '@app/types/ootle/tapplet';
-import { useCallback, useEffect, useState } from 'react';
+import { TappletConfig } from '@app/types/ootle/tapplet';
+import { useCallback, useEffect } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
@@ -11,7 +11,7 @@ export default function ActiveTappletView() {
     // const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
-    const activeTappletId = useTappletsStore((s) => s.activeTappletId);
+    // const activeTappletId = useTappletsStore((s) => s.activeTappletId);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
 
@@ -57,7 +57,7 @@ export default function ActiveTappletView() {
     useEffect(() => {
         // getActiveTapplet();
         fetchTappConfig();
-    }, [activeTappletId, fetchTappConfig]);
+    }, [fetchTappConfig]);
 
     return (
         <>

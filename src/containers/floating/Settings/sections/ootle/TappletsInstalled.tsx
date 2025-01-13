@@ -12,7 +12,7 @@ import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { ActiveTapplet, InstalledTapplet, InstalledTappletWithAssets } from '@app/types/ootle/tapplet.ts';
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 const Count = styled.div<{ $count: number }>`
