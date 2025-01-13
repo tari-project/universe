@@ -45,11 +45,6 @@ export default function App() {
         }
     }, [isShuttingDown, isSettingUp]);
 
-    console.log('App.tsx');
-    console.log('isAppReady: ', isAppReady);
-    console.log('isSettingUp: ', isSettingUp);
-    console.log('isShuttingDown: ', isShuttingDown);
-
     return (
         <ThemeProvider>
             <GlobalReset />

@@ -7,9 +7,7 @@ export const useIsAppReady = () => {
     useEffect(() => {
         emit('frontend_ready', {});
 
-        console.log('useIsAppReady');
         const listener = listen('app_ready', () => {
-            console.log('app_ready');
             setIsAppReady(true);
         });
 
