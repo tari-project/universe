@@ -572,23 +572,26 @@ async fn setup_inner(
     Ok(())
 }
 
-async fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    app
-            .get_webview_window("main")
-            .expect("Could not get main window")
-            .emit("app_ready", ())
-            .expect("Could not emit event 'app_ready'");
-    Ok(())
+// async fn on_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+//     info!(target: LOG_TARGET, "Frontend is ready");
+//     app
+//             .get_webview_window("main")
+//             .expect("Could not get main window")
+//             .emit("app_ready", ())
+//             .expect("Could not emit event 'app_ready'");
+//     Ok(())
 
-}
+// }
 
 async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let app_clone = app.clone();
     app_clone.listen("frontend_ready", move | _event| {
-        let app_clone = app.clone();
-        let _unused = async move {
-            let _unused = on_frontend_ready(app_clone).await;
-        };
+        info!(target: LOG_TARGET, "Frontend is ready");
+        app
+                .get_webview_window("main")
+                .expect("Could not get main window")
+                .emit("app_ready", ())
+                .expect("Could not emit event 'app_ready'");
     });
 
     Ok(())
