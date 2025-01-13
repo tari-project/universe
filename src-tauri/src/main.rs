@@ -74,7 +74,7 @@ use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::NodeManager;
-use crate::p2pool::models::Stats;
+use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
 use crate::utils::auto_rollback::AutoRollback;
@@ -726,7 +726,7 @@ struct UniverseAppState {
     base_node_latest_status: Arc<watch::Receiver<BaseNodeStatus>>,
     wallet_latest_balance: Arc<watch::Receiver<Option<WalletBalance>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
-    is_getting_p2pool_stats: Arc<AtomicBool>,
+    p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
@@ -748,7 +748,6 @@ struct UniverseAppState {
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
-    cached_p2pool_stats: Arc<RwLock<Option<Option<Stats>>>>,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
@@ -786,7 +785,8 @@ fn main() {
     let (wallet_watch_tx, wallet_watch_rx) = watch::channel::<Option<WalletBalance>>(None);
     let wallet_manager = WalletManager::new(node_manager.clone(), wallet_watch_tx);
     let wallet_manager2 = wallet_manager.clone();
-    let p2pool_manager = P2poolManager::new();
+    let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
+    let p2pool_manager = P2poolManager::new(p2pool_stats_tx);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -813,9 +813,9 @@ fn main() {
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
-        p2pool_manager.clone(),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
+        p2pool_stats_rx.clone(),
     );
     let telemetry_service = TelemetryService::new(
         app_config_raw.anon_id().to_string(),
@@ -830,11 +830,11 @@ fn main() {
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
-        is_getting_p2pool_stats: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         base_node_latest_status: Arc::new(base_node_watch_rx),
         wallet_latest_balance: Arc::new(wallet_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
+        p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
@@ -854,7 +854,6 @@ fn main() {
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
         updates_manager,
-        cached_p2pool_stats: Arc::new(RwLock::new(None)),
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),

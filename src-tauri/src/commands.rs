@@ -33,7 +33,7 @@ use crate::external_dependencies::{
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
-use crate::p2pool::models::{Connections, Stats};
+use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
@@ -524,29 +524,13 @@ pub async fn get_monero_seed_words(
 #[tauri::command]
 pub async fn get_p2pool_stats(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<Option<Stats>, String> {
+) -> Result<Option<P2poolStats>, String> {
     let timer = Instant::now();
-    if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
-        let read = state.cached_p2pool_stats.read().await;
-        if let Some(stats) = &*read {
-            warn!(target: LOG_TARGET, "Already getting p2pool stats, returning cached value");
-            return Ok(stats.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting p2pool stats");
-        return Err("Already getting p2pool stats".to_string());
-    }
-    state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = state.p2pool_manager.get_stats().await.unwrap_or_else(|e| {
-        warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-        None
-    });
+    let p2pool_stats = state.p2pool_latest_status.borrow().clone();
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
     }
-    let mut lock = state.cached_p2pool_stats.write().await;
-    *lock = Some(p2pool_stats.clone());
-    state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
 }
 
