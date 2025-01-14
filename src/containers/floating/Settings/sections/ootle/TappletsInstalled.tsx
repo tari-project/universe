@@ -11,7 +11,7 @@ import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { Count } from './styles.ts';
+import { Count } from './OotleSettings.styles.ts';
 
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle', { useSuspense: false });
@@ -82,7 +82,9 @@ export default function TappletsInstalled() {
                             {installedTapplets.map((item, index) => (
                                 <ListItem key={index}>
                                     <ListItemAvatar>
-                                        <Avatar src={item.logoAddr} />
+                                        <Avatar
+                                            src={item.logoAddr == 'undefined' ? item.logoAddr : tariLogo.toString()}
+                                        />
                                     </ListItemAvatar>
                                     <ListItemText
                                         primary={`${item.display_name} ver ${item.installed_version}`}

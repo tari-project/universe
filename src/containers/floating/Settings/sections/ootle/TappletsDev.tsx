@@ -15,7 +15,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
-import { Count, StyledForm, StyledInput, StyledStack } from './styles.ts';
+import { Count, StyledForm, StyledInput, StyledStack } from './OotleSettings.styles.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
 

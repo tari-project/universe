@@ -9,7 +9,7 @@ import { MdDownload } from 'react-icons/md';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
-import { Count } from './styles.ts';
+import { Count } from './OotleSettings.styles.ts';
 
 export default function TappletsRegistered() {
     const { t } = useTranslation('ootle', { useSuspense: false });
