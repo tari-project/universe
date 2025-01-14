@@ -29,6 +29,7 @@ use crate::process_utils::retry_with_backoff;
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
+    UniverseAppState,
 };
 use anyhow::Result;
 use base64::prelude::*;
@@ -46,7 +47,7 @@ use std::ops::Div;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tokio::sync::{watch, RwLock};
 use tokio_util::sync::CancellationToken;
 
@@ -284,7 +285,6 @@ impl TelemetryManager {
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
         self.airdrop_access_token = airdrop_access_token.clone();
-        info!(target: LOG_TARGET, "TEL SELF token: {:?}", self.airdrop_access_token.clone());
         self.start_telemetry_process(TelemetryFrequency::default().into(), app_handle)
             .await?;
         Ok(())
@@ -305,6 +305,10 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let airdrop_access_token = self.airdrop_access_token.clone();
+
+        info!(target: LOG_TARGET, "TEL SELF token: {:?}", airdrop_access_token.clone());
+        info!(target: LOG_TARGET, "TEL state token: {:?}", app_handle.state::<UniverseAppState>().airdrop_access_token.clone());
+
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {

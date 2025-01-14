@@ -30,7 +30,6 @@ export default function AppWrapper() {
             await fetchAppConfig();
             const beConfig = await fetchBackendInMemoryConfig();
             if (beConfig?.airdropUrl) {
-                console.debug(`beConfig.airdropUrl= ${beConfig.airdropUrl}`);
                 await handleRefreshAirdropTokens(beConfig.airdropUrl, true);
             }
             await initSystray();

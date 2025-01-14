@@ -933,27 +933,6 @@ pub async fn send_feedback(
 }
 
 #[tauri::command]
-pub async fn set_airdrop_access_token(
-    token: String,
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token.clone());
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "set_airdrop_access_token took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    let mut in_memory_app_config = state.in_memory_config.write().await;
-    in_memory_app_config.airdrop_access_token = Some(token);
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_allow_telemetry(
     allow_telemetry: bool,
     _window: tauri::Window,

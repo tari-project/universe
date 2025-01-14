@@ -44,7 +44,7 @@ use std::fs;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -153,31 +153,37 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
-async fn get_token(app: tauri::AppHandle) {
-    info!(target: LOG_TARGET, "LISTEN: hello hi when??");
-    let app_move = app.clone();
+async fn set_airdrop_access_token(
+    token: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut write_lock = state.airdrop_access_token.write().await;
+    *write_lock = Some(token.clone());
+    let mut in_memory_app_config = state.in_memory_config.write().await;
+    in_memory_app_config.airdrop_access_token = Some(token);
+    Ok(())
+}
+
+async fn get_token(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    let app_clone = app.clone();
     app.listen("startup-token", move |event| {
-        info!(target: LOG_TARGET, "LISTEN + Payload: hello {:?}", event.payload());
+        info!(target: LOG_TARGET, "Getting token from Frontend");
+        let app_state = app_clone.state::<UniverseAppState>().clone();
         _ = async {
-            let app_state = app_move.state::<UniverseAppState>().clone();
             let token_payload = event.payload();
-            info!(target: LOG_TARGET, "Getting token payload");
 
-            let mut token = app_state.airdrop_access_token.write().await;
-            *token = Some(token_payload.to_string().clone());
-
-            let mut in_memory_app_config = app_state.in_memory_config.write().await;
-            in_memory_app_config.airdrop_access_token = Some(token_payload.to_string().clone());
+            set_airdrop_access_token(token_payload.clone().to_string(), app_state.clone())
+                .await
+                .expect("set_airdrop_access_token failed");
         }
     });
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    dbg!("1: BEFORE");
     let state = app.state::<UniverseAppState>().clone();
-    get_token(app.clone()).await;
-    dbg!("2: AFTER");
+
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -257,7 +263,6 @@ async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
-    info!(target: LOG_TARGET, "TEL token: {:?}", state.airdrop_access_token.clone());
     let _unused = state
         .gpu_miner
         .write()
@@ -1079,7 +1084,6 @@ fn main() {
             commands::resolve_application_language,
             commands::restart_application,
             commands::send_feedback,
-            commands::set_airdrop_access_token,
             commands::set_allow_telemetry,
             commands::send_data_telemetry_service,
             commands::set_application_language,
@@ -1127,6 +1131,10 @@ fn main() {
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
             let a = app_handle.clone();
+            let app_handle_clone = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let _unused = get_token(app_handle_clone).await;
+            });
             tauri::async_runtime::spawn( async move  {
                 let _res = setup_inner(a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));

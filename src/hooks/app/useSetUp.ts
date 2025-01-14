@@ -5,15 +5,12 @@ import { TauriEvent } from '../../types.ts';
 
 import { useAppStateStore } from '../../store/appStateStore.ts';
 
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-
 export function useSetUp() {
     const isInitializingRef = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
     const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
-    const syncedAidropWithBackend = useAirdropStore((s) => s.syncedWithBackend);
 
     const clearStorage = useCallback(() => {
         // clear all storage except airdrop data
@@ -47,13 +44,13 @@ export function useSetUp() {
                     break;
             }
         });
-        console.debug(`syncedAidropWithBackend= ${syncedAidropWithBackend}`);
-        if (syncedAidropWithBackend && !isInitializingRef.current) {
+
+        if (!isInitializingRef.current) {
             isInitializingRef.current = true;
             clearStorage();
         }
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, handlePostSetup, adminShow, syncedAidropWithBackend, setSetupDetails]);
+    }, [clearStorage, handlePostSetup, adminShow, setSetupDetails]);
 }
