@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::path::Path;
+use std::{future::Future, path::Path, pin::Pin, time::Duration};
 
 pub fn launch_child_process(
     file_path: &Path,
@@ -84,3 +84,38 @@ pub fn launch_child_process(
 //         Ok(output.stdout.as_slice().to_vec())
 //     }
 // }
+
+pub async fn retry_with_backoff<T, R, E>(
+    mut f: T,
+    increment_in_secs: u64,
+    max_retries: u64,
+    operation_name: &str,
+) -> anyhow::Result<R>
+where
+    T: FnMut() -> Pin<Box<dyn Future<Output = Result<R, E>> + Send>>,
+    E: std::error::Error,
+{
+    let range_size = increment_in_secs * max_retries + 1;
+
+    for i in (0..range_size).step_by(usize::try_from(increment_in_secs)?) {
+        tokio::time::sleep(Duration::from_secs(i)).await;
+
+        let result = f().await;
+        match result {
+            Ok(res) => return Ok(res),
+            Err(e) => {
+                if i == range_size - 1 {
+                    return Err(anyhow::anyhow!(
+                        "Max retries reached, {} failed. Last error: {:?}",
+                        operation_name,
+                        e
+                    ));
+                }
+            }
+        }
+    }
+    Err(anyhow::anyhow!(
+        "Max retries reached, {} failed without capturing error",
+        operation_name
+    ))
+}
