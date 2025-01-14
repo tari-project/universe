@@ -1,21 +1,30 @@
 {
-    "identifier": "default",
-    "windows": ["main"],
-    "permissions": [
-        "core:path:default",
-        "core:event:default",
-        "core:window:default",
-        "core:app:default",
-        "core:resources:default",
-        "core:menu:default",
-        "core:tray:default",
-        "core:window:allow-close",
-        "core:window:allow-destroy",
-        "core:window:allow-minimize",
-        "core:window:allow-unminimize",
-        "shell:allow-open",
-        "sentry:default",
-        "process:allow-restart",
-        "process:default"
-    ]
+  "identifier": "default",
+  "windows": [
+    "main"
+  ],
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "permissions": [
+    "cli:default",
+    "core:path:default",
+    "core:event:default",
+    "core:window:default",
+    "core:app:default",
+    "core:resources:default",
+    "core:menu:default",
+    "core:tray:default",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
+    "core:window:allow-minimize",
+    "core:window:allow-unminimize",
+    "shell:allow-open",
+    "sentry:default",
+    "process:allow-restart",
+    "process:default",
+    "updater:default"
+  ]
 }

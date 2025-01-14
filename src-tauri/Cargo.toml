@@ -10,6 +10,7 @@ version = "0.8.42"
 
 [build-dependencies]
 embed-resource = "2.5.0"
+tauri-build = "2"
 
 [dependencies]
 anyhow = "1"
@@ -66,7 +67,21 @@ tari_crypto = "0.21.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v1.9.1-rc.1" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v1.9.1-rc.1" }
 tari_utilities = "0.8.0"
-thiserror = "1.0.26"
+tauri = { version= "2", features = [
+  "macos-private-api",
+  "image-png",
+  "image-ico",
+  "tray-icon",
+  "devtools",          # TODO: Remove this before mainnet
+]}
+tauri-plugin-cli = "2"
+tauri-plugin-os = "2"
+tauri-plugin-process = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-sentry = "0.4"
+tauri-plugin-shell = "2"
+tauri-plugin-updater = "2"
+thiserror = "2.0.11"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
@@ -80,6 +95,7 @@ openssl = { version = "0.10", features = ["vendored"] }
 ring-compat = "0.8.0"
 der = "0.7.9"
 
+
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
 
@@ -92,6 +108,7 @@ nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"
 
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 
 # tonic = "0.12.0"
 
