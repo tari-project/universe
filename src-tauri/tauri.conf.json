@@ -1,5 +1,5 @@
 {
-    "version": "0.8.41",
+    "version": "0.8.42",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -40,7 +40,13 @@
                 "default",
                 "migrated"
             ],
-            "csp": null
+            "csp": null,
+            "pattern": {
+                "use": "isolation",
+                "options": {
+                    "dir": "../dist-isolation"
+                }
+            }
         },
         "trayIcon": {
             "id": "universe-tray-id",
