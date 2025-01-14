@@ -4,13 +4,13 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.8.34"
+version = "0.8.42"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
 embed-resource = "2.5.0"
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2", features = ["isolation"] }
 
 [dependencies]
 anyhow = "1"
@@ -69,13 +69,14 @@ tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v1
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v1.9.1-rc.1" }
 tari_utilities = "0.8.0"
 tauri = { git = "https://github.com/tari-project/tauri.git", rev = "67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25", features = [
+  "isolation",
   "macos-private-api",
   "image-png",
   "image-ico",
   "tray-icon",
   "devtools",          # TODO: Remove this before mainnet
-  "tracing",           # TODO: Remove this before mainnet
 ] }
+tauri-plugin-cli = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-os = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-sentry = { git = "https://github.com/tari-project/sentry-tauri", rev = "7554b9a8738d6442d175aa2add55ecc11c52842d" }
 tauri-plugin-shell = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
@@ -106,10 +107,13 @@ log = "0.4.22"
 nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"
+
+
 # tonic = "0.12.0"
 
 [features]
 airdrop-env = []
+telemetry-env = []
 airdrop-local = []
 custom-protocol = [
   "tauri/custom-protocol",

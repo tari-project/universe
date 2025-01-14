@@ -27,10 +27,10 @@ use std::time::Duration;
 use futures_util::future::FusedFuture;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
-use crate::p2pool::models::{Connections, Stats};
+use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
@@ -109,21 +109,13 @@ pub struct P2poolManager {
 }
 
 impl P2poolManager {
-    pub fn new() -> Self {
-        let adapter = P2poolAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+    pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
+        let adapter = P2poolAdapter::new(stats_broadcast);
+        let mut process_watcher = ProcessWatcher::new(adapter);
+        process_watcher.expected_startup_time = Duration::from_secs(30);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
-        }
-    }
-
-    pub async fn get_stats(&self) -> Result<Option<Stats>, anyhow::Error> {
-        let process_watcher = self.watcher.read().await;
-        if let Some(status_monitor) = &process_watcher.status_monitor {
-            Ok(Some(status_monitor.status().await?))
-        } else {
-            Ok(None)
         }
     }
 
