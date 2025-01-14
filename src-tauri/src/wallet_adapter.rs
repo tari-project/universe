@@ -141,9 +141,6 @@ impl ProcessAdapter for WalletAdapter {
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
 
-        let wallet_data_folder =
-            working_dir.join(Network::get_current_or_user_setting_or_default().to_string());
-
         if self.use_tor {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
@@ -171,11 +168,6 @@ impl ProcessAdapter for WalletAdapter {
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {
             warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
-        }
-
-        //  Delete any old wallets on startup
-        if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
         }
 
         #[cfg(target_os = "windows")]
