@@ -6,14 +6,16 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useCallback } from 'react';
+
 import { Typography } from '@app/components/elements/Typography';
-import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+
 import { useTranslation } from 'react-i18next';
+import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
+import { useCallback } from 'react';
 import { TappletsOverview } from './TappletsOverview';
 
 export const OotleSettings = () => {
-    const { t } = useTranslation(['settings', 'ootle']);
+    const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
     const ootleMode = useAppConfigStore((s) => s.ootle_enabled);
     const localIndexer = useAppConfigStore((s) => s.local_tari_indexer);
 

@@ -50,7 +50,7 @@ const Count = styled.div<{ $count: number }>`
 `;
 
 export default function TappletsDev() {
-    const { t } = useTranslation('ootle');
+    const { t } = useTranslation('ootle', { useSuspense: false });
     const initialDevTappEndpoint = '';
 
     const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
@@ -157,7 +157,14 @@ export default function TappletsDev() {
                         }}
                         render={({ field }) => {
                             const { ref: _ref, ...rest } = field;
-                            return <StyledInput type="text" hasError={!!errors.endpoint} {...rest} />;
+                            return (
+                                <StyledInput
+                                    type="text"
+                                    placeholder="New Dev Tapplet endpoint, e.g.: http://localhost:18000"
+                                    hasError={!!errors.endpoint}
+                                    {...rest}
+                                />
+                            );
                         }}
                     />
                     {!errors.endpoint && (

@@ -31,7 +31,7 @@ const Count = styled.div<{ $count: number }>`
 `;
 
 export default function TappletsInstalled() {
-    const { t } = useTranslation('ootle');
+    const { t } = useTranslation('ootle', { useSuspense: false });
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
     const deleteInstalledTapp = useTappletsStore((s) => s.deleteInstalledTapp);

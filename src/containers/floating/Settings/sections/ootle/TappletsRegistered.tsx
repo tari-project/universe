@@ -27,7 +27,7 @@ const Count = styled.div<{ $count: number }>`
 `;
 
 export default function TappletsRegistered() {
-    const { t } = useTranslation('ootle');
+    const { t } = useTranslation('ootle', { useSuspense: false });
     const fetchRegisteredTapplets = useTappletsStore((s) => s.fetchRegisteredTapps);
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
@@ -56,7 +56,7 @@ export default function TappletsRegistered() {
     // useEffect(() => {
     //     const fetchTappletsInterval = setInterval(async () => {
     //         try {
-    //             await fetchTapplets();
+    //             await fetchRegisteredTapplets();
     //         } catch (error) {
     //             console.error('Error fetching registered tapplets:', error);
     //         }
