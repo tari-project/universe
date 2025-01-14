@@ -1,4 +1,3 @@
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -10,21 +9,7 @@ import { MdDownload } from 'react-icons/md';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
-
-const Count = styled.div<{ $count: number }>`
-    border-radius: 11px;
-    background-color: ${({ theme }) => theme.palette.background.accent};
-    color: ${({ theme }) => theme.palette.text.primary};
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px 6px;
-    line-height: 1;
-    width: ${({ $count }) => ($count > 999 ? 'auto' : '22px')};
-    height: ${({ $count }) => ($count > 999 ? 'auto' : '22px')};
-    font-size: ${({ $count }) => ($count > 999 ? '10px' : '11px')};
-`;
+import { Count } from './styles.ts';
 
 export default function TappletsRegistered() {
     const { t } = useTranslation('ootle', { useSuspense: false });
@@ -32,15 +17,6 @@ export default function TappletsRegistered() {
     const registeredTapplets = useTappletsStore((s) => s.registeredTapplets);
     const installRegisteredTapp = useTappletsStore((s) => s.installRegisteredTapp);
     const registeredTappletsCount = registeredTapplets?.length || 0;
-    console.log('fethch registered tapp', registeredTapplets);
-    const listMarkup = registeredTappletsCount
-        ? registeredTapplets.map((tapp, i) => <li key={`tapp-${tapp}:${i}`}>{tapp.display_name}</li>)
-        : null;
-
-    // const handleInstall = async (tappletId: string) => {
-    //     console.log('instal tapp with id', tappletId);
-    //     await installRegisteredTapp(tappletId);
-    // };
 
     const handleInstall = useCallback(
         async (id: string) => {
@@ -52,23 +28,10 @@ export default function TappletsRegistered() {
         },
         [installRegisteredTapp]
     );
-    // TODO can be used if fetching from db works
-    // useEffect(() => {
-    //     const fetchTappletsInterval = setInterval(async () => {
-    //         try {
-    //             await fetchRegisteredTapplets();
-    //         } catch (error) {
-    //             console.error('Error fetching registered tapplets:', error);
-    //         }
-    //     }, 5000);
-
-    //     return () => {
-    //         clearInterval(fetchTappletsInterval);
-    //     };
-    // }, [fetchTapplets]);
 
     useEffect(() => {
         fetchRegisteredTapplets();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (

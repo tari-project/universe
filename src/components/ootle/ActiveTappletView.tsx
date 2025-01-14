@@ -8,16 +8,12 @@ import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 
 export default function ActiveTappletView() {
-    // const [tapplet, setTapplet] = useState<ActiveTapplet>();
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
-    // const activeTappletId = useTappletsStore((s) => s.activeTappletId);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
 
     const fetchTappConfig = useCallback(async () => {
-        console.log('[active dev tapp] fetch tapp config from tapp provider', tappProvider);
-        console.log('[active dev tapp] fetch tapp config from tapp', tapplet);
         try {
             if (!tapplet) return;
 
@@ -44,18 +40,7 @@ export default function ActiveTappletView() {
         }
     }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
 
-    // const getActiveTapplet = useCallback(async () => {
-    //     try {
-    //         if (activeTappletId === tapplet?.tapplet_id) return;
-    //         const tapp = getActiveTapp();
-    //         setTapplet(tapp);
-    //     } catch (e) {
-    //         console.error(e);
-    //     }
-    // }, [activeTappletId, tapplet?.tapplet_id, getActiveTapp]);
-
     useEffect(() => {
-        // getActiveTapplet();
         fetchTappConfig();
     }, [fetchTappConfig]);
 

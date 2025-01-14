@@ -1,4 +1,3 @@
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -11,43 +10,14 @@ import { MdLaunch, MdDelete } from 'react-icons/md';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 import { useCallback, useEffect } from 'react';
-import { Stack } from '@app/components/elements/Stack.tsx';
-import { Input } from '@app/components/elements/inputs/Input.tsx';
+
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
+import { Count, StyledForm, StyledInput, StyledStack } from './styles.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
-
-const StyledStack = styled(Stack)`
-    width: 100%;
-`;
-
-const StyledInput = styled(Input)`
-    font-size: 12px;
-`;
-
-const StyledForm = styled.form`
-    width: 100%;
-    // Reserve space for error message
-    min-height: 53px;
-`;
-
-const Count = styled.div<{ $count: number }>`
-    border-radius: 11px;
-    background-color: ${({ theme }) => theme.palette.background.accent};
-    color: ${({ theme }) => theme.palette.text.primary};
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2px 6px;
-    line-height: 1;
-    width: ${({ $count }) => ($count > 999 ? 'auto' : '22px')};
-    height: ${({ $count }) => ($count > 999 ? 'auto' : '22px')};
-    font-size: ${({ $count }) => ($count > 999 ? '10px' : '11px')};
-`;
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle', { useSuspense: false });
@@ -55,27 +25,8 @@ export default function TappletsDev() {
 
     const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
-    // const devTapplets = useTappletsStore((s) => s.devTapplets);
-    // const addDevTapplet = useTappletsStore((s) => s.addDevTapp);
-    // const deleteDevTapplet = useTappletsStore((s) => s.deleteDevTapp);
-    // const getDevTapps = useTappletsStore((s) => s.getDevTapps);
     const devTappletsCount = devTapplets?.length || 0;
-    console.log('fethch dev tapp', devTapplets);
 
-    // TODO can be used if fetching from db works
-    // useEffect(() => {
-    //     const fetchTappletsInterval = setInterval(async () => {
-    //         try {
-    //             await fetchTapplets();
-    //         } catch (error) {
-    //             console.error('Error fetching dev tapplets:', error);
-    //         }
-    //     }, 5000);
-
-    //     return () => {
-    //         clearInterval(fetchTappletsInterval);
-    //     };
-    // }, [fetchTapplets]);
     const {
         control,
         watch,
@@ -110,6 +61,7 @@ export default function TappletsDev() {
 
     useEffect(() => {
         getDevTapps();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleLaunch = useCallback(
