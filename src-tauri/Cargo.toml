@@ -95,7 +95,6 @@ openssl = { version = "0.10", features = ["vendored"] }
 ring-compat = "0.8.0"
 der = "0.7.9"
 
-
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
 
@@ -108,7 +107,6 @@ nvml-wrapper = "0.10.0"
 rand = "0.8.5"
 sys-locale = "0.3.1"
 
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 
 # tonic = "0.12.0"
 
@@ -117,10 +115,10 @@ airdrop-env = []
 telemetry-env = []
 airdrop-local = []
 custom-protocol = [
-
+  "tauri/custom-protocol",
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
-release-ci = []
-release-ci-beta = []
+release-ci = ["tauri/custom-protocol"]
+release-ci-beta = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = [
@@ -133,3 +131,7 @@ ignored = [
 
 [profile.release]
 debug = true
+
+[profile.release.package.wry]
+debug = true
+debug-assertions = true
