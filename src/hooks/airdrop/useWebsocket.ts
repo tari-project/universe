@@ -34,8 +34,7 @@ export const useWebsocket = () => {
     const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
 
     const isMining = useMemo(() => {
-        const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
-        return isMining;
+        return (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
     const handleEmitMiningStatus = useCallback(
@@ -115,7 +114,7 @@ export const useWebsocket = () => {
                 socket.on(userId as string, handleWsUserIdEvent);
             });
 
-            socket.on('connect_error', (e) => {
+            socket.on('connect_error', (_e) => {
                 registerWsConnectionEvent({
                     state: 'error',
                     error: 'could not connect to server',
@@ -128,7 +127,7 @@ export const useWebsocket = () => {
                 });
                 console.error(reason, details);
             });
-            socket.io.on('reconnect', (e) => {
+            socket.io.on('reconnect', (_e) => {
                 registerWsConnectionEvent({
                     state: 'up',
                 });
