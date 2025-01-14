@@ -29,9 +29,9 @@ export const ApplyInviteCode = () => {
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
-        if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
+        if (backendInMemoryConfig?.airdropUrl) {
             setLoading(true);
-            const refUrl = `${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}${claimCode ? `&universeReferral=${claimCode}` : ''}`;
+            const refUrl = `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${claimCode ? `&universeReferral=${claimCode}` : ''}`;
 
             setAllowTelemetry(true).then(() => {
                 setAuthUuid(token);
@@ -39,7 +39,7 @@ export const ApplyInviteCode = () => {
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [backendInMemoryConfig?.airdropTwitterAuthUrl, claimCode]);
+    }, [backendInMemoryConfig?.airdropUrl, claimCode]);
 
     const handleToken = useCallback(() => {
         if (authUuid) {
