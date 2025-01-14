@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -19,7 +19,13 @@ const GpuMiningMarkup = () => {
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
-    const isGPUMiningAvailable = useMiningStore((s) => s.gpu.mining.is_available);
+    const gpuDevicesHardware = useMiningStore((s) => s.gpu.hardware);
+    const isGPUMiningAvailable = useMemo(() => {
+        if (!gpuDevicesHardware) return false;
+        if (gpuDevicesHardware.length === 0) return false;
+
+        return gpuDevicesHardware.some((device) => device.status.is_available);
+    }, [gpuDevicesHardware]);
 
     const handleGpuMiningEnabled = useCallback(async () => {
         await setGpuMiningEnabled(!isGpuMiningEnabled);
