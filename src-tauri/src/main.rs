@@ -153,22 +153,6 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
-async fn get_token(app: tauri::AppHandle) {
-    let app_clone = app.clone();
-    app.listen("airdrop_token", move |event| {
-        info!(target: LOG_TARGET, "Getting token from Frontend, event: {:#?}", event.payload());
-        let app_state = app_clone.state::<UniverseAppState>().clone();
-        let token_payload = event.payload();
-        drop(async {
-            let mut write_lock = app_state.airdrop_access_token.write().await;
-            *write_lock = Some(token_payload.parse().unwrap());
-
-            let mut in_memory_app_config = app_state.in_memory_config.write().await;
-            in_memory_app_config.airdrop_access_token = Some(token_payload.parse().unwrap());
-        })
-    });
-}
-
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app.state::<UniverseAppState>().clone();
@@ -773,6 +757,11 @@ struct Payload {
     cwd: String,
 }
 
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct FEPayload {
+    token: String,
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() {
     let _unused = fix_path_env::fix();
@@ -948,6 +937,34 @@ fn main() {
             };
 
 
+
+            let webview = app.get_webview_window("main").unwrap();
+            let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
+            let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
+            webview.listen("airdrop_token", move |event| {
+                let token_value = token_state_clone.clone();
+                let memory_value = memory_state_clone.clone();
+                let token_thread: JoinHandle<Result<(), anyhow::Error>> =
+                    tauri::async_runtime::spawn(async move {
+                        info!(target: LOG_TARGET, "Getting token from Frontend");
+                        let payload = event.payload();
+                        let res = serde_json::from_str::<FEPayload>(&payload).unwrap();
+
+                        let token = res.token;
+                        let mut lock = token_value.write().await;
+                        *lock = Some(token.clone());
+
+                        let mut in_memory_app_config = memory_value.write().await;
+                        in_memory_app_config.airdrop_access_token =  Some(token);
+                        Ok(())
+                    });
+                match tauri::async_runtime::block_on(token_thread) {
+                    Ok(_) => {}
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Error token: {:?}", e);
+                    }
+                };
+            });
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
@@ -1115,9 +1132,7 @@ fn main() {
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
             let a = app_handle.clone();
-            let app_handle_clone = app_handle.clone();
             tauri::async_runtime::spawn( async move  {
-                let _unused = get_token(app_handle_clone).await;
                 let _res = setup_inner(a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });

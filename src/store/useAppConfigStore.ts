@@ -66,7 +66,7 @@ const initialState: State = {
     pre_release: false,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
 
     setShouldAutoLaunch: async (shouldAutoLaunch) => {

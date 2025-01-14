@@ -8,8 +8,6 @@ import setupLogger from '../utils/shared-logger.ts';
 import App from './App.tsx';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 
-import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
-import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import { setMiningNetwork } from '@app/store/useMiningStore.ts';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
@@ -26,10 +24,6 @@ export default function AppWrapper() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
-            const beConfig = await fetchBackendInMemoryConfig();
-            if (beConfig?.airdropUrl) {
-                await handleRefreshAirdropTokens(beConfig.airdropUrl);
-            }
             await initSystray();
             await setMiningNetwork();
         }

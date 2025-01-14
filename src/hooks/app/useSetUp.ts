@@ -4,8 +4,11 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
 import { useAppStateStore } from '../../store/appStateStore.ts';
+import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
+import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
+    const canInit = useRef(false);
     const isInitializingRef = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
@@ -28,7 +31,19 @@ export function useSetUp() {
     }, []);
 
     useEffect(() => {
-        if (adminShow === 'setup') return;
+        async function initWithToken() {
+            const beConfig = await fetchBackendInMemoryConfig();
+            if (beConfig?.airdropUrl) {
+                await handleRefreshAirdropTokens(beConfig.airdropUrl);
+            }
+        }
+        initWithToken().then(() => {
+            canInit.current = true;
+        });
+    }, []);
+
+    useEffect(() => {
+        if (adminShow === 'setup' || !canInit.current) return;
         const unlistenPromise = listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
