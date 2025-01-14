@@ -944,26 +944,18 @@ fn main() {
             webview.listen("airdrop_token", move |event| {
                 let token_value = token_state_clone.clone();
                 let memory_value = memory_state_clone.clone();
-                let token_thread: JoinHandle<Result<(), anyhow::Error>> =
-                    tauri::async_runtime::spawn(async move {
-                        info!(target: LOG_TARGET, "Getting token from Frontend");
-                        let payload = event.payload();
-                        let res = serde_json::from_str::<FEPayload>(&payload).unwrap();
+                tauri::async_runtime::spawn(async move {
+                    info!(target: LOG_TARGET, "Getting token from Frontend");
+                    let payload = event.payload();
+                    let res = serde_json::from_str::<FEPayload>(&payload).unwrap();
 
-                        let token = res.token;
-                        let mut lock = token_value.write().await;
-                        *lock = Some(token.clone());
+                    let token = res.token;
+                    let mut lock = token_value.write().await;
+                    *lock = Some(token.clone());
 
-                        let mut in_memory_app_config = memory_value.write().await;
-                        in_memory_app_config.airdrop_access_token =  Some(token);
-                        Ok(())
-                    });
-                match tauri::async_runtime::block_on(token_thread) {
-                    Ok(_) => {}
-                    Err(e) => {
-                        error!(target: LOG_TARGET, "Error token: {:?}", e);
-                    }
-                };
+                    let mut in_memory_app_config = memory_value.write().await;
+                    in_memory_app_config.airdrop_access_token =  Some(token);
+                });
             });
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
