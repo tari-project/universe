@@ -821,8 +821,15 @@ pub async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-    // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = Vec::new();
+    folder_block_list.push("EBWebView");
+
+    let mut files_block_list = Vec::new();
+
+    if !reset_wallet {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
+    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -867,6 +874,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
@@ -877,9 +891,11 @@ pub async fn reset_settings<'r>(
         }
     }
 
-    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _unused = entry.delete_credential();
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+            let _unused = entry.delete_credential();
+        }
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
