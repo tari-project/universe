@@ -10,7 +10,7 @@ version = "0.8.42"
 
 [build-dependencies]
 embed-resource = "2.5.0"
-tauri-build = "2"
+tauri-build = { version = "2", features = [] }
 
 [dependencies]
 anyhow = "1"
