@@ -154,9 +154,10 @@ struct CriticalProblemEvent {
 }
 
 #[allow(clippy::too_many_lines)]
-async fn setup_inner(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let state = app.state::<UniverseAppState>().clone();
-
+async fn setup_inner(
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), anyhow::Error> {
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -936,18 +937,15 @@ fn main() {
                 }
             };
 
-
-
-            let webview = app.get_webview_window("main").unwrap();
             let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
             let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
-            webview.listen("airdrop_token", move |event| {
+            app.listen("airdrop_token", move |event| {
                 let token_value = token_state_clone.clone();
                 let memory_value = memory_state_clone.clone();
                 tauri::async_runtime::spawn(async move {
                     info!(target: LOG_TARGET, "Getting token from Frontend");
                     let payload = event.payload();
-                    let res = serde_json::from_str::<FEPayload>(&payload).unwrap();
+                    let res = serde_json::from_str::<FEPayload>(payload).expect("No token");
 
                     let token = res.token;
                     let mut lock = token_value.write().await;
@@ -1125,7 +1123,8 @@ fn main() {
         tauri::RunEvent::Ready  => {
             let a = app_handle.clone();
             tauri::async_runtime::spawn( async move  {
-                let _res = setup_inner(a.clone()).await
+                let state = a.state::<UniverseAppState>().clone();
+                let _res = setup_inner(state, a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }

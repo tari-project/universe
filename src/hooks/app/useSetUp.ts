@@ -8,7 +8,6 @@ import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
-    const canInit = useRef(false);
     const isInitializingRef = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
     const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
@@ -27,8 +26,7 @@ export function useSetUp() {
     const handlePostSetup = useCallback(async () => {
         await fetchApplicationsVersionsWithRetry();
         await setSettingUpFinished();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [fetchApplicationsVersionsWithRetry, setSettingUpFinished]);
 
     useEffect(() => {
         async function initWithToken() {
@@ -37,13 +35,11 @@ export function useSetUp() {
                 await handleRefreshAirdropTokens(beConfig.airdropUrl);
             }
         }
-        initWithToken().then(() => {
-            canInit.current = true;
-        });
+        void initWithToken();
     }, []);
 
     useEffect(() => {
-        if (adminShow === 'setup' || !canInit.current) return;
+        if (adminShow === 'setup') return;
         const unlistenPromise = listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
             switch (p.event_type) {
                 case 'setup_status':
