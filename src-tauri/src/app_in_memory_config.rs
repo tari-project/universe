@@ -39,6 +39,9 @@ const AIRDROP_TWITTER_AUTH_URL: &str = std::env!(
     "AIRDROP_TWITTER_AUTH_URL",
     "AIRDROP_TWITTER_AUTH_URL env var not defined"
 );
+#[cfg(feature = "telemetry-env")]
+const TELEMETRY_API_URL: &str =
+    std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
@@ -46,6 +49,7 @@ pub struct AppInMemoryConfig {
     pub airdrop_api_url: String,
     pub airdrop_twitter_auth_url: String,
     pub airdrop_access_token: Option<String>,
+    pub telemetry_api_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,6 +77,7 @@ impl Default for AppInMemoryConfig {
             airdrop_api_url: "https://ut.tari.com".into(),
             airdrop_twitter_auth_url: "https://airdrop.tari.com/auth".into(),
             airdrop_access_token: None,
+            telemetry_api_url: "https://ut.tari.com/push".into(),
         }
     }
 }
@@ -118,6 +123,7 @@ impl AppInMemoryConfig {
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             airdrop_twitter_auth_url: AIRDROP_TWITTER_AUTH_URL.into(),
             airdrop_access_token: None,
+            telemetry_api_url: TELEMETRY_API_URL.into(),
         };
 
         #[cfg(feature = "airdrop-local")]
@@ -126,9 +132,14 @@ impl AppInMemoryConfig {
             airdrop_api_url: "http://localhost:3004".into(),
             airdrop_twitter_auth_url: "http://localhost:3004/auth/twitter".into(),
             airdrop_access_token: None,
+            telemetry_api_url: "http://localhost:3004".into(),
         };
 
-        #[cfg(not(any(feature = "airdrop-local", feature = "airdrop-env")))]
+        #[cfg(not(any(
+            feature = "airdrop-local",
+            feature = "airdrop-env",
+            feature = "telemetry-env"
+        )))]
         AppInMemoryConfig::default()
     }
 }
