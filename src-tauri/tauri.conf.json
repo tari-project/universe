@@ -36,7 +36,13 @@
     "app": {
         "security": {
             "capabilities": ["default", "migrated"],
-            "csp": null
+            "csp": null,
+            "pattern": {
+                "use": "isolation",
+                "options": {
+                    "dir": "../dist-isolation"
+                }
+            }
         },
         "trayIcon": {
             "id": "universe-tray-id",

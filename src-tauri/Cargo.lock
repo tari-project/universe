@@ -7480,6 +7480,7 @@ dependencies = [
  "tray-icon",
  "url",
  "urlpattern",
+ "uuid",
  "webkit2gtk",
  "webview2-com",
  "window-vibrancy",
@@ -7505,6 +7506,32 @@ dependencies = [
  "tauri-utils",
  "tauri-winres",
  "toml 0.8.19",
+ "walkdir",
+]
+
+[[package]]
+name = "tauri-codegen"
+version = "2.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bf79faeecf301d3e969b1fae977039edb77a4c1f25cc0a961be298b54bff97cf"
+dependencies = [
+ "base64 0.22.1",
+ "ico",
+ "json-patch",
+ "plist",
+ "png",
+ "proc-macro2",
+ "quote",
+ "semver",
+ "serde",
+ "serde_json",
+ "sha2",
+ "syn 2.0.90",
+ "tauri-utils 2.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "thiserror 2.0.6",
+ "time",
+ "url",
+ "uuid",
  "walkdir",
 ]
 
@@ -7545,7 +7572,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.90",
- "tauri-codegen",
+ "tauri-codegen 2.0.3 (git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25)",
  "tauri-utils",
 ]
 
@@ -7742,10 +7769,12 @@ version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96fb10e7cc97456b2d5b9c03e335b5de5da982039a303a20d10006885e4523a0"
 dependencies = [
+ "aes-gcm",
  "brotli",
  "cargo_metadata",
  "ctor",
  "dunce",
+ "getrandom 0.2.15",
  "glob",
  "html5ever",
  "http",
@@ -7764,6 +7793,7 @@ dependencies = [
  "serde-untagged",
  "serde_json",
  "serde_with",
+ "serialize-to-javascript",
  "swift-rs",
  "thiserror 2.0.11",
  "toml 0.8.19",
