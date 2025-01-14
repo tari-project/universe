@@ -30,7 +30,7 @@ export default function AppWrapper() {
             await fetchAppConfig();
             const beConfig = await fetchBackendInMemoryConfig();
             if (beConfig?.airdropUrl) {
-                await handleRefreshAirdropTokens(beConfig.airdropUrl, true);
+                await handleRefreshAirdropTokens(beConfig.airdropUrl);
             }
             await initSystray();
             await setMiningNetwork();

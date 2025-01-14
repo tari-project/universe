@@ -44,7 +44,7 @@ use std::fs;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::thread::sleep;
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -164,20 +164,18 @@ async fn set_airdrop_access_token(
     Ok(())
 }
 
-async fn get_token(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+async fn get_token(app: tauri::AppHandle) {
     let app_clone = app.clone();
-    app.listen("startup-token", move |event| {
+    app.listen("airdrop_token", move |event| {
         info!(target: LOG_TARGET, "Getting token from Frontend");
         let app_state = app_clone.state::<UniverseAppState>().clone();
-        _ = async {
+        drop(async {
             let token_payload = event.payload();
-
-            set_airdrop_access_token(token_payload.clone().to_string(), app_state.clone())
+            set_airdrop_access_token(token_payload.to_string(), app_state.clone())
                 .await
                 .expect("set_airdrop_access_token failed");
-        }
+        });
     });
-    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -901,11 +899,6 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-            }
             let config_path = app
                 .path()
                 .app_config_dir()
@@ -1132,10 +1125,8 @@ fn main() {
         tauri::RunEvent::Ready  => {
             let a = app_handle.clone();
             let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let _unused = get_token(app_handle_clone).await;
-            });
             tauri::async_runtime::spawn( async move  {
+                let _unused = get_token(app_handle_clone).await;
                 let _res = setup_inner(a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });

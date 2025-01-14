@@ -212,7 +212,7 @@ const currentWindow = getCurrentWindow();
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
     if (airdropTokens) {
         try {
-            await currentWindow.emit('startup-token', airdropTokens.token);
+            await currentWindow.emit('airdrop_token', airdropTokens.token);
         } catch (error) {
             console.error('Error getting airdrop tokens:', error);
         }
