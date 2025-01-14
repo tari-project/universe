@@ -2,7 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
 import { useMiningStore } from './useMiningStore';
-import { getCurrentWindow } from '@tauri-apps/api/window';
+import { getAllWindows, getCurrentWindow } from '@tauri-apps/api/window';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -207,12 +207,13 @@ export const useAirdropStore = create<AirdropStore>()(
     )
 );
 
-const currentWindow = getCurrentWindow();
-
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
+    const windows = await getAllWindows();
+    const mainWindow = windows.find((w) => w.label === 'main');
     if (airdropTokens) {
+        console.debug(`airdropTokens.token= ${airdropTokens.token}`);
         try {
-            await currentWindow.emit('airdrop_token', airdropTokens.token);
+            await mainWindow?.emit('airdrop_token', airdropTokens.token);
         } catch (error) {
             console.error('Error getting airdrop tokens:', error);
         }

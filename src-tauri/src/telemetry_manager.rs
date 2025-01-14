@@ -304,17 +304,19 @@ impl TelemetryManager {
         let network = self.node_network;
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
-        let airdrop_access_token = self.airdrop_access_token.clone();
-
-        info!(target: LOG_TARGET, "TEL SELF token: {:?}", airdrop_access_token.clone());
-        info!(target: LOG_TARGET, "TEL state token: {:?}", app_handle.state::<UniverseAppState>().airdrop_access_token.clone());
+        let airdrop_access_token = app_handle
+            .state::<UniverseAppState>()
+            .airdrop_access_token
+            .clone();
 
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
-                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
+                        info!(target: LOG_TARGET, "TelemetryManager::telemetry_collection_enabled: {}", telemetry_collection_enabled);
+                        info!(target: LOG_TARGET, "TelemetryManager::airdrop_access_token: {:#?}", airdrop_access_token.clone());
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network).await;

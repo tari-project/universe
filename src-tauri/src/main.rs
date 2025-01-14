@@ -153,28 +153,19 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
-async fn set_airdrop_access_token(
-    token: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token.clone());
-    let mut in_memory_app_config = state.in_memory_config.write().await;
-    in_memory_app_config.airdrop_access_token = Some(token);
-    Ok(())
-}
-
 async fn get_token(app: tauri::AppHandle) {
     let app_clone = app.clone();
     app.listen("airdrop_token", move |event| {
-        info!(target: LOG_TARGET, "Getting token from Frontend");
+        info!(target: LOG_TARGET, "Getting token from Frontend, event: {:#?}", event.payload());
         let app_state = app_clone.state::<UniverseAppState>().clone();
+        let token_payload = event.payload();
         drop(async {
-            let token_payload = event.payload();
-            set_airdrop_access_token(token_payload.to_string(), app_state.clone())
-                .await
-                .expect("set_airdrop_access_token failed");
-        });
+            let mut write_lock = app_state.airdrop_access_token.write().await;
+            *write_lock = Some(token_payload.parse().unwrap());
+
+            let mut in_memory_app_config = app_state.in_memory_config.write().await;
+            in_memory_app_config.airdrop_access_token = Some(token_payload.parse().unwrap());
+        })
     });
 }
 
