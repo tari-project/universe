@@ -1,19 +1,14 @@
-import { DotLottieReact, DotLottieWorkerReact } from '@lottiefiles/dotlottie-react';
-import { SplashScreenContainer } from './SplashScreenContainer.styles';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import { LottieWrapper, SplashScreenContainer } from './SplashScreenContainer.styles';
 
-import lottieData from '../../../../public/assets/splashscreen.json';
+import url from './Tari_Universe_Black_JSON.json?url';
 
 export default function Splashscreen() {
     return (
         <SplashScreenContainer>
-            <DotLottieReact
-                src="../../../../public/assets/splashscreen.json"
-                speed={1}
-                style={{ width: '600px', height: '600px', background: 'transparent', display: 'flex' }}
-                loop
-                animationId="splashscreen"
-                // mode="forward"
-            ></DotLottieReact>
+            <LottieWrapper>
+                <DotLottieReact src={url} autoplay />
+            </LottieWrapper>
         </SplashScreenContainer>
     );
 }

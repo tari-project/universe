@@ -8,8 +8,10 @@ export const SplashScreenContainer = styled.div`
     min-width: 100vw;
     height: 100%;
     width: 100%;
-    svg {
-        display: flex;
-        width: 100%;
-    }
+`;
+
+export const LottieWrapper = styled.div`
+    display: flex;
+    height: 300px;
+    width: 300px;
 `;
