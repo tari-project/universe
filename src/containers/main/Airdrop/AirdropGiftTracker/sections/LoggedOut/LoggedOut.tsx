@@ -18,15 +18,15 @@ export default function LoggedOut() {
     const handleAuth = useCallback(
         (code?: string) => {
             const token = uuidv4();
-            if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
+            if (backendInMemoryConfig?.airdropUrl) {
                 setAuthUuid(token);
                 open(
-                    `${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
+                    `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
                 );
             }
         },
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [backendInMemoryConfig?.airdropTwitterAuthUrl]
+        [backendInMemoryConfig?.airdropUrl]
     );
 
     useEffect(() => {
