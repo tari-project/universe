@@ -34,7 +34,8 @@ export const useWebsocket = () => {
     const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
 
     const isMining = useMemo(() => {
-        return (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
+        const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
+        return isMining;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
     const handleEmitMiningStatus = useCallback(

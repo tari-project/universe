@@ -1,15 +1,7 @@
 {
   "identifier": "default",
-  "windows": [
-    "main"
-  ],
-  "platforms": [
-    "macOS",
-    "windows",
-    "linux"
-  ],
+  "windows": ["main"],
   "permissions": [
-    "cli:default",
     "core:path:default",
     "core:event:default",
     "core:window:default",
@@ -24,7 +16,6 @@
     "shell:allow-open",
     "sentry:default",
     "process:allow-restart",
-    "process:default",
-    "updater:default"
+    "process:default"
   ]
 }
