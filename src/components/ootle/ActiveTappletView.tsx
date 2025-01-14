@@ -1,22 +1,23 @@
 import { TappletConfig } from '@app/types/ootle/tapplet';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
 import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
+import { Account } from '@tari-project/tarijs/dist/providers/types';
 
 export default function ActiveTappletView() {
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
+    const [account, setAccount] = useState<Account>();
 
     const fetchTappConfig = useCallback(async () => {
         try {
             if (!tapplet) return;
-
             //TODO
             const config: TappletConfig = await (await fetch(`${tapplet?.source}/tapplet.config.json`)).json(); //TODO add const as path to config
 
@@ -31,7 +32,7 @@ export default function ActiveTappletView() {
                 setTappletProvider(config.packageName, tapplet);
                 setActiveTapp(tapplet);
             }
-            if (!config?.permissions) {
+            if (!config.permissions) {
                 // TODO set error
                 console.error('Dev Tapplet config file not found');
             }
@@ -40,9 +41,25 @@ export default function ActiveTappletView() {
         }
     }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
 
+    const refreshAccount = useCallback(async () => {
+        if (!tappProvider) return;
+        //TODO this is tmp to check if account is found and set
+        try {
+            const acc = await tappProvider.getAccount();
+            setAccount(acc);
+        } catch (error) {
+            console.error(error);
+        }
+    }, [tappProvider]);
+
     useEffect(() => {
         fetchTappConfig();
     }, [fetchTappConfig]);
+
+    useEffect(() => {
+        refreshAccount();
+    }, [refreshAccount, tappProvider]);
+    console.info('TAPP ACCOUNT', account);
 
     return (
         <>
