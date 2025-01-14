@@ -431,7 +431,12 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
+    let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+    let gpu_mining_status = gpu_miner
+        .status(randomx_network_hashrate, block_reward, gpu_mining_status)
+        .await
+        .unwrap();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()

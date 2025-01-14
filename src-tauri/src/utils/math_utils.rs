@@ -1,4 +1,4 @@
-// Copyright 2024. The Tari Project
+// Copyright 2025. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -20,13 +20,43 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod auto_rollback;
-pub mod file_utils;
-pub mod logging_utils;
-pub mod macos_utils;
-pub mod math_utils;
-pub mod platform_utils;
+use log::{info, warn};
+use tari_core::transactions::tari_amount::MicroMinotari;
 
-pub mod shutdown_utils;
-#[cfg(windows)]
-pub mod windows_setup_utils;
+const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
+const LOG_TARGET: &str = "tari::universe::math_utils";
+
+pub fn estimate_earning(
+    network_hash_rate: u64,
+    hash_rate: f64,
+    block_reward: MicroMinotari,
+) -> u64 {
+    let estimated_earnings = if network_hash_rate == 0 {
+        warn!(
+            target: LOG_TARGET,
+            "Network hash rate is zero. Cannot estimate earnings"
+        );
+        0
+    } else {
+        #[allow(clippy::cast_possible_truncation)]
+        {
+            info!(
+                target: LOG_TARGET,
+                "1st: {}, 2nd: {}, 3rd: {}",
+                (block_reward.as_u64() as f64),
+                (hash_rate / (network_hash_rate as f64)),
+                ((hash_rate / (network_hash_rate as f64)) * (RANDOMX_BLOCKS_PER_DAY as f64))
+
+            );
+            ((block_reward.as_u64() as f64)
+                * ((hash_rate / (network_hash_rate as f64)) * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                .floor() as u64
+        }
+    };
+    // Can't be more than the max reward for a day
+    let estimated_earnings = std::cmp::min(
+        estimated_earnings,
+        block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+    );
+    return estimated_earnings;
+}
