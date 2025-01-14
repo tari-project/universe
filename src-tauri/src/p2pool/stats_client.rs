@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::p2pool::models::{Connections, Stats};
+use crate::p2pool::models::{Connections, P2poolStats};
 use anyhow::Error;
 use log::warn;
 
@@ -37,10 +37,10 @@ impl Client {
         }
     }
 
-    pub async fn stats(&self) -> Result<Stats, Error> {
+    pub async fn stats(&self) -> Result<P2poolStats, Error> {
         let stats = reqwest::get(format!("{}/stats", self.stats_server_address))
             .await?
-            .json::<Stats>()
+            .json::<P2poolStats>()
             .await
             .inspect_err(|e| warn!(target: LOG_TARGET, "P2pool stats error: {:?}", e))?;
         Ok(stats)
