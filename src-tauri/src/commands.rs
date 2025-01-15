@@ -436,7 +436,7 @@ pub async fn get_miner_metrics(
     let gpu_mining_status = gpu_miner
         .status(sha_network_hashrate, block_reward, gpu_mining_status)
         .await
-        .unwrap();
+        .unwrap_or_default();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
