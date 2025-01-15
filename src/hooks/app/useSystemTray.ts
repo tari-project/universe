@@ -1,4 +1,3 @@
-import { MinerMetrics } from '@app/types/app-status';
 import {
     menu,
     CPU_HASH_ITEM_ID,
@@ -7,14 +6,14 @@ import {
     UNMINIMIZE_ITEM_ID,
     MINIMIZE_ITEM_ID,
 } from '@app/utils';
-import { listen } from '@tauri-apps/api/event';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { useCallback, useEffect, useRef } from 'react';
+
+import { useCallback, useDeferredValue, useEffect, useRef } from 'react';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils';
 import { MenuItem } from '@tauri-apps/api/menu/menuItem';
-
-const currentWindow = getCurrentWindow();
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { MinerMetrics } from '@app/types/app-status.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const SysTrayCopy = {
     [CPU_HASH_ITEM_ID]: (cpu: string) => `CPU Hashrate: ${cpu}`,
@@ -22,8 +21,10 @@ const SysTrayCopy = {
     [EARNINGS_ITEM_ID]: (earnings: string) => `Est earning: ${earnings} tXTM/day`,
 };
 
+const currentWindow = getCurrentWindow();
 export function useUpdateSystemTray() {
-    const cachedMetrics = useRef<MinerMetrics>();
+    const metrics = useMiningMetricsStore((s) => s);
+    const deferredMetrics = useDeferredValue(metrics);
     const minimizedRef = useRef<boolean>();
 
     const updateMenuItemEnabled = useCallback(async (itemId: string, enabled: boolean) => {
@@ -39,50 +40,42 @@ export function useUpdateSystemTray() {
     }, []);
 
     const updateMenuItem = useCallback(async (itemId: string, itemText: string) => {
-        const item = await menu.get(itemId);
+        const item = await menu?.get(itemId);
         if (item && itemText) {
-            await item.setText(itemText);
+            await item?.setText(itemText);
         }
     }, []);
 
-    useEffect(() => {
-        const handleUpdateMenu = () => {
-            const { cpu, gpu } = cachedMetrics.current || {};
-
-            // --- Update CPU
-            const cpuHashItemText = cpu?.mining?.hash_rate ? `${formatHashrate(cpu?.mining?.hash_rate)}` : '-';
-            updateMenuItem(CPU_HASH_ITEM_ID, SysTrayCopy[CPU_HASH_ITEM_ID](cpuHashItemText));
-            // --- Update GPU
-            const gpuHashItemText = gpu?.mining?.hash_rate ? `${formatHashrate(gpu?.mining?.hash_rate)}` : '-';
-            updateMenuItem(GPU_HASH_ITEM_ID, SysTrayCopy[GPU_HASH_ITEM_ID](gpuHashItemText));
-            // --- Update Total
-            const cpu_est = cpu?.mining?.estimated_earnings || 0;
-            const gpu_est = gpu?.mining?.estimated_earnings || 0;
-            const total = cpu_est + gpu_est;
-            const totalFormatted = total > 0 ? formatNumber(total, FormatPreset.TXTM_COMPACT) : '-';
-            updateMenuItem(EARNINGS_ITEM_ID, SysTrayCopy[EARNINGS_ITEM_ID](totalFormatted));
-        };
-        handleUpdateMenu();
-        const interval = setInterval(handleUpdateMenu, 1000 * 10); // 10s
-
-        return () => clearInterval(interval);
-    }, [updateMenuItem]);
-
-    useEffect(() => {
-        const ul = listen('miner_metrics', async ({ payload }) => {
-            if (payload) {
-                cachedMetrics.current = { ...payload } as MinerMetrics;
-            }
-
+    const handleUpdateMenu = useCallback(
+        async (metrics: MinerMetrics) => {
+            const { cpu, gpu } = metrics || {};
             const minimized = await currentWindow.isMinimized();
+
             if (minimizedRef.current !== minimized) {
                 minimizedRef.current = minimized;
                 await updateMenuItemEnabled(UNMINIMIZE_ITEM_ID, minimized);
                 await updateMenuItemEnabled(MINIMIZE_ITEM_ID, !minimized);
             }
-        });
-        return () => {
-            ul.then((unlisten) => unlisten());
-        };
-    }, [updateMenuItemEnabled]);
+
+            // --- Update CPU
+            const cpuHashItemText = cpu?.mining?.hash_rate ? `${formatHashrate(cpu?.mining?.hash_rate)}` : '-';
+            await updateMenuItem(CPU_HASH_ITEM_ID, SysTrayCopy[CPU_HASH_ITEM_ID](cpuHashItemText));
+            // --- Update GPU
+            const gpuHashItemText = gpu?.mining?.hash_rate ? `${formatHashrate(gpu?.mining?.hash_rate)}` : '-';
+            await updateMenuItem(GPU_HASH_ITEM_ID, SysTrayCopy[GPU_HASH_ITEM_ID](gpuHashItemText));
+            // --- Update Total
+            const cpu_est = cpu?.mining?.estimated_earnings || 0;
+            const gpu_est = gpu?.mining?.estimated_earnings || 0;
+            const total = cpu_est + gpu_est;
+            const totalFormatted = total > 0 ? formatNumber(total, FormatPreset.TXTM_COMPACT) : '-';
+            await updateMenuItem(EARNINGS_ITEM_ID, SysTrayCopy[EARNINGS_ITEM_ID](totalFormatted));
+        },
+        [updateMenuItem, updateMenuItemEnabled]
+    );
+
+    useEffect(() => {
+        if (deferredMetrics && metrics !== deferredMetrics) {
+            handleUpdateMenu(deferredMetrics);
+        }
+    }, [deferredMetrics, handleUpdateMenu, metrics]);
 }

@@ -3,7 +3,7 @@ import FriendAccepted from './FriendAccepted/FriendAccepted';
 import GoalComplete from './GoalComplete/GoalComplete';
 import { Wrapper } from './styles';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
 
 interface Props {
     gems: number;
@@ -24,6 +24,7 @@ export default function Flare({ gems, animationType }: Props) {
     const setFlareAnimationType = useAirdropStore((s) => s.setFlareAnimationType);
 
     useEffect(() => {
+        if (!animationType) return;
         const duration = durations[animationType] || 0;
         const animationTimeout = setTimeout(setFlareAnimationType, duration);
         return () => {
