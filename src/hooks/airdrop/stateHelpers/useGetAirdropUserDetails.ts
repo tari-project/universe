@@ -5,7 +5,6 @@ import { useAirdropRequest } from '../utils/useHandleRequest';
 export const useGetAirdropUserDetails = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
-    const userDetails = useAirdropStore((state) => state.userDetails);
     const setUserDetails = useAirdropStore((state) => state.setUserDetails);
     const setUserPoints = useAirdropStore((state) => state.setUserPoints);
     const setReferralCount = useAirdropStore((state) => state.setReferralCount);
