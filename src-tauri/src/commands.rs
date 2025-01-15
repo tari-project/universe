@@ -47,6 +47,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -651,7 +652,7 @@ pub async fn get_seed_words(
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_details(
+pub async fn emit_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
@@ -825,8 +826,15 @@ pub async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-    // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = Vec::new();
+    folder_block_list.push("EBWebView");
+
+    let mut files_block_list = Vec::new();
+
+    if !reset_wallet {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
+    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -871,6 +879,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
@@ -881,9 +896,11 @@ pub async fn reset_settings<'r>(
         }
     }
 
-    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _unused = entry.delete_credential();
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+            let _unused = entry.delete_credential();
+        }
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -973,6 +990,23 @@ pub async fn set_allow_telemetry(
         .set_allow_telemetry(allow_telemetry)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_data_telemetry_service(
+    state: tauri::State<'_, UniverseAppState>,
+    event_name: String,
+    data: Value,
+) -> Result<(), String> {
+    state
+        .telemetry_service
+        .read()
+        .await
+        .send(event_name, data)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1390,7 +1424,6 @@ pub async fn set_visual_mode<'r>(
 
 #[tauri::command]
 pub async fn setup_application(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<bool, String> {
@@ -1402,7 +1435,7 @@ pub async fn setup_application(
         return Ok(res);
     }
     rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
+    setup_inner(state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         sentry::capture_event(Event {
             level: sentry::Level::Error,

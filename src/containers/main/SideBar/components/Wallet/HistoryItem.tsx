@@ -1,4 +1,4 @@
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore';
 import {
     ButtonWrapper,
     EarningsWrapper,
@@ -17,7 +17,7 @@ import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 
 import { useTranslation } from 'react-i18next';
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
@@ -53,8 +53,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
 
-    const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
-
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
@@ -66,10 +64,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const { colour, colour1, colour2 } = useMemo(() => {
         return randomGradientColours[getRandomInt(9)];
     }, []);
-
-    const handleReplay = useCallback(() => {
-        handleWinReplay(item);
-    }, [handleWinReplay, item]);
 
     const itemTitle = `${t('block')} #${item.mined_in_block_height}`;
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
@@ -106,7 +100,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                                     </GemPill>
                                 </FlexButton>
                             )}
-                            <ReplayButton onClick={handleReplay}>
+                            <ReplayButton onClick={() => handleWinReplay(item)}>
                                 <ReplaySVG />
                             </ReplayButton>
                         </ButtonWrapper>
