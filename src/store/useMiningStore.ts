@@ -1,6 +1,5 @@
 import { MaxConsumptionLevels } from '@app/types/app-status';
 import { create } from './create';
-import * as Sentry from '@sentry/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from './appStateStore';
 
@@ -22,7 +21,6 @@ interface State {
 interface Actions {
     restartMining: () => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
-    setIsChangingMode: (isChangingMode: boolean) => void;
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
     setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
     getMaxAvailableThreads: () => void;
@@ -75,7 +73,6 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
         }
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
-    setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
         set({ excludedGpuDevices });
         try {
@@ -88,16 +85,3 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
         }
     },
 }));
-
-export const setMiningNetwork = async () => {
-    try {
-        const network = (await invoke('get_network', {})) as string;
-        useMiningStore.setState({ network });
-    } catch (e) {
-        Sentry.captureException(e);
-        const appStateStore = useAppStateStore.getState();
-        console.error('Could not get network: ', e);
-        appStateStore.setError(e as string);
-        useMiningStore.setState({ excludedGpuDevices: undefined });
-    }
-};
