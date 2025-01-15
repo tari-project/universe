@@ -51,6 +51,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Listener, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
+use tokio::select;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
@@ -120,7 +121,6 @@ mod tests;
 mod tor_adapter;
 mod tor_manager;
 mod updates_manager;
-mod user_listener;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
@@ -156,7 +156,6 @@ struct CriticalProblemEvent {
 
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
@@ -253,7 +252,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone(), window.clone())
+        .initialize(state.airdrop_access_token.clone(), app.clone())
         .await?;
 
     let mut telemetry_id = state
@@ -669,17 +668,39 @@ async fn setup_inner(
 
     let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
+        let app_state = move_handle.state::<UniverseAppState>().clone();
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
         loop {
-            let app_state = move_handle.state::<UniverseAppState>().clone();
-
-            if app_state.shutdown.is_triggered() {
-                break;
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone()).await {
+                        drop(move_handle.emit("miner_metrics", metrics_ret));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
+        }
+    });
 
-            interval.tick().await;
-            if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
-                drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+    let w_move_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = w_move_handle.state::<UniverseAppState>().clone();
+        let mut interval = time::interval(Duration::from_secs(10));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
+
+        loop {
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(wallet) = commands::emit_tari_wallet_details(app_state.clone()).await {
+                        drop(w_move_handle.emit("wallet_details", wallet));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
         }
     });
@@ -1060,7 +1081,7 @@ fn main() {
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
-            commands::get_tari_wallet_details,
+            commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transaction_history,
