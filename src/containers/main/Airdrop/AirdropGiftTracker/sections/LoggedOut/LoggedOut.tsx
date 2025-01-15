@@ -12,8 +12,7 @@ export default function LoggedOut() {
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const restartMining = useMiningStore((s) => s.restartMining);
-    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } =
-        useAirdropStore();
+    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
