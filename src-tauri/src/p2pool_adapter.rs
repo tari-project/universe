@@ -28,9 +28,10 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use tokio::sync::watch;
 
 use crate::p2pool;
-use crate::p2pool::models::{Connections, Stats};
+use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_manager::P2poolConfig;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -45,11 +46,15 @@ const LOG_TARGET: &str = "tari::universe::p2pool_adapter";
 
 pub struct P2poolAdapter {
     pub(crate) config: Option<P2poolConfig>,
+    stats_broadcast: watch::Sender<Option<P2poolStats>>,
 }
 
 impl P2poolAdapter {
-    pub fn new() -> Self {
-        Self { config: None }
+    pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
+        Self {
+            config: None,
+            stats_broadcast,
+        }
     }
 
     #[allow(dead_code)]
@@ -103,8 +108,10 @@ impl ProcessAdapter for P2poolAdapter {
         ];
         let pid_file_name = self.pid_file_name().to_string();
 
-        args.push("--squad".to_string());
-        args.push("default_2".to_string());
+        args.push("--squad-prefix".to_string());
+        args.push("default".to_string());
+        args.push("--num-squads".to_string());
+        args.push("2".to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
@@ -134,7 +141,10 @@ impl ProcessAdapter for P2poolAdapter {
                     name: "P2pool".to_string(),
                 },
             },
-            P2poolStatusMonitor::new(format!("http://127.0.0.1:{}", config.stats_server_port)),
+            P2poolStatusMonitor::new(
+                format!("http://127.0.0.1:{}", config.stats_server_port),
+                self.stats_broadcast.clone(),
+            ),
         ))
     }
 
@@ -150,12 +160,17 @@ impl ProcessAdapter for P2poolAdapter {
 #[derive(Clone)]
 pub struct P2poolStatusMonitor {
     stats_client: p2pool::stats_client::Client,
+    latest_status_broadcast: watch::Sender<Option<P2poolStats>>,
 }
 
 impl P2poolStatusMonitor {
-    pub fn new(stats_server_addr: String) -> Self {
+    pub fn new(
+        stats_server_addr: String,
+        stats_broadcast: watch::Sender<Option<P2poolStats>>,
+    ) -> Self {
         Self {
             stats_client: p2pool::stats_client::Client::new(stats_server_addr),
+            latest_status_broadcast: stats_broadcast,
         }
     }
 }
@@ -164,7 +179,7 @@ impl P2poolStatusMonitor {
 impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
-            Ok(_stats) => {
+            Ok(stats) => {
                 // if stats
                 //     .connection_info
                 //     .network_info
@@ -185,6 +200,7 @@ impl StatusMonitor for P2poolStatusMonitor {
                 //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
                 //     return HealthStatus::Warning;
                 // }
+                let _unused = self.latest_status_broadcast.send(Some(stats));
 
                 HealthStatus::Healthy
             }
@@ -197,7 +213,7 @@ impl StatusMonitor for P2poolStatusMonitor {
 }
 
 impl P2poolStatusMonitor {
-    pub async fn status(&self) -> Result<Stats, Error> {
+    pub async fn status(&self) -> Result<P2poolStats, Error> {
         self.stats_client.stats().await
     }
 
