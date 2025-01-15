@@ -564,7 +564,7 @@ impl AppConfig {
         Ok(())
     }
 
-    // Config temporarily unused
+    // TODO: BRING BACK AFTER RESOLVING WINDOWS SIZING PERSISTENCE
     // pub async fn set_window_settings(
     //     &mut self,
     //     window_settings: WindowSettings,

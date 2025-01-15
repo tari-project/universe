@@ -59,9 +59,9 @@ use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
+use events::SetupStatusEvent;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
-use setup_status_event::SetupStatusEvent;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -91,6 +91,7 @@ mod consts;
 mod cpu_miner;
 mod credential_manager;
 mod download_utils;
+mod events;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -112,7 +113,6 @@ mod process_killer;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
-mod setup_status_event;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
@@ -720,6 +720,24 @@ async fn setup_inner(
     Ok(())
 }
 
+async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    let app_clone = app.clone();
+    app_clone.listen("frontend_ready", move |_event| {
+        info!(target: LOG_TARGET, "Frontend is ready");
+        let app_clone: tauri::AppHandle = app.clone();
+        tauri::async_runtime::spawn(async move {
+            time::sleep(Duration::from_secs(3)).await;
+            app_clone
+                .get_webview_window("main")
+                .expect("Could not get main window")
+                .emit("app_ready", ())
+                .expect("Could not emit event 'app_ready'");
+        });
+    });
+
+    Ok(())
+}
+
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -1121,9 +1139,12 @@ fn main() {
 
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
+            info!(target: LOG_TARGET, "App is ready");
             let a = app_handle.clone();
+            let app_handle_clone = app_handle.clone();
             tauri::async_runtime::spawn( async move  {
-                let state = a.state::<UniverseAppState>().clone();
+                let state = app_handle_clone.state::<UniverseAppState>().clone();
+                let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
                 let _res = setup_inner(state, a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
