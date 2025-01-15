@@ -70,12 +70,14 @@ export const MarkdownWrapper = styled('div')`
         font-size: 14px;
         font-weight: 600;
         line-height: 110%;
+        margin: 0;
         margin-bottom: 15px;
     }
 
     ul {
         padding: 0;
         padding-left: 24px;
+        margin-bottom: 15px;
 
         li {
             color: ${({ theme }) => theme.palette.text.secondary};
@@ -89,6 +91,15 @@ export const MarkdownWrapper = styled('div')`
         border: none;
         border-top: 1px solid rgba(0, 0, 0, 0.05);
         margin: 25px 0;
+    }
+
+    p {
+        color: ${({ theme }) => theme.palette.text.secondary};
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 141.667%;
+        margin: 0;
+        margin-bottom: 15px;
     }
 `;
 
