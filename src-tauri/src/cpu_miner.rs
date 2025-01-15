@@ -27,7 +27,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;

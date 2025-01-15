@@ -47,7 +47,5 @@ pub fn estimate_earning(
     };
 
     // Can't be more than the max reward for a day
-    let estimated_earnings =
-        std::cmp::min(estimated_earnings, block_reward.as_u64() * BLOCKS_PER_DAY);
-    return estimated_earnings;
+    std::cmp::min(estimated_earnings, block_reward.as_u64() * BLOCKS_PER_DAY)
 }
