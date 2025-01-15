@@ -1,4 +1,11 @@
-use std::{fs, net::SocketAddr, panic, path::PathBuf, process, str::FromStr};
+use std::{
+    fs,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    panic,
+    path::PathBuf,
+    process,
+    str::FromStr,
+};
 
 use crate::utils::logging_utils::setup_logging;
 use log::{info, warn};
@@ -19,6 +26,10 @@ pub async fn start_wallet_daemon(
         default_hook(info);
         process::exit(1);
     }));
+    println!(
+        "------> 🚀 WALLET DAEMON CONFIG FILE {:?}",
+        &wallet_daemon_config_file,
+    );
     let wallet_daemon_config_file = wallet_daemon_config_file.to_str().unwrap().to_owned();
     let log_config_file = log_dir
         .join("wallet_daemon")
@@ -32,6 +43,7 @@ pub async fn start_wallet_daemon(
 
     let mut cli = Cli::init();
     let network = Network::get_current_or_user_setting_or_default();
+    println!("------> 🌟 WALLET DAEMON NETWORK {:?}", &network);
     cli.common.network = Some(network);
     cli.common.base_path = data_dir_path.to_str().unwrap().to_owned();
     cli.common.config = wallet_daemon_config_file.clone();
@@ -39,21 +51,20 @@ pub async fn start_wallet_daemon(
 
     let cfg = load_configuration(wallet_daemon_config_file, true, &cli, None).unwrap();
     let mut config = ApplicationConfig::load_from(&cfg).unwrap();
-    let json_rpc_port = 18010; //TODO set port from the swarm config
-    let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
+    let contractnet_json_rpc_address =
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12008);
 
     config.dan_wallet_daemon.indexer_node_json_rpc_url =
-        "http://localhost:18007/json_rpc".to_string();
-    config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&jrpc_address).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
-    config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
+        "http://18.216.193.9:12006/json_rpc".to_string();
+    config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
+
+    println!("------> 🌟 WALLET DAEMON CONFIG: {:?}", &config);
 
     // Remove the file if it was left behind by a previous run
     let _file = fs::remove_file(data_dir_path.join("pid"));
 
     let shutdown = Shutdown::new();
     let shutdown_signal = shutdown.to_signal();
-
-    info!(target: LOG_TARGET, "🚀 Wallet daemon configuration completed successfully");
 
     tokio::spawn(async move {
         match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
