@@ -646,7 +646,7 @@ async fn setup_inner(
             log_path: log_dir.clone(),
             tari_address: cpu_miner_config.tari_address.clone(),
             coinbase_extra: telemetry_id,
-            p2pool_enabled: p2pool_enabled,
+            p2pool_enabled,
             monero_nodes: config.mmproxy_monero_nodes().clone(),
             use_monero_fail: config.mmproxy_use_monero_fail(),
         })
