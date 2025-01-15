@@ -647,7 +647,7 @@ pub async fn get_seed_words(
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_details(
+pub async fn emit_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
@@ -1419,7 +1419,6 @@ pub async fn set_visual_mode<'r>(
 
 #[tauri::command]
 pub async fn setup_application(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<bool, String> {
@@ -1431,7 +1430,7 @@ pub async fn setup_application(
         return Ok(res);
     }
     rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
+    setup_inner(state.clone(), app).await.map_err(|e| {
         warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
         sentry::capture_event(Event {
             level: sentry::Level::Error,
