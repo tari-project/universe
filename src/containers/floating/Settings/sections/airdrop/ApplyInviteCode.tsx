@@ -12,7 +12,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
 
 import { v4 as uuidv4 } from 'uuid';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/plugin-shell';
@@ -25,7 +25,7 @@ export const ApplyInviteCode = () => {
     const [claimCode, setClaimCode] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { authUuid, setAuthUuid, setAirdropTokens, backendInMemoryConfig } = useAirdropStore();
+    const { authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
@@ -35,7 +35,7 @@ export const ApplyInviteCode = () => {
 
             setAllowTelemetry(true).then(() => {
                 setAuthUuid(token);
-                open(refUrl);
+                void open(refUrl);
             });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -52,8 +52,13 @@ export const ApplyInviteCode = () => {
                 .then((response) => response.json())
                 .then((data) => {
                     if (!data.error) {
-                        setAirdropTokens(data);
-                        return true;
+                        setAirdropTokens(data)
+                            .then(() => {
+                                return true;
+                            })
+                            .catch(() => {
+                                return false;
+                            });
                     }
                 })
                 .catch((e) => {
@@ -63,7 +68,6 @@ export const ApplyInviteCode = () => {
 
             return false;
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     useEffect(() => {
@@ -88,7 +92,7 @@ export const ApplyInviteCode = () => {
             };
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, {}]);
 
     return (
         <SettingsGroupWrapper>

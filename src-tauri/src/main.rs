@@ -51,6 +51,7 @@ use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Listener, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
+use tokio::select;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
@@ -77,7 +78,6 @@ use crate::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
-use crate::utils::auto_rollback::AutoRollback;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
@@ -120,7 +120,6 @@ mod tests;
 mod tor_adapter;
 mod tor_manager;
 mod updates_manager;
-mod user_listener;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
@@ -156,12 +155,11 @@ struct CriticalProblemEvent {
 
 #[allow(clippy::too_many_lines)]
 async fn setup_inner(
-    window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
     app.emit(
-        "message",
+        "setup_message",
         SetupStatusEvent {
             event_type: "setup_status".to_string(),
             title: "starting-up".to_string(),
@@ -169,7 +167,7 @@ async fn setup_inner(
             progress: 0.0,
         },
     )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))?;
+    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
@@ -225,6 +223,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
+    let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -253,7 +252,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone(), window.clone())
+        .initialize(state.airdrop_access_token.clone(), app.clone())
         .await?;
 
     let mut telemetry_id = state
@@ -575,8 +574,17 @@ async fn setup_inner(
         .await;
     progress.set_max(75).await;
     state.node_manager.wait_synced(progress.clone()).await?;
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+    if telemetry_id.is_empty() {
+        telemetry_id = "unknown_miner_tari_universe".to_string();
+    }
 
-    if state.config.read().await.p2pool_enabled() {
+    if p2pool_enabled {
         let _unused = telemetry_service
             .send(
                 "starting-p2pool".to_string(),
@@ -637,7 +645,7 @@ async fn setup_inner(
             log_path: log_dir.clone(),
             tari_address: cpu_miner_config.tari_address.clone(),
             coinbase_extra: telemetry_id,
-            p2pool_enabled: config.p2pool_enabled(),
+            p2pool_enabled,
             monero_nodes: config.mmproxy_monero_nodes().clone(),
             use_monero_fail: config.mmproxy_use_monero_fail(),
         })
@@ -656,7 +664,7 @@ async fn setup_inner(
     drop(
         app.clone()
             .emit(
-                "message",
+                "setup_message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title: "application-started".to_string(),
@@ -664,22 +672,46 @@ async fn setup_inner(
                     progress: 1.0,
                 },
             )
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e)),
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
+            ),
     );
 
     let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
+        let app_state = move_handle.state::<UniverseAppState>().clone();
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
         loop {
-            let app_state = move_handle.state::<UniverseAppState>().clone();
-
-            if app_state.shutdown.is_triggered() {
-                break;
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone()).await {
+                        drop(move_handle.emit("miner_metrics", metrics_ret));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
+        }
+    });
 
-            interval.tick().await;
-            if let Ok(metrics_ret) = commands::get_miner_metrics(app_state).await {
-                drop(move_handle.clone().emit("miner_metrics", metrics_ret));
+    let w_move_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = w_move_handle.state::<UniverseAppState>().clone();
+        let mut interval = time::interval(Duration::from_secs(10));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
+
+        loop {
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(wallet) = commands::emit_tari_wallet_details(app_state.clone()).await {
+                        drop(w_move_handle.emit("wallet_details", wallet));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
             }
         }
     });
@@ -768,13 +800,17 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
-    setup_counter: Arc<RwLock<AutoRollback<bool>>>,
 }
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
     args: Vec<String>,
     cwd: String,
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct FEPayload {
+    token: String,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -874,10 +910,10 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
-        setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
     };
 
     let app_state2 = app_state.clone();
+
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -951,6 +987,24 @@ fn main() {
                 }
             };
 
+            let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
+            let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
+            app.listen("airdrop_token", move |event| {
+                let token_value = token_state_clone.clone();
+                let memory_value = memory_state_clone.clone();
+                tauri::async_runtime::spawn(async move {
+                    info!(target: LOG_TARGET, "Getting token from Frontend");
+                    let payload = event.payload();
+                    let res = serde_json::from_str::<FEPayload>(payload).expect("No token");
+
+                    let token = res.token;
+                    let mut lock = token_value.write().await;
+                    *lock = Some(token.clone());
+
+                    let mut in_memory_app_config = memory_value.write().await;
+                    in_memory_app_config.airdrop_access_token =  Some(token);
+                });
+            });
             // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
@@ -1060,7 +1114,7 @@ fn main() {
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
-            commands::get_tari_wallet_details,
+            commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_transaction_history,
@@ -1071,7 +1125,6 @@ fn main() {
             commands::resolve_application_language,
             commands::restart_application,
             commands::send_feedback,
-            commands::set_airdrop_access_token,
             commands::set_allow_telemetry,
             commands::send_data_telemetry_service,
             commands::set_application_language,
@@ -1091,7 +1144,6 @@ fn main() {
             commands::set_tor_config,
             commands::set_use_tor,
             commands::set_visual_mode,
-            commands::setup_application,
             commands::start_mining,
             commands::stop_mining,
             commands::update_applications,
@@ -1118,11 +1170,15 @@ fn main() {
     );
 
     app.run(move |app_handle, event| match event {
-        tauri::RunEvent::Ready { .. } => {
+        tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "App is ready");
+            let a = app_handle.clone();
             let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let _unused = listen_to_frontend_ready(app_handle_clone).await;
+            tauri::async_runtime::spawn( async move  {
+                let state = app_handle_clone.state::<UniverseAppState>().clone();
+                let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
+                let _res = setup_inner(state, a.clone()).await
+                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
