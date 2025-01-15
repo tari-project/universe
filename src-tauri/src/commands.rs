@@ -39,6 +39,7 @@ use crate::external_dependencies::{
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use crate::indexer_manager::IndexerConfig;
 use crate::interface::{
     ActiveTapplet, DevTappletResponse, InstalledTappletWithName, TappletPermissions,
 };
@@ -63,6 +64,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
+use crate::validator_node_manager::ValidatorNodeConfig;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -2191,14 +2193,103 @@ pub async fn call_wallet(
             });
         }
     }
-    // match state.wallet_manager.get_balance().await {
-    //     Ok(w) => {
-    //         info!(target: LOG_TARGET,"🚨 balance {:?}", w.available_balance.to_json());
-    //         Ok(w)
-    //     }
-    //     Err(e) => {
-    //         warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-    //         return Err(e.to_string());
-    //     }
-    // }
+}
+
+#[tauri::command]
+pub async fn set_ootle_localnet_enabled<'r>(
+    enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE LOCALNET {:?}", enabled);
+    let _lock = state.stop_start_mutex.lock().await;
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_ootle_localnet_enabled(enabled)
+        .await
+        .inspect_err(|e| error!("error at set_ootle_localnet_enabled {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let data_dir = app
+        .path()
+        .app_local_data_dir()
+        .expect("Could not get data dir");
+    let log_dir = app.path().app_log_dir().expect("Could not get log dir");
+
+    if enabled {
+        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE START",);
+        let base_node_grpc_port = state
+            .node_manager
+            .get_grpc_port()
+            .await
+            .map_err(|error| error.to_string())?;
+
+        let validator_node_config = ValidatorNodeConfig::builder()
+            .with_base_node(base_node_grpc_port)
+            .with_base_path(&data_dir)
+            .build()
+            .map_err(|error| error.to_string())?;
+        info!(target: LOG_TARGET,"🚨 try VN binary",);
+        state
+            .validator_node_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                validator_node_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+
+        let indexer_config = IndexerConfig::builder()
+            .with_base_node(base_node_grpc_port)
+            .with_base_path(data_dir.clone())
+            .build()
+            .map_err(|error| error.to_string())?;
+
+        state
+            .indexer_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                indexer_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+    } else {
+        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE STOP",);
+
+        state
+            .validator_node_manager
+            .stop()
+            .await
+            .inspect_err(|e| error!("error at stopping validator node {:?}", e))
+            .ok();
+
+        state
+            .indexer_manager
+            .stop()
+            .await
+            .inspect_err(|e| error!("error at stopping indexer {:?}", e))
+            .ok();
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
 }

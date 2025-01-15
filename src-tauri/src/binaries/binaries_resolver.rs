@@ -241,7 +241,7 @@ impl BinaryResolver {
 
         let version = manager
             .get_used_version()
-            .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
+            .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
 
         let base_dir = manager.get_base_dir().map_err(|error| {
             anyhow!(
@@ -331,7 +331,12 @@ impl BinaryResolver {
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Init binary: no version selected for {}",
+                    binary.name()
+                ))
+            }
         }
 
         Ok(())
@@ -381,7 +386,12 @@ impl BinaryResolver {
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Update binary: no version selected for {}",
+                    binary.name()
+                ))
+            }
         }
 
         Ok(())

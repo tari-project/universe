@@ -449,7 +449,7 @@ async fn setup_inner(
             }),
         )
         .await;
-    progress.set_max(35).await;
+    progress.set_max(32).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -462,20 +462,10 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
-
-    if should_check_for_update {
-        state
-            .config
-            .write()
-            .await
-            .set_last_binaries_update_timestamp(now)
-            .await?;
-    }
-
-    if state.config.read().await.ootle_localnet_enabled() {
+    if state.config.read().await.ootle_enabled() {
         //TODO tari validator node binary
         // should check for update - for now is set to false because of local build
-        progress.set_max(36).await;
+        progress.set_max(34).await;
         progress
             .update(
                 "checking-latest-version-tari-validator-node".to_string(),
@@ -496,7 +486,7 @@ async fn setup_inner(
 
         //TODO tari ootle indexer binary
         // should check for update - for now is set to false because of local build
-        progress.set_max(38).await;
+        progress.set_max(36).await;
         progress
             .update("checking-latest-version-tari-indexer".to_string(), None, 0)
             .await;
@@ -507,8 +497,23 @@ async fn setup_inner(
         info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
     }
 
+    if should_check_for_update {
+        info!(target: LOG_TARGET, "🚀 Check update binary");
+        state
+            .config
+            .write()
+            .await
+            .set_last_binaries_update_timestamp(now)
+            .await?;
+    }
+    info!(target: LOG_TARGET, "🚀 Check update binary done");
     //drop binary resolver to release the lock
     drop(binary_resolver);
+    
+    progress.set_max(37).await;
+    progress
+        .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
+        .await;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
@@ -525,14 +530,14 @@ async fn setup_inner(
     }
     let _unused = telemetry_service
         .send(
-            "waiting-for-minotari-node-to-start".to_string(),
+            "waiting-for-tor-to-start".to_string(),
             json!({
-                "service": "minotari_node",
-                "percentage":35,
+                "service": "tor_manager",
+                "percentage":37,
             }),
         )
         .await;
-    progress.set_max(37).await;
+    progress.set_max(38).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -564,7 +569,7 @@ async fn setup_inner(
                                 }),
                             )
                             .await;
-                        progress.set_max(38).await;
+                        progress.set_max(39).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -580,15 +585,7 @@ async fn setup_inner(
     }
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-    let _unused = telemetry_service
-        .send(
-            "waiting-for-wallet".to_string(),
-            json!({
-                "service": "wallet",
-                "percentage":35,
-            }),
-        )
-        .await;
+
     progress.set_max(40).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
@@ -1268,7 +1265,8 @@ fn main() {
             commands::read_dev_tapplets,
             commands::delete_dev_tapplet,
             commands::call_wallet,
-            commands::update_installed_tapplet
+            commands::update_installed_tapplet,
+            commands::set_ootle_localnet_enabled
         ])
         .build(tauri::generate_context!())
         .inspect_err(

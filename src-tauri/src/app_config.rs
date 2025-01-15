@@ -761,8 +761,23 @@ impl AppConfig {
         self.ootle_enabled
     }
 
+    pub async fn set_ootle_enabled(&mut self, ootle_enabled: bool) -> Result<(), anyhow::Error> {
+        self.ootle_enabled = ootle_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn ootle_localnet_enabled(&self) -> bool {
         self.ootle_localnet_enabled
+    }
+
+    pub async fn set_ootle_localnet_enabled(
+        &mut self,
+        ootle_localnet_enabled: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.ootle_localnet_enabled = ootle_localnet_enabled;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     // Allow needless update because in future there may be fields that are

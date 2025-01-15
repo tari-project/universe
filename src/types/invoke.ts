@@ -22,7 +22,6 @@ import {
     RegisteredTapplet,
     RegisteredTappletWithAssets,
 } from './ootle/tapplet';
-import { AccountsGetBalancesResponse } from '@tari-project/wallet_jrpc_client';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -128,4 +127,5 @@ declare module '@tauri-apps/api/core' {
         payload: { tappletId: string }
     ): Promise<RegisteredTappletWithAssets>;
     function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'set_ootle_localnet_enabled', payload: { enabled: boolean }): Promise<void>;
 }

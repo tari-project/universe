@@ -68,7 +68,7 @@ const initialState: State = {
     p2pool_stats_server_port: null,
     pre_release: false,
     ootle_enabled: false,
-    local_tari_indexer: true,
+    local_tari_indexer: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -319,7 +319,14 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
     setOotleMode: (enabled) => {
         set({ ootle_enabled: enabled });
     },
-    setLocalTariIndexer: (enabled) => {
+    setLocalTariIndexer: async (enabled) => {
+        console.info('setlocalootle', enabled);
         set({ local_tari_indexer: enabled });
+        invoke('set_ootle_localnet_enabled', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set ootle localnet enabled', e);
+            appStateStore.setError('Could not change ootle localnet enabled');
+            set({ local_tari_indexer: !enabled });
+        });
     },
 }));
