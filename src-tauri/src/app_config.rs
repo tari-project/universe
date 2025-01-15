@@ -236,7 +236,6 @@ pub(crate) struct AppConfig {
     created_at: Option<DateTime<Utc>>,
     mode: MiningMode,
     display_mode: DisplayMode,
-    auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
     last_binaries_update_timestamp: SystemTime,
@@ -282,7 +281,6 @@ impl AppConfig {
             created_at: None,
             mode: MiningMode::Eco,
             display_mode: DisplayMode::Light,
-            auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
@@ -598,10 +596,6 @@ impl AppConfig {
         self.show_experimental_settings = show_experimental_settings;
         self.update_config_file().await?;
         Ok(())
-    }
-
-    pub fn auto_mining(&self) -> bool {
-        self.auto_mining
     }
 
     pub fn should_auto_launch(&self) -> bool {
