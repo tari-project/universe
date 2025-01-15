@@ -1,28 +1,28 @@
 import { m } from 'framer-motion';
 import styled from 'styled-components';
 
-const transition = {
-    ease: 'easeIn',
-    duration: 0.3,
-    x: {
-        duration: 0.2,
-    },
-};
 const variants = {
     hidden: {
-        x: -10,
         opacity: 0,
-        transition,
+        scale: 1,
+        transition: {
+            duration: 0.5,
+        },
     },
     visible: {
-        x: 0,
         opacity: 1,
-        transition,
+        scale: 1,
+        transition: {
+            duration: 0.5,
+        },
     },
     exit: {
-        x: -10,
         opacity: 0,
-        transition: { duration: 0.15, ease: 'easeOut' },
+        scale: 1.5,
+        transition: {
+            duration: 0.8,
+            ease: [0.43, 0.13, 0.23, 0.96],
+        },
     },
 };
 

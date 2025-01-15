@@ -59,12 +59,12 @@ export default function App() {
                     <FloatingElements />
                     <AnimatePresence>
                         {!isAppReady && (
-                            <AppContentContainer key="splashscreen" initial="visible">
+                            <AppContentContainer key="splashscreen" initial="hidden">
                                 <Splashscreen />
                             </AppContentContainer>
                         )}
                         {showSetup && (
-                            <AppContentContainer key="setup" initial="visible">
+                            <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
                         )}
