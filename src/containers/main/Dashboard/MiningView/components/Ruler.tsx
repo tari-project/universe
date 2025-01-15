@@ -1,7 +1,6 @@
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useTheme } from 'styled-components';
 import { useLayoutEffect, useRef, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 
 export function Ruler() {
