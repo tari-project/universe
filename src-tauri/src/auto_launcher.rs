@@ -91,8 +91,7 @@ impl AutoLauncher {
         auto_launcher: &AutoLaunch,
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-
-        if config_is_auto_launcher_enabled  {
+        if config_is_auto_launcher_enabled {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
@@ -105,8 +104,7 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                     // To startup application as admin on windows, we need to create a task scheduler
                     #[cfg(target_os = "windows")]
-                    self.toggle_windows_admin_auto_launcher(true)
-                        .await?;
+                    self.toggle_windows_admin_auto_launcher(true).await?;
                 }
                 _ => {
                     auto_launcher.enable()?;
@@ -118,8 +116,7 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    self.toggle_windows_admin_auto_launcher(false)
-                        .await?;
+                    self.toggle_windows_admin_auto_launcher(false).await?;
                     auto_launcher.disable()?;
                 }
                 _ => {
