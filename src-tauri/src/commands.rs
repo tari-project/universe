@@ -434,7 +434,7 @@ pub async fn get_miner_metrics(
     let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = state.gpu_latest_status.borrow().clone();
     let gpu_mining_status = gpu_miner
-        .status(randomx_network_hashrate, block_reward, gpu_mining_status)
+        .status(sha_network_hashrate, block_reward, gpu_mining_status)
         .await
         .unwrap();
 

@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn};
+use log::warn;
 use tari_core::transactions::tari_amount::MicroMinotari;
 
-const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
+const BLOCKS_PER_DAY: u64 = 360; // both RandomX and SHA3 produce 360 blocks per day - 720 in total
 const LOG_TARGET: &str = "tari::universe::math_utils";
 
 pub fn estimate_earning(
@@ -40,23 +40,14 @@ pub fn estimate_earning(
     } else {
         #[allow(clippy::cast_possible_truncation)]
         {
-            info!(
-                target: LOG_TARGET,
-                "1st: {}, 2nd: {}, 3rd: {}",
-                (block_reward.as_u64() as f64),
-                (hash_rate / (network_hash_rate as f64)),
-                ((hash_rate / (network_hash_rate as f64)) * (RANDOMX_BLOCKS_PER_DAY as f64))
-
-            );
             ((block_reward.as_u64() as f64)
-                * ((hash_rate / (network_hash_rate as f64)) * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                * ((hash_rate / (network_hash_rate as f64)) * (BLOCKS_PER_DAY as f64)))
                 .floor() as u64
         }
     };
+
     // Can't be more than the max reward for a day
-    let estimated_earnings = std::cmp::min(
-        estimated_earnings,
-        block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-    );
+    let estimated_earnings =
+        std::cmp::min(estimated_earnings, block_reward.as_u64() * BLOCKS_PER_DAY);
     return estimated_earnings;
 }
