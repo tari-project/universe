@@ -1,12 +1,12 @@
 import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 
 export const useAirdropAuth = () => {
-    const { backendInMemoryConfig, authUuid, setAuthUuid, setAirdropTokens } = useAirdropStore();
     const restartMining = useMiningStore((s) => s.restartMining);
+    const { authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
