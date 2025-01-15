@@ -5,6 +5,10 @@
     "windows",
     "linux"
   ],
+  "windows": [
+    "main",
+    "splashscreen"
+  ],
   "permissions": [
     "updater:default"
   ]

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
 
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 
 import calculateTimeSince from '@app/utils/calculateTimeSince.ts';
 import { useInterval } from '../helpers/useInterval';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const INTERVAL = 1000; // 1 sec
 
@@ -12,7 +12,7 @@ export function useBlockInfo() {
     const setDisplayBlockTime = useBlockchainVisualisationStore((s) => s.setDisplayBlockTime);
     const setDebugBlockTime = useBlockchainVisualisationStore((s) => s.setDebugBlockTime);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const block_time = useMiningStore((s) => s.base_node.block_time);
+    const block_time = useMiningMetricsStore((s) => s.base_node.block_time);
 
     const diff = useMemo(() => {
         const now = new Date();
