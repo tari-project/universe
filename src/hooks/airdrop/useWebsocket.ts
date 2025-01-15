@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { MINING_EVENT_INTERVAL_MS, useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 let socket: ReturnType<typeof io> | null;
 
@@ -22,11 +23,11 @@ export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
-    const cpu = useMiningStore((state) => state.cpu);
-    const gpu = useMiningStore((state) => state.gpu);
+    const cpu = useMiningMetricsStore((state) => state.cpu);
+    const gpu = useMiningMetricsStore((state) => state.gpu);
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
-    const base_node = useMiningStore((state) => state.base_node);
+    const base_node = useMiningMetricsStore((state) => state.base_node);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
@@ -34,8 +35,7 @@ export const useWebsocket = () => {
     const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
 
     const isMining = useMemo(() => {
-        const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
-        return isMining;
+        return (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
     }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
 
     const handleEmitMiningStatus = useCallback(

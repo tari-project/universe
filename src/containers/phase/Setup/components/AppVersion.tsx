@@ -12,7 +12,7 @@ export default function AppVersion() {
     }, []);
 
     return tariVersion ? (
-        <Typography variant="span" style={{ zIndex: 1000, position: 'absolute', right: 12, bottom: 6 }}>
+        <Typography style={{ zIndex: 1000, position: 'absolute', right: 12, bottom: 6, fontWeight: 500 }}>
             {tariVersion}
         </Typography>
     ) : null;

@@ -645,7 +645,7 @@ pub async fn get_seed_words(
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_details(
+pub async fn emit_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
