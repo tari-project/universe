@@ -1,5 +1,5 @@
 {
-    "version": "0.8.40",
+    "version": "0.8.42",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -40,7 +40,13 @@
                 "default",
                 "migrated"
             ],
-            "csp": null
+            "csp": null,
+            "pattern": {
+                "use": "isolation",
+                "options": {
+                    "dir": "../dist-isolation"
+                }
+            }
         },
         "trayIcon": {
             "id": "universe-tray-id",
@@ -52,15 +58,6 @@
         "windows": [
             {
                 "title": "Tari Universe (Alpha) | Testnet",
-                "width": 1380,
-                "height": 780,
-                "label": "splashscreen",
-                "url": "/splash.html",
-                "center": true,
-                "useHttpsScheme": true
-            },
-            {
-                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
@@ -69,7 +66,7 @@
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
-                "visible": false,
+                "visible": true,
                 "center": true,
                 "useHttpsScheme": true
             }

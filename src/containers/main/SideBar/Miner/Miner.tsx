@@ -18,6 +18,7 @@ import {
     ExpandedContentTile,
 } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Miner() {
     useMiningStatesSync();
@@ -27,12 +28,12 @@ export default function Miner() {
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
-    const { cpu_estimated_earnings, cpu_hash_rate, cpu_is_mining } = useMiningStore((s) => ({
+    const { cpu_estimated_earnings, cpu_hash_rate, cpu_is_mining } = useMiningMetricsStore((s) => ({
         cpu_estimated_earnings: s.cpu.mining.estimated_earnings,
         cpu_hash_rate: s.cpu.mining.hash_rate,
         cpu_is_mining: s.cpu.mining.is_mining,
     }));
-    const { gpu_estimated_earnings, gpu_hash_rate, gpu_is_mining } = useMiningStore((s) => ({
+    const { gpu_estimated_earnings, gpu_hash_rate, gpu_is_mining } = useMiningMetricsStore((s) => ({
         gpu_estimated_earnings: s.gpu.mining.estimated_earnings,
         gpu_hash_rate: s.gpu.mining.hash_rate,
         gpu_is_mining: s.gpu.mining.is_mining,

@@ -3,8 +3,9 @@ import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
-import { useMiningStore } from './useMiningStore';
+
 import { addToast } from '@app/components/ToastStack/useToastStore';
+import { startMining } from '@app/store/miningStoreActions.ts';
 
 interface AppState {
     criticalError?: string;
@@ -65,7 +66,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         // Proceed with auto mining when enabled
         const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
         if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            const startMining = useMiningStore.getState().startMining;
             await startMining();
         }
         set({ isSettingUp: false });
