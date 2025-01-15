@@ -224,6 +224,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
+    let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -574,8 +575,17 @@ async fn setup_inner(
         .await;
     progress.set_max(75).await;
     state.node_manager.wait_synced(progress.clone()).await?;
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+    if telemetry_id.is_empty() {
+        telemetry_id = "unknown_miner_tari_universe".to_string();
+    }
 
-    if state.config.read().await.p2pool_enabled() {
+    if p2pool_enabled {
         let _unused = telemetry_service
             .send(
                 "starting-p2pool".to_string(),
@@ -636,7 +646,7 @@ async fn setup_inner(
             log_path: log_dir.clone(),
             tari_address: cpu_miner_config.tari_address.clone(),
             coinbase_extra: telemetry_id,
-            p2pool_enabled: config.p2pool_enabled(),
+            p2pool_enabled,
             monero_nodes: config.mmproxy_monero_nodes().clone(),
             use_monero_fail: config.mmproxy_use_monero_fail(),
         })
