@@ -70,30 +70,28 @@ export function Ruler() {
     }, []);
 
     return (
-        <Wrapper layout layoutId="ruler-wrapper">
-            <AnimatePresence>
-                {height && height > 0 ? (
-                    <Column layoutId="ruler-column" ref={columnRef}>
-                        {topMarkSegments}
-                        <RulerMarkGroup layout>
-                            <RulerMark
-                                $opacity={1}
-                                data-before={height?.toLocaleString()}
-                                animate={{
-                                    fontSize: windowWidth < 1200 ? '18px' : '25px',
-                                    fontFamily: 'DrukWide, sans-serif',
-                                    color: theme.palette.text.primary,
-                                }}
-                            />
-                            <RulerMark />
-                            <RulerMark />
-                            <RulerMark />
-                            <RulerMark />
-                        </RulerMarkGroup>
-                        {bottomMarkSegments}
-                    </Column>
-                ) : null}
-            </AnimatePresence>
+        <Wrapper layoutId="ruler-wrapper">
+            {height && height > 0 ? (
+                <Column layoutId="ruler-column" ref={columnRef}>
+                    {topMarkSegments}
+                    <RulerMarkGroup layout>
+                        <RulerMark
+                            $opacity={1}
+                            data-before={height?.toLocaleString()}
+                            animate={{
+                                fontSize: windowWidth < 1200 ? '18px' : '25px',
+                                fontFamily: 'DrukWide, sans-serif',
+                                color: theme.palette.text.primary,
+                            }}
+                        />
+                        <RulerMark />
+                        <RulerMark />
+                        <RulerMark />
+                        <RulerMark />
+                    </RulerMarkGroup>
+                    {bottomMarkSegments}
+                </Column>
+            ) : null}
         </Wrapper>
     );
 }

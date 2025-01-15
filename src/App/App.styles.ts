@@ -16,6 +16,14 @@ const variants = {
             duration: 0.5,
         },
     },
+    dashboardInitial: {
+        opacity: 0,
+        scale: 2,
+        transition: {
+            duration: 1,
+            ease: [0.43, 0.13, 0.23, 0.96],
+        },
+    },
     exit: {
         opacity: 0,
         scale: 1.5,
