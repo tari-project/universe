@@ -24,6 +24,7 @@ export default function Flare({ gems, animationType }: Props) {
     const setFlareAnimationType = useAirdropStore((s) => s.setFlareAnimationType);
 
     useEffect(() => {
+        if (!animationType) return;
         const duration = durations[animationType] || 0;
         const animationTimeout = setTimeout(setFlareAnimationType, duration);
         return () => {

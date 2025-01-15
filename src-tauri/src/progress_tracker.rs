@@ -26,7 +26,7 @@ use log::error;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{watch::Sender, RwLock};
 
-use crate::setup_status_event::SetupStatusEvent;
+use crate::events::SetupStatusEvent;
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
