@@ -34,7 +34,6 @@ mod tests {
         let config_json = r#"
         {
             "version": 0,
-            "auto_mining": true
         }
         "#;
 
@@ -43,8 +42,6 @@ mod tests {
         config.apply_loaded_config(config_json.to_string());
 
         assert_eq!(config.mode(), MiningMode::Eco);
-        // it doesn't affect auto_mining value saved in the config
-        assert_eq!(config.auto_mining(), true);
         assert_eq!(config.p2pool_enabled(), false);
         assert_ne!(format!("{:?}", config.last_binaries_update_timestamp()), "");
         assert_eq!(config.allow_telemetry(), false);
@@ -59,7 +56,6 @@ mod tests {
         let config_json = r#"
             {
                 "mode": "Ludicrous",
-                "auto_mining": false,
                 "p2pool_enabled": true,
                 "last_binaries_update_timestamp": {
                     "secs_since_epoch": 1725545367,
@@ -78,7 +74,6 @@ mod tests {
         config.apply_loaded_config(config_json.to_string());
 
         assert_eq!(config.mode(), MiningMode::Ludicrous);
-        assert_eq!(config.auto_mining(), false);
         // For now always false by default
         assert_eq!(config.p2pool_enabled(), false);
         let expected_timestamp = SystemTime::UNIX_EPOCH + Duration::new(1725545367, 379078628);
