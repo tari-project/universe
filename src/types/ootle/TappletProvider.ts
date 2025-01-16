@@ -130,8 +130,9 @@ export class TappletProvider implements TariProvider {
 
     public async getAccount(): Promise<Account> {
         const { account, public_key } = (await this.client.accountsGetDefault({})) as any;
+
         const { balances } = await this.client.accountsGetBalances({
-            account: { ComponentAddress: account.address.Component },
+            account: { ComponentAddress: account.address },
             refresh: false,
         });
 
@@ -139,11 +140,17 @@ export class TappletProvider implements TariProvider {
             account_id: account.key_index,
             address: account.address.Component,
             public_key,
+
             resources: balances.map((b: any) => ({
                 type: b.resource_type,
                 resource_address: b.resource_address,
                 balance: b.balance + b.confidential_balance,
-                vault_id: 'Vault' in b.vault_address ? b.vault_address.Vault : b.vault_address,
+                vault_id:
+                    typeof b.vault_address === 'string' && b.vault_address.length > 0
+                        ? b.vault_address
+                        : 'Vault' in b.vault_address
+                          ? b.vault_address.Vault
+                          : b.vault_address,
                 token_symbol: b.token_symbol,
             })),
         };

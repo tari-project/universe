@@ -8,6 +8,8 @@ import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 import { Account } from '@tari-project/tarijs/dist/providers/types';
 
+const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
+
 export default function ActiveTappletView() {
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
@@ -18,8 +20,7 @@ export default function ActiveTappletView() {
     const fetchTappConfig = useCallback(async () => {
         try {
             if (!tapplet) return;
-            //TODO
-            const config: TappletConfig = await (await fetch(`${tapplet?.source}/tapplet.config.json`)).json(); //TODO add const as path to config
+            const config: TappletConfig = await (await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`)).json();
 
             console.log('[active dev tapp] config ->', config);
             if (!config) return;
@@ -42,15 +43,16 @@ export default function ActiveTappletView() {
     }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
 
     const refreshAccount = useCallback(async () => {
+        //TODO this is tmp to check if account is found and set; can be removed later
         if (!tappProvider) return;
-        //TODO this is tmp to check if account is found and set
         try {
             const acc = await tappProvider.getAccount();
             setAccount(acc);
         } catch (error) {
             console.error(error);
         }
-    }, [tappProvider]);
+        console.info('TAPP ACCOUNT', account);
+    }, [account, tappProvider]);
 
     useEffect(() => {
         fetchTappConfig();
@@ -59,7 +61,6 @@ export default function ActiveTappletView() {
     useEffect(() => {
         refreshAccount();
     }, [refreshAccount, tappProvider]);
-    console.info('TAPP ACCOUNT', account);
 
     return (
         <>
