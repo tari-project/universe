@@ -509,7 +509,7 @@ async fn setup_inner(
     info!(target: LOG_TARGET, "🚀 Check update binary done");
     //drop binary resolver to release the lock
     drop(binary_resolver);
-    
+
     progress.set_max(37).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
@@ -585,7 +585,6 @@ async fn setup_inner(
     }
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-
     progress.set_max(40).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
@@ -646,7 +645,7 @@ async fn setup_inner(
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
             .build()?;
-        info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT p2p {:?}", &base_node_grpc);
+        info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT p2p {:?}", &base_node_grpc);
 
         state
             .p2pool_manager
@@ -678,11 +677,13 @@ async fn setup_inner(
         // run localnet
         if state.config.read().await.ootle_localnet_enabled() {
             let base_node_grpc = state.node_manager.get_grpc_port().await?;
+            info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT VN {:?}", &base_node_grpc);
             let validator_node_config = ValidatorNodeConfig::builder()
                 .with_base_node(base_node_grpc)
                 .with_base_path(&data_dir)
                 .build()?;
-            info!(target: LOG_TARGET, "🚀 Base Node GRPC PORT VN {:?}", &base_node_grpc);
+            let tcp_port = state.node_manager.get_tcp_listener_port().await;
+            info!(target: LOG_TARGET, "🌐 Base Node TCP {:?}", &tcp_port);
 
             state
                 .validator_node_manager

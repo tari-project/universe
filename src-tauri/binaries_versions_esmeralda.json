@@ -6,6 +6,8 @@
         "wallet": "=1.9.2-pre.0",
         "sha-p2pool": "=0.20.0",
         "xtrgpuminer": "=0.2.10",
-        "tor": "=13.5.7"
+        "tor": "=13.5.7",
+        "tari_indexer": "=0.7.0",
+        "tari_validator_node": "=0.7.0"
     }
 }
