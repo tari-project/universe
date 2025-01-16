@@ -39,7 +39,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -55,8 +55,6 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -951,27 +949,6 @@ pub async fn send_feedback(
 }
 
 #[tauri::command]
-pub async fn set_airdrop_access_token(
-    token: String,
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token.clone());
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "set_airdrop_access_token took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    let mut in_memory_app_config = state.in_memory_config.write().await;
-    in_memory_app_config.airdrop_access_token = Some(token);
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_allow_telemetry(
     allow_telemetry: bool,
     _window: tauri::Window,
@@ -1082,10 +1059,10 @@ pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
 
     let signature = key.sign(data.as_bytes());
 
-    return Ok(SignWsDataResponse {
+    Ok(SignWsDataResponse {
         signature: BASE64_STANDARD.encode(signature.as_ref()),
         pub_key,
-    });
+    })
 }
 
 #[tauri::command]
@@ -1415,37 +1392,6 @@ pub async fn set_visual_mode<'r>(
         );
     }
     Ok(())
-}
-
-#[tauri::command]
-pub async fn setup_application(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<bool, String> {
-    let timer = Instant::now();
-    let rollback = state.setup_counter.write().await;
-    if rollback.get_value() {
-        warn!(target: LOG_TARGET, "setup_application has already been initialized, debouncing");
-        let res = state.config.read().await.auto_mining();
-        return Ok(res);
-    }
-    rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(state.clone(), app).await.map_err(|e| {
-        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        sentry::capture_event(Event {
-            level: sentry::Level::Error,
-            message: Some(e.to_string()),
-            culprit: Some("setup-inner".to_string()),
-            ..Default::default()
-        });
-        e.to_string()
-    })?;
-
-    let res = state.config.read().await.auto_mining();
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
 }
 
 #[allow(clippy::too_many_lines)]
