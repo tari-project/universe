@@ -98,17 +98,6 @@ impl TelemetryService {
         app_version: String,
         user: String,
     ) -> Result<(), TelemetryServiceError> {
-        let hardware = HardwareStatusMonitor::current();
-        let cpu_name = hardware.get_cpu_devices().await?;
-        let cpu_name = match cpu_name.first() {
-            Some(cpu) => cpu.public_properties.name.clone(),
-            None => "Unknown".to_string(),
-        };
-        let gpu_name = hardware.get_gpu_devices().await?;
-        let gpu_name = match gpu_name.first() {
-            Some(gpu) => gpu.public_properties.name.clone(),
-            None => "Unknown".to_string(),
-        };
         let os = PlatformUtils::detect_current_os();
 
         self.version = app_version;
@@ -129,8 +118,6 @@ impl TelemetryService {
                 app_id,
                 version,
                 user_id: user,
-                cpu_name,
-                gpu_name,
                 os,
             };
             tokio::select! {
@@ -195,8 +182,6 @@ struct SystemInfo {
     version: String,
     user_id: String,
     os: CurrentOperatingSystem,
-    cpu_name: String,
-    gpu_name: String,
 }
 
 async fn send_telemetry_data(
@@ -206,6 +191,20 @@ async fn send_telemetry_data(
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
 
+    let hardware = HardwareStatusMonitor::current();
+
+    let cpu_name = hardware.get_cpu_devices().await?;
+    let cpu_name = match cpu_name.first() {
+        Some(cpu) => cpu.public_properties.name.clone(),
+        None => "Unknown".to_string(),
+    };
+
+    let gpu_name = hardware.get_gpu_devices().await?;
+    let gpu_name = match gpu_name.first() {
+        Some(gpu) => gpu.public_properties.name.clone(),
+        None => "Unknown".to_string(),
+    };
+
     let full_data = FullTelemetryData {
         event_name: data.event_name,
         event_value: data.event_value,
@@ -214,8 +213,8 @@ async fn send_telemetry_data(
         app_id: system_info.app_id,
         version: system_info.version,
         os: system_info.os.to_string(),
-        cpu_name: system_info.cpu_name,
-        gpu_name: system_info.gpu_name,
+        cpu_name,
+        gpu_name,
     };
     let request_builder = request
         .post(api_url)
