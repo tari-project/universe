@@ -7,6 +7,8 @@ import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
 
 type State = Partial<AppConfig>;
 interface SetModeProps {
@@ -16,7 +18,6 @@ interface SetModeProps {
 }
 
 interface Actions {
-    fetchAppConfig: () => Promise<void>;
     setAllowTelemetry: (allowTelemetry: boolean) => Promise<void>;
     setCpuMiningEnabled: (enabled: boolean) => Promise<void>;
     setGpuMiningEnabled: (enabled: boolean) => Promise<void>;
@@ -67,25 +68,9 @@ const initialState: State = {
     pre_release: false,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
-    fetchAppConfig: async () => {
-        try {
-            const appConfig = await invoke('get_app_config');
-            set(appConfig);
-            const configTheme = appConfig.display_mode?.toLowerCase();
-            const canvasElement = document.getElementById('canvas');
-            if (canvasElement && !appConfig.visual_mode) {
-                canvasElement.style.display = 'none';
-            }
 
-            if (configTheme) {
-                await getState().setTheme(configTheme as displayMode);
-            }
-        } catch (e) {
-            console.error('Could not get app config: ', e);
-        }
-    },
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
         invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
@@ -139,15 +124,16 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
     setCpuMiningEnabled: async (enabled) => {
         set({ cpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
-        if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
-            await miningState.pauseMining();
+        const metricsState = useMiningMetricsStore.getState();
+        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+            await pauseMining();
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated && (enabled || miningState.gpu.mining.is_mining)) {
-                    await miningState.startMining();
+                if (miningState.miningInitiated && (enabled || metricsState.gpu.mining.is_mining)) {
+                    await startMining();
                 } else {
-                    miningState.stopMining();
+                    await stopMining();
                 }
             })
             .catch((e) => {
@@ -158,26 +144,27 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
 
                 if (
                     miningState.miningInitiated &&
-                    !miningState.cpu.mining.is_mining &&
-                    !miningState.gpu.mining.is_mining
+                    !metricsState.cpu.mining.is_mining &&
+                    !metricsState.gpu.mining.is_mining
                 ) {
-                    miningState.stopMining();
+                    void stopMining();
                 }
             });
     },
     setGpuMiningEnabled: async (enabled) => {
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
-        if (miningState.cpu.mining.is_mining || miningState.gpu.mining.is_mining) {
-            await miningState.pauseMining();
+        const metricsState = useMiningMetricsStore.getState();
+        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+            await pauseMining();
         }
 
         invoke('set_gpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated && (miningState.cpu.mining.is_mining || enabled)) {
-                    await miningState.startMining();
+                if (miningState.miningInitiated && (metricsState.cpu.mining.is_mining || enabled)) {
+                    await startMining();
                 } else {
-                    miningState.stopMining();
+                    void stopMining();
                 }
             })
             .catch((e) => {
@@ -188,10 +175,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
 
                 if (
                     miningState.miningInitiated &&
-                    !miningState.cpu.mining.is_mining &&
-                    !miningState.gpu.mining.is_mining
+                    !metricsState.cpu.mining.is_mining &&
+                    !metricsState.gpu.mining.is_mining
                 ) {
-                    miningState.stopMining();
+                    void stopMining();
                 }
             });
     },
@@ -313,3 +300,23 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         });
     },
 }));
+
+export const fetchAppConfig = async () => {
+    try {
+        const appConfig = await invoke('get_app_config');
+        useAppConfigStore.setState(appConfig);
+        const configTheme = appConfig.display_mode?.toLowerCase();
+        const canvasElement = document.getElementById('canvas');
+        if (canvasElement && !appConfig.visual_mode) {
+            canvasElement.style.display = 'none';
+        }
+
+        if (configTheme) {
+            await useAppConfigStore.getState().setTheme(configTheme as displayMode);
+        }
+
+        return appConfig;
+    } catch (e) {
+        console.error('Could not get app config: ', e);
+    }
+};
