@@ -52,6 +52,14 @@ export function DialogsGroup() {
                 >
                     Release Notes
                 </Button>
+                <Button
+                    onClick={() =>
+                        setDialogToShow(dialogToShow === 'ludicrousConfirmation' ? undefined : 'ludicrousConfirmation')
+                    }
+                    $isActive={dialogToShow === 'ludicrousConfirmation'}
+                >
+                    Ludicrous Confirmation
+                </Button>
             </ButtonGroup>
         </>
     );
