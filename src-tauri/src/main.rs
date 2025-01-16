@@ -250,16 +250,6 @@ async fn setup_inner(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
-    let _unused = state
-        .gpu_miner
-        .write()
-        .await
-        .detect(config_dir.clone())
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    HardwareStatusMonitor::current().initialize().await?;
-
     state
         .telemetry_manager
         .write()
@@ -467,6 +457,16 @@ async fn setup_inner(
 
     //drop binary resolver to release the lock
     drop(binary_resolver);
+
+    let _unused = state
+        .gpu_miner
+        .write()
+        .await
+        .detect(config_dir.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
