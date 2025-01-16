@@ -57,19 +57,19 @@ export default function App() {
                  */}
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
-                    <AnimatePresence>
+                    <AnimatePresence mode="popLayout">
                         {!isAppReady && (
-                            <AppContentContainer key="splashscreen" initial="visible">
+                            <AppContentContainer key="splashscreen" initial="hidden">
                                 <Splashscreen />
                             </AppContentContainer>
                         )}
                         {showSetup && (
-                            <AppContentContainer key="setup" initial="visible">
+                            <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
                         )}
                         {!isShuttingDown && !isSettingUp && isAppReady && (
-                            <AppContentContainer key="main" initial="hidden">
+                            <AppContentContainer key="main" initial="dashboardInitial">
                                 <MainView />
                             </AppContentContainer>
                         )}
