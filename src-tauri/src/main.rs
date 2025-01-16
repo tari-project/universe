@@ -930,6 +930,14 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
+
+            #[cfg(debug_assertions)] // only include this code on debug builds
+            {
+                let window = app.get_webview_window("main").unwrap();
+                window.open_devtools();
+                window.close_devtools();
+            }
+            
             let config_path = app
                 .path()
                 .app_config_dir()
