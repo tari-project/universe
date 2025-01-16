@@ -20,7 +20,7 @@
         "@lottiefiles/dotlottie-react": "^0.10.1",
         "@mui/material": "^5.15.15",
         "@sentry/react": "^8.42.0",
-        "@tari-project/tarijs": "file:../tari.js",
+        "@tari-project/tarijs": "^0.3.0",
         "@tari-project/wallet_jrpc_client": "^1.1.0",
         "@tauri-apps/api": "^2.1.1",
         "@tauri-apps/plugin-os": "^2.0.0",
