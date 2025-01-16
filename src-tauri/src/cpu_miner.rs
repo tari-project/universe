@@ -23,6 +23,7 @@
 use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
@@ -43,9 +44,9 @@ pub(crate) struct CpuMiner {
 }
 
 impl CpuMiner {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let xmrig_adapter = XmrigAdapter::new();
-        let process_watcher = ProcessWatcher::new(xmrig_adapter);
+        let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner());
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
         }
