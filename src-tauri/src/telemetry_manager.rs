@@ -555,6 +555,11 @@ async fn get_telemetry_data(
 
     add_process_stats(
         &mut extra_data,
+        stats_collector.get_p2pool_stats(),
+        "p2pool",
+    );
+    add_process_stats(
+        &mut extra_data,
         stats_collector.get_cpu_miner_stats(),
         "cpu_miner",
     );
