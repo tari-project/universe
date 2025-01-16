@@ -41,3 +41,63 @@ export function setAnimationProperties(properties: Property[]) {
         app.properties[item.property] = item.value;
     }
 }
+
+let time: number;
+let lastRender: number;
+const targetFPS = 40;
+const frameInterval = 1 / targetFPS;
+
+const glApp = window.glApp;
+function preload() {
+    glApp.preload(
+        {
+            canvas: document.getElementById('canvas'),
+            orbitTarget: document.getElementById('canvas'),
+            ASSETS_PATH: '/assets/',
+        },
+        () => {
+            init();
+        }
+    );
+}
+
+function init() {
+    glApp.init();
+    time = performance.now() / 1000;
+    lastRender = time;
+    window.addEventListener('resize', onResize);
+
+    onResize();
+    animate();
+}
+
+function animate() {
+    const newTime = performance.now() / 1000;
+    const dt = newTime - time;
+    if (newTime - lastRender >= frameInterval) {
+        lastRender = newTime;
+        update(dt);
+        time = newTime;
+    }
+
+    requestAnimationFrame(animate);
+}
+
+function update(dt) {
+    glApp.render(dt);
+}
+
+function onResize() {
+    const sidebarOffset = 348 + 20; // sidebar + padding
+    glApp.properties.cameraOffsetX = sidebarOffset / window.innerWidth;
+    glApp.setSize(window.innerWidth, window.innerHeight);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
+        console.error('WebGL not supported!');
+        return;
+    }
+
+    preload();
+});

@@ -16,11 +16,17 @@ export type GlAppState =
     | 'restartAnimation'
     | 'restart';
 
+interface PreloadArgs {
+    canvas?: HTMLElement | null;
+    orbitTarget?: HTMLElement | null;
+    ASSETS_PATH: string;
+}
 export interface GlApp {
     setState(e: GlAppState, isReplay?: boolean): void;
     init(): void;
     properties: Properties;
     stateManager: StateManager;
+    preload: ({ canvas, orbitTarget, ASSETS_PATH }: PreloadArgs, callback: () => void) => void;
 }
 
 export interface Properties extends Record<string, unknown> {
