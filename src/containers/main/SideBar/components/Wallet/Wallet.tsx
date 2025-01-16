@@ -8,11 +8,10 @@ import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 
-import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { handleTransactions, useWalletStore } from '@app/store/useWalletStore.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
-import useFetchTx from '@app/hooks/mining/useTransactions.ts';
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
 import History from './History.tsx';
 
@@ -46,7 +45,6 @@ export default function Wallet() {
     const [showLongBalance, setShowLongBalance] = useState(false);
     const [animateNumbers, setShowAnimateNumbers] = useState(true);
 
-    const fetchTx = useFetchTx();
     const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLong = formatNumber(balance || 0, FormatPreset.TXTM_LONG);
 
@@ -64,14 +62,13 @@ export default function Wallet() {
 
     const handleShowClick = useCallback(async () => {
         if (balance && !transactions.length && !isTransactionLoading) {
-            await fetchTx();
+            await handleTransactions();
         } else {
             setRecapCount(undefined);
         }
 
         setShowHistory((c) => !c);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [balance, fetchTx, isTransactionLoading, transactions?.length]);
+    }, [balance, isTransactionLoading, setRecapCount, transactions.length]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);

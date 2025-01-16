@@ -1,54 +1,52 @@
-import { useCallback } from 'react';
+import { useCallback, useDeferredValue } from 'react';
 import { MinerMetrics } from '@app/types/app-status';
-
+import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
-import { useMiningStore } from '@app/store/useMiningStore';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-
-import useFetchTx from './useTransactions.ts';
 
 export default function useMiningMetricsUpdater() {
-    const fetchTx = useFetchTx();
-    const currentBlockHeight = useMiningStore((s) => s.base_node.block_height);
-    const baseNodeConnected = useMiningStore((s) => s.base_node.is_connected);
-    const setMiningMetrics = useMiningStore((s) => s.setMiningMetrics);
-    const handleNewBlock = useBlockchainVisualisationStore((s) => s.handleNewBlock);
+    const setMiningMetrics = useMiningMetricsStore((s) => s.setMiningMetrics);
+    const currentBlockHeight = useMiningMetricsStore((s) => s.base_node.block_height);
+    const baseNodeConnected = useMiningMetricsStore((s) => s.base_node.is_connected);
+
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
+
+    const deferredblock = useDeferredValue(currentBlockHeight);
 
     return useCallback(
         async (metrics: MinerMetrics) => {
             if (metrics) {
                 const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
-                // Pause animation when lost connection to the Tari Network
-                if (isMining && !metrics.base_node?.is_connected && baseNodeConnected) {
-                    setAnimationState('stop');
-                } else if (isMining && metrics.base_node?.is_connected && !baseNodeConnected) {
-                    setAnimationState('start');
+
+                if (isMining) {
+                    if (!metrics.base_node?.is_connected && baseNodeConnected) {
+                        setAnimationState('stop');
+                    }
+                    if (metrics.base_node?.is_connected && !baseNodeConnected) {
+                        setAnimationState('start');
+                    }
                 }
 
                 const blockHeight = metrics.base_node.block_height;
-                if (blockHeight > 0 && currentBlockHeight > 0 && blockHeight > currentBlockHeight) {
+                const isNewBlock = blockHeight > 0 && deferredblock > 0 && blockHeight > deferredblock;
+
+                if (isNewBlock) {
                     try {
-                        fetchTx()
-                            .then(async () => {
-                                await handleNewBlock(blockHeight, isMining);
-                            })
-                            .catch(() => {
-                                setDisplayBlockHeight(blockHeight);
-                            });
+                        await handleNewBlock(blockHeight, isMining);
                     } catch (_) {
                         setDisplayBlockHeight(blockHeight);
+                    } finally {
+                        setMiningMetrics(metrics);
                     }
                 } else {
                     if (blockHeight && !displayBlockHeight) {
                         setDisplayBlockHeight(blockHeight);
                     }
+                    setMiningMetrics(metrics);
                 }
-                setMiningMetrics(metrics);
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [baseNodeConnected, currentBlockHeight, displayBlockHeight, fetchTx]
+        [baseNodeConnected, deferredblock, displayBlockHeight, setDisplayBlockHeight, setMiningMetrics]
     );
 }
