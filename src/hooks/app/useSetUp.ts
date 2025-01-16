@@ -71,5 +71,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, handlePostSetup, adminShow, setSetupDetails]);
+    }, [clearStorage, handlePostSetup, adminShow, setSetupDetails, visualMode]);
 }

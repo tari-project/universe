@@ -66,15 +66,14 @@ export async function reinstateCanvas() {
         const newCanvas = document.createElement('canvas');
         const main = document.getElementById('main');
         if (main && newCanvas) {
+            newCanvas.id = 'canvas';
+            newCanvas.innerText = '';
             canPreload = true;
             main.appendChild(newCanvas);
         }
     }
 
-    console.debug('canPreload:', canPreload);
-
     if (canPreload) {
-        console.debug('preloading...');
         preloadTower();
     }
 }

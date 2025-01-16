@@ -29,7 +29,6 @@ function VisualMode() {
             destroyCanvas();
         } else {
             reinstateCanvas().then(() => {
-                console.debug('then!');
                 setAnimationState('showVisual');
             });
         }
