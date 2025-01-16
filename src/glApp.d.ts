@@ -23,7 +23,9 @@ interface PreloadArgs {
 }
 export interface GlApp {
     setState(e: GlAppState, isReplay?: boolean): void;
-    init(): void;
+    init: () => void;
+    render: (dt: number) => void;
+    setSize: (w: number, h: number) => void;
     properties: Properties;
     stateManager: StateManager;
     preload: ({ canvas, orbitTarget, ASSETS_PATH }: PreloadArgs, callback: () => void) => void;

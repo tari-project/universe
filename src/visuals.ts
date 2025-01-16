@@ -48,17 +48,44 @@ const targetFPS = 40;
 const frameInterval = 1 / targetFPS;
 
 const glApp = window.glApp;
-function preload() {
-    glApp.preload(
-        {
-            canvas: document.getElementById('canvas'),
-            orbitTarget: document.getElementById('canvas'),
-            ASSETS_PATH: '/assets/',
-        },
-        () => {
-            init();
+
+export function destroyCanvas() {
+    setAnimationState('stop');
+    const canvas = document.getElementById('canvas');
+
+    canvas?.remove();
+}
+
+export async function reinstateCanvas() {
+    let canPreload = false;
+    const currentCanvas = document.getElementById('canvas');
+    if (currentCanvas) {
+        canPreload = true;
+    }
+    if (!currentCanvas) {
+        const newCanvas = document.createElement('canvas');
+        const main = document.getElementById('main');
+        if (main && newCanvas) {
+            canPreload = true;
+            main.appendChild(newCanvas);
         }
-    );
+    }
+
+    console.debug('canPreload:', canPreload);
+
+    if (canPreload) {
+        console.debug('preloading...');
+        preloadTower();
+    }
+}
+
+export function preloadTower() {
+    const canvasEl = document.getElementById('canvas');
+    if (canvasEl) {
+        glApp.preload({ canvas: canvasEl, orbitTarget: canvasEl, ASSETS_PATH: '/assets/' }, () => {
+            init();
+        });
+    }
 }
 
 function init() {
@@ -83,7 +110,7 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-function update(dt) {
+function update(dt: number) {
     glApp.render(dt);
 }
 
@@ -92,12 +119,3 @@ function onResize() {
     glApp.properties.cameraOffsetX = sidebarOffset / window.innerWidth;
     glApp.setSize(window.innerWidth, window.innerHeight);
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
-        console.error('WebGL not supported!');
-        return;
-    }
-
-    preload();
-});

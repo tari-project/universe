@@ -754,7 +754,7 @@ async fn setup_inner(
 
 async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let app_handle = app.clone();
-    app_handle.once("frontend_ready", move |_event| {
+    app_handle.listen("frontend_ready", move |_event| {
         info!(target: LOG_TARGET, "Frontend is ready");
         let app_clone: tauri::AppHandle = app.clone();
         tauri::async_runtime::spawn(async move {
