@@ -23,8 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/gpu_status.json
-vite-profile-*
-
+vite-profile*
 
 # Sentry Config File
 .env.sentry-build-plugin
