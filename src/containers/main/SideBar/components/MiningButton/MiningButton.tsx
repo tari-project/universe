@@ -12,6 +12,8 @@ import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
 import ButtonOrbitAnimation from '../../Miner/components/ButtonOrbitAnimation.tsx';
 import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { startMining, stopMining } from '@app/store/miningStoreActions.ts';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -20,13 +22,11 @@ enum MiningButtonStateText {
 
 export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const startMining = useMiningStore((s) => s.startMining);
-    const stopMining = useMiningStore((s) => s.stopMining);
     const isAppSettingUp = useAppStateStore((s) => s.isSettingUp);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
-    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
+    const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGPUMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isMining = isCPUMining || isGPUMining;
@@ -45,7 +45,7 @@ export default function MiningButton() {
         } else {
             await stopMining();
         }
-    }, [isMining, startMining, stopMining]);
+    }, [isMining]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
     const iconFinal = <IconWrapper>{isMiningLoading ? <SpinnerIcon /> : icon}</IconWrapper>;

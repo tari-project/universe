@@ -2,6 +2,7 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
 import { useMiningStore } from './useMiningStore';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -143,10 +144,9 @@ interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
     setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
-    setAirdropTokens: (airdropToken?: AirdropTokens) => Promise<void>;
+
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints: UserPoints) => void;
-    fetchBackendInMemoryConfig: (config?: BackendInMemoryConfig) => Promise<BackendInMemoryConfig | undefined>;
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
@@ -177,25 +177,6 @@ export const useAirdropStore = create<AirdropStore>()(
             setBonusTiers: (bonusTiers) => set({ bonusTiers }),
             setUserDetails: (userDetails) => set({ userDetails }),
             setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: async (airdropTokens) => {
-                if (airdropTokens) {
-                    try {
-                        await invoke('set_airdrop_access_token', { token: airdropTokens.token });
-                    } catch (error) {
-                        console.error('Error getting airdrop tokens:', error);
-                    }
-                    set({
-                        syncedWithBackend: true,
-                        airdropTokens: {
-                            ...airdropTokens,
-                            expiresAt: parseJwt(airdropTokens.token).exp,
-                        },
-                    });
-                } else {
-                    // User not connected
-                    set({ syncedWithBackend: true });
-                }
-            },
             setReferralCount: (referralCount) => set({ referralCount }),
             setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
             setUserGems: (userGems: number) =>
@@ -209,18 +190,7 @@ export const useAirdropStore = create<AirdropStore>()(
                         userPoints: userPointsFormatted,
                     };
                 }),
-            fetchBackendInMemoryConfig: async () => {
-                let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
-                try {
-                    backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-                    set({ backendInMemoryConfig });
-                } catch (e) {
-                    console.error('get_app_in_memory_config error:', e);
-                }
-                return backendInMemoryConfig;
-            },
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-
             logout: async () => {
                 set(clearState);
                 await useMiningStore.getState().restartMining();
@@ -236,3 +206,31 @@ export const useAirdropStore = create<AirdropStore>()(
         }
     )
 );
+
+export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
+    const currentWindow = getCurrentWindow();
+    if (airdropTokens) {
+        await currentWindow?.emit('airdrop_token', { token: airdropTokens.token });
+        useAirdropStore.setState({
+            syncedWithBackend: true,
+            airdropTokens: {
+                ...airdropTokens,
+                expiresAt: parseJwt(airdropTokens.token).exp,
+            },
+        });
+    } else {
+        // User not connected
+        useAirdropStore.setState({ syncedWithBackend: true });
+    }
+};
+
+export const fetchBackendInMemoryConfig = async () => {
+    let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+    try {
+        backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
+        useAirdropStore.setState({ backendInMemoryConfig });
+    } catch (e) {
+        console.error('get_app_in_memory_config error:', e);
+    }
+    return backendInMemoryConfig;
+};

@@ -16,11 +16,7 @@ export const ExternalDependenciesDialog = () => {
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
     const setShowExternalDependenciesDialog = useUIStore((s) => s.setShowExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
-    const setView = useUIStore((s) => s.setView);
-    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const [isRestarting, setIsRestarting] = useState(false);
-    const [isInitializing, setIsInitializing] = useState(false);
-
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 
     const handleRestart = useCallback(async () => {
@@ -32,20 +28,6 @@ export const ExternalDependenciesDialog = () => {
         }
         setIsRestarting(false);
     }, []);
-
-    const handleContinue = useCallback(() => {
-        setShowExternalDependenciesDialog(false);
-        if (isInitializing) return;
-        setIsInitializing(true);
-        invoke('setup_application')
-            .catch((e) => {
-                setCriticalError(`Failed to setup application: ${e}`);
-                setView('mining');
-            })
-            .then(() => {
-                setIsInitializing(false);
-            });
-    }, [setCriticalError, setShowExternalDependenciesDialog, setView, isInitializing]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
@@ -77,7 +59,7 @@ export const ExternalDependenciesDialog = () => {
                         <SquaredButton
                             color="grey"
                             size="medium"
-                            onClick={handleContinue}
+                            onClick={() => setShowExternalDependenciesDialog(false)}
                             disabled={isRestarting || !shouldAllowContinue}
                             style={{ width: '100px' }}
                         >

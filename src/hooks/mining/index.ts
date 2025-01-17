@@ -3,4 +3,3 @@ export * from './useEarningsRecap.ts';
 export * from './useMiningMetricsUpdater.ts';
 export * from './useMiningStatesSync.ts';
 export * from './useMiningUiStateMachine.ts';
-export * from './useTransactions.ts';

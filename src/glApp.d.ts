@@ -17,7 +17,7 @@ export type GlAppState =
     | 'restart';
 
 export interface GlApp {
-    setState(e: GlAppState): void;
+    setState(e: GlAppState, isReplay?: boolean): void;
     init(): void;
     properties: Properties;
     stateManager: StateManager;
