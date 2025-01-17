@@ -306,7 +306,7 @@ impl WalletStatusMonitor {
                     .lock()
                     .await
                     .take()
-                    .unwrap()
+                    .expect("completed_transactions_stream not found")
             } else {
                 let mut client = WalletClient::connect(self.wallet_grpc_address())
                     .await
