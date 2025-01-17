@@ -6,7 +6,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import { ListLabel } from './HistoryItem.styles';
 import { HistoryContainer, HistoryPadding } from './Wallet.styles';
 import HistoryItem from './HistoryItem';
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 
 const container = {
     hidden: { opacity: 0, height: 0 },
@@ -18,19 +18,24 @@ const container = {
 
 const History = () => {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-    const isTransactionLoading = useWalletStore((s) => s.isTransactionLoading);
-    const transactions = useWalletStore((s) => s.transactions);
-    const fetchMoreTransactions = useWalletStore((s) => s.fetchMoreTransactions);
+    const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
+    const transactions = useWalletStore((s) => s.coinbase_transactions);
+    const fetchCoinbaseTransactions = useWalletStore((s) => s.fetchCoinbaseTransactions);
+    const hasMore = useWalletStore((s) => s.has_more_coinbase_transactions);
+
+    const handleNext = useCallback(() => {
+        fetchCoinbaseTransactions(true, 20);
+    }, [fetchCoinbaseTransactions]);
 
     return (
         <HistoryContainer initial="hidden" animate="visible" exit="hidden" variants={container}>
             <HistoryPadding id="history-padding">
                 <ListLabel>{t('recent-wins')}</ListLabel>
-                {isTransactionLoading && !transactions?.length && <CircularProgress />}
+                {is_reward_history_loading && !transactions?.length && <CircularProgress />}
                 <InfiniteScroll
                     dataLength={transactions?.length || 0}
-                    next={fetchMoreTransactions}
-                    hasMore={true}
+                    next={handleNext}
+                    hasMore={hasMore}
                     loader={<CircularProgress />}
                     scrollableTarget="history-padding"
                 >

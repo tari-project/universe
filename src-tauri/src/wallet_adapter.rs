@@ -265,11 +265,8 @@ pub struct TransactionInfo {
     pub source_address: String,
     pub dest_address: String,
     pub status: i32,
-    pub direction: i32,
     pub amount: MicroMinotari,
     pub fee: u64,
-    pub is_cancelled: bool,
-    pub excess_sig: String,
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
@@ -298,10 +295,10 @@ impl WalletStatusMonitor {
         })
     }
 
-    pub async fn get_transaction_history(
+    pub async fn get_coinbase_transactions(
         &self,
         continuation: bool,
-        items_length: Option<u32>,
+        limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut stream =
             if continuation && self.completed_transactions_stream.lock().await.is_some() {
@@ -329,27 +326,32 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
         {
             let tx = message.transaction.expect("Transaction not found");
+            if tx.status != 12 && tx.status != 13 {
+                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
+                continue;
+            }
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
                 dest_address: tx.dest_address.to_hex(),
                 status: tx.status,
-                direction: tx.direction,
                 amount: MicroMinotari(tx.amount),
                 fee: tx.fee,
-                is_cancelled: tx.is_cancelled,
-                excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
                 payment_id: tx.payment_id.to_hex(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
-
-            if transactions.len() >= items_length.unwrap_or(20).try_into().unwrap() {
-                break;
+            if let Some(limit) = limit {
+                if transactions.len() >= limit as usize {
+                    break;
+                }
             }
         }
 
-        self.completed_transactions_stream.lock().await.replace(stream);
+        self.completed_transactions_stream
+            .lock()
+            .await
+            .replace(stream);
         Ok(transactions)
     }
 

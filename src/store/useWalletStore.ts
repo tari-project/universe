@@ -9,18 +9,17 @@ interface State extends WalletBalance {
     tari_address_emoji: string;
     tari_address?: string;
     balance: number | null;
-    transactions: TransactionInfo[];
-    isTransactionLoading: boolean;
+    coinbase_transactions: TransactionInfo[];
+    is_reward_history_loading: boolean;
+    has_more_coinbase_transactions: boolean;
     is_wallet_importing: boolean;
-    has_more_transactions: boolean;
 }
 
 interface Actions {
     setWalletDetails: (tari_wallet_details: TariWalletDetails) => void;
-    setTransactionsLoading: (isTransactionLoading: boolean) => void;
-    setTransactions: (transactions?: TransactionInfo[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
-    fetchMoreTransactions: () => Promise<void>;
+    fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
+    refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
 }
 
 type WalletStoreState = State & Actions;
@@ -33,13 +32,13 @@ const initialState: State = {
     timelocked_balance: 0,
     pending_incoming_balance: 0,
     pending_outgoing_balance: 0,
-    transactions: [],
-    has_more_transactions: true,
-    isTransactionLoading: false,
+    coinbase_transactions: [],
+    has_more_coinbase_transactions: true,
+    is_reward_history_loading: false,
     is_wallet_importing: false,
 };
 
-export const useWalletStore = create<WalletStoreState>()((set) => ({
+export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
     ...initialState,
     setWalletDetails: (tari_wallet_details) => {
         const {
@@ -57,19 +56,38 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
             balance: tari_wallet_details?.wallet_balance ? newBalance : null,
         });
     },
-    fetchMoreTransactions: async () => {
+    fetchCoinbaseTransactions: async (continuation, limit) => {
+        const setupProgress = useAppStateStore.getState().setupProgress;
+        if (useWalletStore.getState().is_reward_history_loading || setupProgress < 0.75) {
+            return [];
+        }
+
         try {
-            const moreTxs = await invoke('get_transaction_history', { continuation: true });
-            set((state) => ({
-                has_more_transactions: moreTxs.length > 0,
-                transactions: [...state.transactions, ...moreTxs.sort((a, b) => b.timestamp - a.timestamp)],
-            }));
+            useWalletStore.setState({ is_reward_history_loading: true });
+
+            const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
+            const coinbase_transactions = continuation
+                ? [...getState().coinbase_transactions, ...fetchedTxs]
+                : fetchedTxs;
+            const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
+            set({
+                has_more_coinbase_transactions,
+                coinbase_transactions,
+            });
+            return coinbase_transactions;
         } catch (error) {
-            console.error('Could not fetch more transactions: ', error);
+            if (error !== ALREADY_FETCHING.HISTORY) {
+                console.error('Could not get transaction history: ', error);
+            }
+            return [];
+        } finally {
+            useWalletStore.setState({ is_reward_history_loading: false });
         }
     },
-    setTransactions: (transactions = []) => set({ has_more_transactions: transactions.length >= 20, transactions }),
-    setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
+    refreshCoinbaseTransactions: async () => {
+        const limit = getState().coinbase_transactions.length;
+        return getState().fetchCoinbaseTransactions(false, Math.max(limit, 20));
+    },
     importSeedWords: async (seedWords: string[]) => {
         try {
             set({ is_wallet_importing: true });
@@ -79,28 +97,3 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
         }
     },
 }));
-
-export const handleTransactions = async () => {
-    let transactions: TransactionInfo[] = [];
-    const setupProgress = useAppStateStore.getState().setupProgress;
-    if (useWalletStore.getState().isTransactionLoading || setupProgress < 0.75) {
-        return;
-    }
-    try {
-        useWalletStore.setState({ isTransactionLoading: true });
-        const txs = await invoke('get_transaction_history');
-        const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
-        if (sortedTransactions?.length) {
-            useWalletStore.setState({ transactions: sortedTransactions });
-            transactions = sortedTransactions;
-        }
-    } catch (error) {
-        if (error !== ALREADY_FETCHING.HISTORY) {
-            console.error('Could not get transaction history: ', error);
-        }
-    } finally {
-        useWalletStore.setState({ isTransactionLoading: false });
-    }
-
-    return transactions;
-};
