@@ -379,7 +379,7 @@ async fn get_telemetry_data(
         randomx_network_hashrate,
         block_reward,
         block_height,
-        is_synced,
+        initial_sync_achieved: is_synced,
         ..
     } = node_latest_status.borrow().clone();
 
