@@ -120,17 +120,17 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
-    pub async fn get_transaction_history(
+    pub async fn get_coinbase_transactions(
         &self,
         continuation: bool,
-        items_length: Option<u32>,
+        limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_transaction_history(continuation, items_length)
+            .get_coinbase_transactions(continuation, limit)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
