@@ -74,17 +74,20 @@ export async function reinstateCanvas() {
     }
 
     if (canPreload) {
-        preloadTower();
+        await preloadTower();
     }
 }
 
-export function preloadTower() {
+export async function preloadTower() {
+    let loaded = false;
     const canvasEl = document.getElementById('canvas');
     if (canvasEl) {
         glApp.preload({ canvas: canvasEl, orbitTarget: canvasEl, ASSETS_PATH: '/assets/' }, () => {
             init();
+            loaded = true;
         });
     }
+    return loaded;
 }
 
 function init() {

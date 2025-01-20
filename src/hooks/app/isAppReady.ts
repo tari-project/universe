@@ -5,6 +5,7 @@ export const useIsAppReady = () => {
     const [isAppReady, setIsAppReady] = useState(false);
     useEffect(() => {
         const listener = listen('app_ready', () => {
+            console.debug('wen app ready');
             setIsAppReady(true);
         });
         return () => {

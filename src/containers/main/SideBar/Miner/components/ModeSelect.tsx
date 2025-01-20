@@ -18,7 +18,7 @@ import { useUIStore } from '@app/store/useUIStore';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const mode = useAppConfigStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);

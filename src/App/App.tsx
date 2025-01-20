@@ -19,12 +19,9 @@ import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
 import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
 
 export default function App() {
-    const isShuttingDown = useShuttingDown();
     const isAppReady = useIsAppReady();
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
-
-    const showSetup = isSettingUp && !isShuttingDown && isAppReady;
-
+    const isShuttingDown = useShuttingDown();
+    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
     const { t } = useTranslation('common', { useSuspense: false });
@@ -58,26 +55,26 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AnimatePresence mode="popLayout">
-                        {!isAppReady && (
+                        {!isAppReady ? (
                             <AppContentContainer key="splashscreen" initial="hidden">
                                 <Splashscreen />
                             </AppContentContainer>
-                        )}
-                        {showSetup && (
+                        ) : null}
+                        {isSettingUp ? (
                             <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
-                        )}
-                        {!isShuttingDown && !isSettingUp && isAppReady && (
+                        ) : null}
+                        {!isShuttingDown && !isSettingUp && isAppReady ? (
                             <AppContentContainer key="main" initial="dashboardInitial">
                                 <MainView />
                             </AppContentContainer>
-                        )}
-                        {isShuttingDown && isAppReady && (
+                        ) : null}
+                        {isShuttingDown ? (
                             <AppContentContainer key="shutdown" initial="hidden">
                                 <ShuttingDownScreen />
                             </AppContentContainer>
-                        )}
+                        ) : null}
                     </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>

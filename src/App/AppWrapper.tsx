@@ -14,11 +14,10 @@ import { emit } from '@tauri-apps/api/event';
 
 setupLogger();
 async function emitReady() {
+    console.debug(`when frontend_ready`);
     await emit('frontend_ready', true);
 }
 export default function AppWrapper() {
-    void emitReady();
-
     useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();
@@ -27,6 +26,7 @@ export default function AppWrapper() {
 
     useEffect(() => {
         async function initialize() {
+            await emitReady();
             await fetchAppConfig();
             await initSystray();
             await setMiningNetwork();

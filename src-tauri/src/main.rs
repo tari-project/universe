@@ -158,6 +158,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+    info!(target: LOG_TARGET, "SETUP_INNER");
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -293,7 +294,7 @@ async fn setup_inner(
                 rx.clone(),
             )
             .await?;
-        sleep(Duration::from_secs(1));
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
     let _unused = telemetry_service
@@ -317,7 +318,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let _unused = telemetry_service
         .send(
@@ -340,7 +341,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let _unused = telemetry_service
         .send(
@@ -363,7 +364,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let _unused = telemetry_service
         .send(
@@ -386,7 +387,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let _unused = telemetry_service
         .send(
@@ -409,7 +410,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     let _unused = telemetry_service
         .send(
@@ -432,7 +433,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     if should_check_for_update {
         state
@@ -752,21 +753,6 @@ async fn setup_inner(
     Ok(())
 }
 
-async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    app.clone().listen("frontend_ready", move |event| {
-        info!(target: LOG_TARGET, "Frontend is ready");
-        let app_clone: tauri::AppHandle = app.clone();
-        tauri::async_runtime::spawn(async move {
-            time::sleep(Duration::from_secs(3)).await;
-            app_clone
-                .emit("app_ready", ())
-                .expect("Could not emit event 'app_ready'");
-        });
-    });
-
-    Ok(())
-}
-
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -984,6 +970,22 @@ fn main() {
                 }
             };
 
+            tauri::async_runtime::spawn( async move  {
+                app.listen("frontend_ready", move |event| {
+                    let p = event.payload();
+                    let is_ready = serde_json::from_str::<bool>(p).expect("No response from frontend");
+                    if is_ready {
+                        info!(target: LOG_TARGET, "Frontend is ready");
+
+                        tauri::async_runtime::spawn(async move {
+                            time::sleep(Duration::from_secs(3)).await;
+                            app.emit("app_ready", ()).expect("Could not emit event 'app_ready'");
+                            app.unlisten(event.clone().id());
+                        });
+                    }
+                });
+            });
+
             let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
             let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
             app.listen("airdrop_token", move |event| {
@@ -1168,16 +1170,20 @@ fn main() {
 
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
-            info!(target: LOG_TARGET, "App is ready");
-            let a = app_handle.clone();
-            let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn( async move  {
-                let state = app_handle_clone.state::<UniverseAppState>().clone();
-                let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
-                let _res = setup_inner(state, a.clone()).await
-                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+            info!(target: LOG_TARGET, "RunEvent Ready");
+            // tauri::async_runtime::spawn( async move  {
+            //     let _unused = listen_to_frontend_ready(app_handle.clone()).await;
+            // });
 
+            let handle_clone = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = handle_clone.state::<UniverseAppState>().clone();
+                let _res = setup_inner(state, handle_clone.clone())
+                    .await
+                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
+
+
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
