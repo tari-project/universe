@@ -95,6 +95,7 @@ hex = "0.4.3"
 openssl = { version = "0.10", features = ["vendored"] }
 ring-compat = "0.8.0"
 der = "0.7.9"
+human_format = "1.1.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
