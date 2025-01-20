@@ -14,5 +14,9 @@
     "seconds": "seconds",
     "keepChanges": "Keep Changes",
     "revertToEco": "Revert to ECO"
+  },
+  "releaseNotesDialog": {
+    "title": "Release Notes",
+    "close": "Got It"
   }
 }

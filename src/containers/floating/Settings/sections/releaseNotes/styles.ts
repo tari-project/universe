@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -41,7 +41,7 @@ export const Text = styled('div')`
     line-height: 116.667%;
 `;
 
-export const MarkdownWrapper = styled('div')`
+export const MarkdownWrapper = styled('div')<{ $showScrollBars?: boolean }>`
     position: relative;
     overflow: hidden;
     overflow-y: auto;
@@ -101,6 +101,28 @@ export const MarkdownWrapper = styled('div')`
         margin: 0;
         margin-bottom: 15px;
     }
+
+    ${({ $showScrollBars }) =>
+        $showScrollBars &&
+        css`
+            &::-webkit-scrollbar {
+                display: block;
+                scrollbar-width: auto;
+            }
+        `}
+
+    ${({ $showScrollBars }) =>
+        $showScrollBars &&
+        css`
+            &::-webkit-scrollbar {
+                display: block !important;
+            }
+            & {
+                scrollbar-width: auto;
+                scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.1);
+                padding-right: 10px;
+            }
+        `}
 `;
 
 export const LoadingText = styled('div')`

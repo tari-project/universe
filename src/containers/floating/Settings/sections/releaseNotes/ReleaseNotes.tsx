@@ -44,7 +44,12 @@ interface ReleaseSection {
     content: string;
 }
 
-export const ReleaseNotes = () => {
+interface Props {
+    noHeader?: boolean;
+    showScrollBars?: boolean;
+}
+
+export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const [sections, setSections] = useState<ReleaseSection[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
@@ -98,23 +103,25 @@ export const ReleaseNotes = () => {
 
     return (
         <Wrapper>
-            <VersionWrapper>
-                <IconImage src={tariIcon} alt="Tari Icon" />
-                <TextWrapper>
-                    <Title>{t('settings:tabs.releaseNotes')}</Title>
-                    <Text>
-                        {t('tari-universe')} - {t('testnet')} {versionString}
-                    </Text>
-                </TextWrapper>
+            {!noHeader && (
+                <VersionWrapper>
+                    <IconImage src={tariIcon} alt="Tari Icon" />
+                    <TextWrapper>
+                        <Title>{t('settings:tabs.releaseNotes')}</Title>
+                        <Text>
+                            {t('tari-universe')} - {t('testnet')} {versionString}
+                        </Text>
+                    </TextWrapper>
 
-                {needsUpgrade && !isLoading && (
-                    <UpgradeButton onClick={handleUpdate}>
-                        {t('settings:release-notes.upgrade-available')}
-                    </UpgradeButton>
-                )}
-            </VersionWrapper>
+                    {needsUpgrade && !isLoading && (
+                        <UpgradeButton onClick={handleUpdate}>
+                            {t('settings:release-notes.upgrade-available')}
+                        </UpgradeButton>
+                    )}
+                </VersionWrapper>
+            )}
 
-            <MarkdownWrapper>
+            <MarkdownWrapper $showScrollBars={showScrollBars}>
                 {isLoading ? (
                     <LoadingText>{t('settings:release-notes.loading')}</LoadingText>
                 ) : (
