@@ -294,7 +294,7 @@ async fn setup_inner(
                 rx.clone(),
             )
             .await?;
-        tokio::time::sleep(Duration::from_secs(1)).await;
+        sleep(Duration::from_secs(1));
     }
 
     let _unused = telemetry_service
@@ -318,7 +318,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     let _unused = telemetry_service
         .send(
@@ -341,7 +341,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     let _unused = telemetry_service
         .send(
@@ -364,7 +364,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     let _unused = telemetry_service
         .send(
@@ -387,7 +387,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     let _unused = telemetry_service
         .send(
@@ -410,7 +410,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     let _unused = telemetry_service
         .send(
@@ -433,7 +433,7 @@ async fn setup_inner(
             rx.clone(),
         )
         .await?;
-    tokio::time::sleep(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1));
 
     if should_check_for_update {
         state
@@ -796,6 +796,11 @@ struct FEPayload {
     token: String,
 }
 
+#[derive(Clone, serde::Serialize)]
+struct SetupPayload {
+    setup_complete: bool,
+}
+
 #[allow(clippy::too_many_lines)]
 fn main() {
     let _unused = fix_path_env::fix();
@@ -894,9 +899,7 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
     };
-
-    let app_state2 = app_state.clone();
-
+    let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -939,7 +942,7 @@ fn main() {
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             // Do this after logging has started otherwise we can't actually see any errors
-            app.manage(app_state2);
+            app.manage(app_state_clone);
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
@@ -970,21 +973,6 @@ fn main() {
                 }
             };
 
-            tauri::async_runtime::spawn( async move  {
-                app.listen("frontend_ready", move |event| {
-                    let p = event.payload();
-                    let is_ready = serde_json::from_str::<bool>(p).expect("No response from frontend");
-                    if is_ready {
-                        info!(target: LOG_TARGET, "Frontend is ready");
-
-                        tauri::async_runtime::spawn(async move {
-                            time::sleep(Duration::from_secs(3)).await;
-                            app.emit("app_ready", ()).expect("Could not emit event 'app_ready'");
-                            app.unlisten(event.clone().id());
-                        });
-                    }
-                });
-            });
 
             let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
             let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
@@ -1097,6 +1085,18 @@ fn main() {
                 }
             }
         })
+        .on_page_load(|webview, _ | {
+            info!(target: LOG_TARGET, "Frontend is ready");
+            let w = webview.clone();
+            tauri::async_runtime::spawn(async move {
+                let app_handle = w.app_handle();
+                let state = app_handle.state::<UniverseAppState>().clone();
+                let setup_complete_clone = state.is_setup_finished.read().await;
+                let value = setup_complete_clone.clone();
+                time::sleep(Duration::from_secs(3)).await;
+                app_handle.clone().emit("app_ready", SetupPayload { setup_complete:value }).expect("Could not emit event 'app_ready'");
+            });
+        })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,
             commands::download_and_start_installer,
@@ -1167,14 +1167,9 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
-            // tauri::async_runtime::spawn( async move  {
-            //     let _unused = listen_to_frontend_ready(app_handle.clone()).await;
-            // });
-
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
                 let state = handle_clone.state::<UniverseAppState>().clone();
@@ -1182,8 +1177,6 @@ fn main() {
                     .await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
-
-
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");

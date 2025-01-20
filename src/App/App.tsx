@@ -41,6 +41,7 @@ export default function App() {
             canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
         }
     }, [isShuttingDown, isSettingUp]);
+    console.debug(`isSettingUp= ${isSettingUp}`);
 
     return (
         <ThemeProvider>
@@ -60,7 +61,7 @@ export default function App() {
                                 <Splashscreen />
                             </AppContentContainer>
                         ) : null}
-                        {isSettingUp ? (
+                        {isSettingUp && isAppReady ? (
                             <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
