@@ -266,7 +266,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
         if let Ok(status) = self.status().await {
             let _result = self.latest_status_broadcast.send(status.clone());
             // GPU returns 0 for first 10 seconds until it has an average
-            if status.hash_rate > 0 || self.start_time.elapsed().as_secs() < 11 {
+            if status.hash_rate > 0.0 || self.start_time.elapsed().as_secs() < 11 {
                 HealthStatus::Healthy
             } else {
                 HealthStatus::Warning
@@ -292,13 +292,13 @@ impl GpuMinerStatusMonitor {
                 if e.is_connect() {
                     return Ok(GpuMinerStatus {
                         is_mining: false,
-                        hash_rate: 0,
+                        hash_rate: 0.0,
                         estimated_earnings: 0,
                     });
                 }
                 return Ok(GpuMinerStatus {
                     is_mining: false,
-                    hash_rate: 0,
+                    hash_rate: 0.0,
                     estimated_earnings: 0,
                 });
             }
@@ -310,7 +310,7 @@ impl GpuMinerStatusMonitor {
                 warn!(target: LOG_TARGET, "Error decoding body from  in XtrGpuMiner status: {}", e);
                 return Ok(GpuMinerStatus {
                     is_mining: false,
-                    hash_rate: 0,
+                    hash_rate: 0.0,
                     estimated_earnings: 0,
                 });
             }
@@ -319,7 +319,7 @@ impl GpuMinerStatusMonitor {
         Ok(GpuMinerStatus {
             is_mining: true,
             estimated_earnings: 0,
-            hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0) as u64,
+            hash_rate: body.total_hashrate.ten_seconds.unwrap_or(0.0),
         })
     }
 }
@@ -342,6 +342,6 @@ pub(crate) struct AverageHashrate {
 #[derive(Debug, Serialize, Clone, Default)]
 pub(crate) struct GpuMinerStatus {
     pub is_mining: bool,
-    pub hash_rate: u64,
+    pub hash_rate: f64,
     pub estimated_earnings: u64,
 }
