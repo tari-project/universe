@@ -70,23 +70,6 @@ impl PortAllocator {
         0
     }
 
-    pub fn assign_port(&self) -> Result<u16, Error> {
-        let mut port = self.get_port()?;
-        let mut tries = 0;
-
-        while !self.check_if_port_is_free(port) {
-            port = self.get_port()?;
-            tries += 1;
-            if tries >= MAX_RETRIES {
-                warn!(target: LOG_TARGET, "Failed to assign port after {} tries", MAX_RETRIES);
-                return Err(anyhow!("Failed to assign port after {} tries", MAX_RETRIES));
-            }
-        }
-
-        info!(target: LOG_TARGET, "Assigned port: {}", port);
-        Ok(port)
-    }
-
     pub fn assign_port_with_fallback(&self) -> u16 {
         let mut port = self
             .get_port()

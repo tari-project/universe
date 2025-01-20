@@ -1,23 +1,23 @@
-import { ALREADY_FETCHING } from '@app/App/sentryIgnore';
 import { create } from './create';
-import { WalletBalance } from '../types/app-status.ts';
+import { TariWalletDetails, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
-import { Transaction } from '@app/types/wallet.ts';
+import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 interface State extends WalletBalance {
     tari_address_base58: string;
     tari_address_emoji: string;
     tari_address?: string;
     balance: number | null;
-    transactions: Transaction[];
+    transactions: TransactionInfo[];
     isTransactionLoading: boolean;
     is_wallet_importing: boolean;
 }
 
 interface Actions {
-    fetchWalletDetails: () => Promise<void>;
+    setWalletDetails: (tari_wallet_details: TariWalletDetails) => void;
     setTransactionsLoading: (isTransactionLoading: boolean) => void;
-    setTransactions: (transactions?: Transaction[]) => void;
+    setTransactions: (transactions?: TransactionInfo[]) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
 }
 
@@ -38,28 +38,21 @@ const initialState: State = {
 
 export const useWalletStore = create<WalletStoreState>()((set) => ({
     ...initialState,
-    fetchWalletDetails: async () => {
-        try {
-            const tari_wallet_details = await invoke('get_tari_wallet_details');
-            const {
-                available_balance = 0,
-                timelocked_balance = 0,
-                pending_incoming_balance = 0,
-            } = tari_wallet_details.wallet_balance || {};
-            // Q: Should we subtract pending_outgoing_balance here?
-            const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
+    setWalletDetails: (tari_wallet_details) => {
+        const {
+            available_balance = 0,
+            timelocked_balance = 0,
+            pending_incoming_balance = 0,
+        } = tari_wallet_details.wallet_balance || {};
+        // Q: Should we subtract pending_outgoing_balance here?
+        const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
 
-            set({
-                ...tari_wallet_details.wallet_balance,
-                tari_address_base58: tari_wallet_details.tari_address_base58,
-                tari_address_emoji: tari_wallet_details.tari_address_emoji,
-                balance: tari_wallet_details?.wallet_balance ? newBalance : null,
-            });
-        } catch (error) {
-            if (error !== ALREADY_FETCHING.BALANCE) {
-                console.error('Could not get tari wallet details: ', error);
-            }
-        }
+        set({
+            ...tari_wallet_details.wallet_balance,
+            tari_address_base58: tari_wallet_details.tari_address_base58,
+            tari_address_emoji: tari_wallet_details.tari_address_emoji,
+            balance: tari_wallet_details?.wallet_balance ? newBalance : null,
+        });
     },
     setTransactions: (transactions) => set({ transactions }),
     setTransactionsLoading: (isTransactionLoading) => set({ isTransactionLoading }),
@@ -72,3 +65,28 @@ export const useWalletStore = create<WalletStoreState>()((set) => ({
         }
     },
 }));
+
+export const handleTransactions = async () => {
+    let transactions: TransactionInfo[] = [];
+    const setupProgress = useAppStateStore.getState().setupProgress;
+    if (useWalletStore.getState().isTransactionLoading || setupProgress < 0.75) {
+        return;
+    }
+    try {
+        useWalletStore.setState({ isTransactionLoading: true });
+        const txs = await invoke('get_transaction_history');
+        const sortedTransactions = txs.sort((a, b) => b.timestamp - a.timestamp);
+        if (sortedTransactions?.length) {
+            useWalletStore.setState({ transactions: sortedTransactions });
+            transactions = sortedTransactions;
+        }
+    } catch (error) {
+        if (error !== ALREADY_FETCHING.HISTORY) {
+            console.error('Could not get transaction history: ', error);
+        }
+    } finally {
+        useWalletStore.setState({ isTransactionLoading: false });
+    }
+
+    return transactions;
+};

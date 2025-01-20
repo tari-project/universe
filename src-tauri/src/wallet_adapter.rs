@@ -39,9 +39,10 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
@@ -53,10 +54,11 @@ pub struct WalletAdapter {
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
+    balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool) -> Self {
+    pub fn new(use_tor: bool, balance_broadcast: watch::Sender<Option<WalletBalance>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -67,6 +69,7 @@ impl WalletAdapter {
             spend_key: "".to_string(),
             tcp_listener_port,
             grpc_port,
+            balance_broadcast,
         }
     }
 }
@@ -138,9 +141,6 @@ impl ProcessAdapter for WalletAdapter {
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
 
-        let wallet_data_folder =
-            working_dir.join(Network::get_current_or_user_setting_or_default().to_string());
-
         if self.use_tor {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
@@ -170,11 +170,6 @@ impl ProcessAdapter for WalletAdapter {
             warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
         }
 
-        //  Delete any old wallets on startup
-        if let Err(e) = std::fs::remove_dir_all(&wallet_data_folder) {
-            warn!(target: LOG_TARGET, "Could not clear wallet data folder: {}", e);
-        }
-
         #[cfg(target_os = "windows")]
         add_firewall_rule(
             "minotari_console_wallet.exe".to_string(),
@@ -196,6 +191,7 @@ impl ProcessAdapter for WalletAdapter {
             },
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
+                latest_balance_broadcast: self.balance_broadcast.clone(),
             },
         ))
     }
@@ -222,15 +218,21 @@ pub enum WalletStatusMonitorError {
 #[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
+    latest_balance_broadcast: watch::Sender<Option<WalletBalance>>,
 }
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        if self.get_balance().await.is_ok() {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Unhealthy
+        match self.get_balance().await {
+            Ok(b) => {
+                let _result = self.latest_balance_broadcast.send(Some(b));
+                HealthStatus::Healthy
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }
@@ -255,8 +257,8 @@ pub struct TransactionInfo {
     pub is_cancelled: bool,
     pub excess_sig: String,
     pub timestamp: u64,
-    pub message: String,
     pub payment_id: String,
+    pub mined_in_block_height: u64,
 }
 
 impl WalletStatusMonitor {
@@ -314,8 +316,8 @@ impl WalletStatusMonitor {
                 is_cancelled: tx.is_cancelled,
                 excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
-                message: tx.message,
                 payment_id: tx.payment_id.to_hex(),
+                mined_in_block_height: tx.mined_in_block_height,
             });
         }
         Ok(transactions)

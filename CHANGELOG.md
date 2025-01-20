@@ -1,4 +1,83 @@
-# Tari Universe - Testnet v0.8.7: "The Deep Conclave"
+# 🌟 TARI UNIVERSE v0.8.42: "The Shell of Fate, Part 3 (the end of the trilogy!)"
+
+_January 14, 2025_
+
+🔄 Rolling out over the next 24 hours
+
+The Shell of Fate trilogy has been like one of those slow-burning TV series where you must wait patiently for each new season. Thankfully, we got to the end, and the ending here is far better than the end of Game of Thrones. Introducing Shell of Fate, Part 3: the alpha release of squads! In this version of Tari Universe, you will be randomly placed into a pool with a max size of 300 miners. There are no fancy graphics yet to tell you which pool you're in, but the idea is that by capping the # of miners per pool, we hope to create a world where every pool is a lot more stable and reliably produces rewards. Our goal is for 80%+ of Tari miners to earn rewards every single day. We can't wait to see how .42 works for you!
+
+## 📊 WHAT'S NEW
+
+Breakthroughs with p2pool! 
+
+- ✨ 90% win rate
+- 🔄 90% sync rate
+- ⛓️ P2pool fork: upgrade required to continue earning tXTM and precious Gems
+- 🔀 Pools are now sharded at 300 miners (alpha release of squads!)
+
+## 🛠️ Stability Improvements
+
+Contributors have been hard at work debugging and refactoring to make the app more stable. In today's release:
+
+- 🚀 Resolved app freezing/unresponsiveness:
+  - During startup
+  - During window management
+- 💰 Wallet updates partially fixed:
+  - Note: Updates still take extended time
+
+## ⚠️ Upcoming Fixes to Remaining Issues
+
+- Re-enabling Window persistence/management 
+- Animation sometimes freezes or doesn't play
+- Speediness of transaction history display
+- GPU support on Mac M series of processors
+- Some GPUs are not detected
+- Freezes and crashes on long-running sessions (you have to restart Universe occasionally)
+- Freezes when trying to close Universe
+
+Thank you for your continued support and feedback. Tari is coming SOON 💜🐢
+
+---
+
+# Tari Universe - Testnet v0.8.25
+
+_December 17, 2024_
+
+## 🎮 GPU Mining Enhancements
+
+-   **Mac Optimization**  
+    -   Resolved 60% nonce discard issue  
+    -   Enhanced proof of work processing efficiency  
+    -   Improved true hash rate efficiency by 60%
+
+-   **OpenSSL Updates**  
+    -   Enhanced GPU recognition system  
+    -   Fixed M Mac-specific issues
+
+## 🛠️ Platform Updates
+
+-   **Framework Improvements**  
+    -   Upgraded to Tauri V2  
+    -   Enhanced backend library integration  
+    -   Added opt-in alpha release channel in Settings  
+    -   Reduced installation error rate by 30%
+
+-   **UI Enhancements**  
+    -   Improved p2pool statistics display  
+    -   Resolved full-screen window issues  
+    -   Added orphan chain fix suggestions
+
+## ⚠️ Known Issues
+
+-   P2pool optimization pending for low hash mining (<~1000 h/s CPU)
+-   Latent shares may occur until next update
+-   30-60 minute sync time with auto solo mining during sync
+-   Intermittent hash power cycling
+-   Minor window sizing issues persist
+
+---
+
+# Tari Universe - Testnet v0.8.7
 
 _December 6, 2024_
 

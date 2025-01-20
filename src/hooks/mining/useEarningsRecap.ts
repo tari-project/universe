@@ -1,13 +1,10 @@
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { handleWinRecap, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useCallback, useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
-const appWindow = getCurrentWebviewWindow();
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const handleWinRecap = useBlockchainVisualisationStore((s) => s.handleWinRecap);
     const transactions = useWalletStore((s) => s.transactions);
 
     const getMissedEarnings = useCallback(() => {
@@ -20,20 +17,15 @@ export default function useEarningsRecap() {
                 handleWinRecap({ count, totalEarnings });
             }
         }
-    }, [handleWinRecap, recapIds, transactions]);
+    }, [recapIds, transactions]);
 
     useEffect(() => {
-        const listener = listen<string>(
-            'tauri://focus',
-            async () => {
-                const minimized = await appWindow?.isMinimized();
-                const documentIsVisible = document?.visibilityState === 'visible' || false;
-                if (documentIsVisible && !minimized) {
-                    getMissedEarnings();
-                }
-            },
-            { target: { kind: 'WebviewWindow', label: 'main' } }
-        );
+        const listener = listen<string>('tauri://focus', () => {
+            const documentIsVisible = document?.visibilityState === 'visible' || false;
+            if (documentIsVisible) {
+                getMissedEarnings();
+            }
+        });
 
         return () => {
             listener.then((unlisten) => unlisten());

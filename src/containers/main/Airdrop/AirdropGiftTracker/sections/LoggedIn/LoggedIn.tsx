@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Gems from '../../components/Gems/Gems';
 import UserInfo from './segments/UserInfo/UserInfo';
 import { UserRow, Wrapper } from './styles';
@@ -8,28 +8,22 @@ import Flare from './segments/Flare/Flare';
 import { AnimatePresence } from 'framer-motion';
 
 export default function LoggedIn() {
-    const [gems, setGems] = useState(0);
-
-    const {
-        userDetails,
-        userPoints,
-        flareAnimationType,
-        bonusTiers,
-        setFlareAnimationType,
-        referralQuestPoints,
-        miningRewardPoints,
-    } = useAirdropStore();
-
-    useEffect(() => {
-        setGems(userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0);
-    }, [userPoints?.base?.gems, userDetails?.user?.rank?.gems]);
+    const { userRankGems, userPointsGems, flareAnimationType, bonusTiers, referralGems, miningRewardPoints } =
+        useAirdropStore((s) => ({
+            userRankGems: s.userDetails?.user?.rank?.gems,
+            userPointsGems: s.userPoints?.base?.gems,
+            flareAnimationType: s.flareAnimationType,
+            bonusTiers: s.bonusTiers,
+            referralGems: s.referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS,
+            miningRewardPoints: s.miningRewardPoints,
+        }));
 
     const bonusTier = useMemo(
         () =>
             bonusTiers
                 ?.sort((a, b) => a.target - b.target)
-                .find((t) => t.target == (userPoints?.base?.gems || userDetails?.user?.rank?.gems || 0)),
-        [bonusTiers, userDetails?.user?.rank?.gems, userPoints?.base?.gems]
+                .find((t) => t.target == (userPointsGems || userRankGems || 0)),
+        [bonusTiers, userRankGems, userPointsGems]
     );
 
     const flareGems = useMemo(() => {
@@ -37,37 +31,25 @@ export default function LoggedIn() {
             case 'GoalComplete':
                 return bonusTier?.bonusGems || 0;
             case 'FriendAccepted':
-                return referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS;
+                return referralGems;
             case 'BonusGems':
                 return miningRewardPoints?.reward || 0;
             default:
                 return 0;
         }
-    }, [
-        flareAnimationType,
-        bonusTier?.bonusGems,
-        referralQuestPoints?.pointsForClaimingReferral,
-        miningRewardPoints?.reward,
-    ]);
+    }, [flareAnimationType, bonusTier?.bonusGems, referralGems, miningRewardPoints?.reward]);
 
     return (
         <Wrapper>
             <UserRow>
                 <UserInfo />
-                <Gems number={gems} label={`Gems`} />
+                <Gems number={userPointsGems || userRankGems || 0} label={`Gems`} />
             </UserRow>
 
             <Invite />
 
             <AnimatePresence>
-                {flareAnimationType && (
-                    <Flare
-                        gems={flareGems}
-                        animationType={flareAnimationType}
-                        onAnimationComplete={() => setFlareAnimationType()}
-                        onClick={() => setFlareAnimationType()}
-                    />
-                )}
+                {flareAnimationType ? <Flare gems={flareGems} animationType={flareAnimationType} /> : null}
             </AnimatePresence>
         </Wrapper>
     );

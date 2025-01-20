@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_config::{AppConfig, GpuThreads};
-use crate::app_in_memory_config::AirdropInMemoryConfig;
+use crate::app_in_memory_config::{
+    get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
+};
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
@@ -31,28 +33,28 @@ use crate::external_dependencies::{
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
-use crate::node_manager::NodeManagerError;
-use crate::p2pool::models::{Connections, Stats};
+use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+
+use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -129,14 +131,37 @@ pub struct CpuMinerConnectionStatus {
     // pub error: Option<String>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SignWsDataResponse {
+    signature: String,
+    pub_key: String,
+}
+
 #[tauri::command]
 pub async fn close_splashscreen(app: tauri::AppHandle) {
-    let splashscreen_window = app
-        .get_webview_window("splashscreen")
-        .expect("no window labeled 'splashscreen' found");
-    let main_window = app
-        .get_webview_window("main")
-        .expect("no window labeled 'main' found");
+    let close_max_retries: u32 = 10; // Maximum number of retries
+    let retry_delay_ms: u64 = 100; // Delay between retries in milliseconds
+
+    let mut retries = 0;
+
+    let (splashscreen_window, main_window) = loop {
+        let splashscreen_window = app.get_webview_window("splashscreen");
+        let main_window = app.get_webview_window("main");
+
+        if let (Some(splashscreen), Some(main)) = (splashscreen_window, main_window) {
+            break (splashscreen, main);
+        }
+
+        retries += 1;
+        if retries >= close_max_retries {
+            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {} retries", close_max_retries);
+            return;
+        }
+
+        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {}ms", retry_delay_ms);
+        tokio::time::sleep(Duration::from_millis(retry_delay_ms)).await;
+    };
 
     if let (Ok(window_position), Ok(window_size)) = (
         splashscreen_window.outer_position(),
@@ -158,6 +183,7 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         main_window.show().expect("could not show");
     }
 }
+
 #[tauri::command]
 pub async fn download_and_start_installer(
     _missing_dependency: ExternalDependency,
@@ -369,18 +395,27 @@ pub async fn get_miner_metrics(
     }
     state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
 
-    let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
-        .get_network_hash_rate_and_block_reward().await
-        .unwrap_or_else(|e| {
-            if !matches!(e, NodeManagerError::NodeNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-            }
-            (0, 0, MicroMinotari(0), 0, 0, false)
-        });
+    let node_status = state.base_node_latest_status.borrow().clone();
+    let node_adapter::BaseNodeStatus {
+        sha_network_hashrate,
+        randomx_network_hashrate,
+        block_height,
+        block_time,
+        is_synced,
+        block_reward,
+    } = node_status;
+    // let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
+    //     .get_network_hash_rate_and_block_reward().await
+    //     .unwrap_or_else(|e| {
+    //         if !matches!(e, NodeManagerError::NodeNotStarted) {
+    //             warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
+    //         }
+    //         (0, 0, MicroMinotari(0), 0, 0, false)
+    //     });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
-        .status(randomx_hash_rate, block_reward)
+        .status(randomx_network_hashrate, block_reward)
         .await
         .map_err(|e| e.to_string())
     {
@@ -395,18 +430,7 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_mining_status = match gpu_miner.status(sha_hash_rate, block_reward).await {
-        Ok(gpu) => gpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting gpu miner status: {:?}", e);
-            state
-                .is_getting_miner_metrics
-                .store(false, Ordering::SeqCst);
-            return Err(e.to_string());
-        }
-    };
-    drop(gpu_miner);
+    let gpu_mining_status = state.gpu_latest_status.borrow().clone();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
@@ -424,8 +448,8 @@ pub async fn get_miner_metrics(
     }
 
     let metrics_ret = MinerMetrics {
-        sha_network_hash_rate: sha_hash_rate,
-        randomx_network_hash_rate: randomx_hash_rate,
+        sha_network_hash_rate: sha_network_hashrate,
+        randomx_network_hash_rate: randomx_network_hashrate,
         cpu: CpuMinerMetrics {
             // hardware: cpu_public_parameters.clone(),
             mining: cpu_mining_status,
@@ -498,29 +522,13 @@ pub async fn get_monero_seed_words(
 #[tauri::command]
 pub async fn get_p2pool_stats(
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<Option<Stats>, String> {
+) -> Result<Option<P2poolStats>, String> {
     let timer = Instant::now();
-    if state.is_getting_p2pool_stats.load(Ordering::SeqCst) {
-        let read = state.cached_p2pool_stats.read().await;
-        if let Some(stats) = &*read {
-            warn!(target: LOG_TARGET, "Already getting p2pool stats, returning cached value");
-            return Ok(stats.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting p2pool stats");
-        return Err("Already getting p2pool stats".to_string());
-    }
-    state.is_getting_p2pool_stats.store(true, Ordering::SeqCst);
-    let p2pool_stats = state.p2pool_manager.get_stats().await.unwrap_or_else(|e| {
-        warn!(target: LOG_TARGET, "Error getting p2pool stats: {}", e);
-        None
-    });
+    let p2pool_stats = state.p2pool_latest_status.borrow().clone();
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_p2pool_stats took too long: {:?}", timer.elapsed());
     }
-    let mut lock = state.cached_p2pool_stats.write().await;
-    *lock = Some(p2pool_stats.clone());
-    state.is_getting_p2pool_stats.store(false, Ordering::SeqCst);
     Ok(p2pool_stats)
 }
 
@@ -637,47 +645,20 @@ pub async fn get_seed_words(
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_details(
+pub async fn emit_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
-    if state.is_getting_wallet_balance.load(Ordering::SeqCst) {
-        let read = state.cached_wallet_details.read().await;
-        if let Some(details) = &*read {
-            warn!(target: LOG_TARGET, "Already getting wallet balance, returning cached value");
-            return Ok(details.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting wallet balance");
-        return Err("Already getting wallet balance".to_string());
-    }
-    state
-        .is_getting_wallet_balance
-        .store(true, Ordering::SeqCst);
-    let wallet_balance = match state.wallet_manager.get_balance().await {
-        Ok(w) => Some(w),
-        Err(e) => {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting wallet balance: {}", e);
-            }
-
-            None
-        }
-    };
     let tari_address = state.tari_address.read().await;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
-    }
+    let wallet_balance = state.wallet_latest_balance.borrow().clone();
     let result = TariWalletDetails {
         wallet_balance,
         tari_address_base58: tari_address.to_base58(),
         tari_address_emoji: tari_address.to_emoji_string(),
     };
-    let mut lock = state.cached_wallet_details.write().await;
-    *lock = Some(result.clone());
-    state
-        .is_getting_wallet_balance
-        .store(false, Ordering::SeqCst);
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
+    }
 
     Ok(result)
 }
@@ -838,8 +819,15 @@ pub async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-    // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = Vec::new();
+    folder_block_list.push("EBWebView");
+
+    let mut files_block_list = Vec::new();
+
+    if !reset_wallet {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
+    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -884,6 +872,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
@@ -894,9 +889,11 @@ pub async fn reset_settings<'r>(
         }
     }
 
-    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _unused = entry.delete_credential();
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+            let _unused = entry.delete_credential();
+        }
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -952,27 +949,6 @@ pub async fn send_feedback(
 }
 
 #[tauri::command]
-pub async fn set_airdrop_access_token(
-    token: String,
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token.clone());
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "set_airdrop_access_token took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    let mut in_memory_app_config = state.in_memory_config.write().await;
-    in_memory_app_config.airdrop_access_token = Some(token);
-    Ok(())
-}
-
-#[tauri::command]
 pub async fn set_allow_telemetry(
     allow_telemetry: bool,
     _window: tauri::Window,
@@ -986,6 +962,23 @@ pub async fn set_allow_telemetry(
         .set_allow_telemetry(allow_telemetry)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_data_telemetry_service(
+    state: tauri::State<'_, UniverseAppState>,
+    event_name: String,
+    data: Value,
+) -> Result<(), String> {
+    state
+        .telemetry_service
+        .read()
+        .await
+        .send(event_name, data)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1045,6 +1038,31 @@ pub async fn set_cpu_mining_enabled<'r>(
         );
     }
     Ok(())
+}
+
+#[tauri::command]
+pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
+    let key: ring::signature::Ed25519KeyPair = get_websocket_key().map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws key handling"
+    })?;
+    let pub_key = get_der_encode_pub_key(&key).map_err(|e| {
+        warn!(target: LOG_TARGET,
+            "error ws pub key handling:{:?}",
+            e.to_string()
+        );
+        "sign_ws_data: error ws pub key handling"
+    })?;
+
+    let signature = key.sign(data.as_bytes());
+
+    Ok(SignWsDataResponse {
+        signature: BASE64_STANDARD.encode(signature.as_ref()),
+        pub_key,
+    })
 }
 
 #[tauri::command]
@@ -1374,38 +1392,6 @@ pub async fn set_visual_mode<'r>(
         );
     }
     Ok(())
-}
-
-#[tauri::command]
-pub async fn setup_application(
-    window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<bool, String> {
-    let timer = Instant::now();
-    let rollback = state.setup_counter.write().await;
-    if rollback.get_value() {
-        warn!(target: LOG_TARGET, "setup_application has already been initialized, debouncing");
-        let res = state.config.read().await.auto_mining();
-        return Ok(res);
-    }
-    rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
-        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        sentry::capture_event(Event {
-            level: sentry::Level::Error,
-            message: Some(e.to_string()),
-            culprit: Some("setup-inner".to_string()),
-            ..Default::default()
-        });
-        e.to_string()
-    })?;
-
-    let res = state.config.read().await.auto_mining();
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
 }
 
 #[allow(clippy::too_many_lines)]
