@@ -238,16 +238,6 @@ async fn setup_inner(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
-    let _unused = state
-        .gpu_miner
-        .write()
-        .await
-        .detect(config_dir.clone())
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    HardwareStatusMonitor::current().initialize().await?;
-
     state
         .telemetry_manager
         .write()
@@ -455,6 +445,16 @@ async fn setup_inner(
 
     //drop binary resolver to release the lock
     drop(binary_resolver);
+
+    let _unused = state
+        .gpu_miner
+        .write()
+        .await
+        .detect(config_dir.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
@@ -753,8 +753,8 @@ async fn setup_inner(
 }
 
 async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let app_clone = app.clone();
-    app_clone.listen("frontend_ready", move |_event| {
+    let app_handle = app.clone();
+    app_handle.once("frontend_ready", move |_event| {
         info!(target: LOG_TARGET, "Frontend is ready");
         let app_clone: tauri::AppHandle = app.clone();
         tauri::async_runtime::spawn(async move {
