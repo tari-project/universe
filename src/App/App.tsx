@@ -41,7 +41,8 @@ export default function App() {
             canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
         }
     }, [isShuttingDown, isSettingUp]);
-    console.debug(`isSettingUp= ${isSettingUp}`);
+
+    const showSetup = isSettingUp && !isShuttingDown && isAppReady;
 
     return (
         <ThemeProvider>
@@ -56,26 +57,26 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AnimatePresence mode="popLayout">
-                        {!isAppReady ? (
+                        {!isAppReady && (
                             <AppContentContainer key="splashscreen" initial="hidden">
                                 <Splashscreen />
                             </AppContentContainer>
-                        ) : null}
-                        {isSettingUp && isAppReady ? (
+                        )}
+                        {showSetup ? (
                             <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
                         ) : null}
-                        {!isShuttingDown && !isSettingUp && isAppReady ? (
+                        {!isShuttingDown && !isSettingUp && isAppReady && (
                             <AppContentContainer key="main" initial="dashboardInitial">
                                 <MainView />
                             </AppContentContainer>
-                        ) : null}
-                        {isShuttingDown ? (
+                        )}
+                        {isShuttingDown && isAppReady && (
                             <AppContentContainer key="shutdown" initial="hidden">
                                 <ShuttingDownScreen />
                             </AppContentContainer>
-                        ) : null}
+                        )}
                     </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>

@@ -158,7 +158,6 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    info!(target: LOG_TARGET, "SETUP_INNER");
     app.emit(
         "setup_message",
         SetupStatusEvent {

@@ -4,7 +4,7 @@
     "version": "0.8.44",
     "type": "module",
     "scripts": {
-        "dev": "vite dev --profile --mode development",
+        "dev": "vite dev --mode development",
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
