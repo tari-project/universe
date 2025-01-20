@@ -14,7 +14,7 @@ import { emit } from '@tauri-apps/api/event';
 
 setupLogger();
 async function emitReady() {
-    await emit('frontend_ready');
+    await emit('frontend_ready', true);
 }
 export default function AppWrapper() {
     void emitReady();

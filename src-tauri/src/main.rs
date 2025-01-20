@@ -753,15 +753,12 @@ async fn setup_inner(
 }
 
 async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let app_handle = app.clone();
-    app_handle.listen("frontend_ready", move |_event| {
+    app.clone().listen("frontend_ready", move |event| {
         info!(target: LOG_TARGET, "Frontend is ready");
         let app_clone: tauri::AppHandle = app.clone();
         tauri::async_runtime::spawn(async move {
             time::sleep(Duration::from_secs(3)).await;
             app_clone
-                .get_webview_window("main")
-                .expect("Could not get main window")
                 .emit("app_ready", ())
                 .expect("Could not emit event 'app_ready'");
         });
@@ -930,14 +927,6 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
         .setup(|app| {
-
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                let window = app.get_webview_window("main").unwrap();
-                window.open_devtools();
-                window.close_devtools();
-            }
-            
             let config_path = app
                 .path()
                 .app_config_dir()
@@ -1187,6 +1176,7 @@ fn main() {
                 let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
                 let _res = setup_inner(state, a.clone()).await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+
             });
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
