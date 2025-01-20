@@ -3,19 +3,21 @@ import { initSystray } from '@app/utils';
 
 import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
 
-import { useAppConfigStore } from '../store/useAppConfigStore.ts';
+import { fetchAppConfig } from '../store/useAppConfigStore.ts';
 import setupLogger from '../utils/shared-logger.ts';
-import App from './App.tsx';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
+import App from './App.tsx';
+import { emit } from '@tauri-apps/api/event';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
 setupLogger();
-
+async function emitReady() {
+    await emit('frontend_ready');
+}
 export default function AppWrapper() {
-    const fetchAppConfig = useAppConfigStore((s) => s.fetchAppConfig);
-    const setMiningNetwork = useMiningStore((s) => s.setMiningNetwork);
+    void emitReady();
 
     useDetectMode();
     useDisableRefresh();
@@ -29,8 +31,7 @@ export default function AppWrapper() {
             await initSystray();
             await setMiningNetwork();
         }
-        initialize();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        void initialize();
     }, []);
 
     return <App />;

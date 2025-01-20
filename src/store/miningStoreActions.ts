@@ -84,4 +84,16 @@ const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     }
 };
 
-export { startMining, pauseMining, stopMining, changeMiningMode };
+const setMiningNetwork = async () => {
+    try {
+        const network = (await invoke('get_network', {})) as string;
+        useMiningStore.setState({ network });
+    } catch (e) {
+        const appStateStore = useAppStateStore.getState();
+        console.error('Could not get network: ', e);
+        appStateStore.setError(e as string);
+        useMiningStore.setState({ excludedGpuDevices: undefined });
+    }
+};
+
+export { startMining, pauseMining, stopMining, changeMiningMode, setMiningNetwork };
