@@ -30,11 +30,11 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
-    function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
+    function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(

@@ -203,7 +203,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
         if self
             .get_version()
             .await
-            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {}", e))
             .is_ok()
         {
             HealthStatus::Healthy

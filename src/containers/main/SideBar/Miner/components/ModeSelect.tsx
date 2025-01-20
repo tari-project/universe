@@ -12,21 +12,24 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { modeType } from '@app/store/types';
 import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { changeMiningMode } from '@app/store/miningStoreActions.ts';
+import { useUIStore } from '@app/store/useUIStore';
 
 function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
     const isSettingUp = useAppStateStore((s) => s.isSettingUp);
     const mode = useAppConfigStore((s) => s.mode);
-    const isCPUMining = useMiningStore((s) => s.cpu.mining.is_mining);
-    const isGPUMining = useMiningStore((s) => s.gpu.mining.is_mining);
+    const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
+    const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
     const setCustomLevelsDialog = useMiningStore((s) => s.setCustomLevelsDialogOpen);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMining = isCPUMining || isGPUMining;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
     const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleChange = useCallback(
         async (newMode: string) => {
@@ -34,9 +37,13 @@ function ModeSelect() {
                 setCustomLevelsDialog(true);
                 return;
             }
+            if (newMode === 'Ludicrous') {
+                setDialogToShow('ludicrousConfirmation');
+                return;
+            }
             await changeMiningMode({ mode: newMode as modeType });
         },
-        [changeMiningMode, setCustomLevelsDialog]
+        [setCustomLevelsDialog, setDialogToShow]
     );
 
     const tabOptions = useMemo(() => {
