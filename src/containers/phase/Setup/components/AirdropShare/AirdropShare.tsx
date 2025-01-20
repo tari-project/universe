@@ -1,7 +1,20 @@
-import { GemsWrapper, Text, Title } from '../AirdropLogin/styles';
-import { Avatar, Copied, CopyButton, CopyText, CopyWrapper, Gem1, Gem2, Gem3, TextWrapper, Wrapper } from './styles';
+import {
+    Avatar,
+    Copied,
+    CopyButton,
+    CopyText,
+    CopyWrapper,
+    Gem1,
+    Gem2,
+    Gem3,
+    GemsWrapper,
+    Text,
+    TextWrapper,
+    Title,
+    Wrapper,
+} from './styles';
 import { useTranslation, Trans } from 'react-i18next';
-import gemLargeImage from '../../../../main/Airdrop/AirdropGiftTracker/images/gem.png';
+import gemLargeImage from '../AirdropLogin/images/gem.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useState } from 'react';
 import { useAirdropSyncState } from '@app/hooks/airdrop/useAirdropSyncState';
@@ -13,7 +26,7 @@ export default function AirdropShare() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const { userDetails, referralQuestPoints } = useAirdropStore();
 
-    const profileimageurl = userDetails?.user?.profileimageurl;
+    const profileimageurl = userDetails?.user?.profileimageurl || '';
     const gems = (referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS).toLocaleString();
 
     const referralCode = userDetails?.user?.referral_code || '';
@@ -21,6 +34,7 @@ export default function AirdropShare() {
     const [copied, setCopied] = useState(false);
 
     const url = `${airdropUrl}/download/${referralCode}`;
+    const disaplyUrl = url.replace(/^https?:\/\//, '');
 
     const handleCopy = () => {
         setCopied(true);
@@ -46,21 +60,19 @@ export default function AirdropShare() {
                 <Gem1 src={gemLargeImage} alt="" />
                 <Gem2 src={gemLargeImage} alt="" />
                 <Gem3 src={gemLargeImage} alt="" />
-
-                <Avatar $image={profileimageurl || ''} />
+                <Avatar $image={profileimageurl.replace('_normal', '_bigger')} />
             </GemsWrapper>
 
             <TextWrapper>
-                <Title>
+                <Title>{t('setupInviteTitle')}</Title>
+                <Text>
                     <Trans
-                        t={t}
-                        i18nKey="setupInviteTitle"
+                        i18nKey="setupInviteText"
                         ns="airdrop"
-                        components={{ span: <span /> }}
                         values={{ gems }}
+                        components={{ strong: <strong /> }}
                     />
-                </Title>
-                <Text>{t('setupLoginText')}</Text>
+                </Text>
             </TextWrapper>
 
             <CopyWrapper onClick={handleCopy} $copied={copied}>
@@ -73,7 +85,7 @@ export default function AirdropShare() {
                         </Copied>
                     )}
                 </AnimatePresence>
-                <CopyText>{url}</CopyText>
+                <CopyText>{disaplyUrl}</CopyText>
                 <CopyButton>{t('setupCopyButton')}</CopyButton>
             </CopyWrapper>
         </Wrapper>

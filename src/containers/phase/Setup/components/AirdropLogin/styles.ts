@@ -17,7 +17,7 @@ export const Wrapper = styled(m.div)`
 
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 10px;
 `;
 
 const float = keyframes`
@@ -33,44 +33,29 @@ const float = keyframes`
 `;
 
 export const GemsWrapper = styled('div')`
-    aspect-ratio: 226 / 125;
-    width: 226px;
+    width: 100%;
+    height: 134px;
     margin: auto;
-    margin-bottom: 14px;
 
     position: absolute;
-    top: -40px;
+    top: -44px;
     left: 50%;
     transform: translateX(-50%);
     pointer-events: none;
+
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) calc(100% - 40px), rgba(0, 0, 0, 0));
 `;
 
-export const Gem1 = styled('img')`
+export const GiftImage = styled('img')`
     position: absolute;
     top: 0;
-    left: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+`;
+
+export const GemImage = styled('img')`
+    position: absolute;
     animation: ${float} 3s ease-in-out infinite;
-    width: 121px;
-    rotate: -40deg;
-`;
-
-export const Gem2 = styled('img')`
-    position: absolute;
-    top: 20px;
-    right: 60px;
-
-    width: 42px;
-    rotate: -20deg;
-    animation: ${float} 3.2s ease-in-out infinite;
-`;
-
-export const Gem3 = styled('img')`
-    position: absolute;
-    bottom: 0px;
-    right: 10px;
-    width: 80px;
-    rotate: 18deg;
-    animation: ${float} 3.8s ease-in-out infinite;
 `;
 
 export const TextWrapper = styled('div')`
@@ -80,7 +65,7 @@ export const TextWrapper = styled('div')`
     align-items: center;
     gap: 10px;
 
-    padding-top: 78px;
+    padding-top: 86px;
 `;
 
 export const Title = styled('div')`
@@ -92,7 +77,7 @@ export const Title = styled('div')`
     font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
-    max-width: 262px;
+    max-width: 222px;
 
     span {
         color: #ff4a55;

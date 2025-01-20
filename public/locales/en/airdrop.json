@@ -36,7 +36,9 @@
   "unclaimedGems": "Unclaimed Gems",
   "you-reached-your-giftinh-goal": "You reached your gifting goal!",
   "your-friend-accepted-gift": "One of your friends accepted your gift!",
-  "setupLoginText": "Earn gems while mining to increase your airdrop reward during testnet! Connect your airdrop account to start earning.",
-  "setupInviteTitle": "invite friends & earn <span>{{gems}}</span> Gems",
+  "setupLoginTitle": "We’re gifting you <span>{{gems}}</span> gems",
+  "setupLoginText": "Earn more gems through mining on testnet. The more gems you earn, the bigger your airdrop reward will be.",
+  "setupInviteTitle": "WANT MORE GEMS? INVITE FRIENDS!",
+  "setupInviteText": "Earn <strong>{{gems}} gems</strong> for every friend you invite (and get mining)",
   "setupCopyButton": "Copy"
 }

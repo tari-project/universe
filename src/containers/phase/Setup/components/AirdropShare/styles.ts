@@ -20,6 +20,19 @@ export const Wrapper = styled(m.div)`
     gap: 20px;
 `;
 
+export const GemsWrapper = styled('div')`
+    aspect-ratio: 226 / 125;
+    width: 226px;
+    margin: auto;
+    margin-bottom: 14px;
+
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    pointer-events: none;
+`;
+
 const float = keyframes`
   0% {
     transform: translateY(0) rotate(0deg);
@@ -34,20 +47,20 @@ const float = keyframes`
 
 export const Gem1 = styled('img')`
     position: absolute;
-    top: 0;
-    left: -20px;
+    top: 10px;
+    left: -36px;
     animation: ${float} 3s ease-in-out infinite;
-    width: 121px;
-    rotate: -40deg;
+    width: 111px;
+    rotate: 0deg;
 `;
 
 export const Gem2 = styled('img')`
     position: absolute;
-    top: 25px;
+    top: 35px;
     right: 40px;
 
-    width: 42px;
-    rotate: 10deg;
+    width: 34px;
+    rotate: 40deg;
     animation: ${float} 3.2s ease-in-out infinite;
 `;
 
@@ -55,8 +68,8 @@ export const Gem3 = styled('img')`
     position: absolute;
     bottom: -10px;
     right: -14px;
-    width: 80px;
-    rotate: 5deg;
+    width: 70px;
+    rotate: 40deg;
     animation: ${float} 3.8s ease-in-out infinite;
 `;
 
@@ -86,7 +99,29 @@ export const TextWrapper = styled('div')`
     align-items: center;
     gap: 10px;
 
-    padding-top: 112px;
+    padding-top: 118px;
+`;
+
+export const Title = styled('div')`
+    color: #000;
+    text-align: center;
+    font-family: DrukWide, sans-serif;
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 99.7%;
+    text-transform: uppercase;
+    max-width: 282px;
+`;
+
+export const Text = styled('div')<{ $isError?: boolean }>`
+    color: #000;
+    text-align: center;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 120.7%;
+    max-width: 282px;
 `;
 
 export const CopyWrapper = styled('button')<{ $copied: boolean }>`

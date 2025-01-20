@@ -31,7 +31,7 @@ export default function Footer() {
     const showAirdropPermission = !allowTelemetry || isFirstLoad;
     */
 
-    const airdropShareMarkup = isLoggedIn ? <AirdropShare /> : <AirdropLogin />;
+    const airdropShareMarkup = isLoggedIn ? <AirdropShare key="airdrop-share" /> : <AirdropLogin key="airdrop-login" />;
 
     return (
         <Container>
