@@ -49,7 +49,20 @@ export default function Gems({ number, label }: Props) {
             <Number>
                 <GemImage src={gemImage} alt="" />
 
-                {displayValue.toLocaleString()}
+                {displayValue
+                    .toLocaleString()
+                    .split('')
+                    .map((char, index) =>
+                        char === ',' || char === '.' ? (
+                            <span key={index} className="digit-char">
+                                {char}
+                            </span>
+                        ) : (
+                            <span key={index} className="digit-num">
+                                {char}
+                            </span>
+                        )
+                    )}
 
                 <AnimatePresence>
                     {animate && (
