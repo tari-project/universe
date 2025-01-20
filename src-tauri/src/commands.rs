@@ -33,6 +33,7 @@ use crate::external_dependencies::{
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::mm_proxy_adapter::MergeMiningProxyConfig;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
@@ -1413,12 +1414,62 @@ pub async fn start_mining<'r>(
     let tari_address = cpu_miner_config.tari_address.clone();
     let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
+    // tokio::time::sleep(Duration::new(2, 500000));
+    info!(target: LOG_TARGET, "getting new telemetry id");
     let mut telemetry_id = state
         .telemetry_manager
         .read()
         .await
         .get_unique_string()
         .await;
+    let mm_proxy_manager_config = state
+        .mm_proxy_manager
+        .config()
+        .await
+        .ok_or("mm proxy config could not be found")?;
+
+    info!(target:LOG_TARGET, "changed telemetry id {:?}", telemetry_id);
+    let _ = state
+        .mm_proxy_manager
+        .change_config(MergeMiningProxyConfig {
+            coinbase_extra: telemetry_id.clone(),
+            ..mm_proxy_manager_config
+        })
+        .await
+        .map_err(|e| e.to_string());
+    // let base_node_grpc_port = state
+    //     .node_manager
+    //     .get_grpc_port()
+    //     .await
+    //     .map_err(|e| e.to_string())?;
+    // let config = state.config.read().await;
+    // let p2pool_port = state.p2pool_manager.grpc_port().await;
+    // let data_dir = app
+    //     .path()
+    //     .app_local_data_dir()
+    //     .expect("Could not get data dir");
+    // let config_dir = app
+    //     .path()
+    //     .app_config_dir()
+    //     .expect("Could not get config dir");
+    // let log_dir = app.path().app_log_dir().expect("Could not get log dir");
+    // state
+    //     .mm_proxy_manager
+    //     .start(StartConfig {
+    //         base_node_grpc_port,
+    //         p2pool_port,
+    //         app_shutdown: state.shutdown.to_signal().clone(),
+    //         base_path: data_dir.clone(),
+    //         config_path: config_dir.clone(),
+    //         log_path: log_dir.clone(),
+    //         tari_address: cpu_miner_config.tari_address.clone(),
+    //         coinbase_extra: telemetry_id,
+    //         p2pool_enabled,
+    //         monero_nodes: config.mmproxy_monero_nodes().clone(),
+    //         use_monero_fail: config.mmproxy_use_monero_fail(),
+    //     })
+    //     .await
+    //     .map_err(|e| e.to_string())?;
     if cpu_mining_enabled {
         let mm_proxy_port = state
             .mm_proxy_manager
@@ -1545,6 +1596,15 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
         .stop()
         .await
         .map_err(|e| e.to_string())?;
+
+    let mm_proxy_running = state.mm_proxy_manager.is_running().await;
+    if mm_proxy_running {
+        let _ = state
+            .mm_proxy_manager
+            .stop()
+            .await
+            .map_err(|e| e.to_string());
+    }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }
