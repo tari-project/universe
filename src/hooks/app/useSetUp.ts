@@ -53,8 +53,6 @@ export function useSetUp() {
             }
         });
 
-        console.debug(`isInitializingRef.current= ${isInitializingRef.current}`);
-
         if (!isInitializingRef.current) {
             function clearStorage() {
                 // clear all storage except airdrop data

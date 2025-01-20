@@ -1092,7 +1092,11 @@ fn main() {
                 let app_handle = w.app_handle();
                 let state = app_handle.state::<UniverseAppState>().clone();
                 let setup_complete_clone = state.is_setup_finished.read().await;
-                let value = setup_complete_clone.clone();
+                let value = *setup_complete_clone;
+
+                let prog = ProgressTracker::new(app_handle.clone(), None);
+                prog.send_last_action("".to_string()).await;
+
                 time::sleep(Duration::from_secs(3)).await;
                 app_handle.clone().emit("app_ready", SetupPayload { setup_complete:value }).expect("Could not emit event 'app_ready'");
             });
