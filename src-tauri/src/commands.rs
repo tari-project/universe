@@ -452,7 +452,6 @@ pub async fn get_miner_metrics(
             + gpu_mining_status.estimated_earnings) as f64,
     };
 
-    // info!(target: LOG_TARGET, "7 elapsed {:?}", timer.elapsed());
     state
         .systemtray_manager
         .write()
