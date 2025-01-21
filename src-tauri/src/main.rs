@@ -213,7 +213,7 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            *state.missing_dependencies.write().await = external_dependencies;
+            *state.missing_dependencies.write().await = Some(external_dependencies);
             return Ok(());
         }
     }
