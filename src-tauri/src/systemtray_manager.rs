@@ -2,9 +2,9 @@ use human_format::Formatter;
 use log::{error, info};
 
 use tauri::{
-    menu::{Menu, MenuItem},
-    tray::{TrayIcon, TrayIconBuilder},
-    AppHandle, Wry,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::TrayIcon,
+    AppHandle, Manager, Wry,
 };
 
 use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
@@ -16,6 +16,7 @@ pub enum SystrayItemId {
     CpuHashrate,
     GpuHashrate,
     EstimatedEarning,
+    MinimizeToggle,
 }
 
 impl SystrayItemId {
@@ -24,6 +25,7 @@ impl SystrayItemId {
             SystrayItemId::CpuHashrate => "cpu_hashrate",
             SystrayItemId::GpuHashrate => "gpu_hashrate",
             SystrayItemId::EstimatedEarning => "estimated_earning",
+            SystrayItemId::MinimizeToggle => "minimize_toggle",
         }
     }
 
@@ -31,7 +33,9 @@ impl SystrayItemId {
         match self {
             SystrayItemId::CpuHashrate => format!("CPU Hashrate: {:.2} H/s", value),
             SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
-            SystrayItemId::EstimatedEarning => format!("Estimated Earning: {:.2} tXTM/Day", value),
+            SystrayItemId::EstimatedEarning => format!("Est. Earning: {:.2} tXTM/Day", value),
+            SystrayItemId::MinimizeToggle => format!("Minimize/Unminimize"),
+            _ => "".to_string(),
         }
     }
 }
@@ -42,6 +46,7 @@ pub struct SystemTrayData {
     pub estimated_earning: f64,
 }
 
+#[derive(Clone)]
 pub struct SystemTrayManager {
     pub tray: Option<TrayIcon>,
     pub menu: Option<Menu<Wry>>,
@@ -57,6 +62,8 @@ impl SystemTrayManager {
 
     fn initialize_menu(&self, app: AppHandle) -> Result<Menu<Wry>, anyhow::Error> {
         info!(target: LOG_TARGET, "Initializing system tray menu");
+        let about = PredefinedMenuItem::about(&app, None, None)?;
+        let separator = PredefinedMenuItem::separator(&app)?;
         let cpu_hashrate = MenuItem::with_id(
             &app,
             SystrayItemId::CpuHashrate.to_str(),
@@ -78,8 +85,27 @@ impl SystemTrayManager {
             false,
             None::<&str>,
         )?;
+        let minimize_toggle = MenuItem::with_id(
+            &app,
+            SystrayItemId::MinimizeToggle.to_str(),
+            SystrayItemId::MinimizeToggle.get_title(0.0),
+            true,
+            None::<&str>,
+        )?;
 
-        let menu = Menu::with_items(&app, &[&cpu_hashrate, &gpu_hashrate, &estimated_earning])?;
+        let menu = Menu::with_items(
+            &app,
+            &[
+                &about,
+                &separator,
+                &cpu_hashrate,
+                &gpu_hashrate,
+                &separator,
+                &estimated_earning,
+                &separator,
+                &minimize_toggle,
+            ],
+        )?;
         Ok(menu)
     }
 
@@ -110,6 +136,46 @@ impl SystemTrayManager {
         let tray = app.tray_by_id("universe-tray-id").unwrap();
         let menu = self.initialize_menu(app.clone())?;
         tray.set_menu(Some(menu.clone())).unwrap();
+
+        tray.on_menu_event(move |app, event| match event.id.as_ref() {
+            "minimize_toggle" => {
+                let window = match app.get_webview_window("main") {
+                    Some(window) => window,
+                    None => {
+                        error!(target: LOG_TARGET, "Failed to get main window");
+                        return;
+                    }
+                };
+
+                if window.is_minimized().unwrap_or(false) {
+                    info!(target: LOG_TARGET, "Unminimizing window");
+                    match PlatformUtils::detect_current_os() {
+                        CurrentOperatingSystem::Linux => {
+                            window.hide().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed hide window: {}", error));
+                            window.unminimize().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to unminimize window: {}", error));
+                            window.show().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to show window: {}", error));
+                            window.set_focus().unwrap_or_else(|error| error!(target: LOG_TARGET, "Failed to set focus on window: {}", error));
+                        }
+                        _ => {
+                            window.unminimize().unwrap_or_else(|error| {
+                                error!(target: LOG_TARGET, "Failed to unminimize window: {}", error);
+                            });
+                            window.set_focus().unwrap_or_else(|error| {
+                                error!(target: LOG_TARGET, "Failed to set focus on window: {}", error);
+                            });
+                        }
+                    }
+                } else {
+                    info!(target: LOG_TARGET, "Minimizing window");
+                    window.minimize().unwrap_or_else(|error| {
+                        error!(target: LOG_TARGET, "Failed to minimize window: {}", error);
+                    });
+                }
+            },
+            _ => {
+                println!("menu item {:?} not handled", event.id);
+            }
+        });
 
         self.menu.replace(menu);
         self.tray.replace(tray);
