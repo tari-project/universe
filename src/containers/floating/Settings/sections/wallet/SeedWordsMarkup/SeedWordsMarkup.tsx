@@ -28,7 +28,7 @@ const SeedWordsMarkup = () => {
         setShowSeedWords((prev) => !prev);
     }, [seedWordsFetched, getSeedWords]);
 
-    const handleCopyClick = useCallback(async () => {
+    const handleCopyClick = useCallback(() => {
         if (seedWordsFetched && seedWords) {
             copyToClipboard(seedWords.join(' '));
         } else {
@@ -42,6 +42,7 @@ const SeedWordsMarkup = () => {
             });
         }
     }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
+
     const toggleEdit = useCallback(async () => {
         if (!seedWordsFetched) {
             await getSeedWords();
@@ -82,7 +83,7 @@ const SeedWordsMarkup = () => {
                     />
                 ) : null}
                 {showCopy && (
-                    <IconButton size="small" onClick={() => handleCopyClick()}>
+                    <IconButton size="small" onClick={handleCopyClick}>
                         {!isCopied ? (
                             copyFetchLoading ? (
                                 <CircularProgress />
