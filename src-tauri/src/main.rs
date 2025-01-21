@@ -896,6 +896,7 @@ fn main() {
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(tauri_plugin_os::init())
