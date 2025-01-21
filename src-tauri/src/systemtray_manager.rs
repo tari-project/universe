@@ -207,7 +207,7 @@ impl SystemTrayManager {
     pub fn update_tray(&mut self, data: SystemTrayData) {
         if let Some(tray) = &self.tray {
             if let Err(e) = tray.set_tooltip(Some(self.get_tooltip_text(data.clone()))) {
-            error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+                error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
             }
         } else {
             error!(target: LOG_TARGET, "Tray not initialized");
