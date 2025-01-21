@@ -12,7 +12,6 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
-import { reinstateCanvas, destroyCanvas, setAnimationState } from '@app/visuals.ts';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -25,12 +24,9 @@ function VisualMode() {
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const handleSwitch = useCallback(() => {
-        if (visualMode) {
-            destroyCanvas();
-        } else {
-            reinstateCanvas().then(() => {
-                setAnimationState('showVisual');
-            });
+        const canvasElement = document.getElementById('canvas');
+        if (canvasElement) {
+            canvasElement.style.display = visualMode ? 'none' : 'block';
         }
         setVisualMode(!visualMode);
     }, [setVisualMode, visualMode]);

@@ -6,12 +6,9 @@ import { TauriEvent } from '../../types.ts';
 import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
 import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
-import { preloadTower } from '@app/visuals.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
     const adminShow = useUIStore((s) => s.adminShow);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
 
@@ -37,11 +34,6 @@ export function useSetUp() {
                 case 'setup_status':
                     if (p.progress > 0) {
                         setSetupDetails(p.title, p.title_params, p.progress);
-                    }
-                    if (p.progress > 0.85) {
-                        if (visualMode) {
-                            await preloadTower();
-                        }
                     }
                     if (p.progress >= 1) {
                         await handlePostSetup();
@@ -69,5 +61,5 @@ export function useSetUp() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [adminShow, handlePostSetup, visualMode]);
+    }, [adminShow, handlePostSetup]);
 }

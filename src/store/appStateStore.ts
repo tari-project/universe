@@ -1,5 +1,5 @@
 import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
-import { preloadTower, setAnimationState } from '@app/visuals';
+import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
@@ -106,7 +106,6 @@ export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<str
     useAppStateStore.setState({ setupTitle, setupTitleParams, setupProgress });
 
 export const setSetupComplete = async () => {
-    await preloadTower();
     setAnimationState('showVisual');
     // Proceed with auto mining when enabled
     const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
