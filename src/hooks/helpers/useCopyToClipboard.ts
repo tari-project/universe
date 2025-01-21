@@ -1,3 +1,4 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useCallback, useEffect, useState } from 'react';
 
 export function useCopyToClipboard() {
@@ -15,8 +16,8 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void) => {
-        navigator.clipboard
-            .writeText(value)
+        console.debug(value);
+        writeText(value)
             .then(() => {
                 setIsCopied(true);
                 onCopied?.();
