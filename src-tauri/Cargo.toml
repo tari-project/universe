@@ -96,6 +96,7 @@ openssl = { version = "0.10", features = ["vendored"] }
 ring-compat = "0.8.0"
 der = "0.7.9"
 tonic = "0.12.3"
+tauri-plugin-clipboard-manager = "2.2.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
