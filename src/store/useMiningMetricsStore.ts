@@ -31,7 +31,6 @@ const initialState: MinerMetrics = {
     base_node: {
         block_height: 0,
         block_time: 0,
-        is_synced: false,
         is_connected: false,
         connected_peers: [],
     },

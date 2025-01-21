@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "Wag vir bloksinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
     "waiting-for-header-sync": "Wag vir kopkopsinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
     "waiting-for-node": "Wag vir node om te sinkroniseer",
-    "waiting-for-wallet": "Wag vir beursie"
+    "waiting-for-wallet": "Wag vir beursie",
+    "minotari-node-restarting": "Minotari-knooppuntdata was korrup, ou data word skoongemaak",
+    "waiting-for-minotari-node-to-start": "Wag vir Minotari-knooppunt om te begin",
+    "wallet-started": "Beursie het begin"
   },
   "would-you-like-to-install": "Wil jy nou Tari Universe {{version}} installeer?",
   "yes": "Ja"

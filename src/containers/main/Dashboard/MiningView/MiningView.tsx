@@ -9,7 +9,7 @@ import { MiningViewContainer } from './MiningView.styles.ts';
 
 export default function MiningView() {
     return (
-        <MiningViewContainer layout layoutId="mining-view--content">
+        <MiningViewContainer>
             <LayoutGroup>
                 <BlockHeightAccent />
                 <Ruler />

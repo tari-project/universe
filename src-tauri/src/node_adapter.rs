@@ -32,8 +32,7 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
-    BlockHeader, Empty, GetBlocksRequest, HeightRequest, NewBlockTemplateRequest, Peer, PowAlgo,
-    SyncState,
+    BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, Peer, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use std::collections::HashMap;
@@ -235,7 +234,7 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
     pub randomx_network_hashrate: u64,
@@ -243,6 +242,19 @@ pub(crate) struct BaseNodeStatus {
     pub block_height: u64,
     pub block_time: u64,
     pub is_synced: bool,
+}
+
+impl Default for BaseNodeStatus {
+    fn default() -> Self {
+        Self {
+            sha_network_hashrate: 0,
+            randomx_network_hashrate: 0,
+            block_reward: MicroMinotari(0),
+            block_height: 0,
+            block_time: 0,
+            is_synced: false,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -293,37 +305,8 @@ impl MinotariNodeStatusMonitor {
                 .await
                 .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
-        let mut reward = 0;
-        // The base node returns a stupid error if the template is out of sync, so try multiple times
-        let max_template_retries = 5;
-
-        for _ in 0..max_template_retries {
-            let res = match client
-                .get_new_block_template(NewBlockTemplateRequest {
-                    algo: Some(PowAlgo { pow_algo: 1 }),
-                    max_weight: 0,
-                })
-                .await
-            {
-                Ok(r) => r,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Failed to get new block template: {}", e);
-                    continue;
-                }
-            };
-            let res = res.into_inner();
-
-            reward = res
-                .miner_data
-                .ok_or_else(|| {
-                    MinotariNodeStatusMonitorError::UnknownError(anyhow!("No miner data found"))
-                })?
-                .reward;
-            break;
-        }
-
         let res = client
-            .get_tip_info(Empty {})
+            .get_network_state(GetNetworkStateRequest {})
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
@@ -335,70 +318,15 @@ impl MinotariNodeStatusMonitor {
                 )));
             }
         };
-        let (sync_achieved, block_height, _hash, block_time) = (
-            res.initial_sync_achieved,
-            metadata.best_block_height,
-            metadata.best_block_hash.clone(),
-            metadata.timestamp,
-        );
 
-        // if sync_achieved && (block_height <= self.last_block_height) {
-        //     return Ok((
-        //         self.last_sha3_estimated_hashrate,
-        //         self.last_randomx_estimated_hashrate,
-        //         MicroMinotari(reward),
-        //         block_height,
-        //         block_time,
-        //         sync_achieved,
-        //     ));
-        // }
-
-        // First try with 10 blocks
-        let blocks = [10, 100];
-        let mut result = Err(anyhow::anyhow!("No difficulty found"));
-        for block in &blocks {
-            // Unfortunately have to use 100 blocks to ensure that there are both randomx and sha blocks included
-            // otherwise the hashrate is 0 for one of them.
-            let res = client
-                .get_network_difficulty(HeightRequest {
-                    from_tip: *block,
-                    start_height: 0,
-                    end_height: 0,
-                })
-                .await
-                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-            let mut res = res.into_inner();
-            // Get the last one.
-            // base node returns 0 for hashrate when the algo doesn't match, so we need to keep track of last one.
-            let mut last_sha3_estimated_hashrate = 0;
-            let mut last_randomx_estimated_hashrate = 0;
-            while let Some(difficulty) = res
-                .message()
-                .await
-                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?
-            {
-                if difficulty.sha3x_estimated_hash_rate != 0 {
-                    last_sha3_estimated_hashrate = difficulty.sha3x_estimated_hash_rate;
-                }
-                if difficulty.randomx_estimated_hash_rate != 0 {
-                    last_randomx_estimated_hashrate = difficulty.randomx_estimated_hash_rate;
-                }
-
-                result = Ok(BaseNodeStatus {
-                    sha_network_hashrate: last_sha3_estimated_hashrate,
-                    randomx_network_hashrate: last_randomx_estimated_hashrate,
-                    block_reward: MicroMinotari(reward),
-                    block_height,
-                    block_time,
-                    is_synced: sync_achieved,
-                });
-            }
-            if last_randomx_estimated_hashrate != 0 && last_sha3_estimated_hashrate != 0 {
-                break;
-            }
-        }
-
-        Ok(result?)
+        Ok(BaseNodeStatus {
+            sha_network_hashrate: res.sha3x_estimated_hash_rate,
+            randomx_network_hashrate: res.randomx_estimated_hash_rate,
+            block_reward: MicroMinotari(res.reward),
+            block_height: metadata.best_block_height,
+            block_time: metadata.timestamp,
+            is_synced: res.initial_sync_achieved,
+        })
     }
 
     pub async fn get_historical_blocks(
