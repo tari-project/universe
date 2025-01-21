@@ -858,11 +858,7 @@ fn main() {
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
     );
-    let telemetry_service = TelemetryService::new(
-        app_config_raw.anon_id().to_string(),
-        app_config.clone(),
-        app_in_memory_config.clone(),
-    );
+    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
