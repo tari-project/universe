@@ -138,15 +138,15 @@ impl SystemTrayManager {
                 format!(
                     "CPU Power: {} H/s\nGPU Power: {} H/s\nEst. earning: {} tXTM/day",
                     Formatter::new()
-                        .with_decimals(2)
+                        .with_decimals(0)
                         .with_separator("")
                         .format(data.cpu_hashrate),
                     Formatter::new()
-                        .with_decimals(2)
+                        .with_decimals(0)
                         .with_separator("")
                         .format(data.gpu_hashrate),
                     Formatter::new()
-                        .with_decimals(2)
+                        .with_decimals(0)
                         .with_separator("")
                         .format(data.estimated_earning / 1_000_000.0)
                 )
