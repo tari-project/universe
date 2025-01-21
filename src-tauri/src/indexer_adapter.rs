@@ -12,6 +12,7 @@ use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 use crate::indexer_manager::IndexerConfig;
+use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
@@ -51,6 +52,7 @@ impl ProcessAdapter for IndexerAdapter {
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create indexer working directory - {}", error);
         });
+        let working_dir_string = convert_to_string(working_dir)?;
 
         if self.config.is_none() {
             return Err(anyhow!("IndexerAdapter config is not set"));
@@ -72,9 +74,9 @@ impl ProcessAdapter for IndexerAdapter {
         let network = Network::get_current_or_user_setting_or_default();
 
         let args: Vec<String> = vec![
-            "start".to_string(),
+            // "start".to_string(),
             "-b".to_string(),
-            config.base_path.to_string(),
+            working_dir_string,
             "--network".to_string(),
             network.to_string(),
             format!("-pindexer.base_node_grpc_url={}", config.base_node_grpc_url),
@@ -98,6 +100,9 @@ impl ProcessAdapter for IndexerAdapter {
             }
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
+            }
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
             }
             _ => {
                 return Err(anyhow!("Unsupported network"));

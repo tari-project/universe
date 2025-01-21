@@ -52,10 +52,10 @@ pub async fn start_wallet_daemon(
     let cfg = load_configuration(wallet_daemon_config_file, true, &cli, None).unwrap();
     let mut config = ApplicationConfig::load_from(&cfg).unwrap();
     let contractnet_json_rpc_address =
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12008);
+        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12028);
 
     config.dan_wallet_daemon.indexer_node_json_rpc_url =
-        "http://18.216.193.9:12006/json_rpc".to_string();
+        "http://18.216.193.9:12026/json_rpc".to_string();
     config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
 
     println!("------> 🌟 WALLET DAEMON CONFIG: {:?}", &config);

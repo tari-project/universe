@@ -85,9 +85,9 @@ dns_seeds = ["seeds.esmeralda.tari.com"]
 [igor.p2p.seeds]
 # DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
 # (Default: peer_seeds = [])
-dns_seeds = ["seeds.igor.tari.com"]
+dns_seeds = []
 # Custom specified peer seed nodes (Default: peer_seeds = [])
-peer_seeds = ["fa90b1a54d732cd42321bc5fe1b2a6c0e6d50e226cefa745e60f43e62d8fb03f::/ip4/18.216.193.9/tcp/12000"]
+peer_seeds = ["8e18f14bdf49e23da64a6594eef29d315402cf3cd3652ce8386450d58a63817c::/ip4/18.216.193.9/tcp/12020"]
 
 [mainnet.p2p.seeds]
 # DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
@@ -173,6 +173,7 @@ grpc_server_allow_methods = [
     #"list_connected_peers",
     #"get_mempool_stats",
     #"get_active_validator_nodes",
+    #"get_validator_node_changes",
     #"get_shard_key",
     #"get_template_registrations",
     #"get_side_chain_utxos",
@@ -224,9 +225,6 @@ grpc_server_allow_methods = [
 
 # Obscure GRPC error responses (default = false)
 #report_grpc_error = false
-
-# Interval between each request to the dns server for hte checkpoints to compare it with the local blockchain (default = 120 s)
-# tari_pulse_interval = 120
 
 [base_node.lmdb]
 #init_size_bytes = 16_777_216 # 16 *1024 * 1024
@@ -345,10 +343,6 @@ listener_self_liveness_check_interval = 15
 #rpc_max_simultaneous_sessions = 100
 # The maximum comms RPC sessions allowed per peer (default value = 10).
 #rpc_max_sessions_per_peer = 10
-# If true, and the maximum per peer RPC sessions is reached, the RPC server will close an old session and replace it
-# with a new session. If false, the RPC server will reject the new session and preserve the older session.
-# (default value = true).
-#pub cull_oldest_peer_rpc_connection_on_full = true
 
 [base_node.p2p.transport]
 # -------------- Transport configuration --------------
@@ -718,11 +712,6 @@ event_channel_size = 3500
 #rpc_max_simultaneous_sessions = 100
 # The maximum comms RPC sessions allowed per peer (default value = 10).
 #rpc_max_sessions_per_peer = 10
-#rpc_max_sessions_per_peer = 10
-# If true, and the maximum per peer RPC sessions is reached, the RPC server will close an old session and replace it
-# with a new session. If false, the RPC server will reject the new session and preserve the older session.
-# (default value = true).
-#pub cull_oldest_peer_rpc_connection_on_full = true
 
 [wallet.p2p.transport]
 # -------------- Transport configuration --------------

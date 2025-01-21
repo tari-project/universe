@@ -8,7 +8,7 @@ use tari_wallet_daemon_client::types::{
     AuthLoginAcceptRequest, AuthLoginAcceptResponse, AuthLoginRequest, AuthLoginResponse,
 };
 
-const JSON_CONNECT_ADDRESS: &str = "18.216.193.9:12008"; // TODO use db to get endpoint
+const JSON_CONNECT_ADDRESS: &str = "18.216.193.9:12028"; // TODO use db to get endpoint
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
 pub async fn permission_token(jrpc_port: Option<u16>) -> Result<(String, String), anyhow::Error> {

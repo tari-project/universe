@@ -99,9 +99,9 @@ impl ValidatorNodeConfigBuilder {
 
     pub fn build(&self) -> Result<ValidatorNodeConfig, anyhow::Error> {
         // TODO set proper values not hardcoded ones
-        let jrpc_port = 12004;
-        let web_ui_port = 12005;
-        let grpc_port = 12001;
+        let jrpc_port = 12024;
+        let web_ui_port = 12025;
+        let grpc_port = 12021;
         Ok(ValidatorNodeConfig {
             base_path: self.config.base_path.clone(),
             json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),
@@ -125,12 +125,12 @@ impl Default for ValidatorNodeConfig {
         //TODO SET DEFAULT
         Self {
             base_path: String::from(""),
-            json_rpc_address: String::from("http://127.0.0.1:12004"),
-            json_rpc_public_address: String::from("http://127.0.0.1:12004"),
-            base_node_grpc_url: String::from("http://127.0.0.1:12001"),
-            web_ui_address: String::from("http://127.0.0.1:12005"),
+            json_rpc_address: String::from("http://127.0.0.1:12024"),
+            json_rpc_public_address: String::from("http://127.0.0.1:12024"),
+            base_node_grpc_url: String::from("http://127.0.0.1:12021"),
+            web_ui_address: String::from("http://127.0.0.1:12025"),
             base_layer_scanning_interval: 10,
-            grpc_port: 12004,
+            grpc_port: 12024,
         }
     }
 }

@@ -2224,7 +2224,9 @@ pub async fn set_ootle_localnet_enabled<'r>(
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
 
     if enabled {
-        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE START",);
+        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE START WITH CONFIG FROM {:?}", &config_dir);
+        info!(target: LOG_TARGET, "🚀 Run ootle with config data dir {:?}", &data_dir);
+
         let base_node_grpc_port = state
             .node_manager
             .get_grpc_port()
@@ -2256,7 +2258,6 @@ pub async fn set_ootle_localnet_enabled<'r>(
             .with_base_path(data_dir.clone())
             .build()
             .map_err(|error| error.to_string())?;
-
         state
             .indexer_manager
             .ensure_started(

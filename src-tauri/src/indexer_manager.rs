@@ -93,9 +93,9 @@ impl IndexerConfigBuilder {
 
     pub fn build(&self) -> Result<IndexerConfig, anyhow::Error> {
         // TODO set proper values not hardcoded now
-        let jrpc_port = 12006;
-        let web_ui_port = 12007;
-        let grpc_port = 12001;
+        let jrpc_port = 12026;
+        let web_ui_port = 12027;
+        let grpc_port = 12021;
         Ok(IndexerConfig {
             base_path: self.config.base_path.clone(),
             json_rpc_address: format!("http://127.0.0.1:{}", jrpc_port),
@@ -118,12 +118,12 @@ impl Default for IndexerConfig {
     fn default() -> Self {
         Self {
             base_path: String::from(""),
-            json_rpc_address: String::from("http://127.0.0.1:12007/"),
-            json_rpc_public_address: String::from("http://127.0.0.1:12007"),
-            base_node_grpc_url: String::from("http://127.0.0.1:12001"),
-            web_ui_address: String::from("http://127.0.0.1:12007"),
+            json_rpc_address: String::from("http://127.0.0.1:12027/"),
+            json_rpc_public_address: String::from("http://127.0.0.1:12027"),
+            base_node_grpc_url: String::from("http://127.0.0.1:12021"),
+            web_ui_address: String::from("http://127.0.0.1:12027"),
             base_layer_scanning_interval: 10,
-            grpc_port: 12006,
+            grpc_port: 12026,
         }
     }
 }

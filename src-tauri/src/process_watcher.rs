@@ -87,6 +87,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             return Ok(());
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
+        info!(target: LOG_TARGET, "🔥  Starting process watcher with paths {:?} | {:?} | {:?}", &base_path, &config_path, &log_path);
         self.kill_previous_instances(base_path.clone()).await?;
 
         self.internal_shutdown = Shutdown::new();

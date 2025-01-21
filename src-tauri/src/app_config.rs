@@ -160,7 +160,7 @@ impl Default for AppConfigFromFile {
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
             ootle_enabled: true,
-            ootle_localnet_enabled: false,
+            ootle_localnet_enabled: true,
         }
     }
 }
@@ -322,7 +322,7 @@ impl AppConfig {
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
             ootle_enabled: true,
-            ootle_localnet_enabled: false,
+            ootle_localnet_enabled: true,
         }
     }
 

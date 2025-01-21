@@ -11,6 +11,7 @@ use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
 use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
+use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 #[cfg(target_os = "windows")]
 use crate::utils::setup_utils::setup_utils::add_firewall_rule;
@@ -51,6 +52,7 @@ impl ProcessAdapter for ValidatorNodeAdapter {
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create validator_node working directory - {}", error);
         });
+        let working_dir_string = convert_to_string(working_dir)?;
 
         if self.config.is_none() {
             return Err(anyhow!("ValidatorNodeAdapter config is not set"));
@@ -73,9 +75,9 @@ impl ProcessAdapter for ValidatorNodeAdapter {
         let network = Network::get_current_or_user_setting_or_default();
 
         let args: Vec<String> = vec![
-            "start".to_string(),
+            // "start".to_string(),
             "-b".to_string(),
-            config.base_path.to_string(),
+            working_dir_string,
             "--network".to_string(),
             network.to_string(),
             format!(
