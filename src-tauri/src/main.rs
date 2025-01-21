@@ -1130,7 +1130,7 @@ fn main() {
             commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
-            commands::get_transaction_history,
+            commands::get_coinbase_transactions,
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,

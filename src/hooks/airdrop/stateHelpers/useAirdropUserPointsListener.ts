@@ -17,7 +17,7 @@ export const useAirdropUserPointsListener = () => {
                 setFlareAnimationType('FriendAccepted');
 
                 const goalComplete = bonusTiers?.find((t) => t.target === incomingReferralData?.count);
-                if (goalComplete) {
+                if (goalComplete && goalComplete.bonusGems) {
                     setTimeout(() => setFlareAnimationType('GoalComplete'), 3000);
                 }
 
