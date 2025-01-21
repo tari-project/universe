@@ -42,13 +42,13 @@ mod tests {
         config.apply_loaded_config(config_json.to_string());
 
         assert_eq!(config.mode(), MiningMode::Eco);
-        assert_eq!(config.p2pool_enabled(), false);
+        assert!(!config.p2pool_enabled());
         assert_ne!(format!("{:?}", config.last_binaries_update_timestamp()), "");
-        assert_eq!(config.allow_telemetry(), false);
+        assert!(!config.allow_telemetry());
         assert_eq!(config.anon_id().len(), 20);
         assert_eq!(config.monero_address(), DEFAULT_MONERO_ADDRESS.to_string());
-        assert_eq!(config.gpu_mining_enabled(), true);
-        assert_eq!(config.cpu_mining_enabled(), true);
+        assert!(config.gpu_mining_enabled());
+        assert!(config.cpu_mining_enabled());
     }
 
     #[test]
@@ -75,16 +75,16 @@ mod tests {
 
         assert_eq!(config.mode(), MiningMode::Ludicrous);
         // For now always false by default
-        assert_eq!(config.p2pool_enabled(), false);
+        assert!(!config.p2pool_enabled());
         let expected_timestamp = SystemTime::UNIX_EPOCH + Duration::new(1725545367, 379078628);
         assert_eq!(config.last_binaries_update_timestamp(), expected_timestamp);
-        assert_eq!(config.allow_telemetry(), true);
+        assert!(config.allow_telemetry());
         assert_eq!(config.anon_id(), "5GGl^0NQiChrGMsjYXs5");
         assert_eq!(
             config.monero_address(),
             "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A"
         );
-        assert_eq!(config.gpu_mining_enabled(), true);
-        assert_eq!(config.cpu_mining_enabled(), true);
+        assert!(config.gpu_mining_enabled());
+        assert!(config.cpu_mining_enabled());
     }
 }

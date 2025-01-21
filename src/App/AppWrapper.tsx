@@ -7,17 +7,11 @@ import setupLogger from '../utils/shared-logger.ts';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import App from './App.tsx';
-import { emit } from '@tauri-apps/api/event';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
 setupLogger();
-async function emitReady() {
-    await emit('frontend_ready');
-}
 export default function AppWrapper() {
-    void emitReady();
-
     useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();

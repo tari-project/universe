@@ -23,14 +23,13 @@ function VisualMode() {
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
 
-    const canvasElement = document.getElementById('canvas');
-
     const handleSwitch = useCallback(() => {
+        const canvasElement = document.getElementById('canvas');
         if (canvasElement) {
             canvasElement.style.display = visualMode ? 'none' : 'block';
         }
         setVisualMode(!visualMode);
-    }, [canvasElement, setVisualMode, visualMode]);
+    }, [setVisualMode, visualMode]);
 
     return (
         <SettingsGroupWrapper>

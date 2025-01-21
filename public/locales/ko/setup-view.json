@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "블록 동기화 대기 중. {{local_height}}/{{tip_height}} 블록 동기화됨",
     "waiting-for-header-sync": "헤더 동기화 대기 중. {{local_height}}/{{tip_height}} 헤더 동기화됨",
     "waiting-for-node": "노드 동기화 대기 중",
-    "waiting-for-wallet": "지갑 대기 중"
+    "waiting-for-wallet": "지갑 대기 중",
+    "waiting-for-minotari-node-to-start": "Minotari 노드 시작 대기 중",
+    "minotari-node-restarting": "Minotari 노드 데이터가 손상되었습니다. 오래된 데이터를 정리 중입니다",
+    "wallet-started": "지갑 시작됨"
   },
   "would-you-like-to-install": "지금 Tari Universe {{version}}을(를) 설치하시겠습니까?",
   "yes": "예"
