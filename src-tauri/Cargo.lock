@@ -6907,7 +6907,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.44"
+version = "0.8.45"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -6974,6 +6974,7 @@ dependencies = [
  "thiserror 2.0.10",
  "tokio",
  "tokio-util 0.7.13",
+ "tonic",
  "winreg 0.52.0",
  "xz2",
  "zip",
