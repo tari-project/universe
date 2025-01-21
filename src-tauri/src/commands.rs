@@ -40,7 +40,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -1397,6 +1397,40 @@ pub async fn set_visual_mode<'r>(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
+pub async fn set_airdrop_access_token<'r>(
+    airdrop_access_token: Option<String>,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "Saving new airdrop_access_token {:?}", airdrop_access_token);
+    let token_current_value = state.config.clone().read().await.airdrop_access_token();
+    let current_id = token_current_value
+        .clone()
+        .and_then(|curr: String| airdrop::decode_jwt_claims(&curr).map(|claim| claim.id));
+    let new_id = airdrop_access_token
+        .clone()
+        .and_then(|curr| airdrop::decode_jwt_claims(&curr).map(|claim| claim.id));
+    let mining_restart_needed = current_id != new_id;
+
+    let mut app_config_lock = state.config.write().await;
+    app_config_lock
+        .set_airdrop_access_token(airdrop_access_token)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if mining_restart_needed {
+        stop_mining(state.clone())
+            .await
+            .map_err(|e| e.to_string())?;
+        start_mining(state.clone(), app)
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_lines)]
+#[tauri::command]
 pub async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1409,12 +1443,13 @@ pub async fn start_mining<'r>(
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
     let custom_gpu_usage = config.custom_gpu_usage();
+    let cpu_miner_running = state.cpu_miner.read().await.is_running().await;
+    let gpu_miner_running = state.gpu_miner.read().await.is_running().await;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let tari_address = cpu_miner_config.tari_address.clone();
     let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
-    // tokio::time::sleep(Duration::new(2, 500000));
     info!(target: LOG_TARGET, "getting new telemetry id");
     let mut telemetry_id = state
         .telemetry_manager
@@ -1422,6 +1457,7 @@ pub async fn start_mining<'r>(
         .await
         .get_unique_string()
         .await;
+    info!(target: LOG_TARGET, "getting new telemetry id -after {:?}", telemetry_id);
     let mm_proxy_manager_config = state
         .mm_proxy_manager
         .config()
@@ -1437,40 +1473,8 @@ pub async fn start_mining<'r>(
         })
         .await
         .map_err(|e| e.to_string());
-    // let base_node_grpc_port = state
-    //     .node_manager
-    //     .get_grpc_port()
-    //     .await
-    //     .map_err(|e| e.to_string())?;
-    // let config = state.config.read().await;
-    // let p2pool_port = state.p2pool_manager.grpc_port().await;
-    // let data_dir = app
-    //     .path()
-    //     .app_local_data_dir()
-    //     .expect("Could not get data dir");
-    // let config_dir = app
-    //     .path()
-    //     .app_config_dir()
-    //     .expect("Could not get config dir");
-    // let log_dir = app.path().app_log_dir().expect("Could not get log dir");
-    // state
-    //     .mm_proxy_manager
-    //     .start(StartConfig {
-    //         base_node_grpc_port,
-    //         p2pool_port,
-    //         app_shutdown: state.shutdown.to_signal().clone(),
-    //         base_path: data_dir.clone(),
-    //         config_path: config_dir.clone(),
-    //         log_path: log_dir.clone(),
-    //         tari_address: cpu_miner_config.tari_address.clone(),
-    //         coinbase_extra: telemetry_id,
-    //         p2pool_enabled,
-    //         monero_nodes: config.mmproxy_monero_nodes().clone(),
-    //         use_monero_fail: config.mmproxy_use_monero_fail(),
-    //     })
-    //     .await
-    //     .map_err(|e| e.to_string())?;
-    if cpu_mining_enabled {
+
+    if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
             .mm_proxy_manager
             .get_monero_port()
@@ -1515,7 +1519,7 @@ pub async fn start_mining<'r>(
     let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
     info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
-    if gpu_mining_enabled && gpu_available {
+    if gpu_mining_enabled && gpu_available && !gpu_miner_running {
         info!(target: LOG_TARGET, "1. Starting gpu miner");
         // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         // let p2pool_enabled = state.config.read().await.p2pool_enabled();
@@ -1581,24 +1585,27 @@ pub async fn start_mining<'r>(
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.stop_start_mutex.lock().await;
     let timer = Instant::now();
-    state
-        .cpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
+    if state.cpu_miner.read().await.is_running().await {
+        state
+            .cpu_miner
+            .write()
+            .await
+            .stop()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
+    if state.gpu_miner.read().await.is_running().await {
+        state
+            .gpu_miner
+            .write()
+            .await
+            .stop()
+            .await
+            .map_err(|e| e.to_string())?;
+    }
 
-    let mm_proxy_running = state.mm_proxy_manager.is_running().await;
-    if mm_proxy_running {
+    if state.mm_proxy_manager.is_running().await {
         let _ = state
             .mm_proxy_manager
             .stop()

@@ -83,6 +83,7 @@ use crate::wallet_manager::WalletManager;
 use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;
 
+mod airdrop;
 mod app_config;
 mod app_in_memory_config;
 mod auto_launcher;
@@ -242,7 +243,7 @@ async fn setup_inner(
         .telemetry_manager
         .write()
         .await
-        .initialize(state.airdrop_access_token.clone(), app.clone())
+        .initialize(app.clone())
         .await?;
 
     let mut telemetry_id = state
@@ -794,7 +795,6 @@ struct UniverseAppState {
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
-    airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
@@ -810,7 +810,7 @@ struct Payload {
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct FEPayload {
-    token: String,
+    token: Option<String>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -905,7 +905,6 @@ fn main() {
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
-        airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
@@ -986,26 +985,7 @@ fn main() {
                    return Err(Box::new(e));
                 }
             };
-
-            let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
-            let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
-            app.listen("airdrop_token", move |event| {
-                let token_value = token_state_clone.clone();
-                let memory_value = memory_state_clone.clone();
-                tauri::async_runtime::spawn(async move {
-                    info!(target: LOG_TARGET, "Getting token from Frontend");
-                    let payload = event.payload();
-                    let res = serde_json::from_str::<FEPayload>(payload).expect("No token");
-
-                    let token = res.token;
-                    let mut lock = token_value.write().await;
-                    *lock = Some(token.clone());
-
-                    let mut in_memory_app_config = memory_value.write().await;
-                    in_memory_app_config.airdrop_access_token =  Some(token);
-                });
-            });
-            // The start of needed restart operations. Break this out into a module if we need n+1
+     // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
                 let network = Network::default().as_key_str();

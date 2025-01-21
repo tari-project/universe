@@ -209,8 +209,10 @@ export const useAirdropStore = create<AirdropStore>()(
 
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
     const currentWindow = getCurrentWindow();
+    // console.log({ currentWindow, airdropTokens });
     if (airdropTokens) {
-        await currentWindow?.emit('airdrop_token', { token: airdropTokens.token });
+        // console.log({ msg: 'emitting', token: airdropTokens.token });
+        await invoke('set_airdrop_access_token', { airdropAccessToken: airdropTokens.token });
         useAirdropStore.setState({
             syncedWithBackend: true,
             airdropTokens: {

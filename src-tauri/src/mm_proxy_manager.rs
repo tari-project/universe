@@ -100,12 +100,13 @@ impl MmProxyManager {
     }
 
     pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
-        let mut lock = self.watcher.write().await;
-        lock.stop().await?;
+        if self.watcher.read().await.is_running() {
+            let mut lock = self.watcher.write().await;
+            lock.stop().await?;
+        }
         let start_config_read = self.start_config.read().await;
         match start_config_read.as_ref() {
             Some(start_config) => {
-                drop(lock);
                 let config_with_override = start_config.override_by(config);
                 drop(start_config_read);
                 self.start(config_with_override).await?;
