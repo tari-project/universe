@@ -25,7 +25,7 @@ use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
-use crate::process_stats_collector::{ProcessStatsCollector, ProcessStatsCollectorBuilder};
+use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::{
     app_config::{AppConfig, MiningMode},
@@ -44,7 +44,6 @@ use serde_json::Value;
 use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
-use std::os::windows::process;
 use std::time::Instant;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use sysinfo::System;

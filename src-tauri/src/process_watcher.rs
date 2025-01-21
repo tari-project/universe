@@ -124,6 +124,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let expected_startup_time = self.expected_startup_time;
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
+        let stats_broadcast = self.stats_broadcast.clone();
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
@@ -136,7 +137,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 max_health_check_duration: Duration::from_secs(0),
                 total_health_check_duration: Duration::from_secs(0),
             };
-            sleep(Duration::from_secs(10)).await;
+            // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
             let mut watch_timer = tokio::time::interval(poll_time);
             watch_timer.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -172,6 +173,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                     _ = app_shutdown.wait() => {
                         return child.stop().await;
                     }
+                }
+                if let Err(_unused) = stats_broadcast.send(stats.clone()) {
+                    warn!(target: LOG_TARGET, "Failed to broadcast process watcher stats");
                 }
             }
         }));

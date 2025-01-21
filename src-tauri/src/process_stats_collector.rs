@@ -51,31 +51,43 @@ impl ProcessStatsCollectorBuilder {
     }
 
     pub fn take_cpu_miner(&mut self) -> Sender<ProcessWatcherStats> {
-        self.cpu_miner_tx.take().unwrap()
+        self.cpu_miner_tx
+            .take()
+            .expect("Cannot take cpu_miner more than once")
     }
 
     pub fn take_gpu_miner(&mut self) -> Sender<ProcessWatcherStats> {
-        self.gpu_miner_tx.take().unwrap()
+        self.gpu_miner_tx
+            .take()
+            .expect("Cannot take gpu_miner more than once")
     }
 
     pub fn take_mm_proxy(&mut self) -> Sender<ProcessWatcherStats> {
-        self.mm_proxy_tx.take().unwrap()
+        self.mm_proxy_tx
+            .take()
+            .expect("Cannot take mm_proxy more than once")
     }
 
     pub fn take_minotari_node(&mut self) -> Sender<ProcessWatcherStats> {
-        self.node_tx.take().unwrap()
+        self.node_tx
+            .take()
+            .expect("Cannot take node more than once")
     }
 
     pub fn take_p2pool(&mut self) -> Sender<ProcessWatcherStats> {
-        self.p2pool_tx.take().unwrap()
+        self.p2pool_tx
+            .take()
+            .expect("Cannot take p2pool more than once")
     }
 
     pub fn take_tor(&mut self) -> Sender<ProcessWatcherStats> {
-        self.tor_tx.take().unwrap()
+        self.tor_tx.take().expect("Cannot take tor more than once")
     }
 
     pub fn take_wallet(&mut self) -> Sender<ProcessWatcherStats> {
-        self.wallet_tx.take().unwrap()
+        self.wallet_tx
+            .take()
+            .expect("Cannot take wallet more than once")
     }
 
     pub fn build(self) -> ProcessStatsCollector {
