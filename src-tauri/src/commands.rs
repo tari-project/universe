@@ -445,9 +445,9 @@ pub async fn get_miner_metrics(
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
 
-    let new_systemtray_data: SystemTrayData = SystemTrayData {
+    let new_systemtray_data = SystemTrayData {
         cpu_hashrate: cpu_mining_status.hash_rate,
-        gpu_hashrate: gpu_mining_status.hash_rate as f64,
+        gpu_hashrate: gpu_mining_status.hash_rate,
         estimated_earning: (cpu_mining_status.estimated_earnings
             + gpu_mining_status.estimated_earnings) as f64,
     };

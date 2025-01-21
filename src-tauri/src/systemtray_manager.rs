@@ -56,7 +56,7 @@ impl SystrayItemId {
             SystrayItemId::CpuHashrate => format!("CPU Power: {:.2} H/s", value),
             SystrayItemId::GpuHashrate => format!("GPU Power: {:.2} H/s", value),
             SystrayItemId::EstimatedEarning => format!("Est. Earning: {:.2} tXTM/Day", value),
-            SystrayItemId::MinimizeToggle => format!("Minimize/Unminimize"),
+            SystrayItemId::MinimizeToggle => "Minimize/Unminimize".to_string(),
         }
     }
 }
@@ -154,9 +154,9 @@ impl SystemTrayManager {
     }
 
     pub fn initialize_tray(&mut self, app: AppHandle) -> Result<(), anyhow::Error> {
-        let tray = app.tray_by_id("universe-tray-id").unwrap();
+        let tray = app.tray_by_id("universe-tray-id").expect("tray not found");
         let menu = self.initialize_menu(app.clone())?;
-        tray.set_menu(Some(menu.clone())).unwrap();
+        tray.set_menu(Some(menu.clone()))?;
 
         tray.on_menu_event(move |app, event| match event.id.as_ref() {
             "minimize_toggle" => {
@@ -205,13 +205,12 @@ impl SystemTrayManager {
     }
 
     pub fn update_tray(&mut self, data: SystemTrayData) {
-        if let Err(e) = self
-            .tray
-            .as_ref()
-            .unwrap()
-            .set_tooltip(Some(self.get_tooltip_text(data.clone())))
-        {
+        if let Some(tray) = &self.tray {
+            if let Err(e) = tray.set_tooltip(Some(self.get_tooltip_text(data.clone()))) {
             error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
+            }
+        } else {
+            error!(target: LOG_TARGET, "Tray not initialized");
         }
         if let Some(menu) = &self.menu {
             for (id, value) in [

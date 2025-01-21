@@ -222,7 +222,7 @@ async fn setup_inner(
         }
     }
 
-    let _ = state
+    let _unused = state
         .systemtray_manager
         .write()
         .await
