@@ -24,6 +24,7 @@ use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_watcher::ProcessWatcher;
+use crate::utils::math_utils::estimate_earning;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
 use log::{debug, error, warn};
@@ -34,7 +35,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 
-const RANDOMX_BLOCKS_PER_DAY: u64 = 360;
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
 
@@ -165,24 +165,8 @@ impl CpuMiner {
                 match client.summary().await {
                     Ok(xmrig_status) => {
                         let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                        let estimated_earnings = if network_hash_rate == 0 {
-                            0
-                        } else {
-                            #[allow(clippy::cast_possible_truncation)]
-                            {
-                                ((block_reward.as_u64() as f64)
-                                    * ((hash_rate / (network_hash_rate as f64))
-                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                    .floor() as u64
-                            }
-                        };
-                        // Can't be more than the max reward for a day
-                        let estimated_earnings = std::cmp::min(
-                            estimated_earnings,
-                            block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-                        );
-
-                        // mining should be true if the hashrate is greater than 0
+                        let estimated_earnings =
+                            estimate_earning(network_hash_rate, hash_rate, block_reward);
 
                         let hasrate_sum = xmrig_status
                             .hashrate

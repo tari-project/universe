@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "Menunggu sinkronisasi blok. {{local_height}}/{{tip_height}} blok tersinkronisasi",
     "waiting-for-header-sync": "Menunggu sinkronisasi header. {{local_height}}/{{tip_height}} header tersinkronisasi",
     "waiting-for-node": "Menunggu node untuk sinkronisasi",
-    "waiting-for-wallet": "Menunggu dompet"
+    "waiting-for-wallet": "Menunggu dompet",
+    "waiting-for-minotari-node-to-start": "Menunggu node Minotari untuk memulai",
+    "wallet-started": "Dompet dimulai",
+    "minotari-node-restarting": "Data node Minotari rusak, membersihkan data lama"
   },
   "would-you-like-to-install": "Apakah Anda ingin menginstal Tari Universe {{version}} sekarang?",
   "yes": "Ya"

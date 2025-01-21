@@ -33,6 +33,8 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
+          - platform: 'ubuntu-24.04-arm'
+            args: ''
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'

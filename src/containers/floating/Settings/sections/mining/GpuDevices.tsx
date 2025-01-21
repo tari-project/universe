@@ -18,7 +18,7 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const miningAllowed = useAppStateStore((s) => !s.isSettingUp);
+    const miningAllowed = useAppStateStore((s) => s.setupComplete);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu.hardware);
