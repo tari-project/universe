@@ -53,8 +53,8 @@ impl SystrayItemId {
 
     pub fn get_title(&self, value: f64) -> String {
         match self {
-            SystrayItemId::CpuHashrate => format!("CPU Hashrate: {:.2} H/s", value),
-            SystrayItemId::GpuHashrate => format!("GPU Hashrate: {:.2} H/s", value),
+            SystrayItemId::CpuHashrate => format!("CPU Power: {:.2} H/s", value),
+            SystrayItemId::GpuHashrate => format!("GPU Power: {:.2} H/s", value),
             SystrayItemId::EstimatedEarning => format!("Est. Earning: {:.2} tXTM/Day", value),
             SystrayItemId::MinimizeToggle => format!("Minimize/Unminimize"),
             _ => "".to_string(),
@@ -136,7 +136,7 @@ impl SystemTrayManager {
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             _ => {
                 format!(
-                    "CPU Hashrate: {} H/s\nGPU Hashrate: {} H/s\nEst. earning: {} tXTM/day",
+                    "CPU Power: {} H/s\nGPU Power: {} H/s\nEst. earning: {} tXTM/day",
                     Formatter::new()
                         .with_decimals(2)
                         .with_separator("")
