@@ -21,6 +21,16 @@ export const Number = styled('div')`
     line-height: 100%;
 
     font-variant-numeric: tabular-nums;
+
+    .digit-num {
+        width: 10px;
+        text-align: center;
+    }
+
+    .digit-char {
+        width: 4px;
+        text-align: center;
+    }
 `;
 
 export const Label = styled('div')`
