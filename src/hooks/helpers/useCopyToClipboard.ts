@@ -16,7 +16,6 @@ export function useCopyToClipboard() {
     }, [isCopied]);
 
     const copyToClipboard = useCallback((value: string, onCopied?: () => void) => {
-        console.debug(value);
         writeText(value)
             .then(() => {
                 setIsCopied(true);
