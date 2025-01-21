@@ -379,7 +379,6 @@ async fn get_telemetry_data(
         randomx_network_hashrate,
         block_reward,
         block_height,
-        initial_sync_achieved: is_synced,
         ..
     } = node_latest_status.borrow().clone();
 
@@ -408,7 +407,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
-    let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0);
+    let is_mining_active = cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu.hash_rate);
 
     let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
@@ -438,7 +437,7 @@ async fn get_telemetry_data(
             (None, vec![])
         };
 
-    let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
+    let gpu_hash_rate = Some(gpu_status.hash_rate);
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
         let filtered_gpus = gpu_hardware_parameters
@@ -478,35 +477,7 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
-    // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_stats.is_some();
-    // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
-    //         (
-    //             Some(randomx_stats.squad.name.clone()),
-    //             Some(randomx_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
-    // let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
-    //         (
-    //             Some(sha3_stats.squad.name.clone()),
-    //             Some(sha3_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
     let mut extra_data = HashMap::new();
     extra_data.insert(
         "config_cpu_enabled".to_string(),
