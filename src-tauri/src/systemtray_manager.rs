@@ -92,7 +92,7 @@ impl SystemTrayManager {
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             _ => {
                 format!(
-                    "Hashrate \nCPU: {} H/s\nGPU: {} H/s\nEst. earning: {} tXTM/day",
+                    "CPU Hashrate: {} H/s\nGPU Hashrate: {} H/s\nEst. earning: {} tXTM/day",
                     Formatter::new()
                         .with_decimals(2)
                         .with_separator("")
