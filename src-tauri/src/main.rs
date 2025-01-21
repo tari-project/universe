@@ -70,6 +70,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -212,11 +213,7 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            *state.has_missing_dependencies.write().await = true;
-            app.emit(
-                    "missing-applications",
-                    external_dependencies
-                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            *state.missing_dependencies.write().await = external_dependencies;
             return Ok(());
         }
     }
@@ -764,7 +761,7 @@ struct UniverseAppState {
     is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
-    has_missing_dependencies: Arc<RwLock<bool>>,
+    missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
@@ -879,7 +876,7 @@ fn main() {
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
-        has_missing_dependencies: Arc::new(RwLock::new(false)),
+        missing_dependencies: Arc::new(RwLock::new(None)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
@@ -1094,7 +1091,7 @@ fn main() {
                 let app_handle = w.app_handle();
                 let state = app_handle.state::<UniverseAppState>().clone();
                 let setup_complete_clone = state.is_setup_finished.read().await;
-                let has_missing_dependencies = state.has_missing_dependencies.read().await;
+                let missing_dependencies = state.missing_dependencies.read().await;
                 let setup_complete_value = *setup_complete_clone;
 
                 let prog = ProgressTracker::new(app_handle.clone(), None);
@@ -1104,9 +1101,10 @@ fn main() {
                 app_handle.clone().emit("app_ready", SetupPayload { setup_complete: setup_complete_value }).expect("Could not emit event 'app_ready'");
 
 
-                let missing_bool = *has_missing_dependencies;
-                if missing_bool {
-                    app_handle.clone().emit("missing-applications", missing_bool).expect("Could not emit event 'missing-applications");
+                let has_missing = missing_dependencies.is_some();
+                let external_dependencies = missing_dependencies.clone();
+                if has_missing {
+                    app_handle.clone().emit("missing-applications", external_dependencies).expect("Could not emit event 'missing-applications");
                 }
 
             });
