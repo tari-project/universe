@@ -699,7 +699,7 @@ async fn setup_inner(
     let w_move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = w_move_handle.state::<UniverseAppState>().clone();
-        let mut interval = time::interval(Duration::from_secs(10));
+        let mut interval = time::interval(Duration::from_secs(5));
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         loop {
@@ -752,24 +752,6 @@ async fn setup_inner(
     Ok(())
 }
 
-async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let app_handle = app.clone();
-    app_handle.once("frontend_ready", move |_event| {
-        info!(target: LOG_TARGET, "Frontend is ready");
-        let app_clone: tauri::AppHandle = app.clone();
-        tauri::async_runtime::spawn(async move {
-            time::sleep(Duration::from_secs(3)).await;
-            app_clone
-                .get_webview_window("main")
-                .expect("Could not get main window")
-                .emit("app_ready", ())
-                .expect("Could not emit event 'app_ready'");
-        });
-    });
-
-    Ok(())
-}
-
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -811,6 +793,11 @@ struct Payload {
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct FEPayload {
     token: String,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct SetupPayload {
+    setup_complete: bool,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -907,9 +894,7 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
     };
-
-    let app_state2 = app_state.clone();
-
+    let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -952,7 +937,7 @@ fn main() {
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             // Do this after logging has started otherwise we can't actually see any errors
-            app.manage(app_state2);
+            app.manage(app_state_clone);
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
@@ -982,6 +967,7 @@ fn main() {
                    return Err(Box::new(e));
                 }
             };
+
 
             let token_state_clone = app.state::<UniverseAppState>().airdrop_access_token.clone();
             let memory_state_clone = app.state::<UniverseAppState>().in_memory_config.clone();
@@ -1094,6 +1080,22 @@ fn main() {
                 }
             }
         })
+        .on_page_load(|webview, _ | {
+            info!(target: LOG_TARGET, "Frontend is ready");
+            let w = webview.clone();
+            tauri::async_runtime::spawn(async move {
+                let app_handle = w.app_handle();
+                let state = app_handle.state::<UniverseAppState>().clone();
+                let setup_complete_clone = state.is_setup_finished.read().await;
+                let value = *setup_complete_clone;
+
+                let prog = ProgressTracker::new(app_handle.clone(), None);
+                prog.send_last_action("".to_string()).await;
+
+                time::sleep(Duration::from_secs(3)).await;
+                app_handle.clone().emit("app_ready", SetupPayload { setup_complete:value }).expect("Could not emit event 'app_ready'");
+            });
+        })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,
             commands::download_and_start_installer,
@@ -1113,7 +1115,7 @@ fn main() {
             commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
-            commands::get_transaction_history,
+            commands::get_coinbase_transactions,
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,
@@ -1164,16 +1166,14 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
-            info!(target: LOG_TARGET, "App is ready");
-            let a = app_handle.clone();
-            let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn( async move  {
-                let state = app_handle_clone.state::<UniverseAppState>().clone();
-                let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
-                let _res = setup_inner(state, a.clone()).await
+            info!(target: LOG_TARGET, "RunEvent Ready");
+            let handle_clone = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = handle_clone.state::<UniverseAppState>().clone();
+                let _res = setup_inner(state, handle_clone.clone())
+                    .await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
