@@ -280,11 +280,11 @@ impl TelemetryManager {
     pub async fn initialize(
         &mut self,
         airdrop_access_token: Arc<RwLock<Option<String>>>,
-        window: tauri::Window,
+        app_handle: tauri::AppHandle,
     ) -> Result<()> {
         info!(target: LOG_TARGET, "Starting telemetry manager");
         self.airdrop_access_token = airdrop_access_token.clone();
-        self.start_telemetry_process(TelemetryFrequency::default().into(), window)
+        self.start_telemetry_process(TelemetryFrequency::default().into(), app_handle)
             .await?;
         Ok(())
     }
@@ -292,7 +292,7 @@ impl TelemetryManager {
     async fn start_telemetry_process(
         &mut self,
         timeout: Duration,
-        window: tauri::Window,
+        app_handle: tauri::AppHandle,
     ) -> Result<(), TelemetryManagerError> {
         let cpu_miner = self.cpu_miner.clone();
         let gpu_status = self.gpu_status.clone();
@@ -314,7 +314,7 @@ impl TelemetryManager {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, window.clone()).await;
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
                         sleep(timeout);
                     }
@@ -379,7 +379,6 @@ async fn get_telemetry_data(
         randomx_network_hashrate,
         block_reward,
         block_height,
-        is_synced,
         ..
     } = node_latest_status.borrow().clone();
 
@@ -408,7 +407,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
-    let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0);
+    let is_mining_active = cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu.hash_rate);
 
     let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
@@ -438,7 +437,7 @@ async fn get_telemetry_data(
             (None, vec![])
         };
 
-    let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
+    let gpu_hash_rate = Some(gpu_status.hash_rate);
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
         let filtered_gpus = gpu_hardware_parameters
@@ -478,35 +477,7 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
-    // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_stats.is_some();
-    // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
-    //         (
-    //             Some(randomx_stats.squad.name.clone()),
-    //             Some(randomx_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
-    // let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
-    //         (
-    //             Some(sha3_stats.squad.name.clone()),
-    //             Some(sha3_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
     let mut extra_data = HashMap::new();
     extra_data.insert(
         "config_cpu_enabled".to_string(),
@@ -577,7 +548,7 @@ async fn handle_telemetry_data(
     telemetry: Result<TelemetryData, TelemetryManagerError>,
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
-    window: tauri::Window,
+    app_handle: tauri::AppHandle,
 ) {
     match telemetry {
         Ok(telemetry) => {
@@ -610,7 +581,7 @@ async fn handle_telemetry_data(
                                 referral_count: response_inner,
                             };
 
-                            window
+                            app_handle
                                 .emit("UserPoints", emit_data)
                                 .map_err(|e| {
                                     error!("could not send user points as an event: {}", e)

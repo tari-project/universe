@@ -1,6 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
 
-import VisualMode from '@app/containers/main/Dashboard/components/VisualMode';
 import AppVersions from './AppVersions.tsx';
 import DebugSettings from './DebugSettings.tsx';
 import ExperimentalWarning from './ExperimentalWarning.tsx';
@@ -24,7 +23,6 @@ export const ExperimentalSettings = () => {
                         <TorMarkup />
                         <MonerodMarkup />
                         {isP2poolEnabled && <P2poolMarkup />}
-                        <VisualMode />
                     </>
                 )}
             </AnimatePresence>

@@ -39,7 +39,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -55,8 +55,6 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -115,10 +113,10 @@ pub struct TariWalletDetails {
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
-    is_synced: bool,
     is_connected: bool,
     connected_peers: Vec<String>,
 }
+
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
@@ -403,17 +401,9 @@ pub async fn get_miner_metrics(
         randomx_network_hashrate,
         block_height,
         block_time,
-        is_synced,
         block_reward,
+        ..
     } = node_status;
-    // let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
-    //     .get_network_hash_rate_and_block_reward().await
-    //     .unwrap_or_else(|e| {
-    //         if !matches!(e, NodeManagerError::NodeNotStarted) {
-    //             warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-    //         }
-    //         (0, 0, MicroMinotari(0), 0, 0, false)
-    //     });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -432,7 +422,12 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
+    let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+    let gpu_mining_status = gpu_miner
+        .status(sha_network_hashrate, block_reward, gpu_mining_status)
+        .await
+        .unwrap_or_default();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
@@ -463,7 +458,6 @@ pub async fn get_miner_metrics(
         base_node: BaseNodeStatus {
             block_height,
             block_time,
-            is_synced,
             is_connected: !connected_peers.is_empty(),
             connected_peers,
         },
@@ -647,7 +641,7 @@ pub async fn get_seed_words(
 }
 
 #[tauri::command]
-pub async fn get_tari_wallet_details(
+pub async fn emit_tari_wallet_details(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<TariWalletDetails, String> {
     let timer = Instant::now();
@@ -697,8 +691,10 @@ pub async fn get_tor_entry_guards(
 }
 
 #[tauri::command]
-pub async fn get_transaction_history(
+pub async fn get_coinbase_transactions(
     state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transaction_history.load(Ordering::SeqCst) {
@@ -710,7 +706,7 @@ pub async fn get_transaction_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transaction_history()
+        .get_coinbase_transactions(continuation, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
@@ -720,7 +716,7 @@ pub async fn get_transaction_history(
         });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_coinbase_transactions took too long: {:?}", timer.elapsed());
     }
 
     state
@@ -821,8 +817,15 @@ pub async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-    // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = Vec::new();
+    folder_block_list.push("EBWebView");
+
+    let mut files_block_list = Vec::new();
+
+    if !reset_wallet {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
+    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -867,6 +870,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
@@ -877,9 +887,11 @@ pub async fn reset_settings<'r>(
         }
     }
 
-    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _unused = entry.delete_credential();
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+            let _unused = entry.delete_credential();
+        }
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -932,27 +944,6 @@ pub async fn send_feedback(
         warn!(target: LOG_TARGET, "send_feedback took too long: {:?}", timer.elapsed());
     }
     Ok(reference)
-}
-
-#[tauri::command]
-pub async fn set_airdrop_access_token(
-    token: String,
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let mut write_lock = state.airdrop_access_token.write().await;
-    *write_lock = Some(token.clone());
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET,
-            "set_airdrop_access_token took too long: {:?}",
-            timer.elapsed()
-        );
-    }
-    let mut in_memory_app_config = state.in_memory_config.write().await;
-    in_memory_app_config.airdrop_access_token = Some(token);
-    Ok(())
 }
 
 #[tauri::command]
@@ -1066,10 +1057,10 @@ pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
 
     let signature = key.sign(data.as_bytes());
 
-    return Ok(SignWsDataResponse {
+    Ok(SignWsDataResponse {
         signature: BASE64_STANDARD.encode(signature.as_ref()),
         pub_key,
-    });
+    })
 }
 
 #[tauri::command]
@@ -1399,38 +1390,6 @@ pub async fn set_visual_mode<'r>(
         );
     }
     Ok(())
-}
-
-#[tauri::command]
-pub async fn setup_application(
-    window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<bool, String> {
-    let timer = Instant::now();
-    let rollback = state.setup_counter.write().await;
-    if rollback.get_value() {
-        warn!(target: LOG_TARGET, "setup_application has already been initialized, debouncing");
-        let res = state.config.read().await.auto_mining();
-        return Ok(res);
-    }
-    rollback.set_value(true, Duration::from_millis(1000)).await;
-    setup_inner(window, state.clone(), app).await.map_err(|e| {
-        warn!(target: LOG_TARGET, "Error setting up application: {:?}", e);
-        sentry::capture_event(Event {
-            level: sentry::Level::Error,
-            message: Some(e.to_string()),
-            culprit: Some("setup-inner".to_string()),
-            ..Default::default()
-        });
-        e.to_string()
-    })?;
-
-    let res = state.config.read().await.auto_mining();
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "setup_application took too long: {:?}", timer.elapsed());
-    }
-    Ok(res)
 }
 
 #[allow(clippy::too_many_lines)]

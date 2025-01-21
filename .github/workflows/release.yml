@@ -33,6 +33,8 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
+          - platform: 'ubuntu-24.04-arm'
+            args: ''
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'
@@ -58,7 +60,6 @@ jobs:
           BETA_STRING: '(Beta)'
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
-          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA_AIRDROP_TWITTER_AUTH_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.DEV_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
         shell: bash
@@ -68,10 +69,9 @@ jobs:
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
-          echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
-          echo "TS_FEATURES=release-ci-beta, airdrop-env" >> $GITHUB_ENV
+          echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
           cd "${GITHUB_WORKSPACE}/src-tauri"
@@ -80,7 +80,6 @@ jobs:
           yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
           yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
-          yq eval ".app.windows[1].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
             -i tauri.conf.json
@@ -107,7 +106,6 @@ jobs:
           yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
           yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
-          yq eval ".app.windows[1].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe\"" -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             -i tauri.conf.json
