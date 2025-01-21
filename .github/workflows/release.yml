@@ -33,6 +33,8 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
+          - platform: 'ubuntu-24.04-arm'
+            args: ''
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'
@@ -69,7 +71,7 @@ jobs:
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
-          echo "TS_FEATURES=release-ci-beta, airdrop-env" >> $GITHUB_ENV
+          echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
           cd "${GITHUB_WORKSPACE}/src-tauri"

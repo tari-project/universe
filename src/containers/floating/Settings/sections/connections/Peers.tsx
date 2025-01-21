@@ -1,7 +1,5 @@
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-
-import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 
@@ -11,6 +9,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const Count = styled.div<{ $count: number }>`
     border-radius: 11px;
@@ -29,7 +28,7 @@ const Count = styled.div<{ $count: number }>`
 
 export default function Peers() {
     const { t } = useTranslation('settings');
-    const connectedPeers = useMiningStore((state) => state.base_node?.connected_peers || []);
+    const connectedPeers = useMiningMetricsStore((state) => state.base_node?.connected_peers || []);
     const connectedPeersCount = connectedPeers?.length || 0;
     const listMarkup = connectedPeersCount
         ? connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>)
