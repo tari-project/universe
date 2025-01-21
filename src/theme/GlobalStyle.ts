@@ -98,12 +98,15 @@ export const GlobalStyle = createGlobalStyle`
     
     #canvas {
         z-index: 0;
+        top: 0;
+        left: 0;
         pointer-events: auto;
         width: 100vw;
         background: none;
     }
 
     #root {
+        z-index: 1;
         pointer-events: none;
     }
 `;
