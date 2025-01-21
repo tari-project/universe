@@ -32,11 +32,9 @@ use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
-    BaseNodeState as GrpcBaseNodeState, BlockHeader, Empty, GetBlocksRequest,
-    GetNetworkStateRequest, Peer, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, Peer, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
-use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
@@ -234,8 +232,6 @@ pub enum MinotariNodeStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
     #[error("Node not started")]
     NodeNotStarted,
-    #[error("Conversion error: {0}")]
-    Conversion(String),
 }
 
 #[derive(Clone, Debug)]
@@ -245,9 +241,7 @@ pub(crate) struct BaseNodeStatus {
     pub block_reward: MicroMinotari,
     pub block_height: u64,
     pub block_time: u64,
-    pub initial_sync_achieved: bool,
-    pub base_node_state: BaseNodeState,
-    pub failed_checkpoints: bool,
+    pub is_synced: bool,
 }
 
 impl Default for BaseNodeStatus {
@@ -258,45 +252,7 @@ impl Default for BaseNodeStatus {
             block_reward: MicroMinotari(0),
             block_height: 0,
             block_time: 0,
-            initial_sync_achieved: false,
-            base_node_state: BaseNodeState::StartUp,
-            failed_checkpoints: false,
-        }
-    }
-}
-
-#[derive(Clone, Serialize, Debug, PartialEq, Eq)]
-pub enum BaseNodeState {
-    StartUp = 0,
-    HeaderSync = 1,
-    HorizonSync = 2,
-    Connecting = 3,
-    BlockSync = 4,
-    Listening = 5,
-    SyncFailed = 6,
-}
-
-impl From<GrpcBaseNodeState> for BaseNodeState {
-    fn from(state: GrpcBaseNodeState) -> Self {
-        match state {
-            GrpcBaseNodeState::StartUp => BaseNodeState::StartUp,
-            GrpcBaseNodeState::HeaderSync => BaseNodeState::HeaderSync,
-            GrpcBaseNodeState::HorizonSync => BaseNodeState::HorizonSync,
-            GrpcBaseNodeState::Connecting => BaseNodeState::Connecting,
-            GrpcBaseNodeState::BlockSync => BaseNodeState::BlockSync,
-            GrpcBaseNodeState::Listening => BaseNodeState::Listening,
-            GrpcBaseNodeState::SyncFailed => BaseNodeState::SyncFailed,
-        }
-    }
-}
-
-impl TryFrom<i32> for BaseNodeState {
-    type Error = MinotariNodeStatusMonitorError;
-
-    fn try_from(value: i32) -> Result<Self, Self::Error> {
-        match GrpcBaseNodeState::try_from(value) {
-            Ok(state) => Ok(state.into()),
-            Err(e) => Err(MinotariNodeStatusMonitorError::Conversion(e.to_string())),
+            is_synced: false,
         }
     }
 }
@@ -369,9 +325,7 @@ impl MinotariNodeStatusMonitor {
             block_reward: MicroMinotari(res.reward),
             block_height: metadata.best_block_height,
             block_time: metadata.timestamp,
-            initial_sync_achieved: res.initial_sync_achieved,
-            base_node_state: BaseNodeState::try_from(res.base_node_state)?,
-            failed_checkpoints: res.failed_checkpoints,
+            is_synced: res.initial_sync_achieved,
         })
     }
 
