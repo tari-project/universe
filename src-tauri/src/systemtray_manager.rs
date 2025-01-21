@@ -57,7 +57,6 @@ impl SystrayItemId {
             SystrayItemId::GpuHashrate => format!("GPU Power: {:.2} H/s", value),
             SystrayItemId::EstimatedEarning => format!("Est. Earning: {:.2} tXTM/Day", value),
             SystrayItemId::MinimizeToggle => format!("Minimize/Unminimize"),
-            _ => "".to_string(),
         }
     }
 }
