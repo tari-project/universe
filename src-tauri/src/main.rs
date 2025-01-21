@@ -1105,7 +1105,6 @@ fn main() {
 
 
                 let missing_bool = *has_missing_dependencies;
-                info!(target: LOG_TARGET, "MISSING {}", missing_bool);
                 if missing_bool {
                     app_handle.clone().emit("missing-applications", missing_bool).expect("Could not emit event 'missing-applications");
                 }
