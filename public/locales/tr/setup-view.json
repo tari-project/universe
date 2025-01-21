@@ -22,7 +22,10 @@
     "waiting-for-block-sync": "Blok senkronize için bekleniyor. {{local_height}}/{{tip_height}} bloklar senkronize edildi",
     "waiting-for-header-sync": "Üstbilgi senkronizasyonu bekleniyor. {{local_height}}/{{tip_height}} üstbilgiler senkronize edildi",
     "waiting-for-node": "Düğümün senkronize edilmesi bekleniyor",
-    "waiting-for-wallet": "Cüzdan bekleniyor"
+    "waiting-for-wallet": "Cüzdan bekleniyor",
+    "waiting-for-minotari-node-to-start": "Minotari düğümünün başlaması bekleniyor",
+    "wallet-started": "Cüzdan başlatıldı",
+    "minotari-node-restarting": "Minotari düğüm verileri bozuldu, eski veriler temizleniyor"
   },
   "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
   "yes": "Evet"

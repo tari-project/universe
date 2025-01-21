@@ -3,30 +3,19 @@ import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
-import { useAppStateStore } from '../../store/appStateStore.ts';
+import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
 import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
-    const setSetupDetails = useAppStateStore((s) => s.setSetupDetails);
-    const setSettingUpFinished = useAppStateStore((s) => s.setSettingUpFinished);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
 
-    const clearStorage = useCallback(() => {
-        // clear all storage except airdrop data
-        const airdropStorage = localStorage.getItem('airdrop-store');
-        localStorage.clear();
-        if (airdropStorage) {
-            localStorage.setItem('airdrop-store', airdropStorage);
-        }
-    }, []);
-
     const handlePostSetup = useCallback(async () => {
+        await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
-        await setSettingUpFinished();
-    }, [fetchApplicationsVersionsWithRetry, setSettingUpFinished]);
+    }, [fetchApplicationsVersionsWithRetry]);
 
     useEffect(() => {
         async function initWithToken() {
@@ -57,11 +46,20 @@ export function useSetUp() {
         });
 
         if (!isInitializingRef.current) {
+            function clearStorage() {
+                // clear all storage except airdrop data
+                const airdropStorage = localStorage.getItem('airdrop-store');
+                localStorage.clear();
+                if (airdropStorage) {
+                    localStorage.setItem('airdrop-store', airdropStorage);
+                }
+            }
             isInitializingRef.current = true;
             clearStorage();
         }
+
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [clearStorage, handlePostSetup, adminShow, setSetupDetails]);
+    }, [adminShow, handlePostSetup]);
 }

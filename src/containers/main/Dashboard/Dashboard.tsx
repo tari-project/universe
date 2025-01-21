@@ -3,7 +3,7 @@ import { DashboardContentContainer } from './styles';
 
 export default function Dashboard() {
     return (
-        <DashboardContentContainer layout>
+        <DashboardContentContainer>
             <MiningView />
         </DashboardContentContainer>
     );

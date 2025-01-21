@@ -15,7 +15,7 @@ export function useMiningStatesSync() {
     const handleMiningMetrics = useMiningMetricsUpdater();
     const setWalletDetails = useWalletStore((s) => s.setWalletDetails);
     const setupProgress = useAppStateStore((s) => s.setupProgress);
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const setupComplete = useAppStateStore((s) => s.setupComplete);
     const prevMetricsPayload = useRef<MinerMetrics>();
     const prevWalletPayload = useRef<TariWalletDetails>();
 
@@ -39,7 +39,7 @@ export function useMiningStatesSync() {
     }, [setWalletDetails, setupProgress]);
 
     useEffect(() => {
-        if (isSettingUp) return;
+        if (!setupComplete) return;
         const ul = listen('miner_metrics', async ({ payload }) => {
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as MinerMetrics, prevMetricsPayload.current);
@@ -51,5 +51,5 @@ export function useMiningStatesSync() {
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [isSettingUp, handleMiningMetrics]);
+    }, [setupComplete, handleMiningMetrics]);
 }
