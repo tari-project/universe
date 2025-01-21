@@ -41,7 +41,6 @@ use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
-use crate::node_adapter::BaseNodeState;
 use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
@@ -103,14 +102,6 @@ pub struct MinerMetrics {
     base_node: BaseNodeStatus,
 }
 
-impl MinerMetrics {
-    /// Returns `true` if the base node has state `BaseNodeState::Listening`
-    #[allow(dead_code)]
-    pub fn is_synced(&self) -> bool {
-        self.base_node.base_node_state == BaseNodeState::Listening
-    }
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct TariWalletDetails {
     wallet_balance: Option<WalletBalance>,
@@ -122,9 +113,6 @@ pub struct TariWalletDetails {
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
-    initial_sync_achieved: bool,
-    base_node_state: BaseNodeState,
-    failed_checkpoints: bool,
     is_connected: bool,
     connected_peers: Vec<String>,
 }
@@ -413,10 +401,8 @@ pub async fn get_miner_metrics(
         randomx_network_hashrate,
         block_height,
         block_time,
-        initial_sync_achieved,
         block_reward,
-        base_node_state,
-        failed_checkpoints,
+        ..
     } = node_status;
 
     let cpu_miner = state.cpu_miner.read().await;
@@ -472,9 +458,6 @@ pub async fn get_miner_metrics(
         base_node: BaseNodeStatus {
             block_height,
             block_time,
-            initial_sync_achieved,
-            base_node_state,
-            failed_checkpoints,
             is_connected: !connected_peers.is_empty(),
             connected_peers,
         },

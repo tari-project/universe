@@ -245,7 +245,7 @@ impl NodeManager {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("check_if_is_orphan_chain: Node not started"))?;
         let BaseNodeStatus {
-            initial_sync_achieved: is_synced,
+            is_synced,
             block_height: local_tip,
             ..
         } = status_monitor
