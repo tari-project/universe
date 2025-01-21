@@ -295,10 +295,11 @@ async fn setup_inner(
     let telemetry_service = &telemetry_service.read().await;
 
     let mut binary_resolver = BinaryResolver::current().write().await;
-    let should_check_for_update = now
-        .duration_since(last_binaries_update_timestamp)
-        .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 60 * 6);
+    // let should_check_for_update = now
+    //     .duration_since(last_binaries_update_timestamp)
+    //     .unwrap_or(Duration::from_secs(0))
+    //     > Duration::from_secs(60 * 60 * 6);
+    let should_check_for_update = false; // TODO tmp solution
 
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service
@@ -839,38 +840,39 @@ async fn setup_inner(
         }
     });
 
-    let app_handle_clone: tauri::AppHandle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
-        let mut has_send_error = false;
+    // TODO disable orphan checker for localnet
+    // let app_handle_clone: tauri::AppHandle = app.clone();
+    // tauri::async_runtime::spawn(async move {
+    //     let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+    //     let mut has_send_error = false;
 
-        loop {
-            let state = app_handle_clone.state::<UniverseAppState>().inner();
-            if state.shutdown.is_triggered() {
-                break;
-            }
+    //     loop {
+    //         let state = app_handle_clone.state::<UniverseAppState>().inner();
+    //         if state.shutdown.is_triggered() {
+    //             break;
+    //         }
 
-            interval.tick().await;
-            let check_if_orphan = state
-                .node_manager
-                .check_if_is_orphan_chain(!has_send_error)
-                .await;
-            match check_if_orphan {
-                Ok(is_stuck) => {
-                    if is_stuck {
-                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                    }
-                    if is_stuck && !has_send_error {
-                        has_send_error = true;
-                    }
-                    drop(app_handle_clone.emit("is_stuck", is_stuck));
-                }
-                Err(ref e) => {
-                    error!(target: LOG_TARGET, "{}", e);
-                }
-            }
-        }
-    });
+    //         interval.tick().await;
+    //         let check_if_orphan = state
+    //             .node_manager
+    //             .check_if_is_orphan_chain(!has_send_error)
+    //             .await;
+    //         match check_if_orphan {
+    //             Ok(is_stuck) => {
+    //                 if is_stuck {
+    //                     error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+    //                 }
+    //                 if is_stuck && !has_send_error {
+    //                     has_send_error = true;
+    //                 }
+    //                 drop(app_handle_clone.emit("is_stuck", is_stuck));
+    //             }
+    //             Err(ref e) => {
+    //                 error!(target: LOG_TARGET, "{}", e);
+    //             }
+    //         }
+    //     }
+    // });
 
     Ok(())
 }
@@ -1110,13 +1112,13 @@ fn main() {
                 // They may not exist. This could be first run.
                 if node_peer_db.exists() {
                     if let Err(e) = remove_dir_all(node_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(target: LOG_TARGET, "Could not clear node peer data folder: {}", e);
                     }
                 }
 
                 if wallet_peer_db.exists() {
                     if let Err(e) = remove_dir_all(wallet_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(target: LOG_TARGET, "Could not clear wallet peer data folder: {}", e);
                     }
                 }
 

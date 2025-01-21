@@ -93,6 +93,7 @@ impl BinaryResolver {
             match Network::get_current_or_user_setting_or_default() {
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
                 _ => panic!("Unsupported network"),
             };
 

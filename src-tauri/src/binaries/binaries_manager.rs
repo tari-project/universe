@@ -67,6 +67,7 @@ impl BinaryManager {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
             Network::Esmeralda => include_str!("../../binaries_versions_esmeralda.json"),
+            Network::Igor => include_str!("../../binaries_versions_igor.json"),
             _ => panic!("Unsupported network"),
         };
         let version_requirements = BinaryManager::read_version_requirements(
