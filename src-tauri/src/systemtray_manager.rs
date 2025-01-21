@@ -45,7 +45,6 @@ pub struct SystemTrayData {
 pub struct SystemTrayManager {
     pub tray: Option<TrayIcon>,
     pub menu: Option<Menu<Wry>>,
-    pub last_tray_data: SystemTrayData,
 }
 
 impl SystemTrayManager {
@@ -53,7 +52,6 @@ impl SystemTrayManager {
         Self {
             tray: None,
             menu: None,
-            last_tray_data: SystemTrayData::default(),
         }
     }
 
@@ -85,9 +83,7 @@ impl SystemTrayManager {
         Ok(menu)
     }
 
-    fn get_tooltip_text(&self) -> String {
-        let data = self.last_tray_data.clone();
-
+    fn get_tooltip_text(&self, data: SystemTrayData) -> String {
         match PlatformUtils::detect_current_os() {
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             _ => {
@@ -111,16 +107,9 @@ impl SystemTrayManager {
     }
 
     pub fn initialize_tray(&mut self, app: AppHandle) -> Result<(), anyhow::Error> {
+        let tray = app.tray_by_id("universe-tray-id").unwrap();
         let menu = self.initialize_menu(app.clone())?;
-        let tray = TrayIconBuilder::new()
-            .menu(&menu)
-            .icon(
-                app.default_window_icon()
-                    .cloned()
-                    .expect("Failed to get default_window_icon"),
-            )
-            .tooltip(self.get_tooltip_text())
-            .build(&app)?;
+        tray.set_menu(Some(menu.clone())).unwrap();
 
         self.menu.replace(menu);
         self.tray.replace(tray);
@@ -129,13 +118,11 @@ impl SystemTrayManager {
     }
 
     pub fn update_tray(&mut self, data: SystemTrayData) {
-        self.last_tray_data = data.clone();
-
         if let Err(e) = self
             .tray
             .as_ref()
             .unwrap()
-            .set_tooltip(Some(self.get_tooltip_text()))
+            .set_tooltip(Some(self.get_tooltip_text(data.clone())))
         {
             error!(target: LOG_TARGET, "Failed to update tooltip: {}", e);
         }
