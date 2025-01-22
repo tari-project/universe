@@ -101,6 +101,7 @@ mod gpu_miner;
 mod gpu_miner_adapter;
 mod hardware;
 mod internal_wallet;
+mod mining_operations;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;

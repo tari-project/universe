@@ -26,7 +26,7 @@ use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStat
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -125,8 +125,11 @@ impl CpuMiner {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
+        info!(target:LOG_TARGET, "cpu miner acquiring lock to stop");
         let mut lock = self.watcher.write().await;
+        info!(target:LOG_TARGET, "cpu miner acquired lock to stop");
         lock.stop().await?;
+        info!(target:LOG_TARGET, "cpu miner acquired lock actually stopped");
         Ok(())
     }
 

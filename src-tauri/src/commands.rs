@@ -40,7 +40,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{airdrop, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, mining_operations, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -1424,6 +1424,8 @@ pub async fn set_airdrop_tokens<'r>(
     let new_id = airdrop_tokens.clone().and_then(|tokens| {
         airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
+    info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} oldTokens:{:?} newTokens {:?} is equal {:?}", new_id, old_id, old_tokens, airdrop_tokens,old_id != new_id);
+
     let user_id_changed = old_id != new_id;
 
     let mut app_config_lock = state.config.write().await;
@@ -1431,43 +1433,51 @@ pub async fn set_airdrop_tokens<'r>(
         .set_airdrop_tokens(airdrop_tokens)
         .await
         .map_err(|e| e.to_string())?;
+    drop(app_config_lock);
 
     if user_id_changed {
-        let node_status = state.base_node_latest_status.borrow().clone();
-        let cpu_miner = state.cpu_miner.read().await;
-        let cpu_mining_status = match cpu_miner
-            .status(
-                node_status.randomx_network_hashrate,
-                node_status.block_reward,
-            )
-            .await
-            .map_err(|e| e.to_string())
-        {
-            Ok(cpu) => cpu,
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                state
-                    .is_getting_miner_metrics
-                    .store(false, Ordering::SeqCst);
-                return Err(e);
-            }
+        let currently_mining = {
+            let node_status = state.base_node_latest_status.borrow().clone();
+            let cpu_miner = state.cpu_miner.read().await;
+            let cpu_mining_status = match cpu_miner
+                .status(
+                    node_status.randomx_network_hashrate,
+                    node_status.block_reward,
+                )
+                .await
+                .map_err(|e| e.to_string())
+            {
+                Ok(cpu) => cpu,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+                    state
+                        .is_getting_miner_metrics
+                        .store(false, Ordering::SeqCst);
+                    return Err(e);
+                }
+            };
+            let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+            info!(target: LOG_TARGET, "Saving  gpu mining:{:?} cpu mining {:?} mining {:?}", gpu_mining_status, cpu_mining_status,  cpu_mining_status.is_mining || gpu_mining_status.is_mining);
+            cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
 
-        let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-
-        let currently_mining = cpu_mining_status.is_mining || gpu_mining_status.is_mining;
         if currently_mining {
-            stop_mining(state.clone())
+            mining_operations::stop_mining(state.clone())
                 .await
                 .map_err(|e| e.to_string())?;
+            info!(target: LOG_TARGET, "Stopped mining....");
 
             restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+            info!(target: LOG_TARGET, "restarted  mining proxy....");
 
-            start_mining(state.clone(), app)
+            mining_operations::start_mining(state.clone(), app.clone())
                 .await
                 .map_err(|e| e.to_string())?;
+            info!(target: LOG_TARGET, "Started mining....");
         } else {
+            info!(target: LOG_TARGET, "restarted  mining proxy....");
             restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+            info!(target: LOG_TARGET, "restarted  mining proxy....");
         }
     }
     Ok(())
@@ -1479,159 +1489,12 @@ pub async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    let timer = Instant::now();
-    let _lock = state.stop_start_mutex.lock().await;
-    let config = state.config.read().await;
-    let cpu_mining_enabled = config.cpu_mining_enabled();
-    let gpu_mining_enabled = config.gpu_mining_enabled();
-    let mode = config.mode();
-    let custom_cpu_usage = config.custom_cpu_usage();
-    let custom_gpu_usage = config.custom_gpu_usage();
-    let cpu_miner_running = state.cpu_miner.read().await.is_running().await;
-    let gpu_miner_running = state.gpu_miner.read().await.is_running().await;
-
-    let cpu_miner_config = state.cpu_miner_config.read().await;
-    let tari_address = cpu_miner_config.tari_address.clone();
-    let p2pool_enabled = config.p2pool_enabled();
-    let monero_address = config.monero_address().to_string();
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-
-    if cpu_mining_enabled && !cpu_miner_running {
-        let mm_proxy_port = state
-            .mm_proxy_manager
-            .get_monero_port()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        let res = state
-            .cpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                &cpu_miner_config,
-                monero_address.to_string(),
-                mm_proxy_port,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                custom_cpu_usage,
-            )
-            .await;
-
-        if let Err(e) = res {
-            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-            state
-                .cpu_miner
-                .write()
-                .await
-                .stop()
-                .await
-                .inspect_err(|e| error!("error at stopping cpu miner {:?}", e))
-                .ok();
-            return Err(e.to_string());
-        }
-    }
-
-    let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
-    info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
-
-    if gpu_mining_enabled && gpu_available && !gpu_miner_running {
-        info!(target: LOG_TARGET, "1. Starting gpu miner");
-        // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        // let p2pool_enabled = state.config.read().await.p2pool_enabled();
-        let source = if p2pool_enabled {
-            let p2pool_port = state.p2pool_manager.grpc_port().await;
-            GpuNodeSource::P2Pool { port: p2pool_port }
-        } else {
-            let grpc_port = state
-                .node_manager
-                .get_grpc_port()
-                .await
-                .map_err(|e| e.to_string())?;
-
-            GpuNodeSource::BaseNode { port: grpc_port }
-        };
-
-        info!(target: LOG_TARGET, "2 Starting gpu miner");
-
-        if telemetry_id.is_empty() {
-            telemetry_id = "tari-universe".to_string();
-        }
-
-        info!(target: LOG_TARGET, "3. Starting gpu miner");
-        let res = state
-            .gpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                tari_address,
-                source,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                telemetry_id,
-                custom_gpu_usage,
-            )
-            .await;
-
-        info!(target: LOG_TARGET, "4. Starting gpu miner");
-        if let Err(e) = res {
-            error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
-            drop(
-                state.gpu_miner.write().await.stop().await.inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
-                ),
-            );
-            return Err(e.to_string());
-        }
-    }
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "start_mining took too long: {:?}", timer.elapsed());
-    }
-    Ok(())
+    mining_operations::start_mining(state, app).await
 }
 
 #[tauri::command]
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    let _lock = state.stop_start_mutex.lock().await;
-    let timer = Instant::now();
-    state
-        .cpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    state
-        .gpu_miner
-        .write()
-        .await
-        .stop()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
-    }
-    Ok(())
+    mining_operations::stop_mining(state).await
 }
 
 #[tauri::command]

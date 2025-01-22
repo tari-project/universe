@@ -169,7 +169,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.internal_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
+            info!(target:LOG_TARGET, "process watcher before trying to exit");
             let exit_code = task.await??;
+            info!(target:LOG_TARGET, "process watcher before exited");
             return Ok(exit_code);
         }
         Ok(0)

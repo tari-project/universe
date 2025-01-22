@@ -103,6 +103,7 @@ impl MmProxyManager {
         if self.watcher.read().await.is_running() {
             let mut lock = self.watcher.write().await;
             lock.stop().await?;
+            drop(lock);
         }
         let start_config_read = self.start_config.read().await;
         match start_config_read.as_ref() {
