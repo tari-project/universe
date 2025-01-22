@@ -83,6 +83,8 @@ impl SystemTrayManager {
 
     fn initialize_menu(&self, app: AppHandle) -> Result<Menu<Wry>, anyhow::Error> {
         info!(target: LOG_TARGET, "Initializing system tray menu");
+        // Default behavior only works on MacOS for now
+        #[cfg(target_os = "macos")]
         let about = PredefinedMenuItem::about(&app, None, None)?;
         let separator = PredefinedMenuItem::separator(&app)?;
         let cpu_hashrate = MenuItem::with_id(
@@ -117,7 +119,9 @@ impl SystemTrayManager {
         let menu = Menu::with_items(
             &app,
             &[
+                #[cfg(target_os = "macos")]
                 &about,
+                #[cfg(target_os = "macos")]
                 &separator,
                 &cpu_hashrate,
                 &gpu_hashrate,
