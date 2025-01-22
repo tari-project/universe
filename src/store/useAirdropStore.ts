@@ -226,7 +226,8 @@ export const fetchBackendInMemoryConfig = async () => {
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-        useAirdropStore.setState({ ...currentState, backendInMemoryConfig });
+        const airdropTokens = await invoke('get_airdrop_access_token');
+        useAirdropStore.setState({ ...currentState, backendInMemoryConfig, airdropTokens });
     } catch (e) {
         console.error('get_app_in_memory_config error:', e);
     }
