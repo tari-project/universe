@@ -1,3 +1,30 @@
+# 🌟 Tari Universe - Testnet v0.8.44: "Fortunes Favor, Part 1"
+
+_January 20, 2025_
+
+## 🔄 Staged Rollout
+
+- Rolling out via autoupdate
+
+## 📊 What's New
+
+- Fixed freezing animations
+- Improved app resource management
+- Set GPU framerate targets to reduce non-mining GPU usage
+- Fixed broken seed words after reset
+
+## 🔜 What's Next
+
+- Restoring persistent window settings
+- More GPU-type support, monitoring, and reporting
+- Optimizing p2pool for computers of all power levels
+
+## ⚠️ Important Notes
+
+While contributors continue optimizing p2pool, others have been working hard to improve app stability. This release of Tari Universe features significant updates under the hood to make Tari Universe more rock solid, crash less, and get us closer to "it just works." The Fortunes Favor series of releases will feature several parts as we continue to improve the overall stability of Tari Universe.
+
+---
+
 # 🌟 TARI UNIVERSE v0.8.42: "The Shell of Fate, Part 3 (the end of the trilogy!)"
 
 _January 14, 2025_

@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use std::{path::PathBuf, sync::Arc};
@@ -39,9 +40,9 @@ impl Clone for TorManager {
 }
 
 impl TorManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let adapter = TorAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
