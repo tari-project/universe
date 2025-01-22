@@ -1,8 +1,6 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
-import { useMiningStore } from './useMiningStore';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -192,8 +190,7 @@ export const useAirdropStore = create<AirdropStore>()(
                 }),
             setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
             logout: async () => {
-                set(clearState);
-                await useMiningStore.getState().restartMining();
+                await setAirdropTokens(undefined);
             },
         }),
         {
@@ -208,10 +205,8 @@ export const useAirdropStore = create<AirdropStore>()(
 );
 
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
-    const currentWindow = getCurrentWindow();
-    // console.log({ currentWindow, airdropTokens });
+    console.log({ airdropTokens });
     if (airdropTokens) {
-        // console.log({ msg: 'emitting', token: airdropTokens.token });
         await invoke('set_airdrop_access_token', { airdropAccessToken: airdropTokens.token });
         useAirdropStore.setState({
             syncedWithBackend: true,
@@ -222,11 +217,13 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
         });
     } else {
         // User not connected
-        useAirdropStore.setState({ syncedWithBackend: true });
+        await invoke('set_airdrop_access_token', { airdropAccessToken: undefined });
+        useAirdropStore.setState({ ...clearState, syncedWithBackend: true, airdropTokens: undefined });
     }
 };
 
 export const fetchBackendInMemoryConfig = async () => {
+    console.log('setting in memory config');
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
