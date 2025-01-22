@@ -207,13 +207,16 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        await invoke('set_airdrop_access_token', { airdropAccessToken: airdropTokens.token });
+        console.log({ airdropTokens });
+        await invoke('set_airdrop_tokens', {
+            airdropTokens: airdropTokens,
+        });
     } else {
         // User not connected
         const clearedState = { ...currentState, ...clearState, syncedWithBackend: true, airdropTokens: undefined };
         useAirdropStore.setState(clearedState);
         try {
-            await invoke('set_airdrop_access_token', { airdropAccessToken: undefined });
+            await invoke('set_airdrop_tokens', { airdropTokens: undefined });
         } catch (e) {
             console.error('Error clearing airdrop access token:', e);
         }
@@ -226,8 +229,12 @@ export const fetchBackendInMemoryConfig = async () => {
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-        const airdropTokens = await invoke('get_airdrop_access_token');
-        useAirdropStore.setState({ ...currentState, backendInMemoryConfig, airdropTokens });
+        const airdropTokens = await invoke('get_airdrop_tokens');
+        useAirdropStore.setState({
+            ...currentState,
+            backendInMemoryConfig,
+            airdropTokens: { ...airdropTokens, expiresAt: parseJwt(airdropTokens.token).exp },
+        });
     } catch (e) {
         console.error('get_app_in_memory_config error:', e);
     }

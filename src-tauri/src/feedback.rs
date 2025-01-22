@@ -162,7 +162,7 @@ impl Feedback {
             .read()
             .await
             .airdrop_tokens()
-            .map(|tokens| tokens.airdrop_access_token);
+            .map(|tokens| tokens.token);
 
         // Send the POST request
         let mut req = reqwest::Client::new().post(feedback_url).multipart(form);

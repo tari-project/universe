@@ -696,7 +696,7 @@ pub async fn get_tor_entry_guards(
 }
 
 #[tauri::command]
-pub async fn get_airdrop_access_token(
+pub async fn get_airdrop_tokens(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
@@ -704,7 +704,7 @@ pub async fn get_airdrop_access_token(
     let timer = Instant::now();
     let airdrop_access_token = state.config.read().await.airdrop_tokens();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_airdrop_access_token took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
 }
@@ -1411,7 +1411,7 @@ pub async fn set_visual_mode<'r>(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
-pub async fn set_airdrop_access_token<'r>(
+pub async fn set_airdrop_tokens<'r>(
     airdrop_tokens: Option<AirdropTokens>,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1419,10 +1419,10 @@ pub async fn set_airdrop_access_token<'r>(
     info!(target: LOG_TARGET, "Saving new airdrop_access_token {:?}", airdrop_tokens);
     let old_tokens = state.config.clone().read().await.airdrop_tokens();
     let old_id = old_tokens.clone().and_then(|tokens| {
-        airdrop::decode_jwt_claims_without_exp(&tokens.airdrop_access_token).map(|claim| claim.id)
+        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
     let new_id = airdrop_tokens.clone().and_then(|tokens| {
-        airdrop::decode_jwt_claims_without_exp(&tokens.airdrop_access_token).map(|claim| claim.id)
+        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
     let user_id_changed = old_id != new_id;
 

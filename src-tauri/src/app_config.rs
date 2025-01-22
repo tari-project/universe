@@ -170,8 +170,8 @@ pub enum DisplayMode {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AirdropTokens {
-    pub airdrop_access_token: String,
-    pub airdrop_refresh_token: String,
+    pub token: String,
+    pub refresh_token: String,
 }
 
 impl DisplayMode {
