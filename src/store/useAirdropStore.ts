@@ -223,7 +223,6 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
 };
 
 export const fetchBackendInMemoryConfig = async () => {
-    console.log('setting in memory config');
     const currentState = useAirdropStore.getState();
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
     try {
