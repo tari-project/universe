@@ -45,14 +45,14 @@ pub fn format_currency(balance: f64, currency: &str) -> String {
     if balance < 1000.0 {
         format!("{:.2} {}", balance, currency)
     } else if balance < 1_000_000.0 {
-        format!("{:.2}K {}", balance / 1000.0, currency)
+        format!("{:.2}k {}", balance / 1000.0, currency)
     } else if balance < 1_000_000_000.0 {
-        format!("{:.2}M {}", balance / 1_000_000.0, currency)
+        format!("{:.2}m {}", balance / 1_000_000.0, currency)
     } else if balance < 1_000_000_000_000.0 {
-        format!("{:.2}B {}", balance / 1_000_000_000.0, currency)
+        format!("{:.2}b {}", balance / 1_000_000_000.0, currency)
     } else if balance < 1_000_000_000_000_000.0 {
-        format!("{:.2}T {}", balance / 1_000_000_000_000.0, currency)
+        format!("{:.2}t {}", balance / 1_000_000_000_000.0, currency)
     } else {
-        format!("{:.2}Q {}", balance / 1_000_000_000_000_000.0, currency)
+        format!("{:.2}q {}", balance / 1_000_000_000_000_000.0, currency)
     }
 }
