@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AppConfig, GpuThreads};
+use crate::airdrop::restart_mm_proxy_with_new_telemetry_id;
+use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
@@ -33,7 +34,6 @@ use crate::external_dependencies::{
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
-use crate::mm_proxy_adapter::MergeMiningProxyConfig;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
@@ -700,9 +700,9 @@ pub async fn get_airdrop_access_token(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
-) -> Result<Option<String>, String> {
+) -> Result<Option<AirdropTokens>, String> {
     let timer = Instant::now();
-    let airdrop_access_token = state.config.read().await.airdrop_access_token();
+    let airdrop_access_token = state.config.read().await.airdrop_tokens();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_airdrop_access_token took too long: {:?}", timer.elapsed());
     }
@@ -1412,33 +1412,63 @@ pub async fn set_visual_mode<'r>(
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn set_airdrop_access_token<'r>(
-    airdrop_access_token: Option<String>,
+    airdrop_tokens: Option<AirdropTokens>,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Saving new airdrop_access_token {:?}", airdrop_access_token);
-    let token_current_value = state.config.clone().read().await.airdrop_access_token();
-    let current_id = token_current_value
-        .clone()
-        .and_then(|curr: String| airdrop::decode_jwt_claims(&curr).map(|claim| claim.id));
-    let new_id = airdrop_access_token
-        .clone()
-        .and_then(|curr| airdrop::decode_jwt_claims(&curr).map(|claim| claim.id));
-    let mining_restart_needed = current_id != new_id;
+    info!(target: LOG_TARGET, "Saving new airdrop_access_token {:?}", airdrop_tokens);
+    let old_tokens = state.config.clone().read().await.airdrop_tokens();
+    let old_id = old_tokens.clone().and_then(|tokens| {
+        airdrop::decode_jwt_claims_without_exp(&tokens.airdrop_access_token).map(|claim| claim.id)
+    });
+    let new_id = airdrop_tokens.clone().and_then(|tokens| {
+        airdrop::decode_jwt_claims_without_exp(&tokens.airdrop_access_token).map(|claim| claim.id)
+    });
+    let user_id_changed = old_id != new_id;
 
     let mut app_config_lock = state.config.write().await;
     app_config_lock
-        .set_airdrop_access_token(airdrop_access_token)
+        .set_airdrop_tokens(airdrop_tokens)
         .await
         .map_err(|e| e.to_string())?;
 
-    if mining_restart_needed {
-        stop_mining(state.clone())
+    if user_id_changed {
+        let node_status = state.base_node_latest_status.borrow().clone();
+        let cpu_miner = state.cpu_miner.read().await;
+        let cpu_mining_status = match cpu_miner
+            .status(
+                node_status.randomx_network_hashrate,
+                node_status.block_reward,
+            )
             .await
-            .map_err(|e| e.to_string())?;
-        start_mining(state.clone(), app)
-            .await
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| e.to_string())
+        {
+            Ok(cpu) => cpu,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+                state
+                    .is_getting_miner_metrics
+                    .store(false, Ordering::SeqCst);
+                return Err(e);
+            }
+        };
+
+        let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+
+        let currently_mining = cpu_mining_status.is_mining || gpu_mining_status.is_mining;
+        if currently_mining {
+            stop_mining(state.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+
+            restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+
+            start_mining(state.clone(), app)
+                .await
+                .map_err(|e| e.to_string())?;
+        } else {
+            restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+        }
     }
     Ok(())
 }
@@ -1464,29 +1494,12 @@ pub async fn start_mining<'r>(
     let tari_address = cpu_miner_config.tari_address.clone();
     let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
-    info!(target: LOG_TARGET, "getting new telemetry id");
     let mut telemetry_id = state
         .telemetry_manager
         .read()
         .await
         .get_unique_string()
         .await;
-    info!(target: LOG_TARGET, "getting new telemetry id -after {:?}", telemetry_id);
-    let mm_proxy_manager_config = state
-        .mm_proxy_manager
-        .config()
-        .await
-        .ok_or("mm proxy config could not be found")?;
-
-    info!(target:LOG_TARGET, "changed telemetry id {:?}", telemetry_id);
-    let _ = state
-        .mm_proxy_manager
-        .change_config(MergeMiningProxyConfig {
-            coinbase_extra: telemetry_id.clone(),
-            ..mm_proxy_manager_config
-        })
-        .await
-        .map_err(|e| e.to_string());
 
     if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
@@ -1599,33 +1612,22 @@ pub async fn start_mining<'r>(
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
     let _lock = state.stop_start_mutex.lock().await;
     let timer = Instant::now();
-    if state.cpu_miner.read().await.is_running().await {
-        state
-            .cpu_miner
-            .write()
-            .await
-            .stop()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    state
+        .cpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
 
-    if state.gpu_miner.read().await.is_running().await {
-        state
-            .gpu_miner
-            .write()
-            .await
-            .stop()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
+    state
+        .gpu_miner
+        .write()
+        .await
+        .stop()
+        .await
+        .map_err(|e| e.to_string())?;
 
-    if state.mm_proxy_manager.is_running().await {
-        let _ = state
-            .mm_proxy_manager
-            .stop()
-            .await
-            .map_err(|e| e.to_string());
-    }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }

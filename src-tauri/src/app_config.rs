@@ -113,7 +113,7 @@ pub struct AppConfigFromFile {
     #[serde(default = "default_false")]
     pre_release: bool,
     #[serde(default)]
-    airdrop_access_token: Option<String>,
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl Default for AppConfigFromFile {
@@ -156,7 +156,7 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
-            airdrop_access_token: None,
+            airdrop_tokens: None,
         }
     }
 }
@@ -166,6 +166,12 @@ pub enum DisplayMode {
     System,
     Dark,
     Light,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AirdropTokens {
+    pub airdrop_access_token: String,
+    pub airdrop_refresh_token: String,
 }
 
 impl DisplayMode {
@@ -269,7 +275,7 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
-    airdrop_access_token: Option<String>,
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl AppConfig {
@@ -314,7 +320,7 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
-            airdrop_access_token: None,
+            airdrop_tokens: None,
         }
     }
 
@@ -392,7 +398,7 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
-                self.airdrop_access_token = config.airdrop_access_token;
+                self.airdrop_tokens = config.airdrop_tokens;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -512,15 +518,15 @@ impl AppConfig {
         self.custom_max_gpu_usage.clone()
     }
 
-    pub fn airdrop_access_token(&self) -> Option<String> {
-        self.airdrop_access_token.clone()
+    pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
+        self.airdrop_tokens.clone()
     }
 
-    pub async fn set_airdrop_access_token(
+    pub async fn set_airdrop_tokens(
         &mut self,
-        airdrop_access_token: Option<String>,
+        airdrop_tokens: Option<AirdropTokens>,
     ) -> Result<(), anyhow::Error> {
-        self.airdrop_access_token = airdrop_access_token.clone();
+        self.airdrop_tokens = airdrop_tokens;
         self.update_config_file().await?;
         Ok(())
     }
@@ -805,7 +811,7 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
-            airdrop_access_token: self.airdrop_access_token.clone(),
+            airdrop_tokens: self.airdrop_tokens.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

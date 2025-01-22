@@ -237,7 +237,9 @@ impl TelemetryManager {
         let version = env!("CARGO_PKG_VERSION");
         // let mode = MiningMode::to_str(config.mode());
 
-        let airdrop_access_token = config.airdrop_access_token();
+        let airdrop_access_token = config
+            .airdrop_tokens()
+            .map(|tokens| tokens.airdrop_access_token);
         let id: Option<String> = airdrop_access_token
             .and_then(|token| airdrop::decode_jwt_claims(&token).map(|claim| claim.id));
 
@@ -291,7 +293,7 @@ impl TelemetryManager {
                     debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                     loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
-                        let airdrop_access_token = config_cloned.read().await.airdrop_access_token();
+                        let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.airdrop_access_token);
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network).await;
