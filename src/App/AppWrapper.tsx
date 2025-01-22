@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { initSystray } from '@app/utils';
 
 import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
 
@@ -22,7 +21,6 @@ export default function AppWrapper() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
-            await initSystray();
             await setMiningNetwork();
         }
         void initialize();
