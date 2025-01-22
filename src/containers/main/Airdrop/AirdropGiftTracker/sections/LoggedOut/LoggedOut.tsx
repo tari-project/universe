@@ -71,7 +71,7 @@ export default function LoggedOut() {
     return (
         <Wrapper>
             <ClaimButton onClick={handleClick}>
-                <Title>{t('claimGems')}</Title>
+                <Title>{t('joinAirdrop')}</Title>
 
                 <GemPill>
                     {gemsValue}
