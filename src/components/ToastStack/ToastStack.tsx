@@ -7,7 +7,7 @@ import { Inside, Wrapper } from './styles';
 
 export const ToastStack = () => {
     const { toasts } = useToastStore();
-    const { isSettingUp } = useAppStateStore();
+    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = () => {

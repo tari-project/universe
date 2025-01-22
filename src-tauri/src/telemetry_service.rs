@@ -69,7 +69,6 @@ pub enum TelemetryServiceError {
 }
 
 pub struct TelemetryService {
-    app_id: String,
     version: String,
     tx_channel: Option<Sender<TelemetryData>>,
     cancellation_token: CancellationToken,
@@ -79,13 +78,11 @@ pub struct TelemetryService {
 
 impl TelemetryService {
     pub fn new(
-        app_id: String,
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         TelemetryService {
-            app_id,
             version: "0.0.0".to_string(),
             tx_channel: None,
             cancellation_token,
@@ -109,13 +106,11 @@ impl TelemetryService {
             .await
             .telemetry_api_url
             .clone();
-        let app_id = self.app_id.clone();
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
         tokio::spawn(async move {
             let system_info = SystemInfo {
-                app_id,
                 version,
                 user_id: user,
                 os,
@@ -124,7 +119,9 @@ impl TelemetryService {
                 _ = async {
                     debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
                     while let Some(telemetry_data) = rx.recv().await {
-                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
+                        let config_guard = config_cloned.read().await;
+                        let telemetry_collection_enabled = config_guard.allow_telemetry();
+                        let app_id = config_guard.anon_id().to_string();
                         if telemetry_collection_enabled {
                             drop(retry_with_backoff(
                                 || {
@@ -132,6 +129,7 @@ impl TelemetryService {
                                         telemetry_data.clone(),
                                         telemetry_api_url.clone(),
                                         system_info.clone(),
+                                        app_id.clone(),
                                     ))
                                 },
                                 3,
@@ -178,7 +176,6 @@ impl TelemetryService {
 
 #[derive(Clone)]
 struct SystemInfo {
-    app_id: String,
     version: String,
     user_id: String,
     os: CurrentOperatingSystem,
@@ -188,6 +185,7 @@ async fn send_telemetry_data(
     data: TelemetryData,
     api_url: String,
     system_info: SystemInfo,
+    app_id: String,
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
 
@@ -210,7 +208,7 @@ async fn send_telemetry_data(
         event_value: data.event_value,
         created_at: SystemTime::now(),
         user_id: system_info.user_id,
-        app_id: system_info.app_id,
+        app_id,
         version: system_info.version,
         os: system_info.os.to_string(),
         cpu_name,

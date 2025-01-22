@@ -25,6 +25,7 @@ use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
+use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::{
     app_config::{AppConfig, MiningMode},
@@ -43,7 +44,9 @@ use serde_json::Value;
 use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
+use std::time::Instant;
 use std::{sync::Arc, thread::sleep, time::Duration};
+use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
@@ -206,6 +209,7 @@ pub struct TelemetryManager {
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
     p2pool_status: watch::Receiver<Option<P2poolStats>>,
+    process_stats_collector: ProcessStatsCollector,
 }
 
 impl TelemetryManager {
@@ -217,6 +221,7 @@ impl TelemetryManager {
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
         p2pool_status: watch::Receiver<Option<P2poolStats>>,
+        process_stats_collector: ProcessStatsCollector,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
@@ -229,6 +234,7 @@ impl TelemetryManager {
             gpu_status,
             node_status,
             p2pool_status,
+            process_stats_collector,
         }
     }
 
@@ -294,6 +300,7 @@ impl TelemetryManager {
         timeout: Duration,
         app_handle: tauri::AppHandle,
     ) -> Result<(), TelemetryManagerError> {
+        let uptime = Instant::now();
         let cpu_miner = self.cpu_miner.clone();
         let gpu_status = self.gpu_status.clone();
         let node_status = self.node_status.clone();
@@ -304,6 +311,7 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let airdrop_access_token = self.airdrop_access_token.clone();
+        let stats_collector = self.process_stats_collector.clone();
         tokio::spawn(async move {
             tokio::select! {
                 _ = async {
@@ -312,7 +320,7 @@ impl TelemetryManager {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = validate_jwt(airdrop_access_token.clone()).await;
-                            let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network).await;
+                            let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
@@ -374,12 +382,13 @@ async fn get_telemetry_data(
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
     config: &RwLock<AppConfig>,
     network: Option<Network>,
+    started: Instant,
+    stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
         randomx_network_hashrate,
         block_reward,
         block_height,
-        is_synced,
         ..
     } = node_latest_status.borrow().clone();
 
@@ -408,7 +417,7 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
-    let is_mining_active = is_synced && (cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0);
+    let is_mining_active = cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu.hash_rate);
 
     let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
@@ -438,7 +447,7 @@ async fn get_telemetry_data(
             (None, vec![])
         };
 
-    let gpu_hash_rate = Some(gpu_status.hash_rate as f64);
+    let gpu_hash_rate = Some(gpu_status.hash_rate);
 
     let gpu_utilization = if let Some(gpu_hardware_parameters) = gpu_hardware_parameters.clone() {
         let filtered_gpus = gpu_hardware_parameters
@@ -478,35 +487,7 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    // let p2pool_gpu_stats_sha3 = p2pool_stats.as_ref().map(|s| s.sha3x_stats.clone());
-    // let p2pool_cpu_stats_randomx = p2pool_stats.as_ref().map(|s| s.randomx_stats.clone());
     let p2pool_enabled = config_guard.p2pool_enabled() && p2pool_stats.is_some();
-    // let (cpu_tribe_name, cpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(randomx_stats) = p2pool_cpu_stats_randomx {
-    //         (
-    //             Some(randomx_stats.squad.name.clone()),
-    //             Some(randomx_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
-    // let (gpu_tribe_name, gpu_tribe_id) = if p2pool_enabled {
-    //     if let Some(sha3_stats) = p2pool_gpu_stats_sha3 {
-    //         (
-    //             Some(sha3_stats.squad.name.clone()),
-    //             Some(sha3_stats.squad.id.clone()),
-    //         )
-    //     } else {
-    //         (None, None)
-    //     }
-    // } else {
-    //     (None, None)
-    // };
-
     let mut extra_data = HashMap::new();
     extra_data.insert(
         "config_cpu_enabled".to_string(),
@@ -549,6 +530,60 @@ async fn get_telemetry_data(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
+    let system = System::new_all();
+    extra_data.insert(
+        "cpu_usage".to_string(),
+        system.global_cpu_usage().to_string(),
+    );
+    extra_data.insert(
+        "total_memory".to_string(),
+        system.total_memory().to_string(),
+    );
+    extra_data.insert("free_memory".to_string(), system.free_memory().to_string());
+    if let Some(core_count) = system.physical_core_count() {
+        extra_data.insert("physical_core_count".to_string(), core_count.to_string());
+    }
+    if let Some(arch) = System::cpu_arch() {
+        extra_data.insert("cpu_arch".to_string(), arch);
+    }
+    extra_data.insert(
+        "uptime".to_string(),
+        started.elapsed().as_secs().to_string(),
+    );
+
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_p2pool_stats(),
+        "p2pool",
+    );
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_cpu_miner_stats(),
+        "cpu_miner",
+    );
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_gpu_miner_stats(),
+        "gpu_miner",
+    );
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_minotari_node_stats(),
+        "node",
+    );
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_mm_proxy_stats(),
+        "mmproxy",
+    );
+    add_process_stats(&mut extra_data, stats_collector.get_tor_stats(), "tor");
+
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_wallet_stats(),
+        "wallet",
+    );
+
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
@@ -571,6 +606,47 @@ async fn get_telemetry_data(
         extra_data,
         current_os: std::env::consts::OS.to_string(),
     })
+}
+
+fn add_process_stats(
+    extra_data: &mut HashMap<String, String>,
+    process_stats: crate::process_watcher::ProcessWatcherStats,
+    process: &str,
+) {
+    extra_data.insert(
+        format!("{}_uptime_seconds", process),
+        process_stats.current_uptime.as_secs().to_string(),
+    );
+    extra_data.insert(
+        format!("{}_total_health_checks", process),
+        process_stats.total_health_checks.to_string(),
+    );
+    extra_data.insert(
+        format!("{}_num_warnings", process),
+        process_stats.num_warnings.to_string(),
+    );
+    extra_data.insert(
+        format!("{}_num_failure", process),
+        process_stats.num_failures.to_string(),
+    );
+    extra_data.insert(
+        format!("{}_num_restarts", process),
+        process_stats.num_restarts.to_string(),
+    );
+    extra_data.insert(
+        format!("{}_max_health_check_seconds", process),
+        process_stats
+            .max_health_check_duration
+            .as_secs()
+            .to_string(),
+    );
+    extra_data.insert(
+        format!("{}_total_health_check_seconds", process),
+        process_stats
+            .total_health_check_duration
+            .as_secs()
+            .to_string(),
+    );
 }
 
 async fn handle_telemetry_data(

@@ -64,7 +64,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             default:
                 return css`
                     color: ${$color
-                        ? theme.colors[$color][theme.mode == 'dark' ? 200 : 600]
+                        ? theme?.colors[$color ?? 'primary']?.[theme.mode == 'dark' ? 200 : 600]
                         : convertHexToRGBA(theme.palette.contrast, 0.7)};
                     background-color: ${$disableColour ? 'transparent' : theme.palette.action.background.default};
                     &:hover {

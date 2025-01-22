@@ -1,3 +1,4 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import {
     Wrapper,
     FriendsWrapper,
@@ -27,7 +28,7 @@ export default function Friends() {
     const shareLink = 'https://universe.tari.com';
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(shareLink).then(() => {
+        writeText(shareLink).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });

@@ -11,7 +11,7 @@ export function useGetSeedWords() {
             const seedWords = await invoke('get_seed_words');
             setSeedWords(seedWords);
 
-            if (seedWords) {
+            if (seedWords.length) {
                 return seedWords;
             }
         } catch (e) {
