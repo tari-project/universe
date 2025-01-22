@@ -305,6 +305,14 @@ export const fetchAppConfig = async () => {
     try {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
+
+        const noKeychain = appConfig.keyring_fallback || !appConfig.keyring_accessed;
+
+        if (noKeychain) {
+            const setDialogToShow = useUIStore.getState().setDialogToShow;
+            setDialogToShow('keyring');
+        }
+
         const configTheme = appConfig.display_mode?.toLowerCase();
         const canvasElement = document.getElementById('canvas');
         if (canvasElement && !appConfig.visual_mode) {
