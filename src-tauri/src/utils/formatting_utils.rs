@@ -20,13 +20,39 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod file_utils;
-pub mod formatting_utils;
-pub mod logging_utils;
-pub mod macos_utils;
-pub mod math_utils;
-pub mod platform_utils;
+pub fn format_hashrate(hashrate: f64) -> String {
+    if hashrate < 1000.0 {
+        format!("{:.2} H/s", hashrate)
+    } else if hashrate < 1_000_000.0 {
+        format!("{:.2} kH/s", hashrate / 1000.0)
+    } else if hashrate < 1_000_000_000.0 {
+        format!("{:.2} MH/s", hashrate / 1_000_000.0)
+    } else if hashrate < 1_000_000_000_000.0 {
+        format!("{:.2} GH/s", hashrate / 1_000_000_000.0)
+    } else if hashrate < 1_000_000_000_000_000.0 {
+        format!("{:.2} TH/s", hashrate / 1_000_000_000_000.0)
+    } else {
+        format!("{:.2} PH/s", hashrate / 1_000_000_000_000_000.0)
+    }
+}
 
-pub mod shutdown_utils;
-#[cfg(windows)]
-pub mod windows_setup_utils;
+pub fn format_currency(balance: f64, currency: &str) -> String {
+    if balance < 0.0 {
+        // Handle negative balances
+        return format!("-{}", format_currency(-balance, currency));
+    }
+
+    if balance < 1000.0 {
+        format!("{:.2} {}", balance, currency)
+    } else if balance < 1_000_000.0 {
+        format!("{:.2}K {}", balance / 1000.0, currency)
+    } else if balance < 1_000_000_000.0 {
+        format!("{:.2}M {}", balance / 1_000_000.0, currency)
+    } else if balance < 1_000_000_000_000.0 {
+        format!("{:.2}B {}", balance / 1_000_000_000.0, currency)
+    } else if balance < 1_000_000_000_000_000.0 {
+        format!("{:.2}T {}", balance / 1_000_000_000_000.0, currency)
+    } else {
+        format!("{:.2}Q {}", balance / 1_000_000_000_000_000.0, currency)
+    }
+}

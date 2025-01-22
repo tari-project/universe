@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use human_format::Formatter;
 use log::{error, info};
 
 use tauri::{
@@ -29,7 +28,10 @@ use tauri::{
     AppHandle, Manager, Wry,
 };
 
-use crate::utils::platform_utils::{CurrentOperatingSystem, PlatformUtils};
+use crate::utils::{
+    formatting_utils::{format_currency, format_hashrate},
+    platform_utils::{CurrentOperatingSystem, PlatformUtils},
+};
 
 const LOG_TARGET: &str = "tari::universe::systemtray_manager";
 
@@ -53,9 +55,11 @@ impl SystrayItemId {
 
     pub fn get_title(&self, value: f64) -> String {
         match self {
-            SystrayItemId::CpuHashrate => format!("CPU Power: {:.2} H/s", value),
-            SystrayItemId::GpuHashrate => format!("GPU Power: {:.2} H/s", value),
-            SystrayItemId::EstimatedEarning => format!("Est. Earning: {:.2} tXTM/Day", value),
+            SystrayItemId::CpuHashrate => format!("CPU Power: {}", format_hashrate(value)),
+            SystrayItemId::GpuHashrate => format!("GPU Power: {}", format_hashrate(value)),
+            SystrayItemId::EstimatedEarning => {
+                format!("Est. Earning: {}", format_currency(value, "tXTM/day"))
+            }
             SystrayItemId::MinimizeToggle => "Minimize/Unminimize".to_string(),
         }
     }
@@ -139,19 +143,10 @@ impl SystemTrayManager {
             CurrentOperatingSystem::Linux => "Not supported".to_string(),
             _ => {
                 format!(
-                    "CPU Power: {} H/s\nGPU Power: {} H/s\nEst. earning: {} tXTM/day",
-                    Formatter::new()
-                        .with_decimals(0)
-                        .with_separator("")
-                        .format(data.cpu_hashrate),
-                    Formatter::new()
-                        .with_decimals(0)
-                        .with_separator("")
-                        .format(data.gpu_hashrate),
-                    Formatter::new()
-                        .with_decimals(0)
-                        .with_separator("")
-                        .format(data.estimated_earning / 1_000_000.0)
+                    "CPU Power: {}\nGPU Power: {}\nEst. earning: {}",
+                    format_hashrate(data.cpu_hashrate),
+                    format_hashrate(data.gpu_hashrate),
+                    format_currency(data.estimated_earning / 1_000_000.0, "tXTM/day")
                 )
             }
         }
