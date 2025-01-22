@@ -33,7 +33,7 @@ export const Number = styled('div')`
 
     .digit-char {
         width: 3px;
-        text-align: center;
+        text-align: right;
     }
 `;
 
