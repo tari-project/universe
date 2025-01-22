@@ -696,6 +696,20 @@ pub async fn get_tor_entry_guards(
 }
 
 #[tauri::command]
+pub async fn get_airdrop_access_token(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<Option<String>, String> {
+    let timer = Instant::now();
+    let airdrop_access_token = state.config.read().await.airdrop_access_token();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_airdrop_access_token took too long: {:?}", timer.elapsed());
+    }
+    Ok(airdrop_access_token)
+}
+
+#[tauri::command]
 pub async fn get_transaction_history(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<Vec<TransactionInfo>, String> {

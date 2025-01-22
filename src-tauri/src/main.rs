@@ -1137,6 +1137,7 @@ fn main() {
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_access_token,
+            commands::get_airdrop_access_token
         ])
         .build(tauri::generate_context!())
         .inspect_err(
