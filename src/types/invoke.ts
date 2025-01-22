@@ -30,7 +30,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
-    function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
@@ -66,7 +65,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
-    function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
+    function invoke(
+        param: 'get_coinbase_transactions',
+        payload: { continuation: boolean; limit?: number }
+    ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;

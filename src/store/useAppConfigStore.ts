@@ -18,7 +18,6 @@ interface SetModeProps {
 }
 
 interface Actions {
-    fetchAppConfig: () => Promise<void>;
     setAllowTelemetry: (allowTelemetry: boolean) => Promise<void>;
     setCpuMiningEnabled: (enabled: boolean) => Promise<void>;
     setGpuMiningEnabled: (enabled: boolean) => Promise<void>;
@@ -69,31 +68,9 @@ const initialState: State = {
     pre_release: false,
 };
 
-export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
+export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
-    fetchAppConfig: async () => {
-        try {
-            const appConfig = await invoke('get_app_config');
-            set(appConfig);
-            const noKeychain = appConfig.keyring_fallback || !appConfig.keyring_accessed;
 
-            if (noKeychain) {
-                const setDialogToShow = useUIStore.getState().setDialogToShow;
-                setDialogToShow('keyring');
-            }
-            const configTheme = appConfig.display_mode?.toLowerCase();
-            const canvasElement = document.getElementById('canvas');
-            if (canvasElement && !appConfig.visual_mode) {
-                canvasElement.style.display = 'none';
-            }
-
-            if (configTheme) {
-                await getState().setTheme(configTheme as displayMode);
-            }
-        } catch (e) {
-            console.error('Could not get app config: ', e);
-        }
-    },
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
         invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
@@ -323,3 +300,31 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
         });
     },
 }));
+
+export const fetchAppConfig = async () => {
+    try {
+        const appConfig = await invoke('get_app_config');
+        useAppConfigStore.setState(appConfig);
+
+        const noKeychain = appConfig.keyring_fallback || !appConfig.keyring_accessed;
+
+        if (noKeychain) {
+            const setDialogToShow = useUIStore.getState().setDialogToShow;
+            setDialogToShow('keyring');
+        }
+
+        const configTheme = appConfig.display_mode?.toLowerCase();
+        const canvasElement = document.getElementById('canvas');
+        if (canvasElement && !appConfig.visual_mode) {
+            canvasElement.style.display = 'none';
+        }
+
+        if (configTheme) {
+            await useAppConfigStore.getState().setTheme(configTheme as displayMode);
+        }
+
+        return appConfig;
+    } catch (e) {
+        console.error('Could not get app config: ', e);
+    }
+};

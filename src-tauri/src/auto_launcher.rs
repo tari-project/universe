@@ -142,7 +142,6 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
-        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
 
         AutoLauncher::toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)?;
