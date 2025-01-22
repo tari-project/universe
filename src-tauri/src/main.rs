@@ -33,6 +33,7 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
+use systemtray_manager::SystemTrayManager;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
@@ -117,6 +118,7 @@ mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
+mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
@@ -219,6 +221,12 @@ async fn setup_inner(
             return Ok(());
         }
     }
+
+    let _unused = state
+        .systemtray_manager
+        .write()
+        .await
+        .initialize_tray(app.clone());
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
@@ -783,6 +791,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
+    systemtray_manager: Arc<RwLock<SystemTrayManager>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -900,6 +909,7 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
+        systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
