@@ -27,7 +27,6 @@ interface Actions {
     setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
     setIsSettingsOpen: (value: boolean) => void;
     fetchExternalDependencies: () => Promise<void>;
-    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
@@ -98,7 +97,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error loading missing external dependencies', error);
         }
     },
-    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
     setIssueReference: (issueReference) => set({ issueReference }),
 }));
 
@@ -114,3 +112,6 @@ export const setSetupComplete = async () => {
     }
     useAppStateStore.setState({ setupComplete: true });
 };
+
+export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
+    useAppStateStore.setState({ externalDependencies });
