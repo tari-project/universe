@@ -50,9 +50,7 @@ export default function LudicrousCofirmationDialog() {
                         <KeepButton onClick={handleChange}>
                             <span>🔥</span> {t('ludicrousConfirmationDialog.keepChanges')}
                         </KeepButton>
-                        <RevertButton onClick={handleClose}>
-                            {t('ludicrousConfirmationDialog.revertToEco')}
-                        </RevertButton>
+                        <RevertButton onClick={handleClose}>{t('ludicrousConfirmationDialog.cancel')}</RevertButton>
                     </ButtonWrapper>
                 </Wrapper>
             </DialogContent>
