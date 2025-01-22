@@ -1,3 +1,31 @@
+# 🌟 Tari Universe - Testnet v0.8.46: "Fortunes Favor, Part 2"
+
+_January 22, 2025_
+
+## 🔄 Staged Rollout
+
+- Rolling out via auto-update
+
+## 📊 What's New
+
+- Fixed p2pool restart problem to improve sync
+- Fixed sluggish wallet history performance
+- Resolved memory issues by temporarily removing system tray status
+- Fixed loading sync stalls at 0%, 30%, and 75%
+- Release notes pop-up automatically on every release
+
+## 🔜 What's Next
+
+- Restoring persistent window settings
+- Expanded GPU support, monitoring, and reporting
+- Optimizing p2pool for computers of all power levels
+
+## ⚠️ Important Notes
+
+We're aiming to beat our 70% 24-hour win rate record in the last release. For higher-power machines (above 1kH/s CPU), the win rate should be closer to 100%. Contributors are busy optimizing the lower-hash-tier miners, which represent 25% of the miner base. The Fortunes Favor series of releases will feature multiple parts as we refine and improve Tari Universe's overall performance and stability.
+
+---
+
 # 🌟 Tari Universe - Testnet v0.8.44: "Fortunes Favor, Part 1"
 
 _January 20, 2025_
