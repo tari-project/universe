@@ -22,13 +22,17 @@ export const Number = styled('div')`
 
     font-variant-numeric: tabular-nums;
 
+    span {
+        display: inline-block;
+    }
+
     .digit-num {
-        width: 10px;
-        text-align: center;
+        width: 9px;
+        text-align: right;
     }
 
     .digit-char {
-        width: 4px;
+        width: 3px;
         text-align: center;
     }
 `;
