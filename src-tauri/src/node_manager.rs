@@ -39,6 +39,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
 
@@ -67,7 +68,10 @@ impl Clone for NodeManager {
 }
 
 impl NodeManager {
-    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<BaseNodeStatus>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         // TODO: wire up to front end
         // let mut use_tor = true;
 
@@ -78,7 +82,8 @@ impl NodeManager {
         // }
 
         let adapter = MinotariNodeAdapter::new(status_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher =
+            ProcessWatcher::new(adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
         process_watcher.expected_startup_time = Duration::from_secs(120);

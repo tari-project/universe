@@ -32,6 +32,7 @@ use tokio::sync::{watch, RwLock};
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_utils;
 use crate::utils::math_utils::estimate_earning;
 use crate::{
@@ -66,9 +67,12 @@ pub(crate) struct GpuMiner {
 }
 
 impl GpuMiner {
-    pub fn new(status_broadcast: watch::Sender<GpuMinerStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<GpuMinerStatus>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         let adapter = GpuMinerAdapter::new(vec![], status_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner());
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
 

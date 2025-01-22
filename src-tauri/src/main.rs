@@ -29,6 +29,7 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
+use process_stats_collector::ProcessStatsCollectorBuilder;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
@@ -70,6 +71,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -111,6 +113,7 @@ mod p2pool_manager;
 mod port_allocator;
 mod process_adapter;
 mod process_killer;
+mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
@@ -212,10 +215,7 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            app.emit(
-                    "missing-applications",
-                    external_dependencies
-                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            *state.missing_dependencies.write().await = Some(external_dependencies);
             return Ok(());
         }
     }
@@ -763,6 +763,7 @@ struct UniverseAppState {
     is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
+    missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
@@ -818,16 +819,18 @@ fn main() {
 
     let shutdown = Shutdown::new();
 
+    let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let node_manager = NodeManager::new(base_node_watch_tx);
+    let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_watch_tx, wallet_watch_rx) = watch::channel::<Option<WalletBalance>>(None);
-    let wallet_manager = WalletManager::new(node_manager.clone(), wallet_watch_tx);
+    let wallet_manager =
+        WalletManager::new(node_manager.clone(), wallet_watch_tx, &mut stats_collector);
     let wallet_manager2 = wallet_manager.clone();
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let p2pool_manager = P2poolManager::new(p2pool_stats_tx);
+    let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -843,11 +846,14 @@ fn main() {
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(gpu_status_tx).into());
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector).into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> =
+        Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
+    let tor_manager = TorManager::new(&mut stats_collector);
+    let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner.clone(),
@@ -857,13 +863,13 @@ fn main() {
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
+        stats_collector.build(),
     );
     let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
-    let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
@@ -873,6 +879,7 @@ fn main() {
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
+        missing_dependencies: Arc::new(RwLock::new(None)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
@@ -889,13 +896,14 @@ fn main() {
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
-        tor_manager: TorManager::new(),
+        tor_manager,
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(tauri_plugin_os::init())
@@ -1087,13 +1095,22 @@ fn main() {
                 let app_handle = w.app_handle();
                 let state = app_handle.state::<UniverseAppState>().clone();
                 let setup_complete_clone = state.is_setup_finished.read().await;
-                let value = *setup_complete_clone;
+                let missing_dependencies = state.missing_dependencies.read().await;
+                let setup_complete_value = *setup_complete_clone;
 
                 let prog = ProgressTracker::new(app_handle.clone(), None);
                 prog.send_last_action("".to_string()).await;
 
                 time::sleep(Duration::from_secs(3)).await;
-                app_handle.clone().emit("app_ready", SetupPayload { setup_complete:value }).expect("Could not emit event 'app_ready'");
+                app_handle.clone().emit("app_ready", SetupPayload { setup_complete: setup_complete_value }).expect("Could not emit event 'app_ready'");
+
+
+                let has_missing = missing_dependencies.is_some();
+                let external_dependencies = missing_dependencies.clone();
+                if has_missing {
+                    app_handle.clone().emit("missing-applications", external_dependencies).expect("Could not emit event 'missing-applications");
+                }
+
             });
         })
         .invoke_handler(tauri::generate_handler![
