@@ -207,7 +207,6 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        console.log({ airdropTokens });
         await invoke('set_airdrop_tokens', {
             airdropTokens: { token: airdropTokens.token, refresh_token: airdropTokens.refreshToken },
         });

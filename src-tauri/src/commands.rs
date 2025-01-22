@@ -1416,7 +1416,6 @@ pub async fn set_airdrop_tokens<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "Saving new airdrop_access_token {:?}", airdrop_tokens);
     let old_tokens = state.config.clone().read().await.airdrop_tokens();
     let old_id = old_tokens.clone().and_then(|tokens| {
         airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
@@ -1424,7 +1423,9 @@ pub async fn set_airdrop_tokens<'r>(
     let new_id = airdrop_tokens.clone().and_then(|tokens| {
         airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
-    info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} oldTokens:{:?} newTokens {:?} is equal {:?}", new_id, old_id, old_tokens, airdrop_tokens,old_id != new_id);
+
+    // info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} oldTokens:{:?} newTokens {:?} is equal {:?}", new_id, old_id, old_tokens, airdrop_tokens,old_id != new_id);
+    info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} is equal {:?}", new_id, old_id, old_id != new_id);
 
     let user_id_changed = old_id != new_id;
 

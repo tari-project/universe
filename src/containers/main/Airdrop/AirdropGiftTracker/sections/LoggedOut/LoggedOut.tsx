@@ -15,7 +15,6 @@ export default function LoggedOut() {
     const handleAuth = useCallback(
         (code?: string) => {
             const token = uuidv4();
-            console.log('handleAuth', backendInMemoryConfig);
             if (backendInMemoryConfig?.airdropUrl) {
                 setAuthUuid(token);
                 open(

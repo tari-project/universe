@@ -10,9 +10,7 @@ const LOG_TARGET: &str = "tari::universe::mining_operations";
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    info!(target:LOG_TARGET, "acquiring stop_mining lock");
     let _lock = state.stop_start_mutex.lock().await;
-    info!(target:LOG_TARGET, "acquired stop_mining lock");
     let timer = Instant::now();
     state
         .cpu_miner

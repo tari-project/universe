@@ -125,11 +125,8 @@ impl CpuMiner {
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
-        info!(target:LOG_TARGET, "cpu miner acquiring lock to stop");
         let mut lock = self.watcher.write().await;
-        info!(target:LOG_TARGET, "cpu miner acquired lock to stop");
         lock.stop().await?;
-        info!(target:LOG_TARGET, "cpu miner acquired lock actually stopped");
         Ok(())
     }
 
