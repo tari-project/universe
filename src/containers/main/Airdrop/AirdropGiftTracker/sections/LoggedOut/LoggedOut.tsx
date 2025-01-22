@@ -15,6 +15,7 @@ export default function LoggedOut() {
     const handleAuth = useCallback(
         (code?: string) => {
             const token = uuidv4();
+            console.log('handleAuth', backendInMemoryConfig);
             if (backendInMemoryConfig?.airdropUrl) {
                 setAuthUuid(token);
                 open(
@@ -27,8 +28,6 @@ export default function LoggedOut() {
     );
 
     useEffect(() => {
-        console.log({ authUuid, airdropApiUrl: backendInMemoryConfig?.airdropApiUrl });
-
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {

@@ -229,12 +229,20 @@ export const fetchBackendInMemoryConfig = async () => {
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-        const airdropTokens = await invoke('get_airdrop_tokens');
-        useAirdropStore.setState({
+        const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
+        const newState = {
             ...currentState,
             backendInMemoryConfig,
-            airdropTokens: { ...airdropTokens, expiresAt: parseJwt(airdropTokens.token).exp },
-        });
+        };
+
+        if (airdropTokens?.token) {
+            newState.airdropTokens = {
+                ...airdropTokens,
+                expiresAt: parseJwt(airdropTokens.token).exp,
+            };
+        }
+
+        useAirdropStore.setState(newState);
     } catch (e) {
         console.error('get_app_in_memory_config error:', e);
     }
