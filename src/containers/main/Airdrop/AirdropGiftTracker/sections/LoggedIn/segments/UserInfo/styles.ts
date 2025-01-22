@@ -14,8 +14,7 @@ export const Wrapper = styled('div')`
     width: 100%;
 `;
 
-export const Avatar = styled('div')<{ $image?: string }>`
-    background-image: url(${({ $image }) => $image});
+export const Avatar = styled('div')`
     background-size: cover;
     background-position: center;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
