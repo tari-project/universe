@@ -37,7 +37,7 @@ interface StyleObject {
     backgroundPosition?: string;
 }
 
-export function useAvatarGradient({ username, fallback = 'rgb(200, 200, 200)', image }: GradientOptions): StyleObject {
+export function useAvatarGradient({ username, fallback = 'rgb(0, 0, 0, 0.15)', image }: GradientOptions): StyleObject {
     return useMemo(() => {
         if (image)
             return {
