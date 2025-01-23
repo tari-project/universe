@@ -5,7 +5,7 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const transactions = useWalletStore((s) => s.transactions);
+    const transactions = useWalletStore((s) => s.coinbase_transactions);
 
     const getMissedEarnings = useCallback(() => {
         if (recapIds.length && transactions.length) {

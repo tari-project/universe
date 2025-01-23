@@ -36,6 +36,7 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
+use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
@@ -114,10 +115,10 @@ pub struct TariWalletDetails {
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
-    is_synced: bool,
     is_connected: bool,
     connected_peers: Vec<String>,
 }
+
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerStatus {
     pub is_mining: bool,
@@ -402,17 +403,9 @@ pub async fn get_miner_metrics(
         randomx_network_hashrate,
         block_height,
         block_time,
-        is_synced,
         block_reward,
+        ..
     } = node_status;
-    // let (sha_hash_rate, randomx_hash_rate, block_reward, block_height, block_time, is_synced) = state.node_manager
-    //     .get_network_hash_rate_and_block_reward().await
-    //     .unwrap_or_else(|e| {
-    //         if !matches!(e, NodeManagerError::NodeNotStarted) {
-    //             warn!(target: LOG_TARGET, "Error getting network hash rate and block reward: {}", e);
-    //         }
-    //         (0, 0, MicroMinotari(0), 0, 0, false)
-    //     });
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -431,7 +424,12 @@ pub async fn get_miner_metrics(
     };
     drop(cpu_miner);
 
+    let gpu_miner = state.gpu_miner.read().await;
     let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+    let gpu_mining_status = gpu_miner
+        .status(sha_network_hashrate, block_reward, gpu_mining_status)
+        .await
+        .unwrap_or_default();
 
     let gpu_public_parameters = HardwareStatusMonitor::current()
         .get_gpu_devices_public_properties()
@@ -448,6 +446,19 @@ pub async fn get_miner_metrics(
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
 
+    let new_systemtray_data = SystemTrayData {
+        cpu_hashrate: cpu_mining_status.hash_rate,
+        gpu_hashrate: gpu_mining_status.hash_rate,
+        estimated_earning: (cpu_mining_status.estimated_earnings
+            + gpu_mining_status.estimated_earnings) as f64,
+    };
+
+    state
+        .systemtray_manager
+        .write()
+        .await
+        .update_tray(new_systemtray_data);
+
     let metrics_ret = MinerMetrics {
         sha_network_hash_rate: sha_network_hashrate,
         randomx_network_hash_rate: randomx_network_hashrate,
@@ -462,7 +473,6 @@ pub async fn get_miner_metrics(
         base_node: BaseNodeStatus {
             block_height,
             block_time,
-            is_synced,
             is_connected: !connected_peers.is_empty(),
             connected_peers,
         },
@@ -710,8 +720,10 @@ pub async fn get_airdrop_tokens(
 }
 
 #[tauri::command]
-pub async fn get_transaction_history(
+pub async fn get_coinbase_transactions(
     state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
     if state.is_getting_transaction_history.load(Ordering::SeqCst) {
@@ -723,7 +735,7 @@ pub async fn get_transaction_history(
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
-        .get_transaction_history()
+        .get_coinbase_transactions(continuation, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
@@ -733,7 +745,7 @@ pub async fn get_transaction_history(
         });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transaction_history took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_coinbase_transactions took too long: {:?}", timer.elapsed());
     }
 
     state

@@ -32,6 +32,7 @@ use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
@@ -82,9 +83,10 @@ impl Clone for MmProxyManager {
 }
 
 impl MmProxyManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
-        let mut process_watcher = ProcessWatcher::new(sidecar_adapter);
+        let mut process_watcher =
+            ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
 

@@ -33,6 +33,7 @@ use tokio::time::sleep;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -109,10 +110,13 @@ pub struct P2poolManager {
 }
 
 impl P2poolManager {
-    pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
+    pub fn new(
+        stats_broadcast: watch::Sender<Option<P2poolStats>>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter);
-        process_watcher.expected_startup_time = Duration::from_secs(30);
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool());
+        process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

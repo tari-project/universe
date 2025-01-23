@@ -29,9 +29,11 @@ use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
+use process_stats_collector::ProcessStatsCollectorBuilder;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
+use systemtray_manager::SystemTrayManager;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
@@ -70,6 +72,7 @@ use crate::cpu_miner::CpuMiner;
 use crate::commands::{CpuMinerConnection, MinerMetrics};
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -113,9 +116,11 @@ mod p2pool_manager;
 mod port_allocator;
 mod process_adapter;
 mod process_killer;
+mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
+mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
@@ -214,13 +219,16 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            app.emit(
-                    "missing-applications",
-                    external_dependencies
-                ).inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'missing-applications': {:?}", e))?;
+            *state.missing_dependencies.write().await = Some(external_dependencies);
             return Ok(());
         }
     }
+
+    let _unused = state
+        .systemtray_manager
+        .write()
+        .await
+        .initialize_tray(app.clone());
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
@@ -701,7 +709,7 @@ async fn setup_inner(
     let w_move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = w_move_handle.state::<UniverseAppState>().clone();
-        let mut interval = time::interval(Duration::from_secs(10));
+        let mut interval = time::interval(Duration::from_secs(5));
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         loop {
@@ -754,24 +762,6 @@ async fn setup_inner(
     Ok(())
 }
 
-async fn listen_to_frontend_ready(app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-    let app_handle = app.clone();
-    app_handle.once("frontend_ready", move |_event| {
-        info!(target: LOG_TARGET, "Frontend is ready");
-        let app_clone: tauri::AppHandle = app.clone();
-        tauri::async_runtime::spawn(async move {
-            time::sleep(Duration::from_secs(3)).await;
-            app_clone
-                .get_webview_window("main")
-                .expect("Could not get main window")
-                .emit("app_ready", ())
-                .expect("Could not emit event 'app_ready'");
-        });
-    });
-
-    Ok(())
-}
-
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
@@ -783,6 +773,7 @@ struct UniverseAppState {
     is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
+    missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
@@ -801,6 +792,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
+    systemtray_manager: Arc<RwLock<SystemTrayManager>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -812,6 +804,11 @@ struct Payload {
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct FEPayload {
     token: Option<String>,
+}
+
+#[derive(Clone, serde::Serialize)]
+struct SetupPayload {
+    setup_complete: bool,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -832,16 +829,18 @@ fn main() {
 
     let shutdown = Shutdown::new();
 
+    let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let node_manager = NodeManager::new(base_node_watch_tx);
+    let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_watch_tx, wallet_watch_rx) = watch::channel::<Option<WalletBalance>>(None);
-    let wallet_manager = WalletManager::new(node_manager.clone(), wallet_watch_tx);
+    let wallet_manager =
+        WalletManager::new(node_manager.clone(), wallet_watch_tx, &mut stats_collector);
     let wallet_manager2 = wallet_manager.clone();
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
-    let p2pool_manager = P2poolManager::new(p2pool_stats_tx);
+    let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -857,11 +856,14 @@ fn main() {
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new().into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(GpuMiner::new(gpu_status_tx).into());
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector).into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> =
+        Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
+    let tor_manager = TorManager::new(&mut stats_collector);
+    let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner.clone(),
@@ -871,17 +873,13 @@ fn main() {
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
+        stats_collector.build(),
     );
-    let telemetry_service = TelemetryService::new(
-        app_config_raw.anon_id().to_string(),
-        app_config.clone(),
-        app_in_memory_config.clone(),
-    );
+    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
-    let mm_proxy_manager = MmProxyManager::new();
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
@@ -891,6 +889,7 @@ fn main() {
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
+        missing_dependencies: Arc::new(RwLock::new(None)),
         is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
@@ -906,15 +905,15 @@ fn main() {
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
-        tor_manager: TorManager::new(),
+        tor_manager,
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
+        systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
     };
-
-    let app_state2 = app_state.clone();
-
+    let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(tauri_plugin_os::init())
@@ -956,7 +955,7 @@ fn main() {
             log4rs::init_raw_config(config).expect("Could not initialize logging");
 
             // Do this after logging has started otherwise we can't actually see any errors
-            app.manage(app_state2);
+            app.manage(app_state_clone);
             match app.cli().matches() {
                 Ok(matches) => {
                     if let Some(backup_path) = matches.args.get("import-backup") {
@@ -986,7 +985,7 @@ fn main() {
                    return Err(Box::new(e));
                 }
             };
-     // The start of needed restart operations. Break this out into a module if we need n+1
+            // The start of needed restart operations. Break this out into a module if we need n+1
             let tcp_tor_toggled_file = config_path.join("tcp_tor_toggled");
             if tcp_tor_toggled_file.exists() {
                 let network = Network::default().as_key_str();
@@ -1079,6 +1078,31 @@ fn main() {
                 }
             }
         })
+        .on_page_load(|webview, _ | {
+            info!(target: LOG_TARGET, "Frontend is ready");
+            let w = webview.clone();
+            tauri::async_runtime::spawn(async move {
+                let app_handle = w.app_handle();
+                let state = app_handle.state::<UniverseAppState>().clone();
+                let setup_complete_clone = state.is_setup_finished.read().await;
+                let missing_dependencies = state.missing_dependencies.read().await;
+                let setup_complete_value = *setup_complete_clone;
+
+                let prog = ProgressTracker::new(app_handle.clone(), None);
+                prog.send_last_action("".to_string()).await;
+
+                time::sleep(Duration::from_secs(3)).await;
+                app_handle.clone().emit("app_ready", SetupPayload { setup_complete: setup_complete_value }).expect("Could not emit event 'app_ready'");
+
+
+                let has_missing = missing_dependencies.is_some();
+                let external_dependencies = missing_dependencies.clone();
+                if has_missing {
+                    app_handle.clone().emit("missing-applications", external_dependencies).expect("Could not emit event 'missing-applications");
+                }
+
+            });
+        })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,
             commands::download_and_start_installer,
@@ -1098,7 +1122,7 @@ fn main() {
             commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
-            commands::get_transaction_history,
+            commands::get_coinbase_transactions,
             commands::import_seed_words,
             commands::log_web_message,
             commands::open_log_dir,
@@ -1151,16 +1175,14 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
-            info!(target: LOG_TARGET, "App is ready");
-            let a = app_handle.clone();
-            let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn( async move  {
-                let state = app_handle_clone.state::<UniverseAppState>().clone();
-                let _unused = listen_to_frontend_ready(app_handle_clone.clone()).await;
-                let _res = setup_inner(state, a.clone()).await
+            info!(target: LOG_TARGET, "RunEvent Ready");
+            let handle_clone = app_handle.clone();
+            tauri::async_runtime::spawn(async move {
+                let state = handle_clone.state::<UniverseAppState>().clone();
+                let _res = setup_inner(state, handle_clone.clone())
+                    .await
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }

@@ -22,6 +22,7 @@
 
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
@@ -61,12 +62,13 @@ impl WalletManager {
     pub fn new(
         node_manager: NodeManager,
         wallet_watch_tx: watch::Sender<Option<WalletBalance>>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
         let adapter = WalletAdapter::new(use_tor, wallet_watch_tx);
-        let process_watcher = ProcessWatcher::new(adapter);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -120,15 +122,17 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
-    pub async fn get_transaction_history(
+    pub async fn get_coinbase_transactions(
         &self,
+        continuation: bool,
+        limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_transaction_history()
+            .get_coinbase_transactions(continuation, limit)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,

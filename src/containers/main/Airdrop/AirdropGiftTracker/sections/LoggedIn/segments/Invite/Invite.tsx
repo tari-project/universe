@@ -1,3 +1,4 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Wrapper, InviteButton, Image, TextWrapper, Title, Text, GemPill, Copied } from './styles';
 import gemImage from '../../../../images/gem.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
@@ -19,7 +20,7 @@ export default function Invite() {
 
     const handleCopy = () => {
         setCopied(true);
-        navigator.clipboard.writeText(url);
+        writeText(url);
     };
 
     useEffect(() => {
