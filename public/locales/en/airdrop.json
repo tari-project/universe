@@ -1,5 +1,5 @@
 {
-  "airdropGame": "Testnet Rewards",
+  "airdropGame": "Join Airdrop, Invite Friends, Win Gems",
   "bonus-gems-earned": "Bonus gems earned",
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
@@ -32,7 +32,7 @@
   },
   "referral": "Invite a friend",
   "topTooltipText": "Get a Tari Airdrop by collecting gems. The more gems you earn, the larger your airdrop.",
-  "topTooltipTitle": "Testnet Rewards",
+  "topTooltipTitle": "Join Airdrop, Invite Friends, Win Gems",
   "unclaimedGems": "Unclaimed Gems",
   "you-reached-your-giftinh-goal": "You reached your gifting goal!",
   "your-friend-accepted-gift": "One of your friends accepted your gift!",
@@ -40,5 +40,6 @@
   "setupLoginText": "Earn more gems through mining on testnet. The more gems you earn, the bigger your airdrop reward will be.",
   "setupInviteTitle": "WANT MORE GEMS? INVITE FRIENDS!",
   "setupInviteText": "Earn <strong>{{gems}} gems</strong> for every friend you invite (and get mining)",
-  "setupCopyButton": "Copy"
+  "setupCopyButton": "Copy",
+  "joinAirdrop": "LOG IN / SIGN UP"
 }
