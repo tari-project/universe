@@ -20,18 +20,18 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::airdrop::restart_mm_proxy_with_new_telemetry_id;
 use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::commands_internal::restart_mm_proxy_with_new_telemetry_id;
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
-use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
+use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -41,7 +41,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{airdrop, mining_operations, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, commands_internal, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -1475,7 +1475,7 @@ pub async fn set_airdrop_tokens<'r>(
         };
 
         if currently_mining {
-            mining_operations::stop_mining(state.clone())
+            commands_internal::stop_mining(state.clone())
                 .await
                 .map_err(|e| e.to_string())?;
             info!(target: LOG_TARGET, "Stopped mining....");
@@ -1483,7 +1483,7 @@ pub async fn set_airdrop_tokens<'r>(
             restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
             info!(target: LOG_TARGET, "restarted  mining proxy....");
 
-            mining_operations::start_mining(state.clone(), app.clone())
+            commands_internal::start_mining(state.clone(), app.clone())
                 .await
                 .map_err(|e| e.to_string())?;
             info!(target: LOG_TARGET, "Started mining....");
@@ -1502,12 +1502,12 @@ pub async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    mining_operations::start_mining(state, app).await
+    commands_internal::start_mining(state, app).await
 }
 
 #[tauri::command]
 pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
-    mining_operations::stop_mining(state).await
+    commands_internal::stop_mining(state).await
 }
 
 #[tauri::command]
