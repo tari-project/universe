@@ -224,7 +224,21 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     const currentState = useAirdropStore.getState();
+
+    // Checks for old persisted tokens
+    const existingTokensStore = localStorage.getItem('airdrop-store');
+    let existingTokens: AirdropTokens | undefined = undefined;
+    if (existingTokensStore) {
+        try {
+            existingTokens = (JSON.parse(existingTokensStore).state as AirdropState).airdropTokens;
+        } catch (e) {
+            console.error('Failed to parse existing tokens:', e);
+        }
+    }
+    ////////////////////////////
+
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
@@ -238,6 +252,22 @@ export const fetchBackendInMemoryConfig = async () => {
                 ...airdropTokens,
                 expiresAt: parseJwt(airdropTokens.token).exp,
             };
+        } else if (existingTokens?.token) {
+            try {
+                await invoke('set_airdrop_tokens', {
+                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
+                });
+
+                newState.airdropTokens = {
+                    ...existingTokens,
+                    expiresAt: parseJwt(existingTokens.token).exp,
+                };
+
+                // Remove old tokens
+                localStorage.removeItem('airdrop-store');
+            } catch (e) {
+                console.error('get_app_in_memory_config error:', e);
+            }
         }
 
         useAirdropStore.setState(newState);
