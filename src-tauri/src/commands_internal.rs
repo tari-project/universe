@@ -38,6 +38,7 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
     Ok(())
 }
 
+#[allow(clippy::too_many_lines)]
 pub async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -174,19 +175,19 @@ pub async fn start_mining<'r>(
 pub async fn restart_mm_proxy_with_new_telemetry_id(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "Restarting mm_proxy");
     let telemetry_id = state
         .telemetry_manager
         .read()
         .await
         .get_unique_string()
         .await;
-    info!(target: LOG_TARGET, "getting new telemetry id -after {:?}", telemetry_id);
     let mm_proxy_manager_config = state
         .mm_proxy_manager
         .config()
         .await
         .ok_or("mm proxy config could not be found")?;
-    let _ = state
+    let _unused = state
         .mm_proxy_manager
         .change_config(MergeMiningProxyConfig {
             coinbase_extra: telemetry_id.clone(),
@@ -194,5 +195,6 @@ pub async fn restart_mm_proxy_with_new_telemetry_id(
         })
         .await
         .map_err(|e| e.to_string());
+    info!(target: LOG_TARGET, "mm_proxy restarted");
     Ok(())
 }

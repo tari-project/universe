@@ -1436,9 +1436,6 @@ pub async fn set_airdrop_tokens<'r>(
         airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
 
-    // info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} oldTokens:{:?} newTokens {:?} is equal {:?}", new_id, old_id, old_tokens, airdrop_tokens,old_id != new_id);
-    info!(target: LOG_TARGET, "Saving newId {:?} oldId {:?} is equal {:?}", new_id, old_id, old_id != new_id);
-
     let user_id_changed = old_id != new_id;
 
     let mut app_config_lock = state.config.write().await;
@@ -1448,6 +1445,7 @@ pub async fn set_airdrop_tokens<'r>(
         .map_err(|e| e.to_string())?;
     drop(app_config_lock);
 
+    info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
             let node_status = state.base_node_latest_status.borrow().clone();
@@ -1470,7 +1468,6 @@ pub async fn set_airdrop_tokens<'r>(
                 }
             };
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-            info!(target: LOG_TARGET, "Saving  gpu mining:{:?} cpu mining {:?} mining {:?}", gpu_mining_status, cpu_mining_status,  cpu_mining_status.is_mining || gpu_mining_status.is_mining);
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
 
@@ -1478,19 +1475,14 @@ pub async fn set_airdrop_tokens<'r>(
             commands_internal::stop_mining(state.clone())
                 .await
                 .map_err(|e| e.to_string())?;
-            info!(target: LOG_TARGET, "Stopped mining....");
 
             restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-            info!(target: LOG_TARGET, "restarted  mining proxy....");
 
             commands_internal::start_mining(state.clone(), app.clone())
                 .await
                 .map_err(|e| e.to_string())?;
-            info!(target: LOG_TARGET, "Started mining....");
         } else {
-            info!(target: LOG_TARGET, "restarted  mining proxy....");
             restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
-            info!(target: LOG_TARGET, "restarted  mining proxy....");
         }
     }
     Ok(())
