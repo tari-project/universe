@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AppConfig, GpuThreads};
+use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
@@ -40,7 +40,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
-use crate::{node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -702,6 +702,20 @@ pub async fn get_tor_entry_guards(
         warn!(target: LOG_TARGET, "get_tor_entry_guards took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+pub async fn get_airdrop_tokens(
+    _window: tauri::Window,
+    state: tauri::State<'_, UniverseAppState>,
+    _app: tauri::AppHandle,
+) -> Result<Option<AirdropTokens>, String> {
+    let timer = Instant::now();
+    let airdrop_access_token = state.config.read().await.airdrop_tokens();
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
+    }
+    Ok(airdrop_access_token)
 }
 
 #[tauri::command]
@@ -1420,6 +1434,73 @@ pub async fn set_visual_mode<'r>(
 
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
+pub async fn set_airdrop_tokens<'r>(
+    airdrop_tokens: Option<AirdropTokens>,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let old_tokens = state.config.clone().read().await.airdrop_tokens();
+    let old_id = old_tokens.clone().and_then(|tokens| {
+        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
+    });
+    let new_id = airdrop_tokens.clone().and_then(|tokens| {
+        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
+    });
+
+    let user_id_changed = old_id != new_id;
+
+    let mut app_config_lock = state.config.write().await;
+    app_config_lock
+        .set_airdrop_tokens(airdrop_tokens)
+        .await
+        .map_err(|e| e.to_string())?;
+    drop(app_config_lock);
+
+    info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
+    if user_id_changed {
+        let currently_mining = {
+            let node_status = state.base_node_latest_status.borrow().clone();
+            let cpu_miner = state.cpu_miner.read().await;
+            let cpu_mining_status = match cpu_miner
+                .status(
+                    node_status.randomx_network_hashrate,
+                    node_status.block_reward,
+                )
+                .await
+                .map_err(|e| e.to_string())
+            {
+                Ok(cpu) => cpu,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
+                    state
+                        .is_getting_miner_metrics
+                        .store(false, Ordering::SeqCst);
+                    return Err(e);
+                }
+            };
+            let gpu_mining_status = state.gpu_latest_status.borrow().clone();
+            cpu_mining_status.is_mining || gpu_mining_status.is_mining
+        };
+
+        if currently_mining {
+            stop_mining(state.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+
+            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+
+            start_mining(state.clone(), app.clone())
+                .await
+                .map_err(|e| e.to_string())?;
+        } else {
+            airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
+        }
+    }
+    Ok(())
+}
+
+#[allow(clippy::too_many_lines)]
+#[tauri::command]
 pub async fn start_mining<'r>(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -1432,6 +1513,8 @@ pub async fn start_mining<'r>(
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
     let custom_gpu_usage = config.custom_gpu_usage();
+    let cpu_miner_running = state.cpu_miner.read().await.is_running().await;
+    let gpu_miner_running = state.gpu_miner.read().await.is_running().await;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let tari_address = cpu_miner_config.tari_address.clone();
@@ -1443,7 +1526,8 @@ pub async fn start_mining<'r>(
         .await
         .get_unique_string()
         .await;
-    if cpu_mining_enabled {
+
+    if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
             .mm_proxy_manager
             .get_monero_port()
@@ -1488,7 +1572,7 @@ pub async fn start_mining<'r>(
     let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
     info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
-    if gpu_mining_enabled && gpu_available {
+    if gpu_mining_enabled && gpu_available && !gpu_miner_running {
         info!(target: LOG_TARGET, "1. Starting gpu miner");
         // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         // let p2pool_enabled = state.config.read().await.p2pool_enabled();
@@ -1561,6 +1645,7 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
         .stop()
         .await
         .map_err(|e| e.to_string())?;
+    info!(target:LOG_TARGET, "cpu miner stopped");
 
     state
         .gpu_miner
@@ -1569,6 +1654,8 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
         .stop()
         .await
         .map_err(|e| e.to_string())?;
+    info!(target:LOG_TARGET, "gpu miner stopped");
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
     }

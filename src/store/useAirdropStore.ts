@@ -1,8 +1,5 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
-import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
-import { useMiningStore } from './useMiningStore';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -166,69 +163,114 @@ const clearState: Partial<AirdropState> = {
     miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
+    referralQuestPoints: undefined,
+    bonusTiers: undefined,
+    flareAnimationType: undefined,
+    seenPermissions: false,
 };
 
-export const useAirdropStore = create<AirdropStore>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
-            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
-            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
-            setUserDetails: (userDetails) => set({ userDetails }),
-            setAuthUuid: (authUuid) => set({ authUuid }),
-            setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
-            setUserGems: (userGems: number) =>
-                set((state) => {
-                    const userPointsFormatted = {
-                        ...state.userPoints,
-                        base: { ...state.userPoints?.base, gems: userGems },
-                    } as UserPoints;
+export const useAirdropStore = create<AirdropStore>()((set) => ({
+    ...initialState,
+    setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
+    setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+    setBonusTiers: (bonusTiers) => set({ bonusTiers }),
+    setUserDetails: (userDetails) => set({ userDetails }),
+    setAuthUuid: (authUuid) => set({ authUuid }),
+    setReferralCount: (referralCount) => set({ referralCount }),
+    setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
+    setUserGems: (userGems: number) =>
+        set((state) => {
+            const userPointsFormatted = {
+                ...state.userPoints,
+                base: { ...state.userPoints?.base, gems: userGems },
+            } as UserPoints;
 
-                    return {
-                        userPoints: userPointsFormatted,
-                    };
-                }),
-            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-            logout: async () => {
-                set(clearState);
-                await useMiningStore.getState().restartMining();
-            },
+            return {
+                userPoints: userPointsFormatted,
+            };
         }),
-        {
-            name: 'airdrop-store',
-            partialize: (s) => ({
-                airdropTokens: s.airdropTokens,
-                miningRewardPoints: s.miningRewardPoints,
-                referralQuestPoints: s.referralQuestPoints,
-            }),
-        }
-    )
-);
+    setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+    logout: async () => {
+        await setAirdropTokens(undefined);
+    },
+}));
 
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
-    const currentWindow = getCurrentWindow();
+    const currentState = useAirdropStore.getState();
     if (airdropTokens) {
-        await currentWindow?.emit('airdrop_token', { token: airdropTokens.token });
         useAirdropStore.setState({
             syncedWithBackend: true,
             airdropTokens: {
+                ...currentState,
                 ...airdropTokens,
                 expiresAt: parseJwt(airdropTokens.token).exp,
             },
         });
+
+        await invoke('set_airdrop_tokens', {
+            airdropTokens: { token: airdropTokens.token, refresh_token: airdropTokens.refreshToken },
+        });
     } else {
         // User not connected
-        useAirdropStore.setState({ syncedWithBackend: true });
+        const clearedState = { ...currentState, ...clearState, syncedWithBackend: true, airdropTokens: undefined };
+        useAirdropStore.setState(clearedState);
+        try {
+            await invoke('set_airdrop_tokens', { airdropTokens: undefined });
+        } catch (e) {
+            console.error('Error clearing airdrop access token:', e);
+        }
     }
 };
 
 export const fetchBackendInMemoryConfig = async () => {
+    const currentState = useAirdropStore.getState();
+
+    // Checks for old persisted tokens
+    const existingTokensStore = localStorage.getItem('airdrop-store');
+    let existingTokens: AirdropTokens | undefined = undefined;
+    if (existingTokensStore) {
+        try {
+            existingTokens = (JSON.parse(existingTokensStore).state as AirdropState).airdropTokens;
+        } catch (e) {
+            console.error('Failed to parse existing tokens:', e);
+        }
+    }
+    ////////////////////////////
+
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-        useAirdropStore.setState({ backendInMemoryConfig });
+        const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
+        const newState = {
+            ...currentState,
+            backendInMemoryConfig,
+        };
+
+        if (airdropTokens?.token) {
+            newState.airdropTokens = {
+                ...airdropTokens,
+                expiresAt: parseJwt(airdropTokens.token).exp,
+            };
+        } else if (existingTokens?.token) {
+            try {
+                await invoke('set_airdrop_tokens', {
+                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
+                });
+
+                newState.airdropTokens = {
+                    ...existingTokens,
+                    expiresAt: parseJwt(existingTokens.token).exp,
+                };
+
+                // Remove old tokens
+                localStorage.removeItem('airdrop-store');
+            } catch (e) {
+                console.error('get_app_in_memory_config error:', e);
+            }
+        }
+
+        useAirdropStore.setState(newState);
     } catch (e) {
         console.error('get_app_in_memory_config error:', e);
     }

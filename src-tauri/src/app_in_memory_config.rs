@@ -42,7 +42,6 @@ const TELEMETRY_API_URL: &str =
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
-    pub airdrop_access_token: Option<String>,
     pub telemetry_api_url: String,
 }
 
@@ -67,7 +66,6 @@ impl Default for AppInMemoryConfig {
         AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
-            airdrop_access_token: None,
             telemetry_api_url: "https://ut.tari.com/push".into(),
         }
     }
@@ -112,7 +110,6 @@ impl AppInMemoryConfig {
         return AppInMemoryConfig {
             airdrop_url: AIRDROP_BASE_URL.into(),
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
-            airdrop_access_token: None,
             telemetry_api_url: TELEMETRY_API_URL.into(),
         };
 
@@ -120,7 +117,6 @@ impl AppInMemoryConfig {
         return AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
-            airdrop_access_token: None,
             telemetry_api_url: "http://localhost:3004".into(),
         };
 
