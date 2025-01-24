@@ -12,7 +12,7 @@ export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: A
         }),
     });
     if (!response.ok) {
-        // throw new Error('Failed to refresh token');
+        console.error('Fetching airdrop tokens was not successful');
         return undefined;
     }
 
