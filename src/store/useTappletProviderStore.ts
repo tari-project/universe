@@ -13,6 +13,7 @@ interface State {
 
 //TODO do we need tapp provider id at all?
 interface Actions {
+    initTappletProvider: () => Promise<void>;
     setTappletProvider: (id: string, launchedTapplet: ActiveTapplet) => Promise<void>;
     runTransaction: (event: MessageEvent<TransactionEvent>) => Promise<void>;
 }
@@ -26,6 +27,21 @@ const initialState: State = {
 
 export const useTappletProviderStore = create<TappletProviderStoreState>()((set, get) => ({
     ...initialState,
+    initTappletProvider: async () => {
+        try {
+            const params: TappletProviderParams = {
+                id: '0',
+                permissions: { requiredPermissions: [], optionalPermissions: [] },
+            };
+            const provider: TappletProvider = TappletProvider.build(params);
+
+            set({ isInitialized: true, tappletProvider: provider });
+        } catch (error) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Error setting tapplet provider: ', error);
+            appStateStore.setError(`Error setting tapplet provider: ${error}`);
+        }
+    },
     setTappletProvider: async (id: string, launchedTapplet: ActiveTapplet) => {
         try {
             // TODO tmp solution
