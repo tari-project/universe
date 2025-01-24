@@ -102,5 +102,5 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
 
 export const refreshCoinbaseTransactions = async () => {
     const limit = useWalletStore.getState().coinbase_transactions.length;
-    return useWalletStore.getState().fetchCoinbaseTransactions(false, Math.min(limit, 5), true);
+    return useWalletStore.getState().fetchCoinbaseTransactions(false, Math.max(limit, 5));
 };

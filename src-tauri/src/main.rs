@@ -704,6 +704,26 @@ async fn setup_inner(
         }
     });
 
+    // TEMP; checking longer interval
+    let move_handle_block = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = move_handle_block.state::<UniverseAppState>().clone();
+        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+        let mut shutdown_signal = app_state.shutdown.to_signal();
+        loop {
+            select! {
+                _ = interval.tick() => {
+                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone()).await {
+                        drop(move_handle_block.emit("miner_metrics_block_height", metrics_ret));
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
+
     let w_move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = w_move_handle.state::<UniverseAppState>().clone();
