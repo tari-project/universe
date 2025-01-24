@@ -21,6 +21,7 @@ import {
     PoolMiningSettings,
     WalletSettings,
     ReleaseNotes,
+    OotleWalletSettings,
 } from './sections';
 
 import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
@@ -35,6 +36,7 @@ const markups = {
     experimental: <ExperimentalSettings />,
     releaseNotes: <ReleaseNotes />,
     ootle: <OotleSettings />,
+    ootleWallet: <OotleWalletSettings />,
 };
 
 export default function SettingsModal() {
