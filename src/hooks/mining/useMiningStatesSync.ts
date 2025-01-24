@@ -40,12 +40,12 @@ export function useMiningStatesSync() {
 
     useEffect(() => {
         if (!setupComplete) return;
-        const ul = listen('miner_metrics', async ({ payload }) => {
+        const ul = listen('miner_metrics', ({ payload }) => {
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as MinerMetrics, prevMetricsPayload.current);
             if (payloadChanged) {
                 prevMetricsPayload.current = payload as MinerMetrics;
-                await handleMiningMetrics(payload as MinerMetrics);
+                handleMiningMetrics(payload as MinerMetrics);
             }
         });
         return () => {

@@ -111,21 +111,14 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (newBlockHeight: number, isMining?: boolean) => {
-    if (isMining) {
-        const txs = await useWalletStore.getState().refreshCoinbaseTransactions();
-        const minimized = await appWindow?.isMinimized();
-        const documentIsVisible = document?.visibilityState === 'visible' || false;
-        const canAnimate = !minimized && documentIsVisible;
-        const latestTx = txs?.[0];
-        const latestTxBlock = latestTx?.mined_in_block_height;
-
-        if (latestTx && latestTxBlock === newBlockHeight) {
-            await handleWin({ latestTx, canAnimate });
-        } else {
-            await handleFail(newBlockHeight, canAnimate);
-        }
+export const handleNewBlock = async (newBlockHeight: number, latestTx?: TransactionInfo) => {
+    const minimized = await appWindow?.isMinimized();
+    const documentIsVisible = document?.visibilityState === 'visible' || false;
+    const canAnimate = !minimized && documentIsVisible;
+    const latestTxBlock = latestTx?.mined_in_block_height;
+    if (latestTx && latestTxBlock === newBlockHeight) {
+        await handleWin({ latestTx, canAnimate });
     } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: newBlockHeight });
+        await handleFail(newBlockHeight, canAnimate);
     }
 };

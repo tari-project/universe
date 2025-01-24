@@ -3,7 +3,9 @@ import { MinerMetrics } from '@app/types/app-status';
 import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { setAnimationState } from '@app/visuals.ts';
+import { refreshCoinbaseTransactions } from '@app/store/useWalletStore.ts';
 
+const TX_CHECK_INTERVAL = 1000 * 10 * 2; // 20s
 export default function useMiningMetricsUpdater() {
     const setMiningMetrics = useMiningMetricsStore((s) => s.setMiningMetrics);
     const currentBlockHeight = useMiningMetricsStore((s) => s.base_node.block_height);
@@ -15,7 +17,7 @@ export default function useMiningMetricsUpdater() {
     const deferredblock = useDeferredValue(currentBlockHeight);
 
     return useCallback(
-        async (metrics: MinerMetrics) => {
+        (metrics: MinerMetrics) => {
             if (metrics) {
                 const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
 
@@ -31,19 +33,33 @@ export default function useMiningMetricsUpdater() {
                 const blockHeight = metrics.base_node.block_height;
                 const isNewBlock = blockHeight > 0 && deferredblock > 0 && blockHeight > deferredblock;
 
-                if (isNewBlock) {
-                    try {
-                        await handleNewBlock(blockHeight, isMining);
-                    } catch (_) {
-                        setDisplayBlockHeight(blockHeight);
-                    } finally {
-                        setMiningMetrics(metrics);
-                    }
-                } else {
-                    if (blockHeight && !displayBlockHeight) {
-                        setDisplayBlockHeight(blockHeight);
-                    }
+                if (!isNewBlock && blockHeight && !displayBlockHeight) {
                     setMiningMetrics(metrics);
+                    return;
+                }
+
+                if (isNewBlock && !isMining) {
+                    setDisplayBlockHeight(blockHeight);
+                    setMiningMetrics(metrics);
+                    return;
+                }
+
+                if (isNewBlock && isMining) {
+                    const newBlockMiningTimeout = setTimeout(async () => {
+                        try {
+                            const latestTxs = await refreshCoinbaseTransactions();
+                            if (latestTxs?.length) {
+                                console.debug(latestTxs);
+                                await handleNewBlock(blockHeight, latestTxs[0]);
+                            }
+                        } finally {
+                            setMiningMetrics(metrics);
+                        }
+                    }, TX_CHECK_INTERVAL);
+
+                    return () => {
+                        clearTimeout(newBlockMiningTimeout);
+                    };
                 }
             }
         },

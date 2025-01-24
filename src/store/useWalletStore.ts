@@ -18,8 +18,11 @@ interface State extends WalletBalance {
 interface Actions {
     setWalletDetails: (tari_wallet_details: TariWalletDetails) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
-    fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
-    refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
+    fetchCoinbaseTransactions: (
+        continuation: boolean,
+        limit?: number,
+        isRefresh?: boolean
+    ) => Promise<TransactionInfo[]>;
 }
 
 type WalletStoreState = State & Actions;
@@ -56,37 +59,36 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             balance: tari_wallet_details?.wallet_balance ? newBalance : null,
         });
     },
-    fetchCoinbaseTransactions: async (continuation, limit) => {
+    fetchCoinbaseTransactions: async (continuation, limit, isRefresh = false) => {
         const setupProgress = useAppStateStore.getState().setupProgress;
-        if (useWalletStore.getState().is_reward_history_loading || setupProgress < 0.75) {
-            return [];
+        const setupComplete = useAppStateStore.getState().setupComplete;
+        const currentLoading = getState().is_reward_history_loading;
+
+        const currentTx = getState().coinbase_transactions;
+        if (currentLoading || (!setupComplete && setupProgress < 0.75)) {
+            return currentTx?.length ? currentTx : [];
         }
 
         try {
-            useWalletStore.setState({ is_reward_history_loading: true });
-
+            set({ is_reward_history_loading: true });
             const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
-            const coinbase_transactions = continuation
-                ? [...getState().coinbase_transactions, ...fetchedTxs]
-                : fetchedTxs;
-            const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
-            set({
-                has_more_coinbase_transactions,
-                coinbase_transactions,
-            });
+            const sortedTx = fetchedTxs?.sort((a, b) => b.timestamp - a.timestamp);
+            const coinbase_transactions = continuation ? [...currentTx, ...sortedTx] : sortedTx;
+            const has_more_coinbase_transactions = sortedTx.length > 0 && (!limit || sortedTx.length === limit);
+
+            if (!isRefresh) {
+                set({ has_more_coinbase_transactions, coinbase_transactions });
+            }
+
             return coinbase_transactions;
         } catch (error) {
             if (error !== ALREADY_FETCHING.HISTORY) {
                 console.error('Could not get transaction history: ', error);
             }
-            return [];
+            return currentTx?.length ? currentTx : [];
         } finally {
-            useWalletStore.setState({ is_reward_history_loading: false });
+            set({ is_reward_history_loading: false });
         }
-    },
-    refreshCoinbaseTransactions: async () => {
-        const limit = getState().coinbase_transactions.length;
-        return getState().fetchCoinbaseTransactions(false, Math.max(limit, 20));
     },
     importSeedWords: async (seedWords: string[]) => {
         try {
@@ -97,3 +99,8 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
         }
     },
 }));
+
+export const refreshCoinbaseTransactions = async () => {
+    const limit = useWalletStore.getState().coinbase_transactions.length;
+    return useWalletStore.getState().fetchCoinbaseTransactions(false, Math.max(limit, 5), true);
+};
