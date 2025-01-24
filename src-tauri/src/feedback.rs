@@ -158,11 +158,11 @@ impl Feedback {
         };
 
         let jwt = self
-            .in_memory_config
+            .config
             .read()
             .await
-            .airdrop_access_token
-            .clone();
+            .airdrop_tokens()
+            .map(|tokens| tokens.token);
 
         // Send the POST request
         let mut req = reqwest::Client::new().post(feedback_url).multipart(form);

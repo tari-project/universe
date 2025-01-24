@@ -112,6 +112,8 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default)]
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl Default for AppConfigFromFile {
@@ -154,6 +156,7 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            airdrop_tokens: None,
         }
     }
 }
@@ -163,6 +166,12 @@ pub enum DisplayMode {
     System,
     Dark,
     Light,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AirdropTokens {
+    pub token: String,
+    pub refresh_token: String,
 }
 
 impl DisplayMode {
@@ -266,6 +275,7 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl AppConfig {
@@ -310,6 +320,7 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            airdrop_tokens: None,
         }
     }
 
@@ -387,6 +398,7 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.airdrop_tokens = config.airdrop_tokens;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -504,6 +516,19 @@ impl AppConfig {
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
         self.custom_max_gpu_usage.clone()
+    }
+
+    pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
+        self.airdrop_tokens.clone()
+    }
+
+    pub async fn set_airdrop_tokens(
+        &mut self,
+        airdrop_tokens: Option<AirdropTokens>,
+    ) -> Result<(), anyhow::Error> {
+        self.airdrop_tokens = airdrop_tokens;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_max_gpu_usage(
@@ -786,6 +811,7 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            airdrop_tokens: self.airdrop_tokens.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
