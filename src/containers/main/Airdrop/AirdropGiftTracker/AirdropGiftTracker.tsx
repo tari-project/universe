@@ -20,7 +20,7 @@ export default function AirdropGiftTracker() {
     return (
         <Wrapper layout>
             <TitleWrapper>
-                <Title>{t('airdropGame')}</Title>
+                <Title>{isLoggedIn ? t('loggedInTitle') : t('loggedOutTitle')}</Title>
                 <InfoTooltip title={t('topTooltipTitle')} text={t('topTooltipText')} />
             </TitleWrapper>
 
