@@ -48,7 +48,8 @@ export function useMiningStatesSync() {
             const latestTxs = await refreshCoinbaseTransactions();
             handleNewBlock(newBlockHeight, latestTxs?.[0])
                 .then(() => {
-                    console.debug('new block THEN!');
+                    console.debug('new block THEN!', newBlockHeight);
+                    setDisplayBlockHeight(newBlockHeight);
                     prevTip.current = newBlockHeight;
                 })
                 .catch(() => {
@@ -56,7 +57,7 @@ export function useMiningStatesSync() {
                     handleNoAnimation(newBlockHeight, newBlockTime);
                 });
         },
-        [handleNoAnimation]
+        [handleNoAnimation, setDisplayBlockHeight]
     );
 
     useEffect(() => {
@@ -95,10 +96,8 @@ export function useMiningStatesSync() {
         const ul = listen('miner_metrics', ({ payload }: { payload: MinerMetrics }) => {
             const newBlockHeight = payload.base_node.block_height;
             const blockChanged = prevTip.current !== newBlockHeight;
-            console.debug('----');
-            console.debug(`prev | new`, prevTip.current, payload.base_node.block_height);
-            console.debug('----');
             if (!blockChanged) return;
+            console.debug(`prev | new`, prevTip.current, payload.base_node.block_height);
             const newBlockTime = payload.base_node.block_time;
             const isMining = payload.cpu?.mining.is_mining || payload.gpu?.mining.is_mining;
             if (!isMining && newBlockHeight && !displayBlockHeight) {
