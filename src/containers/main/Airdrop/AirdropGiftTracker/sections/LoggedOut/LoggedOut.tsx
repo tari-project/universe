@@ -5,11 +5,9 @@ import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
 import gemImage from '../../images/gem.png';
-import { useMiningStore } from '@app/store/useMiningStore';
 
 export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const restartMining = useMiningStore((s) => s.restartMining);
     const { referralQuestPoints, authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
@@ -45,7 +43,6 @@ export default function LoggedOut() {
                             if (!data.error) {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
-                                restartMining();
                             }
                         });
                 }
