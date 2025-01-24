@@ -20,6 +20,7 @@ interface State {
     recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
+    currentItem?: TransactionInfo;
 }
 
 interface WinAnimation {
@@ -58,7 +59,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 const handleWin = ({ latestTx, canAnimate }: WinAnimation) => {
     const blockHeight = Number(latestTx?.mined_in_block_height);
     const earnings = latestTx.amount;
-
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
     if (canAnimate) {
@@ -66,13 +66,16 @@ const handleWin = ({ latestTx, canAnimate }: WinAnimation) => {
         const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
-        useBlockchainVisualisationStore.setState({ earnings });
-        const winTimeout = setTimeout(() => {
-            useMiningStore.getState().setMiningControlsEnabled(true);
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
-        }, 2000);
+        useBlockchainVisualisationStore.setState({ earnings, currentItem: latestTx });
 
-        return clearTimeout(winTimeout);
+        setTimeout(() => {
+            useMiningStore.getState().setMiningControlsEnabled(true);
+            useBlockchainVisualisationStore.setState({
+                currentItem: undefined,
+                displayBlockHeight: blockHeight,
+                earnings: undefined,
+            });
+        }, 2000);
     } else {
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, latestTx.tx_id],
@@ -81,18 +84,12 @@ const handleWin = ({ latestTx, canAnimate }: WinAnimation) => {
         }));
     }
 };
-const handleFail = (blockHeight: number, canAnimate: boolean) => {
-    if (canAnimate) {
-        useMiningStore.getState().setMiningControlsEnabled(false);
-        setAnimationState('fail');
-        const failTimeout = setTimeout(() => {
-            useMiningStore.getState().setMiningControlsEnabled(true);
-            useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
-        }, 1000);
-        return clearTimeout(failTimeout);
-    } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
-    }
+const handleFail = () => {
+    useMiningStore.getState().setMiningControlsEnabled(false);
+    setAnimationState('fail');
+    setTimeout(() => {
+        useMiningStore.getState().setMiningControlsEnabled(true);
+    }, 1000);
 };
 
 export const handleWinRecap = (recapData: Recap) => {
@@ -123,6 +120,8 @@ export const handleNewBlock = async (newBlockHeight: number, latestTx?: Transact
     if (latestTx && latestTxBlock === newBlockHeight) {
         handleWin({ latestTx, canAnimate });
     } else {
-        handleFail(newBlockHeight, canAnimate);
+        if (canAnimate) {
+            handleFail();
+        }
     }
 };

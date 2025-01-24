@@ -31,6 +31,7 @@ export default function Earnings() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
     const replayItem = useBlockchainVisualisationStore((s) => s.replayItem);
+    const currentItem = useBlockchainVisualisationStore((s) => s.currentItem);
     const earnings = useBlockchainVisualisationStore((s) => s.earnings);
     const recapData = useBlockchainVisualisationStore((s) => s.recapData);
 
@@ -65,11 +66,26 @@ export default function Earnings() {
             </RecapText>
         ) : null;
 
+    const currentText =
+        currentItem?.amount && currentItem.mined_in_block_height ? (
+            <RecapText>
+                <Trans
+                    ns="mining-view"
+                    i18nKey={'you-won-block'}
+                    values={{
+                        blockHeight: currentItem.mined_in_block_height,
+                    }}
+                    components={{ span: <span /> }}
+                />
+            </RecapText>
+        ) : null;
+
     return (
         <EarningsContainer>
             <AnimatePresence mode="wait">
                 {displayEarnings ? (
                     <EarningsWrapper variants={variants} initial="hidden" animate="visible" exit="hidden">
+                        {currentText}
                         {replayText}
                         {recapText}
                         <WinWrapper>

@@ -14,7 +14,7 @@ import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
-const TX_CHECK_INTERVAL = 1000 * 10; // 20s
+const TX_CHECK_INTERVAL = 1000 * 5; // 20s
 
 export function useMiningStatesSync() {
     const handleMiningMetrics = useMiningMetricsUpdater();
@@ -44,21 +44,15 @@ export function useMiningStatesSync() {
     );
 
     const handleMiningChainTipChange = useCallback(
-        (newBlockHeight: number, newBlockTime: number) => {
-            refreshCoinbaseTransactions()
-                .then((latestTxs) => {
-                    handleNewBlock(newBlockHeight, latestTxs?.[0])
-                        .then(() => {
-                            console.debug('new block THEN!');
-                            prevTip.current = newBlockHeight;
-                        })
-                        .catch(() => {
-                            console.debug('new block catch');
-                            handleNoAnimation(newBlockHeight, newBlockTime);
-                        });
+        async (newBlockHeight: number, newBlockTime: number) => {
+            const latestTxs = await refreshCoinbaseTransactions();
+            handleNewBlock(newBlockHeight, latestTxs?.[0])
+                .then(() => {
+                    console.debug('new block THEN!');
+                    prevTip.current = newBlockHeight;
                 })
                 .catch(() => {
-                    console.debug('tx catch');
+                    console.debug('new block catch');
                     handleNoAnimation(newBlockHeight, newBlockTime);
                 });
         },
@@ -101,25 +95,21 @@ export function useMiningStatesSync() {
         const ul = listen('miner_metrics', ({ payload }: { payload: MinerMetrics }) => {
             const newBlockHeight = payload.base_node.block_height;
             const blockChanged = prevTip.current !== newBlockHeight;
-            console.debug(`prevTip.current= `, prevTip.current);
-            console.debug(`payload.base_node.block_height= `, payload.base_node.block_height);
+            console.debug('----');
+            console.debug(`prev | new`, prevTip.current, payload.base_node.block_height);
+            console.debug('----');
             if (!blockChanged) return;
             const newBlockTime = payload.base_node.block_time;
             const isMining = payload.cpu?.mining.is_mining || payload.gpu?.mining.is_mining;
-
             if (!isMining && newBlockHeight && !displayBlockHeight) {
                 handleNoAnimation(newBlockHeight, newBlockTime);
             }
 
             if (isMining) {
-                const newBlockTimeout = setTimeout(
-                    () => handleMiningChainTipChange(newBlockHeight, newBlockTime),
+                setTimeout(
+                    async () => await handleMiningChainTipChange(newBlockHeight, newBlockTime),
                     TX_CHECK_INTERVAL
                 );
-                return () => {
-                    clearTimeout(newBlockTimeout);
-                    prevTip.current = newBlockHeight;
-                };
             }
         });
         return () => {
