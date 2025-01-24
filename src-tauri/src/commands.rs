@@ -35,6 +35,7 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
+use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
@@ -443,6 +444,19 @@ pub async fn get_miner_metrics(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
     }
+
+    let new_systemtray_data = SystemTrayData {
+        cpu_hashrate: cpu_mining_status.hash_rate,
+        gpu_hashrate: gpu_mining_status.hash_rate,
+        estimated_earning: (cpu_mining_status.estimated_earnings
+            + gpu_mining_status.estimated_earnings) as f64,
+    };
+
+    state
+        .systemtray_manager
+        .write()
+        .await
+        .update_tray(new_systemtray_data);
 
     let metrics_ret = MinerMetrics {
         sha_network_hash_rate: sha_network_hashrate,
