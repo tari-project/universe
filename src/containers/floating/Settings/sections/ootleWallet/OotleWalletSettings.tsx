@@ -1,9 +1,10 @@
-import MoneroAddressMarkup from '../wallet/MoneroAddressMarkup';
+import OotleWalletBalance from './OotleWalletBalance';
 
 export const OotleWalletSettings = () => {
+    console.log('DUPAAAAAAAAAAAAA');
     return (
         <>
-            <MoneroAddressMarkup />
+            <OotleWalletBalance />
         </>
     );
 };
