@@ -55,7 +55,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRecapCount: (recapCount) => set({ recapCount }),
 }));
 
-const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
+const handleWin = ({ latestTx, canAnimate }: WinAnimation) => {
     const blockHeight = Number(latestTx?.mined_in_block_height);
     const earnings = latestTx.amount;
 
@@ -74,14 +74,14 @@ const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
 
         return clearTimeout(winTimeout);
     } else {
-        return useBlockchainVisualisationStore.setState((curr) => ({
+        useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, latestTx.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
         }));
     }
 };
-const handleFail = async (blockHeight: number, canAnimate: boolean) => {
+const handleFail = (blockHeight: number, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
@@ -91,7 +91,7 @@ const handleFail = async (blockHeight: number, canAnimate: boolean) => {
         }, 1000);
         return clearTimeout(failTimeout);
     } else {
-        return useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
+        useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
     }
 };
 
@@ -119,11 +119,10 @@ export const handleNewBlock = async (newBlockHeight: number, latestTx?: Transact
     const documentIsVisible = document?.visibilityState === 'visible' || false;
     const canAnimate = !minimized && documentIsVisible;
     const latestTxBlock = latestTx?.mined_in_block_height;
-    console.debug(`latestTxBlock= `, latestTxBlock);
-    console.debug(`newBlockHeight= `, newBlockHeight);
+    console.debug(`latestTx | new`, latestTxBlock, newBlockHeight);
     if (latestTx && latestTxBlock === newBlockHeight) {
-        await handleWin({ latestTx, canAnimate });
+        handleWin({ latestTx, canAnimate });
     } else {
-        await handleFail(newBlockHeight, canAnimate);
+        handleFail(newBlockHeight, canAnimate);
     }
 };

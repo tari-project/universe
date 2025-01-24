@@ -45,37 +45,28 @@ export function useMiningStatesSync() {
 
     const handleMiningChainTipChange = useCallback(
         (newBlockHeight: number, newBlockTime: number) => {
-            const newBlockMiningTimeout = setTimeout(() => {
-                refreshCoinbaseTransactions()
-                    .then((latestTxs) => {
-                        handleNewBlock(newBlockHeight, latestTxs?.[0])
-                            .then(() => {
-                                console.debug('new block THEN!');
-                                prevTip.current = newBlockHeight;
-                            })
-                            .catch(() => {
-                                console.debug('new block catch');
-                                handleNoAnimation(newBlockHeight, newBlockTime);
-                            });
-                    })
-                    .catch(() => {
-                        console.debug('tx catch');
-                        handleNoAnimation(newBlockHeight, newBlockTime);
-                    })
-                    .finally(() => {
-                        prevTip.current = newBlockHeight;
-                    });
-            }, TX_CHECK_INTERVAL);
-
-            return () => {
-                clearTimeout(newBlockMiningTimeout);
-            };
+            refreshCoinbaseTransactions()
+                .then((latestTxs) => {
+                    handleNewBlock(newBlockHeight, latestTxs?.[0])
+                        .then(() => {
+                            console.debug('new block THEN!');
+                            prevTip.current = newBlockHeight;
+                        })
+                        .catch(() => {
+                            console.debug('new block catch');
+                            handleNoAnimation(newBlockHeight, newBlockTime);
+                        });
+                })
+                .catch(() => {
+                    console.debug('tx catch');
+                    handleNoAnimation(newBlockHeight, newBlockTime);
+                });
         },
         [handleNoAnimation]
     );
 
     useEffect(() => {
-        if (setupProgress < 0.75) return;
+        if (!setupComplete && setupProgress < 0.75) return;
         const ul = listen('wallet_details', ({ payload }) => {
             if (!payload) return;
             const payloadChanged = !deepEqual(payload as TariWalletDetails, prevWalletPayload.current);
@@ -87,7 +78,7 @@ export function useMiningStatesSync() {
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [setWalletDetails, setupProgress]);
+    }, [setWalletDetails, setupComplete, setupProgress]);
 
     useEffect(() => {
         if (!setupComplete) return;
@@ -110,10 +101,10 @@ export function useMiningStatesSync() {
         const ul = listen('miner_metrics', ({ payload }: { payload: MinerMetrics }) => {
             const newBlockHeight = payload.base_node.block_height;
             const blockChanged = prevTip.current !== newBlockHeight;
-            if (!blockChanged) return;
-            const newBlockTime = payload.base_node.block_time;
             console.debug(`prevTip.current= `, prevTip.current);
             console.debug(`payload.base_node.block_height= `, payload.base_node.block_height);
+            if (!blockChanged) return;
+            const newBlockTime = payload.base_node.block_time;
             const isMining = payload.cpu?.mining.is_mining || payload.gpu?.mining.is_mining;
 
             if (!isMining && newBlockHeight && !displayBlockHeight) {
@@ -121,7 +112,14 @@ export function useMiningStatesSync() {
             }
 
             if (isMining) {
-                handleMiningChainTipChange(newBlockHeight, newBlockTime);
+                const newBlockTimeout = setTimeout(
+                    () => handleMiningChainTipChange(newBlockHeight, newBlockTime),
+                    TX_CHECK_INTERVAL
+                );
+                return () => {
+                    clearTimeout(newBlockTimeout);
+                    prevTip.current = newBlockHeight;
+                };
             }
         });
         return () => {
