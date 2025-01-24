@@ -105,6 +105,7 @@ export function useMiningStatesSync() {
             const isMining = payload.cpu?.mining.is_mining || payload.gpu?.mining.is_mining;
             const newBlockHeight = payload.base_node.block_height;
             const blockChanged = prevTip.current !== newBlockHeight;
+
             if (!blockChanged || !isMining) return;
             console.debug(`prev | new`, prevTip.current, payload.base_node.block_height);
             const newBlockTime = payload.base_node.block_time;

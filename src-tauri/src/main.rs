@@ -708,7 +708,7 @@ async fn setup_inner(
     let move_handle_block = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_handle_block.state::<UniverseAppState>().clone();
-        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+        let mut interval: time::Interval = time::interval(Duration::from_secs(15));
         let mut shutdown_signal = app_state.shutdown.to_signal();
         loop {
             select! {
@@ -727,7 +727,7 @@ async fn setup_inner(
     let w_move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = w_move_handle.state::<UniverseAppState>().clone();
-        let mut interval = time::interval(Duration::from_secs(3));
+        let mut interval = time::interval(Duration::from_secs(5));
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         loop {
