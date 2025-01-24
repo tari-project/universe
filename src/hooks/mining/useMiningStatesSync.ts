@@ -14,7 +14,7 @@ import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
-const TX_CHECK_INTERVAL = 1000 * 10 * 2; // 20s
+const TX_CHECK_INTERVAL = 1000 * 10; // 20s
 
 export function useMiningStatesSync() {
     const handleMiningMetrics = useMiningMetricsUpdater();
@@ -33,40 +33,45 @@ export function useMiningStatesSync() {
     useUiMiningStateMachine();
     useEarningsRecap();
 
-    const handleChainTip = useCallback(
-        (metrics: MinerMetrics) => {
-            const isMining = metrics.cpu?.mining.is_mining || metrics.gpu?.mining.is_mining;
-            const newBlockHeight = metrics.base_node.block_height;
-
-            if (!isMining && newBlockHeight && !displayBlockHeight) {
-                setDisplayBlockHeight(newBlockHeight);
-                setBlockHeight(newBlockHeight);
-                setBlockTime(metrics.base_node.block_time);
-                return;
-            }
-
-            if (isMining) {
-                const newBlockMiningTimeout = setTimeout(async () => {
-                    try {
-                        const latestTxs = await refreshCoinbaseTransactions();
-                        if (latestTxs?.length) {
-                            await handleNewBlock(newBlockHeight, latestTxs[0]);
-                        }
-                    } catch (_) {
-                        setDisplayBlockHeight(newBlockHeight);
-                        setBlockHeight(newBlockHeight);
-                        setBlockTime(metrics.base_node.block_time);
-                    } finally {
-                        prevTip.current = newBlockHeight;
-                    }
-                }, TX_CHECK_INTERVAL);
-
-                return () => {
-                    clearTimeout(newBlockMiningTimeout);
-                };
-            }
+    const handleNoAnimation = useCallback(
+        (newBlockHeight: number, newBlockTime: number) => {
+            setDisplayBlockHeight(newBlockHeight);
+            setBlockHeight(newBlockHeight);
+            setBlockTime(newBlockTime);
+            prevTip.current = newBlockHeight;
         },
-        [displayBlockHeight, setBlockHeight, setBlockTime, setDisplayBlockHeight]
+        [setBlockHeight, setBlockTime, setDisplayBlockHeight]
+    );
+
+    const handleMiningChainTipChange = useCallback(
+        (newBlockHeight: number, newBlockTime: number) => {
+            const newBlockMiningTimeout = setTimeout(() => {
+                refreshCoinbaseTransactions()
+                    .then((latestTxs) => {
+                        handleNewBlock(newBlockHeight, latestTxs?.[0])
+                            .then(() => {
+                                console.debug('new block THEN!');
+                                prevTip.current = newBlockHeight;
+                            })
+                            .catch(() => {
+                                console.debug('new block catch');
+                                handleNoAnimation(newBlockHeight, newBlockTime);
+                            });
+                    })
+                    .catch(() => {
+                        console.debug('tx catch');
+                        handleNoAnimation(newBlockHeight, newBlockTime);
+                    })
+                    .finally(() => {
+                        prevTip.current = newBlockHeight;
+                    });
+            }, TX_CHECK_INTERVAL);
+
+            return () => {
+                clearTimeout(newBlockMiningTimeout);
+            };
+        },
+        [handleNoAnimation]
     );
 
     useEffect(() => {
@@ -93,14 +98,34 @@ export function useMiningStatesSync() {
                 prevMetricsPayload.current = payload;
                 handleMiningMetrics(payload);
             }
+        });
+        return () => {
+            ul.then((unlisten) => unlisten());
+        };
+    }, [handleMiningMetrics, setupComplete]);
 
-            const blockChanged = prevTip.current !== payload.base_node.block_height;
-            if (blockChanged) {
-                handleChainTip(payload);
+    useEffect(() => {
+        if (!setupComplete) return;
+        // ONLY for new blocks
+        const ul = listen('miner_metrics', ({ payload }: { payload: MinerMetrics }) => {
+            const newBlockHeight = payload.base_node.block_height;
+            const blockChanged = prevTip.current !== newBlockHeight;
+            if (!blockChanged) return;
+            const newBlockTime = payload.base_node.block_time;
+            console.debug(`prevTip.current= `, prevTip.current);
+            console.debug(`payload.base_node.block_height= `, payload.base_node.block_height);
+            const isMining = payload.cpu?.mining.is_mining || payload.gpu?.mining.is_mining;
+
+            if (!isMining && newBlockHeight && !displayBlockHeight) {
+                handleNoAnimation(newBlockHeight, newBlockTime);
+            }
+
+            if (isMining) {
+                handleMiningChainTipChange(newBlockHeight, newBlockTime);
             }
         });
         return () => {
             ul.then((unlisten) => unlisten());
         };
-    }, [setupComplete, handleMiningMetrics, handleChainTip]);
+    }, [displayBlockHeight, handleMiningChainTipChange, handleNoAnimation, setupComplete]);
 }

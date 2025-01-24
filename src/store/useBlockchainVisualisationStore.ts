@@ -4,7 +4,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useWalletStore } from './useWalletStore.ts';
+
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -67,12 +67,14 @@ const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
-        setTimeout(() => {
+        const winTimeout = setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
         }, 2000);
+
+        return clearTimeout(winTimeout);
     } else {
-        useBlockchainVisualisationStore.setState((curr) => ({
+        return useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, latestTx.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
@@ -83,12 +85,13 @@ const handleFail = async (blockHeight: number, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
-        setTimeout(() => {
+        const failTimeout = setTimeout(() => {
             useMiningStore.getState().setMiningControlsEnabled(true);
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
         }, 1000);
+        return clearTimeout(failTimeout);
     } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
+        return useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
     }
 };
 
@@ -116,6 +119,8 @@ export const handleNewBlock = async (newBlockHeight: number, latestTx?: Transact
     const documentIsVisible = document?.visibilityState === 'visible' || false;
     const canAnimate = !minimized && documentIsVisible;
     const latestTxBlock = latestTx?.mined_in_block_height;
+    console.debug(`latestTxBlock= `, latestTxBlock);
+    console.debug(`newBlockHeight= `, newBlockHeight);
     if (latestTx && latestTxBlock === newBlockHeight) {
         await handleWin({ latestTx, canAnimate });
     } else {
