@@ -92,7 +92,6 @@ mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
 mod commands;
-mod commands_internal;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
