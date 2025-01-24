@@ -463,7 +463,7 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
-    if state.config.read().await.ootle_enabled() {
+    if state.config.read().await.ootle_localnet_enabled() {
         //TODO tari validator node binary
         // should check for update - for now is set to false because of local build
         progress.set_max(34).await;
