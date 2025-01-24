@@ -17,7 +17,7 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
 import { Count, StyledForm, StyledInput, StyledStack } from './OotleSettings.styles.ts';
 
-const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}\/?$/;
+const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}?$/;
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle', { useSuspense: false });
