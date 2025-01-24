@@ -86,7 +86,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             warn!(target: LOG_TARGET, "Tried to start process watcher for {} twice", name);
             return Ok(());
         }
-        info!(target: LOG_TARGET, "Starting process watcher for {}", name);
+        info!(target: LOG_TARGET, "🔥  Starting process watcher for {}", name);
         info!(target: LOG_TARGET, "🔥  Starting process watcher with paths {:?} | {:?} | {:?}", &base_path, &config_path, &log_path);
         self.kill_previous_instances(base_path.clone()).await?;
 
@@ -100,7 +100,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .read()
             .await
             .resolve_path_to_binary_files(binary)?;
-        info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
+        info!(target: LOG_TARGET, "🔥  Using {:?} for {}", binary_path, name);
         let (mut child, status_monitor) =
             self.adapter
                 .spawn(base_path, config_path, log_path, binary_path)?;

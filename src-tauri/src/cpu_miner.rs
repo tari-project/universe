@@ -26,7 +26,7 @@ use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStat
 use crate::process_watcher::ProcessWatcher;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -65,8 +65,9 @@ impl CpuMiner {
         custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
-
-        let xmrig_node_connection = match cpu_miner_config.node_connection {
+        info!(target: LOG_TARGET, "👨‍🔧 --- cpu miner config: {:?} and log: {:?}", &config_path, &log_dir);
+        info!(target: LOG_TARGET, "👨‍🔧 --- cpu miner monero port: {:?} and address: {:?}", &monero_port, &monero_address);
+        let xmrig_node_connection: XmrigNodeConnection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
                 XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
@@ -103,7 +104,7 @@ impl CpuMiner {
             }
             MiningMode::Ludicrous => None,
         };
-
+        info!(target: LOG_TARGET, "👨‍🔧 --- cpu xmrig node connection {:?}", &xmrig_node_connection);
         lock.adapter.node_connection = Some(xmrig_node_connection);
         lock.adapter.monero_address = Some(monero_address.clone());
         lock.adapter.cpu_threads = Some(cpu_max_percentage);
@@ -161,46 +162,49 @@ impl CpuMiner {
         let client = &lock.status_monitor;
 
         if let Some(client) = client.as_ref() {
-            let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
-                match client.summary().await {
-                    Ok(xmrig_status) => {
-                        let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                        let estimated_earnings = if network_hash_rate == 0 {
-                            0
-                        } else {
-                            #[allow(clippy::cast_possible_truncation)]
-                            {
-                                ((block_reward.as_u64() as f64)
-                                    * ((hash_rate / (network_hash_rate as f64))
-                                        * (RANDOMX_BLOCKS_PER_DAY as f64)))
-                                    .floor() as u64
-                            }
-                        };
-                        // Can't be more than the max reward for a day
-                        let estimated_earnings = std::cmp::min(
-                            estimated_earnings,
-                            block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
-                        );
+            let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) = match client
+                .summary()
+                .await
+            {
+                Ok(xmrig_status) => {
+                    info!(target: LOG_TARGET, "👨‍🔧 --- XMRIG summary status: {:?}", &xmrig_status);
+                    let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
+                    let estimated_earnings = if network_hash_rate == 0 {
+                        0
+                    } else {
+                        #[allow(clippy::cast_possible_truncation)]
+                        {
+                            ((block_reward.as_u64() as f64)
+                                * ((hash_rate / (network_hash_rate as f64))
+                                    * (RANDOMX_BLOCKS_PER_DAY as f64)))
+                                .floor() as u64
+                        }
+                    };
+                    // Can't be more than the max reward for a day
+                    let estimated_earnings = std::cmp::min(
+                        estimated_earnings,
+                        block_reward.as_u64() * RANDOMX_BLOCKS_PER_DAY,
+                    );
 
-                        // mining should be true if the hashrate is greater than 0
+                    // mining should be true if the hashrate is greater than 0
 
-                        let hasrate_sum = xmrig_status
-                            .hashrate
-                            .total
-                            .iter()
-                            .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
-                        (
-                            hash_rate,
-                            hasrate_sum,
-                            estimated_earnings,
-                            xmrig_status.connection.uptime > 0,
-                        )
-                    }
-                    Err(e) => {
+                    let hasrate_sum = xmrig_status
+                        .hashrate
+                        .total
+                        .iter()
+                        .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                    (
+                        hash_rate,
+                        hasrate_sum,
+                        estimated_earnings,
+                        xmrig_status.connection.uptime > 0,
+                    )
+                }
+                Err(e) => {
                         warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
-                        (0.0, 0.0, 0, false)
-                    }
-                };
+                    (0.0, 0.0, 0, false)
+                }
+            };
             Ok(CpuMinerStatus {
                 is_mining: true,
                 hash_rate,

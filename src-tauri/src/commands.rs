@@ -597,6 +597,7 @@ pub async fn get_p2pool_connections(
     state
         .is_getting_p2pool_connections
         .store(false, Ordering::SeqCst);
+    info!(target: LOG_TARGET, "✅ get_p2pool_connections: {:?}", &p2pool_connections);
     Ok(p2pool_connections)
 }
 
@@ -1279,6 +1280,7 @@ pub async fn set_p2pool_enabled(
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
 
+    info!(target: LOG_TARGET, "👨‍🔧 --------------- P2P ORIGIN CONFIG {:?}", &origin_config);
     match origin_config {
         None => {
             warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
@@ -1295,6 +1297,7 @@ pub async fn set_p2pool_enabled(
                         .await
                         .map_err(|error| error.to_string())?;
                     origin_config.set_to_use_base_node(base_node_grpc_port);
+                    info!(target: LOG_TARGET, "👨‍🔧 --- P2P DISABLED | GRPC BASE NODE {:?}", &base_node_grpc_port);
                 }
                 state
                     .mm_proxy_manager
@@ -1509,7 +1512,7 @@ pub async fn start_mining<'r>(
             .get_monero_port()
             .await
             .map_err(|e| e.to_string())?;
-
+        info!(target: LOG_TARGET, "👨‍🔧 --- mm_proxy_port {:?}", &mm_proxy_port);
         let res = state
             .cpu_miner
             .write()
@@ -2100,6 +2103,10 @@ pub async fn add_dev_tapplet(
 ) -> Result<DevTapplet, Error> {
     let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
     // let config_endpoint = format!("{}/tapplet.config.json", endpoint); TODO
+    info!(
+        "🌟 Add dev tapplet to db endpoint: {:?}",
+        &manifest_endpoint
+    );
     let tapp_manifest = reqwest::get(&manifest_endpoint)
         .await
         .inspect_err(|e| {
@@ -2120,6 +2127,7 @@ pub async fn add_dev_tapplet(
                 endpoint: endpoint.clone(),
             })
         })?;
+    info!("🌟 Add dev tapplet manifest: {:?}", &tapp_manifest);
     let mut store = SqliteStore::new(db_connection.0.clone());
     let new_dev_tapplet = CreateDevTapplet {
         endpoint: &endpoint,

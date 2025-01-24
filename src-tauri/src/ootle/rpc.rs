@@ -16,7 +16,7 @@ pub async fn permission_token(jrpc_port: Option<u16>) -> Result<(String, String)
         permissions: vec!["Admin".to_string()],
         duration: None,
     };
-    info!(target: LOG_TARGET, "------> 🌟 RPC Auth request port: {:?} with params: {:?}", &jrpc_port, &req_params);
+    info!(target: LOG_TARGET, "🌟 RPC Auth request port: {:?} with params: {:?}", &jrpc_port, &req_params);
     info!(target: LOG_TARGET, "🚀 Auth tokens request");
     let req_res = make_request(None, "auth.request".to_string(), &req_params, jrpc_port).await?;
     let req_res: AuthLoginResponse = serde_json::from_value(req_res)?;
@@ -49,7 +49,7 @@ pub async fn make_request<T: Serialize>(
     );
     let address = SocketAddr::from_str(&json_connect_address).unwrap();
     let url = Url::parse(&format!("http://{}", address)).unwrap();
-    info!(target: LOG_TARGET, "------> 🌟 MAKE REQUEST URL: {:?} | socket address: {:?}", &url, &address);
+    info!(target: LOG_TARGET, "🌟 MAKE REQUEST URL: {:?} | socket address: {:?}", &url, &address);
 
     let method_name = method.clone();
     let client = reqwest::Client::new();

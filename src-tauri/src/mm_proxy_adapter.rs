@@ -29,7 +29,7 @@ use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 // use log::warn;
 use reqwest::Client;
 use serde_json::json;
@@ -38,7 +38,7 @@ use tari_shutdown::Shutdown;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
-#[derive(Clone, PartialEq, Default)]
+#[derive(Clone, PartialEq, Default, Debug)]
 pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
@@ -107,7 +107,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
         let working_dir_string = convert_to_string(working_dir)?;
         let config_dir_string = convert_to_string(config_dir.to_path_buf())?;
-
+        info!(target: LOG_TARGET, "👨‍🔧 --- MM_PROXY_ADAPTER {:?}", &config);
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             working_dir_string,
@@ -206,7 +206,7 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
             .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {}", e))
             .is_ok()
         {
-            HealthStatus::Healthy
+        HealthStatus::Healthy
         } else {
             if self.start_time.elapsed().as_secs() <30 {
                 return HealthStatus::Healthy;

@@ -126,8 +126,8 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     },
     addDevTapp: async (endpoint) => {
         const devTapp = await invoke('add_dev_tapplet', { endpoint });
-        const devTapplets = await invoke('read_dev_tapplets');
         console.info('[STORE] add dev tapp', devTapp);
+        const devTapplets = await invoke('read_dev_tapplets');
         console.info('[STORE] add dev tapplets', devTapplets);
         // set((state) => ({
         //     devTapplets: [...state.devTapplets, devTapp],
@@ -141,7 +141,7 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     },
     getDevTapps: async () => {
         const devTapplets = await invoke('read_dev_tapplets');
-        console.info('[STORE] add dev tapplets', devTapplets);
+        console.info('[STORE get dev tapplets', devTapplets);
         set({ devTapplets });
     },
     deleteInstalledTapp: async (tappletId) => {
