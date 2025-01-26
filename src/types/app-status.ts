@@ -94,8 +94,7 @@ export interface MinerMetrics {
     base_node: BaseNodeStatus;
 }
 
-export interface TariWalletDetails {
-    wallet_balance: WalletBalance;
+export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
 }
@@ -241,10 +240,10 @@ export interface BaseNodeStatus {
 }
 
 export interface WalletBalance {
-    available_balance?: number;
-    timelocked_balance?: number;
-    pending_incoming_balance?: number;
-    pending_outgoing_balance?: number;
+    available_balance: number;
+    timelocked_balance: number;
+    pending_incoming_balance: number;
+    pending_outgoing_balance: number;
 }
 
 export interface ApplicationsVersions {

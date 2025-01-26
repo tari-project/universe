@@ -38,7 +38,7 @@ use crate::progress_tracker::ProgressTracker;
 use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
 
@@ -101,13 +101,6 @@ pub struct MinerMetrics {
     cpu: CpuMinerMetrics,
     gpu: GpuMinerMetrics,
     base_node: BaseNodeStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TariWalletDetails {
-    wallet_balance: Option<WalletBalance>,
-    tari_address_base58: String,
-    tari_address_emoji: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -383,13 +376,15 @@ pub async fn get_network(
 #[tauri::command]
 pub async fn get_miner_metrics(
     state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<MinerMetrics, String> {
     let timer = Instant::now();
+    let read = state.cached_miner_metrics.read().await;
+    let metrics_cache = &*read;
     if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
-        let read = state.cached_miner_metrics.read().await;
-        if let Some(metrics) = &*read {
+        if let Some(metrics_cache) = metrics_cache {
             debug!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
-            return Ok(metrics.clone());
+            return Ok(metrics_cache.clone());
         }
         warn!(target: LOG_TARGET, "Already getting miner metrics");
         return Err("Already getting miner metrics".to_string());
@@ -405,6 +400,28 @@ pub async fn get_miner_metrics(
         block_reward,
         ..
     } = node_status;
+    println!(
+        "OOOOOOOOOOOOOOOOOOOOOOOOO metrics_cache.clo: {:?}",
+        metrics_cache.clone()
+    );
+    if let Some(metrics) = metrics_cache.clone() {
+        if block_height > metrics.base_node.block_height {
+            state
+                .events_manager
+                .read()
+                .await
+                .handle_new_block_height(app, block_height)
+                .await;
+        }
+    } else {
+        println!("OOOOOOOOOOO2222222222222222222222");
+        state
+            .events_manager
+            .read()
+            .await
+            .wait_for_initial_wallet_scan(app, block_height)
+            .await;
+    }
 
     let cpu_miner = state.cpu_miner.read().await;
     let cpu_mining_status = match cpu_miner
@@ -652,25 +669,6 @@ pub async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
-}
-
-#[tauri::command]
-pub async fn emit_tari_wallet_details(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<TariWalletDetails, String> {
-    let timer = Instant::now();
-    let tari_address = state.tari_address.read().await;
-    let wallet_balance = state.wallet_latest_balance.borrow().clone();
-    let result = TariWalletDetails {
-        wallet_balance,
-        tari_address_base58: tari_address.to_base58(),
-        tari_address_emoji: tari_address.to_emoji_string(),
-    };
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(result)
 }
 
 #[tauri::command]

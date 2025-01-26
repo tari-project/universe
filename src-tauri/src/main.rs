@@ -24,6 +24,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{debug, error, info, warn};
@@ -38,7 +39,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use wallet_adapter::WalletBalance;
+use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -97,6 +98,9 @@ mod cpu_miner;
 mod credential_manager;
 mod download_utils;
 mod events;
+mod events_emitter;
+mod events_manager;
+mod events_service;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -689,33 +693,14 @@ async fn setup_inner(
     let move_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_handle.state::<UniverseAppState>().clone();
+        let app_handle = move_handle.app_handle().clone();
         let mut interval: time::Interval = time::interval(Duration::from_secs(1));
         let mut shutdown_signal = app_state.shutdown.to_signal();
         loop {
             select! {
                 _ = interval.tick() => {
-                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone()).await {
+                    if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone(), app_handle.clone()).await {
                         drop(move_handle.emit("miner_metrics", metrics_ret));
-                    }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
-        }
-    });
-
-    let w_move_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let app_state = w_move_handle.state::<UniverseAppState>().clone();
-        let mut interval = time::interval(Duration::from_secs(5));
-        let mut shutdown_signal = app_state.shutdown.to_signal();
-
-        loop {
-            select! {
-                _ = interval.tick() => {
-                    if let Ok(wallet) = commands::emit_tari_wallet_details(app_state.clone()).await {
-                        drop(w_move_handle.emit("wallet_details", wallet));
                     }
                 },
                 _ = shutdown_signal.wait() => {
@@ -765,7 +750,7 @@ async fn setup_inner(
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
     base_node_latest_status: Arc<watch::Receiver<BaseNodeStatus>>,
-    wallet_latest_balance: Arc<watch::Receiver<Option<WalletBalance>>>,
+    wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -792,6 +777,7 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    events_manager: Arc<RwLock<EventsManager>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -834,9 +820,13 @@ fn main() {
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
-    let (wallet_watch_tx, wallet_watch_rx) = watch::channel::<Option<WalletBalance>>(None);
-    let wallet_manager =
-        WalletManager::new(node_manager.clone(), wallet_watch_tx, &mut stats_collector);
+    let (wallet_state_watch_tx, wallet_state_watch_rx) =
+        watch::channel::<Option<WalletState>>(None);
+    let wallet_manager = WalletManager::new(
+        node_manager.clone(),
+        wallet_state_watch_tx,
+        &mut stats_collector,
+    );
     let wallet_manager2 = wallet_manager.clone();
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
@@ -884,7 +874,7 @@ fn main() {
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         base_node_latest_status: Arc::new(base_node_watch_rx),
-        wallet_latest_balance: Arc::new(wallet_watch_rx),
+        wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
@@ -909,6 +899,7 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        events_manager: Arc::new(RwLock::new(EventsManager::new(wallet_state_watch_rx))),
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
@@ -1040,6 +1031,8 @@ fn main() {
                 .app_config_dir()
                 .expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();
+            let events_manager = app.state::<UniverseAppState>().events_manager.clone();
+            let app_handle_clone = app.handle().clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {
                     Ok(wallet) => {
@@ -1050,8 +1043,10 @@ fn main() {
                                 wallet.get_spend_key(),
                             )
                             .await;
-                        let mut lock = address.write().await;
-                        *lock = wallet.get_tari_address();
+                        let mut address_lock = address.write().await;
+                        *address_lock = wallet.get_tari_address();
+                        let mut events_manager_lock = events_manager.write().await;
+                        events_manager_lock.handle_internal_wallet_loaded_or_created(app_handle_clone, wallet.get_tari_address()).await;
                         Ok(())
                         //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }
@@ -1118,7 +1113,6 @@ fn main() {
             commands::get_p2pool_stats,
             commands::get_paper_wallet_details,
             commands::get_seed_words,
-            commands::emit_tari_wallet_details,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
             commands::get_coinbase_transactions,

@@ -13,8 +13,10 @@ interface Props {
 export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
-    const balance = useWalletStore((state) => state.balance);
-    const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
+    const calculated_balance = useWalletStore((state) => state.calculated_balance);
+    const formatted_balance = calculated_balance
+        ? formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT)
+        : '-'; // Wallet still scanning
 
     return (
         <Wrapper>
@@ -30,7 +32,7 @@ export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
                     components={{
                         span: <span />,
                     }}
-                    values={{ balance: formatted }}
+                    values={{ balance: formatted_balance }}
                 />
             </WalletText>
 
