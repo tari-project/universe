@@ -1,11 +1,4 @@
-import {
-    SettingsGroup,
-    SettingsGroupAction,
-    SettingsGroupContent,
-    SettingsGroupTitle,
-    SettingsGroupWrapper,
-} from '../../components/SettingsGroup.styles';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { SettingsGroup, SettingsGroupContent, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
 
 import { Typography } from '@app/components/elements/Typography';
 
@@ -17,7 +10,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { CardContainer, ConnectionIcon } from '../../components/Settings.styles';
 import { CardComponent } from '../../components/Card.component';
 import { AccountInfo, OotleAccount } from './types';
-import SelectAccount from './SelectAccount';
+import SelectAccount from './SelectOotleAccount';
 
 const OotleWalletBalance = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });

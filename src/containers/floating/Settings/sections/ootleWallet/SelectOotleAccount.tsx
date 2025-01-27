@@ -9,7 +9,7 @@ interface SelectAccountProps {
     currentAccount?: AccountInfo;
 }
 
-function SelectAccount({ onSubmit, accountsList, currentAccount }: SelectAccountProps) {
+function SelectOotleAccount({ onSubmit, accountsList, currentAccount }: SelectAccountProps) {
     const currentAccountName = currentAccount?.account.name ?? '';
     console.log(accountsList);
     const [newAccountName, setNewAccountName] = useState(currentAccountName);
@@ -72,4 +72,4 @@ function SelectAccount({ onSubmit, accountsList, currentAccount }: SelectAccount
     );
 }
 
-export default SelectAccount;
+export default SelectOotleAccount;
