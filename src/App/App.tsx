@@ -17,10 +17,8 @@ import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
 import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
-import { useUserSetup } from '@app/hooks/app/useUserSetup.ts';
 
 export default function App() {
-    useUserSetup();
     const isAppReady = useIsAppReady();
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
