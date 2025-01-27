@@ -43,7 +43,7 @@ export const ApplyInviteCode = () => {
 
     const handleToken = useCallback(() => {
         if (authUuid) {
-            fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {
+            fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/get-token/${authUuid}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

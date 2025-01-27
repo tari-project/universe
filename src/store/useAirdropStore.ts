@@ -23,7 +23,6 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
-//
 
 export interface BonusTier {
     id: string;
@@ -124,7 +123,6 @@ interface MiningPoint {
 
 interface AirdropState {
     authUuid?: string;
-    syncedWithBackend: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -134,7 +132,6 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
@@ -151,11 +148,6 @@ interface AirdropStore extends AirdropState {
     logout: () => Promise<void>;
 }
 
-const initialState: AirdropState = {
-    seenPermissions: false,
-    syncedWithBackend: false,
-};
-
 const clearState: Partial<AirdropState> = {
     authUuid: '',
     airdropTokens: undefined,
@@ -165,11 +157,9 @@ const clearState: Partial<AirdropState> = {
     referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
-    seenPermissions: false,
 };
 
 export const useAirdropStore = create<AirdropStore>()((set) => ({
-    ...initialState,
     setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
     setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
     setBonusTiers: (bonusTiers) => set({ bonusTiers }),
@@ -198,7 +188,6 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
     const currentState = useAirdropStore.getState();
     if (airdropTokens) {
         useAirdropStore.setState({
-            syncedWithBackend: true,
             airdropTokens: {
                 ...currentState,
                 ...airdropTokens,
@@ -265,8 +254,6 @@ export const fetchBackendInMemoryConfig = async () => {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
         const newState: AirdropState = {
-            seenPermissions: false,
-            syncedWithBackend: false,
             backendInMemoryConfig,
         };
 

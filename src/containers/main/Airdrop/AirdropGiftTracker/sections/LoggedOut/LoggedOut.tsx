@@ -32,7 +32,7 @@ export default function LoggedOut() {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
-                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {
+                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/get-token/${authUuid}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
