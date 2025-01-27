@@ -4,7 +4,7 @@ use tauri::AppHandle;
 use tokio::sync::watch::Receiver;
 
 use crate::{
-    events_emitter::EventsEmitter, events_service::EventsService, wallet_adapter::WalletState,
+    commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService, hardware::hardware_status_monitor::GpuDeviceProperties, wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -63,6 +63,7 @@ impl EventsManager {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
                         EventsEmitter::emit_wallet_balance_update(app_handle_clone, balance).await;
+                        // Check coinbase txs
                     }
                     None => {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
@@ -73,5 +74,38 @@ impl EventsManager {
                 }
             };
         });
+    }
+
+    pub async fn handle_base_node_update(&self, app_handle: AppHandle, status: BaseNodeStatus) {
+        EventsEmitter::emit_base_node_update(app_handle, status).await;
+    }
+
+    pub async fn handle_connected_peers_update(
+        &self,
+        app_handle: AppHandle,
+        connected_peers: Vec<String>,
+    ) {
+        EventsEmitter::emit_connected_peers_update(app_handle, connected_peers).await;
+    }
+
+    pub async fn handle_gpu_devices_update(
+        &self,
+        app_handle: AppHandle,
+        gpu_devices: Vec<GpuDeviceProperties>,
+    ) {
+        let gpu_public_devices = gpu_devices
+            .iter()
+            .map(|gpu_device| gpu_device.public_properties.clone())
+            .collect();
+
+        EventsEmitter::emit_gpu_devices_update(app_handle, gpu_public_devices).await;
+    }
+
+    pub async fn handle_cpu_mining_update(&self, app_handle: AppHandle, status: CpuMinerStatus) {
+        EventsEmitter::emit_cpu_mining_update(app_handle, status).await;
+    }
+
+    pub async fn handle_gpu_mining_update(&self, app_handle: AppHandle, status: GpuMinerStatus) {
+        EventsEmitter::emit_gpu_mining_update(app_handle, status).await;
     }
 }

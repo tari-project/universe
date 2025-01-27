@@ -7,7 +7,7 @@ export function Ruler() {
     const theme = useTheme();
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-
+    console.log({ height });
     const columnRef = useRef<HTMLDivElement>(null);
 
     const topSegments = Array.from({ length: 16 }, (_, i) => i + 1);

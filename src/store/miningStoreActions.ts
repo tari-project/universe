@@ -61,7 +61,7 @@ const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     const metricsState = useMiningMetricsStore.getState();
     useMiningStore.setState({ isChangingMode: true });
 
-    if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
         await pauseMining();
     }

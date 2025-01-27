@@ -75,25 +75,6 @@ export interface CriticalProblem {
     title: string;
     description: string;
 }
-
-export interface CpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: CpuMinerStatus;
-}
-
-export interface GpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: GpuMinerStatus;
-}
-
-export interface MinerMetrics {
-    sha_network_hash_rate: number;
-    randomx_network_hash_rate: number;
-    cpu: CpuMinerMetrics;
-    gpu: GpuMinerMetrics;
-    base_node: BaseNodeStatus;
-}
-
 export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
@@ -236,7 +217,8 @@ export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
     is_connected: boolean;
-    connected_peers: string[];
+    sha_network_hash_rate: number;
+    randomx_network_hash_rate: number;
 }
 
 export interface WalletBalance {

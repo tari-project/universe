@@ -57,7 +57,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
 
     restartMining: async () => {
         const state = useMiningMetricsStore.getState();
-        if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+        if (state.cpu_mining_status.is_mining || state.gpu_mining_status.is_mining) {
             console.info('Restarting mining...');
             try {
                 await pauseMining();

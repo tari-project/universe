@@ -69,7 +69,7 @@ impl Clone for NodeManager {
 
 impl NodeManager {
     pub fn new(
-        status_broadcast: watch::Sender<BaseNodeStatus>,
+        state_broadcast: watch::Sender<BaseNodeStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         // TODO: wire up to front end
@@ -81,7 +81,7 @@ impl NodeManager {
         // use_tor = false;
         // }
 
-        let adapter = MinotariNodeAdapter::new(status_broadcast);
+        let adapter = MinotariNodeAdapter::new(state_broadcast);
         let mut process_watcher =
             ProcessWatcher::new(adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);
@@ -253,16 +253,13 @@ impl NodeManager {
             is_synced,
             block_height: local_tip,
             ..
-        } = status_monitor
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .map_err(|e| {
-                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
-                    NodeManagerError::NodeNotStarted
-                } else {
-                    NodeManagerError::UnknownError(e.into())
-                }
-            })?;
+        } = status_monitor.get_network_state().await.map_err(|e| {
+            if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                NodeManagerError::NodeNotStarted
+            } else {
+                NodeManagerError::UnknownError(e.into())
+            }
+        })?;
         if !is_synced {
             info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);

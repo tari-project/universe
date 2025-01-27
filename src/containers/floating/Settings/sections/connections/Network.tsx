@@ -16,8 +16,10 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');
-    const sha_network_hash_rate = useMiningMetricsStore((state) => state?.sha_network_hash_rate);
-    const randomx_network_hash_rate = useMiningMetricsStore((state) => state?.randomx_network_hash_rate);
+    const sha_network_hash_rate = useMiningMetricsStore((state) => state?.base_node_status?.sha_network_hash_rate);
+    const randomx_network_hash_rate = useMiningMetricsStore(
+        (state) => state?.base_node_status?.randomx_network_hash_rate
+    );
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>

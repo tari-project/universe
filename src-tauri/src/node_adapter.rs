@@ -35,6 +35,7 @@ use minotari_node_grpc_client::grpc::{
     BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, Peer, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use serde::Serialize;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::path::PathBuf;
@@ -58,11 +59,11 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
-    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
+    state_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
+    pub fn new(state_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -72,7 +73,7 @@ impl MinotariNodeAdapter {
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
-            latest_status_broadcast: status_broadcast,
+            state_broadcast,
         }
     }
 }
@@ -212,7 +213,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
-                latest_status_broadcast: self.latest_status_broadcast.clone(),
+                state_broadcast: self.state_broadcast.clone(),
             },
         ))
     }
@@ -234,7 +235,7 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
     pub randomx_network_hashrate: u64,
@@ -262,17 +263,17 @@ pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
-    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
+    state_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         let duration = std::time::Duration::from_secs(1);
-        match timeout(duration, self.get_network_hash_rate_and_block_reward()).await {
+        match timeout(duration, self.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    let _res = self.latest_status_broadcast.send(status.clone());
+                    let _res = self.state_broadcast.send(status.clone());
                     HealthStatus::Healthy
                 }
                 Err(e) => {
@@ -297,7 +298,7 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 }
 
 impl MinotariNodeStatusMonitor {
-    pub async fn get_network_hash_rate_and_block_reward(
+    pub async fn get_network_state(
         &self,
     ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
         let mut client =

@@ -372,136 +372,26 @@ pub async fn get_network(
     Ok(Network::get_current_or_user_setting_or_default().to_string())
 }
 
-#[allow(clippy::too_many_lines)]
-#[tauri::command]
-pub async fn get_miner_metrics(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<MinerMetrics, String> {
-    let timer = Instant::now();
-    let read = state.cached_miner_metrics.read().await;
-    let metrics_cache = &*read;
-    if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
-        if let Some(metrics_cache) = metrics_cache {
-            debug!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
-            return Ok(metrics_cache.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting miner metrics");
-        return Err("Already getting miner metrics".to_string());
-    }
-    state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
+// #[allow(clippy::too_many_lines)]
+// #[tauri::command]
+// pub async fn get_miner_metrics(
+//     state: tauri::State<'_, UniverseAppState>,
+//     app: tauri::AppHandle,
+// ) -> Result<MinerMetrics, String> {
+//     // let new_systemtray_data = SystemTrayData {
+//     //     cpu_hashrate: cpu_mining_status.hash_rate,
+//     //     gpu_hashrate: gpu_mining_status.hash_rate,
+//     //     estimated_earning: (cpu_mining_status.estimated_earnings
+//     //         + gpu_mining_status.estimated_earnings) as f64,
+//     // };
 
-    let node_status = state.base_node_latest_status.borrow().clone();
-    let node_adapter::BaseNodeStatus {
-        sha_network_hashrate,
-        randomx_network_hashrate,
-        block_height,
-        block_time,
-        block_reward,
-        ..
-    } = node_status;
-    println!(
-        "OOOOOOOOOOOOOOOOOOOOOOOOO metrics_cache.clo: {:?}",
-        metrics_cache.clone()
-    );
-    if let Some(metrics) = metrics_cache.clone() {
-        if block_height > metrics.base_node.block_height {
-            state
-                .events_manager
-                .read()
-                .await
-                .handle_new_block_height(app, block_height)
-                .await;
-        }
-    } else {
-        println!("OOOOOOOOOOO2222222222222222222222");
-        state
-            .events_manager
-            .read()
-            .await
-            .wait_for_initial_wallet_scan(app, block_height)
-            .await;
-    }
+//     // state
+//     //     .systemtray_manager
+//     //     .write()
+//     //     .await
+//     //     .update_tray(new_systemtray_data);
 
-    let cpu_miner = state.cpu_miner.read().await;
-    let cpu_mining_status = match cpu_miner
-        .status(randomx_network_hashrate, block_reward)
-        .await
-        .map_err(|e| e.to_string())
-    {
-        Ok(cpu) => cpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-            state
-                .is_getting_miner_metrics
-                .store(false, Ordering::SeqCst);
-            return Err(e);
-        }
-    };
-    drop(cpu_miner);
-
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-    let gpu_mining_status = gpu_miner
-        .status(sha_network_hashrate, block_reward, gpu_mining_status)
-        .await
-        .unwrap_or_default();
-
-    let gpu_public_parameters = HardwareStatusMonitor::current()
-        .get_gpu_devices_public_properties()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let connected_peers = state
-        .node_manager
-        .list_connected_peers()
-        .await
-        .unwrap_or_default();
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
-    }
-
-    let new_systemtray_data = SystemTrayData {
-        cpu_hashrate: cpu_mining_status.hash_rate,
-        gpu_hashrate: gpu_mining_status.hash_rate,
-        estimated_earning: (cpu_mining_status.estimated_earnings
-            + gpu_mining_status.estimated_earnings) as f64,
-    };
-
-    state
-        .systemtray_manager
-        .write()
-        .await
-        .update_tray(new_systemtray_data);
-
-    let metrics_ret = MinerMetrics {
-        sha_network_hash_rate: sha_network_hashrate,
-        randomx_network_hash_rate: randomx_network_hashrate,
-        cpu: CpuMinerMetrics {
-            // hardware: cpu_public_parameters.clone(),
-            mining: cpu_mining_status,
-        },
-        gpu: GpuMinerMetrics {
-            hardware: gpu_public_parameters.clone(),
-            mining: gpu_mining_status,
-        },
-        base_node: BaseNodeStatus {
-            block_height,
-            block_time,
-            is_connected: !connected_peers.is_empty(),
-            connected_peers,
-        },
-    };
-
-    let mut lock = state.cached_miner_metrics.write().await;
-    *lock = Some(metrics_ret.clone());
-    state
-        .is_getting_miner_metrics
-        .store(false, Ordering::SeqCst);
-
-    Ok(metrics_ret)
-}
+// }
 
 #[tauri::command]
 pub async fn get_monero_seed_words(
@@ -1445,7 +1335,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.base_node_latest_status.borrow().clone();
+            let node_status = state.node_state_watch_rx.borrow().clone();
             let cpu_miner = state.cpu_miner.read().await;
             let cpu_mining_status = match cpu_miner
                 .status(
