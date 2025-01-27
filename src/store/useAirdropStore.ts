@@ -123,7 +123,7 @@ interface MiningPoint {
 }
 
 interface AirdropState {
-    authUuid: string;
+    authUuid?: string;
     syncedWithBackend: boolean;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
@@ -152,7 +152,6 @@ interface AirdropStore extends AirdropState {
 }
 
 const initialState: AirdropState = {
-    authUuid: '',
     seenPermissions: false,
     syncedWithBackend: false,
 };
@@ -222,28 +221,52 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
     }
 };
 
-export const fetchBackendInMemoryConfig = async () => {
-    const currentState = useAirdropStore.getState();
-
-    // Checks for old persisted tokens
+export const getExistingTokens = async () => {
     const existingTokensStore = localStorage.getItem('airdrop-store');
     let existingTokens: AirdropTokens | undefined = undefined;
     if (existingTokensStore) {
         try {
-            existingTokens = (JSON.parse(existingTokensStore).state as AirdropState).airdropTokens;
+            const parsedStore = JSON.parse(existingTokensStore);
+            if (parsedStore.state && parsedStore.state.airdropTokens) {
+                existingTokens = parsedStore.state.airdropTokens;
+                if (!existingTokens?.token || !existingTokens?.refreshToken) {
+                    return undefined;
+                }
+
+                await invoke('set_airdrop_tokens', {
+                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
+                });
+                const currentState = useAirdropStore.getState();
+
+                useAirdropStore.setState({
+                    ...currentState,
+                    airdropTokens: {
+                        ...existingTokens,
+                        expiresAt: parseJwt(existingTokens.token).exp,
+                    },
+                });
+
+                // Remove old tokens
+                localStorage.removeItem('airdrop-store');
+                console.info('Previous tokens set local store cleared');
+            }
         } catch (e) {
             console.error('Failed to parse existing tokens:', e);
         }
+    } else {
+        console.info('No existing tokens found');
     }
-    ////////////////////////////
+};
 
+export const fetchBackendInMemoryConfig = async () => {
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
 
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState = {
-            ...currentState,
+        const newState: AirdropState = {
+            seenPermissions: false,
+            syncedWithBackend: false,
             backendInMemoryConfig,
         };
 
@@ -252,27 +275,14 @@ export const fetchBackendInMemoryConfig = async () => {
                 ...airdropTokens,
                 expiresAt: parseJwt(airdropTokens.token).exp,
             };
-        } else if (existingTokens?.token) {
-            try {
-                await invoke('set_airdrop_tokens', {
-                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
-                });
-
-                newState.airdropTokens = {
-                    ...existingTokens,
-                    expiresAt: parseJwt(existingTokens.token).exp,
-                };
-
-                // Remove old tokens
-                localStorage.removeItem('airdrop-store');
-            } catch (e) {
-                console.error('get_app_in_memory_config error:', e);
-            }
         }
 
         useAirdropStore.setState(newState);
     } catch (e) {
         console.error('get_app_in_memory_config error:', e);
+    }
+    if (!backendInMemoryConfig?.airdropUrl) {
+        console.error('Error geting BE in memory config');
     }
     return backendInMemoryConfig;
 };

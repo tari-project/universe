@@ -4,7 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
 import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
-import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
+import { fetchBackendInMemoryConfig, getExistingTokens } from '@app/store/useAirdropStore.ts';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 export function useSetUp() {
@@ -20,11 +20,14 @@ export function useSetUp() {
     useEffect(() => {
         async function initWithToken() {
             const beConfig = await fetchBackendInMemoryConfig();
+            await getExistingTokens();
             if (beConfig?.airdropUrl) {
                 await handleRefreshAirdropTokens(beConfig.airdropUrl);
             }
         }
-        void initWithToken();
+        // Timeout added as there are instances where this gets called more than once
+        const timeout = setTimeout(() => initWithToken(), 500);
+        return () => clearTimeout(timeout);
     }, []);
 
     useEffect(() => {
