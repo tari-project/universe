@@ -8,7 +8,7 @@ export const SETTINGS_TYPES = [
     'experimental',
     'releaseNotes',
     'ootle',
-    'ootle-wallet',
+    'ootleWallet',
 ] as const;
 type SettingsTuple = typeof SETTINGS_TYPES;
 export type SettingsType = SettingsTuple[number];
