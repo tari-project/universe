@@ -8,7 +8,8 @@ import gemImage from '../../images/gem.png';
 
 export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { referralQuestPoints, authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
+    const { setFlareAnimationType, referralQuestPoints, authUuid, setAuthUuid, backendInMemoryConfig } =
+        useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
@@ -32,7 +33,7 @@ export default function LoggedOut() {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
-                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {
+                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/get-token/${authUuid}`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -43,6 +44,9 @@ export default function LoggedOut() {
                             if (!data.error) {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
+                                if (data.installReward) {
+                                    setFlareAnimationType('FriendAccepted');
+                                }
                             }
                         });
                 }
