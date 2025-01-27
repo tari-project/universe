@@ -25,7 +25,7 @@ export const ApplyInviteCode = () => {
     const [claimCode, setClaimCode] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
+    const { authUuid, setAuthUuid, backendInMemoryConfig, setFlareAnimationType } = useAirdropStore();
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
@@ -54,6 +54,9 @@ export const ApplyInviteCode = () => {
                     if (!data.error) {
                         setAirdropTokens(data)
                             .then(() => {
+                                if (data.installReward) {
+                                    setFlareAnimationType('FriendAccepted');
+                                }
                                 return true;
                             })
                             .catch(() => {
@@ -68,7 +71,7 @@ export const ApplyInviteCode = () => {
 
             return false;
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setFlareAnimationType]);
 
     useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
