@@ -24,6 +24,7 @@ export default function App() {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
+    const mmProxyVersion = useAppStateStore((s) => s.applications_versions?.mm_proxy);
     const { t } = useTranslation('common', { useSuspense: false });
 
     useEffect(() => {
@@ -42,7 +43,7 @@ export default function App() {
         }
     }, [isShuttingDown, isSettingUp]);
 
-    const showSetup = isSettingUp && !isShuttingDown && isAppReady;
+    const showSetup = isSettingUp && !isShuttingDown && isAppReady && !mmProxyVersion;
 
     return (
         <ThemeProvider>
@@ -62,21 +63,24 @@ export default function App() {
                                 <Splashscreen />
                             </AppContentContainer>
                         )}
+
                         {showSetup ? (
                             <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
                         ) : null}
-                        {!isShuttingDown && !isSettingUp && isAppReady && (
+
+                        {!showSetup && !isShuttingDown && !isSettingUp && isAppReady ? (
                             <AppContentContainer key="main" initial="dashboardInitial">
                                 <MainView />
                             </AppContentContainer>
-                        )}
-                        {isShuttingDown && isAppReady && (
+                        ) : null}
+
+                        {isShuttingDown && isAppReady ? (
                             <AppContentContainer key="shutdown" initial="hidden">
                                 <ShuttingDownScreen />
                             </AppContentContainer>
-                        )}
+                        ) : null}
                     </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>
