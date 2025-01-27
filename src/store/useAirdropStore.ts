@@ -222,9 +222,6 @@ export const getExistingTokens = async () => {
                     return undefined;
                 }
 
-                await invoke('set_airdrop_tokens', {
-                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
-                });
                 const currentState = useAirdropStore.getState();
 
                 useAirdropStore.setState({
@@ -233,6 +230,10 @@ export const getExistingTokens = async () => {
                         ...existingTokens,
                         expiresAt: parseJwt(existingTokens.token).exp,
                     },
+                });
+
+                await invoke('set_airdrop_tokens', {
+                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
                 });
 
                 // Remove old tokens
