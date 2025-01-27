@@ -269,7 +269,7 @@ export const fetchBackendInMemoryConfig = async () => {
         console.error('get_app_in_memory_config error:', e);
     }
     if (!backendInMemoryConfig?.airdropUrl) {
-        console.error('Error geting BE in memory config');
+        console.error('Error getting BE in memory config');
     }
     return backendInMemoryConfig;
 };
