@@ -9,6 +9,7 @@ docker run \
     --device=/dev/dri:/dev/dri \
     --volume="/etc/ssl/certs:/etc/ssl/certs:ro" \
     --volume="$HOME/.local/share/com.tari.universe.alpha:/root/.local/share/com.tari.universe.alpha" \
+    --volume="$(pwd)/AppImage:/root/app/AppImage" \
     --privileged \
     --net=host \
     taritest
