@@ -79,13 +79,13 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
         const totalGpuDevices = hardware.length;
         console.error('Excluded GPU devices: ', excludedGpuDevices);
         console.error('Hardware: ', hardware);
-        if (excludedGpuDevices.length === totalGpuDevices) {
-            const appConfigStore = useAppConfigStore.getState();
-            appConfigStore.setGpuMiningEnabled(false);
-        }
-        set({ excludedGpuDevices });
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+            if (excludedGpuDevices.length === totalGpuDevices) {
+                const appConfigStore = useAppConfigStore.getState();
+                appConfigStore.setGpuMiningEnabled(false);
+            }
+            set({ excludedGpuDevices });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);
