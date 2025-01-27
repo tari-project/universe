@@ -227,7 +227,6 @@ impl GpuMiner {
         &mut self,
         excluded_gpu_devices: Vec<u8>,
     ) -> Result<(), anyhow::Error> {
-        self.is_available = !(self.gpu_devices.len() <= excluded_gpu_devices.len());
         self.excluded_gpu_devices = excluded_gpu_devices;
         Ok(())
     }
