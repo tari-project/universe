@@ -11,3 +11,14 @@ export interface VaultData {
     token_symbol: string;
     vault_id: string;
 }
+
+export interface AccountInfo {
+    account: Account;
+    public_key: string;
+}
+export interface Account {
+    name: string | null;
+    address: string;
+    key_index: number;
+    is_default: boolean;
+}
