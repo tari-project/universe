@@ -11,6 +11,7 @@ export function useSetUp() {
     const isInitializingRef = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
+    const mmProxyVersion = useAppStateStore((s) => s.applications_versions?.mm_proxy);
 
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
@@ -25,10 +26,12 @@ export function useSetUp() {
                 await handleRefreshAirdropTokens(beConfig.airdropUrl);
             }
         }
-        // Timeout added as there are instances where this gets called more than once
-        const timeout = setTimeout(() => initWithToken(), 500);
-        return () => clearTimeout(timeout);
-    }, []);
+        if (mmProxyVersion) {
+            // Timeout added as there are instances where this gets called more than once
+            const timeout = setTimeout(() => initWithToken(), 500);
+            return () => clearTimeout(timeout);
+        }
+    }, [mmProxyVersion]);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
