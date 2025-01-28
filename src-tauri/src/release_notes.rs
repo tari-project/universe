@@ -28,7 +28,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 use dirs::cache_dir;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -87,7 +87,7 @@ impl ReleaseNotes {
 
     fn read_release_notes_file() -> Result<ReleaseNotesFile, Error> {
         let release_notes_path = ReleaseNotes::get_release_notes_path();
-        info!(target: LOG_TARGET, "Reading release notes from {}", release_notes_path);
+        debug!(target: LOG_TARGET, "Reading release notes from {}", release_notes_path);
         let content = std::fs::read_to_string(release_notes_path).map_err(|e| {
             error!(target: LOG_TARGET, "Failed to read release notes file: {}", e);
             anyhow!("Failed to read release notes file")
@@ -106,7 +106,7 @@ impl ReleaseNotes {
             e_tag,
             timestamp: SystemTime::now(),
         };
-        info!(target: LOG_TARGET, "Saving release notes to {}", release_notes_path);
+        debug!(target: LOG_TARGET, "Saving release notes to {}", release_notes_path);
         let content = serde_json::to_string(&content_to_save)?;
         std::fs::write(release_notes_path, content).map_err(|e| {
             error!(target: LOG_TARGET, "Failed to save release notes file: {}", e);
@@ -141,7 +141,7 @@ impl ReleaseNotes {
     }
 
     async fn fetch_release_notes_header(&self) -> Result<String, Error> {
-        info!(target: LOG_TARGET, "Fetching release notes header from {}", CHANGELOG_URL);
+        debug!(target: LOG_TARGET, "Fetching release notes header from {}", CHANGELOG_URL);
         let client = ReleaseNotes::build_retry_reqwest_client();
 
         let response = client.head(CHANGELOG_URL).send().await?;
@@ -155,7 +155,7 @@ impl ReleaseNotes {
     }
 
     async fn fetch_release_notes(&self) -> Result<(String, String), Error> {
-        info!(target: LOG_TARGET, "Fetching release notes from {}", CHANGELOG_URL);
+        debug!(target: LOG_TARGET, "Fetching release notes from {}", CHANGELOG_URL);
         let client = ReleaseNotes::build_retry_reqwest_client();
 
         let response = client.get(CHANGELOG_URL).send().await?;
@@ -170,7 +170,7 @@ impl ReleaseNotes {
     }
 
     async fn handle_fetching_and_saving(&self) -> Result<ReleaseNotesFile, Error> {
-        info!(target: LOG_TARGET, "Fetching and saving release notes");
+        debug!(target: LOG_TARGET, "Fetching and saving release notes");
         let (release_notes, e_tag) = self.fetch_release_notes().await?;
         self.save_release_notes_file(&release_notes, e_tag.clone())?;
         let version = ReleaseNotes::get_latest_version_from_changelog(&release_notes)
@@ -188,7 +188,7 @@ impl ReleaseNotes {
             .await
             .replace(new_release_notes.clone());
 
-        info!(target: LOG_TARGET, "Release notes fetched and saved");
+        debug!(target: LOG_TARGET, "Release notes fetched and saved");
 
         Ok(new_release_notes)
     }
@@ -199,7 +199,7 @@ impl ReleaseNotes {
         drop(release_notes_file_lock);
 
         if force_fetch {
-            info!(target: LOG_TARGET, "Forcing release notes fetch");
+            debug!(target: LOG_TARGET, "Forcing release notes fetch");
             return Ok(self.handle_fetching_and_saving().await?);
         };
 
@@ -210,20 +210,20 @@ impl ReleaseNotes {
                 .unwrap_or(true);
 
             if !did_expire {
-                info!(target: LOG_TARGET, "Using cached release notes");
+                debug!(target: LOG_TARGET, "Using cached release notes");
                 return Ok(release_notes_file.clone());
             };
 
             let e_tag = self.fetch_release_notes_header().await?;
             if e_tag == release_notes_file.e_tag {
-                info!(target: LOG_TARGET, "Found matching ETag, using cached release notes");
+                debug!(target: LOG_TARGET, "Found matching ETag, using cached release notes");
                 Ok(release_notes_file.clone())
             } else {
-                info!(target: LOG_TARGET, "Found different ETag, fetching release notes");
+                debug!(target: LOG_TARGET, "Found different ETag, fetching release notes");
                 Ok(self.handle_fetching_and_saving().await?)
             }
         } else {
-            info!(target: LOG_TARGET, "Didn't find cached release notes, fetching");
+            debug!(target: LOG_TARGET, "Didn't find cached release notes, fetching");
             Ok(self.handle_fetching_and_saving().await?)
         }
     }

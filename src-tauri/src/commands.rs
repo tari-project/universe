@@ -1811,11 +1811,7 @@ pub async fn get_release_notes(
     let last_release_notes_version_shown =
         Version::parse(&last_release_notes_version_shown).map_err(|e| e.to_string())?;
 
-    info!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}", current_app_version, last_release_notes_version_shown);
-
     let was_updated = current_app_version.gt(&last_release_notes_version_shown);
-
-    info!(target: LOG_TARGET, "force_fetch: {}", was_updated);
 
     let release_notes = ReleaseNotes::current()
         .get_release_notes(was_updated)
@@ -1825,7 +1821,13 @@ pub async fn get_release_notes(
     let is_release_notes_version_matching_current_version =
         current_app_version.eq(&Version::parse(&release_notes.version).map_err(|e| e.to_string())?);
 
-    // info!(target: LOG_TARGET, "release_notes: {}", release_notes);
+    debug!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}, release_notes_version: {}, was_updated: {}, is_release_notes_version_matching_current_version: {}",
+        current_app_version,
+        last_release_notes_version_shown,
+        release_notes.version,
+        was_updated,
+        is_release_notes_version_matching_current_version
+    );
 
     if is_release_notes_version_matching_current_version {
         state
