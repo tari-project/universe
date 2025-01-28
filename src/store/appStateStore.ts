@@ -115,3 +115,11 @@ export const setSetupComplete = async () => {
 
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
+
+export const getReleaseNotes = async () => {
+    try {
+        return await invoke('get_release_notes');
+    } catch (error) {
+        console.error('Error getting release notes', error);
+    }
+};

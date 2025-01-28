@@ -35,6 +35,7 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
+use crate::release_notes::ReleaseNotes;
 use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
@@ -47,6 +48,7 @@ use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
@@ -751,18 +753,6 @@ pub async fn get_coinbase_transactions(
         .is_getting_transaction_history
         .store(false, Ordering::SeqCst);
     Ok(transactions)
-}
-
-#[tauri::command]
-pub async fn get_last_changelog_version(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let timer = Instant::now();
-    let last_changelog_version = state.config.read().await.last_changelog_version().into();
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_last_changelog_version took too long: {:?}", timer.elapsed());
-    }
-    Ok(last_changelog_version)
 }
 
 #[tauri::command]
@@ -1805,24 +1795,47 @@ pub async fn proceed_with_update(
 }
 
 #[tauri::command]
-pub async fn set_last_changelog_version(
-    version: String,
+pub async fn get_release_notes(
+    app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+) -> Result<String, String> {
     let timer = Instant::now();
 
-    state
+    let current_app_version = app.package_info().version.clone();
+    let last_release_notes_version_shown = state
         .config
-        .write()
+        .read()
         .await
-        .set_last_changelog_version(version)
+        .last_changelog_version()
+        .to_string();
+    let last_release_notes_version_shown =
+        Version::parse(&last_release_notes_version_shown).map_err(|e| e.to_string())?;
+
+    info!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}", current_app_version, last_release_notes_version_shown);
+
+    let was_updated = current_app_version.gt(&last_release_notes_version_shown);
+
+    info!(target: LOG_TARGET, "force_fetch: {}", was_updated);
+
+    let release_notes = ReleaseNotes::current()
+        .get_release_notes(was_updated)
         .await
-        .inspect_err(|e| error!("error at set_last_changelog_version{:?}", e))
         .map_err(|e| e.to_string())?;
 
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_last_changelog_version took too long: {:?}", timer.elapsed());
+    // info!(target: LOG_TARGET, "release_notes: {}", release_notes);
+
+    if was_updated {
+        state
+            .config
+            .write()
+            .await
+            .set_last_changelog_version(current_app_version.to_string())
+            .await
+            .map_err(|e| e.to_string())?;
     }
 
-    Ok(())
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());
+    }
+    Ok(release_notes)
 }

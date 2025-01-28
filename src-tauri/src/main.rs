@@ -30,6 +30,7 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
+use semver::Version;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
@@ -759,6 +760,23 @@ async fn setup_inner(
         }
     });
 
+    let current_app_version = app.package_info().version.clone();
+    let last_release_notes_version_shown = state
+        .config
+        .read()
+        .await
+        .last_changelog_version()
+        .to_string();
+    let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
+
+    let did_app_updated = current_app_version.gt(&last_release_notes_version_shown);
+
+    if did_app_updated {
+        app.emit("show_release_notes", ()).inspect_err(
+            |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
+        )?;
+    }
+
     Ok(())
 }
 
@@ -1161,8 +1179,7 @@ fn main() {
             commands::try_update,
             commands::get_network,
             commands::sign_ws_data,
-            commands::get_last_changelog_version,
-            commands::set_last_changelog_version,
+            commands::get_release_notes,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens
         ])

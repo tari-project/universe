@@ -16,7 +16,7 @@ import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { useReleaseNotes } from './useReleaseNotes';
+import { getReleaseNotes } from '@app/store/appStateStore';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
@@ -57,14 +57,19 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
 
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
-    const { fetchReleaseNotes } = useReleaseNotes();
-
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
                 setIsLoading(true);
 
-                const text = await fetchReleaseNotes();
+                console.log('Loading release notes...');
+                const text = await getReleaseNotes();
+
+                if (!text) {
+                    console.log('No release notes found');
+                    setIsLoading(false);
+                    return;
+                }
 
                 const parsedSections = parseMarkdownSections(text);
                 setSections(parsedSections);
@@ -76,8 +81,6 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
         };
 
         loadReleaseNotes();
-
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
