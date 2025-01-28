@@ -216,9 +216,9 @@ export interface GpuMinerStatus {
 export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
-    is_connected: boolean;
-    sha_network_hash_rate: number;
-    randomx_network_hash_rate: number;
+    is_synced: boolean;
+    sha_network_hashrate: number;
+    randomx_network_hashrate: number;
 }
 
 export interface WalletBalance {

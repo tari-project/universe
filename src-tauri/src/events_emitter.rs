@@ -20,6 +20,7 @@ pub enum FrontendEventType {
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
+    NewBlockMined
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -34,10 +35,16 @@ struct WalletAddressUpdatePayload {
     tari_address_emoji: String,
 }
 
+#[derive(Clone, Debug, Serialize)]
+struct NewBlockMinedPayload {
+    block_height: u64,
+    coinbase_transaction: Option<bool>,
+}
+
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
-    pub async fn emit_wallet_address_update(app_handle: AppHandle, wallet_address: TariAddress) {
+    pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
         let event = FrontendEvent {
             event_type: FrontendEventType::WalletAddressUpdate,
             payload: WalletAddressUpdatePayload {
@@ -50,7 +57,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_balance_update(app_handle: AppHandle, balance: WalletBalance) {
+    pub async fn emit_wallet_balance_update(app_handle: &AppHandle, balance: WalletBalance) {
         let event = FrontendEvent {
             event_type: FrontendEventType::WalletBalanceUpdate,
             payload: balance,
@@ -60,7 +67,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_base_node_update(app_handle: AppHandle, status: BaseNodeStatus) {
+    pub async fn emit_base_node_update(app_handle: &AppHandle, status: BaseNodeStatus) {
         let event = FrontendEvent {
             event_type: FrontendEventType::BaseNodeUpdate,
             payload: status,
@@ -71,7 +78,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_gpu_devices_update(
-        app_handle: AppHandle,
+        app_handle: &AppHandle,
         gpu_public_devices: Vec<PublicDeviceProperties>,
     ) {
         let event = FrontendEvent {
@@ -83,7 +90,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_cpu_mining_update(app_handle: AppHandle, status: CpuMinerStatus) {
+    pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
         let event = FrontendEvent {
             event_type: FrontendEventType::CpuMiningUpdate,
             payload: status,
@@ -93,7 +100,7 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_gpu_mining_update(app_handle: AppHandle, status: GpuMinerStatus) {
+    pub async fn emit_gpu_mining_update(app_handle: &AppHandle, status: GpuMinerStatus) {
         let event = FrontendEvent {
             event_type: FrontendEventType::GpuMiningUpdate,
             payload: status,
@@ -103,13 +110,26 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_connected_peers_update(app_handle: AppHandle, connected_peers: Vec<String>) {
+    pub async fn emit_connected_peers_update(app_handle: &AppHandle, connected_peers: Vec<String>) {
         let event = FrontendEvent {
             event_type: FrontendEventType::ConnectedPeersUpdate,
             payload: connected_peers,
         };
         if let Err(e) = app_handle.emit("frontend_event", event) {
             error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {:?}", e);
+        }
+    }
+    // Replace with real coinbase transaction
+    pub async fn emit_new_block_mined(app_handle: &AppHandle, block_height: u64, coinbase_transaction: Option<bool>) {
+        let event = FrontendEvent {
+            event_type: FrontendEventType::NewBlockMined,
+            payload: NewBlockMinedPayload {
+                block_height,
+                coinbase_transaction
+            },
+        };
+        if let Err(e) = app_handle.emit("frontend_event", event) {
+            error!(target: LOG_TARGET, "Failed to emit NewBlockMined event: {:?}", e);
         }
     }
 }

@@ -22,10 +22,6 @@ interface State {
     replayItem?: TransactionInfo;
 }
 
-interface WinAnimation {
-    latestTx: TransactionInfo;
-    canAnimate?: boolean;
-}
 interface Actions {
     setDisplayBlockHeight: (displayBlockHeight: number) => void;
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
@@ -55,9 +51,9 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRecapCount: (recapCount) => set({ recapCount }),
 }));
 
-const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
-    const blockHeight = Number(latestTx?.mined_in_block_height);
-    const earnings = latestTx.amount;
+const handleWin = async (coinbase_transaction: TransactionInfo, canAnimate: boolean) => {
+    const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
+    const earnings = coinbase_transaction.amount;
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
@@ -73,7 +69,7 @@ const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
         }, 2000);
     } else {
         useBlockchainVisualisationStore.setState((curr) => ({
-            recapIds: [...curr.recapIds, latestTx.tx_id],
+            recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
         }));
@@ -111,21 +107,24 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (newBlockHeight: number, isMining?: boolean) => {
-    if (isMining) {
-        const coinbase_txs = await useWalletStore.getState().refreshCoinbaseTransactions();
+export const handleNewBlock = async (payload: { block_height: number; coinbase_transaction?: boolean }) => {
+    if (useMiningStore.getState().miningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
-        const latestTx = coinbase_txs?.[0];
-        const latestTxBlock = latestTx?.mined_in_block_height;
 
-        if (latestTx && latestTxBlock === newBlockHeight) {
-            await handleWin({ latestTx, canAnimate });
+        if (payload.coinbase_transaction) {
+            // NOTE: TEMPORARY HACKS FOR TESTING
+            const coinbase_transaction = {
+                mined_in_block_height: payload.block_height - 1,
+                amount: 100_000_000,
+                tx_id: Math.random().toString(36).substring(12),
+            } as any as TransactionInfo;
+            await handleWin(coinbase_transaction, canAnimate);
         } else {
-            await handleFail(newBlockHeight, canAnimate);
+            await handleFail(payload.block_height, canAnimate);
         }
     } else {
-        useBlockchainVisualisationStore.setState({ displayBlockHeight: newBlockHeight });
+        useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
     }
 };

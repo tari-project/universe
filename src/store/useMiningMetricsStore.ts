@@ -24,9 +24,9 @@ const initialState: MiningMetricsStoreState = {
     base_node_status: {
         block_height: 0,
         block_time: 0,
-        is_connected: false,
-        sha_network_hash_rate: 0,
-        randomx_network_hash_rate: 0,
+        is_synced: false,
+        sha_network_hashrate: 0,
+        randomx_network_hashrate: 0,
     },
     connected_peers: [],
     cpu_devices: [],
@@ -60,7 +60,6 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set) => ({
         set({ connected_peers });
     },
     setBaseNodeStatus: (base_node_status) => {
-        console.log('setBaseNodeStatus', base_node_status);
         set({ base_node_status });
     },
 }));

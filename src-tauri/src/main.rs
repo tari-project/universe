@@ -472,7 +472,7 @@ async fn setup_inner(
             .events_manager
             .read()
             .await
-            .handle_gpu_devices_update(app.clone(), gpu_devices)
+            .handle_gpu_devices_update(&app, gpu_devices)
             .await;
     } else {
         error!(target: LOG_TARGET, "Could not get hardware status");
@@ -699,26 +699,6 @@ async fn setup_inner(
             ),
     );
 
-    // let move_handle = app.clone();
-    // tauri::async_runtime::spawn(async move {
-    //     let app_state = move_handle.state::<UniverseAppState>().clone();
-    //     let app_handle = move_handle.app_handle().clone();
-    //     let mut interval: time::Interval = time::interval(Duration::from_secs(1));
-    //     let mut shutdown_signal = app_state.shutdown.to_signal();
-    //     loop {
-    //         select! {
-    //             _ = interval.tick() => {
-    //                 if let Ok(metrics_ret) = commands::get_miner_metrics(app_state.clone(), app_handle.clone()).await {
-    //                     drop(move_handle.emit("miner_metrics", metrics_ret));
-    //                 }
-    //             },
-    //             _ = shutdown_signal.wait() => {
-    //                 break;
-    //             },
-    //         }
-    //     }
-    // });
-
     let move_app = app.clone();
     let move_node_status = state.node_state_watch_rx.clone();
 
@@ -733,7 +713,7 @@ async fn setup_inner(
             .events_manager
             .read()
             .await
-            .wait_for_initial_wallet_scan(move_app.clone(), current_block_height)
+            .wait_for_initial_wallet_scan(&move_app, current_block_height)
             .await;
 
         let mut latest_updated_block_height = current_block_height;
@@ -744,14 +724,14 @@ async fn setup_inner(
                     let node_status: BaseNodeStatus = (*move_node_status).borrow().clone();
                     if node_status.block_height > latest_updated_block_height {
                         app_state.events_manager.read().await
-                            .handle_new_block_height(move_app.clone(), node_status.block_height).await;
+                            .handle_new_block_height(&move_app, node_status.block_height).await;
 
                         latest_updated_block_height = node_status.block_height;
                     }
                     // **************** MINER _ METRICS ****************
                     // BASE NODE
                     app_state.events_manager.read().await
-                        .handle_base_node_update(move_app.clone(), node_status.clone()).await;
+                        .handle_base_node_update(&move_app, node_status.clone()).await;
 
                     // CPU STATUS
                     if let Ok(cpu_status) = app_state.cpu_miner.read().await
@@ -759,7 +739,7 @@ async fn setup_inner(
                         .await
                     {
                         app_state.events_manager.read().await
-                            .handle_cpu_mining_update(move_app.clone(), cpu_status).await;
+                            .handle_cpu_mining_update(&move_app, cpu_status).await;
                     } else {
                         let e = "Error getting cpu miner status".to_string();
                         error!(target: LOG_TARGET, "{}", e);
@@ -771,7 +751,7 @@ async fn setup_inner(
                         .await
                     {
                         app_state.events_manager.read().await
-                            .handle_gpu_mining_update(move_app.clone(), gpu_status).await;
+                            .handle_gpu_mining_update(&move_app, gpu_status).await;
                     } else {
                         let e = "Error getting gpu miner status".to_string();
                         error!(target: LOG_TARGET, "{}", e);
@@ -783,7 +763,7 @@ async fn setup_inner(
                         .list_connected_peers()
                         .await {
                             app_state.events_manager.read().await
-                                .handle_connected_peers_update(move_app.clone(), connected_peers).await;
+                                .handle_connected_peers_update(&move_app, connected_peers).await;
                         } else {
                             error!(target: LOG_TARGET, "Error getting connected peers");
                         }
@@ -1131,7 +1111,7 @@ fn main() {
                         let mut address_lock = address.write().await;
                         *address_lock = wallet.get_tari_address();
                         let mut events_manager_lock = events_manager.write().await;
-                        events_manager_lock.handle_internal_wallet_loaded_or_created(app_handle_clone, wallet.get_tari_address()).await;
+                        events_manager_lock.handle_internal_wallet_loaded_or_created(&app_handle_clone, wallet.get_tari_address()).await;
                         Ok(())
                         //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }

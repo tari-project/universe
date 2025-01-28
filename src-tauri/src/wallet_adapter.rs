@@ -333,6 +333,8 @@ pub struct TransactionInfo {
     pub mined_in_block_height: u64,
 }
 
+// TODO: We should get rid of methods from here
+// TODO: Store client connection??
 impl WalletStatusMonitor {
     fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
