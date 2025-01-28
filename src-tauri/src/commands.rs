@@ -1822,9 +1822,12 @@ pub async fn get_release_notes(
         .await
         .map_err(|e| e.to_string())?;
 
+    let is_release_notes_version_matching_current_version =
+        current_app_version.eq(&Version::parse(&release_notes.version).map_err(|e| e.to_string())?);
+
     // info!(target: LOG_TARGET, "release_notes: {}", release_notes);
 
-    if was_updated {
+    if is_release_notes_version_matching_current_version {
         state
             .config
             .write()
@@ -1837,5 +1840,5 @@ pub async fn get_release_notes(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());
     }
-    Ok(release_notes)
+    Ok(release_notes.content)
 }

@@ -169,28 +169,31 @@ impl ReleaseNotes {
         }
     }
 
-    async fn handle_fetching_and_saving(&self) -> Result<String, Error> {
+    async fn handle_fetching_and_saving(&self) -> Result<ReleaseNotesFile, Error> {
         info!(target: LOG_TARGET, "Fetching and saving release notes");
         let (release_notes, e_tag) = self.fetch_release_notes().await?;
         self.save_release_notes_file(&release_notes, e_tag.clone())?;
         let version = ReleaseNotes::get_latest_version_from_changelog(&release_notes)
             .unwrap_or_else(|| "Unknown".to_string());
+
+        let new_release_notes = ReleaseNotesFile {
+            content: release_notes,
+            version,
+            e_tag,
+            timestamp: SystemTime::now(),
+        };
+
         self.release_notes_file
             .write()
             .await
-            .replace(ReleaseNotesFile {
-                content: release_notes.clone(),
-                version: version.clone(),
-                e_tag,
-                timestamp: SystemTime::now(),
-            });
+            .replace(new_release_notes.clone());
 
         info!(target: LOG_TARGET, "Release notes fetched and saved");
 
-        Ok(release_notes)
+        Ok(new_release_notes)
     }
 
-    pub async fn get_release_notes(&self, force_fetch: bool) -> Result<String, Error> {
+    pub async fn get_release_notes(&self, force_fetch: bool) -> Result<ReleaseNotesFile, Error> {
         let release_notes_file_lock = self.release_notes_file.read().await;
         let file = release_notes_file_lock.deref().clone();
         drop(release_notes_file_lock);
@@ -208,13 +211,13 @@ impl ReleaseNotes {
 
             if !did_expire {
                 info!(target: LOG_TARGET, "Using cached release notes");
-                return Ok(release_notes_file.content.clone());
+                return Ok(release_notes_file.clone());
             };
 
             let e_tag = self.fetch_release_notes_header().await?;
             if e_tag == release_notes_file.e_tag {
                 info!(target: LOG_TARGET, "Found matching ETag, using cached release notes");
-                Ok(release_notes_file.content.clone())
+                Ok(release_notes_file.clone())
             } else {
                 info!(target: LOG_TARGET, "Found different ETag, fetching release notes");
                 Ok(self.handle_fetching_and_saving().await?)
@@ -223,5 +226,13 @@ impl ReleaseNotes {
             info!(target: LOG_TARGET, "Didn't find cached release notes, fetching");
             Ok(self.handle_fetching_and_saving().await?)
         }
+    }
+
+    pub async fn get_current_release_notes_version(&self) -> Option<String> {
+        let release_notes_file_lock = self.release_notes_file.read().await;
+        let file = release_notes_file_lock.deref().clone();
+        drop(release_notes_file_lock);
+
+        file.map(|f| f.version.clone())
     }
 }

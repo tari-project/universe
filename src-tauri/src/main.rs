@@ -30,6 +30,7 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
+use release_notes::ReleaseNotes;
 use semver::Version;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
@@ -760,6 +761,9 @@ async fn setup_inner(
         }
     });
 
+    let release_notes_version = ReleaseNotes::current()
+        .get_current_release_notes_version()
+        .await;
     let current_app_version = app.package_info().version.clone();
     let last_release_notes_version_shown = state
         .config
@@ -770,8 +774,16 @@ async fn setup_inner(
     let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
 
     let did_app_updated = current_app_version.gt(&last_release_notes_version_shown);
+    let was_this_version_shown = release_notes_version
+        .as_ref()
+        .map(|v| {
+            Version::parse(&v)
+                .unwrap_or_else(|_| Version::new(0, 0, 0))
+                .eq(&current_app_version)
+        })
+        .unwrap_or(false);
 
-    if did_app_updated {
+    if did_app_updated && !was_this_version_shown {
         app.emit("show_release_notes", ()).inspect_err(
             |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
         )?;
