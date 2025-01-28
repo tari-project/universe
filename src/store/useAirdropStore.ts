@@ -1,5 +1,6 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
 import { invoke } from '@tauri-apps/api/core';
+import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -196,7 +197,10 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
         });
 
         await invoke('set_airdrop_tokens', {
-            airdropTokens: { token: airdropTokens.token, refresh_token: airdropTokens.refreshToken },
+            airdropTokens: {
+                token: airdropTokens.token,
+                refresh_token: airdropTokens.refreshToken,
+            },
         });
     } else {
         // User not connected
@@ -238,13 +242,13 @@ export const getExistingTokens = async () => {
 
                 // Remove old tokens
                 localStorage.removeItem('airdrop-store');
-                console.info('Previous tokens set local store cleared');
+                console.debug('Previous tokens set local store cleared');
             }
         } catch (e) {
             console.error('Failed to parse existing tokens:', e);
         }
     } else {
-        console.info('No existing tokens found');
+        console.debug('No existing tokens found');
     }
 };
 
@@ -262,15 +266,33 @@ export const fetchBackendInMemoryConfig = async () => {
             newState.airdropTokens = {
                 ...airdropTokens,
                 expiresAt: parseJwt(airdropTokens.token).exp,
+                refreshToken: airdropTokens.refresh_token,
             };
         }
 
         useAirdropStore.setState(newState);
     } catch (e) {
-        console.error('get_app_in_memory_config error:', e);
+        throw `get_app_in_memory_config error: ${e}`;
     }
+
     if (!backendInMemoryConfig?.airdropUrl) {
         console.error('Error getting BE in memory config');
     }
+
     return backendInMemoryConfig;
+};
+
+export const airdropSetup = async () => {
+    try {
+        console.debug('Fetching backend in memory config');
+        const beConfig = await fetchBackendInMemoryConfig();
+        console.debug('Getting existing tokens');
+        await getExistingTokens();
+        if (beConfig?.airdropUrl) {
+            console.debug('Refreshing airdrop tokens');
+            await handleRefreshAirdropTokens(beConfig.airdropUrl);
+        }
+    } catch (error) {
+        console.error('Error in airdropSetup: ', error);
+    }
 };
