@@ -4,8 +4,8 @@
         "mmproxy": "=1.11.0-pre.0",
         "minotari_node": "=1.11.0-pre.0",
         "wallet": "=1.11.0-pre.0",
-        "sha-p2pool": "=0.20.6",
-        "xtrgpuminer": "=0.2.11",
+        "sha-p2pool": "=0.21.0",
+        "xtrgpuminer": "=0.2.12",
         "tor": "=13.5.7"
     }
 }
