@@ -32,6 +32,7 @@ use log::{debug, error, info, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
@@ -228,11 +229,12 @@ impl ReleaseNotes {
         }
     }
 
-    pub async fn get_current_release_notes_version(&self) -> Option<String> {
+    pub async fn get_current_release_notes_version(&self) -> Option<Version> {
         let release_notes_file_lock = self.release_notes_file.read().await;
         let file = release_notes_file_lock.deref().clone();
         drop(release_notes_file_lock);
 
-        file.map(|f| f.version.clone())
+        file.map(|f| Version::parse(f.version.as_str()).ok())
+            .flatten()
     }
 }

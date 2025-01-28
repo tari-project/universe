@@ -1818,26 +1818,12 @@ pub async fn get_release_notes(
         .await
         .map_err(|e| e.to_string())?;
 
-    let is_release_notes_version_matching_current_version =
-        current_app_version.eq(&Version::parse(&release_notes.version).map_err(|e| e.to_string())?);
-
-    debug!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}, release_notes_version: {}, was_updated: {}, is_release_notes_version_matching_current_version: {}",
+    debug!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}, release_notes_version: {}, was_updated: {}",
         current_app_version,
         last_release_notes_version_shown,
         release_notes.version,
         was_updated,
-        is_release_notes_version_matching_current_version
     );
-
-    if is_release_notes_version_matching_current_version {
-        state
-            .config
-            .write()
-            .await
-            .set_last_changelog_version(current_app_version.to_string())
-            .await
-            .map_err(|e| e.to_string())?;
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());
