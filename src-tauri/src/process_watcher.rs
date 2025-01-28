@@ -148,7 +148,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                       _ = watch_timer.tick() => {
                         let status_monitor3 = status_monitor2.clone();
 
-                        let exit_code = do_health_check(
+                        if let Some(exit_code) = do_health_check(
                             &mut child,
                             status_monitor3,
                             name.clone(),
@@ -160,12 +160,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             &mut warning_count,
                             &stop_on_exit_codes,
                             &mut stats
-                        ).await?;
-                        if exit_code != 0 {
+                        ).await? {
                             return Ok(exit_code);
-                                                }
-                            //    break;
-                      },
+                        }
+                    },
                     _ = inner_shutdown.wait() => {
                         return child.stop().await;
 
@@ -229,8 +227,9 @@ async fn do_health_check<T: StatusMonitor>(
     warning_count: &mut u32,
     stop_on_exit_codes: &[i32],
     stats: &mut ProcessWatcherStats,
-) -> Result<i32, anyhow::Error> {
+) -> Result<Option<i32>, anyhow::Error> {
     let mut is_healthy = false;
+    let mut ping_failed = false;
 
     stats.total_health_checks += 1;
     let health_timer = Instant::now();
@@ -269,6 +268,8 @@ async fn do_health_check<T: StatusMonitor>(
                 }
             }
         }
+    } else {
+        ping_failed = true;
     }
     let health_check_duration = health_timer.elapsed();
     if health_check_duration > stats.max_health_check_duration {
@@ -283,14 +284,14 @@ async fn do_health_check<T: StatusMonitor>(
         && !inner_shutdown.is_triggered()
     {
         stats.num_failures += 1;
-        if uptime.elapsed() < expected_startup_time {
+        if uptime.elapsed() < expected_startup_time && !ping_failed {
             warn!(target: LOG_TARGET, "{} is not healthy. Waiting for startup time to elapse", name);
         } else {
             match child.stop().await {
                 Ok(exit_code) => {
                     if exit_code != 0 {
                         if stop_on_exit_codes.contains(&exit_code) {
-                            return Ok(exit_code);
+                            return Ok(Some(exit_code));
                         }
                         warn!(target: LOG_TARGET, "{} exited with error code: {}, restarting because it is not a listed exit code to list for", name, exit_code);
 
@@ -317,5 +318,5 @@ async fn do_health_check<T: StatusMonitor>(
     } else {
         stats.current_uptime = uptime.elapsed();
     }
-    Ok(0)
+    Ok(None)
 }
