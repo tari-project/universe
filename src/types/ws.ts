@@ -2,6 +2,7 @@ export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
     MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
     MINING_STATUS_CREW_DISCONNECTED = 'mining_status_crew_disconnected',
+    REFERRAL_INSTALL_REWARD = 'referral_install_reward',
     MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
 }
 
@@ -51,7 +52,12 @@ export interface MiningStatusCrewDisconnectedEvent {
     };
 }
 
+export interface ReferralInstallRewardEvent {
+    name: WebsocketEventNames.REFERRAL_INSTALL_REWARD;
+}
+
 export type WebsocketUserEvent =
+    | ReferralInstallRewardEvent
     | QuestCompletedEvent
     | MiningStatusCrewUpdateEvent
     | MiningStatusUserUpdateEvent
