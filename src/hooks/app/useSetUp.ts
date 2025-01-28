@@ -4,34 +4,18 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
 import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
-import { fetchBackendInMemoryConfig, getExistingTokens } from '@app/store/useAirdropStore.ts';
-import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { airdropSetup } from '@app/store/useAirdropStore.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
-    const beConfigSet = useRef(false);
     const adminShow = useUIStore((s) => s.adminShow);
     const fetchApplicationsVersionsWithRetry = useAppStateStore((s) => s.fetchApplicationsVersionsWithRetry);
-    const mmProxyVersion = useAppStateStore((s) => s.applications_versions?.mm_proxy);
 
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
+        await airdropSetup();
     }, [fetchApplicationsVersionsWithRetry]);
-
-    useEffect(() => {
-        async function initWithToken() {
-            const beConfig = await fetchBackendInMemoryConfig();
-            await getExistingTokens();
-            if (beConfig?.airdropUrl) {
-                await handleRefreshAirdropTokens(beConfig.airdropUrl);
-            }
-        }
-        if (mmProxyVersion && !beConfigSet.current) {
-            beConfigSet.current = true;
-            initWithToken();
-        }
-    }, [mmProxyVersion]);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
