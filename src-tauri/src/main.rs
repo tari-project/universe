@@ -119,6 +119,7 @@ mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
+mod release_notes;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
