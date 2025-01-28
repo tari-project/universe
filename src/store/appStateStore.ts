@@ -43,6 +43,7 @@ const initialstate: State = {
     externalDependencies: [],
     missingExternalDependencies: [],
 };
+
 export const useAppStateStore = create<AppState>()((set, getState) => ({
     ...initialstate,
     setCriticalError: (criticalError) => set({ criticalError }),
