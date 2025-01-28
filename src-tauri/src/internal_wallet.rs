@@ -48,6 +48,7 @@ use tari_key_manager::SeedWords;
 use tari_utilities::hex::Hex;
 
 use crate::credential_manager::{Credential, CredentialError, CredentialManager};
+use crate::wallet_adapter::WalletBalance;
 
 const KEY_MANAGER_COMMS_SECRET_KEY_BRANCH_KEY: &str = "comms";
 const LOG_TARGET: &str = "tari::universe::internal_wallet";
@@ -127,7 +128,12 @@ impl InternalWallet {
         self.tari_address.clone()
     }
 
-    pub async fn get_paper_wallet_details(&self) -> Result<PaperWalletConfig, anyhow::Error> {
+    pub async fn get_paper_wallet_details(
+        &self,
+        wallet_balance: Option<WalletBalance>,
+        auth_uuid: Option<String>,
+    ) -> Result<PaperWalletConfig, anyhow::Error> {
+        let _ = wallet_balance;
         let path = match &self.config.config_path {
             Some(p) => p.clone(),
             None => return Err(anyhow!("No config path found")),
@@ -149,10 +155,24 @@ impl InternalWallet {
             .trim()
             .to_lowercase();
 
-        let link = format!(
+        let mut link = format!(
             "tari://{}/paper_wallet?private_key={}",
             network, seed_words_encrypted_base58,
         );
+        // Add wallet_balance as a query parameter if it exists
+        if let Some(balance) = &wallet_balance {
+            link.push_str(&format!(
+                "&balance={}",
+                balance.available_balance
+                    + balance.timelocked_balance
+                    + balance.pending_incoming_balance
+            ));
+        }
+
+        // Add auth_uuid as a query parameter if it exists
+        if let Some(uuid) = &auth_uuid {
+            link.push_str(&format!("&tt={}", uuid));
+        }
 
         let paper_wallet_details = PaperWalletConfig {
             qr_link: link,
