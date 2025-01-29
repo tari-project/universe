@@ -761,34 +761,14 @@ async fn setup_inner(
         }
     });
 
-    let release_notes_version = ReleaseNotes::current()
-        .get_release_notes(false)
-        .await?
-        .version;
-    let release_notes_version = Version::parse(&release_notes_version)?;
-    let current_app_version = app.package_info().version.clone();
-    let last_release_notes_version_shown = state
-        .config
-        .read()
-        .await
-        .last_changelog_version()
-        .to_string();
-    let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
+    let should_show_release_notes = ReleaseNotes::current()
+        .should_show_release_notes(state.clone(), app.clone())
+        .await?;
 
-    let was_release_notes_updated = release_notes_version.gt(&last_release_notes_version_shown);
-    let is_app_on_latest_release_notes_version = release_notes_version.eq(&current_app_version);
-
-    if was_release_notes_updated && is_app_on_latest_release_notes_version {
+    if should_show_release_notes {
         app.emit("show_release_notes", ()).inspect_err(
             |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
         )?;
-
-        state
-            .config
-            .write()
-            .await
-            .set_last_changelog_version(release_notes_version.to_string())
-            .await?;
     }
 
     Ok(())

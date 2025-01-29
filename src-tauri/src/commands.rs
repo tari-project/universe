@@ -1801,29 +1801,31 @@ pub async fn get_release_notes(
 ) -> Result<String, String> {
     let timer = Instant::now();
 
-    let current_app_version = app.package_info().version.clone();
-    let last_release_notes_version_shown = state
-        .config
-        .read()
-        .await
-        .last_changelog_version()
-        .to_string();
-    let last_release_notes_version_shown =
-        Version::parse(&last_release_notes_version_shown).map_err(|e| e.to_string())?;
-
-    let was_updated = current_app_version.gt(&last_release_notes_version_shown);
-
-    let release_notes = ReleaseNotes::current()
-        .get_release_notes(was_updated)
+    let should_force_update = ReleaseNotes::current()
+        .should_force_update(state.clone(), app.clone())
         .await
         .map_err(|e| e.to_string())?;
 
-    debug!(target: LOG_TARGET, "current_app_version: {}, last_release_notes_version_shown: {}, release_notes_version: {}, was_updated: {}",
-        current_app_version,
-        last_release_notes_version_shown,
-        release_notes.version,
-        was_updated,
-    );
+    let release_notes = ReleaseNotes::current()
+        .get_release_notes(should_force_update)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let should_update_release_notes_shown_version = ReleaseNotes::current()
+        .should_show_release_notes(state.clone(), app.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if should_update_release_notes_shown_version {
+        info!(target: LOG_TARGET, "Updating last release notes version shown to: {}", release_notes.version);
+        state
+            .config
+            .write()
+            .await
+            .set_last_changelog_version(release_notes.version)
+            .await
+            .map_err(|e| e.to_string())?;
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());

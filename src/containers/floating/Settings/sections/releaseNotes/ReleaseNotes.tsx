@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
     IconImage,
@@ -55,11 +55,18 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
     const [needsUpgrade, setNeedsUpgrade] = useState(false);
 
+    const ensureCalledOncePerLoopRef = useRef(false);
+
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     useEffect(() => {
         const loadReleaseNotes = async () => {
             try {
+                if (ensureCalledOncePerLoopRef.current) {
+                    return;
+                }
+
+                ensureCalledOncePerLoopRef.current = true;
                 setIsLoading(true);
 
                 console.log('Loading release notes...');
@@ -77,6 +84,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
                 console.error('Error loading release notes:', err);
             } finally {
                 setIsLoading(false);
+                ensureCalledOncePerLoopRef.current = false;
             }
         };
 
