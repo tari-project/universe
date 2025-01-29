@@ -43,6 +43,7 @@ export default function App() {
     }, [isShuttingDown, isSettingUp]);
 
     const showSetup = isSettingUp && !isShuttingDown && isAppReady;
+    const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
 
     return (
         <ThemeProvider>
@@ -62,21 +63,24 @@ export default function App() {
                                 <Splashscreen />
                             </AppContentContainer>
                         )}
+
                         {showSetup ? (
                             <AppContentContainer key="setup" initial="hidden">
                                 <Setup />
                             </AppContentContainer>
                         ) : null}
-                        {!isShuttingDown && !isSettingUp && isAppReady && (
+
+                        {showMainView ? (
                             <AppContentContainer key="main" initial="dashboardInitial">
                                 <MainView />
                             </AppContentContainer>
-                        )}
-                        {isShuttingDown && isAppReady && (
+                        ) : null}
+
+                        {isShuttingDown && isAppReady ? (
                             <AppContentContainer key="shutdown" initial="hidden">
                                 <ShuttingDownScreen />
                             </AppContentContainer>
-                        )}
+                        ) : null}
                     </AnimatePresence>
                 </MotionConfig>
             </LazyMotion>

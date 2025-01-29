@@ -49,6 +49,7 @@ const initialstate: State = {
     releaseNotes: '',
     isAppUpdateAvailable: false,
 };
+
 export const useAppStateStore = create<AppState>()((set, getState) => ({
     ...initialstate,
     setCriticalError: (criticalError) => set({ criticalError }),

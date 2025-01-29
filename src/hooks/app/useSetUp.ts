@@ -4,8 +4,7 @@ import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
 import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
-import { fetchBackendInMemoryConfig } from '@app/store/useAirdropStore.ts';
-import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
+import { airdropSetup } from '@app/store/useAirdropStore.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
@@ -15,17 +14,8 @@ export function useSetUp() {
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
+        await airdropSetup();
     }, [fetchApplicationsVersionsWithRetry]);
-
-    useEffect(() => {
-        async function initWithToken() {
-            const beConfig = await fetchBackendInMemoryConfig();
-            if (beConfig?.airdropUrl) {
-                await handleRefreshAirdropTokens(beConfig.airdropUrl);
-            }
-        }
-        void initWithToken();
-    }, []);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
