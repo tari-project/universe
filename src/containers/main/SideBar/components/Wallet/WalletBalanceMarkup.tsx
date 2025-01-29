@@ -37,7 +37,7 @@ export default function WalletBalanceMarkup() {
     }, [formattedLong.length]);
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-    const displayValue = calculated_balance === null ? '-' : showBalance ? formatted : '*****';
+    const displayValue = !Number.isFinite(calculated_balance) ? '-' : showBalance ? formatted : '*****';
 
     const handleMouseOver = () => {
         setShowAnimateNumbers(false);

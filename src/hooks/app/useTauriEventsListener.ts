@@ -11,6 +11,8 @@ import {
 } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { setAnimationState } from '@app/visuals';
+import { useMiningStore } from '@app/store/useMiningStore';
 
 const FRONTEND_EVENT = 'frontend_event';
 
@@ -75,22 +77,24 @@ const useTauriEventsListener = () => {
     const setBaseNodeStatus = useMiningMetricsStore((s) => s.setBaseNodeStatus);
     const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.debugBlockTime);
+    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const wasNodeConnected = useMiningMetricsStore((s) => s.connected_peers?.length);
 
-    // {"WalletBalanceUpdate":{"balance":{"available_balance":5398127087633,"timelocked_balance":0,"pending_incoming_balance":13617687141,"pending_outgoing_balance":0}}}
     useEffect(() => {
         const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEventPayload }) => {
             switch (event.event_type) {
                 case FrontendEvent.WalletAddressUpdate:
-                    console.log('WalletAddressUpdate', event.payload);
+                    console.log('xxxxxxxxx WalletAddressUpdate', event.payload);
                     setWalletAddress(event.payload);
                     break;
                 case FrontendEvent.WalletBalanceUpdate:
-                    console.log('WalletBalanceUpdate', event.payload);
+                    console.log('yyyyyyyyyyy WalletBalanceUpdate', event.payload);
                     setWalletBalance(event.payload);
                     break;
                 case FrontendEvent.BaseNodeUpdate:
                     setBaseNodeStatus(event.payload);
                     if (event.payload.block_height && !displayBlockHeight) {
+                        // initial block height
                         setDisplayBlockHeight(event.payload.block_height);
                     }
                     break;
@@ -104,13 +108,22 @@ const useTauriEventsListener = () => {
                     setCpuMiningStatus(event.payload);
                     break;
                 case FrontendEvent.ConnectedPeersUpdate:
+                    if (isMiningInitiated) {
+                        const isNodeConnected = event.payload?.length > 0;
+                        if (!isNodeConnected && wasNodeConnected) {
+                            setAnimationState('stop');
+                        }
+                        if (isNodeConnected && !wasNodeConnected) {
+                            setAnimationState('start');
+                        }
+                    }
                     setConnectedPeers(event.payload);
                     break;
                 case FrontendEvent.NewBlockMined:
                     handleNewBlock(event.payload);
                     break;
                 default:
-                    console.log('Unknown event', JSON.stringify(event));
+                    console.warn('Unknown event', JSON.stringify(event));
                     break;
             }
         });
@@ -120,6 +133,7 @@ const useTauriEventsListener = () => {
         };
     }, [
         displayBlockHeight,
+        isMiningInitiated,
         setBaseNodeStatus,
         setConnectedPeers,
         setCpuMiningStatus,
@@ -128,6 +142,7 @@ const useTauriEventsListener = () => {
         setGpuMiningStatus,
         setWalletAddress,
         setWalletBalance,
+        wasNodeConnected,
     ]);
 };
 

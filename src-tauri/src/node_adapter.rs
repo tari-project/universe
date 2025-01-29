@@ -59,11 +59,11 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
-    state_broadcast: watch::Sender<BaseNodeStatus>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 impl MinotariNodeAdapter {
-    pub fn new(state_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
+    pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -73,7 +73,7 @@ impl MinotariNodeAdapter {
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
-            state_broadcast,
+            status_broadcast,
         }
     }
 }
@@ -213,7 +213,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
-                state_broadcast: self.state_broadcast.clone(),
+                status_broadcast: self.status_broadcast.clone(),
             },
         ))
     }
@@ -263,7 +263,7 @@ pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
-    state_broadcast: watch::Sender<BaseNodeStatus>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 #[async_trait]
@@ -273,7 +273,7 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
         match timeout(duration, self.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    let _res = self.state_broadcast.send(status.clone());
+                    let _res = self.status_broadcast.send(status.clone());
                     HealthStatus::Healthy
                 }
                 Err(e) => {

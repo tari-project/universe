@@ -70,7 +70,7 @@ use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
 
-use crate::commands::{CpuMinerConnection, MinerMetrics};
+use crate::commands::CpuMinerConnection;
 #[allow(unused_imports)]
 use crate::external_dependencies::ExternalDependencies;
 use crate::external_dependencies::RequiredExternalDependency;
@@ -161,6 +161,106 @@ struct CpuMinerConfig {
 struct CriticalProblemEvent {
     title: Option<String>,
     description: Option<String>,
+}
+
+async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
+    let move_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = move_app.state::<UniverseAppState>().clone();
+        let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+        let _app_handle = move_app.app_handle().clone();
+        let mut shutdown_signal = app_state.shutdown.to_signal();
+
+        let current_block_height = node_status_watch_rx.borrow().clone().block_height;
+        app_state
+            .events_manager
+            .read()
+            .await
+            .wait_for_initial_wallet_scan(&move_app, current_block_height)
+            .await;
+
+        let mut latest_updated_block_height = current_block_height;
+
+        loop {
+            select! {
+                _ = node_status_watch_rx.changed() => {
+                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
+                    if node_status.block_height > latest_updated_block_height {
+                        app_state.events_manager.read().await
+                            .handle_new_block_height(&move_app, node_status.block_height).await;
+
+                        latest_updated_block_height = node_status.block_height;
+                    } else {
+                        app_state.events_manager.read().await
+                            .handle_base_node_update(&move_app, node_status.clone()).await;
+                    }
+                },
+                _ = gpu_status_watch_rx.changed() => {
+                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
+                    if let Ok(gpu_status) = app_state.gpu_miner.read().await
+                        .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
+                        .await
+                    {
+                        app_state.events_manager.read().await
+                            .handle_gpu_mining_update(&move_app, gpu_status).await;
+                    } else {
+                        let e = "Error getting gpu miner status".to_string();
+                        error!(target: LOG_TARGET, "{}", e);
+                    };
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
+
+    // TODO: Use receivers for the following:
+    let move_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = move_app.state::<UniverseAppState>().clone();
+        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let _app_handle = move_app.app_handle().clone();
+        let mut shutdown_signal = app_state.shutdown.to_signal();
+        let mut interval = time::interval(Duration::from_secs(10));
+
+        loop {
+            select! {
+                _ = interval.tick() => {
+                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
+
+                    // CPU status
+                    if let Ok(cpu_status) = app_state.cpu_miner.read().await
+                        .status(node_status.randomx_network_hashrate, node_status.block_reward)
+                        .await
+                    {
+                        app_state.events_manager.read().await
+                            .handle_cpu_mining_update(&move_app, cpu_status).await;
+                    } else {
+                        let e = "Error getting cpu miner status".to_string();
+                        error!(target: LOG_TARGET, "{}", e);
+                    };
+                    // Connected peers
+                    if let Ok(connected_peers) = app_state
+                        .node_manager
+                        .list_connected_peers()
+                        .await {
+                            app_state.events_manager.read().await
+                                .handle_connected_peers_update(&move_app, connected_peers).await;
+                        } else {
+                            error!(target: LOG_TARGET, "Error getting connected peers");
+                        }
+                },
+                _ = shutdown_signal.wait() => {
+                    break;
+                },
+            }
+        }
+    });
+
+    Ok(())
 }
 
 #[allow(clippy::too_many_lines)]
@@ -699,81 +799,7 @@ async fn setup_inner(
             ),
     );
 
-    let move_app = app.clone();
-    let move_node_status = state.node_state_watch_rx.clone();
-
-    tauri::async_runtime::spawn(async move {
-        let app_state = move_app.state::<UniverseAppState>().clone();
-        let _app_handle = move_app.app_handle().clone();
-        let mut interval: time::Interval = time::interval(Duration::from_secs(1));
-        let mut shutdown_signal = app_state.shutdown.to_signal();
-
-        let current_block_height = (*move_node_status).borrow().block_height;
-        app_state
-            .events_manager
-            .read()
-            .await
-            .wait_for_initial_wallet_scan(&move_app, current_block_height)
-            .await;
-
-        let mut latest_updated_block_height = current_block_height;
-
-        loop {
-            select! {
-                _ = interval.tick() => {
-                    let node_status: BaseNodeStatus = (*move_node_status).borrow().clone();
-                    if node_status.block_height > latest_updated_block_height {
-                        app_state.events_manager.read().await
-                            .handle_new_block_height(&move_app, node_status.block_height).await;
-
-                        latest_updated_block_height = node_status.block_height;
-                    }
-                    // **************** MINER _ METRICS ****************
-                    // BASE NODE
-                    app_state.events_manager.read().await
-                        .handle_base_node_update(&move_app, node_status.clone()).await;
-
-                    // CPU STATUS
-                    if let Ok(cpu_status) = app_state.cpu_miner.read().await
-                        .status(node_status.randomx_network_hashrate, node_status.block_reward)
-                        .await
-                    {
-                        app_state.events_manager.read().await
-                            .handle_cpu_mining_update(&move_app, cpu_status).await;
-                    } else {
-                        let e = "Error getting cpu miner status".to_string();
-                        error!(target: LOG_TARGET, "{}", e);
-                    };
-                    // GPU STATUS
-                    let gpu_latest_status = app_state.gpu_latest_status.borrow().clone();
-                    if let Ok(gpu_status) = app_state.gpu_miner.read().await
-                        .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_latest_status)
-                        .await
-                    {
-                        app_state.events_manager.read().await
-                            .handle_gpu_mining_update(&move_app, gpu_status).await;
-                    } else {
-                        let e = "Error getting gpu miner status".to_string();
-                        error!(target: LOG_TARGET, "{}", e);
-                    };
-                    // CONNECTED PEERS
-                    // TODO: Do we need to update it this frequently?
-                    if let Ok(connected_peers) = app_state
-                        .node_manager
-                        .list_connected_peers()
-                        .await {
-                            app_state.events_manager.read().await
-                                .handle_connected_peers_update(&move_app, connected_peers).await;
-                        } else {
-                            error!(target: LOG_TARGET, "Error getting connected peers");
-                        }
-                },
-                _ = shutdown_signal.wait() => {
-                    break;
-                },
-            }
-        }
-    });
+    initialize_frontend_updates(&app).await?;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -814,7 +840,7 @@ async fn setup_inner(
 #[derive(Clone)]
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
-    node_state_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+    node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
@@ -840,7 +866,6 @@ struct UniverseAppState {
     tor_manager: TorManager,
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
-    cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<RwLock<EventsManager>>,
 }
@@ -938,7 +963,7 @@ fn main() {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
-        node_state_watch_rx: Arc::new(base_node_watch_rx),
+        node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
@@ -962,7 +987,6 @@ fn main() {
         tor_manager,
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
-        cached_miner_metrics: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         events_manager: Arc::new(RwLock::new(EventsManager::new(wallet_state_watch_rx))),
     };

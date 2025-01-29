@@ -69,7 +69,7 @@ impl Clone for NodeManager {
 
 impl NodeManager {
     pub fn new(
-        state_broadcast: watch::Sender<BaseNodeStatus>,
+        status_broadcast: watch::Sender<BaseNodeStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         // TODO: wire up to front end
@@ -81,7 +81,7 @@ impl NodeManager {
         // use_tor = false;
         // }
 
-        let adapter = MinotariNodeAdapter::new(state_broadcast);
+        let adapter = MinotariNodeAdapter::new(status_broadcast);
         let mut process_watcher =
             ProcessWatcher::new(adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);

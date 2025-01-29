@@ -21,7 +21,6 @@ export default function Network() {
         (state) => state?.base_node_status?.randomx_network_hashrate
     );
 
-    console.log({ sha_network_hashrate, randomx_network_hashrate });
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>

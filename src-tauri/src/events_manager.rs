@@ -5,7 +5,9 @@ use tauri::AppHandle;
 use tokio::sync::watch::Receiver;
 
 use crate::{
-    commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService, hardware::hardware_status_monitor::GpuDeviceProperties, wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus
+    commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
+    hardware::hardware_status_monitor::GpuDeviceProperties, wallet_adapter::WalletState,
+    BaseNodeStatus, GpuMinerStatus,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -13,10 +15,6 @@ const LOG_TARGET: &str = "tari::universe::events_manager";
 pub struct EventsManager {
     events_service: EventsService,
 }
-
-// TODO: Rethink renaming it to ActionsManager?
-// TODO: Retnink to make this manager react to FINISHED actions only(handle_...)
-// TODO: Limit cloning
 
 impl EventsManager {
     pub fn new(wallet_state_watch_rx: Receiver<Option<WalletState>>) -> Self {
@@ -63,12 +61,26 @@ impl EventsManager {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
-                        EventsEmitter::emit_wallet_balance_update(&app_handle_clone, balance.clone()).await;
-                        // TODO: Check coinbase txs 
+                        EventsEmitter::emit_wallet_balance_update(
+                            &app_handle_clone,
+                            balance.clone(),
+                        )
+                        .await;
+                        // TODO: Check coinbase txs
                         if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                            EventsEmitter::emit_new_block_mined(&app_handle_clone, block_height, Some(true)).await;
+                            EventsEmitter::emit_new_block_mined(
+                                &app_handle_clone,
+                                block_height,
+                                Some(true),
+                            )
+                            .await;
                         } else {
-                            EventsEmitter::emit_new_block_mined(&app_handle_clone, block_height, None).await;
+                            EventsEmitter::emit_new_block_mined(
+                                &app_handle_clone,
+                                block_height,
+                                None,
+                            )
+                            .await;
                         }
                     }
                     None => {

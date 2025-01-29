@@ -1,19 +1,20 @@
 use std::sync::Arc;
+use log::error;
 
 use crate::wallet_adapter::WalletState;
-use tokio::sync::{watch::Receiver, RwLock};
+use tokio::sync::watch::Receiver;
 
 const LOG_TARGET: &str = "tari::universe::events_service";
 
 #[derive(Clone)]
 pub struct EventsService {
-    pub wallet_state_watch_rx: Arc<RwLock<Receiver<Option<WalletState>>>>,
+    pub wallet_state_watch_rx: Arc<Receiver<Option<WalletState>>>,
 }
 
 impl EventsService {
     pub fn new(wallet_state_watch_rx: Receiver<Option<WalletState>>) -> Self {
         Self {
-            wallet_state_watch_rx: Arc::new(RwLock::new(wallet_state_watch_rx)),
+            wallet_state_watch_rx: Arc::new(wallet_state_watch_rx),
         }
     }
 
@@ -23,21 +24,24 @@ impl EventsService {
         retries_limit: u32,
     ) -> Result<WalletState, anyhow::Error> {
         let mut retries = 0;
+        let mut wallet_state_watch_rx = (*self.wallet_state_watch_rx).clone();
         loop {
-            let wallet_state = self.wallet_state_watch_rx.read().await.borrow().clone();
-            if let Some(wallet_state) = wallet_state {
+            if wallet_state_watch_rx.changed().await.is_err() {
+                error!(target: LOG_TARGET, "Failed to receive wallet_state_watch_rx");
+                break;
+            }
+            if let Some(wallet_state) = wallet_state_watch_rx.borrow().clone() {
                 if wallet_state.scanned_height >= block_height {
                     return Ok(wallet_state);
                 }
             }
-            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
             retries += 1;
             if retries >= retries_limit {
                 break;
             }
         }
-        return Err(anyhow::anyhow!(
+        Err(anyhow::anyhow!(
             "Exceeded maximum retries waiting for wallet scan"
-        ));
+        ))
     }
 }

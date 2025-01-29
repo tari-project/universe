@@ -95,15 +95,6 @@ pub struct GpuMinerMetrics {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct MinerMetrics {
-    sha_network_hash_rate: u64,
-    randomx_network_hash_rate: u64,
-    cpu: CpuMinerMetrics,
-    gpu: GpuMinerMetrics,
-    base_node: BaseNodeStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
 pub struct BaseNodeStatus {
     block_height: u64,
     block_time: u64,
@@ -371,27 +362,6 @@ pub async fn get_network(
 ) -> Result<String, ()> {
     Ok(Network::get_current_or_user_setting_or_default().to_string())
 }
-
-// #[allow(clippy::too_many_lines)]
-// #[tauri::command]
-// pub async fn get_miner_metrics(
-//     state: tauri::State<'_, UniverseAppState>,
-//     app: tauri::AppHandle,
-// ) -> Result<MinerMetrics, String> {
-//     // let new_systemtray_data = SystemTrayData {
-//     //     cpu_hashrate: cpu_mining_status.hash_rate,
-//     //     gpu_hashrate: gpu_mining_status.hash_rate,
-//     //     estimated_earning: (cpu_mining_status.estimated_earnings
-//     //         + gpu_mining_status.estimated_earnings) as f64,
-//     // };
-
-//     // state
-//     //     .systemtray_manager
-//     //     .write()
-//     //     .await
-//     //     .update_tray(new_systemtray_data);
-
-// }
 
 #[tauri::command]
 pub async fn get_monero_seed_words(
@@ -1335,7 +1305,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_state_watch_rx.borrow().clone();
+            let node_status = state.node_status_watch_rx.borrow().clone();
             let cpu_miner = state.cpu_miner.read().await;
             let cpu_mining_status = match cpu_miner
                 .status(
