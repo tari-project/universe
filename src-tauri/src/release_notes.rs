@@ -216,6 +216,19 @@ impl ReleaseNotes {
 
         if force_fetch {
             debug!(target: LOG_TARGET, "[get_release_notes] Forcing release notes fetch");
+            if let Some(cached_file) = &file {
+                debug!(target: LOG_TARGET, "[get_release_notes] Found cached release notes, fetching e_tag");
+                let e_tag = self.fetch_release_notes_header().await?;
+                let file_e_tag = cached_file.e_tag.clone();
+                if e_tag == file_e_tag {
+                    debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
+                    return Ok(cached_file.clone());
+                };
+            } else {
+                debug!(target: LOG_TARGET, "[get_release_notes] No cached release notes found");
+                return Ok(self.handle_fetching_and_saving().await?);
+            };
+
             return Ok(self.handle_fetching_and_saving().await?);
         };
 
@@ -251,7 +264,7 @@ impl ReleaseNotes {
     ) -> Result<bool, Error> {
         debug!(target: LOG_TARGET, "[should_show_release_notes]");
         let release_notes_version = ReleaseNotes::current()
-            .get_release_notes(false)
+            .get_release_notes(true)
             .await?
             .version;
         let release_notes_version = Version::parse(&release_notes_version)?;
