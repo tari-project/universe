@@ -20,6 +20,8 @@ interface State {
     missingExternalDependencies?: ExternalDependency[];
     issueReference?: string;
     applications_versions?: ApplicationsVersions;
+    releaseNotes: string;
+    isAppUpdateAvailable: boolean;
 }
 interface Actions {
     setCriticalError: (value: string | undefined) => void;
@@ -31,6 +33,8 @@ interface Actions {
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
     setIssueReference: (value: string) => void;
+    fetchReleaseNotes: () => Promise<void>;
+    checkForAppUpdate: () => Promise<void>;
 }
 type AppState = State & Actions;
 
@@ -42,6 +46,8 @@ const initialstate: State = {
     setupComplete: false,
     externalDependencies: [],
     missingExternalDependencies: [],
+    releaseNotes: '',
+    isAppUpdateAvailable: false,
 };
 export const useAppStateStore = create<AppState>()((set, getState) => ({
     ...initialstate,
@@ -98,6 +104,22 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         }
     },
     setIssueReference: (issueReference) => set({ issueReference }),
+    fetchReleaseNotes: async () => {
+        try {
+            const releaseNotes = await invoke('get_release_notes');
+            set({ releaseNotes });
+        } catch (error) {
+            console.error('Error fetching release notes', error);
+        }
+    },
+    checkForAppUpdate: async () => {
+        try {
+            const version = await invoke('check_for_updates');
+            set({ isAppUpdateAvailable: !!version });
+        } catch (error) {
+            console.error('Error checking for app update', error);
+        }
+    },
 }));
 
 export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
@@ -115,11 +137,3 @@ export const setSetupComplete = async () => {
 
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
-
-export const getReleaseNotes = async () => {
-    try {
-        return await invoke('get_release_notes');
-    } catch (error) {
-        console.error('Error getting release notes', error);
-    }
-};

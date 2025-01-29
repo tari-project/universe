@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import {
     IconImage,
@@ -16,7 +16,7 @@ import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
-import { getReleaseNotes } from '@app/store/appStateStore';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
@@ -50,14 +50,21 @@ interface Props {
 }
 
 export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
-    const [sections, setSections] = useState<ReleaseSection[]>([]);
+    const releaseNotes = useAppStateStore((state) => state.releaseNotes);
+    const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
+    const { fetchRelaseNotes, checkForAppUpdate } = useAppStateStore((state) => ({
+        fetchRelaseNotes: state.fetchReleaseNotes,
+        checkForAppUpdate: state.checkForAppUpdate,
+    }));
+
     const [isLoading, setIsLoading] = useState(true);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
-    const [needsUpgrade, setNeedsUpgrade] = useState(false);
 
     const ensureCalledOncePerLoopRef = useRef(false);
 
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+
+    const sections = useMemo(() => parseMarkdownSections(releaseNotes), [releaseNotes]);
 
     useEffect(() => {
         const loadReleaseNotes = async () => {
@@ -65,23 +72,11 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
                 if (ensureCalledOncePerLoopRef.current) {
                     return;
                 }
-
                 ensureCalledOncePerLoopRef.current = true;
                 setIsLoading(true);
 
-                console.log('Loading release notes...');
-                const text = await getReleaseNotes();
-
-                if (!text) {
-                    console.log('No release notes found');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const parsedSections = parseMarkdownSections(text);
-                setSections(parsedSections);
-            } catch (err) {
-                console.error('Error loading release notes:', err);
+                await fetchRelaseNotes();
+                await checkForAppUpdate();
             } finally {
                 setIsLoading(false);
                 ensureCalledOncePerLoopRef.current = false;
@@ -89,17 +84,6 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
         };
 
         loadReleaseNotes();
-    }, []);
-
-    useEffect(() => {
-        const checkForUpdates = async () => {
-            const version = await invoke('check_for_updates').catch((err) => {
-                console.error('Error checking for updates:', err);
-            });
-            setNeedsUpgrade(!!version);
-        };
-
-        checkForUpdates();
     }, []);
 
     const toggleSection = (index: number) => {
