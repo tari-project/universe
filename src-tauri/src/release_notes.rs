@@ -223,12 +223,12 @@ impl ReleaseNotes {
                 if e_tag == file_e_tag {
                     debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
                     return Ok(cached_file.clone());
+                } else {
+                    debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
+                    return Ok(self.handle_fetching_and_saving().await?);
                 };
-            } else {
-                debug!(target: LOG_TARGET, "[get_release_notes] No cached release notes found");
-                return Ok(self.handle_fetching_and_saving().await?);
             };
-
+            debug!(target: LOG_TARGET, "[get_release_notes] No cached release notes found");
             return Ok(self.handle_fetching_and_saving().await?);
         };
 
@@ -248,11 +248,11 @@ impl ReleaseNotes {
                 debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
                 Ok(release_notes_file.clone())
             } else {
-                info!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
+                debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
                 Ok(self.handle_fetching_and_saving().await?)
             }
         } else {
-            info!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
+            debug!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
             Ok(self.handle_fetching_and_saving().await?)
         }
     }

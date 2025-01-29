@@ -1811,24 +1811,33 @@ pub async fn get_release_notes(
         .await
         .map_err(|e| e.to_string())?;
 
-    let should_update_release_notes_shown_version = ReleaseNotes::current()
-        .should_show_release_notes(state.clone(), app.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if should_update_release_notes_shown_version {
-        info!(target: LOG_TARGET, "Updating last release notes version shown to: {}", release_notes.version);
-        state
-            .config
-            .write()
-            .await
-            .set_last_changelog_version(release_notes.version)
-            .await
-            .map_err(|e| e.to_string())?;
-    };
-
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());
     }
     Ok(release_notes.content)
+}
+
+#[tauri::command]
+pub async fn update_last_shown_release_notes_version(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let release_notes = ReleaseNotes::current()
+        .get_release_notes(false)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    info!(target: LOG_TARGET, "Updating last release notes version shown to: {}", release_notes.version);
+    state
+        .config
+        .write()
+        .await
+        .set_last_changelog_version(release_notes.version)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "update_last_shown_release_notes_version took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
 }

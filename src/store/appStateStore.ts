@@ -35,6 +35,7 @@ interface Actions {
     setIssueReference: (value: string) => void;
     fetchReleaseNotes: () => Promise<void>;
     checkForAppUpdate: () => Promise<void>;
+    updateLastShownReleaseNotesVersion: () => Promise<void>;
 }
 type AppState = State & Actions;
 
@@ -111,6 +112,13 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             set({ releaseNotes });
         } catch (error) {
             console.error('Error fetching release notes', error);
+        }
+    },
+    updateLastShownReleaseNotesVersion: async () => {
+        try {
+            await invoke('update_last_shown_release_notes_version');
+        } catch (error) {
+            console.error('Error updating last shown release notes version', error);
         }
     },
     checkForAppUpdate: async () => {

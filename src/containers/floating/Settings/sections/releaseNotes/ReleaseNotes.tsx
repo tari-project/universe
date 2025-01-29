@@ -50,6 +50,7 @@ interface Props {
 }
 
 export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
+    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const releaseNotes = useAppStateStore((state) => state.releaseNotes);
     const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
     const { fetchRelaseNotes, checkForAppUpdate } = useAppStateStore((state) => ({
@@ -61,8 +62,6 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
     const ensureCalledOncePerLoopRef = useRef(false);
-
-    const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
 
     const sections = useMemo(() => parseMarkdownSections(releaseNotes), [releaseNotes]);
 

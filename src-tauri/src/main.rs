@@ -1170,6 +1170,7 @@ fn main() {
             commands::proceed_with_update,
             commands::set_pre_release,
             commands::check_for_updates,
+            commands::update_last_shown_release_notes_version,
             commands::try_update,
             commands::get_network,
             commands::sign_ws_data,
