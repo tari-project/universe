@@ -24,7 +24,7 @@ enum FrontendEvent {
     CpuMiningUpdate = 'CpuMiningUpdate',
     GpuMiningUpdate = 'GpuMiningUpdate',
     ConnectedPeersUpdate = 'ConnectedPeersUpdate',
-    NewBlockMined = 'NewBlockMined',
+    NewBlockHeight = 'NewBlockHeight',
 }
 
 type FrontendEventPayload =
@@ -60,10 +60,10 @@ type FrontendEventPayload =
           payload: string[];
       }
     | {
-          event_type: FrontendEvent.NewBlockMined;
+          event_type: FrontendEvent.NewBlockHeight;
           payload: {
               block_height: number;
-              coinbase_transaction?: boolean;
+              coinbase_transaction?: TransactionInfo;
           };
       };
 
@@ -76,6 +76,7 @@ const useTauriEventsListener = () => {
     const setConnectedPeers = useMiningMetricsStore((s) => s.setConnectedPeers);
     const setBaseNodeStatus = useMiningMetricsStore((s) => s.setBaseNodeStatus);
     const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
+    const refreshCoinbaseTransactions = useWalletStore((s) => s.refreshCoinbaseTransactions);
     const displayBlockHeight = useBlockchainVisualisationStore((s) => s.debugBlockTime);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const wasNodeConnected = useMiningMetricsStore((s) => s.connected_peers?.length);
@@ -119,8 +120,9 @@ const useTauriEventsListener = () => {
                     }
                     setConnectedPeers(event.payload);
                     break;
-                case FrontendEvent.NewBlockMined:
+                case FrontendEvent.NewBlockHeight:
                     handleNewBlock(event.payload);
+                    refreshCoinbaseTransactions();
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));
@@ -134,6 +136,7 @@ const useTauriEventsListener = () => {
     }, [
         displayBlockHeight,
         isMiningInitiated,
+        refreshCoinbaseTransactions,
         setBaseNodeStatus,
         setConnectedPeers,
         setCpuMiningStatus,

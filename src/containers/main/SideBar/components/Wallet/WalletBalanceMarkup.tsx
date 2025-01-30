@@ -37,7 +37,8 @@ export default function WalletBalanceMarkup() {
     }, [formattedLong.length]);
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-    const displayValue = !Number.isFinite(calculated_balance) ? '-' : showBalance ? formatted : '*****';
+    const isWalletScanning = !Number.isFinite(calculated_balance);
+    const displayValue = isWalletScanning ? '-' : showBalance ? formatted : '*****';
 
     const handleMouseOver = () => {
         setShowAnimateNumbers(false);
@@ -75,7 +76,7 @@ export default function WalletBalanceMarkup() {
             </Stack>
             <WalletBalanceWrapper onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
                 <AnimatePresence mode="popLayout">
-                    {!showLongBalance || !showBalance ? (
+                    {!showLongBalance || !showBalance || isWalletScanning ? (
                         <WalletBalance
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}

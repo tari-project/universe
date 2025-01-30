@@ -320,7 +320,7 @@ impl WalletBalance {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
     pub tx_id: u64,
     pub source_address: String,
@@ -341,7 +341,6 @@ impl WalletStatusMonitor {
     }
 
     pub async fn get_status(&self) -> Result<WalletState, WalletStatusMonitorError> {
-        //Q(1): Shouldn't we store the client connection
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
@@ -363,6 +362,7 @@ impl WalletStatusMonitor {
         continuation: bool,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
+        // TODO: Implement starting point instead of continuation
         let mut stream =
             if continuation && self.completed_transactions_stream.lock().await.is_some() {
                 self.completed_transactions_stream

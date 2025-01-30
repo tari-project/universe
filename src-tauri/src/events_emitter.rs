@@ -4,8 +4,10 @@ use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 
 use crate::{
-    commands::CpuMinerStatus, hardware::hardware_status_monitor::PublicDeviceProperties,
-    wallet_adapter::WalletBalance, BaseNodeStatus, GpuMinerStatus,
+    commands::CpuMinerStatus,
+    hardware::hardware_status_monitor::PublicDeviceProperties,
+    wallet_adapter::{TransactionInfo, WalletBalance},
+    BaseNodeStatus, GpuMinerStatus,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
@@ -21,7 +23,7 @@ pub enum FrontendEventType {
     CpuMiningUpdate,
     GpuMiningUpdate,
     ConnectedPeersUpdate,
-    NewBlockMined,
+    NewBlockHeight,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -37,9 +39,9 @@ struct WalletAddressUpdatePayload {
 }
 
 #[derive(Clone, Debug, Serialize)]
-struct NewBlockMinedPayload {
+struct NewBlockHeightPayload {
     block_height: u64,
-    coinbase_transaction: Option<bool>,
+    coinbase_transaction: Option<TransactionInfo>,
 }
 
 pub(crate) struct EventsEmitter;
@@ -125,17 +127,17 @@ impl EventsEmitter {
     pub async fn emit_new_block_mined(
         app_handle: &AppHandle,
         block_height: u64,
-        coinbase_transaction: Option<bool>,
+        coinbase_transaction: Option<TransactionInfo>,
     ) {
         let event = FrontendEvent {
-            event_type: FrontendEventType::NewBlockMined,
-            payload: NewBlockMinedPayload {
+            event_type: FrontendEventType::NewBlockHeight,
+            payload: NewBlockHeightPayload {
                 block_height,
                 coinbase_transaction,
             },
         };
         if let Err(e) = app_handle.emit("frontend_event", event) {
-            error!(target: LOG_TARGET, "Failed to emit NewBlockMined event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {:?}", e);
         }
     }
 }

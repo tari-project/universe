@@ -1,7 +1,10 @@
+use log::{error, warn};
 use std::sync::Arc;
-use log::error;
 
-use crate::wallet_adapter::WalletState;
+use crate::{
+    wallet_adapter::{TransactionInfo, WalletState},
+    wallet_manager::WalletManager,
+};
 use tokio::sync::watch::Receiver;
 
 const LOG_TARGET: &str = "tari::universe::events_service";
@@ -34,6 +37,11 @@ impl EventsService {
                 if wallet_state.scanned_height >= block_height {
                     return Ok(wallet_state);
                 }
+
+                if wallet_state.scanned_height == 0 && retries > 2 {
+                    warn!(target: LOG_TARGET, "Initial wallet scan completed before the wallet grpc server started");
+                    return Ok(wallet_state);
+                }
             }
             retries += 1;
             if retries >= retries_limit {
@@ -43,5 +51,29 @@ impl EventsService {
         Err(anyhow::anyhow!(
             "Exceeded maximum retries waiting for wallet scan"
         ))
+    }
+
+    pub async fn get_coinbase_transaction_for_last_mined_block(
+        &self,
+        wallet_manager: &WalletManager,
+        last_mined_block_height: u64,
+    ) -> Option<TransactionInfo> {
+        match wallet_manager
+            .get_coinbase_transactions(false, Some(1))
+            .await
+        {
+            Ok(mut txs) => {
+                if let Some(tx) = txs.pop() {
+                    if tx.mined_in_block_height == last_mined_block_height {
+                        return Some(tx);
+                    }
+                }
+                None
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to get latest coinbase transaction: {:?}", e);
+                None
+            }
+        }
     }
 }

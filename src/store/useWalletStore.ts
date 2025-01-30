@@ -47,8 +47,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
         set({ ...wallet_balance, calculated_balance });
     },
     fetchCoinbaseTransactions: async (continuation, limit) => {
-        const setupProgress = useAppStateStore.getState().setupProgress;
-        if (useWalletStore.getState().is_reward_history_loading || setupProgress < 0.75) {
+        if (useWalletStore.getState().is_reward_history_loading) {
             return [];
         }
 

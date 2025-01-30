@@ -140,21 +140,6 @@ impl WalletManager {
             })
     }
 
-    // pub async fn init_new_block_height_updates(&self) -> Result<(), WalletManagerError> {
-    //     let process_watcher = self.watcher.read().await;
-    //     process_watcher.
-    //     process_watcher
-    //         .status_monitor
-    //         .as_ref()
-    //         .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-    //         .init_new_block_height_updates()
-    //         .await
-    //         .map_err(|e| match e {
-    //             WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-    //             _ => WalletManagerError::UnknownError(e.into()),
-    //         })
-    // }
-
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher

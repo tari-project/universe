@@ -107,20 +107,14 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (payload: { block_height: number; coinbase_transaction?: boolean }) => {
+export const handleNewBlock = async (payload: { block_height: number; coinbase_transaction?: TransactionInfo }) => {
     if (useMiningStore.getState().miningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
         const canAnimate = !minimized && documentIsVisible;
 
         if (payload.coinbase_transaction) {
-            // NOTE: TEMPORARY HACKS FOR TESTING
-            const coinbase_transaction = {
-                mined_in_block_height: payload.block_height - 1,
-                amount: 100_000_000,
-                tx_id: Math.random().toString(36).substring(12),
-            } as any as TransactionInfo;
-            await handleWin(coinbase_transaction, canAnimate);
+            await handleWin(payload.coinbase_transaction, canAnimate);
         } else {
             await handleFail(payload.block_height, canAnimate);
         }

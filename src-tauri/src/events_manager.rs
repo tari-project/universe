@@ -1,13 +1,13 @@
 use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
     hardware::hardware_status_monitor::GpuDeviceProperties, wallet_adapter::WalletState,
-    BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -25,24 +25,22 @@ impl EventsManager {
 
     pub async fn handle_internal_wallet_loaded_or_created(
         &mut self,
-        app_handle: &AppHandle,
+        app: &AppHandle,
         wallet_address: TariAddress,
     ) {
-        EventsEmitter::emit_wallet_address_update(&app_handle, wallet_address).await;
+        EventsEmitter::emit_wallet_address_update(&app, wallet_address).await;
     }
 
-    pub async fn wait_for_initial_wallet_scan(&self, app_handle: &AppHandle, block_height: u64) {
+    pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
         let events_service = self.events_service.clone();
-        let app_handle = app_handle.clone();
+        let app = app.clone();
         tokio::spawn(async move {
             match events_service
                 .wait_for_wallet_scan(block_height, 1200)
                 .await
             {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
-                    Some(balance) => {
-                        EventsEmitter::emit_wallet_balance_update(&app_handle, balance).await
-                    }
+                    Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
                     None => {
                         error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
                     }
@@ -54,34 +52,59 @@ impl EventsManager {
         });
     }
 
-    pub async fn handle_new_block_height(&self, app_handle: &AppHandle, block_height: u64) {
-        let app_handle_clone = app_handle.clone();
+    pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
+        let app_clone = app.clone();
         let events_service = self.events_service.clone();
         tokio::spawn(async move {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
-                        EventsEmitter::emit_wallet_balance_update(
-                            &app_handle_clone,
-                            balance.clone(),
-                        )
-                        .await;
-                        // TODO: Check coinbase txs
-                        if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                            EventsEmitter::emit_new_block_mined(
-                                &app_handle_clone,
-                                block_height,
-                                Some(true),
-                            )
-                            .await;
+                        println!(
+                            "{} ======================= handle_new_block_height: #{}",
+                            chrono::Local::now().format("%H:%M:%S.%f"),
+                            block_height
+                        );
+                        println!(
+                            "{} Wallet balance: {:?}",
+                            chrono::Local::now().format("%H:%M:%S.%f"),
+                            balance
+                        );
+                        let coinbase_tx = if balance
+                            .pending_incoming_balance
+                            .gt(&MicroMinotari::zero())
+                        {
+                            let last_mined_block_height = block_height - 1;
+                            println!(
+                                "{} Pending incoming balance is greater than zero. Last mined block height: {}",
+                                chrono::Local::now().format("%H:%M:%S.%f"),
+                                last_mined_block_height
+                            );
+                            events_service
+                                .get_coinbase_transaction_for_last_mined_block(
+                                    &app_clone.state::<UniverseAppState>().wallet_manager,
+                                    last_mined_block_height,
+                                )
+                                .await
                         } else {
-                            EventsEmitter::emit_new_block_mined(
-                                &app_handle_clone,
-                                block_height,
-                                None,
-                            )
+                            println!(
+                                "{} Pending incoming balance is zero.",
+                                chrono::Local::now().format("%H:%M:%S.%f")
+                            );
+                            None
+                        };
+                        println!(
+                            "{} Coinbase transaction: {:?}",
+                            chrono::Local::now().format("%H:%M:%S.%f"),
+                            coinbase_tx
+                        );
+                        EventsEmitter::emit_new_block_mined(&app_clone, block_height, coinbase_tx)
                             .await;
-                        }
+                        EventsEmitter::emit_wallet_balance_update(&app_clone, balance.clone())
+                            .await;
+                        println!(
+                            "{} ============== handle_new_block_height done ===============",
+                            chrono::Local::now().format("%H:%M:%S.%f")
+                        );
                     }
                     None => {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
@@ -94,21 +117,21 @@ impl EventsManager {
         });
     }
 
-    pub async fn handle_base_node_update(&self, app_handle: &AppHandle, status: BaseNodeStatus) {
-        EventsEmitter::emit_base_node_update(&app_handle, status).await;
+    pub async fn handle_base_node_update(&self, app: &AppHandle, status: BaseNodeStatus) {
+        EventsEmitter::emit_base_node_update(&app, status).await;
     }
 
     pub async fn handle_connected_peers_update(
         &self,
-        app_handle: &AppHandle,
+        app: &AppHandle,
         connected_peers: Vec<String>,
     ) {
-        EventsEmitter::emit_connected_peers_update(&app_handle, connected_peers).await;
+        EventsEmitter::emit_connected_peers_update(&app, connected_peers).await;
     }
 
     pub async fn handle_gpu_devices_update(
         &self,
-        app_handle: &AppHandle,
+        app: &AppHandle,
         gpu_devices: Vec<GpuDeviceProperties>,
     ) {
         let gpu_public_devices = gpu_devices
@@ -116,14 +139,14 @@ impl EventsManager {
             .map(|gpu_device| gpu_device.public_properties.clone())
             .collect();
 
-        EventsEmitter::emit_gpu_devices_update(&app_handle, gpu_public_devices).await;
+        EventsEmitter::emit_gpu_devices_update(&app, gpu_public_devices).await;
     }
 
-    pub async fn handle_cpu_mining_update(&self, app_handle: &AppHandle, status: CpuMinerStatus) {
-        EventsEmitter::emit_cpu_mining_update(&app_handle, status).await;
+    pub async fn handle_cpu_mining_update(&self, app: &AppHandle, status: CpuMinerStatus) {
+        EventsEmitter::emit_cpu_mining_update(&app, status).await;
     }
 
-    pub async fn handle_gpu_mining_update(&self, app_handle: &AppHandle, status: GpuMinerStatus) {
-        EventsEmitter::emit_gpu_mining_update(&app_handle, status).await;
+    pub async fn handle_gpu_mining_update(&self, app: &AppHandle, status: GpuMinerStatus) {
+        EventsEmitter::emit_gpu_mining_update(&app, status).await;
     }
 }
