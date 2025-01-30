@@ -37,15 +37,12 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::RwLock;
 
-use crate::{
-    events::ReleaseNotesHandlerEvent, updates_manager::UpdatesManager, UniverseAppState,
-    APPLICATION_FOLDER_ID,
-};
+use crate::{events::ReleaseNotesHandlerEvent, UniverseAppState, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md";
 const RELEASE_NOTES_FILE_NAME: &str = "CHANGELOG.json";
-const TIME_BETWEEN_FETCHES: Duration = Duration::from_secs(1 * 1 * 1); // 1 hour
+const TIME_BETWEEN_FETCHES: Duration = Duration::from_secs(60 * 60 * 1); // 1 hour
 static INSTANCE: LazyLock<ReleaseNotes> = LazyLock::new(ReleaseNotes::new);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -204,7 +201,7 @@ impl ReleaseNotes {
         Ok(new_release_notes)
     }
 
-    pub async fn get_release_notes(&self, force_fetch: bool) -> Result<ReleaseNotesFile, Error> {
+    pub async fn get_release_notes(&self) -> Result<ReleaseNotesFile, Error> {
         debug!(target: LOG_TARGET, "[get_release_notes]");
 
         debug!(target: LOG_TARGET, "[get_release_notes] Getting release notes file lock");
@@ -212,11 +209,6 @@ impl ReleaseNotes {
         let file = release_notes_file_lock.deref().clone();
         drop(release_notes_file_lock);
         debug!(target: LOG_TARGET, "[get_release_notes] Realising release notes file lock");
-
-        if force_fetch {
-            debug!(target: LOG_TARGET, "[get_release_notes] Forcing release notes fetch");
-            return self.handle_fetching_and_saving().await;
-        };
 
         if let Some(release_notes_file) = file {
             let did_expire = SystemTime::now()
@@ -255,9 +247,7 @@ impl ReleaseNotes {
         let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
         drop(config_lock);
 
-        let release_notes = ReleaseNotes::current()
-            .get_release_notes(UpdatesManager::read_update_finished_from_file())
-            .await?;
+        let release_notes = ReleaseNotes::current().get_release_notes().await?;
 
         let release_notes_version = Version::parse(&release_notes.version)?;
         let current_app_version = app.package_info().version.clone();

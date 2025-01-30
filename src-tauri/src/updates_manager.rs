@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use dirs::cache_dir;
 use std::sync::Arc;
 use tokio::time;
 
@@ -32,12 +31,11 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::{app_config::AppConfig, APPLICATION_FOLDER_ID};
+use crate::app_config::AppConfig;
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
 const LOG_TARGET: &str = "tari::universe::updates_manager";
-const APP_UPDATED_FILE_NAME: &str = "app_updated.txt";
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,
@@ -75,50 +73,6 @@ impl UpdatesManager {
             update: Arc::new(RwLock::new(None)),
             app_shutdown,
         }
-    }
-
-    fn mark_update_finished_with_file_spawn() {
-        let cache_dir = cache_dir();
-
-        if let Some(cache_dir) = cache_dir {
-            let app_updated_file = cache_dir
-                .join(APPLICATION_FOLDER_ID)
-                .join(APP_UPDATED_FILE_NAME);
-
-            std::fs::write(app_updated_file, "true").unwrap_or_else(|e| {
-                warn!(target: LOG_TARGET, "Failed to write app_updated file: {}", e);
-            });
-        };
-    }
-
-    pub fn read_update_finished_from_file() -> bool {
-        let cache_dir = cache_dir();
-
-        if let Some(cache_dir) = cache_dir {
-            let app_updated_file = cache_dir
-                .join(APPLICATION_FOLDER_ID)
-                .join(APP_UPDATED_FILE_NAME);
-
-            if let Ok(content) = std::fs::read_to_string(app_updated_file) {
-                return content.trim() == "true";
-            }
-        }
-
-        false
-    }
-
-    pub fn delete_update_finished_file() {
-        let cache_dir = cache_dir();
-
-        if let Some(cache_dir) = cache_dir {
-            let app_updated_file = cache_dir
-                .join(APPLICATION_FOLDER_ID)
-                .join(APP_UPDATED_FILE_NAME);
-
-            std::fs::remove_file(app_updated_file).unwrap_or_else(|e| {
-                warn!(target: LOG_TARGET, "Failed to remove app_updated file: {}", e);
-            });
-        };
     }
 
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
@@ -251,8 +205,6 @@ impl UpdatesManager {
                 },
             )
             .await?;
-
-        UpdatesManager::mark_update_finished_with_file_spawn();
 
         app.restart();
     }
