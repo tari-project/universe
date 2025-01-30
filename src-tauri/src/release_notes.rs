@@ -208,7 +208,7 @@ impl ReleaseNotes {
         let release_notes_file_lock = self.release_notes_file.read().await;
         let file = release_notes_file_lock.deref().clone();
         drop(release_notes_file_lock);
-        debug!(target: LOG_TARGET, "[get_release_notes] Realising release notes file lock");
+        debug!(target: LOG_TARGET, "[get_release_notes] Releasing release notes file lock");
 
         if let Some(release_notes_file) = file {
             let did_expire = SystemTime::now()
@@ -221,13 +221,20 @@ impl ReleaseNotes {
                 return Ok(release_notes_file.clone());
             };
 
-            let e_tag = self.fetch_release_notes_header().await?;
-            if e_tag == release_notes_file.e_tag {
-                debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
-                Ok(release_notes_file.clone())
-            } else {
-                debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
-                self.handle_fetching_and_saving().await
+            match self.fetch_release_notes_header().await {
+                Ok(e_tag) => {
+                    if e_tag == release_notes_file.e_tag {
+                        debug!(target: LOG_TARGET, "[get_release_notes] Found matching ETag, using cached release notes");
+                        Ok(release_notes_file.clone())
+                    } else {
+                        debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
+                        self.handle_fetching_and_saving().await
+                    }
+                }
+                Err(_) => {
+                    debug!(target: LOG_TARGET, "[get_release_notes] Server not responding, using cached release notes");
+                    Ok(release_notes_file.clone())
+                }
             }
         } else {
             debug!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
