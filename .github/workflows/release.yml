@@ -1,93 +1,154 @@
 ---
 name: Release
 
-'on':
+on:
   push:
     paths-ignore:
       - '**/*.md'
-    # tags:
-    #   - 'v[0-9]+.[0-9]+.[0-9]+'
     branches:
       - 'release'
+      - 'beta'
       - 'build-*'
+  schedule:
+    - cron: '05 00 * * *'
   workflow_dispatch:
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
   group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
   cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' || github.ref != 'refs/heads/release' }}
-
 permissions: {}
+
+env:
+  TS_FEATURES: release-ci
 
 jobs:
   builds:
     name: Building ${{ matrix.platform }}
+    # best effort disabled by default
+    continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-20.04'
+          - platform: 'ubuntu-22.04'
             args: ''
-          - platform: 'windows-2019'
+          - platform: 'ubuntu-24.04-arm'
+            args: ''
+            best_effort: true
+          - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
-
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set environment variables
-        if: ${{ ! startsWith(github.ref, 'refs/heads/build-') }}
+      - name: BETA Builds - Install dependencies (windows) [yq]
+        if: ${{ startsWith(runner.os,'Windows') }}
+        run: |
+          choco upgrade yq -y
+
+      - name: BETA Builds - Install dependencies (linux) [yq]
+        if: ${{ startsWith(runner.os,'Linux') }}
         shell: bash
         run: |
+          sudo bash ./scripts/check-get-yq.sh
+
+      - name: BETA Builds - Set environment variables
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        env:
+          BETA_STRING: '(Beta)'
+          AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
+          AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
+          TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.DEV_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
+        shell: bash
+        run: |
+          #set -xueo pipefail
+          echo "TARI_NETWORK=esme" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
+          echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
+          # numeric-only and cannot be greater than 65535 for msi target
+          export BETA_DATE=$(date +%m%d)
+          cd "${GITHUB_WORKSPACE}/src-tauri"
+          echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
+          # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
+          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
+          yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
+            -i tauri.conf.json
+          cat tauri.conf.json
+          sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
+
+      - name: RELEASE Builds - Set environment variables
+        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
+        shell: bash
+        run: |
+          #set -xueo pipefail
+          # Setup tauri action envs
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
+          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          cd "${GITHUB_WORKSPACE}/src-tauri"
+          TU_VERSION=$(jq -r .version tauri.conf.json)
+          # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
+          yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe\"" -i tauri.conf.json
+          yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
+            -i tauri.conf.json
 
-      - name: Node.js setup
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
 
-      - name: Rust setup (linux)
-        if: startsWith(runner.os,'Linux')
-        uses: dtolnay/rust-toolchain@stable
-        env:
-          RUSTUP_PERMIT_COPY_RENAME: true
-        with:
-          toolchain: stable
-          target: aarch64-unknown-linux-gnu
-
-      - name: Rust setup (macOS)
-        if: startsWith(runner.os,'macOS')
+      - name: Rust Setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          target: aarch64-apple-darwin,x86_64-apple-darwin
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Cache cargo files and outputs
+      - name: Cache Cargo files and outputs
         if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
 
-      - name: Install dependencies (linux)
+      - name: Install Dependencies - Linux
         if: startsWith(runner.os,'Linux')
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
-            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: Install dependencies (macOS)
+      - name: Install Dependencies - Linux/OpenCL
+        if: startsWith(runner.os,'Linux')
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
+      - name: Install Dependencies - macOS
         if: startsWith(runner.os,'macOS')
         run: |
           # openssl, cmake and autoconf already installed
@@ -99,51 +160,84 @@ jobs:
           rustup toolchain install stable-x86_64-apple-darwin --force-non-host
           rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
-      - name: Install dependencies (Windows)
+      - name: Install Dependencies - Windows
         if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
-      - name: Set environment variables (Windows)
+      - name: Install Dependencies - Windows/OpenCL
+        if: startsWith(runner.os,'Windows')
+        run: |
+          vcpkg.exe --triplet=x64-windows install opencl
+
+      - name: Set environment variables - Windows
         if: startsWith(runner.os,'Windows')
         shell: bash
         run: |
           echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
+          echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
-      - name: Install dependencies (node)
+      - name: Azure Code-signing Setup - Windows Only
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -c Tarilabs %1
+        run: |
+          cd "${GITHUB_WORKSPACE}/src-tauri"
+          echo "{}" | \
+            jq '.bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
+              ./tauri.windows.conf.json
+          cat ./tauri.windows.conf.json
+          cargo install trusted-signing-cli@0.3.0 --locked
+
+      - name: Install Dependencies - Node
         run: |
           npm --version
           npm install
 
-      - name: Build Tauri apps
+      - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@dev
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE }}
+          ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          AZURE_TENANT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ startsWith(runner.os,'Windows') && secrets.AZURE_CLIENT_SECRET }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          NODE_OPTIONS: '--max_old_space_size=4096'
         with:
           tagName: ${{ env.tagName }}
           releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
-          #releaseId: ${{ env.releaseId }}
           releaseDraft: true
           prerelease: true
           includeDebug: false
           includeRelease: true
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
-      - name: Upload
-        if: ${{ startsWith(github.ref, 'refs/heads/build-') }}
+      - name: Debug Step - artifactPaths
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        continue-on-error: true
+        env:
+          artifactPaths: ${{ steps.build.outputs.artifactPaths }}
+        shell: bash
+        run: |
+          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
+
+      - name: BETA Builds - Upload assets
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
-          name: tari-universe_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"

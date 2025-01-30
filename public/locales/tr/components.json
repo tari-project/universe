@@ -1,11 +1,11 @@
 {
-    "field-error-message": {
-        "invalid": "Alan geçersiz",
-        "required": "Alan gerekli",
-        "password-too-short": "Şifre en az 8 karakterden oluşmalıdır",
-        "invalid-url": "Geçerli bir URL adresi olmalıdır",
-        "invalid-email": "Geçerli bir e-posta adresi girin",
-        "invalid-date": "Geçersiz tarih",
-        "integers-only": "Sadece Tamsayılara İzin Verilir"
-    }
+  "field-error-message": {
+    "integers-only": "Sadece Tamsayılara İzin Verilir",
+    "invalid": "Alan geçersiz",
+    "invalid-date": "Geçersiz tarih",
+    "invalid-email": "Geçerli bir e-posta adresi girin",
+    "invalid-url": "Geçerli bir URL adresi olmalıdır",
+    "password-too-short": "Şifre en az 8 karakterden oluşmalıdır",
+    "required": "Alan gerekli"
+  }
 }

@@ -1,0 +1,32 @@
+{
+  "dont-worry": "चिंता न करें, अगली बार इसमें इतना समय नहीं लगेगा",
+  "installing-latest-version": "तारी यूनिवर्स के {{version}} संस्करण को इंस्टॉल कर रहे हैं",
+  "new-tari-version-available": "Tari Universe का एक नया संस्करण उपलब्ध है!",
+  "no": "नहीं",
+  "setting-up": "Tari सत्य मशीन सेट कर रहा है...",
+  "this-might-take-a-few-minutes": "इसमें कुछ मिनट लग सकते हैं",
+  "title": {
+    "application-started": "एप्लिकेशन शुरू हो गए हैं",
+    "checking-latest-version-gpuminer": "xtrgpuminer के नवीनतम संस्करण की जाँच कर रहा है",
+    "checking-latest-version-mmproxy": "mmproxy के नवीनतम संस्करण की जाँच कर रहा है",
+    "checking-latest-version-node": "नोड के नवीनतम संस्करण की जाँच कर रहा है",
+    "checking-latest-version-sha-p2pool": "sha-p2pool के नवीनतम संस्करण की जाँच कर रहा है",
+    "checking-latest-version-wallet": "वॉलेट के नवीनतम संस्करण की जाँच कर रहा है",
+    "checking-latest-version-xmrig": "xmrig के नवीनतम संस्करण की जाँच कर रहा है",
+    "download-completed": "डाउनलोड पूरा हुआ",
+    "downloading": "डाउनलोड हो रहा है",
+    "preparing-for-initial-sync": "नेटवर्क साथियों से कनेक्ट हो रहा है {{initial_connected_peers}}/{{required_peers}}",
+    "starting-mmproxy": "मर्ज माइनिंग प्रॉक्सी शुरू हो रहा है",
+    "starting-p2pool": "P2Pool शुरू हो रहा है",
+    "starting-up": "शुरू हो रहा है",
+    "waiting-for-block-sync": "ब्लॉक सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} ब्लॉक सिंक हो गए हैं",
+    "waiting-for-header-sync": "हेडर सिंक की प्रतीक्षा कर रहा है। {{local_height}}/{{tip_height}} हेडर सिंक हो गए हैं",
+    "waiting-for-node": "नोड के सिंक होने की प्रतीक्षा कर रहा है",
+    "waiting-for-wallet": "वॉलेट की प्रतीक्षा कर रहा है",
+    "waiting-for-minotari-node-to-start": "मिनोटारी नोड शुरू होने की प्रतीक्षा कर रहा है",
+    "minotari-node-restarting": "मिनोटारी नोड डेटा भ्रष्ट था, पुराने डेटा को साफ कर रहा है",
+    "wallet-started": "वॉलेट शुरू हो गया"
+  },
+  "would-you-like-to-install": "क्या आप अब Tari Universe {{version}} स्थापित करना चाहेंगे?",
+  "yes": "हाँ"
+}

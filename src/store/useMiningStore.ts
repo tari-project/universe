@@ -1,71 +1,96 @@
+import { MaxConsumptionLevels } from '@app/types/app-status';
 import { create } from './create';
+import { invoke } from '@tauri-apps/api/core';
+import { useAppStateStore } from './appStateStore';
 
-import { BlockTimeData } from '@app/types/mining.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { pauseMining, startMining } from '@app/store/miningStoreActions.ts';
+import { useAppConfigStore } from './useAppConfigStore';
 
 interface State {
-    displayBlockTime?: BlockTimeData;
-    earnings?: number;
-    postBlockAnimation?: boolean;
-    timerPaused?: boolean;
-    miningLoading?: boolean;
-    displayBlockHeight?: number;
     hashrateReady?: boolean;
-
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
-    isMiningInProgress: boolean;
     isChangingMode: boolean;
-    isConnectionLostDuringMining: boolean;
-    audioEnabled: boolean;
+    excludedGpuDevices: number[];
+    counter: number;
+    customLevelsDialogOpen: boolean;
+    maxAvailableThreads?: MaxConsumptionLevels;
+    network: string;
 }
+
 interface Actions {
-    setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
-    setDisplayBlockHeight: (displayBlockHeight: number) => void;
-    setEarnings: (earnings?: number) => void;
-    setPostBlockAnimation: (postBlockAnimation: boolean) => void;
-    setTimerPaused: (timerPaused: boolean) => void;
-
-    setMiningLoading: (miningLoading: boolean) => void;
-    setHashrateReady: (hashrateReady: boolean) => void;
-
+    restartMining: () => Promise<void>;
     setMiningControlsEnabled: (miningControlsEnabled: boolean) => void;
-    setMiningInitiated: (miningInitiated: State['miningInitiated']) => void;
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining: State['isConnectionLostDuringMining']) => void;
-    setIsMiningInProgress: (isMiningInProgress: State['isMiningInProgress']) => void;
-    setIsChangingMode: (isChangingMode: State['isChangingMode']) => void;
-    setAudioEnabled: (audioEnabled: State['audioEnabled']) => void;
+    setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
+    setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
+    getMaxAvailableThreads: () => void;
 }
 type MiningStoreState = State & Actions;
 
 const initialState: State = {
-    displayBlockHeight: undefined,
-    timerPaused: false,
-    postBlockAnimation: false,
-    miningLoading: false,
+    customLevelsDialogOpen: false,
+    maxAvailableThreads: undefined,
+    counter: 0,
     hashrateReady: false,
     miningInitiated: false,
-    isMiningInProgress: false,
     isChangingMode: false,
-    isConnectionLostDuringMining: false,
-    miningControlsEnabled: false,
-    audioEnabled: true,
+    miningControlsEnabled: true,
+
+    network: 'unknown',
+    excludedGpuDevices: [],
 };
 
 export const useMiningStore = create<MiningStoreState>()((set) => ({
     ...initialState,
-    setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
-    setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
-    setEarnings: (earnings) => set({ earnings }),
-    setPostBlockAnimation: (postBlockAnimation) => set({ postBlockAnimation }),
-    setTimerPaused: (timerPaused) => set({ timerPaused }),
-    setMiningLoading: (miningLoading) => set({ miningLoading, hashrateReady: !miningLoading }),
-    setHashrateReady: (hashrateReady) => set({ hashrateReady }),
+    setCustomLevelsDialogOpen: (customLevelsDialogOpen) => set({ customLevelsDialogOpen }),
+    getMaxAvailableThreads: async () => {
+        console.info('Getting max available threads...');
+        try {
+            const maxAvailableThreads = await invoke('get_max_consumption_levels');
+            set({ maxAvailableThreads });
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Failed to get max available threads: ', e);
+            appStateStore.setError(e as string);
+        }
+    },
 
-    setMiningInitiated: (miningInitiated) => set({ miningInitiated }),
-    setIsConnectionLostDuringMining: (isConnectionLostDuringMining) => set({ isConnectionLostDuringMining }),
-    setIsMiningInProgress: (isMiningInProgress) => set({ isMiningInProgress }),
-    setIsChangingMode: (isChangingMode) => set({ isChangingMode }),
-    setMiningControlsEnabled: (miningControlsEnabled) =>
-        set((state) => ({ miningControlsEnabled: miningControlsEnabled && !state.miningLoading })),
-    setAudioEnabled: (audioEnabled) => set({ audioEnabled: audioEnabled }),
+    restartMining: async () => {
+        const state = useMiningMetricsStore.getState();
+        if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+            console.info('Restarting mining...');
+            try {
+                await pauseMining();
+            } catch (e) {
+                console.error('Failed to pause(restart) mining: ', e);
+            }
+
+            try {
+                await startMining();
+            } catch (e) {
+                console.error('Failed to start(restart) mining: ', e);
+            }
+        }
+    },
+    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
+    setExcludedGpuDevice: async (excludedGpuDevices) => {
+        const hardware = useMiningMetricsStore.getState().gpu.hardware;
+        const totalGpuDevices = hardware.length;
+        console.error('Excluded GPU devices: ', excludedGpuDevices);
+        console.error('Hardware: ', hardware);
+        try {
+            await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+            if (excludedGpuDevices.length === totalGpuDevices) {
+                const appConfigStore = useAppConfigStore.getState();
+                appConfigStore.setGpuMiningEnabled(false);
+            }
+            set({ excludedGpuDevices });
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set excluded gpu device: ', e);
+            appStateStore.setError(e as string);
+            set({ excludedGpuDevices: undefined });
+        }
+    },
 }));

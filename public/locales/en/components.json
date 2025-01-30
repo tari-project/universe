@@ -1,11 +1,18 @@
 {
-    "field-error-message": {
-        "invalid": "Field invalid",
-        "required": "Field required",
-        "password-too-short": "Password must have at least 8 characters",
-        "invalid-url": "Must be a valid URL address",
-        "invalid-email": "Enter a valid email address",
-        "invalid-date": "Date is invalid",
-        "integers-only": "Only Integers Allowed"
-    }
+  "field-error-message": {
+    "integers-only": "Only Integers Allowed",
+    "invalid": "Field invalid",
+    "invalid-date": "Date is invalid",
+    "invalid-email": "Enter a valid email address",
+    "invalid-url": "Must be a valid URL address",
+    "password-too-short": "Password must have at least 8 characters",
+    "required": "Field required"
+  },
+  "ludicrousConfirmationDialog": {
+    "title": "Switch to Ludicrous Mode?",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "seconds": "seconds",
+    "keepChanges": "Keep Changes",
+    "cancel": "Cancel"
+  }
 }

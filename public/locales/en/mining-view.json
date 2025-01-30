@@ -1,15 +1,32 @@
 {
-  "floor": "Floor",
-  "current-block-time": "Current block time",
-  "your-reward-is": "Your reward is",
   "connection-to-node-lost": "Connection to miner lost. Please wait for the miner to reconnect or restart the miner.",
+  "cpu-power": "CPU Power",
+  "current-block-time": "Current block time",
+  "day": "day",
+  "estimated-day": "Est tXTM/day",
+  "estimated-earnings": "Estimated earnings",
+  "floor": "Floor",
+  "gpu-power": "GPU Power",
   "mining-button-text": {
-    "starting-mining": "Starting Mining",
-    "start-mining": "Start Mining",
-    "pause-mining": "Pause Mining",
-    "changing-mode": "Changing mode",
     "cancel-mining": "Cancel Mining",
-    "waiting-for-idle": "Waiting for Idle",
-    "started-auto-mining": "Auto Mining Started"
-  }
+    "changing-mode": "Changing mode",
+    "start-mining": "Start Mining",
+    "started-auto-mining": "Auto Mining Started",
+    "starting-mining": "Starting Mining",
+    "stop-mining": "Stop Mining",
+    "waiting-for-idle": "Waiting for Idle"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Things to try:",
+    "step_1": "Check your Internet connection",
+    "step_2": "Wait 30 mins",
+    "step_3": "Restart the app",
+    "step_4": "Try using a Tor Bridge (in Settings)",
+    "step_5": "Try disabling Tor (in Settings)",
+    "step_6": "Try an app reset (in Settings)"
+  },
+  "you-earn-rewards-separately": "You earn rewards for mining CPU and GPU separately",
+  "you-won-block": "You were the winner of <span>block #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>You won {{ blocks }}</span> while you were away",
+  "your-reward-is": "Your reward is"
 }

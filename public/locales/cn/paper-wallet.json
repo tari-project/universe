@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "我有这个应用",
+    "scan": "扫描二维码",
+    "text": "下载 Tari Aurora，随时随地跟踪您的 XTM。立即在 App Store 或 Google Play Store 获取。",
+    "textButton": "了解更多关于 Tari Aurora",
+    "title": "将您的 Tari 宇宙钱包连接到手机"
+  },
+  "qrcode": {
+    "blackButton": "完成",
+    "copied": "已复制！",
+    "inputLabel": "识别码",
+    "text": "在 Tari Aurora 应用中扫描二维码以导入您的 Tari 宇宙钱包。使用下面的一次性代码确认您的身份，然后按照应用中的步骤进行操作。",
+    "textButton": "我需要帮助",
+    "title": "导入到 Tari Aurora",
+    "warning": "请勿分享此二维码"
+  }
+}

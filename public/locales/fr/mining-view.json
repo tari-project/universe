@@ -1,0 +1,32 @@
+{
+  "connection-to-node-lost": "Connexion au mineur perdue. Attends que le mineur se reconnecte ou redémarre le mineur.",
+  "cpu-power": "Puissance CPU",
+  "current-block-time": "Temps actuelle du bloc",
+  "day": "day",
+  "estimated-day": "Est tXTM/jour",
+  "estimated-earnings": "Gains estimés",
+  "floor": "Étage",
+  "gpu-power": "Puissance GPU",
+  "mining-button-text": {
+    "cancel-mining": "Annuler le minage",
+    "changing-mode": "Changement de mode",
+    "start-mining": "Démarrer le minage",
+    "started-auto-mining": "Démarrage du minage automatique",
+    "starting-mining": "Minage en cours de démarrage",
+    "stop-mining": "Arrêtez le minage",
+    "waiting-for-idle": "En attente d'inactivité"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Choses à essayer :",
+    "step_1": "Vérifiez votre connexion Internet",
+    "step_2": "Attendez 30 minutes",
+    "step_3": "Redémarrez l\"application",
+    "step_4": "Essayez d\"utiliser un pont Tor (dans les paramètres)",
+    "step_5": "Essayez de désactiver Tor (dans les paramètres)",
+    "step_6": "Essayez de réinitialiser l\"application (dans les paramètres)"
+  },
+  "you-earn-rewards-separately": "Vous gagnez des récompenses pour le minage CPU et GPU séparément",
+  "you-won-block": "Vous avez gagné le <span>bloc #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Vous avez gagné {{ blocks }}</span> pendant votre absence",
+  "your-reward-is": "Votre récompense est"
+}

@@ -5,7 +5,7 @@ name: CI
   workflow_dispatch:
   push:
     branches:
-      - "ci-*"
+      - 'ci-*'
   pull_request:
     types:
       - opened
@@ -21,37 +21,35 @@ concurrency:
 permissions: {}
 
 jobs:
-  clippy:
-    name: clippy
-    runs-on: [ ubuntu-latest ]
+  cargo-checks:
+    name: cargo checks (fmt, clippy, check)
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: created empty dist dir
+      - uses: actions/checkout@v4
+      - name: create empty dist dir
         run: |
           mkdir dist
-
       - name: install dependencies (linux)
-        if: startsWith(runner.os,'Linux')
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
-            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
+      - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
-
-      - name: cache cargo files and outputs
-        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-        uses: swatinem/rust-cache@v2
+      - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
 
@@ -60,27 +58,28 @@ jobs:
         run: |
           cargo fmt --all -- --check
 
-      - name: clippy check (with lints)
+      - name: clippy lint
         working-directory: ./src-tauri
+        env:
+          AIRDROP_BASE_URL: http://localhost:4000
+          AIRDROP_API_BASE_URL: http://localhost:3004
+          AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
+          TELEMETRY_API_URL: http://localhost:3004  
         run: |
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
+      - name: cargo check
+        working-directory: ./src-tauri
+        run: |
+          cargo check --release --all-targets --workspace
 
   machete:
     name: machete
-    runs-on: [ ubuntu-latest ]
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: cache cargo files and outputs
-        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-        uses: swatinem/rust-cache@v2
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
 
@@ -90,82 +89,56 @@ jobs:
           cargo install cargo-machete
           cargo machete
 
-  cargo-check:
-    name: cargo-check
-    runs-on: [ ubuntu-latest ]
-    steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
-      - name: install dependencies (linux)
-        if: startsWith(runner.os,'Linux')
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends --assume-yes \
-            libwebkit2gtk-4.0-dev \
-            libappindicator3-dev \
-            librsvg2-dev \
-            patchelf \
-            libprotobuf-dev \
-            protobuf-compiler
-
-      - name: toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy, rustfmt
-
-      - name: cache cargo files and outputs
-        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-
-      - name: cargo check
-        working-directory: ./src-tauri
-        run: |
-          cargo check --release --all-targets --workspace --locked
-
-  tauri-build:
+  tauri-test-build:
     name: tauri-build
-    runs-on: [ ubuntu-latest ]
+    runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: install dependencies (linux)
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends --assume-yes \
-            libwebkit2gtk-4.0-dev \
+            libwebkit2gtk-4.1-dev \
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
             libprotobuf-dev \
             protobuf-compiler
 
-      - name: Node.js setup
-        uses: actions/setup-node@v4
+      - name: install dependencies (linux/OpenCL)
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            opencl-headers \
+            ocl-icd-opencl-dev
+
+      - uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
-
       - name: Install dependencies (node)
-        run: |
-          npm --version
-          npm install
-
-      - name: toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: cache cargo files and outputs
-        if: ${{ ( startsWith(runner.environment,'github-hosted') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
-        uses: swatinem/rust-cache@v2
+        run: npm ci
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
-
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli
+          cargo install tauri-cli --version "2.1.0" --locked
           cargo tauri --version
-          cargo tauri build --ci --bundles deb
+          cargo tauri build --ci --no-bundle
+
+  file-licenses:
+    name: file-licenses
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: install ripgrep
+        run: |
+          # https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb.sha256
+          wget -v https://github.com/BurntSushi/ripgrep/releases/download/14.1.1/ripgrep_14.1.1-1_amd64.deb
+          sudo dpkg -i ripgrep_14.1.1-1_amd64.deb
+          rg --version || exit 1
+      - name: run the license check
+        run: ./scripts/file_license_check.sh

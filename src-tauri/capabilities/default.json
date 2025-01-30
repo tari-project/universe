@@ -1,0 +1,35 @@
+{
+    "identifier": "default",
+    "windows": ["main", "splashscreen"],
+    "permissions": [
+        "core:path:default",
+        "core:event:default",
+        "core:window:default",
+        "core:app:default",
+        "core:resources:default",
+        "core:menu:default",
+        "core:tray:default",
+        "core:window:allow-close",
+        "core:window:allow-destroy",
+        "core:window:allow-minimize",
+        "core:window:allow-unminimize",
+        "shell:allow-open",
+        "sentry:default",
+        "process:allow-restart",
+        "process:default",
+        "clipboard-manager:allow-write-text",
+        "fs:default",
+        "fs:allow-desktop-read-recursive",
+        "fs:allow-desktop-meta-recursive",
+        "fs:allow-resource-read-recursive",
+        "fs:allow-resource-meta-recursive",
+        {
+            "identifier": "fs:allow-read-file",
+            "allow": [{ "path": "$RESOURCE/*" }]
+        },
+        {
+            "identifier": "fs:allow-read-dir",
+            "allow": [{ "path": "$RESOURCE/*" }]
+        }
+    ]
+}

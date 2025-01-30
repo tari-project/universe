@@ -1,0 +1,11 @@
+{
+  "field-error-message": {
+    "integers-only": "整数のみ許可されます",
+    "invalid": "フィールドが無効です",
+    "invalid-date": "日付が無効です",
+    "invalid-email": "有効なメールアドレスを入力してください",
+    "invalid-url": "有効なURLアドレスでなければなりません",
+    "password-too-short": "パスワードは8文字以上でなければなりません",
+    "required": "フィールドが必要です"
+  }
+}

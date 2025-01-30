@@ -1,0 +1,39 @@
+{
+  "airdropGame": "Testnet Belohnungen",
+  "bonus-gems-earned": "Bonus-Edelsteine verdient",
+  "claimGems": "Edelsteine beanspruchen",
+  "claimModalFieldLabel": "Optional",
+  "claimModalFieldPlaceholder": "Gib den Einladungscode ein",
+  "claimModalFinePrint": "<strong>Bitte beachten:</strong> Edelsteine beanspruchen aktiviert Analysen, damit wir das Universum verbessern können.",
+  "claimModalText": "Verdiene Edelsteine durch Mining und das Einladen von Freunden. Je mehr Edelsteine du verdienst, desto größer ist dein Tari Airdrop. Hast du einen Empfehlungs-Code? Gib ihn unten ein und verdopple deinen Bonus von <strong>{{gems1}} Edelsteinen</strong> auf <strong>{{gems2}} Edelsteine!</strong>",
+  "claimModalTitle": "BELONUNGEN FÜR DAS MINING IM TESTNET VERDIENEN",
+  "claimReferralCode": "Beanspruche deinen Empfehlungs-Code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> Edelsteine.",
+  "claimReferralGifts": "Beanspruche deinen Empfehlungs-Code und erhalte {{gems}} Edelsteine. Sobald du dein Konto verbindest, wirst du deine Edelsteine erhalten.",
+  "doLater": "Ich mache das später",
+  "giftReferralCode": "Verdiene {{gems}} Edelsteine für jeden Freund, den du in Tari Universe einlädst. Sobald sie ihr Konto verbinden, wirst du deine Edelsteine erhalten.",
+  "giftReferralCodeHeader": "Beanspruche deinen Empfehlungs-Code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> Edelsteine.",
+  "inviteFirends": "Freunde einladen",
+  "inviteFriendsText": "Link kopieren und teilen",
+  "invitedAmount": "Du hast <span>{{count}}</span> Freunde eingeladen",
+  "keep-mining-to-earn-rewards": "Weiter minen, um mehr Belohnungen zu verdienen!",
+  "linkCopied": "Link kopiert!",
+  "logged-in-as": "Eingeloggt als <strong>@{{twitter}}</strong>",
+  "loginButton": "Einloggen, um Edelsteine zu beanspruchen",
+  "logout": "Ausloggen",
+  "nextTierBonus": "Lade <strong>{{count}} Freunde</strong> ein und erhalte {{bonusGems}} Bonus-Edelsteine",
+  "permission": {
+    "setup": "Tari Universe möchte Analysen verwenden, um <strong>Ihr Erlebnis zu verbessern.</strong>",
+    "text": "Tari Universe möchte Analysen verwenden, um deine Erfahrung zu verbessern und dich mit Edelsteinen für das Mining zu belohnen.",
+    "title": "Verdiene Edelsteine und mache Tari Universe besser"
+  },
+  "permissionNoGems": {
+    "text": "Tari Universe möchte Analysen verwenden, um deine Erfahrung zu verbessern.",
+    "title": "Mache Tari Universe besser"
+  },
+  "referral": "Freund einladen",
+  "topTooltipText": "Erhalte einen Tari Airdrop, indem du Edelsteine sammelst. Je mehr Edelsteine du verdienst, desto größer ist dein Airdrop.",
+  "topTooltipTitle": "Testnet Belohnungen",
+  "unclaimedGems": "Nicht beanspruchte Edelsteine",
+  "you-reached-your-giftinh-goal": "Sie haben Ihr Geschenkziel erreicht!",
+  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!"
+}

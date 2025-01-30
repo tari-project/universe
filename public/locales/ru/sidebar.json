@@ -1,0 +1,28 @@
+{
+  "auto-miner": "Авто-майнер",
+  "auto-miner-description": "Авто-майнер включит ваш майнер, когда ваш компьютер будет в простое",
+  "block": "Блок",
+  "hide-history": "Скрыть историю",
+  "history-hide-button": "Скрыть историю",
+  "history-show-button": "История",
+  "lost-connection": "Потеряно соединение с сетью Tari. Переподключение..",
+  "mining-schedules": "Графики майнинга",
+  "mining-schedules-description": "Запланируйте вашу майнинговую активность",
+  "next-milestone": "Следующий этап",
+  "paper-wallet-button": "Синхронизировать с телефоном",
+  "paper-wallet-tooltip-message": "Отслеживайте свои XTM в любом месте, синхронизируя кошелек Universe с Tari Aurora.",
+  "paper-wallet-tooltip-title": "Синхронизировать с телефоном",
+  "recent-wins": "Последние выигрыши",
+  "rewards": "Награды",
+  "setup-scheduler": "Настройка планировщика",
+  "share": {
+    "button-text": "ПОХВАСТАТЬСЯ И ПРИГЛАСИТЬ",
+    "copied": "Ссылка скопирована!",
+    "history-item-button": "Похвастаться и пригласить",
+    "reward": "моя награда",
+    "title": "Я только что намайнил Tari",
+    "winner-pill": "Победитель блока"
+  },
+  "show-history": "Показать историю",
+  "wallet-balance": "Баланс кошелька"
+}

@@ -1,0 +1,28 @@
+{
+  "auto-miner": "Mineur automatique",
+  "auto-miner-description": "Le mineur automatique activera votre mineur lorsque votre machine est inactive",
+  "block": "Bloc",
+  "hide-history": "Masquer l\"historique",
+  "history-hide-button": "Masquer l\"historique",
+  "history-show-button": "Historique",
+  "lost-connection": "Connexion perdue au réseau Tari. Reconnexion..",
+  "mining-schedules": "Horaires de minage",
+  "mining-schedules-description": "Planifiez votre activité de minage",
+  "next-milestone": "Prochaine étape",
+  "paper-wallet-button": "Synchroniser avec le téléphone",
+  "paper-wallet-tooltip-message": "Suivez votre XTM partout en synchronisant votre portefeuille Universe avec Tari Aurora.",
+  "paper-wallet-tooltip-title": "Synchroniser avec le téléphone",
+  "recent-wins": "Gains récents",
+  "rewards": "Récompenses",
+  "setup-scheduler": "Configurer le planificateur",
+  "share": {
+    "button-text": "FLEX & INVITER",
+    "copied": "Lien copié !",
+    "history-item-button": "Flex & Inviter",
+    "reward": "ma récompense",
+    "title": "Je viens de miner du tari",
+    "winner-pill": "Gagnant du bloc"
+  },
+  "show-history": "Afficher l\"historique",
+  "wallet-balance": "Solde du portefeuille"
+}

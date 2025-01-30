@@ -1,9 +1,28 @@
 {
-    "auto-miner":"自动采矿机",
-    "auto-miner-description":"当您的机器闲置时，自动矿机将打开您的矿机",
-    "next-milestone":"下一个里程碑",
-    "wallet-balance":"钱包余额",
-    "setup-scheduler":"安装计划程序",
-    "mining-schedules":"采矿时间表",
-    "mining-schedules-description":"安排您的采矿活动"
+  "auto-miner": "自动采矿机",
+  "auto-miner-description": "当您的机器闲置时，自动矿机将打开您的矿机",
+  "block": "区块",
+  "hide-history": "隐藏历史记录",
+  "history-hide-button": "隐藏历史记录",
+  "history-show-button": "历史记录",
+  "lost-connection": "与Tari网络的连接丢失。正在重新连接..",
+  "mining-schedules": "采矿时间表",
+  "mining-schedules-description": "安排您的采矿活动",
+  "next-milestone": "下一个里程碑",
+  "paper-wallet-button": "与手机同步",
+  "paper-wallet-tooltip-message": "通过将您的宇宙钱包同步到 Tari Aurora，随时随地跟踪您的 XTM。",
+  "paper-wallet-tooltip-title": "与手机同步",
+  "recent-wins": "最近的胜利",
+  "rewards": "奖励",
+  "setup-scheduler": "安装计划程序",
+  "share": {
+    "button-text": "炫耀并邀请",
+    "copied": "链接已复制！",
+    "history-item-button": "炫耀并邀请",
+    "reward": "我的奖励",
+    "title": "我刚刚挖掘了Tari",
+    "winner-pill": "区块赢家"
+  },
+  "show-history": "显示历史记录",
+  "wallet-balance": "钱包余额"
 }

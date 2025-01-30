@@ -1,15 +1,33 @@
 {
-    "floor": "Zemin",
-    "current-block-time": "Geçerli blok zamanı",
-    "your-reward-is": "Ödülünüz",
-    "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
-    "mining-button-text": {
-        "starting-mining": "Madenci Başlatılıyor",
-        "start-mining": "Madenciyi Başlat",
-        "pause-mining": "Madenciyi Durdur",
-        "changing-mode": "Mod değiştirme",
-        "cancel-mining": "Madenciyi İptal Et",
-        "waiting-for-idle": "Boşta Bekliyor",
-        "started-auto-mining": "Otomatik Madencilik Başladı"
-    }
+  "connection-to-node-lost": "Madenciyle bağlantı kesildi. Lütfen madencinin yeniden bağlanmasını bekleyin veya madenciyi yeniden başlatın.",
+  "cpu-power": "CPU Gücü",
+  "current-block-time": "Geçerli blok zamanı",
+  "day": "day",
+  "estimated-day": "Est tXTM/gün",
+  "estimated-earnings": "Tahmini kazançlar",
+  "floor": "Zemin",
+  "gpu-power": "GPU Gücü",
+  "mining-button-text": {
+    "cancel-mining": "Madenciyi İptal Et",
+    "changing-mode": "Mod değiştirme",
+    "pause-mining": "Madenciyi Durdur",
+    "start-mining": "Madenciyi Başlat",
+    "started-auto-mining": "Otomatik Madencilik Başladı",
+    "starting-mining": "Madenci Başlatılıyor",
+    "stop-mining": "Madenciliği Durdur",
+    "waiting-for-idle": "Boşta Bekliyor"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Denenecek şeyler:",
+    "step_1": "İnternet bağlantınızı kontrol edin",
+    "step_2": "30 dakika bekleyin",
+    "step_3": "Uygulamayı yeniden başlatın",
+    "step_4": "Tor Köprüsü kullanmayı deneyin (Ayarlar\"da)",
+    "step_5": "Tor\"u devre dışı bırakmayı deneyin (Ayarlar\"da)",
+    "step_6": "Uygulama sıfırlamayı deneyin (Ayarlar\"da)"
+  },
+  "you-earn-rewards-separately": "CPU ve GPU madenciliği için ayrı ayrı ödüller kazanırsınız",
+  "you-won-block": "<span>blok #{{ blockHeight }}</span> kazananı siz oldunuz",
+  "you-won-while-away": "<span>Uzakta olduğunuzda {{ blocks }} kazandınız</span>",
+  "your-reward-is": "Ödülünüz"
 }

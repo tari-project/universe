@@ -1,0 +1,33 @@
+{
+  "connection-to-node-lost": "Koneksi ke penambang terputus. Harap tunggu penambang untuk menyambung kembali atau mulai ulang penambang.",
+  "cpu-power": "Daya CPU",
+  "current-block-time": "Waktu blok saat ini",
+  "day": "day",
+  "estimated-day": "Perkiraan tXTM/hari",
+  "estimated-earnings": "Perkiraan penghasilan",
+  "floor": "Batas Bawah",
+  "gpu-power": "Daya GPU",
+  "mining-button-text": {
+    "cancel-mining": "Batalkan Penambangan",
+    "changing-mode": "Mengubah mode",
+    "pause-mining": "Jeda Penambangan",
+    "start-mining": "Mulai Menambang",
+    "started-auto-mining": "Penambangan Otomatis Dimulai",
+    "starting-mining": "Memulai Penambangan",
+    "stop-mining": "Hentikan Penambangan",
+    "waiting-for-idle": "Menunggu Tidak Aktif"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Hal-hal yang bisa dicoba:",
+    "step_1": "Periksa koneksi Internet Anda",
+    "step_2": "Tunggu 30 menit",
+    "step_3": "Mulai ulang aplikasi",
+    "step_4": "Coba gunakan Tor Bridge (di Pengaturan)",
+    "step_5": "Coba nonaktifkan Tor (di Pengaturan)",
+    "step_6": "Coba atur ulang aplikasi (di Pengaturan)"
+  },
+  "you-earn-rewards-separately": "Anda mendapatkan hadiah untuk menambang CPU dan GPU secara terpisah",
+  "you-won-block": "Anda adalah pemenang dari <span>blok #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Anda memenangkan {{ blocks }}</span> saat Anda pergi",
+  "your-reward-is": "Hadiah Anda adalah"
+}

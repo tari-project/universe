@@ -1,6 +1,6 @@
-export default function calculateTimeSince(time: number, start: number) {
-    const past: Date = new Date(time * 1000); // Convert seconds to milliseconds
-    const diff: number = start - past.getTime();
+export default function calculateTimeSince(earlier: number, later: number) {
+    const past: Date = new Date(earlier * 1000); // Convert seconds to milliseconds
+    const diff: number = later - past.getTime();
 
     // Convert the difference to days, hours, minutes, and seconds
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));

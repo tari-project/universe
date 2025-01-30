@@ -1,0 +1,32 @@
+{
+  "dont-worry": "걱정 마세요, 다음 번에는 오래 걸리지 않을 것입니다",
+  "installing-latest-version": "Tari Universe의 {{version}} 버전 설치 중",
+  "new-tari-version-available": "Tari Universe의 새 버전이 출시되었습니다!",
+  "no": "아니요",
+  "setting-up": "Tari 진실 기계 설정 중...",
+  "this-might-take-a-few-minutes": "몇 분 정도 걸릴 수 있습니다",
+  "title": {
+    "application-started": "애플리케이션 시작됨",
+    "checking-latest-version-gpuminer": "xtrgpuminer의 최신 버전 확인 중",
+    "checking-latest-version-mmproxy": "mmproxy의 최신 버전 확인 중",
+    "checking-latest-version-node": "노드의 최신 버전 확인 중",
+    "checking-latest-version-sha-p2pool": "sha-p2pool의 최신 버전 확인 중",
+    "checking-latest-version-wallet": "지갑의 최신 버전 확인 중",
+    "checking-latest-version-xmrig": "xmrig의 최신 버전 확인 중",
+    "download-completed": "다운로드 완료",
+    "downloading": "다운로드 중",
+    "preparing-for-initial-sync": "네트워크 피어에 연결 중 {{initial_connected_peers}}/{{required_peers}}",
+    "starting-mmproxy": "병합 채굴 프록시 시작 중",
+    "starting-p2pool": "P2Pool 시작 중",
+    "starting-up": "시작 중",
+    "waiting-for-block-sync": "블록 동기화 대기 중. {{local_height}}/{{tip_height}} 블록 동기화됨",
+    "waiting-for-header-sync": "헤더 동기화 대기 중. {{local_height}}/{{tip_height}} 헤더 동기화됨",
+    "waiting-for-node": "노드 동기화 대기 중",
+    "waiting-for-wallet": "지갑 대기 중",
+    "waiting-for-minotari-node-to-start": "Minotari 노드 시작 대기 중",
+    "minotari-node-restarting": "Minotari 노드 데이터가 손상되었습니다. 오래된 데이터를 정리 중입니다",
+    "wallet-started": "지갑 시작됨"
+  },
+  "would-you-like-to-install": "지금 Tari Universe {{version}}을(를) 설치하시겠습니까?",
+  "yes": "예"
+}

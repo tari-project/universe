@@ -1,28 +1,35 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
+import { deepEqual } from '@app/utils/objectDeepEqual';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 export const useAirdropUserPointsListener = () => {
-    const setUserPoints = useAirdropStore((state) => state.setUserPoints);
-    useEffect(() => {
-        let unListen: () => void = () => {
-            //do nothing
-        };
+    const setUserPoints = useAirdropStore((state) => state?.setUserPoints);
+    const currentReferralData = useAirdropStore((state) => state?.referralCount);
+    const bonusTiers = useAirdropStore((state) => state.bonusTiers);
+    const cachedUserPoints = useRef<UserPoints>();
 
-        listen('UserPoints', (event) => {
-            if (event.event === 'UserPoints') {
-                if (event.payload) {
-                    setUserPoints(event.payload as UserPoints);
-                }
+    const handleAirdropPoints = useCallback(
+        (pointsPayload: UserPoints) => {
+            const incomingReferralData = pointsPayload?.referralCount;
+            if (incomingReferralData?.count && incomingReferralData?.count !== currentReferralData?.count) {
+                setUserPoints(pointsPayload);
             }
-        })
-            .then((unListenFunction) => {
-                unListen = unListenFunction;
-            })
-            .catch(console.error);
+        },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [bonusTiers, currentReferralData?.count]
+    );
 
+    useEffect(() => {
+        const ul = listen('UserPoints', ({ payload }) => {
+            if (!payload) return;
+            const payloadChanged = !deepEqual(payload as UserPoints, cachedUserPoints.current);
+            if (payloadChanged) {
+                handleAirdropPoints(payload as UserPoints);
+            }
+        });
         return () => {
-            unListen();
+            ul.then((unlisten) => unlisten());
         };
-    }, [setUserPoints]);
+    }, [handleAirdropPoints]);
 };

@@ -9,15 +9,26 @@ export type GlAppState =
     | 'stop'
     | 'complete'
     | 'success'
+    | 'success2'
+    | 'success3'
     | 'fail'
     | 'resultAnimation'
     | 'restartAnimation'
     | 'restart';
 
+interface PreloadArgs {
+    canvas?: HTMLElement | null;
+    orbitTarget?: HTMLElement | null;
+    ASSETS_PATH: string;
+}
 export interface GlApp {
-    set(e: GlAppState): void;
+    setState(e: GlAppState, isReplay?: boolean): void;
+    init: () => void;
+    render: (dt: number) => void;
+    setSize: (w: number, h: number) => void;
     properties: Properties;
     stateManager: StateManager;
+    preload: ({ canvas, orbitTarget, ASSETS_PATH }: PreloadArgs, callback: () => void) => void;
 }
 
 export interface Properties extends Record<string, unknown> {
@@ -30,6 +41,11 @@ export interface Properties extends Record<string, unknown> {
     spawnSignal: unknown;
     gameEndedSignal: unknown;
     statusUpdateQueue: unknown;
+    lightPositionX: number;
+    lightPositionY: number;
+    lightPositionZ: number;
+    bgColor1: string;
+    bgColor2: string;
 }
 
 export interface StateManager extends Record<string, unknown> {
