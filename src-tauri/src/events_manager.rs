@@ -59,26 +59,11 @@ impl EventsManager {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
-                        println!(
-                            "{} ======================= handle_new_block_height: #{}",
-                            chrono::Local::now().format("%H:%M:%S.%f"),
-                            block_height
-                        );
-                        println!(
-                            "{} Wallet balance: {:?}",
-                            chrono::Local::now().format("%H:%M:%S.%f"),
-                            balance
-                        );
                         let coinbase_tx = if balance
                             .pending_incoming_balance
                             .gt(&MicroMinotari::zero())
                         {
                             let last_mined_block_height = block_height - 1;
-                            println!(
-                                "{} Pending incoming balance is greater than zero. Last mined block height: {}",
-                                chrono::Local::now().format("%H:%M:%S.%f"),
-                                last_mined_block_height
-                            );
                             events_service
                                 .get_coinbase_transaction_for_last_mined_block(
                                     &app_clone.state::<UniverseAppState>().wallet_manager,
@@ -86,25 +71,12 @@ impl EventsManager {
                                 )
                                 .await
                         } else {
-                            println!(
-                                "{} Pending incoming balance is zero.",
-                                chrono::Local::now().format("%H:%M:%S.%f")
-                            );
                             None
                         };
-                        println!(
-                            "{} Coinbase transaction: {:?}",
-                            chrono::Local::now().format("%H:%M:%S.%f"),
-                            coinbase_tx
-                        );
                         EventsEmitter::emit_new_block_mined(&app_clone, block_height, coinbase_tx)
                             .await;
                         EventsEmitter::emit_wallet_balance_update(&app_clone, balance.clone())
                             .await;
-                        println!(
-                            "{} ============== handle_new_block_height done ===============",
-                            chrono::Local::now().format("%H:%M:%S.%f")
-                        );
                     }
                     None => {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);

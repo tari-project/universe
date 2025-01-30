@@ -85,11 +85,9 @@ const useTauriEventsListener = () => {
         const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEventPayload }) => {
             switch (event.event_type) {
                 case FrontendEvent.WalletAddressUpdate:
-                    console.log('xxxxxxxxx WalletAddressUpdate', event.payload);
                     setWalletAddress(event.payload);
                     break;
                 case FrontendEvent.WalletBalanceUpdate:
-                    console.log('yyyyyyyyyyy WalletBalanceUpdate', event.payload);
                     setWalletBalance(event.payload);
                     break;
                 case FrontendEvent.BaseNodeUpdate:
