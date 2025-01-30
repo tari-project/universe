@@ -13,8 +13,8 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-#[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+// #[cfg(target_os = "windows")]
+// use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 use crate::validator_node_manager::ValidatorNodeConfig;
 
 const LOG_TARGET: &str = "tari::universe::validator_node_adapter";

@@ -14,8 +14,8 @@ use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 use crate::indexer_manager::IndexerConfig;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-#[cfg(target_os = "windows")]
-use crate::utils::setup_utils::setup_utils::add_firewall_rule;
+// #[cfg(target_os = "windows")]
+// use crate::utils::setup_utils::setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::indexer_adapter";
 
