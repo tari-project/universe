@@ -243,41 +243,6 @@ impl ReleaseNotes {
         }
     }
 
-    pub async fn should_show_release_notes(
-        &self,
-        state: State<'_, UniverseAppState>,
-        app: AppHandle,
-    ) -> Result<bool, Error> {
-        debug!(target: LOG_TARGET, "[should_show_release_notes]");
-        let release_notes_version = ReleaseNotes::current()
-            .get_release_notes(UpdatesManager::read_update_finished_from_file())
-            .await?
-            .version;
-        let release_notes_version = Version::parse(&release_notes_version)?;
-        let current_app_version = app.package_info().version.clone();
-
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Getting config lock");
-        let config_lock = state.config.read().await;
-        let last_release_notes_version_shown = config_lock.last_changelog_version().to_string();
-        drop(config_lock);
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Realising config lock");
-
-        let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
-
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Release notes version: {}", release_notes_version);
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Last release notes version shown: {}", last_release_notes_version_shown);
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Current app version: {}", current_app_version);
-
-        let was_release_notes_updated = release_notes_version.gt(&last_release_notes_version_shown);
-        let is_app_on_latest_release_notes_version_or_higher =
-            current_app_version.ge(&release_notes_version);
-
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Was release notes updated: {}", was_release_notes_updated);
-        debug!(target: LOG_TARGET, "[should_show_release_notes] Is app on latest release notes version or higher: {}", is_app_on_latest_release_notes_version_or_higher);
-
-        Ok(was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher)
-    }
-
     pub async fn handle_release_notes_event_emit(
         &self,
         state: State<'_, UniverseAppState>,
