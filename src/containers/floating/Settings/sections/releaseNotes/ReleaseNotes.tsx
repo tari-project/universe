@@ -12,6 +12,10 @@ const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
+    if (markdown === '' || !markdown) {
+        return [];
+    }
+
     const sections = markdown.split(/\n---\n/);
 
     return sections.map((block) => {
