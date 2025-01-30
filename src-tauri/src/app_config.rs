@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -930,5 +931,5 @@ fn default_p2pool_stats_server_port() -> Option<u16> {
 }
 
 fn default_changelog_version() -> String {
-    UNIVERSE_VERSION.clone().into()
+    Version::new(0, 0, 0).to_string()
 }
