@@ -762,9 +762,9 @@ async fn setup_inner(
         }
     });
 
-    ReleaseNotes::current()
+    let _unused = ReleaseNotes::current()
         .handle_release_notes_event_emit(state.clone(), app)
-        .await?;
+        .await;
 
     Ok(())
 }
