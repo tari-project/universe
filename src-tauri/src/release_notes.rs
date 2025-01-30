@@ -28,7 +28,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 use dirs::cache_dir;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};

@@ -28,7 +28,7 @@ use anyhow::anyhow;
 use log::{error, info, warn};
 
 use serde::{Deserialize, Serialize};
-use tauri::{Emitter, Manager, Url};
+use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
