@@ -48,7 +48,6 @@ use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
-use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;

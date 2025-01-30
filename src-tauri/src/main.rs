@@ -31,7 +31,6 @@ use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
-use semver::Version;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;

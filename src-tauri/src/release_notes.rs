@@ -28,7 +28,7 @@ use std::{
 
 use anyhow::{anyhow, Error};
 use dirs::cache_dir;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
@@ -225,11 +225,11 @@ impl ReleaseNotes {
                     return Ok(cached_file.clone());
                 } else {
                     debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
-                    return Ok(self.handle_fetching_and_saving().await?);
+                    return self.handle_fetching_and_saving().await;
                 };
             };
             debug!(target: LOG_TARGET, "[get_release_notes] No cached release notes found");
-            return Ok(self.handle_fetching_and_saving().await?);
+            return self.handle_fetching_and_saving().await;
         };
 
         if let Some(release_notes_file) = file {
@@ -249,11 +249,11 @@ impl ReleaseNotes {
                 Ok(release_notes_file.clone())
             } else {
                 debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
-                Ok(self.handle_fetching_and_saving().await?)
+                return self.handle_fetching_and_saving().await;
             }
         } else {
             debug!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
-            Ok(self.handle_fetching_and_saving().await?)
+            return self.handle_fetching_and_saving().await;
         }
     }
 
