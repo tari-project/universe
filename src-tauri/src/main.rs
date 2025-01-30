@@ -166,22 +166,53 @@ struct CriticalProblemEvent {
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
+        // Initial updates
         let app_state = move_app.state::<UniverseAppState>().clone();
+        let events_manager = app_state.events_manager.read().await;
+
+        events_manager
+            .handle_internal_wallet_loaded_or_created(&move_app)
+            .await;
+        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
+            Ok(devices) => devices,
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to get GPU devices: {:?}", e);
+                vec![]
+            }
+        };
+        events_manager
+            .handle_gpu_devices_update(&move_app, gpu_devices)
+            .await;
+    });
+
+    let move_app = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let app_state = move_app.state::<UniverseAppState>().clone();
+        let events_manager = app_state.events_manager.read().await;
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-        let _app_handle = move_app.app_handle().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
-        let current_block_height = node_status_watch_rx.borrow().clone().block_height;
-        app_state
-            .events_manager
-            .read()
-            .await
+        events_manager
+            .handle_internal_wallet_loaded_or_created(&move_app)
+            .await;
+        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
+            Ok(devices) => devices,
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to get GPU devices: {:?}", e);
+                vec![]
+            }
+        };
+        events_manager
+            .handle_gpu_devices_update(&move_app, gpu_devices)
+            .await;
+
+        let current_block_height = node_status_watch_rx.borrow().block_height;
+        events_manager
             .wait_for_initial_wallet_scan(&move_app, current_block_height)
             .await;
 
         let mut latest_updated_block_height = current_block_height;
-
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
@@ -567,16 +598,7 @@ async fn setup_inner(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
-    if let Some((gpu_devices, _unused)) = HardwareStatusMonitor::current().initialize().await.ok() {
-        state
-            .events_manager
-            .read()
-            .await
-            .handle_gpu_devices_update(&app, gpu_devices)
-            .await;
-    } else {
-        error!(target: LOG_TARGET, "Could not get hardware status");
-    };
+    HardwareStatusMonitor::current().initialize().await?;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
@@ -783,6 +805,9 @@ async fn setup_inner(
             }),
         )
         .await;
+
+    initialize_frontend_updates(&app).await?;
+
     drop(
         app.clone()
             .emit(
@@ -798,8 +823,6 @@ async fn setup_inner(
                 |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
             ),
     );
-
-    initialize_frontend_updates(&app).await?;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
@@ -1120,8 +1143,6 @@ fn main() {
                 .app_config_dir()
                 .expect("Could not get config dir");
             let address = app.state::<UniverseAppState>().tari_address.clone();
-            let events_manager = app.state::<UniverseAppState>().events_manager.clone();
-            let app_handle_clone = app.handle().clone();
             let thread = tauri::async_runtime::spawn(async move {
                 match InternalWallet::load_or_create(config_path).await {
                     Ok(wallet) => {
@@ -1134,8 +1155,6 @@ fn main() {
                             .await;
                         let mut address_lock = address.write().await;
                         *address_lock = wallet.get_tari_address();
-                        let mut events_manager_lock = events_manager.write().await;
-                        events_manager_lock.handle_internal_wallet_loaded_or_created(&app_handle_clone, wallet.get_tari_address()).await;
                         Ok(())
                         //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
                     }

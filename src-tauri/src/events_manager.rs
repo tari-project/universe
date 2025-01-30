@@ -1,5 +1,4 @@
 use log::error;
-use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
@@ -23,11 +22,13 @@ impl EventsManager {
         }
     }
 
-    pub async fn handle_internal_wallet_loaded_or_created(
-        &mut self,
-        app: &AppHandle,
-        wallet_address: TariAddress,
-    ) {
+    pub async fn handle_internal_wallet_loaded_or_created(&self, app: &AppHandle) {
+        let wallet_address = app
+            .state::<UniverseAppState>()
+            .tari_address
+            .read()
+            .await
+            .clone();
         EventsEmitter::emit_wallet_address_update(&app, wallet_address).await;
     }
 
