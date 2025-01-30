@@ -36,6 +36,7 @@ use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use systemtray_manager::SystemTrayManager;
 use tauri_plugin_cli::CliExt;
+use tauri_plugin_updater::Update;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
@@ -1196,11 +1197,13 @@ fn main() {
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            UpdatesManager::delete_update_finished_file();
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            UpdatesManager::delete_update_finished_file();
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

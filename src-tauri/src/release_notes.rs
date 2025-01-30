@@ -37,7 +37,10 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::RwLock;
 
-use crate::{events::ReleaseNotesHandlerEvent, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{
+    events::ReleaseNotesHandlerEvent, updates_manager::UpdatesManager, UniverseAppState,
+    APPLICATION_FOLDER_ID,
+};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md";
@@ -247,7 +250,7 @@ impl ReleaseNotes {
     ) -> Result<bool, Error> {
         debug!(target: LOG_TARGET, "[should_show_release_notes]");
         let release_notes_version = ReleaseNotes::current()
-            .get_release_notes(true)
+            .get_release_notes(UpdatesManager::read_update_finished_from_file())
             .await?
             .version;
         let release_notes_version = Version::parse(&release_notes_version)?;
@@ -280,15 +283,33 @@ impl ReleaseNotes {
         state: State<'_, UniverseAppState>,
         app: AppHandle,
     ) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit]");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit]");
 
-        let should_show_release_notes = self
-            .should_show_release_notes(state.clone(), app.clone())
+        let config_lock = state.config.read().await;
+        let last_release_notes_version_shown = config_lock.last_changelog_version().to_string();
+        let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
+        drop(config_lock);
+
+        let release_notes = ReleaseNotes::current()
+            .get_release_notes(UpdatesManager::read_update_finished_from_file())
             .await?;
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Should show release notes: {}", should_show_release_notes);
 
-        let release_notes = self.get_release_notes(false).await?;
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {}", release_notes.version);
+        let release_notes_version = Version::parse(&release_notes.version)?;
+        let current_app_version = app.package_info().version.clone();
+
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {}", release_notes_version);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Last release notes version shown: {}", last_release_notes_version_shown);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Current app version: {}", current_app_version);
+
+        let was_release_notes_updated = release_notes_version.gt(&last_release_notes_version_shown);
+        let is_app_on_latest_release_notes_version_or_higher =
+            current_app_version.ge(&release_notes_version);
+
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Was release notes updated: {}", was_release_notes_updated);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app on latest release notes version or higher: {}", is_app_on_latest_release_notes_version_or_higher);
+
+        let should_show_release_notes =
+            was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher;
 
         let is_app_update_available: bool = state
             .updates_manager
@@ -297,7 +318,7 @@ impl ReleaseNotes {
             .map(|update| update.is_some())
             .unwrap_or(false);
 
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
 
         app.emit(
             "release_notes_handler",
@@ -308,10 +329,10 @@ impl ReleaseNotes {
             },
         )
         .map_err(|e| anyhow::anyhow!(e))?;
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
 
         if should_show_release_notes {
-            info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
+            debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
             state
                 .config
                 .write()
@@ -320,7 +341,7 @@ impl ReleaseNotes {
                 .await?;
         }
 
-        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Done");
+        debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Done");
         Ok(())
     }
 }
