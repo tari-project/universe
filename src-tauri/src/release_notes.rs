@@ -249,11 +249,11 @@ impl ReleaseNotes {
                 Ok(release_notes_file.clone())
             } else {
                 debug!(target: LOG_TARGET, "[get_release_notes] Found different ETag, fetching release notes");
-                return self.handle_fetching_and_saving().await;
+                self.handle_fetching_and_saving().await
             }
         } else {
             debug!(target: LOG_TARGET, "[get_release_notes] Didn't find cached release notes, fetching");
-            return self.handle_fetching_and_saving().await;
+            self.handle_fetching_and_saving().await
         }
     }
 
