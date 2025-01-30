@@ -28,13 +28,16 @@ use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use log::{debug, error, warn};
+use core::hash;
+use log::{debug, error, info, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
+use std::time::{Duration, Instant};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
+use tokio::time::{sleep, timeout};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -76,6 +79,7 @@ impl CpuMiner {
                     port: monero_port,
                 }
             }
+            CpuMinerConnection::Benchmark => XmrigNodeConnection::Benchmark,
         };
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
@@ -123,6 +127,96 @@ impl CpuMiner {
         )
         .await?;
         Ok(())
+    }
+
+    pub async fn start_benchmarking(
+        &mut self,
+        app_shutdown: ShutdownSignal,
+        duration: Duration,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_dir: PathBuf,
+    ) -> Result<u64, anyhow::Error> {
+        let mut lock = self.watcher.write().await;
+
+        let xmrig_node_connection = XmrigNodeConnection::Benchmark;
+        let max_cpu_available = thread::available_parallelism();
+        let max_cpu_available = match max_cpu_available {
+            Ok(available_cpus) => {
+                debug!(target:LOG_TARGET, "Available CPUs: {}", available_cpus);
+                u32::try_from(available_cpus.get()).unwrap_or(1)
+            }
+            Err(err) => {
+                error!("Available CPUs: Unknown, error: {}", err);
+                1
+            }
+        };
+
+        // let eco_mode_threads = cpu_miner_config
+        // .eco_mode_cpu_percentage
+        // .unwrap_or((ECO_MODE_CPU_USAGE * max_cpu_available) / 100u32);
+
+        // let cpu_max_percentage = match mode {
+        // MiningMode::Eco => Some(eco_mode_threads),
+        // MiningMode::Custom => {
+        // if custom_cpu_threads.unwrap_or(0) == max_cpu_available {
+        // None
+        // } else {
+        // custom_cpu_threads
+        // }
+        // }
+        // MiningMode::Ludicrous => None,
+        // };
+
+        lock.adapter.node_connection = Some(xmrig_node_connection);
+        lock.adapter.monero_address = Some("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string());
+        lock.adapter.cpu_threads = Some(Some(1)); // Ludicrous mode
+        lock.adapter.extra_options = vec![];
+
+        let timeout_duration = duration + Duration::from_secs(10);
+        let res = match timeout(timeout_duration, async move {
+            lock.start(
+                app_shutdown.clone(),
+                base_path.clone(),
+                config_path.clone(),
+                log_dir.clone(),
+                Binaries::Xmrig,
+            )
+            .await?;
+            let status = lock.status_monitor.clone().unwrap();
+            let start_time = Instant::now();
+            let mut max_hashrate = 0f64;
+            loop {
+                if app_shutdown.is_triggered() {
+                    break;
+                }
+                sleep(Duration::from_secs(1)).await;
+                if let Ok(stats) = status.summary().await {
+                    dbg!(&stats);
+                    let hash_rate = stats.hashrate.total[0].unwrap_or_default();
+                    if hash_rate > max_hashrate {
+                        max_hashrate = hash_rate;
+                    }
+                    info!(target: LOG_TARGET, "Xmrig stats available");
+                    dbg!(start_time.elapsed());
+                    dbg!(duration);
+                    if start_time.elapsed() > duration {
+                        break;
+                    }
+                } else {
+                    warn!(target: LOG_TARGET, "Xmrig stats not available yet");
+                }
+            } // wait until we have stats from xmrig, so its started
+            Ok::<u64, anyhow::Error>(max_hashrate as u64)
+        })
+        .await
+        {
+            Ok(res) => Ok(res? * max_cpu_available as u64),
+            Err(_) => return Err(anyhow::anyhow!("Benchmarking timed out")),
+        };
+        let mut lock2 = self.watcher.write().await;
+        lock2.stop().await?;
+        res
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
