@@ -11,6 +11,11 @@ jobs:
         with:
           cache: 'npm'
           node-version: lts/*
+      - name: Set up NPM credentials
+        run: |
+          printf -- "//npm.pkg.github.com/:_authToken=${PACKAGE_TOKEN}\n@tari-labs:registry=https://npm.pkg.github.com" > .npmrc
+        env:
+          PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       - name: Install Node.js dependencies
         run: npm ci
       - name: check lint/prettier errors

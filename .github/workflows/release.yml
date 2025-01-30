@@ -191,7 +191,11 @@ jobs:
               ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
           cargo install trusted-signing-cli@0.3.0 --locked
-
+      - name: Set up NPM credentials
+        run: |
+          printf -- "//npm.pkg.github.com/:_authToken=${PACKAGE_TOKEN}\n@tari-labs:registry=https://npm.pkg.github.com" > .npmrc
+        env:
+          PACKAGE_TOKEN: ${{ secrets.PACKAGE_TOKEN }}
       - name: Install Dependencies - Node
         run: |
           npm --version

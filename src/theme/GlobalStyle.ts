@@ -96,7 +96,7 @@ export const GlobalStyle = createGlobalStyle`
         //background:  ${({ theme }) => theme.palette.base};
     }
     
-    #canvas {
+    #tower-canvas {
         z-index: 0;
         top: 0;
         left: 0;

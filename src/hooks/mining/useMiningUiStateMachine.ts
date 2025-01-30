@@ -1,8 +1,9 @@
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { setAnimationState } from '@app/visuals';
 import { useEffect } from 'react';
+import { animationStatus, setAnimationState, animationStatusIndex } from '@tari-labs/tari-tower';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -10,24 +11,27 @@ export const useUiMiningStateMachine = () => {
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
+    const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isMining = cpuIsMining || gpuIsMining;
 
-    const statusIndex = window?.glApp?.stateManager?.statusIndex;
+    const indexTrigger = animationStatusIndex;
 
     useEffect(() => {
-        const status = window?.glApp?.stateManager?.status;
-        const notStarted = !status || status == 'not-started' || status == 'stop';
+        if (!visualMode || visualModeToggleLoading) return;
+        const notStarted = !animationStatus || animationStatus == 'not-started' || animationStatus == 'stop';
         if (isMining && notStarted) {
             setAnimationState('start');
         }
-    }, [statusIndex, isMining]);
+    }, [indexTrigger, isMining, visualMode, visualModeToggleLoading]);
 
     useEffect(() => {
-        const notStopped = window?.glApp?.stateManager?.status !== 'not-started';
+        if (!visualMode || visualModeToggleLoading) return;
+        const notStopped = animationStatus !== 'not-started';
         const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
         const shouldStop = !isMining && notStopped && !preventStop;
         if (shouldStop) {
             setAnimationState('stop');
         }
-    }, [statusIndex, setupComplete, isMiningInitiated, isMining, isChangingMode]);
+    }, [indexTrigger, setupComplete, isMiningInitiated, isMining, isChangingMode, visualMode, visualModeToggleLoading]);
 };

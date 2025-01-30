@@ -2,8 +2,8 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useUIStore } from '@app/store/useUIStore';
+import { setVisualMode, useAppConfigStore } from '@app/store/useAppConfigStore';
+import { sidebarTowerOffset, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,
@@ -13,23 +13,41 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
+import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-labs/tari-tower';
+
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 
 function VisualMode() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const setVisualMode = useAppConfigStore((s) => s.setVisualMode);
+    const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
 
-    const handleSwitch = useCallback(() => {
-        const canvasElement = document.getElementById('canvas');
-        if (canvasElement) {
-            canvasElement.style.display = visualMode ? 'none' : 'block';
+    const handleDisable = useCallback(() => {
+        const canvas = document.getElementById('tower-canvas');
+        if (canvas) {
+            canvas.style.opacity = '0';
         }
-        setVisualMode(!visualMode);
-    }, [setVisualMode, visualMode]);
+        setVisualMode(false);
+        removeTowerAnimation('tower-canvas');
+    }, []);
+
+    const handleEnable = useCallback(() => {
+        loadTowerAnimation('tower-canvas', sidebarTowerOffset).then(() => {
+            setVisualMode(true);
+            setAnimationState('showVisual');
+        });
+    }, []);
+
+    const handleSwitch = useCallback(() => {
+        if (visualMode) {
+            handleDisable();
+        } else {
+            handleEnable();
+        }
+    }, [handleDisable, handleEnable, visualMode]);
 
     return (
         <SettingsGroupWrapper>
@@ -41,11 +59,14 @@ function VisualMode() {
                     {isWebglNotSupported && <ErrorTypography color="error">{t('webgl-not-supported')}</ErrorTypography>}
                 </SettingsGroupContent>
                 <SettingsGroupAction style={{ alignItems: 'center' }}>
-                    <ToggleSwitch disabled={isWebglNotSupported} checked={visualMode} onChange={handleSwitch} />
+                    <ToggleSwitch
+                        disabled={visualModeToggleLoading || isWebglNotSupported}
+                        checked={visualMode}
+                        onChange={handleSwitch}
+                    />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>
     );
 }
-
 export default VisualMode;
