@@ -69,7 +69,6 @@ pub struct MaxUsageLevels {
 
 pub enum CpuMinerConnection {
     BuiltInProxy,
-    Benchmark,
 }
 
 #[derive(Debug, Serialize)]

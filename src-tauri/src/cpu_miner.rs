@@ -28,8 +28,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use core::hash;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -79,7 +78,6 @@ impl CpuMiner {
                     port: monero_port,
                 }
             }
-            CpuMinerConnection::Benchmark => XmrigNodeConnection::Benchmark,
         };
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
@@ -143,7 +141,7 @@ impl CpuMiner {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
-            Err(err) => 1,
+            Err(_) => 1,
         };
 
         lock.adapter.node_connection = Some(xmrig_node_connection);
@@ -162,7 +160,19 @@ impl CpuMiner {
                 Binaries::Xmrig,
             )
             .await?;
-            let status = lock.status_monitor.clone().unwrap();
+            let mut status = None;
+            for _ in 0..10 {
+                if let Some(s) = lock.status_monitor.as_ref() {
+                    status = Some(s.clone());
+                    break;
+                }
+                sleep(Duration::from_secs(1)).await;
+            }
+            if status.is_none() {
+                error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
+                return Ok(0);
+            }
+            let status = status.expect("Can't fail");
             let start_time = Instant::now();
             let mut max_hashrate = 0f64;
             loop {
@@ -180,11 +190,12 @@ impl CpuMiner {
                     }
                 }
             } // wait until we have stats from xmrig, so its started
-            Ok::<u64, anyhow::Error>(max_hashrate as u64)
+            #[allow(clippy::cast_possible_truncation)]
+            Ok::<u64, anyhow::Error>(max_hashrate.floor() as u64)
         })
         .await
         {
-            Ok(res) => Ok(res? * max_cpu_available as u64),
+            Ok(res) => Ok(res? * u64::from(max_cpu_available)),
             Err(_) => Ok(0),
         };
         let mut lock2 = self.watcher.write().await;
