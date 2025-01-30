@@ -130,9 +130,11 @@ export class TappletProvider implements TariProvider {
 
     public async getAccount(): Promise<Account> {
         const { account, public_key } = (await this.client.accountsGetDefault({})) as any;
-
+        console.info('TAPP ACCOUNT GET DEF -> ', account, public_key);
+        //TODO debug error
+        //tip: if fails try `account: { ComponentAddress: account.address }`
         const { balances } = await this.client.accountsGetBalances({
-            account: { ComponentAddress: account.address },
+            account: { ComponentAddress: account.address.Component },
             refresh: false,
         });
 

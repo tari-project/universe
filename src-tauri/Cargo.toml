@@ -89,6 +89,8 @@ tauri-plugin-os = { git = "https://github.com/tari-project/tauri-plugins-workspa
 tauri-plugin-sentry = { git = "https://github.com/tari-project/sentry-tauri", rev = "7554b9a8738d6442d175aa2add55ecc11c52842d" }
 tauri-plugin-shell = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 tauri-plugin-updater = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
+tauri-plugin-dialog = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
+tauri-plugin-upload = { git = "https://github.com/tari-project/tauri-plugins-workspace", rev = "09f29b0abe2cb1eb81365b65a3aa3f73325e4e17" }
 thiserror = "1.0.26"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.11", features = ["compat"] }

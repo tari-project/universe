@@ -51,12 +51,22 @@ pub async fn start_wallet_daemon(
 
     let cfg = load_configuration(wallet_daemon_config_file, true, &cli, None).unwrap();
     let mut config = ApplicationConfig::load_from(&cfg).unwrap();
-    let contractnet_json_rpc_address =
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12028);
+    // ======= LOCAL SWARM CONFIG
+    // let contractnet_json_rpc_address =
+    //     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12028);
+
+    // config.dan_wallet_daemon.indexer_node_json_rpc_url =
+    //     "http://18.216.193.9:12026/json_rpc".to_string();
+    // config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
+
+    // ======= LOCAL SWARM CONFIG
+    let json_rpc_port = 18010; //TODO set port from the swarm config
+    let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
 
     config.dan_wallet_daemon.indexer_node_json_rpc_url =
-        "http://18.216.193.9:12026/json_rpc".to_string();
-    config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
+        "http://localhost:18007/json_rpc".to_string();
+    config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&jrpc_address).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
+    config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
 
     println!("------> 🌟 WALLET DAEMON CONFIG: {:?}", &config);
 

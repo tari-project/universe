@@ -35,6 +35,7 @@ const OotleWalletBalance = () => {
                 // TODO refactor types
                 setAccountsList(list.accounts as unknown as AccountInfo[]);
                 const acc = (await tappProvider.getAccount()) as OotleAccount;
+                console.info('TAPP ACCOUNT -> ', acc);
                 setAccount(acc);
             }
         } catch (error) {

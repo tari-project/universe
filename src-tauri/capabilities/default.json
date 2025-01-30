@@ -16,6 +16,9 @@
         "shell:allow-open",
         "sentry:default",
         "process:allow-restart",
-        "process:default"
+        "process:default",
+        "dialog:allow-open",
+        "dialog:allow-confirm",
+        "upload:allow-upload"
     ]
 }
