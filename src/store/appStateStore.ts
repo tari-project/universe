@@ -35,9 +35,6 @@ interface Actions {
     setIssueReference: (value: string) => void;
     setReleaseNotes: (value: string) => void;
     setIsAppUpdateAvailable: (value: boolean) => void;
-    // fetchReleaseNotes: () => Promise<void>;
-    // checkForAppUpdate: () => Promise<void>;
-    // updateLastShownReleaseNotesVersion: () => Promise<void>;
 }
 type AppState = State & Actions;
 

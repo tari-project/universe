@@ -8,7 +8,7 @@ interface UseListenForAppUpdatedOptions {
 }
 
 interface ShowReleaseNotesPayload {
-    release_notes: string;
+    release_notes?: string;
     is_app_update_available: boolean;
     should_show_dialog: boolean;
 }
@@ -26,7 +26,7 @@ export const useListenForAppUpdated = (options: UseListenForAppUpdatedOptions) =
         const listToShowReleaseNotes = listen(
             'release_notes_handler',
             ({ payload }: { payload: ShowReleaseNotesPayload }) => {
-                setReleaseNotes(payload.release_notes);
+                setReleaseNotes(payload.release_notes || '');
                 setIsAppUpdateAvailable(payload.is_app_update_available);
                 if (payload.should_show_dialog) {
                     setDialogToShow('releaseNotes');
