@@ -221,6 +221,11 @@ impl CredentialManager {
 
     fn save_to_file(&self, credential: &Credential) -> Result<(), CredentialError> {
         let serialized = serde_cbor::to_vec(credential)?;
+        if let Some(parent) = self.fallback_file().parent() {
+            if !parent.exists() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)

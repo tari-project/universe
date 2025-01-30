@@ -14,6 +14,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
+import { AirdropTokens } from '@app/store/useAirdropStore';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -78,6 +79,11 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
     function invoke(param: 'proceed_with_update'): Promise<void>;
     function invoke(param: 'check_for_updates'): Promise<string | undefined>;
+    function invoke(
+        param: 'set_airdrop_tokens',
+        airdropTokens: Pick<AirdropTokens, 'refreshToken' | 'token'>
+    ): Promise<void>;
+    function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',

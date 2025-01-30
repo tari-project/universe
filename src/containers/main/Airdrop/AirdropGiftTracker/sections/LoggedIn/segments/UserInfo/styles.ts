@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -14,11 +13,7 @@ export const Wrapper = styled('div')`
     width: 100%;
 `;
 
-export const Avatar = styled('div')<{ $image?: string }>`
-    background-image: url(${({ $image }) => $image});
-    background-size: cover;
-    background-position: center;
-    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+export const Avatar = styled('div')`
     width: 36px;
     height: 36px;
     border-radius: 50%;
