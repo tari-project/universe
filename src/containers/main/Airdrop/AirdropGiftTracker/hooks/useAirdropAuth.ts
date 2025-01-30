@@ -2,11 +2,9 @@ import { useCallback, useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
 import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
-import { useMiningStore } from '@app/store/useMiningStore';
 
 export const useAirdropAuth = () => {
-    const restartMining = useMiningStore((s) => s.restartMining);
-    const { authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
+    const { setFlareAnimationType, authUuid, setAuthUuid, backendInMemoryConfig } = useAirdropStore();
 
     const handleAuth = useCallback(
         (code?: string) => {
@@ -37,7 +35,9 @@ export const useAirdropAuth = () => {
                             if (!data.error) {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
-                                restartMining();
+                                if (data.installReward) {
+                                    setFlareAnimationType('FriendAccepted');
+                                }
                             }
                         });
                 }
