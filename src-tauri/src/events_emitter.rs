@@ -12,8 +12,6 @@ use crate::{
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 
-// TODO: Rethink types and structure of events
-
 #[derive(Debug, Serialize, Clone)]
 pub enum FrontendEventType {
     WalletAddressUpdate,
@@ -123,7 +121,7 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit ConnectedPeersUpdate event: {:?}", e);
         }
     }
-    // Replace with real coinbase transaction
+
     pub async fn emit_new_block_mined(
         app_handle: &AppHandle,
         block_height: u64,
