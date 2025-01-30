@@ -37,7 +37,6 @@ use tari_common::configuration::Network;
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
-const UNIVERSE_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(clippy::struct_excessive_bools)]
