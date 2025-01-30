@@ -28,16 +28,16 @@ use std::{
 
 use anyhow::{anyhow, Error};
 use dirs::cache_dir;
-use log::{debug, error, warn};
+use log::{debug, error, info, warn};
 use reqwest::{self, Client, Response};
 use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 use tokio::sync::RwLock;
 
-use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{events::ReleaseNotesHandlerEvent, UniverseAppState, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md";
@@ -292,32 +292,52 @@ impl ReleaseNotes {
         Ok(was_release_notes_updated && is_app_on_latest_release_notes_version_or_higher)
     }
 
-    pub async fn should_force_update(
+    pub async fn handle_release_notes_event_emit(
         &self,
         state: State<'_, UniverseAppState>,
         app: AppHandle,
-    ) -> Result<bool, anyhow::Error> {
-        debug!(target: LOG_TARGET, "[should_force_update]");
-        let current_app_version = app.package_info().version.clone();
+    ) -> Result<(), Error> {
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit]");
 
-        debug!(target: LOG_TARGET, "[should_force_update] Getting config lock");
-        let config_lock = state.config.read().await;
-        let last_release_notes_version_shown = config_lock.last_changelog_version().to_string();
-        drop(config_lock);
-        debug!(target: LOG_TARGET, "[should_force_update] Realising config lock");
+        let should_show_release_notes = self
+            .should_show_release_notes(state.clone(), app.clone())
+            .await?;
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Should show release notes: {}", should_show_release_notes);
 
-        let last_release_notes_version_shown =
-        Version::parse(&last_release_notes_version_shown).map_err(|e| {
-            error!(target: LOG_TARGET, "Failed to parse last release notes version shown: {}", e);
-            anyhow!("Failed to parse last release notes version shown")
-        })?;
+        let release_notes = self.get_release_notes(false).await?;
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Release notes version: {}", release_notes.version);
 
-        let was_updated = current_app_version.gt(&last_release_notes_version_shown);
+        let is_app_update_available: bool = state
+            .updates_manager
+            .check_for_update(app.clone(), false)
+            .await
+            .map(|update| update.is_some())
+            .unwrap_or(false);
 
-        debug!(target: LOG_TARGET, "[should_force_update] Last release notes version shown: {}", last_release_notes_version_shown);
-        debug!(target: LOG_TARGET, "[should_force_update] Current app version: {}", current_app_version);
-        debug!(target: LOG_TARGET, "[should_force_update] Was updated: {}", was_updated);
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
 
-        Ok(was_updated)
+        app.emit(
+            "release_notes_handler",
+            ReleaseNotesHandlerEvent {
+                release_notes: release_notes.content,
+                is_app_update_available,
+                should_show_dialog: should_show_release_notes,
+            },
+        )
+        .map_err(|e| anyhow::anyhow!(e))?;
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
+
+        if should_show_release_notes {
+            info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
+            state
+                .config
+                .write()
+                .await
+                .set_last_changelog_version(release_notes.version)
+                .await?;
+        }
+
+        info!(target: LOG_TARGET, "[handle_release_notes_event_emit] Done");
+        Ok(())
     }
 }

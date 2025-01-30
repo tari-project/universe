@@ -33,9 +33,11 @@ interface Actions {
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
     setIssueReference: (value: string) => void;
-    fetchReleaseNotes: () => Promise<void>;
-    checkForAppUpdate: () => Promise<void>;
-    updateLastShownReleaseNotesVersion: () => Promise<void>;
+    setReleaseNotes: (value: string) => void;
+    setIsAppUpdateAvailable: (value: boolean) => void;
+    // fetchReleaseNotes: () => Promise<void>;
+    // checkForAppUpdate: () => Promise<void>;
+    // updateLastShownReleaseNotesVersion: () => Promise<void>;
 }
 type AppState = State & Actions;
 
@@ -106,29 +108,8 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         }
     },
     setIssueReference: (issueReference) => set({ issueReference }),
-    fetchReleaseNotes: async () => {
-        try {
-            const releaseNotes = await invoke('get_release_notes');
-            set({ releaseNotes });
-        } catch (error) {
-            console.error('Error fetching release notes', error);
-        }
-    },
-    updateLastShownReleaseNotesVersion: async () => {
-        try {
-            await invoke('update_last_shown_release_notes_version');
-        } catch (error) {
-            console.error('Error updating last shown release notes version', error);
-        }
-    },
-    checkForAppUpdate: async () => {
-        try {
-            const version = await invoke('check_for_updates');
-            set({ isAppUpdateAvailable: !!version });
-        } catch (error) {
-            console.error('Error checking for app update', error);
-        }
-    },
+    setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
+    setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
 
 export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>

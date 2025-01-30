@@ -35,7 +35,6 @@ use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDevi
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
-use crate::release_notes::ReleaseNotes;
 use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
@@ -1789,54 +1788,6 @@ pub async fn proceed_with_update(
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
-    }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn get_release_notes(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let timer = Instant::now();
-
-    let should_force_update = ReleaseNotes::current()
-        .should_force_update(state.clone(), app.clone())
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let release_notes = ReleaseNotes::current()
-        .get_release_notes(should_force_update)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_release_notes took too long: {:?}", timer.elapsed());
-    }
-    Ok(release_notes.content)
-}
-
-#[tauri::command]
-pub async fn update_last_shown_release_notes_version(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    let timer = Instant::now();
-    let release_notes = ReleaseNotes::current()
-        .get_release_notes(false)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    info!(target: LOG_TARGET, "Updating last release notes version shown to: {}", release_notes.version);
-    state
-        .config
-        .write()
-        .await
-        .set_last_changelog_version(release_notes.version)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "update_last_shown_release_notes_version took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

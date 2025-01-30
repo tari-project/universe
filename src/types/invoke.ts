@@ -27,8 +27,6 @@ declare module '@tauri-apps/api/core' {
         param: 'download_and_start_installer',
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
-    function invoke(param: 'get_release_notes'): Promise<string>;
-    function invoke(param: 'update_last_shown_release_notes_version'): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
     function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;

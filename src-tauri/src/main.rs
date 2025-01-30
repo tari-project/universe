@@ -662,6 +662,8 @@ async fn setup_inner(
         })
         .await?;
     mm_proxy_manager.wait_ready().await?;
+    drop(config);
+
     *state.is_setup_finished.write().await = true;
     let _unused = telemetry_service
         .send(
@@ -760,15 +762,9 @@ async fn setup_inner(
         }
     });
 
-    let should_show_release_notes = ReleaseNotes::current()
-        .should_show_release_notes(state.clone(), app.clone())
+    ReleaseNotes::current()
+        .handle_release_notes_event_emit(state.clone(), app)
         .await?;
-
-    if should_show_release_notes {
-        app.emit("show_release_notes", ()).inspect_err(
-            |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-        )?;
-    }
 
     Ok(())
 }
@@ -1169,11 +1165,9 @@ fn main() {
             commands::proceed_with_update,
             commands::set_pre_release,
             commands::check_for_updates,
-            commands::update_last_shown_release_notes_version,
             commands::try_update,
             commands::get_network,
             commands::sign_ws_data,
-            commands::get_release_notes,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens
         ])

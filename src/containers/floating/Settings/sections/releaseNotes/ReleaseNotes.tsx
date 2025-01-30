@@ -1,16 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import {
-    IconImage,
-    LoadingText,
-    MarkdownWrapper,
-    Text,
-    TextWrapper,
-    Title,
-    UpgradeButton,
-    VersionWrapper,
-    Wrapper,
-} from './styles';
+import { IconImage, MarkdownWrapper, Text, TextWrapper, Title, UpgradeButton, VersionWrapper, Wrapper } from './styles';
 import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
@@ -53,37 +43,9 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const releaseNotes = useAppStateStore((state) => state.releaseNotes);
     const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
-    const { fetchRelaseNotes, checkForAppUpdate } = useAppStateStore((state) => ({
-        fetchRelaseNotes: state.fetchReleaseNotes,
-        checkForAppUpdate: state.checkForAppUpdate,
-    }));
-
-    const [isLoading, setIsLoading] = useState(true);
     const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
-    const ensureCalledOncePerLoopRef = useRef(false);
-
     const sections = useMemo(() => parseMarkdownSections(releaseNotes), [releaseNotes]);
-
-    useEffect(() => {
-        const loadReleaseNotes = async () => {
-            try {
-                if (ensureCalledOncePerLoopRef.current) {
-                    return;
-                }
-                ensureCalledOncePerLoopRef.current = true;
-                setIsLoading(true);
-
-                await fetchRelaseNotes();
-                await checkForAppUpdate();
-            } finally {
-                setIsLoading(false);
-                ensureCalledOncePerLoopRef.current = false;
-            }
-        };
-
-        loadReleaseNotes();
-    }, []);
 
     const toggleSection = (index: number) => {
         setOpenSectionIndex(openSectionIndex === index ? null : index);
@@ -107,7 +69,7 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
                         </Text>
                     </TextWrapper>
 
-                    {needsUpgrade && !isLoading && (
+                    {needsUpgrade && (
                         <UpgradeButton onClick={handleUpdate}>
                             {t('settings:release-notes.upgrade-available')}
                         </UpgradeButton>
@@ -116,20 +78,16 @@ export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
             )}
 
             <MarkdownWrapper $showScrollBars={showScrollBars}>
-                {isLoading ? (
-                    <LoadingText>{t('settings:release-notes.loading')}</LoadingText>
-                ) : (
-                    sections.map((section, index) => (
-                        <AccordionItem
-                            key={index}
-                            title={section.title}
-                            subtitle={section.date}
-                            content={<ReactMarkdown>{section.content}</ReactMarkdown>}
-                            isOpen={openSectionIndex === index}
-                            onToggle={() => toggleSection(index)}
-                        />
-                    ))
-                )}
+                {sections.map((section, index) => (
+                    <AccordionItem
+                        key={index}
+                        title={section.title}
+                        subtitle={section.date}
+                        content={<ReactMarkdown>{section.content}</ReactMarkdown>}
+                        isOpen={openSectionIndex === index}
+                        onToggle={() => toggleSection(index)}
+                    />
+                ))}
             </MarkdownWrapper>
         </Wrapper>
     );
