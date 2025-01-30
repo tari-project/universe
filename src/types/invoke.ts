@@ -79,7 +79,7 @@ declare module '@tauri-apps/api/core' {
         param: 'set_airdrop_tokens',
         airdropTokens: Pick<AirdropTokens, 'refreshToken' | 'token'>
     ): Promise<void>;
-    function invoke(param: 'get_airdrop_tokens'): Promise<Pick<AirdropTokens, 'refreshToken' | 'token'>>;
+    function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',

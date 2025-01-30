@@ -78,7 +78,7 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::NodeManager;
+use crate::node_manager::{NodeManager, STOP_ON_ERROR_CODES};
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
@@ -620,7 +620,7 @@ async fn setup_inner(
             Ok(_) => {}
             Err(e) => {
                 if let NodeManagerError::ExitCode(code) = e {
-                    if code == 114 {
+                    if STOP_ON_ERROR_CODES.contains(&code) {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
                         let _unused = telemetry_service

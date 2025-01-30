@@ -5,6 +5,7 @@ import { useAppStateStore } from './appStateStore';
 
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining } from '@app/store/miningStoreActions.ts';
+import { useAppConfigStore } from './useAppConfigStore';
 
 interface State {
     hashrateReady?: boolean;
@@ -74,9 +75,17 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
-        set({ excludedGpuDevices });
+        const hardware = useMiningMetricsStore.getState().gpu.hardware;
+        const totalGpuDevices = hardware.length;
+        console.error('Excluded GPU devices: ', excludedGpuDevices);
+        console.error('Hardware: ', hardware);
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+            if (excludedGpuDevices.length === totalGpuDevices) {
+                const appConfigStore = useAppConfigStore.getState();
+                appConfigStore.setGpuMiningEnabled(false);
+            }
+            set({ excludedGpuDevices });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);
