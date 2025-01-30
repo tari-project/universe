@@ -132,19 +132,15 @@ impl ReleaseNotes {
 
     pub fn get_etag_from_response(response: &Response) -> Result<String, Error> {
         debug!(target: LOG_TARGET, "[get_etag_from_response]");
-        response
-            .headers()
-            .get("etag")
-            .ok_or_else(|| {
-                warn!(target: LOG_TARGET, "Failed to get ETag header");
-                anyhow!("Failed to get ETag header")
-            })?
-            .to_str()
-            .map_err(|e| {
-                warn!(target: LOG_TARGET, "Failed to convert ETag header to string: {}", e);
-                anyhow!("Failed to convert ETag header to string")
-            })
-            .map(|s| s.to_string())
+        let etag = response.headers().get("etag").ok_or_else(|| {
+            warn!(target: LOG_TARGET, "Failed to get ETag header");
+            anyhow!("Failed to get ETag header")
+        })?;
+        let etag_str = etag.to_str().map_err(|e| {
+            warn!(target: LOG_TARGET, "Failed to convert ETag header to string: {}", e);
+            anyhow!("Failed to convert ETag header to string")
+        })?;
+        Ok(etag_str.to_string())
     }
 
     async fn fetch_release_notes_header(&self) -> Result<String, Error> {
