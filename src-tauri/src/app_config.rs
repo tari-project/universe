@@ -114,6 +114,8 @@ pub struct AppConfigFromFile {
     pre_release: bool,
     #[serde(default)]
     airdrop_tokens: Option<AirdropTokens>,
+    #[serde(default = "default_true")]
+    audio_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -157,6 +159,7 @@ impl Default for AppConfigFromFile {
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
             airdrop_tokens: None,
+            audio_enabled: true,
         }
     }
 }
@@ -276,6 +279,7 @@ pub(crate) struct AppConfig {
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
     airdrop_tokens: Option<AirdropTokens>,
+    audio_enabled: bool,
 }
 
 impl AppConfig {
@@ -321,6 +325,7 @@ impl AppConfig {
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
             airdrop_tokens: None,
+            audio_enabled: true,
         }
     }
 
@@ -399,6 +404,7 @@ impl AppConfig {
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
                 self.airdrop_tokens = config.airdrop_tokens;
+                self.audio_enabled = config.audio_enabled;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -527,6 +533,16 @@ impl AppConfig {
         airdrop_tokens: Option<AirdropTokens>,
     ) -> Result<(), anyhow::Error> {
         self.airdrop_tokens = airdrop_tokens;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn audio_enabled(&self) -> bool {
+        self.audio_enabled
+    }
+
+    pub async fn set_audio_enabled(&mut self, audio_enabled: bool) -> Result<(), anyhow::Error> {
+        self.audio_enabled = audio_enabled;
         self.update_config_file().await?;
         Ok(())
     }
@@ -812,6 +828,7 @@ impl AppConfig {
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
             airdrop_tokens: self.airdrop_tokens.clone(),
+            audio_enabled: self.audio_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

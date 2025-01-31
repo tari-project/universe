@@ -7,6 +7,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
+import { useAppConfigStore } from './useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -22,7 +23,6 @@ interface State {
     recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
-    blockWinSoundEnabled?: boolean;
 }
 
 interface WinAnimation {
@@ -34,7 +34,6 @@ interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
-    setBlockWinSoundEnabled: (blockWinSoundEnabled: boolean) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -57,7 +56,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
-    setBlockWinSoundEnabled: (blockWinSoundEnabled) => set({ blockWinSoundEnabled }),
 }));
 
 async function playBlockWinAudio() {
@@ -80,7 +78,7 @@ async function playBlockWinAudio() {
 const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
     const blockHeight = Number(latestTx?.mined_in_block_height);
     const earnings = latestTx.amount;
-    const blockWinSoundEnabled = useBlockchainVisualisationStore.getState().blockWinSoundEnabled;
+    const audioEnabled = useAppConfigStore.getState().audio_enabled;
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
@@ -102,7 +100,7 @@ const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
         }));
     }
 
-    if (blockWinSoundEnabled) {
+    if (audioEnabled) {
         playBlockWinAudio();
     }
 };
