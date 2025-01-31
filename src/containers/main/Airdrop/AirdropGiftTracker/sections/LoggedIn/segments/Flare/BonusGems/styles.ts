@@ -1,4 +1,4 @@
-import { m } from 'motion';
+import { m } from 'motion/react';
 import styled from 'styled-components';
 import backgroundImage from '../images/bonus_gems_bg.png';
 

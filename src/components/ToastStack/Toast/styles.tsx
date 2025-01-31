@@ -1,4 +1,4 @@
-import { m } from 'motion';
+import { m } from 'motion/react';
 import { css, styled } from 'styled-components';
 import { ToastType } from '../useToastStore';
 

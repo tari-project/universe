@@ -19,7 +19,7 @@ import {
 } from './styles';
 import CopyIcon from '../../icons/CopyIcon';
 import CheckIcon from '../../icons/CheckIcon';
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useCopyToClipboard } from '@app/hooks';
 

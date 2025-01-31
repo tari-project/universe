@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import { Image, Menu, Text, Trigger, Wrapper } from './styles';
 import { useState } from 'react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';

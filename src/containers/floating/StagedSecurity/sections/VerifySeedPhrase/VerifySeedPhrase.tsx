@@ -12,7 +12,7 @@ import {
     WordsSelected,
     Wrapper,
 } from './styles';
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import PillCloseIcon from '../../icons/PillCloseIcon';
 import { useTranslation } from 'react-i18next';
 import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';

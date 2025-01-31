@@ -1,4 +1,4 @@
-import { m } from 'motion';
+import { m } from 'motion/react';
 
 interface ArrowProps {
     delay: number;

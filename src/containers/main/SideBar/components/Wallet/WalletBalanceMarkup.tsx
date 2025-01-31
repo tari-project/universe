@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
 import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';

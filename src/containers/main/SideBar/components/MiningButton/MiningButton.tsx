@@ -1,5 +1,5 @@
 import { useCallback, useMemo } from 'react';
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import { GiPauseButton } from 'react-icons/gi';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';

@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import backgroundImage from '../images/goal_complete_bg.png';
-import { m } from 'motion';
+import { m } from 'motion/react';
 
 export const Wrapper = styled('div')`
     display: flex;

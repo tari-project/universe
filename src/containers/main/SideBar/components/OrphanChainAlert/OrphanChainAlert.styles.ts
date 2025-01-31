@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import { m } from 'motion';
+import { m } from 'motion/react';
 import { convertHexToRGBA } from '@app/utils';
 
 export const AlertWrapper = styled.div`

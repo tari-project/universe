@@ -1,4 +1,4 @@
-import { m } from 'motion';
+import { m } from 'motion/react';
 import styled from 'styled-components';
 export const EarningsContainer = styled.div`
     display: flex;

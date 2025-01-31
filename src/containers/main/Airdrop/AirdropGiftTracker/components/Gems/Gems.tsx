@@ -1,6 +1,6 @@
 import { Wrapper, Number, Label, GemImage, GemsAnimation, GemAnimatedImage } from './styles';
 import gemImage from '../../images/gem.png';
-import { AnimatePresence, useSpring } from 'motion';
+import { AnimatePresence, useSpring } from 'motion/react';
 import { useEffect, useState } from 'react';
 
 interface Props {

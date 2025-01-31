@@ -1,7 +1,7 @@
 import styled, { css, keyframes } from 'styled-components';
 import { ImSpinner3 } from 'react-icons/im';
 
-import { m } from 'motion';
+import { m } from 'motion/react';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 

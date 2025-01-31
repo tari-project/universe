@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 
 import AppVersions from './AppVersions.tsx';
 import DebugSettings from './DebugSettings.tsx';

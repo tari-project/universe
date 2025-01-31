@@ -1,4 +1,4 @@
-import { LayoutGroup } from 'motion';
+import { LayoutGroup } from 'motion/react';
 
 import { BlockHeightAccent } from './components/BlockHeightAccent';
 import { Ruler } from './components/Ruler';

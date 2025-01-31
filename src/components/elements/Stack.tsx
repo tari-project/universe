@@ -1,6 +1,6 @@
 import { CSSProperties, ReactNode } from 'react';
 import styled from 'styled-components';
-import { m, MotionProps } from 'motion';
+import { m, MotionProps } from 'motion/react';
 
 type StackFlexProps = Partial<
     Pick<CSSProperties, 'justifyContent' | 'justifyItems' | 'alignItems' | 'alignContent' | 'flexDirection'>

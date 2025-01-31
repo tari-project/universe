@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'motion';
+import { m } from 'motion/react';
 
 export const Wrapper = styled('div')`
     display: flex;

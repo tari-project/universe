@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useLayoutEffect, useState } from 'react';
-import { AnimatePresence, LayoutGroup } from 'motion';
+import { AnimatePresence, LayoutGroup } from 'motion/react';
 
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { AccentText, AccentWrapper, SpacedNum } from './BlockHeightAccent.styles';

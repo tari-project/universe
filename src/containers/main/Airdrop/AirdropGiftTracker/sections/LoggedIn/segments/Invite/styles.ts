@@ -1,4 +1,4 @@
-import { m } from 'motion';
+import { m } from 'motion/react';
 import styled from 'styled-components';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 

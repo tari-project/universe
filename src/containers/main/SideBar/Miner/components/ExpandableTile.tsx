@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
 import { ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
 
-import { AnimatePresence } from 'motion';
+import { AnimatePresence } from 'motion/react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
