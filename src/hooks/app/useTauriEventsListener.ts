@@ -10,9 +10,7 @@ import {
     WalletBalance,
 } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
-import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
-import { setAnimationState } from '@app/visuals';
-import { useMiningStore } from '@app/store/useMiningStore';
+import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 
 const FRONTEND_EVENT = 'frontend_event';
 
@@ -64,6 +62,7 @@ type FrontendEventPayload =
           payload: {
               block_height: number;
               coinbase_transaction?: TransactionInfo;
+              balance: WalletBalance;
           };
       };
 
@@ -73,13 +72,8 @@ const useTauriEventsListener = () => {
     const setGpuDevices = useMiningMetricsStore((s) => s.setGpuDevices);
     const setGpuMiningStatus = useMiningMetricsStore((s) => s.setGpuMiningStatus);
     const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
-    const setConnectedPeers = useMiningMetricsStore((s) => s.setConnectedPeers);
-    const setBaseNodeStatus = useMiningMetricsStore((s) => s.setBaseNodeStatus);
-    const setDisplayBlockHeight = useBlockchainVisualisationStore((s) => s.setDisplayBlockHeight);
-    const refreshCoinbaseTransactions = useWalletStore((s) => s.refreshCoinbaseTransactions);
-    const displayBlockHeight = useBlockchainVisualisationStore((s) => s.debugBlockTime);
-    const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
-    const wasNodeConnected = useMiningMetricsStore((s) => s.connected_peers?.length);
+    const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
+    const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
 
     useEffect(() => {
         const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEventPayload }) => {
@@ -91,11 +85,7 @@ const useTauriEventsListener = () => {
                     setWalletBalance(event.payload);
                     break;
                 case FrontendEvent.BaseNodeUpdate:
-                    setBaseNodeStatus(event.payload);
-                    if (event.payload.block_height && !displayBlockHeight) {
-                        // initial block height
-                        setDisplayBlockHeight(event.payload.block_height);
-                    }
+                    handleBaseNodeStatusUpdate(event.payload);
                     break;
                 case FrontendEvent.GpuDevicesUpdate:
                     setGpuDevices(event.payload);
@@ -107,20 +97,10 @@ const useTauriEventsListener = () => {
                     setCpuMiningStatus(event.payload);
                     break;
                 case FrontendEvent.ConnectedPeersUpdate:
-                    if (isMiningInitiated) {
-                        const isNodeConnected = event.payload?.length > 0;
-                        if (!isNodeConnected && wasNodeConnected) {
-                            setAnimationState('stop');
-                        }
-                        if (isNodeConnected && !wasNodeConnected) {
-                            setAnimationState('start');
-                        }
-                    }
-                    setConnectedPeers(event.payload);
+                    handleConnectedPeersUpdate(event.payload);
                     break;
                 case FrontendEvent.NewBlockHeight:
                     handleNewBlock(event.payload);
-                    refreshCoinbaseTransactions();
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));
@@ -132,18 +112,13 @@ const useTauriEventsListener = () => {
             unlisten.then((f) => f());
         };
     }, [
-        displayBlockHeight,
-        isMiningInitiated,
-        refreshCoinbaseTransactions,
-        setBaseNodeStatus,
-        setConnectedPeers,
+        handleBaseNodeStatusUpdate,
+        handleConnectedPeersUpdate,
         setCpuMiningStatus,
-        setDisplayBlockHeight,
         setGpuDevices,
         setGpuMiningStatus,
         setWalletAddress,
         setWalletBalance,
-        wasNodeConnected,
     ]);
 };
 

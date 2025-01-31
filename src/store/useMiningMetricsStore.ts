@@ -1,12 +1,15 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, PublicDeviceParameters } from '@app/types/app-status';
 import { create } from './create';
+import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
+import { setAnimationState } from '@app/visuals';
+import { useMiningStore } from './useMiningStore';
 
 interface Actions {
-    setBaseNodeStatus: (baseNodeStatus: BaseNodeStatus) => void;
+    handleBaseNodeStatusUpdate: (baseNodeStatus: BaseNodeStatus) => void;
     setGpuDevices: (gpuDevices: PublicDeviceParameters[]) => void;
     setCpuMiningStatus: (cpuMiningStatus: CpuMinerStatus) => void;
     setGpuMiningStatus: (gpuMiningStatus: GpuMinerStatus) => void;
-    setConnectedPeers: (connectedPeers: string[]) => void;
+    handleConnectedPeersUpdate: (connectedPeers: string[]) => void;
 }
 
 interface MiningMetricsStoreState {
@@ -56,10 +59,30 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set) => ({
     setCpuMiningStatus: (cpu_mining_status) => {
         set({ cpu_mining_status });
     },
-    setConnectedPeers: (connected_peers) => {
+    handleConnectedPeersUpdate: (connected_peers) => {
         set({ connected_peers });
+
+        const { miningInitiated } = useMiningStore.getState();
+        const wasNodeConnected = useMiningMetricsStore.getState().connected_peers?.length > 0;
+        if (miningInitiated) {
+            const isNodeConnected = connected_peers?.length > 0;
+            if (!isNodeConnected && wasNodeConnected) {
+                // Lost connection
+                setAnimationState('stop');
+            }
+            if (isNodeConnected && !wasNodeConnected) {
+                // Restored connection
+                setAnimationState('start');
+            }
+        }
     },
-    setBaseNodeStatus: (base_node_status) => {
+    handleBaseNodeStatusUpdate: (base_node_status) => {
         set({ base_node_status });
+
+        const { displayBlockHeight, setDisplayBlockHeight } = useBlockchainVisualisationStore.getState();
+        if (base_node_status.block_height && !displayBlockHeight) {
+            // initial set, later updates via new block height handlers only
+            setDisplayBlockHeight(base_node_status.block_height);
+        }
     },
 }));

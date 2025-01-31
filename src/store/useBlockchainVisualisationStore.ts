@@ -3,7 +3,7 @@ import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
 const appWindow = getCurrentWindow();
 
@@ -107,7 +107,11 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (payload: { block_height: number; coinbase_transaction?: TransactionInfo }) => {
+export const handleNewBlock = async (payload: {
+    block_height: number;
+    coinbase_transaction?: TransactionInfo;
+    balance: WalletBalance;
+}) => {
     if (useMiningStore.getState().miningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
@@ -115,9 +119,12 @@ export const handleNewBlock = async (payload: { block_height: number; coinbase_t
 
         if (payload.coinbase_transaction) {
             await handleWin(payload.coinbase_transaction, canAnimate);
+            useWalletStore.getState().refreshCoinbaseTransactions();
         } else {
             await handleFail(payload.block_height, canAnimate);
         }
+
+        useWalletStore.getState().setWalletBalance(payload.balance);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
     }

@@ -83,9 +83,7 @@ impl EventsManager {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
                         let coinbase_tx =
-                            if balance.pending_incoming_balance.gt(&MicroMinotari::zero())
-                                || balance.timelocked_balance.gt(&MicroMinotari::zero())
-                            {
+                            if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
                                 events_service
                                     .get_coinbase_transaction_for_last_mined_block(
                                         &app_clone.state::<UniverseAppState>().wallet_manager,
@@ -95,9 +93,7 @@ impl EventsManager {
                             } else {
                                 None
                             };
-                        EventsEmitter::emit_new_block_mined(&app_clone, block_height, coinbase_tx)
-                            .await;
-                        EventsEmitter::emit_wallet_balance_update(&app_clone, balance.clone())
+                        EventsEmitter::emit_new_block_mined(&app_clone, block_height, coinbase_tx, balance)
                             .await;
                     }
                     None => {

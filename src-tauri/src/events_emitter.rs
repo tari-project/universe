@@ -62,6 +62,7 @@ struct WalletAddressUpdatePayload {
 struct NewBlockHeightPayload {
     block_height: u64,
     coinbase_transaction: Option<TransactionInfo>,
+    balance: WalletBalance,
 }
 
 pub(crate) struct EventsEmitter;
@@ -148,12 +149,14 @@ impl EventsEmitter {
         app_handle: &AppHandle,
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
+        balance: WalletBalance
     ) {
         let event = FrontendEvent {
             event_type: FrontendEventType::NewBlockHeight,
             payload: NewBlockHeightPayload {
                 block_height,
                 coinbase_transaction,
+                balance,
             },
         };
         if let Err(e) = app_handle.emit("frontend_event", event) {
