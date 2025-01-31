@@ -19,7 +19,7 @@ export const useUiMiningStateMachine = () => {
 
     useEffect(() => {
         if (!visualMode || visualModeToggleLoading) return;
-        const notStarted = !animationStatus || animationStatus == 'not-started' || animationStatus == 'stop';
+        const notStarted = !animationStatus || animationStatus == 'not-started';
         if (isMining && notStarted) {
             setAnimationState('start');
         }
