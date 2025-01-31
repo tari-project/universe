@@ -904,6 +904,7 @@ async fn setup_inner(
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+    #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
