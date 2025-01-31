@@ -18,18 +18,13 @@
         "process:allow-restart",
         "process:default",
         "clipboard-manager:allow-write-text",
-        "fs:default",
-        "fs:allow-desktop-read-recursive",
-        "fs:allow-desktop-meta-recursive",
-        "fs:allow-resource-read-recursive",
-        "fs:allow-resource-meta-recursive",
         {
             "identifier": "fs:allow-read-file",
-            "allow": [{ "path": "$RESOURCE/*" }]
+            "allow": [{ "path": "$RESOURCE/audio/block_win.mp3" }]
         },
         {
             "identifier": "fs:allow-read-dir",
-            "allow": [{ "path": "$RESOURCE/*" }]
+            "allow": [{ "path": "$RESOURCE/audio" }]
         }
     ]
 }
