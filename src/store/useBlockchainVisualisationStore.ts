@@ -51,7 +51,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRecapCount: (recapCount) => set({ recapCount }),
 }));
 
-const handleWin = async (coinbase_transaction: TransactionInfo, canAnimate: boolean) => {
+const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
     const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
     const earnings = coinbase_transaction.amount;
 
@@ -64,8 +64,10 @@ const handleWin = async (coinbase_transaction: TransactionInfo, canAnimate: bool
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
         setTimeout(() => {
-            useMiningStore.getState().setMiningControlsEnabled(true);
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
+            useWalletStore.getState().setWalletBalance(balance);
+            useWalletStore.getState().refreshCoinbaseTransactions();
+            useMiningStore.getState().setMiningControlsEnabled(true);
         }, 2000);
     } else {
         useBlockchainVisualisationStore.setState((curr) => ({
@@ -75,13 +77,14 @@ const handleWin = async (coinbase_transaction: TransactionInfo, canAnimate: bool
         }));
     }
 };
-const handleFail = async (blockHeight: number, canAnimate: boolean) => {
+const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
         setTimeout(() => {
-            useMiningStore.getState().setMiningControlsEnabled(true);
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
+            useWalletStore.getState().setWalletBalance(balance);
+            useMiningStore.getState().setMiningControlsEnabled(true);
         }, 1000);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
@@ -118,13 +121,10 @@ export const handleNewBlock = async (payload: {
         const canAnimate = !minimized && documentIsVisible;
 
         if (payload.coinbase_transaction) {
-            await handleWin(payload.coinbase_transaction, canAnimate);
-            useWalletStore.getState().refreshCoinbaseTransactions();
+            await handleWin(payload.coinbase_transaction, payload.balance, canAnimate);
         } else {
-            await handleFail(payload.block_height, canAnimate);
+            await handleFail(payload.block_height, payload.balance, canAnimate);
         }
-
-        useWalletStore.getState().setWalletBalance(payload.balance);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
     }

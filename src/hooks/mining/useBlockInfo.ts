@@ -25,7 +25,9 @@ export function useBlockInfo() {
 
     useEffect(() => {
         displayCounter.current = 0;
-    }, [displayBlockHeight]);
+        const displayTime = calculateTimeSince(0, 0);
+        setDisplayBlockTime(displayTime);
+    }, [displayBlockHeight, setDisplayBlockTime]);
 
     useEffect(() => {
         debugCounter.current = diff;

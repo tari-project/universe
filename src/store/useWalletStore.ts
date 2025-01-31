@@ -2,7 +2,6 @@ import { create } from './create';
 import { WalletAddress, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 interface State {
     tari_address_base58: string;
@@ -39,12 +38,10 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
     setWalletAddress: (wallet_address) => {
         set({ ...wallet_address });
     },
-    setWalletBalance: (wallet_balance) => {
+    setWalletBalance: (balance) => {
         const calculated_balance =
-            wallet_balance.available_balance +
-            wallet_balance.timelocked_balance +
-            wallet_balance.pending_incoming_balance;
-        set({ ...wallet_balance, calculated_balance });
+            balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+        set({ balance, calculated_balance });
     },
     fetchCoinbaseTransactions: async (continuation, limit) => {
         if (useWalletStore.getState().is_reward_history_loading) {
