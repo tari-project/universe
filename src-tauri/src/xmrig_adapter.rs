@@ -37,6 +37,7 @@ const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
     LocalMmproxy { host_name: String, port: u16 },
+    Benchmark,
 }
 
 impl XmrigNodeConnection {
@@ -49,6 +50,9 @@ impl XmrigNodeConnection {
                     // "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
                 ]
+            }
+            XmrigNodeConnection::Benchmark => {
+                vec!["--benchmark=1m".to_string()]
             }
         }
     }
@@ -128,13 +132,9 @@ impl ProcessAdapter for XmrigAdapter {
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Monero address not set"))?
         ));
-        #[allow(clippy::collapsible_match)]
         // don't specify threads for ludicrous mode
-        #[allow(clippy::collapsible_match)]
-        if let Some(cpu_threads) = self.cpu_threads {
-            if let Some(cpu_threads) = cpu_threads {
-                args.push(format!("--threads={}", cpu_threads));
-            }
+        if let Some(Some(cpu_threads)) = self.cpu_threads {
+            args.push(format!("--threads={}", cpu_threads));
         }
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
