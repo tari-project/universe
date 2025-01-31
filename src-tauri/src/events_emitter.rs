@@ -149,7 +149,7 @@ impl EventsEmitter {
         app_handle: &AppHandle,
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
-        balance: WalletBalance
+        balance: WalletBalance,
     ) {
         let event = FrontendEvent {
             event_type: FrontendEventType::NewBlockHeight,
