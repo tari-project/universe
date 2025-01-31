@@ -128,4 +128,5 @@ declare module '@tauri-apps/api/core' {
     ): Promise<RegisteredTappletWithAssets>;
     function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
     function invoke(param: 'set_ootle_localnet_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'upload_wasm_file', payload: { directory: string }): Promise<void>;
 }

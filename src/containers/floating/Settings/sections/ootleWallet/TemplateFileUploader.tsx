@@ -3,6 +3,7 @@ import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
 import { open } from '@tauri-apps/plugin-dialog';
 import { upload } from '@tauri-apps/plugin-upload';
+import { invoke } from '@tauri-apps/api/core';
 
 const WALLET_JSON_RPC_ADDRESS = '127.0.0.1:1420'; // TODO use db to get endpoint
 
@@ -20,7 +21,9 @@ export async function uploadFile(url: string, formData: FormData) {
 }
 
 function TemplateFileUploader() {
-    const [selectedFilePath, setSelectedFilePath] = useState<string>('');
+    const [selectedFilePath, setSelectedFilePath] = useState<string>(
+        '/home/oski/Projects/tari/templates-wasm-files/test'
+    );
     // const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     //     console.info('-------->>> handle file change');
     //     console.info('file', event.target.files);
@@ -32,15 +35,20 @@ function TemplateFileUploader() {
     // };
 
     const handleFileUpload = useCallback(async () => {
+        const headers = new Map<string, string>();
+        headers.set('Content-Type', 'application/wasm');
+        headers.set('Accept', 'application/wasm');
         const url = `http://localhost:18000/upload_template`;
         console.info('handle file upload ', url);
         console.info('handle file upload path ', selectedFilePath);
-        upload(
-            url,
-            selectedFilePath,
-            ({ progress, total }) => console.info(` ^^^^^ Uploaded ${progress} of ${total} bytes`) // a callback that will be called with the upload progress
-            // { 'Content-Type': 'text/plain' } // optional headers to send with the request
-        );
+        console.info('handle file upload headers ', headers);
+        // upload(
+        //     url,
+        //     selectedFilePath,
+        //     ({ progress, total }) => console.info(` ^^^^^ Uploaded ${progress} of ${total} bytes`), // a callback that will be called with the upload progress
+        //     headers // optional headers to send with the request
+        // );
+        invoke('upload_wasm_file', { directory: selectedFilePath }).catch((e) => console.error('Failed to upload', e));
     }, [selectedFilePath]);
 
     const handleFileSelect = useCallback(async () => {

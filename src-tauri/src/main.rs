@@ -1271,7 +1271,8 @@ fn main() {
             commands::delete_dev_tapplet,
             commands::call_wallet,
             commands::update_installed_tapplet,
-            commands::set_ootle_localnet_enabled
+            commands::set_ootle_localnet_enabled,
+            commands::upload_wasm_file
         ])
         .build(tauri::generate_context!())
         .inspect_err(

@@ -78,11 +78,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fmt::Debug;
 use std::fs::{self, read_dir, remove_dir_all, remove_file, File};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_utilities::message_format::MessageFormat;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
@@ -2311,45 +2311,67 @@ pub async fn set_ootle_localnet_enabled<'r>(
 //     }
 // }
 
-// #[tauri::command]
-// pub async fn upload_file(filetokens: tauri::State<'_, Tokens>) -> Result<serde_json::Value, Error> {
-//     let jrpc_url = ensure_prefix("http://localhost:18000");
-//     let url = format!("{}/upload_template", jrpc_url);
+fn search_wasm_files(directory: &PathBuf) -> Option<String> {
+    let path = Path::new(directory);
+    if let Ok(entries) = fs::read_dir(path) {
+        for entry in entries.flatten() {
+            if let Ok(file_type) = entry.file_type() {
+                if file_type.is_file() {
+                    if let Some(extension) = entry.path().extension() {
+                        if extension == "wasm" {
+                            if let Some(file_name) = entry.file_name().to_str() {
+                                return Some(file_name.to_string());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    None
+}
 
-//     let file_fs = fs::read(file_path).expect("failed to read file");
-//     let file = reqwest::multipart::Part::bytes(file_fs.clone()).file_name(wasm_name);
-//     let form = reqwest::multipart::Form::new().part("file", file);
+#[tauri::command]
+pub async fn upload_wasm_file(directory: String) -> Result<(), String> {
+    let dir = PathBuf::from(directory);
+    let jrpc_url = "http://localhost:18000";
+    let url = format!("{}/upload_template", jrpc_url);
+    let wasm_name = search_wasm_files(&dir).unwrap();
+    let file_path = dir.join(wasm_name.clone());
+    let file_fs = fs::read(file_path).expect("failed to read file");
+    let file = reqwest::multipart::Part::bytes(file_fs.clone()).file_name(wasm_name);
+    let form = reqwest::multipart::Form::new().part("file", file);
 
-//     let client = reqwest::Client::new();
-//     let response = client
-//         .post(url)
-//         .multipart(form)
-//         .send()
-//         .await
-//         .expect("failed to send request");
+    let client = reqwest::Client::new();
+    let response = client
+        .post(url)
+        .multipart(form)
+        .send()
+        .await
+        .expect("failed to send request");
 
-//     if !response.status().is_success() {
-//         return Err("Failed to upload template {:?}", response);
-//     }
+    if !response.status().is_success() {
+        return Err("Response status not success".to_string());
+    }
 
-//     let request = json!({
-//         "jsonrpc": "2.0",
-//         "method": "mine",
-//         "params": [4],
-//         "id": 1
-//     });
+    let request = json!({
+        "jsonrpc": "2.0",
+        "method": "mine",
+        "params": [4],
+        "id": 1
+    });
 
-//     let response = reqwest::Client::new()
-//         .post(jrpc_url)
-//         .json(&request)
-//         .header(reqwest::header::CONTENT_TYPE, "application/json")
-//         .send()
-//         .await
-//         .map_err(|error| error.to_string())?;
+    let response = reqwest::Client::new()
+        .post(jrpc_url)
+        .json(&request)
+        .header(reqwest::header::CONTENT_TYPE, "application/wasm")
+        .send()
+        .await
+        .map_err(|error| error.to_string())?;
 
-//     if !response.status().is_success() {
-//         println!("Failed to mine");
-//         println!("{:?}", response);
-//     }
-//     Ok(())
-// }
+    if !response.status().is_success() {
+        println!("Failed to mine");
+        println!("{:?}", response);
+    }
+    Ok(())
+}
