@@ -117,7 +117,7 @@ jobs:
           cache: 'npm'
       - name: Set up NPM credentials
         run: |
-          printf -- "//npm.pkg.github.com/:_authToken="${{ env.TOWER_PACKAGE_TOKEN }}"\n@tari-labs:registry=https://npm.pkg.github.com" > .npmrc
+          printf -- "//npm.pkg.github.com/:_authToken=${{ env.TOWER_PACKAGE_TOKEN }}\n@tari-labs:registry=https://npm.pkg.github.com" > .npmrc
         env:
           TOWER_PACKAGE_TOKEN: ${{ secrets.TOWER_PACKAGE_TOKEN }}
       - name: Install dependencies (node)
