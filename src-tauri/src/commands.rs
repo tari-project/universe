@@ -2303,42 +2303,21 @@ pub async fn set_ootle_localnet_enabled<'r>(
     Ok(())
 }
 
-// fn ensure_prefix(url: &str) -> String {
-//     if url.starts_with("http://") || url.starts_with("https://") {
-//         url.to_string()
-//     } else {
-//         format!("http://{}", url)
-//     }
-// }
-
-fn search_wasm_files(directory: &PathBuf) -> Option<String> {
-    let path = Path::new(directory);
-    if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries.flatten() {
-            if let Ok(file_type) = entry.file_type() {
-                if file_type.is_file() {
-                    if let Some(extension) = entry.path().extension() {
-                        if extension == "wasm" {
-                            if let Some(file_name) = entry.file_name().to_str() {
-                                return Some(file_name.to_string());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-    None
-}
-
+// TODO custom fct because tauri plugin 'upload' fails at some point while sending wasm files
 #[tauri::command]
-pub async fn upload_wasm_file(directory: String) -> Result<(), String> {
-    let dir = PathBuf::from(directory);
-    let jrpc_url = "http://localhost:18000";
+pub async fn upload_wasm_file(file: String, app: tauri::AppHandle) -> Result<(), String> {
+    let _progress_tracker = ProgressTracker::new(app.clone(), None); //TODO add if needed?
+    let file_path = PathBuf::from(file);
+    let jrpc_url = "http://localhost:18000"; //TODO get from config
     let url = format!("{}/upload_template", jrpc_url);
-    let wasm_name = search_wasm_files(&dir).unwrap();
-    let file_path = dir.join(wasm_name.clone());
-    let file_fs = fs::read(file_path).expect("failed to read file");
+    let wasm_name = file_path
+        .file_stem()
+        .and_then(|stem| stem.to_str()) // Convert OsStr to Option<&str>
+        .map(|s| s.to_string()) // Convert &str to String
+        .unwrap_or_else(|| String::from("default_name")); // Provide a default value
+
+    warn!(target: LOG_TARGET, "UPLOAD {:?},{:?}", &wasm_name, &url);
+    let file_fs = fs::read(file_path).expect("Failed to read file");
     let file = reqwest::multipart::Part::bytes(file_fs.clone()).file_name(wasm_name);
     let form = reqwest::multipart::Form::new().part("file", file);
 
@@ -2348,30 +2327,15 @@ pub async fn upload_wasm_file(directory: String) -> Result<(), String> {
         .multipart(form)
         .send()
         .await
-        .expect("failed to send request");
+        .expect("Failed to send request");
 
     if !response.status().is_success() {
-        return Err("Response status not success".to_string());
+        return Err(format!(
+            "Failed to send request. Response status: {:?}",
+            response.status().as_str()
+        ));
     }
-
-    let request = json!({
-        "jsonrpc": "2.0",
-        "method": "mine",
-        "params": [4],
-        "id": 1
-    });
-
-    let response = reqwest::Client::new()
-        .post(jrpc_url)
-        .json(&request)
-        .header(reqwest::header::CONTENT_TYPE, "application/wasm")
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-
-    if !response.status().is_success() {
-        println!("Failed to mine");
-        println!("{:?}", response);
-    }
+    //TODO cleanup
+    warn!(target: LOG_TARGET, "UPLOAD SUCCESS STATUS {:?}", response);
     Ok(())
 }

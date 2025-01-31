@@ -18,7 +18,6 @@
         "process:allow-restart",
         "process:default",
         "dialog:allow-open",
-        "dialog:allow-confirm",
-        "upload:allow-upload"
+        "dialog:allow-confirm"
     ]
 }

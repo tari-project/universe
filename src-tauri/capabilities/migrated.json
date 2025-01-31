@@ -3,5 +3,5 @@
     "description": "permissions that were migrated from v1",
     "local": true,
     "windows": ["main"],
-    "permissions": ["core:default", "updater:default", "os:default", "dialog:default", "upload:default"]
+    "permissions": ["core:default", "updater:default", "os:default", "dialog:default"]
 }

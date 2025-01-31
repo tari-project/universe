@@ -1,11 +1,8 @@
-import { ChangeEvent, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
 import { Typography } from '@app/components/elements/Typography';
 import { open } from '@tauri-apps/plugin-dialog';
-import { upload } from '@tauri-apps/plugin-upload';
 import { invoke } from '@tauri-apps/api/core';
-
-const WALLET_JSON_RPC_ADDRESS = '127.0.0.1:1420'; // TODO use db to get endpoint
 
 export async function uploadFile(url: string, formData: FormData) {
     const response = await fetch(`${url}/upload_template`, {
@@ -21,34 +18,11 @@ export async function uploadFile(url: string, formData: FormData) {
 }
 
 function TemplateFileUploader() {
-    const [selectedFilePath, setSelectedFilePath] = useState<string>(
-        '/home/oski/Projects/tari/templates-wasm-files/test'
-    );
-    // const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    //     console.info('-------->>> handle file change');
-    //     console.info('file', event.target.files);
-    //     const file = event.target.files?.item(0);
-    //     console.info('handle file', file);
-    //     if (file) {
-    //         setSelectedFilePath(file);
-    //     }
-    // };
+    const [selectedFilePath, setSelectedFilePath] = useState<string>('');
 
     const handleFileUpload = useCallback(async () => {
-        const headers = new Map<string, string>();
-        headers.set('Content-Type', 'application/wasm');
-        headers.set('Accept', 'application/wasm');
-        const url = `http://localhost:18000/upload_template`;
-        console.info('handle file upload ', url);
         console.info('handle file upload path ', selectedFilePath);
-        console.info('handle file upload headers ', headers);
-        // upload(
-        //     url,
-        //     selectedFilePath,
-        //     ({ progress, total }) => console.info(` ^^^^^ Uploaded ${progress} of ${total} bytes`), // a callback that will be called with the upload progress
-        //     headers // optional headers to send with the request
-        // );
-        invoke('upload_wasm_file', { directory: selectedFilePath }).catch((e) => console.error('Failed to upload', e));
+        invoke('upload_wasm_file', { file: selectedFilePath }).catch((e) => console.error('Failed to upload', e));
     }, [selectedFilePath]);
 
     const handleFileSelect = useCallback(async () => {
@@ -62,24 +36,12 @@ function TemplateFileUploader() {
             setSelectedFilePath(file);
         }
         console.info('handle file upload file path', file);
-        // if (!selectedFile) {
-        //     return;
-        // }
-        // const address = import.meta.env.VITE_DAEMON_JRPC_ADDRESS || WALLET_JSON_RPC_ADDRESS; //Current host
-        // const formData = new FormData();
-        // formData.append('file', selectedFile);
-        // console.info('handle file upload form data ', address, { formData });
-        // fetch(`${address}/upload_template`, { method: 'POST', body: formData }).then((resp) => {
-        //     console.info('resp', resp);
-        // });
-        // await uploadFile(address, formData);
     }, []);
+
     return (
         <div className="template">
             <Typography>{'Upload wasm file'}</Typography>
             <Typography>{`Path: ${selectedFilePath}`}</Typography>
-            {/* <input type="file" onChange={handleFileSelect} /> */}
-            {/* <button onClick={handleFileUpload}>Upload template</button> */}\
             <SquaredButton
                 onClick={handleFileSelect}
                 color="tariPurple"

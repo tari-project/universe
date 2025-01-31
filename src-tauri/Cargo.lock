@@ -8156,17 +8156,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "read-progress-stream"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6435842fc2fea44b528719eb8c32203bbc1bb2f5b619fbe0c0a3d8350fd8d2a8"
-dependencies = [
- "bytes 1.9.0",
- "futures 0.3.31",
- "pin-project-lite",
-]
-
-[[package]]
 name = "readkey"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -10081,7 +10070,6 @@ dependencies = [
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
- "tauri-plugin-upload",
  "thiserror 1.0.69",
  "tokio",
  "tokio-util 0.7.13",
@@ -12334,24 +12322,6 @@ dependencies = [
  "url",
  "windows-sys 0.59.0",
  "zip",
-]
-
-[[package]]
-name = "tauri-plugin-upload"
-version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
-dependencies = [
- "futures-util",
- "log",
- "read-progress-stream",
- "reqwest 0.12.12",
- "serde",
- "serde_json",
- "tauri",
- "tauri-plugin",
- "thiserror 2.0.11",
- "tokio",
- "tokio-util 0.7.13",
 ]
 
 [[package]]
