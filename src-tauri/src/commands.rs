@@ -1317,9 +1317,6 @@ pub async fn set_airdrop_tokens<'r>(
                 Ok(cpu) => cpu,
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    state
-                        .is_getting_miner_metrics
-                        .store(false, Ordering::SeqCst);
                     return Err(e);
                 }
             };

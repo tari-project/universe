@@ -10,6 +10,7 @@ interface Actions {
     setCpuMiningStatus: (cpuMiningStatus: CpuMinerStatus) => void;
     setGpuMiningStatus: (gpuMiningStatus: GpuMinerStatus) => void;
     handleConnectedPeersUpdate: (connectedPeers: string[]) => void;
+    handleMiningModeChange: () => void;
 }
 
 interface MiningMetricsStoreState {
@@ -48,7 +49,7 @@ const initialState: MiningMetricsStoreState = {
     },
 };
 
-export const useMiningMetricsStore = create<MiningMetricsStore>()((set) => ({
+export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState) => ({
     ...initialState,
     setGpuDevices: (gpu_devices) => {
         set({ gpu_devices });
@@ -63,7 +64,7 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set) => ({
         set({ connected_peers });
 
         const { miningInitiated } = useMiningStore.getState();
-        const wasNodeConnected = useMiningMetricsStore.getState().connected_peers?.length > 0;
+        const wasNodeConnected = getState().connected_peers?.length > 0;
         if (miningInitiated) {
             const isNodeConnected = connected_peers?.length > 0;
             if (!isNodeConnected && wasNodeConnected) {
@@ -84,5 +85,21 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set) => ({
             // initial set, later updates via new block height handlers only
             setDisplayBlockHeight(base_node_status.block_height);
         }
+    },
+    handleMiningModeChange: () => {
+        set({
+            cpu_mining_status: {
+                ...getState().cpu_mining_status,
+                is_mining: false,
+                hash_rate: 0,
+                estimated_earnings: 0,
+            },
+            gpu_mining_status: {
+                ...getState().gpu_mining_status,
+                is_mining: false,
+                hash_rate: 0,
+                estimated_earnings: 0,
+            },
+        });
     },
 }));

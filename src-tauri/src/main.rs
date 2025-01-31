@@ -896,7 +896,6 @@ struct UniverseAppState {
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
-    is_getting_miner_metrics: Arc<AtomicBool>,
     is_getting_transaction_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
@@ -1012,7 +1011,6 @@ fn main() {
 
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
-        is_getting_miner_metrics: Arc::new(AtomicBool::new(false)),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
