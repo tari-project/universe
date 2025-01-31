@@ -1,7 +1,7 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
-import { setAnimationProperties } from '@tari-labs/tari-tower';
+import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './useAppConfigStore.ts';
 
 export const sidebarTowerOffset = 348 + 20; // sidebar + padding

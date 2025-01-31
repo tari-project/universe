@@ -1,7 +1,7 @@
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
-import { animationStatus, setAnimationState, animationStatusIndex } from '@tari-labs/tari-tower';
+import { animationStatus, setAnimationState, animationStatusIndex } from '@tari-project/tari-tower';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 

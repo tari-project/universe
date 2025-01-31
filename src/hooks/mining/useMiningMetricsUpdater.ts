@@ -2,7 +2,7 @@ import { useCallback, useDeferredValue } from 'react';
 import { MinerMetrics } from '@app/types/app-status';
 import { handleNewBlock, useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { setAnimationState } from '@tari-labs/tari-tower';
+import { setAnimationState } from '@tari-project/tari-tower';
 
 export default function useMiningMetricsUpdater() {
     const setMiningMetrics = useMiningMetricsStore((s) => s.setMiningMetrics);

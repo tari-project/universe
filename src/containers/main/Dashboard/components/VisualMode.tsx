@@ -13,7 +13,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
-import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-labs/tari-tower';
+import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,

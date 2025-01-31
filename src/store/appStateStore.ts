@@ -1,5 +1,5 @@
 import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
-import { setAnimationState } from '@tari-labs/tari-tower';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';

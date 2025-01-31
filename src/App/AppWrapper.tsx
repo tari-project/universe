@@ -6,7 +6,7 @@ import { fetchAppConfig } from '../store/useAppConfigStore.ts';
 import setupLogger from '../utils/shared-logger.ts';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
-import { loadTowerAnimation } from '@tari-labs/tari-tower';
+import { loadTowerAnimation } from '@tari-project/tari-tower';
 import { sidebarTowerOffset } from '@app/store/useUIStore.ts';
 import App from './App.tsx';
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
