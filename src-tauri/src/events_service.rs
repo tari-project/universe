@@ -56,7 +56,7 @@ impl EventsService {
     pub async fn get_coinbase_transaction_for_last_mined_block(
         &self,
         wallet_manager: &WalletManager,
-        last_mined_block_height: u64,
+        current_block_height: u64,
     ) -> Option<TransactionInfo> {
         match wallet_manager
             .get_coinbase_transactions(false, Some(1))
@@ -64,7 +64,7 @@ impl EventsService {
         {
             Ok(mut txs) => {
                 if let Some(tx) = txs.pop() {
-                    if tx.mined_in_block_height == last_mined_block_height {
+                    if tx.mined_in_block_height == current_block_height {
                         return Some(tx);
                     }
                 }

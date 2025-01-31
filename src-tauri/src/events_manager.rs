@@ -61,12 +61,13 @@ impl EventsManager {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
                         let coinbase_tx =
-                            if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                                let last_mined_block_height = block_height - 1;
+                            if balance.pending_incoming_balance.gt(&MicroMinotari::zero())
+                                || balance.timelocked_balance.gt(&MicroMinotari::zero())
+                            {
                                 events_service
                                     .get_coinbase_transaction_for_last_mined_block(
                                         &app_clone.state::<UniverseAppState>().wallet_manager,
-                                        last_mined_block_height,
+                                        block_height,
                                     )
                                     .await
                             } else {
