@@ -34,7 +34,7 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
-use systemtray_manager::SystemTrayManager;
+use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
@@ -254,6 +254,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let _app_handle = move_app.app_handle().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
@@ -269,7 +270,18 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .await
                     {
                         app_state.events_manager.read().await
-                            .handle_cpu_mining_update(&move_app, cpu_status).await;
+                            .handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+
+                        // Update systemtray data - no better place until rewritten to channels
+                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                        let systray_data = SystemTrayData {
+                            cpu_hashrate: cpu_status.hash_rate,
+                            gpu_hashrate: gpu_status.hash_rate,
+                            estimated_earning: (cpu_status.estimated_earnings
+                                + gpu_status.estimated_earnings) as f64,
+                        };
+                        app_state.systemtray_manager.write().await
+                            .update_tray(systray_data);
                     } else {
                         let e = "Error getting cpu miner status".to_string();
                         error!(target: LOG_TARGET, "{}", e);

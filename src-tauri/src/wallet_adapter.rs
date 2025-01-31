@@ -252,6 +252,7 @@ impl StatusMonitor for WalletStatusMonitor {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct WalletState {
     pub scanned_height: u64,
@@ -259,6 +260,7 @@ pub struct WalletState {
     pub network: Option<NetworkStatus>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct NetworkStatus {
     pub status: ConnectivityStatus,
@@ -285,6 +287,7 @@ impl NetworkStatus {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Default, Debug, Clone)]
 pub enum ConnectivityStatus {
     /// Initial connectivity status before the Connectivity actor has initialized.
@@ -308,15 +311,12 @@ pub struct WalletBalance {
 
 impl WalletBalance {
     pub fn from(res: Option<GetBalanceResponse>) -> Option<Self> {
-        match res {
-            Some(balance) => Some(Self {
-                available_balance: MicroMinotari(balance.available_balance),
-                timelocked_balance: MicroMinotari(balance.timelocked_balance),
-                pending_incoming_balance: MicroMinotari(balance.pending_incoming_balance),
-                pending_outgoing_balance: MicroMinotari(balance.pending_outgoing_balance),
-            }),
-            None => None,
-        }
+        res.map(|balance| Self {
+            available_balance: MicroMinotari(balance.available_balance),
+            timelocked_balance: MicroMinotari(balance.timelocked_balance),
+            pending_incoming_balance: MicroMinotari(balance.pending_incoming_balance),
+            pending_outgoing_balance: MicroMinotari(balance.pending_outgoing_balance),
+        })
     }
 }
 

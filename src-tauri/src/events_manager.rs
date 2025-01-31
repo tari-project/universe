@@ -51,7 +51,7 @@ impl EventsManager {
             .read()
             .await
             .clone();
-        EventsEmitter::emit_wallet_address_update(&app, wallet_address).await;
+        EventsEmitter::emit_wallet_address_update(app, wallet_address).await;
     }
 
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
@@ -113,7 +113,7 @@ impl EventsManager {
     }
 
     pub async fn handle_base_node_update(&self, app: &AppHandle, status: BaseNodeStatus) {
-        EventsEmitter::emit_base_node_update(&app, status).await;
+        EventsEmitter::emit_base_node_update(app, status).await;
     }
 
     pub async fn handle_connected_peers_update(
@@ -121,7 +121,7 @@ impl EventsManager {
         app: &AppHandle,
         connected_peers: Vec<String>,
     ) {
-        EventsEmitter::emit_connected_peers_update(&app, connected_peers).await;
+        EventsEmitter::emit_connected_peers_update(app, connected_peers).await;
     }
 
     pub async fn handle_gpu_devices_update(
@@ -134,14 +134,14 @@ impl EventsManager {
             .map(|gpu_device| gpu_device.public_properties.clone())
             .collect();
 
-        EventsEmitter::emit_gpu_devices_update(&app, gpu_public_devices).await;
+        EventsEmitter::emit_gpu_devices_update(app, gpu_public_devices).await;
     }
 
     pub async fn handle_cpu_mining_update(&self, app: &AppHandle, status: CpuMinerStatus) {
-        EventsEmitter::emit_cpu_mining_update(&app, status).await;
+        EventsEmitter::emit_cpu_mining_update(app, status).await;
     }
 
     pub async fn handle_gpu_mining_update(&self, app: &AppHandle, status: GpuMinerStatus) {
-        EventsEmitter::emit_gpu_mining_update(&app, status).await;
+        EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
 }
