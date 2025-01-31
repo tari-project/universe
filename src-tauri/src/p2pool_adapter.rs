@@ -111,7 +111,7 @@ impl ProcessAdapter for P2poolAdapter {
         args.push("--squad-prefix".to_string());
         args.push("default".to_string());
         args.push("--num-squads".to_string());
-        args.push("3".to_string());
+        args.push("2".to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
