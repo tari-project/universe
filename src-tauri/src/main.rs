@@ -163,6 +163,7 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
+#[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {

@@ -75,7 +75,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
     },
     setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
-        const hardware = useMiningMetricsStore.getState().gpu.hardware;
+        const hardware = useMiningMetricsStore.getState().gpu_devices;
         const totalGpuDevices = hardware.length;
         console.error('Excluded GPU devices: ', excludedGpuDevices);
         console.error('Hardware: ', hardware);
