@@ -4,7 +4,7 @@ import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'framer-motion';
+import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'motion';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useTranslation } from 'react-i18next';
 

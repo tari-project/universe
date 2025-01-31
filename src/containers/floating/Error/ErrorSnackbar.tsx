@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, MouseEvent } from 'react';
 import { IoClose } from 'react-icons/io5';
 
 import { ButtonWrapper, ContentWrapper, SnackWrapper, Wrapper } from './ErrorSnackbar.styles.ts';
-import { AnimatePresence, easeIn, Variants } from 'framer-motion';
+import { AnimatePresence, easeIn, Variants } from 'motion';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 

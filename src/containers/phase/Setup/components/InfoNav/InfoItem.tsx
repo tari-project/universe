@@ -1,5 +1,5 @@
 import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
-import { m, Variants } from 'framer-motion';
+import { m, Variants } from 'motion';
 
 interface InfoItemProps {
     title: string;

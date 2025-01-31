@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import { css, styled } from 'styled-components';
 import { ToastType } from '../useToastStore';
 

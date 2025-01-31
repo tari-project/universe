@@ -1,7 +1,7 @@
 import { CubeWrapper, Orbit, OrbitWrapper } from './ButtonOrbitAnimation.styles.ts';
 import CubeSvg from '@app/components/svgs/CubeSvg.tsx';
 import { useState } from 'react';
-import { Transition, useAnimationFrame, Variants } from 'framer-motion';
+import { Transition, useAnimationFrame, Variants } from 'motion';
 
 const orbitTracks = [{ size: 200 }, { size: 230 }, { size: 260 }, { size: 160 }];
 

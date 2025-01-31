@@ -17,7 +17,7 @@ import friendImage2 from '../../images/friend2.png';
 import friendImage3 from '../../images/friend3.png';
 
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 import AnimatedArrows from './AnimatedArrows/AnimatedArrows';
 import { useTranslation } from 'react-i18next';
 

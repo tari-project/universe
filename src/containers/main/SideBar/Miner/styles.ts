@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 
 export const MinerContainer = styled(m.div)`
     display: flex;

@@ -7,7 +7,7 @@ import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { ToastsGroup } from './groups/ToastsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 
 export default function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled(m.div)`

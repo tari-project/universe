@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 import { Text, TextButton, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 

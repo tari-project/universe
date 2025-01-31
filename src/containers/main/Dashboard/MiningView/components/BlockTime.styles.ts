@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 
 export const BlockTimeContainer = styled(m.div)`
     display: flex;

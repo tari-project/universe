@@ -1,6 +1,6 @@
 import { Trans } from 'react-i18next';
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup } from 'motion';
 
 const transition = {
     type: 'spring',

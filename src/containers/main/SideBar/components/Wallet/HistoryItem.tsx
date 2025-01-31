@@ -18,7 +18,7 @@ import { TariSvg } from '@app/assets/icons/tari.tsx';
 
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';

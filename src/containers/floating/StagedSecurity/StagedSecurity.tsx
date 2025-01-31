@@ -1,7 +1,7 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import lockImage from './images/locked-image.png';
 import { LockImage } from './styles';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 import ProtectIntro from './sections/ProtectIntro/ProtectIntro';
 import { useCallback, useEffect, useState } from 'react';
 import SeedPhrase from './sections/SeedPhrase/SeedPhrase';

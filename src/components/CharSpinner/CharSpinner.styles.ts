@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import { CharSpinnerVariant } from '@app/components/CharSpinner/CharSpinner.tsx';
 import styled, { css } from 'styled-components';
 

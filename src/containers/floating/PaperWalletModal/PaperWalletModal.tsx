@@ -1,5 +1,5 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 import { useEffect, useState } from 'react';
 import ConnectSection from './sections/ConnectSection/ConnectSection';
 import QRCodeSection from './sections/QRCodeSection/QRCodeSection';

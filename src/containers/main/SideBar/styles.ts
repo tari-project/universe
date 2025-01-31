@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import { sidebarWidth } from '@app/theme/styles';
 
 // SideBar

@@ -1,4 +1,4 @@
-import { type Variants } from 'framer-motion';
+import { type Variants } from 'motion';
 
 export const toastVariants: Variants = {
     first: {

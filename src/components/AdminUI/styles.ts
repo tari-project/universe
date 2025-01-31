@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import styled, { css } from 'styled-components';
 
 export const ToggleButton = styled('button')<{ $isOpen?: boolean }>`

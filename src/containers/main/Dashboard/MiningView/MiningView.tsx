@@ -1,4 +1,4 @@
-import { LayoutGroup } from 'framer-motion';
+import { LayoutGroup } from 'motion';
 
 import { BlockHeightAccent } from './components/BlockHeightAccent';
 import { Ruler } from './components/Ruler';

@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')``;

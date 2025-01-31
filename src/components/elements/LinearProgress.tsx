@@ -1,5 +1,5 @@
 import { convertHexToRGBA } from '@app/utils/convertHex';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import styled, { css } from 'styled-components';
 
 const Wrapper = styled.div<{ $variant?: 'primary' | 'small' | 'tiny' }>`

@@ -2,7 +2,7 @@ import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx
 import { Language, LanguageList, resolveI18nLanguage } from '@app/i18initializer.ts';
 import styled from 'styled-components';
 import i18n from 'i18next';
-import { m } from 'framer-motion';
+import { m } from 'motion';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 
 type LanguageOption = SelectOption;

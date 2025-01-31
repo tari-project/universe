@@ -3,7 +3,7 @@ import { Wrapper, InviteButton, Image, TextWrapper, Title, Text, GemPill, Copied
 import gemImage from '../../../../images/gem.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion';
 import { useTranslation } from 'react-i18next';
 import LinkIcon from './LinkIcon';
 

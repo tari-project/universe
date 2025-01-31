@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion';
 
 import AppVersions from './AppVersions.tsx';
 import DebugSettings from './DebugSettings.tsx';
