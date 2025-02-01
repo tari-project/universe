@@ -14,51 +14,40 @@ import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 
 const FRONTEND_EVENT = 'frontend_event';
 
-enum FrontendEvent {
-    WalletAddressUpdate = 'WalletAddressUpdate',
-    WalletBalanceUpdate = 'WalletBalanceUpdate',
-    BaseNodeUpdate = 'BaseNodeUpdate',
-    GpuDevicesUpdate = 'GpuDevicesUpdate',
-    CpuMiningUpdate = 'CpuMiningUpdate',
-    GpuMiningUpdate = 'GpuMiningUpdate',
-    ConnectedPeersUpdate = 'ConnectedPeersUpdate',
-    NewBlockHeight = 'NewBlockHeight',
-}
-
-type FrontendEventPayload =
+type FrontendEvent =
     | {
-          event_type: FrontendEvent.WalletAddressUpdate;
+          event_type: 'WalletAddressUpdate';
           payload: {
               tari_address_base58: string;
               tari_address_emoji: string;
           };
       }
     | {
-          event_type: FrontendEvent.BaseNodeUpdate;
+          event_type: 'BaseNodeUpdate';
           payload: BaseNodeStatus;
       }
     | {
-          event_type: FrontendEvent.WalletBalanceUpdate;
+          event_type: 'WalletBalanceUpdate';
           payload: WalletBalance;
       }
     | {
-          event_type: FrontendEvent.GpuDevicesUpdate;
+          event_type: 'GpuDevicesUpdate';
           payload: PublicDeviceParameters[];
       }
     | {
-          event_type: FrontendEvent.CpuMiningUpdate;
+          event_type: 'CpuMiningUpdate';
           payload: CpuMinerStatus;
       }
     | {
-          event_type: FrontendEvent.GpuMiningUpdate;
+          event_type: 'GpuMiningUpdate';
           payload: GpuMinerStatus;
       }
     | {
-          event_type: FrontendEvent.ConnectedPeersUpdate;
+          event_type: 'ConnectedPeersUpdate';
           payload: string[];
       }
     | {
-          event_type: FrontendEvent.NewBlockHeight;
+          event_type: 'NewBlockHeight';
           payload: {
               block_height: number;
               coinbase_transaction?: TransactionInfo;
@@ -76,30 +65,30 @@ const useTauriEventsListener = () => {
     const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
 
     useEffect(() => {
-        const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEventPayload }) => {
+        const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEvent }) => {
             switch (event.event_type) {
-                case FrontendEvent.WalletAddressUpdate:
+                case 'WalletAddressUpdate':
                     setWalletAddress(event.payload);
                     break;
-                case FrontendEvent.WalletBalanceUpdate:
+                case 'WalletBalanceUpdate':
                     setWalletBalance(event.payload);
                     break;
-                case FrontendEvent.BaseNodeUpdate:
+                case 'BaseNodeUpdate':
                     handleBaseNodeStatusUpdate(event.payload);
                     break;
-                case FrontendEvent.GpuDevicesUpdate:
+                case 'GpuDevicesUpdate':
                     setGpuDevices(event.payload);
                     break;
-                case FrontendEvent.GpuMiningUpdate:
+                case 'GpuMiningUpdate':
                     setGpuMiningStatus(event.payload);
                     break;
-                case FrontendEvent.CpuMiningUpdate:
+                case 'CpuMiningUpdate':
                     setCpuMiningStatus(event.payload);
                     break;
-                case FrontendEvent.ConnectedPeersUpdate:
+                case 'ConnectedPeersUpdate':
                     handleConnectedPeersUpdate(event.payload);
                     break;
-                case FrontendEvent.NewBlockHeight:
+                case 'NewBlockHeight':
                     handleNewBlock(event.payload);
                     break;
                 default:
