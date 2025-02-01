@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import Box from '@mui/material/Box';
 import { AccountInfo } from './types';
 import { Button, DialogContent, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
 
 interface SelectAccountProps {
     onSubmit: (name: string) => void;
@@ -13,12 +14,15 @@ function SelectOotleAccount({ onSubmit, accountsList, currentAccount }: SelectAc
     const currentAccountName = currentAccount?.account.name ?? '';
     console.log(accountsList);
     const [newAccountName, setNewAccountName] = useState(currentAccountName);
+    const createAccount = useOotleWalletStore((s) => s.createAccount);
 
-    const handleChange = () => {
-        //TODO set account store
-    };
+    const handleCreateNewAccount = useCallback(async () => {
+        console.info('CREATE ACCOUNT', newAccountName);
+        await createAccount(newAccountName);
+    }, [createAccount, newAccountName]);
 
-    const handleSubmit = useCallback(async () => {
+    const handleChange = useCallback(async () => {
+        console.info('CHANGE ACCOUNT');
         return onSubmit(newAccountName);
     }, [newAccountName, onSubmit]);
 
@@ -63,7 +67,7 @@ function SelectOotleAccount({ onSubmit, accountsList, currentAccount }: SelectAc
                         onChange={onAddAccountChange}
                         style={{ flexGrow: 1 }}
                     />
-                    <Button onClick={handleSubmit} variant="contained" sx={{ width: 200 }}>
+                    <Button onClick={handleCreateNewAccount} variant="contained" sx={{ width: 200 }}>
                         {'create-account'}
                     </Button>
                 </Box>
