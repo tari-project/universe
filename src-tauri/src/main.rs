@@ -595,13 +595,39 @@ async fn setup_inner(
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
 
+    // Benchmark if needed.
+    progress.set_max(77).await;
+    // let mut cpu_miner_config = state.cpu_miner_config.read().await.clone();
+    // Clear out so we use default.
+    let _unused = telemetry_service
+        .send(
+            "starting-benchmarking".to_string(),
+            json!({
+                "service": "starting_benchmarking",
+                "percentage":75,
+            }),
+        )
+        .await;
+
+    let mut cpu_miner = state.cpu_miner.write().await;
+    let benchmarked_hashrate = cpu_miner
+        .start_benchmarking(
+            state.shutdown.to_signal(),
+            Duration::from_secs(30),
+            data_dir.clone(),
+            config_dir.clone(),
+            log_dir.clone(),
+        )
+        .await?;
+    drop(cpu_miner);
+
     if p2pool_enabled {
         let _unused = telemetry_service
             .send(
                 "starting-p2pool".to_string(),
                 json!({
                     "service": "starting_p2pool",
-                    "percentage":75,
+                    "percentage":77,
                 }),
             )
             .await;
@@ -614,6 +640,7 @@ async fn setup_inner(
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
+            .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
             .build()?;
 
         state
