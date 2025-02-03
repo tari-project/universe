@@ -37,6 +37,7 @@ use tari_key_manager::key_manager_service::KeyDigest;
 use tari_utilities::encoding::MBase58;
 use tari_utilities::SafePassword;
 use tokio::fs;
+use urlencoding::encode;
 
 use tari_core::transactions::key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
@@ -130,6 +131,7 @@ impl InternalWallet {
 
     pub async fn get_paper_wallet_details(
         &self,
+        anon_id: String,
         wallet_balance: Option<WalletBalance>,
         auth_uuid: Option<String>,
     ) -> Result<PaperWalletConfig, anyhow::Error> {
@@ -156,22 +158,26 @@ impl InternalWallet {
             .to_lowercase();
 
         let mut link = format!(
-            "tari://{}/paper_wallet?private_key={}",
-            network, seed_words_encrypted_base58,
+            "tari://{}/paper_wallet?private_key={}&anon_id={}",
+            network,
+            seed_words_encrypted_base58,
+            encode(&anon_id),
         );
         // Add wallet_balance as a query parameter if it exists
         if let Some(balance) = &wallet_balance {
+            let available_balance = balance.available_balance
+                + balance.timelocked_balance
+                + balance.pending_incoming_balance;
+
             link.push_str(&format!(
                 "&balance={}",
-                balance.available_balance
-                    + balance.timelocked_balance
-                    + balance.pending_incoming_balance
+                encode(&available_balance.to_string())
             ));
         }
 
         // Add auth_uuid as a query parameter if it exists
         if let Some(uuid) = &auth_uuid {
-            link.push_str(&format!("&tt={}", uuid));
+            link.push_str(&format!("&tt={}", encode(uuid)));
         }
 
         let paper_wallet_details = PaperWalletConfig {
