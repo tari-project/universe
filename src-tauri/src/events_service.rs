@@ -81,15 +81,12 @@ impl EventsService {
         current_block_height: u64,
     ) -> Option<TransactionInfo> {
         match wallet_manager
-            .get_coinbase_transactions(false, Some(1))
+            .get_coinbase_transactions(false, Some(10))
             .await
         {
-            Ok(mut txs) => {
-                if let Some(tx) = txs.pop() {
-                    if tx.mined_in_block_height == current_block_height {
-                        return Some(tx);
-                    }
-                }
+            Ok(txs) => {
+                txs.into_iter()
+                    .find(|tx| tx.mined_in_block_height == current_block_height);
                 None
             }
             Err(e) => {

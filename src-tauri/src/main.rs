@@ -219,10 +219,11 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 _ = node_status_watch_rx.changed() => {
                     let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
                     if node_status.block_height > latest_updated_block_height {
-                        app_state.events_manager.read().await
-                            .handle_new_block_height(&move_app, node_status.block_height).await;
-
-                        latest_updated_block_height = node_status.block_height;
+                        while latest_updated_block_height < node_status.block_height {
+                            latest_updated_block_height = latest_updated_block_height + 1;
+                            app_state.events_manager.read().await
+                                .handle_new_block_height(&move_app, latest_updated_block_height).await;
+                        }
                     } else {
                         app_state.events_manager.read().await
                             .handle_base_node_update(&move_app, node_status.clone()).await;
