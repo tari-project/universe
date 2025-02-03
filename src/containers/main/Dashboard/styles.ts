@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'motion/react';
+import * as m from 'motion/react-m';
 
 export const DashboardContentContainer = styled(m.div)`
     display: flex;

@@ -4,7 +4,7 @@ import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'motion/react';
+import { LazyMotion, domAnimation, MotionConfig, AnimatePresence } from 'motion/react';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -48,40 +48,41 @@ export default function App() {
         <ThemeProvider>
             <GlobalReset />
             <GlobalStyle />
-            <LazyMotion features={domMax} strict>
+            <LazyMotion features={domAnimation} strict>
                 {/*
                  * added to reduce bundle size
                  * see https://www.framer.com/motion/guide-reduce-bundle-size/#synchronous-loading
                  * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
                  */}
-                <MotionConfig reducedMotion="user">
-                    <FloatingElements />
-                    <AnimatePresence mode="popLayout">
-                        {!isAppReady ? (
-                            <AppContentContainer key="splashscreen" initial="hidden">
-                                <Splashscreen />
-                            </AppContentContainer>
-                        ) : null}
+                <FloatingElements />
+                <AnimatePresence mode="popLayout">
+                    <AppContentContainer key="setup" initial="hidden">
+                        <Setup />
+                    </AppContentContainer>
+                    {/*{!isAppReady ? (*/}
+                    {/*    <AppContentContainer key="splashscreen" initial="hidden">*/}
+                    {/*        <Splashscreen />*/}
+                    {/*    </AppContentContainer>*/}
+                    {/*) : null}*/}
 
-                        {showSetup ? (
-                            <AppContentContainer key="setup" initial="hidden">
-                                <Setup />
-                            </AppContentContainer>
-                        ) : null}
+                    {/*{showSetup ? (*/}
+                    {/*    <AppContentContainer key="setup" initial="hidden">*/}
+                    {/*        <Setup />*/}
+                    {/*    </AppContentContainer>*/}
+                    {/*) : null}*/}
 
-                        {showMainView ? (
-                            <AppContentContainer key="main" initial="dashboardInitial">
-                                <MainView />
-                            </AppContentContainer>
-                        ) : null}
+                    {/*{showMainView ? (*/}
+                    {/*    <AppContentContainer key="main" initial="dashboardInitial">*/}
+                    {/*        <MainView />*/}
+                    {/*    </AppContentContainer>*/}
+                    {/*) : null}*/}
 
-                        {isShuttingDown && isAppReady ? (
-                            <AppContentContainer key="shutdown" initial="hidden">
-                                <ShuttingDownScreen />
-                            </AppContentContainer>
-                        ) : null}
-                    </AnimatePresence>
-                </MotionConfig>
+                    {/*{isShuttingDown && isAppReady ? (*/}
+                    {/*    <AppContentContainer key="shutdown" initial="hidden">*/}
+                    {/*        <ShuttingDownScreen />*/}
+                    {/*    </AppContentContainer>*/}
+                    {/*) : null}*/}
+                </AnimatePresence>
             </LazyMotion>
         </ThemeProvider>
     );

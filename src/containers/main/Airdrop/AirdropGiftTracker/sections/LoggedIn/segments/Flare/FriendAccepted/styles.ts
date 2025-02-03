@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 import backgroundImage from '../images/friend_accepted_bg.png';
-import { m } from 'motion/react';
+import * as m from 'motion/react-m';
 
 export const Wrapper = styled('div')`
     display: flex;

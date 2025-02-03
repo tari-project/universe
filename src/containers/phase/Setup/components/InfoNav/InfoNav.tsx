@@ -55,7 +55,7 @@ export default function InfoNav() {
             <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
                 <LinearProgress value={0} variant="tiny" />
                 {isSelected ? (
-                    <NavItemCurrent layoutId="selected" key={`selected:${key}`}>
+                    <NavItemCurrent key={`selected:${key}`}>
                         <LinearProgress
                             value={100}
                             duration={duration}

@@ -56,7 +56,7 @@ export function ExpandableTile({
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
     return (
-        <TileItem layoutId="expandable-tile">
+        <TileItem>
             <TileTop>
                 <Typography>{title}</Typography>
                 <TriggerWrapper ref={refs.setReference} {...getReferenceProps()} layout>

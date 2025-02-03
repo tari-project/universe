@@ -1,4 +1,4 @@
-import { m } from 'motion/react';
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
 export const ToggleButton = styled('button')<{ $isOpen?: boolean }>`

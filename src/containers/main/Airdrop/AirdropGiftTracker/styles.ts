@@ -1,7 +1,6 @@
 import styled from 'styled-components';
-import { m } from 'motion/react';
 
-export const Wrapper = styled(m.div)`
+export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 10px;

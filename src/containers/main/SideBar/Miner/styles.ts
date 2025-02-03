@@ -1,14 +1,13 @@
 import styled from 'styled-components';
-import { m } from 'motion/react';
 
-export const MinerContainer = styled(m.div)`
+export const MinerContainer = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     gap: 10px;
 `;
 
-export const TileItem = styled(m.div)`
+export const TileItem = styled.div`
     height: 61px;
     width: 161px;
     flex-shrink: 0;
@@ -30,12 +29,12 @@ export const TileItem = styled(m.div)`
     font-weight: 500;
     position: relative;
 `;
-export const TileTop = styled(m.div)`
+export const TileTop = styled.div`
     display: flex;
     justify-content: space-between;
 `;
 
-export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
+export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     display: flex;
     justify-content: space-between;
     align-items: baseline;
@@ -49,7 +48,7 @@ export const StatWrapper = styled(m.div)<{ $useLowerCase?: boolean }>`
     text-transform: ${({ $useLowerCase }) => ($useLowerCase ? 'lowercase' : 'uppercase')};
 `;
 
-export const Unit = styled(m.div)`
+export const Unit = styled.div`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;
     font-style: normal;
@@ -57,7 +56,7 @@ export const Unit = styled(m.div)`
     line-height: 100%;
 `;
 
-export const TileContainer = styled(m.div)`
+export const TileContainer = styled.div`
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;

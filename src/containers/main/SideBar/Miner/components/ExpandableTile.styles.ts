@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import { m } from 'motion/react';
+import * as m from 'motion/react-m';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const TriggerWrapper = styled(m.div)`
