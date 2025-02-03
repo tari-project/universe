@@ -7,5 +7,16 @@
     "invalid-url": "有効なURLアドレスでなければなりません",
     "password-too-short": "パスワードは8文字以上でなければなりません",
     "required": "フィールドが必要です"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
   }
 }
