@@ -1,5 +1,5 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence, useMotionValue } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { useEffect, useState } from 'react';
 import ConnectSection from './sections/ConnectSection/ConnectSection';
 import QRCodeSection from './sections/QRCodeSection/QRCodeSection';
@@ -12,7 +12,7 @@ export default function PaperWalletModal() {
     const setShowModal = usePaperWalletStore((s) => s.setShowModal);
 
     const [section, setSection] = useState<PaperWalletModalSectionType>('Connect');
-    const boxWidth = useMotionValue(618);
+    const [boxWidth, setBoxWidth] = useState(618);
 
     const handleClose = () => {
         setSection('Connect');
@@ -21,16 +21,16 @@ export default function PaperWalletModal() {
 
     useEffect(() => {
         if (section == 'QRCode') {
-            boxWidth.set(780);
+            setBoxWidth(780);
         } else {
-            boxWidth.set(682);
+            setBoxWidth(682);
         }
     }, [boxWidth, section]);
 
     return (
         <AnimatePresence>
             {showModal && (
-                <GreenModal onClose={handleClose} boxWidth={boxWidth.get()}>
+                <GreenModal onClose={handleClose} boxWidth={boxWidth}>
                     {section === 'Connect' && <ConnectSection setSection={setSection} />}
                     {section === 'QRCode' && <QRCodeSection onDoneClick={handleClose} />}
                 </GreenModal>

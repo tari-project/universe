@@ -1,4 +1,4 @@
-import * as m from 'motion/react-m';
+import { m } from 'motion/react';
 import { css, styled } from 'styled-components';
 import { ToastType } from '../useToastStore';
 
@@ -84,7 +84,6 @@ export const CloseButton = styled.button<{ $type?: ToastType }>`
     border-radius: 50%;
     border: none;
     background: transparent;
-    color: inherit;
     cursor: pointer;
     padding: 0;
 

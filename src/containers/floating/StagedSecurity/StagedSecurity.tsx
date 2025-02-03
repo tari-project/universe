@@ -1,7 +1,7 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import lockImage from './images/locked-image.png';
 import { LockImage } from './styles';
-import { AnimatePresence, useMotionValue } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import ProtectIntro from './sections/ProtectIntro/ProtectIntro';
 import { useCallback, useEffect, useState } from 'react';
 import SeedPhrase from './sections/SeedPhrase/SeedPhrase';
@@ -25,7 +25,7 @@ export default function StagedSecurity() {
     const showCompletedTip = useStagedSecurityStore((s) => s.showCompletedTip);
     const setShowCompletedTip = useStagedSecurityStore((s) => s.setShowCompletedTip);
 
-    const boxWidth = useMotionValue(618);
+    const [boxWidth, setBoxWidth] = useState(618);
     const [section, setSection] = useState<StagedSecuritySectionType>('ProtectIntro');
 
     const handleBackupButtonClick = useCallback(async () => {
@@ -52,11 +52,11 @@ export default function StagedSecurity() {
 
     useEffect(() => {
         if (section == 'SeedPhrase' || section == 'VerifySeedPhrase') {
-            boxWidth.set(710);
+            setBoxWidth(710);
         } else {
-            boxWidth.set(618);
+            setBoxWidth(618);
         }
-    }, [boxWidth, section]);
+    }, [section]);
 
     const seedPhraseSection =
         section == 'SeedPhrase' ? <SeedPhrase setSection={handleSection} words={seedWords} /> : null;
@@ -65,7 +65,7 @@ export default function StagedSecurity() {
         <>
             <AnimatePresence>
                 {showModal && (
-                    <GreenModal onClose={handleClose} boxWidth={boxWidth.get()}>
+                    <GreenModal onClose={handleClose} boxWidth={boxWidth}>
                         <LockImage src={lockImage} alt="Lock Icon" />
 
                         {section == 'ProtectIntro' ? (
