@@ -11,6 +11,7 @@ export const AccentWrapper = styled(m.div)`
     display: flex;
     top: 0;
     right: -25px;
+    border: 1px solid deeppink;
 `;
 
 export const AccentText = styled(m.div)`
@@ -24,9 +25,11 @@ export const AccentText = styled(m.div)`
     color: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.095)' : 'rgba(255, 255, 255, 0.4)')};
     user-select: none;
     height: min-content;
+    rotate: -90deg;
+    font-size: 16px;
 `;
 
-export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
+export const SpacedNum = styled.span<{ $isDec?: boolean }>`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;

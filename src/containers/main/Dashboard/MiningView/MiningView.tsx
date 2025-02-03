@@ -1,5 +1,3 @@
-import { LayoutGroup } from 'motion/react';
-
 import { BlockHeightAccent } from './components/BlockHeightAccent';
 import { Ruler } from './components/Ruler';
 import Earnings from './components/Earnings';
@@ -10,12 +8,10 @@ import { MiningViewContainer } from './MiningView.styles.ts';
 export default function MiningView() {
     return (
         <MiningViewContainer>
-            <LayoutGroup>
-                <BlockHeightAccent />
-                <Ruler />
-                <Earnings />
-                <BlockTime />
-            </LayoutGroup>
+            <BlockHeightAccent />
+            <Ruler />
+            <Earnings />
+            <BlockTime />
         </MiningViewContainer>
     );
 }

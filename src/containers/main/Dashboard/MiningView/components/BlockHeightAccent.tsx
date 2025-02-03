@@ -1,5 +1,5 @@
-import { useDeferredValue, useEffect, useLayoutEffect, useState } from 'react';
-import { AnimatePresence, LayoutGroup, useMotionValue } from 'motion/react';
+import { useEffect } from 'react';
+import { useMotionValue, useTransform, useMotionValueEvent } from 'motion/react';
 
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { AccentText, AccentWrapper, SpacedNum } from './BlockHeightAccent.styles';
@@ -8,59 +8,53 @@ export function BlockHeightAccent() {
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const heightString = height?.toString();
 
-    const [windowHeight, setWindowHeight] = useState(window.innerHeight - 80);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
     const heightStringArr = heightString?.split('') || [];
-    const deferredHeight = useDeferredValue(windowHeight);
 
-    const fontSize = useMotionValue(110);
+    const windowHeight = useMotionValue(window.innerHeight);
+    const windowWidth = useMotionValue(window.innerWidth);
+    const width = useMotionValue(0);
+    const scale = useMotionValue(0);
 
     useEffect(() => {
-        let dividend = (deferredHeight - 70) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
-
-        // checking discrepancy between height to mitigate overlap a bit
-        if (Math.abs(deferredHeight - windowWidth) < 210 && deferredHeight / windowWidth >= 0.65) {
-            dividend = dividend * 0.6;
-        }
-        const font = Math.floor(dividend);
-
-        fontSize.set(font);
-    }, [deferredHeight, fontSize, heightStringArr.length, windowWidth]);
-
-    useLayoutEffect(() => {
         function handleResize() {
-            setWindowHeight(window.innerHeight - 80);
-            setWindowWidth(window.innerWidth);
+            windowHeight.set(window.innerHeight);
+            windowWidth.set(window.innerWidth);
         }
         window.addEventListener('resize', handleResize);
         handleResize();
+
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, []);
+    }, [windowHeight, windowWidth]);
+
+    const size = useTransform(() => {
+        const height = windowHeight.get();
+        const width = windowWidth.get();
+        let dividend = (height - 70) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
+
+        // checking discrepancy between height to mitigate overlap a bit
+        if (Math.abs(height - width) < 210 && height / width >= 0.65) {
+            dividend = dividend * 0.6;
+        }
+        return Math.floor(dividend);
+    });
+
+    useMotionValueEvent(size, 'change', (latest) => {
+        console.debug(latest);
+        scale.set(Math.min(10, latest * 0.055));
+        console.debug(scale.get());
+    });
 
     return (
-        <AccentWrapper layoutId="accent-wrapper" style={{ width: fontSize }}>
-            <AnimatePresence>
-                {height && height > 0 ? (
-                    <LayoutGroup id="accent-content">
-                        <AccentText
-                            layout
-                            layoutId="accent-text"
-                            animate={{
-                                fontSize: `${fontSize}px`,
-                                transform: `rotate(-90)`,
-                            }}
-                        >
-                            {heightStringArr?.map((c, i) => (
-                                <SpacedNum layout key={`spaced-char-${c}-${i}`} $isDec={isNaN(Number(c))}>
-                                    {c}
-                                </SpacedNum>
-                            ))}
-                        </AccentText>
-                    </LayoutGroup>
-                ) : null}
-            </AnimatePresence>
+        <AccentWrapper style={{ width }}>
+            <AccentText style={{ scale }}>
+                {heightStringArr?.map((c, i) => (
+                    <SpacedNum key={`spaced-char-${c}-${i}`} $isDec={isNaN(Number(c))}>
+                        {c}
+                    </SpacedNum>
+                ))}
+            </AccentText>
         </AccentWrapper>
     );
 }
