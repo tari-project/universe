@@ -5,7 +5,7 @@ import { UserRow, Wrapper } from './styles';
 import { useAirdropStore, REFERRAL_GEMS } from '@app/store/useAirdropStore';
 import Invite from './segments/Invite/Invite';
 import Flare from './segments/Flare/Flare';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 export default function LoggedIn() {
     const { userRankGems, userPointsGems, flareAnimationType, bonusTiers, referralGems, miningRewardPoints } =

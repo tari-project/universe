@@ -21,8 +21,8 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
     const chipText = formatNumber(chipValue, FormatPreset.PERCENT);
 
     return (
-        <TileItem layoutId={`tile-item-${title}`}>
-            <TileTop layout>
+        <TileItem>
+            <TileTop>
                 <Typography>{title}</Typography>
                 {chipValue ? (
                     <Chip size="small" background={chipColor} color={'#fff'}>
@@ -33,7 +33,7 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
             {isLoading ? (
                 <SpinnerIcon />
             ) : (
-                <StatWrapper $useLowerCase={useLowerCase} layout>
+                <StatWrapper $useLowerCase={useLowerCase}>
                     {truncateString(stats, 8)}
                     <Unit>{unit}</Unit>
                 </StatWrapper>

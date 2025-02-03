@@ -36,7 +36,6 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
-
     network: 'unknown',
     excludedGpuDevices: [],
 };
@@ -73,7 +72,17 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             }
         }
     },
-    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
+    setMiningControlsEnabled: (miningControlsEnabled) =>
+        set((state) => {
+            const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+            const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+            return {
+                miningControlsEnabled:
+                    state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled)
+                        ? false
+                        : miningControlsEnabled,
+            };
+        }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
         const hardware = useMiningMetricsStore.getState().gpu.hardware;
         const totalGpuDevices = hardware.length;

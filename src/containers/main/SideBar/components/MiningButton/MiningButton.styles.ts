@@ -1,23 +1,6 @@
-import styled, { css, keyframes } from 'styled-components';
-import { ImSpinner3 } from 'react-icons/im';
-
-import { m } from 'framer-motion';
+import styled, { css } from 'styled-components';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
-
-export const spin = keyframes`
-  from {
-  transform:rotate(0deg)
-  }
-  to {
-  transform:rotate(360deg)
-  }
-`;
-export const StyledIcon = styled(ImSpinner3)`
-    animation: ${spin} 2s infinite;
-    animation-timing-function: cubic-bezier(0.76, 0.89, 0.95, 0.85);
-    height: 18px;
-`;
 
 export const IconWrapper = styled.div`
     width: 27px;
@@ -33,7 +16,7 @@ export const IconWrapper = styled.div`
     }
 `;
 
-export const ButtonWrapper = styled(m.div)`
+export const ButtonWrapper = styled.div`
     position: relative;
     display: flex;
     align-items: center;

@@ -1,7 +1,7 @@
 import { LinearProgress } from '@app/components/elements/LinearProgress';
 import InfoItemGraphic from '@app/containers/phase/Setup/components/InfoNav/InfoItemGraphic';
-import { AnimatePresence } from 'framer-motion';
-import { useCallback, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { memo, useCallback, useState } from 'react';
 import InfoItem from './InfoItem';
 import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
 import { useTranslation } from 'react-i18next';
@@ -18,7 +18,7 @@ const calculateReadingTime = (text) => {
     return (words / 350) * 60 + 3; // Convert to seconds + 3s for a pause
 };
 
-export default function InfoNav() {
+const InfoNav = memo(function InfoNav() {
     const { t } = useTranslation('info');
     const [currentStep, setCurrentStep] = useState(steps[0]);
 
@@ -55,7 +55,7 @@ export default function InfoNav() {
             <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
                 <LinearProgress value={0} variant="tiny" />
                 {isSelected ? (
-                    <NavItemCurrent layoutId="selected" key={`selected:${key}`}>
+                    <NavItemCurrent key={`selected:${key}`}>
                         <LinearProgress
                             value={100}
                             duration={duration}
@@ -79,4 +79,5 @@ export default function InfoNav() {
             <Nav>{sliderMarkup}</Nav>
         </NavContainer>
     );
-}
+});
+export default InfoNav;

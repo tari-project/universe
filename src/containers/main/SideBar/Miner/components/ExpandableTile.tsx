@@ -4,7 +4,7 @@ import { ReactNode, useState } from 'react';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
 import { ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
 
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
@@ -56,17 +56,16 @@ export function ExpandableTile({
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
 
     return (
-        <TileItem layoutId="expandable-tile">
+        <TileItem>
             <TileTop>
                 <Typography>{title}</Typography>
-                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()} layout>
+                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                     <QuestionMarkSvg />
                 </TriggerWrapper>
             </TileTop>
             <AnimatePresence mode="sync">
                 {expanded && (
                     <ExpandedWrapper
-                        layout
                         ref={refs.setFloating}
                         {...getFloatingProps()}
                         variants={variants}

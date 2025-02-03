@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -65,7 +65,7 @@ export const WordButton = styled('button')`
     }
 `;
 
-export const WordsSelected = styled(m.div)`
+export const WordsSelected = styled.div`
     width: 100%;
     max-width: 566px;
     min-height: 270px;

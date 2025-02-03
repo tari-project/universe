@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { Toast } from './Toast/Toast';
 import { useToastStore } from './useToastStore';
 import { useAppStateStore } from '@app/store/appStateStore';

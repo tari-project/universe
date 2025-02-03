@@ -10,7 +10,7 @@ import {
     TooltipTop,
     AlertIconWrapper,
 } from './OrphanChainAlert.styles.ts';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { List } from '@app/components/elements/List.tsx';
 
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
