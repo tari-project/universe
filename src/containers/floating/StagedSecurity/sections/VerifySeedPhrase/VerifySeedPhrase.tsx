@@ -80,7 +80,7 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
             </TextWrapper>
 
             <PhraseWrapper>
-                <WordsSelected layout>
+                <WordsSelected>
                     <AnimatePresence>
                         {selectedWords.length === 0 && (
                             <Placeholder
@@ -97,7 +97,6 @@ export default function VerifySeedPhrase({ setSection, words }: Props) {
                         {selectedWords.map((data) => (
                             <WordPill
                                 key={'VerifySeedPhrase' + data.word + data.index}
-                                layout
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, scale: 0.5 }}

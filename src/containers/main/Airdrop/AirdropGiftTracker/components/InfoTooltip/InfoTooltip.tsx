@@ -32,7 +32,7 @@ export default function InfoTooltip({ title, text }: Props) {
 
     return (
         <>
-            <Trigger ref={refs.setReference} {...getReferenceProps()} layout>
+            <Trigger ref={refs.setReference} {...getReferenceProps()}>
                 <QuestionMarkSvg />
             </Trigger>
 

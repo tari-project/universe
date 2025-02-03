@@ -1,4 +1,3 @@
-import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
 
@@ -46,33 +45,31 @@ const SetupTextGhost = styled.div`
     ${TEXT_STYLE_BASE}
 `;
 
-const TextWrapper = styled.div<{ $height: number }>`
+const TextWrapper = styled.div`
     display: grid;
     gap: calc(0.15rem + 1vh);
     grid-template-columns: 1fr 1fr 1fr;
     grid-auto-flow: dense;
     position: absolute;
-    top: ${({ $height }) => `-${$height * 0.75}px`};
+    top: -100px;
     left: 0;
 `;
 
-const GridReference = styled.div<{ $minHeight: number }>`
+const GridReference = styled.div`
     grid-area: hero;
     position: relative;
-    min-height: ${({ $minHeight }) => $minHeight}px;
+    min-height: 160px;
     z-index: 1;
 `;
 export default function HeroText() {
     const { t } = useTranslation('common');
-    const heightRef = useRef<HTMLDivElement>(null);
-    const textHeight = heightRef?.current?.offsetHeight || 180;
     return (
-        <GridReference $minHeight={textHeight + 80}>
-            <TextWrapper $height={textHeight}>
+        <GridReference>
+            <TextWrapper>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
-                <SetupTextMain ref={heightRef}>{t('tari-universe')}</SetupTextMain>
+                <SetupTextMain>{t('tari-universe')}</SetupTextMain>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
                 <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>

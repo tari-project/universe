@@ -59,14 +59,13 @@ export function ExpandableTile({
         <TileItem>
             <TileTop>
                 <Typography>{title}</Typography>
-                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()} layout>
+                <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                     <QuestionMarkSvg />
                 </TriggerWrapper>
             </TileTop>
             <AnimatePresence mode="sync">
                 {expanded && (
                     <ExpandedWrapper
-                        layout
                         ref={refs.setFloating}
                         {...getFloatingProps()}
                         variants={variants}
