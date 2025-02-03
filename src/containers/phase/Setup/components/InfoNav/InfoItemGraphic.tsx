@@ -1,10 +1,10 @@
-import { useTheme } from 'styled-components';
 import { GraphicContainer, StepImg, StepImgCloud } from './InfoNav.styles';
 
 import coinsClouds from '/assets/img/setup/coins-clouds.png';
 import coins from '/assets/img/setup/coins.png';
-import cubesLight from '/assets/img/setup/cubes-light.png';
+
 import cubes from '/assets/img/setup/cubes.png';
+import cubesClouds from '/assets/img/setup/cubes-clouds.png';
 import fancyClouds from '/assets/img/setup/fancy-clouds.png';
 import fancy from '/assets/img/setup/fancy.png';
 import tariCloud from '/assets/img/setup/tari-cloud.png';
@@ -20,7 +20,6 @@ interface InfoItemGraphicProps {
 }
 
 export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
-    const theme = useTheme();
     const { x, y } = useParallax(10);
     const { x: x2, y: y2 } = useParallax(15);
 
@@ -28,7 +27,7 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
         [towerWin, towerWinClouds],
         [fancy, fancyClouds],
         [coins, coinsClouds],
-        [theme.mode === 'dark' ? cubes : cubesLight],
+        [cubes, cubesClouds],
         [tower, towerClouds],
         [tari, tariCloud],
     ];
@@ -49,7 +48,7 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
             {cloudOverlay && (
                 <StepImgCloud
                     src={cloudOverlay}
-                    alt={`Step ${step} cloud overlay`}
+                    alt={`Step ${step} cloud`}
                     style={{ x: x2, y: y2 }}
                     initial={{ opacity: 0, scale: 1.1 }}
                     animate={{ opacity: 1, scale: 1 }}
