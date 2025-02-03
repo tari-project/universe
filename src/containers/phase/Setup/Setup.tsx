@@ -7,7 +7,7 @@ import grain from '/assets/img/grain.png';
 import AppVersion from './components/AppVersion';
 
 export default function Setup() {
-    // useSetUp();
+    useSetUp();
     return (
         <SetupWrapper $bg={grain}>
             <HeroText />

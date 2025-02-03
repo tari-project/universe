@@ -4,7 +4,7 @@ import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domAnimation, MotionConfig, AnimatePresence } from 'motion/react';
+import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { useTranslation } from 'react-i18next';
 
@@ -56,32 +56,29 @@ export default function App() {
                  */}
                 <FloatingElements />
                 <AnimatePresence mode="popLayout">
-                    <AppContentContainer key="setup" initial="hidden">
-                        <Setup />
-                    </AppContentContainer>
-                    {/*{!isAppReady ? (*/}
-                    {/*    <AppContentContainer key="splashscreen" initial="hidden">*/}
-                    {/*        <Splashscreen />*/}
-                    {/*    </AppContentContainer>*/}
-                    {/*) : null}*/}
+                    {!isAppReady ? (
+                        <AppContentContainer key="splashscreen" initial="hidden">
+                            <Splashscreen />
+                        </AppContentContainer>
+                    ) : null}
 
-                    {/*{showSetup ? (*/}
-                    {/*    <AppContentContainer key="setup" initial="hidden">*/}
-                    {/*        <Setup />*/}
-                    {/*    </AppContentContainer>*/}
-                    {/*) : null}*/}
+                    {showSetup ? (
+                        <AppContentContainer key="setup" initial="hidden">
+                            <Setup />
+                        </AppContentContainer>
+                    ) : null}
 
-                    {/*{showMainView ? (*/}
-                    {/*    <AppContentContainer key="main" initial="dashboardInitial">*/}
-                    {/*        <MainView />*/}
-                    {/*    </AppContentContainer>*/}
-                    {/*) : null}*/}
+                    {showMainView ? (
+                        <AppContentContainer key="main" initial="dashboardInitial">
+                            <MainView />
+                        </AppContentContainer>
+                    ) : null}
 
-                    {/*{isShuttingDown && isAppReady ? (*/}
-                    {/*    <AppContentContainer key="shutdown" initial="hidden">*/}
-                    {/*        <ShuttingDownScreen />*/}
-                    {/*    </AppContentContainer>*/}
-                    {/*) : null}*/}
+                    {isShuttingDown && isAppReady ? (
+                        <AppContentContainer key="shutdown" initial="hidden">
+                            <ShuttingDownScreen />
+                        </AppContentContainer>
+                    ) : null}
                 </AnimatePresence>
             </LazyMotion>
         </ThemeProvider>

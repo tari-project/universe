@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
+import { memo } from 'react';
 
 const TEXT_STYLE_BASE = css`
     font-family: Druk, sans-serif;
@@ -61,7 +62,7 @@ const GridReference = styled.div`
     min-height: 160px;
     z-index: 1;
 `;
-export default function HeroText() {
+const HeroText = memo(function HeroText() {
     const { t } = useTranslation('common');
     return (
         <GridReference>
@@ -76,4 +77,6 @@ export default function HeroText() {
             </TextWrapper>
         </GridReference>
     );
-}
+});
+
+export default HeroText;
