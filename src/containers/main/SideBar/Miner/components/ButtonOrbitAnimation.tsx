@@ -1,106 +1,71 @@
-import { CubeWrapper, Orbit, OrbitWrapper } from './ButtonOrbitAnimation.styles.ts';
+import { backIn, circOut } from 'motion';
+import { useTime, useTransform } from 'motion/react';
 import CubeSvg from '@app/components/svgs/CubeSvg.tsx';
-import { useState } from 'react';
-import { Transition, useAnimationFrame, Variants } from 'motion/react';
+import { CubeWrapper, Orbit, OrbitWrapper } from './ButtonOrbitAnimation.styles.ts';
 
 const orbitTracks = [{ size: 200 }, { size: 230 }, { size: 260 }, { size: 160 }];
 
-const opacityTransition = {
-    duration: 10,
-    ease: 'easeInOut',
-    repeat: Infinity,
-};
-const cube = {
-    animate: (i) => ({
-        opacity: [0.53, 0.65, 0.75, 1, 0.9, 0.6, 0.45],
-        scale: [0.8, 0.85],
-        transition: { ...opacityTransition, delay: i * 2 },
-    }),
-};
-
-const track: Variants = {
-    animate: (i) => ({
-        rotate: i % 2 !== 0 ? 360 : -360,
-        opacity: [0.55, 0.75, 0.6],
-        transition: {
-            duration: 45 + (orbitTracks.length - i) * 3,
-            ease: 'linear',
-            repeat: Infinity,
-            repeatType: 'mirror' as Transition['repeatType'],
-            staggerChildren: 2,
-            staggerDirection: -1,
-            delay: (i + 1) * 1.5,
-            opacity: opacityTransition,
-        },
-    }),
-};
-
-function OrbitCube({ isEven, custom, x, y }: { isEven?: boolean; custom: number; x: number; y: number }) {
-    return (
-        <CubeWrapper style={{ x, y, rotate: isEven ? 5 : 0.5 }} variants={cube} animate="animate" custom={custom}>
-            <CubeSvg />
-        </CubeWrapper>
-    );
-}
-
-const baseCubes = [1, 2, 3];
-
+const WRAPPER = 300;
+const RADIUS = WRAPPER / 2;
 export default function ButtonOrbitAnimation() {
-    const [cubesPerTrack, setCubesPerTrack] = useState(baseCubes);
+    const time = useTime();
+    const rotate = useTransform(time, [0, 55 * 1000], [0, 360], { clamp: false });
+    const opacity = useTransform(time, [300, 1000, 1500], [0.95, 0.05, 0.8], { ease: circOut });
 
-    useAnimationFrame((time, delta) => {
-        if (delta > 25 && cubesPerTrack.length < 12) {
-            setCubesPerTrack((c) => [...c, c.length + 1]);
-        }
+    const cubesPerTrack = Array.from({ length: 6 }).map((_, i) => i + 1);
+
+    const evenStyle = {
+        opacity,
+        rotate,
+    };
+
+    const style = {
+        opacity: useTransform(() => opacity.get() / 2),
+        rotate: useTransform(() => rotate.get() * -1),
+    };
+
+    const trackMarkup = orbitTracks.map(({ size }, trackIndex) => {
+        const styles = trackIndex % 2 === 0 ? evenStyle : style;
+        const cubes =
+            trackIndex % 2 === 0 ? cubesPerTrack.filter((c) => c % 2 === 0) : cubesPerTrack.filter((c) => c % 2 !== 0);
+        return (
+            <Orbit
+                key={`orbit-track-${trackIndex}`}
+                style={{
+                    borderStyle: (trackIndex - 1) % 3 === 0 ? 'solid' : 'dashed',
+                    width: size,
+                    height: size,
+                    y: RADIUS - size / 2,
+                    x: RADIUS - size / 2,
+                    ...styles,
+                }}
+            >
+                {cubes.map((_, cubeIndex) => {
+                    const third = (cubeIndex * trackIndex) % 3 === 0;
+                    const x = (size / Math.PI) * (third ? 1 : 2);
+                    const y = third ? -9 : -4.5;
+                    return <OrbitCube key={`track-${trackIndex}-${size}:cube-${cubeIndex}`} x={x} y={y} />;
+                })}
+            </Orbit>
+        );
     });
 
+    return <OrbitWrapper>{trackMarkup}</OrbitWrapper>;
+}
+
+function OrbitCube({ x, y }: { x: number; y: number }) {
+    const time = useTime();
+    const opacity = useTransform(time, [300, 900, 1500], [0.4, 0.75, 0.6], {
+        clamp: false,
+        ease: backIn,
+    });
+    const scale = useTransform(time, [500, 1500], [0.7, 0.85], {
+        clamp: false,
+        ease: backIn,
+    });
     return (
-        <OrbitWrapper
-            key="orbit-wrapper"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, transition: { staggerChildren: 1, staggerDirection: -1 } }}
-            exit={{ opacity: 0 }}
-        >
-            {orbitTracks.map(({ size }, trackIndex) => {
-                const isEven = trackIndex % 2 === 0;
-                const borderStyleArr = ['solid', 'solid', 'solid'];
-                borderStyleArr.splice(trackIndex, 0, 'dashed');
-                const borderStyle = borderStyleArr.join(' ');
-                const cubes = isEven
-                    ? cubesPerTrack.filter((c) => c % 2 === 0)
-                    : cubesPerTrack.filter((c) => c % 2 !== 0);
-                return (
-                    <Orbit
-                        key={`orbit-${size}-${trackIndex}`}
-                        style={{
-                            opacity: isEven ? 0.7 : 0.55,
-                            borderStyle,
-                            width: size,
-                            height: size,
-                            y: 150 - size / 2,
-                            x: 150 - size / 2,
-                        }}
-                        animate="animate"
-                        variants={track}
-                        custom={trackIndex}
-                    >
-                        {cubes.map((cube, cubeIndex) => {
-                            const third = (cubeIndex * trackIndex) % 3 === 0;
-                            const x = (size / Math.PI) * (third ? 1 : 2);
-                            const y = third ? -9 : -4.5;
-                            return (
-                                <OrbitCube
-                                    key={`track-${trackIndex}-${size}:cube-${cubeIndex}`}
-                                    isEven={isEven}
-                                    custom={cube}
-                                    x={x}
-                                    y={y}
-                                />
-                            );
-                        })}
-                    </Orbit>
-                );
-            })}
-        </OrbitWrapper>
+        <CubeWrapper style={{ opacity, scale, x, y }}>
+            <CubeSvg />
+        </CubeWrapper>
     );
 }
