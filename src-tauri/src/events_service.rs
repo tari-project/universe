@@ -84,11 +84,9 @@ impl EventsService {
             .get_coinbase_transactions(false, Some(10))
             .await
         {
-            Ok(txs) => {
-                txs.into_iter()
-                    .find(|tx| tx.mined_in_block_height == current_block_height);
-                None
-            }
+            Ok(txs) => txs
+                .into_iter()
+                .find(|tx| tx.mined_in_block_height == current_block_height),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to get latest coinbase transaction: {:?}", e);
                 None
