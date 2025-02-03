@@ -10,7 +10,9 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
 
-type State = Partial<AppConfig>;
+type State = Partial<AppConfig> & {
+    visualModeToggleLoading: boolean;
+};
 interface SetModeProps {
     mode: modeType;
     customGpuLevels?: GpuThreads[];
@@ -32,7 +34,6 @@ interface Actions {
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
-    setVisualMode: (enabled: boolean) => void;
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
@@ -41,6 +42,7 @@ interface Actions {
 type AppConfigStoreState = State & Actions;
 
 const initialState: State = {
+    visualModeToggleLoading: false,
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',
@@ -70,7 +72,6 @@ const initialState: State = {
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
-
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
         invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
@@ -267,15 +268,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ display_mode: prevTheme });
         });
     },
-    setVisualMode: (enabled) => {
-        set({ visual_mode: enabled });
-        invoke('set_visual_mode', { enabled }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set visual mode', e);
-            appStateStore.setError('Could not change visual mode');
-            set({ visual_mode: !enabled });
-        });
-    },
     setShowExperimentalSettings: async (showExperimentalSettings) => {
         set({ show_experimental_settings: showExperimentalSettings });
         invoke('set_show_experimental_settings', { showExperimentalSettings }).catch((e) => {
@@ -323,4 +315,16 @@ export const fetchAppConfig = async () => {
     } catch (e) {
         console.error('Could not get app config: ', e);
     }
+};
+
+export const setVisualMode = (enabled: boolean) => {
+    useAppConfigStore.setState({ visual_mode: enabled, visualModeToggleLoading: true });
+    invoke('set_visual_mode', { enabled })
+        .catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set visual mode', e);
+            appStateStore.setError('Could not change visual mode');
+            useAppConfigStore.setState({ visual_mode: !enabled });
+        })
+        .finally(() => useAppConfigStore.setState({ visualModeToggleLoading: false }));
 };
