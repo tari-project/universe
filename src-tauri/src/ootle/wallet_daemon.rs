@@ -7,7 +7,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::utils::logging_utils::setup_logging;
+use crate::{consts::DAN_WALLET_JSON_ADDRESS, utils::logging_utils::setup_logging};
 use log::{info, warn};
 use tari_common_dan2::configuration::Network;
 use tari_dan_app_utilities::configuration::load_configuration;
@@ -65,7 +65,7 @@ pub async fn start_wallet_daemon(
 
     config.dan_wallet_daemon.indexer_node_json_rpc_url =
         "http://localhost:18007/json_rpc".to_string();
-    config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&jrpc_address).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
+    config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&DAN_WALLET_JSON_ADDRESS).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
     config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
 
     println!("------> 🌟 WALLET DAEMON CONFIG: {:?}", &config);

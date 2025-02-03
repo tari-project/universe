@@ -8,8 +8,10 @@ use tari_wallet_daemon_client::types::{
     AuthLoginAcceptRequest, AuthLoginAcceptResponse, AuthLoginRequest, AuthLoginResponse,
 };
 
+use crate::consts::DAN_WALLET_JSON_ADDRESS;
+
 // const JSON_CONNECT_ADDRESS: &str = "18.216.193.9:12028"; // TODO use db to get endpoint
-const JSON_CONNECT_ADDRESS: &str = "127.0.0.1:18010"; // TODO use db to get endpoint
+// const JSON_CONNECT_ADDRESS: &str = "127.0.0.1:18010"; // TODO use db to get endpoint
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
 pub async fn permission_token(jrpc_port: Option<u16>) -> Result<(String, String), anyhow::Error> {
@@ -45,7 +47,7 @@ pub async fn make_request<T: Serialize>(
 ) -> Result<serde_json::Value, anyhow::Error> {
     info!(target: LOG_TARGET, "Make request");
     let json_connect_address = jrpc_port.map_or_else(
-        || JSON_CONNECT_ADDRESS.to_string(),
+        || DAN_WALLET_JSON_ADDRESS.to_string(),
         |port| format!("127.0.0.1:{}", port),
     );
     let address = SocketAddr::from_str(&json_connect_address).unwrap();
