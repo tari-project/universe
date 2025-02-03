@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import Box from '@mui/material/Box';
-import { AccountInfo } from './types';
 import { Button, DialogContent, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
 import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
+import { AccountInfo } from '@app/types/ootle';
 
 interface SelectAccountProps {
     onSubmit: (name: string) => void;

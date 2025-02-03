@@ -9,8 +9,8 @@ import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Stack } from '@app/components/elements/Stack';
 import { CardContainer, ConnectionIcon } from '../../components/Settings.styles';
 import { CardComponent } from '../../components/Card.component';
-import { AccountInfo, OotleAccount } from './types';
 import SelectAccount from './SelectOotleAccount';
+import { AccountInfo, OotleAccount } from '@app/types/ootle';
 
 const OotleWalletBalance = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
