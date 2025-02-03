@@ -112,6 +112,11 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default = "default_true")]
+    ootle_enabled: bool,
+    // enable localnet: check binaries and run base node + Ootle locally
+    #[serde(default = "default_false")]
+    ootle_localnet_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -154,6 +159,8 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            ootle_enabled: true,
+            ootle_localnet_enabled: false,
         }
     }
 }
@@ -267,6 +274,8 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    ootle_enabled: bool,
+    ootle_localnet_enabled: bool,
 }
 
 impl AppConfig {
@@ -312,6 +321,8 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            ootle_enabled: true,
+            ootle_localnet_enabled: false,
         }
     }
 
@@ -389,6 +400,7 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.ootle_enabled = config.ootle_enabled;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -745,6 +757,29 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn ootle_enabled(&self) -> bool {
+        self.ootle_enabled
+    }
+
+    pub async fn set_ootle_enabled(&mut self, ootle_enabled: bool) -> Result<(), anyhow::Error> {
+        self.ootle_enabled = ootle_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn ootle_localnet_enabled(&self) -> bool {
+        self.ootle_localnet_enabled
+    }
+
+    pub async fn set_ootle_localnet_enabled(
+        &mut self,
+        ootle_localnet_enabled: bool,
+    ) -> Result<(), anyhow::Error> {
+        self.ootle_localnet_enabled = ootle_localnet_enabled;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -792,6 +827,8 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            ootle_enabled: self.ootle_enabled,
+            ootle_localnet_enabled: self.ootle_localnet_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

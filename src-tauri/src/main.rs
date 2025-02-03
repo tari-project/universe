@@ -24,16 +24,25 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR};
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
+use indexer_manager::{IndexerConfig, IndexerManager};
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
+use ootle::tapplet_server::start;
+use ootle::{
+    setup_ootle_wallet, setup_tokens, AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
+};
 use p2pool::models::Connections;
+use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use tauri_plugin_cli::CliExt;
+use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use validator_node_manager::{ValidatorNodeConfig, ValidatorNodeManager};
 use wallet_adapter::WalletBalance;
 
 use log4rs::config::RawConfig;
@@ -89,6 +98,7 @@ mod commands;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
+mod database;
 mod download_utils;
 mod external_dependencies;
 mod feedback;
@@ -96,12 +106,16 @@ mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
 mod hardware;
+mod indexer_adapter;
+mod indexer_manager;
+mod interface;
 mod internal_wallet;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
 mod node_adapter;
 mod node_manager;
+mod ootle;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -113,12 +127,15 @@ mod process_watcher;
 mod progress_tracker;
 mod setup_status_event;
 mod telemetry_manager;
+mod telemetry_service;
 mod tests;
 mod tor_adapter;
 mod tor_manager;
 mod updates_manager;
 mod user_listener;
 mod utils;
+mod validator_node_adapter;
+mod validator_node_manager;
 mod wallet_adapter;
 mod wallet_manager;
 mod xmrig;
@@ -197,6 +214,10 @@ async fn setup_inner(
         .app_config_dir()
         .expect("Could not get config dir");
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .expect("Could not get app data dir");
 
     #[cfg(target_os = "windows")]
     if cfg!(target_os = "windows") && !cfg!(dev) {
@@ -236,6 +257,16 @@ async fn setup_inner(
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
 
+    let _unused = state
+        .gpu_miner
+        .write()
+        .await
+        .detect(config_dir.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
+
+    HardwareStatusMonitor::current().initialize().await?;
+
     state
         .telemetry_manager
         .write()
@@ -243,13 +274,43 @@ async fn setup_inner(
         .initialize(state.airdrop_access_token.clone(), window.clone())
         .await?;
 
+    let mut telemetry_id = state
+        .telemetry_manager
+        .read()
+        .await
+        .get_unique_string()
+        .await;
+    if telemetry_id.is_empty() {
+        telemetry_id = "unknown_miner_tari_universe".to_string();
+    }
+
+    let app_version = app.package_info().version.clone();
+    state
+        .telemetry_service
+        .write()
+        .await
+        .init(app_version.to_string(), telemetry_id.clone())
+        .await?;
+    let telemetry_service = state.telemetry_service.clone();
+    let telemetry_service = &telemetry_service.read().await;
+
     let mut binary_resolver = BinaryResolver::current().write().await;
-    let should_check_for_update = now
-        .duration_since(last_binaries_update_timestamp)
-        .unwrap_or(Duration::from_secs(0))
-        > Duration::from_secs(60 * 60 * 6);
+    // let should_check_for_update = now
+    //     .duration_since(last_binaries_update_timestamp)
+    //     .unwrap_or(Duration::from_secs(0))
+    //     > Duration::from_secs(60 * 60 * 6);
+    let should_check_for_update = false; // TODO tmp solution
 
     if use_tor && !cfg!(target_os = "macos") {
+        telemetry_service
+            .send(
+                "checking-latest-version-tor".to_string(),
+                json!({
+                    "service": "tor_manager",
+                    "percentage": 0,
+                }),
+            )
+            .await?;
         progress.set_max(5).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
@@ -265,6 +326,15 @@ async fn setup_inner(
         sleep(Duration::from_secs(1));
     }
 
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-node".to_string(),
+            json!({
+                "service": "node_manager",
+                "percentage": 5,
+            }),
+        )
+        .await;
     progress.set_max(10).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
@@ -279,6 +349,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-mmproxy".to_string(),
+            json!({
+                "service": "mmproxy",
+                "percentage": 10,
+            }),
+        )
+        .await;
     progress.set_max(15).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
@@ -293,6 +372,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-wallet".to_string(),
+            json!({
+                "service": "wallet",
+                "percentage": 15,
+            }),
+        )
+        .await;
     progress.set_max(20).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
@@ -307,6 +395,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-gpuminer".to_string(),
+            json!({
+                "service": "gpuminer",
+                "percentage":20,
+            }),
+        )
+        .await;
     progress.set_max(25).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
@@ -321,6 +418,15 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-xmrig".to_string(),
+            json!({
+                "service": "xmrig",
+                "percentage":25,
+            }),
+        )
+        .await;
     progress.set_max(30).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
@@ -335,7 +441,16 @@ async fn setup_inner(
         .await?;
     sleep(Duration::from_secs(1));
 
-    progress.set_max(35).await;
+    let _unused = telemetry_service
+        .send(
+            "checking-latest-version-sha-p2pool".to_string(),
+            json!({
+                "service": "sha_p2pool",
+                "percentage":30,
+            }),
+        )
+        .await;
+    progress.set_max(32).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -348,8 +463,43 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
+    if state.config.read().await.ootle_localnet_enabled() {
+        //TODO tari validator node binary
+        // should check for update - for now is set to false because of local build
+        progress.set_max(34).await;
+        progress
+            .update(
+                "checking-latest-version-tari-validator-node".to_string(),
+                None,
+                0,
+            )
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(
+                Binaries::TariValidatorNode,
+                progress.clone(),
+                false,
+                rx.clone(),
+            )
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
+
+        //TODO tari ootle indexer binary
+        // should check for update - for now is set to false because of local build
+        progress.set_max(36).await;
+        progress
+            .update("checking-latest-version-tari-indexer".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(Binaries::TariIndexer, progress.clone(), false, rx.clone())
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
+    }
 
     if should_check_for_update {
+        info!(target: LOG_TARGET, "🚀 Check update binary");
         state
             .config
             .write()
@@ -357,19 +507,14 @@ async fn setup_inner(
             .set_last_binaries_update_timestamp(now)
             .await?;
     }
-
+    info!(target: LOG_TARGET, "🚀 Check update binary done");
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
-    let _unused = state
-        .gpu_miner
-        .write()
-        .await
-        .detect(config_dir.clone())
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
-
-    HardwareStatusMonitor::current().initialize().await?;
+    progress.set_max(37).await;
+    progress
+        .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
+        .await;
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
@@ -384,7 +529,16 @@ async fn setup_inner(
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
-    progress.set_max(37).await;
+    let _unused = telemetry_service
+        .send(
+            "waiting-for-tor-to-start".to_string(),
+            json!({
+                "service": "tor_manager",
+                "percentage":37,
+            }),
+        )
+        .await;
+    progress.set_max(38).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -407,7 +561,16 @@ async fn setup_inner(
                     if code == 114 {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
-                        progress.set_max(38).await;
+                        let _unused = telemetry_service
+                            .send(
+                                "resetting-minotari-node-database".to_string(),
+                                json!({
+                                    "service": "minotari_node",
+                                    "percentage":37,
+                                }),
+                            )
+                            .await;
+                        progress.set_max(39).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -437,15 +600,42 @@ async fn setup_inner(
         )
         .await?;
 
+    let _unused = telemetry_service
+        .send(
+            "wallet-started".to_string(),
+            json!({
+                "service": "wallet",
+                "percentage":40,
+            }),
+        )
+        .await;
     progress.set_max(45).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
         .await;
+    let _unused = telemetry_service
+        .send(
+            "preparing-for-initial-sync".to_string(),
+            json!({
+                "service": "initial_sync",
+                "percentage":45,
+            }),
+        )
+        .await;
     progress.set_max(75).await;
     state.node_manager.wait_synced(progress.clone()).await?;
 
     if state.config.read().await.p2pool_enabled() {
+        let _unused = telemetry_service
+            .send(
+                "starting-p2pool".to_string(),
+                json!({
+                    "service": "starting_p2pool",
+                    "percentage":75,
+                }),
+            )
+            .await;
         progress.set_max(85).await;
         progress
             .update("starting-p2pool".to_string(), None, 0)
@@ -456,6 +646,7 @@ async fn setup_inner(
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
             .build()?;
+        info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT p2p {:?}", &base_node_grpc);
 
         state
             .p2pool_manager
@@ -469,22 +660,126 @@ async fn setup_inner(
             .await?;
     }
 
+    let _unused = telemetry_service
+        .send(
+            "starting-mmproxy".to_string(),
+            json!({
+                "service": "starting_mmproxy",
+                "percentage":85,
+            }),
+        )
+        .await;
+
+    //TODO RUN OOTLE
+    if state.config.read().await.ootle_enabled() {
+        progress.set_max(90).await;
+        progress.update("starting-ootle".to_string(), None, 0).await;
+
+        // run localnet
+        if state.config.read().await.ootle_localnet_enabled() {
+            let base_node_grpc = state.node_manager.get_grpc_port().await?;
+            info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT VN {:?}", &base_node_grpc);
+            let validator_node_config = ValidatorNodeConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(&data_dir)
+                .build()?;
+            let tcp_port = state.node_manager.get_tcp_listener_port().await;
+            info!(target: LOG_TARGET, "🌐 Base Node TCP {:?}", &tcp_port);
+
+            state
+                .validator_node_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    validator_node_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+
+            let indexer_config = IndexerConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(data_dir.clone())
+                .build()?;
+
+            state
+                .indexer_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    indexer_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+        }
+
+        let app_handle_clone = app.clone();
+        let data_dir_clone = data_dir.clone();
+        let log_dir_clone = log_dir.clone();
+        let config_dir_clone = config_dir.clone();
+        let db_path = app_data_dir.join(DB_FILE_NAME);
+
+        app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
+            database::establish_connection(db_path.to_str().unwrap()),
+        ))));
+        info!(target: LOG_TARGET, "🚀 DB connection established successfully");
+
+        app.manage(Tokens {
+            auth: std::sync::Mutex::new("".to_string()),
+            permission: std::sync::Mutex::new("".to_string()),
+        });
+        app.manage(ShutdownTokens::default());
+        let thread_tokens = tauri::async_runtime::spawn(async move {
+            setup_tokens(app_handle_clone)
+                .await
+                .inspect_err(|e| error!(target: LOG_TARGET, "Could not set tokens: {:?}", e))
+                .map_err(|e| e.to_string())
+        });
+        let _ = thread_tokens
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
+            .map_err(|e| e.to_string());
+
+        let thread_ootle = tauri::async_runtime::spawn(async move {
+            setup_ootle_wallet(data_dir_clone, log_dir_clone, config_dir_clone)
+                .await
+                .inspect_err(
+                    |e| error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e),
+                )
+                .map_err(|e| e.to_string())
+        });
+        let _ = thread_ootle
+            .await
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e),
+            )
+            .map_err(|e| e.to_string());
+
+        let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
+        let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
+        app.manage(AssetServer { addr, cancel_token });
+        let _unused = telemetry_service
+            .send(
+                "starting-ootle".to_string(),
+                json!({
+                    "service": "starting-ootle",
+                    "percentage":90,
+                }),
+            )
+            .await;
+    }
+
     progress.set_max(100).await;
     progress
         .update("starting-mmproxy".to_string(), None, 0)
         .await;
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
-
-    let mut telemetry_id = state
-        .telemetry_manager
-        .read()
-        .await
-        .get_unique_string()
-        .await;
-    if telemetry_id.is_empty() {
-        telemetry_id = "unknown_miner_tari_universe".to_string();
-    }
 
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
@@ -505,6 +800,15 @@ async fn setup_inner(
         .await?;
     mm_proxy_manager.wait_ready().await?;
     *state.is_setup_finished.write().await = true;
+    let _unused = telemetry_service
+        .send(
+            "setup-finished".to_string(),
+            json!({
+                "service": "setup_finished",
+                "percentage":100,
+            }),
+        )
+        .await;
     drop(
         app.clone()
             .emit(
@@ -536,38 +840,39 @@ async fn setup_inner(
         }
     });
 
-    let app_handle_clone: tauri::AppHandle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let mut interval: time::Interval = time::interval(Duration::from_secs(30));
-        let mut has_send_error = false;
+    // TODO disable orphan checker for localnet
+    // let app_handle_clone: tauri::AppHandle = app.clone();
+    // tauri::async_runtime::spawn(async move {
+    //     let mut interval: time::Interval = time::interval(Duration::from_secs(30));
+    //     let mut has_send_error = false;
 
-        loop {
-            let state = app_handle_clone.state::<UniverseAppState>().inner();
-            if state.shutdown.is_triggered() {
-                break;
-            }
+    //     loop {
+    //         let state = app_handle_clone.state::<UniverseAppState>().inner();
+    //         if state.shutdown.is_triggered() {
+    //             break;
+    //         }
 
-            interval.tick().await;
-            let check_if_orphan = state
-                .node_manager
-                .check_if_is_orphan_chain(!has_send_error)
-                .await;
-            match check_if_orphan {
-                Ok(is_stuck) => {
-                    if is_stuck {
-                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                    }
-                    if is_stuck && !has_send_error {
-                        has_send_error = true;
-                    }
-                    drop(app_handle_clone.emit("is_stuck", is_stuck));
-                }
-                Err(ref e) => {
-                    error!(target: LOG_TARGET, "{}", e);
-                }
-            }
-        }
-    });
+    //         interval.tick().await;
+    //         let check_if_orphan = state
+    //             .node_manager
+    //             .check_if_is_orphan_chain(!has_send_error)
+    //             .await;
+    //         match check_if_orphan {
+    //             Ok(is_stuck) => {
+    //                 if is_stuck {
+    //                     error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+    //                 }
+    //                 if is_stuck && !has_send_error {
+    //                     has_send_error = true;
+    //                 }
+    //                 drop(app_handle_clone.emit("is_stuck", is_stuck));
+    //             }
+    //             Err(ref e) => {
+    //                 error!(target: LOG_TARGET, "{}", e);
+    //             }
+    //         }
+    //     }
+    // });
 
     Ok(())
 }
@@ -594,6 +899,7 @@ struct UniverseAppState {
     node_manager: NodeManager,
     wallet_manager: WalletManager,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
+    telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
     airdrop_access_token: Arc<RwLock<Option<String>>>,
     p2pool_manager: P2poolManager,
@@ -602,6 +908,9 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     cached_miner_metrics: Arc<RwLock<Option<MinerMetrics>>>,
     setup_counter: Arc<RwLock<AutoRollback<bool>>>,
+    tokens: Arc<RwLock<Tokens>>,                  //TODO
+    validator_node_manager: ValidatorNodeManager, //TODO
+    indexer_manager: IndexerManager,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -638,6 +947,8 @@ fn main() {
     let wallet_manager2 = wallet_manager.clone();
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx);
+    let validator_node_manager = ValidatorNodeManager::new();
+    let indexer_manager = IndexerManager::new();
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -668,7 +979,11 @@ fn main() {
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
     );
-
+    let telemetry_service = TelemetryService::new(
+        app_config_raw.anon_id().to_string(),
+        app_config.clone(),
+        app_in_memory_config.clone(),
+    );
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
@@ -696,6 +1011,7 @@ fn main() {
         wallet_manager,
         p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
+        telemetry_service: Arc::new(RwLock::new(telemetry_service)),
         feedback: Arc::new(RwLock::new(feedback)),
         airdrop_access_token: Arc::new(RwLock::new(None)),
         tor_manager: TorManager::new(),
@@ -703,6 +1019,12 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         cached_miner_metrics: Arc::new(RwLock::new(None)),
         setup_counter: Arc::new(RwLock::new(AutoRollback::new(false))),
+        tokens: Arc::new(RwLock::new(Tokens {
+            auth: std::sync::Mutex::new("".to_string()),
+            permission: std::sync::Mutex::new("".to_string()),
+        })),
+        validator_node_manager,
+        indexer_manager,
     };
 
     let app_state2 = app_state.clone();
@@ -721,6 +1043,7 @@ fn main() {
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             let config_path = app
                 .path()
@@ -790,13 +1113,13 @@ fn main() {
                 // They may not exist. This could be first run.
                 if node_peer_db.exists() {
                     if let Err(e) = remove_dir_all(node_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(target: LOG_TARGET, "Could not clear node peer data folder: {}", e);
                     }
                 }
 
                 if wallet_peer_db.exists() {
                     if let Err(e) = remove_dir_all(wallet_peer_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                        warn!(target: LOG_TARGET, "Could not clear wallet peer data folder: {}", e);
                     }
                 }
 
@@ -901,6 +1224,7 @@ fn main() {
             commands::send_feedback,
             commands::set_airdrop_access_token,
             commands::set_allow_telemetry,
+            commands::send_data_telemetry_service,
             commands::set_application_language,
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
@@ -931,6 +1255,23 @@ fn main() {
             commands::try_update,
             commands::get_network,
             commands::sign_ws_data,
+            commands::fetch_registered_tapplets,
+            commands::launch_tapplet,
+            commands::insert_tapp_registry_db,
+            commands::read_tapp_registry_db,
+            commands::get_assets_server_addr,
+            commands::download_and_extract_tapp,
+            commands::insert_installed_tapp_db,
+            commands::read_installed_tapp_db,
+            commands::update_installed_tapp_db,
+            commands::delete_installed_tapplet,
+            commands::add_dev_tapplet,
+            commands::read_dev_tapplets,
+            commands::delete_dev_tapplet,
+            commands::call_wallet,
+            commands::update_installed_tapplet,
+            commands::set_ootle_localnet_enabled,
+            commands::upload_wasm_file
         ])
         .build(tauri::generate_context!())
         .inspect_err(

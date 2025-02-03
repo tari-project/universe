@@ -123,6 +123,8 @@
     "experimental": "Experimental",
     "general": "General",
     "mining": "Mining",
+    "ootle": "Tari Ootle",
+    "ootleWallet": "Tari Ootle Wallet",
     "p2p": "Pool Mining",
     "releaseNotes": "Release Notes",
     "very_experimental": "Very Experimental",

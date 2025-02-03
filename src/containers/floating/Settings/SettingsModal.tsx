@@ -17,9 +17,11 @@ import {
     ExperimentalSettings,
     GeneralSettings,
     MiningSettings,
+    OotleSettings,
     PoolMiningSettings,
     WalletSettings,
     ReleaseNotes,
+    OotleWalletSettings,
 } from './sections';
 
 import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
@@ -33,6 +35,8 @@ const markups = {
     airdrop: <AirdropSettings />,
     experimental: <ExperimentalSettings />,
     releaseNotes: <ReleaseNotes />,
+    ootle: <OotleSettings />,
+    ootleWallet: <OotleWalletSettings />,
 };
 
 export default function SettingsModal() {

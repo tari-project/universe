@@ -25,6 +25,7 @@ use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
+use crate::process_utils::retry_with_backoff;
 use crate::{
     app_config::{AppConfig, MiningMode},
     cpu_miner::CpuMiner,
@@ -41,9 +42,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::Digest;
 use std::collections::HashMap;
-use std::future::Future;
 use std::ops::Div;
-use std::pin::Pin;
 use std::{sync::Arc, thread::sleep, time::Duration};
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
@@ -675,41 +674,4 @@ async fn send_telemetry_data(
         return Ok(Some(data));
     }
     Ok(None)
-}
-
-async fn retry_with_backoff<T, R, E>(
-    mut f: T,
-    increment_in_secs: u64,
-    max_retries: u64,
-    operation_name: &str,
-) -> anyhow::Result<R>
-where
-    T: FnMut() -> Pin<Box<dyn Future<Output = Result<R, E>> + Send>>,
-    E: std::error::Error,
-{
-    let range_size = increment_in_secs * max_retries + 1;
-
-    for i in (0..range_size).step_by(usize::try_from(increment_in_secs)?) {
-        tokio::time::sleep(Duration::from_secs(i)).await;
-
-        let result = f().await;
-        match result {
-            Ok(res) => return Ok(res),
-            Err(e) => {
-                if i == range_size - 1 {
-                    return Err(anyhow::anyhow!(
-                        "Max retries reached, {} failed. Last error: {:?}",
-                        operation_name,
-                        e
-                    ));
-                } else {
-                    warn!(target: LOG_TARGET, "Retrying {} due to failure: {:?}", operation_name, e);
-                }
-            }
-        }
-    }
-    Err(anyhow::anyhow!(
-        "Max retries reached, {} failed without capturing error",
-        operation_name
-    ))
 }

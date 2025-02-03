@@ -35,6 +35,8 @@ interface Actions {
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
+    setOotleMode: (enabled: boolean) => void;
+    setLocalTariIndexer: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -65,6 +67,8 @@ const initialState: State = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
+    ootle_enabled: false,
+    local_tari_indexer: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) => ({
@@ -310,6 +314,19 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set, getState) =
             console.error('Could not set pre release', e);
             appStateStore.setError('Could not change pre release');
             set({ pre_release: !preRelease });
+        });
+    },
+    setOotleMode: (enabled) => {
+        set({ ootle_enabled: enabled });
+    },
+    setLocalTariIndexer: async (enabled) => {
+        console.info('setlocalootle', enabled);
+        set({ local_tari_indexer: enabled });
+        invoke('set_ootle_localnet_enabled', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set ootle localnet enabled', e);
+            appStateStore.setError('Could not change ootle localnet enabled');
+            set({ local_tari_indexer: !enabled });
         });
     },
 }));

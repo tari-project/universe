@@ -36,7 +36,7 @@ use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct StartConfig {
     pub app_shutdown: ShutdownSignal,
     pub base_path: PathBuf,
@@ -110,19 +110,20 @@ impl MmProxyManager {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
-
+        let new_port = PortAllocator::new().assign_port_with_fallback();
         let new_config = MergeMiningProxyConfig {
             tari_address: config.tari_address.clone(),
             base_node_grpc_port: config.base_node_grpc_port,
             coinbase_extra: config.coinbase_extra.clone(),
             p2pool_enabled: config.p2pool_enabled,
-            port: PortAllocator::new().assign_port_with_fallback(),
+            port: new_port,
             p2pool_grpc_port: config.p2pool_port,
             monero_nodes: config.monero_nodes.clone(),
             use_monero_fail: config.use_monero_fail,
         };
         process_watcher.adapter.config = Some(new_config.clone());
-        info!(target: LOG_TARGET, "Starting mmproxy");
+        info!(target: LOG_TARGET, "👨‍🔧 --- Starting mmproxy");
+        info!(target: LOG_TARGET, "👨‍🔧 --- Starting mmproxy with config {:?} | {:?}", &new_port, &config);
         process_watcher
             .start(
                 config.app_shutdown,

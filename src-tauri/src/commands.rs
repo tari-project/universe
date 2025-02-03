@@ -26,17 +26,45 @@ use crate::app_in_memory_config::{
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::consts::{TAPPLET_ARCHIVE, TAPPLET_DIST_DIR};
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::database::models::{
+    CreateDevTapplet, CreateInstalledTapplet, CreateTapplet, CreateTappletAsset,
+    CreateTappletVersion, DevTapplet, InstalledTapplet, Tapplet, UpdateInstalledTapplet,
+};
+use crate::database::store::{SqliteStore, Store};
+use crate::download_utils::{download_file_with_retries, extract};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use crate::indexer_manager::IndexerConfig;
+use crate::interface::{
+    ActiveTapplet, DevTappletResponse, InstalledTappletWithName, TappletPermissions,
+};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+
+use crate::ootle::{
+    error,
+    error::{
+        Error::{self, RequestError, TappletServerError},
+        RequestError::*,
+        TappletServerError::*,
+    },
+    rpc::make_request,
+    tapplet_installer::{
+        check_files_and_validate_checksum, delete_tapplet, download_asset,
+        fetch_tapp_registry_manifest, get_tapp_download_path, get_tapp_permissions,
+    },
+    tapplet_server::start,
+    AssetServer, DatabaseConnection, ShutdownTokens, Tokens,
+};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
+use crate::validator_node_manager::ValidatorNodeConfig;
 use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::{node_adapter, setup_inner, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -47,8 +75,10 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use std::fmt::Debug;
-use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::fs::{self, read_dir, remove_dir_all, remove_file, File};
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
@@ -567,6 +597,7 @@ pub async fn get_p2pool_connections(
     state
         .is_getting_p2pool_connections
         .store(false, Ordering::SeqCst);
+    info!(target: LOG_TARGET, "✅ get_p2pool_connections: {:?}", &p2pool_connections);
     Ok(p2pool_connections)
 }
 
@@ -820,8 +851,15 @@ pub async fn reset_settings<'r>(
         error!(target: LOG_TARGET, "Could not get app directories for {:?}", valid_dir_paths);
         return Err("Could not get app directories".to_string());
     }
-    // Exclude EBWebView because it is still being used.
-    let folder_block_list = ["EBWebView"];
+    let mut folder_block_list = Vec::new();
+    folder_block_list.push("EBWebView");
+
+    let mut files_block_list = Vec::new();
+
+    if !reset_wallet {
+        folder_block_list.push("wallet");
+        files_block_list.push("credentials_backup.bin");
+    }
 
     for dir_path in dirs_to_remove.iter().flatten() {
         if dir_path.exists() {
@@ -866,6 +904,13 @@ pub async fn reset_settings<'r>(
                         format!("Could not remove directory: {}", e)
                     })?;
                 } else {
+                    if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
+                        if files_block_list.contains(&file_name) {
+                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
+                            continue;
+                        }
+                    }
+
                     debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
@@ -876,9 +921,11 @@ pub async fn reset_settings<'r>(
         }
     }
 
-    debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
-    if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
-        let _unused = entry.delete_credential();
+    if reset_wallet {
+        debug!(target: LOG_TARGET, "[reset_settings] Removing keychain items");
+        if let Ok(entry) = Entry::new(APPLICATION_FOLDER_ID, "inner_wallet_credentials") {
+            let _unused = entry.delete_credential();
+        }
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
@@ -968,6 +1015,23 @@ pub async fn set_allow_telemetry(
         .set_allow_telemetry(allow_telemetry)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_data_telemetry_service(
+    state: tauri::State<'_, UniverseAppState>,
+    event_name: String,
+    data: Value,
+) -> Result<(), String> {
+    state
+        .telemetry_service
+        .read()
+        .await
+        .send(event_name, data)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at send_data_telemetry_service {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1216,6 +1280,7 @@ pub async fn set_p2pool_enabled(
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
 
+    info!(target: LOG_TARGET, "👨‍🔧 --------------- P2P ORIGIN CONFIG {:?}", &origin_config);
     match origin_config {
         None => {
             warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
@@ -1232,6 +1297,7 @@ pub async fn set_p2pool_enabled(
                         .await
                         .map_err(|error| error.to_string())?;
                     origin_config.set_to_use_base_node(base_node_grpc_port);
+                    info!(target: LOG_TARGET, "👨‍🔧 --- P2P DISABLED | GRPC BASE NODE {:?}", &base_node_grpc_port);
                 }
                 state
                     .mm_proxy_manager
@@ -1446,7 +1512,7 @@ pub async fn start_mining<'r>(
             .get_monero_port()
             .await
             .map_err(|e| e.to_string())?;
-
+        info!(target: LOG_TARGET, "👨‍🔧 --- mm_proxy_port {:?}", &mm_proxy_port);
         let res = state
             .cpu_miner
             .write()
@@ -1711,5 +1777,565 @@ pub async fn proceed_with_update(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn launch_tapplet(
+    installed_tapplet_id: i32,
+    shutdown_tokens: tauri::State<'_, ShutdownTokens>,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<ActiveTapplet, String> {
+    let mut locked_tokens = shutdown_tokens.0.lock().await;
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    let (_installed_tapp, registered_tapp, tapp_version) = store
+        .get_installed_tapplet_full_by_id(installed_tapplet_id)
+        .map_err(|e| e.to_string())?;
+    // get download path
+    let version = tapp_version.clone().version;
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.registry_id,
+        version.clone(),
+        app_handle.clone(),
+    )
+    .map_err(|e| e.to_string())?;
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+
+    // Extract the tapplet archieve each time before launching
+    // This way make sure that local files have not been replaced and are not malicious
+    let _ = extract(&file_path, &tapplet_path.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"❌ Error validating checksum: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+
+    let permissions: TappletPermissions = match get_tapp_permissions(tapplet_path.clone()) {
+        Ok(p) => p,
+        Err(e) => {
+            error!(target: LOG_TARGET,"Error getting permissions: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    let dist_path = tapplet_path.join(TAPPLET_DIST_DIR);
+    let handle_start = tauri::async_runtime::spawn(async move { start(dist_path).await });
+
+    let (addr, cancel_token) = match handle_start.await {
+        Ok(result) => result.map_err(|e| e.to_string())?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    match locked_tokens.insert(installed_tapplet_id.clone(), cancel_token) {
+        Some(_) => {
+            return Err(TappletServerError(AlreadyRunning)).map_err(|e| e.to_string())?;
+        }
+        None => {}
+    }
+
+    Ok(ActiveTapplet {
+        tapplet_id: installed_tapplet_id,
+        display_name: registered_tapp.display_name,
+        source: format!("http://{}", addr),
+        version,
+        permissions,
+    })
+}
+
+/**
+ *  REGISTERED TAPPLETS - FETCH DATA FROM MANIFEST JSON
+ */
+#[tauri::command]
+pub async fn fetch_registered_tapplets(
+    app_handle: tauri::AppHandle,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<(), String> {
+    let tapplets = match fetch_tapp_registry_manifest().await {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+
+    for tapplet_manifest in tapplets.registered_tapplets.values() {
+        let inserted_tapplet = store
+            .create(&CreateTapplet::from(tapplet_manifest))
+            .map_err(|e| e.to_string())?;
+
+        // TODO uncomment if audit data in manifest
+        // for audit_data in tapplet_manifest.metadata.audits.iter() {
+        //   store.create(
+        //     &(CreateTappletAudit {
+        //       tapplet_id: inserted_tapplet.id,
+        //       auditor: &audit_data.auditor,
+        //       report_url: &audit_data.report_url,
+        //     })
+        //   )?;
+        // }
+
+        for (version, version_data) in tapplet_manifest.versions.iter() {
+            let _ = store
+                .create(
+                    &(CreateTappletVersion {
+                        tapplet_id: inserted_tapplet.id,
+                        version: &version,
+                        integrity: &version_data.integrity,
+                        registry_url: &version_data.registry_url,
+                    }),
+                )
+                .map_err(|e| e.to_string());
+        }
+        match store.get_tapplet_assets_by_tapplet_id(inserted_tapplet.id.unwrap()) {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                match download_asset(app_handle.clone(), inserted_tapplet.registry_id).await {
+                    Ok(tapplet_assets) => {
+                        let _ = store
+                            .create(
+                                &(CreateTappletAsset {
+                                    tapplet_id: inserted_tapplet.id,
+                                    icon_url: &tapplet_assets.icon_url,
+                                    background_url: &tapplet_assets.background_url,
+                                }),
+                            )
+                            .map_err(|e| e.to_string());
+                    }
+                    Err(e) => {
+                        error!(target: LOG_TARGET, "Could not download tapplet assets: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                return Err(e.to_string());
+            }
+        }
+    }
+    Ok(())
+}
+
+/**
+ * TAPPLETS REGISTRY - STORES ALL REGISTERED TAPPLETS IN THE TARI UNIVERSE
+ */
+
+#[tauri::command]
+pub fn insert_tapp_registry_db(
+    tapplet: CreateTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.create(&tapplet).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_tapp_registry_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<Tapplet>, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<String, String> {
+    Ok(format!("http://{}", state.addr))
+}
+
+#[tauri::command]
+pub async fn download_and_extract_tapp(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app: tauri::AppHandle,
+) -> Result<Tapplet, String> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    // let (tapp, tapp_version) = tapplet_store.get_registered_tapplet_with_version(tapplet_id);
+    let (tapp, tapp_version) = match tapplet_store.get_registered_tapplet_with_version(tapplet_id) {
+        Ok(tapp) => tapp,
+        Err(e) => {
+            return Err(e.to_string());
+        }
+    };
+
+    // get download path
+    let tapplet_path = get_tapp_download_path(
+        tapp.registry_id.clone(),
+        tapp_version.version.clone(),
+        app.clone(),
+    )
+    .unwrap_or_default();
+    // download tarball
+    let url = tapp_version.registry_url.clone();
+    let file_path = tapplet_path.join(TAPPLET_ARCHIVE);
+    let destination_dir = file_path.clone();
+    let progress_tracker = ProgressTracker::new(app.clone(), None);
+    let handle_download = tauri::async_runtime::spawn(async move {
+        download_file_with_retries(&url, &destination_dir, progress_tracker).await
+    });
+    let _ = handle_download
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error downloading file: {:?}", e))
+        .map_err(|_| {
+            Error::RequestError(FailedToDownload {
+                url: tapp_version.registry_url.clone(),
+            })
+        });
+
+    let _ = extract(&file_path, &tapplet_path.clone())
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error extracting file: {:?}", e));
+    //TODO should compare integrity field with the one stored in db or from github manifest?
+    match check_files_and_validate_checksum(tapp_version, tapplet_path.clone()) {
+        Ok(is_valid) => {
+            info!(target: LOG_TARGET,"✅ Checksum validation successfully with test result: {:?}", is_valid);
+        }
+        Err(e) => {
+            error!(target: LOG_TARGET,"🚨 Error validating checksum: {:?}", e);
+            return Err(e.to_string());
+        }
+    }
+    Ok(tapp)
+}
+
+/**
+ * INSTALLED TAPPLETS - STORES ALL THE USER'S INSTALLED TAPPLETS
+ */
+
+#[tauri::command]
+pub fn insert_installed_tapp_db(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<InstalledTapplet, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let (tapp, version_data) = tapplet_store.get_registered_tapplet_with_version(tapplet_id)?;
+
+    let installed_tapplet = CreateInstalledTapplet {
+        tapplet_id: tapp.id,
+        tapplet_version_id: version_data.id,
+    };
+    tapplet_store.create(&installed_tapplet)
+}
+
+#[tauri::command]
+pub fn read_installed_tapp_db(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    tapplet_store.get_installed_tapplets_with_display_name()
+}
+
+#[tauri::command]
+pub fn update_installed_tapp_db(
+    tapplet: UpdateInstalledTapplet,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut tapplet_store = SqliteStore::new(db_connection.0.clone());
+    let tapplets: Vec<InstalledTapplet> = tapplet_store.get_all()?;
+    let first: InstalledTapplet = tapplets.into_iter().next().unwrap();
+    tapplet_store.update(first, &tapplet)
+}
+
+#[tauri::command]
+pub fn delete_installed_tapplet(
+    tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let (_installed_tapp, registered_tapp, tapp_version) =
+        store.get_installed_tapplet_full_by_id(tapplet_id)?;
+    let tapplet_path = get_tapp_download_path(
+        registered_tapp.registry_id,
+        tapp_version.version,
+        app_handle,
+    )
+    .unwrap();
+    delete_tapplet(tapplet_path)?;
+
+    let installed_tapplet: InstalledTapplet = store.get_by_id(tapplet_id)?;
+    store.delete(installed_tapplet)
+}
+
+#[tauri::command]
+pub async fn update_installed_tapplet(
+    tapplet_id: i32,
+    installed_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+    app_handle: tauri::AppHandle,
+) -> Result<Vec<InstalledTappletWithName>, Error> {
+    let _ = delete_installed_tapplet(
+        installed_tapplet_id,
+        db_connection.clone(),
+        app_handle.clone(),
+    )
+    .inspect_err(|e| error!("❌ Delete installed tapplet from db error: {:?}", e));
+
+    let _ = download_and_extract_tapp(tapplet_id, db_connection.clone(), app_handle.clone())
+        .await
+        .inspect_err(|e| error!("❌ Download and extract tapplet process error: {:?}", e));
+
+    let _ = insert_installed_tapp_db(tapplet_id, db_connection.clone())
+        .inspect_err(|e| error!("❌ Insert installed tapplet to db error: {:?}", e));
+
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let installed_tapplets = store.get_installed_tapplets_with_display_name().unwrap();
+
+    return Ok(installed_tapplets);
+}
+
+#[tauri::command]
+pub async fn add_dev_tapplet(
+    endpoint: String,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<DevTapplet, Error> {
+    let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
+    // let config_endpoint = format!("{}/tapplet.config.json", endpoint); TODO
+    info!(
+        "🌟 Add dev tapplet to db endpoint: {:?}",
+        &manifest_endpoint
+    );
+    let tapp_manifest = reqwest::get(&manifest_endpoint)
+        .await
+        .inspect_err(|e| {
+            error!(
+                "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
+                manifest_endpoint, e
+            )
+        })
+        .map_err(|_| {
+            RequestError(FetchManifestError {
+                endpoint: endpoint.clone(),
+            })
+        })?
+        .json::<DevTappletResponse>()
+        .await
+        .map_err(|_| {
+            RequestError(ManifestResponseError {
+                endpoint: endpoint.clone(),
+            })
+        })?;
+    info!("🌟 Add dev tapplet manifest: {:?}", &tapp_manifest);
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let new_dev_tapplet = CreateDevTapplet {
+        endpoint: &endpoint,
+        package_name: &tapp_manifest.package_name,
+        display_name: &tapp_manifest.display_name,
+    };
+    match store.create(&new_dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet added to db successfully: {:?}", new_dev_tapplet);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while adding dev tapplet (endpoint {:?}) to db: {:?}", endpoint, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub fn read_dev_tapplets(
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<Vec<DevTapplet>, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    store.get_all()
+}
+
+#[tauri::command]
+pub fn delete_dev_tapplet(
+    dev_tapplet_id: i32,
+    db_connection: tauri::State<'_, DatabaseConnection>,
+) -> Result<usize, Error> {
+    let mut store = SqliteStore::new(db_connection.0.clone());
+    let dev_tapplet: DevTapplet = store.get_by_id(dev_tapplet_id)?;
+    // store.delete(dev_tapplet)
+    match store.delete(dev_tapplet) {
+        Ok(dev_tapplet) => {
+            info!(target: LOG_TARGET,"✅ Dev tapplet with id {:?} deleted from db successfully", dev_tapplet_id);
+            Ok(dev_tapplet)
+        }
+        Err(e) => {
+            warn!(target: LOG_TARGET, "❌ Error while deleting dev tapplet id {:?} from db: {:?}", dev_tapplet_id, e);
+            return Err(e);
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn call_wallet(
+    method: String,
+    params: String,
+    tokens: tauri::State<'_, Tokens>,
+) -> Result<serde_json::Value, Error> {
+    let permission_token = tokens
+        .permission
+        .lock()
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+        .map_err(|_| error::Error::FailedToObtainPermissionTokenLock)?
+        .clone();
+    let req_params: serde_json::Value = serde_json::from_str(&params)
+        .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
+        .map_err(|e| error::Error::JsonParsingError(e))
+        .unwrap();
+
+    info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?}", method);
+    match make_request(Some(permission_token), method, req_params, None).await {
+        Ok(res) => Ok(res),
+        Err(e) => {
+            error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);
+            return Err(Error::RequestFailed {
+                message: e.to_string(),
+            });
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn set_ootle_localnet_enabled<'r>(
+    enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE LOCALNET {:?}", enabled);
+    let _lock = state.stop_start_mutex.lock().await;
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_ootle_localnet_enabled(enabled)
+        .await
+        .inspect_err(|e| error!("error at set_ootle_localnet_enabled {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let data_dir = app
+        .path()
+        .app_local_data_dir()
+        .expect("Could not get data dir");
+    let log_dir = app.path().app_log_dir().expect("Could not get log dir");
+
+    if enabled {
+        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE START WITH CONFIG FROM {:?}", &config_dir);
+        info!(target: LOG_TARGET, "🚀 Run ootle with config data dir {:?}", &data_dir);
+
+        let base_node_grpc_port = state
+            .node_manager
+            .get_grpc_port()
+            .await
+            .map_err(|error| error.to_string())?;
+
+        let validator_node_config = ValidatorNodeConfig::builder()
+            .with_base_node(base_node_grpc_port)
+            .with_base_path(&data_dir)
+            .build()
+            .map_err(|error| error.to_string())?;
+        info!(target: LOG_TARGET,"🚨 try VN binary",);
+        state
+            .validator_node_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                validator_node_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+
+        let indexer_config = IndexerConfig::builder()
+            .with_base_node(base_node_grpc_port)
+            .with_base_path(data_dir.clone())
+            .build()
+            .map_err(|error| error.to_string())?;
+        state
+            .indexer_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                indexer_config,
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await
+            .map_err(|error| error.to_string())?;
+
+        info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+    } else {
+        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE STOP",);
+
+        state
+            .validator_node_manager
+            .stop()
+            .await
+            .inspect_err(|e| error!("error at stopping validator node {:?}", e))
+            .ok();
+
+        state
+            .indexer_manager
+            .stop()
+            .await
+            .inspect_err(|e| error!("error at stopping indexer {:?}", e))
+            .ok();
+    }
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+// TODO custom fct because tauri plugin 'upload' fails at some point while sending wasm files
+#[tauri::command]
+pub async fn upload_wasm_file(file: String, app: tauri::AppHandle) -> Result<(), String> {
+    let _progress_tracker = ProgressTracker::new(app.clone(), None); //TODO add if needed?
+    let file_path = PathBuf::from(file);
+    let jrpc_url = "http://localhost:18000"; //TODO get from config
+    let url = format!("{}/upload_template", jrpc_url);
+    let wasm_name = file_path
+        .file_stem()
+        .and_then(|stem| stem.to_str()) // Convert OsStr to Option<&str>
+        .map(|s| s.to_string()) // Convert &str to String
+        .unwrap_or_else(|| String::from("default_name")); // Provide a default value
+
+    warn!(target: LOG_TARGET, "UPLOAD {:?},{:?}", &wasm_name, &url);
+    let file_fs = fs::read(file_path).expect("Failed to read file");
+    let file = reqwest::multipart::Part::bytes(file_fs.clone()).file_name(wasm_name);
+    let form = reqwest::multipart::Form::new().part("file", file);
+
+    let client = reqwest::Client::new();
+    let response = client
+        .post(url)
+        .multipart(form)
+        .send()
+        .await
+        .expect("Failed to send request");
+
+    if !response.status().is_success() {
+        return Err(format!(
+            "Failed to send request. Response status: {:?}",
+            response.status().as_str()
+        ));
+    }
+    //TODO cleanup
+    warn!(target: LOG_TARGET, "UPLOAD SUCCESS STATUS {:?}", response);
     Ok(())
 }

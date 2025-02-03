@@ -120,6 +120,9 @@ impl ProcessAdapter for P2poolAdapter {
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
             }
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
+            }
             _ => {
                 return Err(anyhow!("Unsupported network"));
             }

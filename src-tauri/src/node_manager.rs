@@ -131,6 +131,7 @@ impl NodeManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
+        info!(target: LOG_TARGET, "🔥 MINOTARI NODE CONFIG PATH {:?}", &config_path);
         process_watcher
             .start(
                 app_shutdown,

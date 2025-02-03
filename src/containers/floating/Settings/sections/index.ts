@@ -3,9 +3,11 @@ import { ConnectionsSettings } from './connections/ConnectionsSettings.tsx';
 import { ExperimentalSettings } from './experimental/ExperimentalSettings.tsx';
 import { GeneralSettings } from './general/GeneralSettings.tsx';
 import { MiningSettings } from './mining/MiningSettings.tsx';
+import { OotleSettings } from './ootle/OotleSettings.tsx';
 import { PoolMiningSettings } from './p2p/PoolMiningSettings.tsx';
 import { WalletSettings } from './wallet/WalletSettings.tsx';
 import { ReleaseNotes } from './releaseNotes/ReleaseNotes.tsx';
+import { OotleWalletSettings } from './ootleWallet/OotleWalletSettings.tsx';
 
 export {
     AirdropSettings,
@@ -16,4 +18,6 @@ export {
     PoolMiningSettings,
     WalletSettings,
     ReleaseNotes,
+    OotleSettings,
+    OotleWalletSettings,
 };
