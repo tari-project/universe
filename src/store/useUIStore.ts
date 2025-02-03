@@ -6,7 +6,7 @@ import { setVisualMode } from './useAppConfigStore.ts';
 
 export const sidebarTowerOffset = 348 + 20; // sidebar + padding
 
-export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'ludicrousConfirmation'] as const;
+export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number];
 

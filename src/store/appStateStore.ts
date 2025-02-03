@@ -20,6 +20,8 @@ interface State {
     missingExternalDependencies?: ExternalDependency[];
     issueReference?: string;
     applications_versions?: ApplicationsVersions;
+    releaseNotes: string;
+    isAppUpdateAvailable: boolean;
 }
 interface Actions {
     setCriticalError: (value: string | undefined) => void;
@@ -31,6 +33,8 @@ interface Actions {
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
     setIssueReference: (value: string) => void;
+    setReleaseNotes: (value: string) => void;
+    setIsAppUpdateAvailable: (value: boolean) => void;
 }
 type AppState = State & Actions;
 
@@ -42,6 +46,8 @@ const initialstate: State = {
     setupComplete: false,
     externalDependencies: [],
     missingExternalDependencies: [],
+    releaseNotes: '',
+    isAppUpdateAvailable: false,
 };
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
@@ -99,6 +105,8 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         }
     },
     setIssueReference: (issueReference) => set({ issueReference }),
+    setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
+    setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
 
 export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>

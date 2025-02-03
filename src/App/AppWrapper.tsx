@@ -9,6 +9,8 @@ import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import { loadTowerAnimation } from '@tari-project/tari-tower';
 import { sidebarTowerOffset } from '@app/store/useUIStore.ts';
 import App from './App.tsx';
+import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
+
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
 setupLogger();
@@ -19,6 +21,7 @@ export default function AppWrapper() {
     useLangaugeResolver();
     useListenForExternalDependencies();
     useListenForCriticalProblem();
+    useListenForAppUpdated({ triggerEffect: true });
 
     useEffect(() => {
         async function initialize() {
