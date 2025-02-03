@@ -31,23 +31,31 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
         [tower, towerClouds],
         [tari, tariCloud],
     ];
-    const graphics = stepGraphics[step - 1];
 
-    const graphicsMarkup = graphics?.map((img, i) => {
-        const key = `step-${step}:img:${i}`;
-        if (img) {
-            return <StepImg key={key} src={img} alt={`Step ${step} image #${i + 1}`} style={{ zIndex: i + 1 }} />;
-        }
-    });
+    const [mainImage, cloudOverlay] = stepGraphics[step - 1];
+
     return (
-        <GraphicContainer
-            style={{ x, y }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.5 }}
-        >
-            {graphicsMarkup}
+        <GraphicContainer style={{ x, y }}>
+            <StepImg
+                src={mainImage}
+                alt={`Step ${step} main image`}
+                style={{ zIndex: 1, x, y }}
+                initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 2, ease: 'anticipate' }}
+            />
+            {cloudOverlay && (
+                <StepImg
+                    src={cloudOverlay}
+                    alt={`Step ${step} cloud overlay`}
+                    style={{ zIndex: 2 }}
+                    initial={{ opacity: 0, scale: 1.1 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 1.1 }}
+                    transition={{ duration: 2, ease: 'anticipate' }}
+                />
+            )}
         </GraphicContainer>
     );
 }
