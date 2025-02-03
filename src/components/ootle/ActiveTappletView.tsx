@@ -1,12 +1,11 @@
 import { TappletConfig } from '@app/types/ootle/tapplet';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
 import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
-import { Account } from '@tari-project/tarijs/dist/providers/types';
 
 const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
@@ -15,14 +14,12 @@ export default function ActiveTappletView() {
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
-    const [account, setAccount] = useState<Account>();
 
     const fetchTappConfig = useCallback(async () => {
         try {
             if (!tapplet) return;
             const config: TappletConfig = await (await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`)).json();
 
-            console.log('[active dev tapp] config ->', config);
             if (!config) return;
             if (!tappProvider && tapplet) {
                 // assign permissions
@@ -42,25 +39,9 @@ export default function ActiveTappletView() {
         }
     }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
 
-    const refreshAccount = useCallback(async () => {
-        //TODO this is tmp to check if account is found and set; can be removed later
-        if (!tappProvider) return;
-        try {
-            const acc = await tappProvider.getAccount();
-            setAccount(acc);
-        } catch (error) {
-            console.error(error);
-        }
-        console.info('TAPP ACCOUNT', account);
-    }, [account, tappProvider]);
-
     useEffect(() => {
         fetchTappConfig();
     }, [fetchTappConfig]);
-
-    useEffect(() => {
-        refreshAccount();
-    }, [refreshAccount, tappProvider]);
 
     return (
         <>

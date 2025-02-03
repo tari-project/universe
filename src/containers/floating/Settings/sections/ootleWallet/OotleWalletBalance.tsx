@@ -23,31 +23,39 @@ const OotleWalletBalance = () => {
     const getOotleAccountInfo = useOotleWalletStore((s) => s.getOotleAccountInfo);
     const getOotleAccountsList = useOotleWalletStore((s) => s.getOotleAccountsList);
 
-    const refreshAccount = useCallback(async () => {
-        console.info('TAPP PROVIDER', tappProvider);
-        console.info('TAPP ACCOUNT', ootleAccount);
+    // TODO fetch all data from backend
+    const refreshProvider = useCallback(async () => {
         try {
             if (!tappProvider) {
-                console.info('TAPP PROVIDER INIT');
                 await initTappletProvider();
                 return;
-            }
-            if (!ootleAccount) {
-                console.info('TAPP ACCOUNT UPDATED-> ', ootleAccount);
-                await getOotleAccountInfo();
-            }
-            if (!ootleAccountsList) {
-                await getOotleAccountsList();
-                console.info('TAPP ACCOUNT LIST UPDATED -> ', ootleAccountsList);
             }
         } catch (error) {
             console.error(error);
         }
-    }, [tappProvider, ootleAccount, ootleAccountsList, initTappletProvider, getOotleAccountInfo, getOotleAccountsList]);
+    }, [tappProvider, initTappletProvider]);
+
+    const refreshAccount = useCallback(async () => {
+        try {
+            await getOotleAccountInfo();
+        } catch (error) {
+            console.error(error);
+        }
+    }, [getOotleAccountInfo]);
+
+    const refreshAccountsList = useCallback(async () => {
+        try {
+            await getOotleAccountsList();
+        } catch (error) {
+            console.error(error);
+        }
+    }, [getOotleAccountsList]);
 
     useEffect(() => {
+        refreshProvider();
         refreshAccount();
-    }, [refreshAccount]);
+        refreshAccountsList();
+    }, [refreshAccount, refreshAccountsList, refreshProvider]);
 
     return (
         <>
