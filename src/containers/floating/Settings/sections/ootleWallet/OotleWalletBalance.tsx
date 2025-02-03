@@ -3,50 +3,47 @@ import { SettingsGroup, SettingsGroupContent, SettingsGroupWrapper } from '../..
 import { Typography } from '@app/components/elements/Typography';
 
 import { useTranslation } from 'react-i18next';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 
 import { Stack } from '@app/components/elements/Stack';
 import { CardContainer, ConnectionIcon } from '../../components/Settings.styles';
 import { CardComponent } from '../../components/Card.component';
 import SelectAccount from './SelectOotleAccount';
-import { AccountInfo, OotleAccount } from '@app/types/ootle';
+import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
 
 const OotleWalletBalance = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
-    const [account, setAccount] = useState<OotleAccount>();
-    const [accountsList, setAccountsList] = useState<AccountInfo[]>([]);
 
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const isTappProviderInitialized = useTappletProviderStore((s) => s.isInitialized);
     const initTappletProvider = useTappletProviderStore((s) => s.initTappletProvider);
+    const ootleAccount = useOotleWalletStore((s) => s.ootleAccount);
+    const ootleAccountsList = useOotleWalletStore((s) => s.ootleAccountsList);
+    const getOotleAccountInfo = useOotleWalletStore((s) => s.getOotleAccountInfo);
+    const getOotleAccountsList = useOotleWalletStore((s) => s.getOotleAccountsList);
 
     const refreshAccount = useCallback(async () => {
         console.info('TAPP PROVIDER', tappProvider);
+        console.info('TAPP ACCOUNT', ootleAccount);
         try {
             if (!tappProvider) {
                 console.info('TAPP PROVIDER INIT');
                 await initTappletProvider();
                 return;
             }
-            if (!account) {
-                // TODO debug why `address` is undefined
-                const list = await tappProvider.getAccountsList();
-                // TODO refactor types
-                setAccountsList(list.accounts as unknown as AccountInfo[]);
-                const acc = (await tappProvider.getAccount()) as OotleAccount;
-                console.info('TAPP ACCOUNT -> ', acc);
-                setAccount(acc);
+            if (!ootleAccount) {
+                console.info('TAPP ACCOUNT UPDATED-> ', ootleAccount);
+                await getOotleAccountInfo();
+            }
+            if (!ootleAccountsList) {
+                await getOotleAccountsList();
+                console.info('TAPP ACCOUNT LIST UPDATED -> ', ootleAccountsList);
             }
         } catch (error) {
             console.error(error);
         }
-        console.info('TAPP ACCOUNT', account);
-    }, [account, initTappletProvider, tappProvider]);
-
-    async function handleOnSubmit() {
-        return;
-    }
+    }, [tappProvider, ootleAccount, ootleAccountsList, initTappletProvider, getOotleAccountInfo, getOotleAccountsList]);
 
     useEffect(() => {
         refreshAccount();
@@ -63,15 +60,16 @@ const OotleWalletBalance = () => {
                                 {isTappProviderInitialized ? 'Provider initialized' : 'Provider not initialized'}
                             </Typography>
                         </Stack>
-                        <Typography>{t('Tari Ootle Wallet public key')}</Typography>
-                        <Typography variant="h6">{account?.public_key}</Typography>
+                        <Typography>{t('Tari Ootle Account')}</Typography>
+                        <Typography variant="h6">{ootleAccount?.account_name}</Typography>
+                        <Typography variant="h6">{ootleAccount?.address}</Typography>
                     </SettingsGroupContent>
                 </SettingsGroup>
                 <SettingsGroup>
                     <SettingsGroupContent>
                         <Stack>
                             <CardContainer>
-                                {Object.entries(account?.resources || []).map(([key, value]) => (
+                                {Object.entries(ootleAccount?.resources || []).map(([key, value]) => (
                                     <CardComponent
                                         key={key}
                                         heading={`${value.token_symbol} (${value.resource_address})`}
@@ -88,11 +86,7 @@ const OotleWalletBalance = () => {
                     </SettingsGroupContent>
                 </SettingsGroup>
                 <SettingsGroup>
-                    <SelectAccount
-                        onSubmit={handleOnSubmit}
-                        accountsList={accountsList}
-                        currentAccount={accountsList[0] ?? undefined}
-                    />
+                    <SelectAccount accountsList={ootleAccountsList} currentAccount={ootleAccount} />
                 </SettingsGroup>
             </SettingsGroupWrapper>
         </>

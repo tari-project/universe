@@ -3,7 +3,10 @@ export interface OotleAccount {
     address: string;
     public_key: string;
     resources: VaultData[];
+    account_name: string;
 }
+
+// TODO tari.js add to VaultData type field `token_symbol` and `vault_id`
 export interface VaultData {
     type: string;
     balance: number;
@@ -12,13 +15,14 @@ export interface VaultData {
     vault_id: string;
 }
 
-export interface AccountInfo {
-    account: Account;
-    public_key: string;
-}
-export interface Account {
-    name: string | null;
-    address: string;
-    key_index: number;
-    is_default: boolean;
-}
+// TODO tari.js
+// export interface AccountInfo {
+//     account: Account;
+//     public_key: string;
+// }
+// export interface Account {
+//     name: string | null;
+//     address: string;
+//     key_index: number;
+//     is_default: boolean;
+// }

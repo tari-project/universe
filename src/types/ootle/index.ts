@@ -1,4 +1,4 @@
-export type { Account, AccountInfo, OotleAccount, VaultData } from './account';
+export type { OotleAccount, VaultData } from './account';
 export type { IPCRpcTransport } from './ipc_transport';
 export type {
     ActiveTapplet,

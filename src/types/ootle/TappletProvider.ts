@@ -21,9 +21,10 @@ import {
     VaultBalances,
 } from '@tari-project/tarijs';
 import { ListSubstatesResponse } from '@tari-project/tarijs/dist/providers';
-import { ComponentAccessRules } from '@tari-project/typescript-bindings';
+import { AccountSetDefaultResponse, ComponentAccessRules } from '@tari-project/typescript-bindings';
 import { TappletPermissions } from './tapplet';
 import { IPCRpcTransport } from './ipc_transport';
+import { OotleAccount } from './account';
 
 export interface WindowSize {
     width: number;
@@ -128,19 +129,20 @@ export class TappletProvider implements TariProvider {
         return Promise.resolve({ width: this.width, height: this.height });
     }
 
-    public async getAccount(): Promise<Account> {
-        const { account, public_key } = (await this.client.accountsGetDefault({})) as any;
+    public async getAccount(): Promise<OotleAccount> {
+        const { account, public_key } = await this.client.accountsGetDefault({});
         console.info('TAPP ACCOUNT GET DEF -> ', account, public_key);
         //TODO debug error
         //tip: if fails try `account: { ComponentAddress: account.address }`
         const { balances } = await this.client.accountsGetBalances({
-            account: { ComponentAddress: account.address.Component },
+            account: { ComponentAddress: substateIdToString(account.address) },
             refresh: false,
         });
 
         return {
             account_id: account.key_index,
-            address: account.address.Component,
+            address: substateIdToString(account.address), //TODO tari.js SubstateId type
+            account_name: account.name ?? '',
             public_key,
 
             resources: balances.map((b: any) => ({
@@ -158,7 +160,7 @@ export class TappletProvider implements TariProvider {
         };
     }
 
-    public async getAccountBalances(componentAddress: string): Promise<AccountsGetBalancesResponse> {
+    public async getAccountBalancesByAddress(componentAddress: string): Promise<AccountsGetBalancesResponse> {
         return await this.client.accountsGetBalances({
             account: { ComponentAddress: componentAddress },
             refresh: true,
@@ -172,7 +174,7 @@ export class TappletProvider implements TariProvider {
         });
     }
 
-    public async getAccountsBalances(accountName: string, refresh = false): Promise<AccountsGetBalancesResponse> {
+    public async getAccountBalancesByName(accountName: string, refresh = false): Promise<AccountsGetBalancesResponse> {
         return await this.client.accountsGetBalances({ account: { Name: accountName }, refresh });
     }
 
@@ -268,6 +270,10 @@ export class TappletProvider implements TariProvider {
         }));
 
         return { substates };
+    }
+
+    public async setDefaultAccount(accountName: string): Promise<AccountSetDefaultResponse> {
+        return await this.client.accountsSetDefault({ account: { Name: accountName } });
     }
 }
 

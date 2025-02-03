@@ -1,35 +1,43 @@
 import { useCallback, useState } from 'react';
 import Box from '@mui/material/Box';
-import { Button, DialogContent, FormControl, InputLabel, MenuItem, Select, TextField } from '@mui/material';
+import { DialogContent, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
-import { AccountInfo } from '@app/types/ootle';
+import { AccountInfo } from '@tari-project/typescript-bindings';
+import { OotleAccount } from '@app/types/ootle';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton';
+import { Input } from '@app/components/elements/inputs/Input';
+import { SettingsGroup } from '../../components/SettingsGroup.styles';
 
 interface SelectAccountProps {
-    onSubmit: (name: string) => void;
     accountsList: AccountInfo[];
-    currentAccount?: AccountInfo;
+    currentAccount?: OotleAccount;
 }
 
-function SelectOotleAccount({ onSubmit, accountsList, currentAccount }: SelectAccountProps) {
-    const currentAccountName = currentAccount?.account.name ?? '';
-    console.log(accountsList);
-    const [newAccountName, setNewAccountName] = useState(currentAccountName);
+function SelectOotleAccount({ accountsList, currentAccount }: SelectAccountProps) {
+    // const currentAccount = useOotleWalletStore((s) => s.ootleAccount);
     const createAccount = useOotleWalletStore((s) => s.createAccount);
+    const setDefaultAccount = useOotleWalletStore((s) => s.setDefaultAccount);
+    const currentAccountName = currentAccount?.account_name ?? '';
+    const [newAccountName, setNewAccountName] = useState('');
 
     const handleCreateNewAccount = useCallback(async () => {
         console.info('CREATE ACCOUNT', newAccountName);
         await createAccount(newAccountName);
     }, [createAccount, newAccountName]);
 
-    const handleChange = useCallback(async () => {
-        console.info('CHANGE ACCOUNT');
-        return onSubmit(newAccountName);
-    }, [newAccountName, onSubmit]);
+    const handleChange = useCallback(
+        async (event: SelectChangeEvent) => {
+            console.info('CHANGE ACCOUNT TO: ', event.target.value);
+            return await setDefaultAccount(event.target.value);
+        },
+        [setDefaultAccount]
+    );
 
     const onAddAccountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setNewAccountName(e.target.value);
     };
 
+    //TODO refactor select component
     return (
         <Box sx={{ minWidth: 250 }}>
             <DialogContent className="dialog-content">
@@ -58,19 +66,23 @@ function SelectOotleAccount({ onSubmit, accountsList, currentAccount }: SelectAc
                         })}
                     </Select>
                 </FormControl>
-
-                <Box display="flex" flexDirection="row" gap={2} alignItems="center" py={4}>
-                    <TextField
-                        name="accountName"
-                        label="Account Name"
+                <SettingsGroup>
+                    <Input
+                        name="new-account-name"
+                        type="text"
+                        placeholder="New account name"
                         value={newAccountName}
                         onChange={onAddAccountChange}
-                        style={{ flexGrow: 1 }}
                     />
-                    <Button onClick={handleCreateNewAccount} variant="contained" sx={{ width: 200 }}>
-                        {'create-account'}
-                    </Button>
-                </Box>
+                    <SquaredButton
+                        onClick={handleCreateNewAccount}
+                        color="tariPurple"
+                        size="medium"
+                        style={{ width: '50%', alignContent: 'center', marginBottom: 10 }}
+                    >
+                        {'Create account'}
+                    </SquaredButton>
+                </SettingsGroup>
             </DialogContent>
         </Box>
     );
