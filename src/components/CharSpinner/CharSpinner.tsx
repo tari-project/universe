@@ -1,6 +1,5 @@
 import { Trans } from 'react-i18next';
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup } from 'motion/react';
 
 const transition = {
     type: 'spring',
@@ -100,19 +99,15 @@ export default function CharSpinner({
 
     return (
         <Wrapper $alignment={XTMAlignment} $variant={variant}>
-            <LayoutGroup id="char-spinner">
-                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
-                    <CharacterWrapper style={{ height: letterHeight * 10 }}>
-                        <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
-                    </CharacterWrapper>
-                </SpinnerWrapper>
-                {/* // eslint-disable-next-line i18next/no-literal-string */}
-                {value === '-' ? null : (
-                    <XTMWrapper>
-                        <Trans>tXTM</Trans>
-                    </XTMWrapper>
-                )}
-            </LayoutGroup>
+            <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
+                <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
+            </SpinnerWrapper>
+            {/* // eslint-disable-next-line i18next/no-literal-string */}
+            {value === '-' ? null : (
+                <XTMWrapper>
+                    <Trans>tXTM</Trans>
+                </XTMWrapper>
+            )}
         </Wrapper>
     );
 }

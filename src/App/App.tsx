@@ -44,7 +44,6 @@ export default function App() {
 
     const showSetup = isSettingUp && !isShuttingDown && isAppReady;
     const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
-
     return (
         <ThemeProvider>
             <GlobalReset />
@@ -58,11 +57,11 @@ export default function App() {
                 <MotionConfig reducedMotion="user">
                     <FloatingElements />
                     <AnimatePresence mode="popLayout">
-                        {!isAppReady && (
+                        {!isAppReady ? (
                             <AppContentContainer key="splashscreen" initial="hidden">
                                 <Splashscreen />
                             </AppContentContainer>
-                        )}
+                        ) : null}
 
                         {showSetup ? (
                             <AppContentContainer key="setup" initial="hidden">

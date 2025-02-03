@@ -1,18 +1,17 @@
-import { CSSProperties, ReactNode } from 'react';
+import { CSSProperties, HTMLAttributes, ReactNode } from 'react';
 import styled from 'styled-components';
-import { m, MotionProps } from 'motion/react';
 
 type StackFlexProps = Partial<
     Pick<CSSProperties, 'justifyContent' | 'justifyItems' | 'alignItems' | 'alignContent' | 'flexDirection'>
 >;
 
-interface StackProps extends MotionProps, StackFlexProps {
+interface StackProps extends HTMLAttributes<HTMLDivElement>, StackFlexProps {
     children?: ReactNode;
     direction?: StackFlexProps['flexDirection'];
     gap?: number;
 }
 
-const StyledStack = styled(m.div)<{
+const StyledStack = styled.div<{
     $direction?: StackProps['direction'];
     $justifyContent?: StackProps['justifyContent'];
     $alignItems?: StackProps['alignItems'];

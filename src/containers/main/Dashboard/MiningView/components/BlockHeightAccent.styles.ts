@@ -10,8 +10,7 @@ export const AccentWrapper = styled(m.div)`
     justify-content: center;
     display: flex;
     top: 0;
-    right: -25px;
-    border: 1px solid deeppink;
+    right: -30px;
 `;
 
 export const AccentText = styled(m.div)`

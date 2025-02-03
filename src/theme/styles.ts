@@ -1,10 +1,9 @@
 import styled, { css } from 'styled-components';
-import { m } from 'motion/react';
 import clouds from '@app/assets/backgrounds/clouds.png';
 
 export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
 
-export const DashboardContainer = styled(m.div)<{ $visualModeOff?: boolean }>`
+export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     display: grid;
     grid-template-columns: ${sidebarWidth} auto;
     position: relative;

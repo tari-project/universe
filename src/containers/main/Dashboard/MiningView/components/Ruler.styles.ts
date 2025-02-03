@@ -9,7 +9,7 @@ export const Wrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    height: calc(100% - 100px);
+    height: calc(100% - 80px);
     position: fixed;
     right: 10px;
 `;
