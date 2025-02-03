@@ -30,6 +30,7 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
+use release_notes::ReleaseNotes;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
@@ -119,6 +120,7 @@ mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
+mod release_notes;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -593,13 +595,39 @@ async fn setup_inner(
         telemetry_id = "unknown_miner_tari_universe".to_string();
     }
 
+    // Benchmark if needed.
+    progress.set_max(77).await;
+    // let mut cpu_miner_config = state.cpu_miner_config.read().await.clone();
+    // Clear out so we use default.
+    let _unused = telemetry_service
+        .send(
+            "starting-benchmarking".to_string(),
+            json!({
+                "service": "starting_benchmarking",
+                "percentage":75,
+            }),
+        )
+        .await;
+
+    let mut cpu_miner = state.cpu_miner.write().await;
+    let benchmarked_hashrate = cpu_miner
+        .start_benchmarking(
+            state.shutdown.to_signal(),
+            Duration::from_secs(30),
+            data_dir.clone(),
+            config_dir.clone(),
+            log_dir.clone(),
+        )
+        .await?;
+    drop(cpu_miner);
+
     if p2pool_enabled {
         let _unused = telemetry_service
             .send(
                 "starting-p2pool".to_string(),
                 json!({
                     "service": "starting_p2pool",
-                    "percentage":75,
+                    "percentage":77,
                 }),
             )
             .await;
@@ -612,6 +640,7 @@ async fn setup_inner(
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
+            .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
             .build()?;
 
         state
@@ -660,6 +689,8 @@ async fn setup_inner(
         })
         .await?;
     mm_proxy_manager.wait_ready().await?;
+    drop(config);
+
     *state.is_setup_finished.write().await = true;
     let _unused = telemetry_service
         .send(
@@ -757,6 +788,10 @@ async fn setup_inner(
             }
         }
     });
+
+    let _unused = ReleaseNotes::current()
+        .handle_release_notes_event_emit(state.clone(), app)
+        .await;
 
     Ok(())
 }

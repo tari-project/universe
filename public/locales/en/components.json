@@ -9,10 +9,14 @@
     "required": "Field required"
   },
   "ludicrousConfirmationDialog": {
-    "title": "Switch to Ludicrous Mode?",
+    "cancel": "Cancel",
     "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "seconds": "seconds",
     "keepChanges": "Keep Changes",
-    "cancel": "Cancel"
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
   }
 }

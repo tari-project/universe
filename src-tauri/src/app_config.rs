@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -112,6 +113,8 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default = "default_changelog_version")]
+    last_changelog_version: String,
     #[serde(default)]
     airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_true")]
@@ -158,6 +161,7 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             audio_enabled: true,
         }
@@ -278,6 +282,7 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    last_changelog_version: String,
     airdrop_tokens: Option<AirdropTokens>,
     audio_enabled: bool,
 }
@@ -324,6 +329,7 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             audio_enabled: true,
         }
@@ -403,6 +409,7 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.audio_enabled = config.audio_enabled;
 
@@ -482,6 +489,10 @@ impl AppConfig {
 
     pub fn anon_id(&self) -> &str {
         &self.anon_id
+    }
+
+    pub fn last_changelog_version(&self) -> &str {
+        &self.last_changelog_version
     }
 
     pub async fn set_mode(
@@ -780,6 +791,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_last_changelog_version(
+        &mut self,
+        version: String,
+    ) -> Result<(), anyhow::Error> {
+        self.last_changelog_version = version;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -827,6 +847,7 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
             audio_enabled: self.audio_enabled,
         };
@@ -923,4 +944,8 @@ fn default_window_settings() -> Option<WindowSettings> {
 
 fn default_p2pool_stats_server_port() -> Option<u16> {
     None
+}
+
+fn default_changelog_version() -> String {
+    Version::new(0, 0, 0).to_string()
 }
