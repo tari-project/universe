@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import * as m from 'motion/react-m';
+import { m } from 'motion/react';
 
 export const AccentWrapper = styled(m.div)`
     overflow: hidden;

@@ -12,8 +12,8 @@ export function BlockHeightAccent() {
 
     const windowHeight = useMotionValue(window.innerHeight);
     const windowWidth = useMotionValue(window.innerWidth);
-    const width = useMotionValue(110);
-    const scale = useMotionValue(5);
+    const width = useMotionValue(170);
+    const scale = useMotionValue(7.5);
 
     useEffect(() => {
         function handleResize() {
