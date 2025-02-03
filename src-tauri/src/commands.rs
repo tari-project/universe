@@ -1487,6 +1487,27 @@ pub async fn set_airdrop_tokens<'r>(
     Ok(())
 }
 
+#[tauri::command]
+pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
+    let enabled = state.config.read().await.audio_enabled();
+    Ok(enabled)
+}
+
+#[tauri::command]
+pub async fn set_audio_enabled(
+    audio_enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_audio_enabled(audio_enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn start_mining<'r>(

@@ -36,6 +36,7 @@ interface Actions {
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
+    setAudioEnabled: (audioEnabled: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -66,6 +67,7 @@ const initialState: State = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
+    audio_enabled: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -301,6 +303,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set pre release', e);
             appStateStore.setError('Could not change pre release');
             set({ pre_release: !preRelease });
+        });
+    },
+    setAudioEnabled: async (audioEnabled) => {
+        set({ audio_enabled: audioEnabled });
+        invoke('set_audio_enabled', { audioEnabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set audio enabled', e);
+            appStateStore.setError('Could not change audio enabled');
+            set({ audio_enabled: !audioEnabled });
         });
     },
 }));

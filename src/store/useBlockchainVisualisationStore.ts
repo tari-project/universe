@@ -1,10 +1,13 @@
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { resourceDir, join } from '@tauri-apps/api/path';
+import { readFile } from '@tauri-apps/plugin-fs';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
+import { useAppConfigStore } from './useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -55,9 +58,27 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRecapCount: (recapCount) => set({ recapCount }),
 }));
 
+async function playBlockWinAudio() {
+    const resourceDirPath = await resourceDir();
+    const filePath = await join(resourceDirPath, 'audio/block_win.mp3');
+    readFile(filePath)
+        .catch((err) => {
+            console.error(err);
+        })
+        .then((res) => {
+            const fileBlob = new Blob([res as ArrayBuffer], { type: 'audio/mpeg' });
+            const reader = new FileReader();
+            reader.readAsDataURL(fileBlob);
+            const url = URL.createObjectURL(fileBlob);
+            const audio = new Audio(url);
+            audio.play();
+        });
+}
+
 const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
     const blockHeight = Number(latestTx?.mined_in_block_height);
     const earnings = latestTx.amount;
+    const audioEnabled = useAppConfigStore.getState().audio_enabled;
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
@@ -77,6 +98,10 @@ const handleWin = async ({ latestTx, canAnimate }: WinAnimation) => {
             displayBlockHeight: blockHeight,
             earnings: undefined,
         }));
+    }
+
+    if (audioEnabled) {
+        playBlockWinAudio();
     }
 };
 const handleFail = async (blockHeight: number, canAnimate: boolean) => {

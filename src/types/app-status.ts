@@ -48,6 +48,7 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    audio_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {

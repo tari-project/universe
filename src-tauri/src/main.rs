@@ -947,6 +947,7 @@ fn main() {
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -1196,7 +1197,9 @@ fn main() {
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
-            commands::get_airdrop_tokens
+            commands::get_airdrop_tokens,
+            commands::get_audio_enabled,
+            commands::set_audio_enabled,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
