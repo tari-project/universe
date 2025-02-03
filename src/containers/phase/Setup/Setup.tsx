@@ -8,6 +8,7 @@ import AppVersion from './components/AppVersion';
 
 export default function Setup() {
     useSetUp();
+
     return (
         <SetupWrapper $bg={grain}>
             <HeroText />

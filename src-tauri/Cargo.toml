@@ -97,6 +97,8 @@ ring-compat = "0.8.0"
 der = "0.7.9"
 tonic = "0.12.3"
 tauri-plugin-clipboard-manager = "2.2.0"
+reqwest-middleware = "0.4.0"
+reqwest-retry = "0.7.0"
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.52.0"
