@@ -3,7 +3,7 @@ import { m } from 'framer-motion';
 import { sidebarWidth } from '@app/theme/styles';
 
 // SideBar
-export const SideBarContainer = styled(m.div)`
+export const SideBarContainer = styled.div`
     width: ${sidebarWidth};
     pointer-events: auto;
     display: flex;
@@ -18,7 +18,7 @@ export const SideBarContainer = styled(m.div)`
     padding: 16px 0 0;
 `;
 
-export const Scroll = styled(m.div)`
+export const Scroll = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -28,7 +28,7 @@ export const Scroll = styled(m.div)`
     padding: 0 10px 12px 10px;
 `;
 
-export const Top = styled(m.div)`
+export const Top = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -45,7 +45,7 @@ export const SidebarTop = styled('div')`
     }
 `;
 
-export const Bottom = styled(m.div)`
+export const Bottom = styled.div`
     display: flex;
     flex-direction: column;
     gap: 12px;

@@ -19,6 +19,7 @@ import {
 } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { LayoutGroup } from 'framer-motion';
 
 export default function Miner() {
     useMiningStatesSync();

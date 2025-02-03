@@ -64,7 +64,7 @@ function ModeSelect() {
     }, [custom_power_levels_enabled]);
 
     return (
-        <TileItem layoutId="miner-mode-select-tile" layout>
+        <TileItem >
             <Typography>{t('mode')}</Typography>
             <ModeSelectWrapper>
                 <Select
