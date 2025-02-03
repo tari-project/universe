@@ -55,7 +55,8 @@ const OotleWalletBalance = () => {
         refreshProvider();
         refreshAccount();
         refreshAccountsList();
-    }, [refreshAccount, refreshAccountsList, refreshProvider]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     return (
         <>

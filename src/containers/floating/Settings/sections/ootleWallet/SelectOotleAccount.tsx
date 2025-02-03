@@ -42,14 +42,13 @@ function SelectOotleAccount({ accountsList, currentAccount }: SelectAccountProps
         <Box sx={{ minWidth: 250 }}>
             <DialogContent className="dialog-content">
                 <FormControl fullWidth>
-                    <InputLabel id="account-select-label" />
                     <Select
                         labelId="account-select-label"
                         id="account-select"
                         value={
                             accountsList.some((account: AccountInfo) => account.account.name == currentAccountName)
                                 ? currentAccountName
-                                : ''
+                                : 'Select account'
                         }
                         label="Account"
                         onChange={handleChange}

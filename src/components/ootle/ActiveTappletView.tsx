@@ -6,6 +6,7 @@ import { Tapplet } from './Tapplet';
 import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
@@ -14,6 +15,7 @@ export default function ActiveTappletView() {
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
     const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
+    const setError = useAppStateStore((s) => s.setError);
 
     const fetchTappConfig = useCallback(async () => {
         try {
@@ -31,13 +33,15 @@ export default function ActiveTappletView() {
                 setActiveTapp(tapplet);
             }
             if (!config.permissions) {
-                // TODO set error
+                // TODO error translation
+                setError('Dev Tapplet config file not found');
                 console.error('Dev Tapplet config file not found');
             }
         } catch (e) {
+            setError(e as string);
             console.error(e);
         }
-    }, [setActiveTapp, setTappletProvider, tappProvider, tapplet]);
+    }, [setActiveTapp, setError, setTappletProvider, tappProvider, tapplet]);
 
     useEffect(() => {
         fetchTappConfig();
