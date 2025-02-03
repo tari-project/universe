@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { m } from 'motion/react';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
-export const Wrapper = styled(m.div)`
+export const Wrapper = styled.div`
     overflow: hidden;
     top: 40px;
     width: 60vw;
@@ -14,7 +14,7 @@ export const Wrapper = styled(m.div)`
     right: 10px;
 `;
 
-export const Column = styled(m.div)<{ $isNumber?: boolean }>`
+export const Column = styled.div<{ $isNumber?: boolean }>`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -23,11 +23,11 @@ export const Column = styled(m.div)<{ $isNumber?: boolean }>`
     height: 100%;
 `;
 
-export const MarkGroup = styled(m.div)`
+export const MarkGroup = styled.div`
     display: flex;
 `;
 
-export const RulerMarkGroup = styled(m.div)`
+export const RulerMarkGroup = styled.div`
     display: flex;
     position: relative;
     flex-direction: column;

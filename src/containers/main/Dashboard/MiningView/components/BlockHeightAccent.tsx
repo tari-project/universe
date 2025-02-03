@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useLayoutEffect, useState } from 'react';
-import { AnimatePresence, LayoutGroup } from 'motion/react';
+import { AnimatePresence, LayoutGroup, useMotionValue } from 'motion/react';
 
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { AccentText, AccentWrapper, SpacedNum } from './BlockHeightAccent.styles';
@@ -10,10 +10,10 @@ export function BlockHeightAccent() {
 
     const [windowHeight, setWindowHeight] = useState(window.innerHeight - 80);
     const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-    const [fontSize, setFontSize] = useState(0);
     const heightStringArr = heightString?.split('') || [];
     const deferredHeight = useDeferredValue(windowHeight);
-    const deferredFontSize = useDeferredValue(fontSize || 110);
+
+    const fontSize = useMotionValue(110);
 
     useEffect(() => {
         let dividend = (deferredHeight - 70) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
@@ -23,8 +23,9 @@ export function BlockHeightAccent() {
             dividend = dividend * 0.6;
         }
         const font = Math.floor(dividend);
-        setFontSize(font);
-    }, [heightStringArr.length, deferredHeight, windowWidth]);
+
+        fontSize.set(font);
+    }, [deferredHeight, fontSize, heightStringArr.length, windowWidth]);
 
     useLayoutEffect(() => {
         function handleResize() {
@@ -39,16 +40,16 @@ export function BlockHeightAccent() {
     }, []);
 
     return (
-        <AccentWrapper layoutId="accent-wrapper" style={{ width: deferredFontSize }}>
+        <AccentWrapper layoutId="accent-wrapper" style={{ width: fontSize }}>
             <AnimatePresence>
                 {height && height > 0 ? (
                     <LayoutGroup id="accent-content">
                         <AccentText
                             layout
                             layoutId="accent-text"
-                            style={{
-                                fontSize: `${deferredFontSize}px`,
-                                rotate: -90,
+                            animate={{
+                                fontSize: `${fontSize}px`,
+                                transform: `rotate(-90)`,
                             }}
                         >
                             {heightStringArr?.map((c, i) => (
