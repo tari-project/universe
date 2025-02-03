@@ -94,7 +94,17 @@ export const GraphicContainer = styled(m.div)`
 export const StepImg = styled(m.img)`
     max-height: 100%;
     position: absolute;
-    bottom: 0;
+    bottom: -20px;
     right: 0;
     pointer-events: none;
+    z-index: 1;
+`;
+
+export const StepImgCloud = styled(m.img)`
+    max-height: 100%;
+    position: absolute;
+    bottom: -20px;
+    right: 0;
+    pointer-events: none;
+    z-index: 2;
 `;

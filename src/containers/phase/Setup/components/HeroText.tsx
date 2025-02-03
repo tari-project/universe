@@ -1,6 +1,8 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
+import { useParallax } from '@app/hooks/ui/useParallax';
+import { m } from 'framer-motion';
 
 const TEXT_STYLE_BASE = css`
     font-family: Druk, sans-serif;
@@ -16,6 +18,7 @@ const TEXT_STYLE_BASE = css`
 const SetupTextMain = styled.div`
     color: ${({ theme }) => theme.palette.text.contrast};
     background: ${({ theme }) => theme.palette.text.contrast};
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 
@@ -23,6 +26,7 @@ const SetupTextMain = styled.div`
         if (theme.mode === 'dark') {
             return css`
                 background: -webkit-linear-gradient(#eee, #333);
+                background-clip: text;
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
             `;
@@ -34,7 +38,7 @@ const SetupTextMain = styled.div`
 const SetupTextGhost = styled.div`
     color: transparent;
     -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.18);
+    -webkit-text-stroke: 2px rgba(255, 255, 255, 0.15);
 
     ${({ theme }) => {
         if (theme.mode === 'dark') {
@@ -46,7 +50,7 @@ const SetupTextGhost = styled.div`
     ${TEXT_STYLE_BASE}
 `;
 
-const TextWrapper = styled.div<{ $height: number }>`
+const TextWrapper = styled(m.div)<{ $height: number }>`
     display: grid;
     gap: calc(0.15rem + 1vh);
     grid-template-columns: 1fr 1fr 1fr;
@@ -54,6 +58,8 @@ const TextWrapper = styled.div<{ $height: number }>`
     position: absolute;
     top: ${({ $height }) => `-${$height * 0.75}px`};
     left: 0;
+    user-select: none;
+    pointer-events: none;
 `;
 
 const GridReference = styled.div<{ $minHeight: number }>`
@@ -62,20 +68,27 @@ const GridReference = styled.div<{ $minHeight: number }>`
     min-height: ${({ $minHeight }) => $minHeight}px;
     z-index: 1;
 `;
+
 export default function HeroText() {
     const { t } = useTranslation('common');
     const heightRef = useRef<HTMLDivElement>(null);
     const textHeight = heightRef?.current?.offsetHeight || 180;
+    const { x, y } = useParallax(2.5);
+
     return (
         <GridReference $minHeight={textHeight + 80}>
-            <TextWrapper $height={textHeight}>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
+            <TextWrapper $height={textHeight} style={{ x, y }}>
+                {Array(3)
+                    .fill(null)
+                    .map((_, i) => (
+                        <SetupTextGhost key={`ghost-before-${i}`}>{t('tari-universe')}</SetupTextGhost>
+                    ))}
                 <SetupTextMain ref={heightRef}>{t('tari-universe')}</SetupTextMain>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
-                <SetupTextGhost>{t('tari-universe')}</SetupTextGhost>
+                {Array(7)
+                    .fill(null)
+                    .map((_, i) => (
+                        <SetupTextGhost key={`ghost-after-${i}`}>{t('tari-universe')}</SetupTextGhost>
+                    ))}
             </TextWrapper>
         </GridReference>
     );
