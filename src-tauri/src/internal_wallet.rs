@@ -135,7 +135,6 @@ impl InternalWallet {
         wallet_balance: Option<WalletBalance>,
         auth_uuid: Option<String>,
     ) -> Result<PaperWalletConfig, anyhow::Error> {
-        let _ = wallet_balance;
         let path = match &self.config.config_path {
             Some(p) => p.clone(),
             None => return Err(anyhow!("No config path found")),

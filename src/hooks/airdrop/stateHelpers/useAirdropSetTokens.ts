@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { useAirdropRequest } from '../utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
-export const useAirdropSetTokens = () => {
+export const useAirdropSetTokenToUuid = () => {
     const handleRequest = useAirdropRequest();
     const airdropUser = useAirdropStore((state) => state.userDetails?.user.name);
 
