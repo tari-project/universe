@@ -278,37 +278,25 @@ impl HardwareStatusMonitor {
         Ok(cpu_devices)
     }
 
-    pub async fn initialize(&self) -> Result<(), Error> {
+    pub async fn initialize(
+        &self,
+    ) -> Result<(Vec<GpuDeviceProperties>, Vec<CpuDeviceProperties>), Error> {
         let gpu_devices = self.initialize_gpu_devices().await?;
         let cpu_devices = self.initialize_cpu_devices().await?;
 
         let mut gpu_devices_lock = self.gpu_devices.write().await;
         let mut cpu_devices_lock = self.cpu_devices.write().await;
 
-        *gpu_devices_lock = gpu_devices;
-        *cpu_devices_lock = cpu_devices;
+        *gpu_devices_lock = gpu_devices.clone();
+        *cpu_devices_lock = cpu_devices.clone();
 
-        Ok(())
+        Ok((gpu_devices, cpu_devices))
     }
 
     #[allow(dead_code)]
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
         Ok(gpu_devices.clone())
-    }
-
-    pub async fn get_gpu_devices_public_properties(
-        &self,
-    ) -> Result<Vec<PublicDeviceProperties>, Error> {
-        let gpu_devices = self.gpu_devices.read().await;
-
-        let mut platform_devices = Vec::new();
-
-        for device in gpu_devices.iter() {
-            platform_devices.push(device.public_properties.clone());
-        }
-
-        Ok(platform_devices)
     }
 
     #[allow(dead_code)]

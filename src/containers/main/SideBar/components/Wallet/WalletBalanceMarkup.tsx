@@ -19,13 +19,13 @@ import {
 export default function WalletBalanceMarkup() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
-    const balance = useWalletStore((s) => s.balance);
+    const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const [showBalance, setShowBalance] = useState(true);
     const [showLongBalance, setShowLongBalance] = useState(false);
     const [animateNumbers, setShowAnimateNumbers] = useState(true);
 
-    const formatted = formatNumber(balance || 0, FormatPreset.TXTM_COMPACT);
-    const formattedLong = formatNumber(balance || 0, FormatPreset.TXTM_LONG);
+    const formatted = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
+    const formattedLong = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
 
     const sizingLong = useCallback(() => {
         const baseSize = 50;
@@ -37,7 +37,8 @@ export default function WalletBalanceMarkup() {
     }, [formattedLong.length]);
 
     const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-    const displayValue = balance === null ? '-' : showBalance ? formatted : '*****';
+    const isWalletScanning = !Number.isFinite(calculated_balance);
+    const displayValue = isWalletScanning ? '-' : showBalance ? formatted : '*****';
 
     const handleMouseOver = () => {
         setShowAnimateNumbers(false);
@@ -75,7 +76,7 @@ export default function WalletBalanceMarkup() {
             </Stack>
             <WalletBalanceWrapper onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
                 <AnimatePresence mode="popLayout">
-                    {!showLongBalance || !showBalance ? (
+                    {!showLongBalance || !showBalance || isWalletScanning ? (
                         <WalletBalance
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}

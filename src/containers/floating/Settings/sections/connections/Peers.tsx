@@ -28,7 +28,7 @@ const Count = styled.div<{ $count: number }>`
 
 export default function Peers() {
     const { t } = useTranslation('settings');
-    const connectedPeers = useMiningMetricsStore((state) => state.base_node?.connected_peers || []);
+    const connectedPeers = useMiningMetricsStore((state) => state?.connected_peers || []);
     const connectedPeersCount = connectedPeers?.length || 0;
     const listMarkup = connectedPeersCount
         ? connectedPeers.map((peer, i) => <li key={`peer-${peer}:${i}`}>{peer}</li>)

@@ -18,7 +18,7 @@ const GpuMiningMarkup = () => {
     const setGpuMiningEnabled = useAppConfigStore((s) => s.setGpuMiningEnabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
-    const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu.hardware);
+    const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
 
     const isGPUMiningAvailable = useMemo(() => {
         if (!gpuDevicesHardware) return false;
