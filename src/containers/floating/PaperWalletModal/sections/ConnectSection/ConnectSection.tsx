@@ -43,7 +43,6 @@ export default function ConnectSection({ setSection }: Props) {
 
             if (r) {
                 const url = r.qr_link;
-                console.log('url', url);
                 const password = r.password;
 
                 setQrCodeValue(url);
