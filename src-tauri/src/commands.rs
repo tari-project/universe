@@ -602,17 +602,25 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_paper_wallet_details(app: tauri::AppHandle) -> Result<PaperWalletConfig, String> {
+pub async fn get_paper_wallet_details(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+    auth_uuid: Option<String>,
+) -> Result<PaperWalletConfig, String> {
     let timer = Instant::now();
     let config_path = app
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
+    let wallet_balance = state.wallet_latest_balance.borrow().clone();
+    let anon_id = state.config.read().await.anon_id().to_string();
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
+
+    warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
     let result = internal_wallet
-        .get_paper_wallet_details()
+        .get_paper_wallet_details(anon_id, wallet_balance, auth_uuid)
         .await
         .map_err(|e| e.to_string())?;
 
