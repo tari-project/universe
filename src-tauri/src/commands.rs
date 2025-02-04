@@ -488,7 +488,11 @@ pub async fn get_paper_wallet_details(
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let wallet_balance = state.wallet_latest_balance.borrow().clone();
+    let balance = state
+        .wallet_state_watch_rx
+        .borrow()
+        .clone()
+        .and_then(|state| state.balance);
     let anon_id = state.config.read().await.anon_id().to_string();
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
@@ -496,7 +500,7 @@ pub async fn get_paper_wallet_details(
 
     warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
     let result = internal_wallet
-        .get_paper_wallet_details(anon_id, wallet_balance, auth_uuid)
+        .get_paper_wallet_details(anon_id, balance, auth_uuid)
         .await
         .map_err(|e| e.to_string())?;
 
