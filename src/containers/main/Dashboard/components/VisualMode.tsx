@@ -31,11 +31,11 @@ function VisualMode() {
             canvas.style.opacity = '0';
         }
         setVisualMode(false);
-        removeTowerAnimation('tower-canvas');
+        removeTowerAnimation({ canvasId: 'tower-canvas' });
     }, []);
 
     const handleEnable = useCallback(() => {
-        loadTowerAnimation('tower-canvas', sidebarTowerOffset).then(() => {
+        loadTowerAnimation({ canvasId: 'tower-canvas', offset: sidebarTowerOffset }).then(() => {
             setVisualMode(true);
             setAnimationState('showVisual');
         });

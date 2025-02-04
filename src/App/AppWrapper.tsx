@@ -27,7 +27,7 @@ export default function AppWrapper() {
         async function initialize() {
             const config = await fetchAppConfig();
             if (config?.visual_mode) {
-                loadTowerAnimation('tower-canvas', sidebarTowerOffset);
+                loadTowerAnimation({ canvasId: 'tower-canvas', offset: sidebarTowerOffset });
             }
             await setMiningNetwork();
         }
