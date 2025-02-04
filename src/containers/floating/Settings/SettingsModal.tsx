@@ -51,6 +51,9 @@ export default function SettingsModal() {
         setIsSettingsOpen(!isSettingsOpen);
     }
 
+    const sectionTitle = t(`tabs.${activeSection}`);
+    const title = activeSection === 'releaseNotes' ? sectionTitle : `${sectionTitle} ${t('settings')}`;
+
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
@@ -58,7 +61,7 @@ export default function SettingsModal() {
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
-                            <Typography variant="h4">{`${t(`tabs.${activeSection}`)} ${t('settings')}`}</Typography>
+                            <Typography variant="h4">{title}</Typography>
                             <IconButton onClick={() => onOpenChange()}>
                                 <IoClose size={18} />
                             </IconButton>

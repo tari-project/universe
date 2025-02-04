@@ -31,6 +31,7 @@ use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
+use release_notes::ReleaseNotes;
 use serde_json::json;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
@@ -123,6 +124,7 @@ mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
 mod progress_tracker;
+mod release_notes;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -822,6 +824,8 @@ async fn setup_inner(
         })
         .await?;
     mm_proxy_manager.wait_ready().await?;
+    drop(config);
+
     *state.is_setup_finished.write().await = true;
     let _unused = telemetry_service
         .send(
@@ -883,6 +887,10 @@ async fn setup_inner(
             }
         }
     });
+
+    let _unused = ReleaseNotes::current()
+        .handle_release_notes_event_emit(state.clone(), app)
+        .await;
 
     Ok(())
 }

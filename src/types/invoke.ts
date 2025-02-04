@@ -26,7 +26,7 @@ declare module '@tauri-apps/api/core' {
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
-    function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
+    function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;

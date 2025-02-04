@@ -1,27 +1,21 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
-import {
-    IconImage,
-    LoadingText,
-    MarkdownWrapper,
-    Text,
-    TextWrapper,
-    Title,
-    UpgradeButton,
-    VersionWrapper,
-    Wrapper,
-} from './styles';
+import { IconImage, MarkdownWrapper, Text, TextWrapper, Title, UpgradeButton, VersionWrapper, Wrapper } from './styles';
 import { AccordionItem } from './AccordionItem/AccordionItem';
 import tariIcon from './tari-icon.png';
 import packageInfo from '../../../../../../package.json';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
+import { useAppStateStore } from '@app/store/appStateStore';
 
 const appVersion = packageInfo.version;
 const versionString = `v${appVersion}`;
-const CHANGELOG_URL = `https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md`;
 
 const parseMarkdownSections = (markdown: string): ReleaseSection[] => {
+    if (markdown === '' || !markdown) {
+        return [];
+    }
+
     const sections = markdown.split(/\n---\n/);
 
     return sections.map((block) => {
@@ -44,45 +38,18 @@ interface ReleaseSection {
     content: string;
 }
 
-export const ReleaseNotes = () => {
-    const [sections, setSections] = useState<ReleaseSection[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
-    const [needsUpgrade, setNeedsUpgrade] = useState(false);
+interface Props {
+    noHeader?: boolean;
+    showScrollBars?: boolean;
+}
 
+export const ReleaseNotes = ({ noHeader, showScrollBars }: Props) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
+    const releaseNotes = useAppStateStore((state) => state.releaseNotes);
+    const needsUpgrade = useAppStateStore((state) => state.isAppUpdateAvailable);
+    const [openSectionIndex, setOpenSectionIndex] = useState<number | null>(0);
 
-    useEffect(() => {
-        const loadReleaseNotes = async () => {
-            try {
-                setIsLoading(true);
-                const response = await fetch(CHANGELOG_URL);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const text = await response.text();
-                const parsedSections = parseMarkdownSections(text);
-                setSections(parsedSections);
-            } catch (err) {
-                console.error('Error loading release notes:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        loadReleaseNotes();
-    }, []);
-
-    useEffect(() => {
-        const checkForUpdates = async () => {
-            const version = await invoke('check_for_updates').catch((err) => {
-                console.error('Error checking for updates:', err);
-            });
-            setNeedsUpgrade(!!version);
-        };
-
-        checkForUpdates();
-    }, []);
+    const sections = useMemo(() => parseMarkdownSections(releaseNotes), [releaseNotes]);
 
     const toggleSection = (index: number) => {
         setOpenSectionIndex(openSectionIndex === index ? null : index);
@@ -96,37 +63,35 @@ export const ReleaseNotes = () => {
 
     return (
         <Wrapper>
-            <VersionWrapper>
-                <IconImage src={tariIcon} alt="Tari Icon" />
-                <TextWrapper>
-                    <Title>{t('settings:tabs.releaseNotes')}</Title>
-                    <Text>
-                        {t('tari-universe')} - {t('testnet')} {versionString}
-                    </Text>
-                </TextWrapper>
+            {!noHeader && (
+                <VersionWrapper>
+                    <IconImage src={tariIcon} alt="Tari Icon" />
+                    <TextWrapper>
+                        <Title>{t('settings:tabs.releaseNotes')}</Title>
+                        <Text>
+                            {t('tari-universe')} - {t('testnet')} {versionString}
+                        </Text>
+                    </TextWrapper>
 
-                {needsUpgrade && !isLoading && (
-                    <UpgradeButton onClick={handleUpdate}>
-                        {t('settings:release-notes.upgrade-available')}
-                    </UpgradeButton>
-                )}
-            </VersionWrapper>
+                    {needsUpgrade && (
+                        <UpgradeButton onClick={handleUpdate}>
+                            {t('settings:release-notes.upgrade-available')}
+                        </UpgradeButton>
+                    )}
+                </VersionWrapper>
+            )}
 
-            <MarkdownWrapper>
-                {isLoading ? (
-                    <LoadingText>{t('settings:release-notes.loading')}</LoadingText>
-                ) : (
-                    sections.map((section, index) => (
-                        <AccordionItem
-                            key={index}
-                            title={section.title}
-                            subtitle={section.date}
-                            content={<ReactMarkdown>{section.content}</ReactMarkdown>}
-                            isOpen={openSectionIndex === index}
-                            onToggle={() => toggleSection(index)}
-                        />
-                    ))
-                )}
+            <MarkdownWrapper $showScrollBars={showScrollBars}>
+                {sections.map((section, index) => (
+                    <AccordionItem
+                        key={index}
+                        title={section.title}
+                        subtitle={section.date}
+                        content={<ReactMarkdown>{section.content}</ReactMarkdown>}
+                        isOpen={openSectionIndex === index}
+                        onToggle={() => toggleSection(index)}
+                    />
+                ))}
             </MarkdownWrapper>
         </Wrapper>
     );

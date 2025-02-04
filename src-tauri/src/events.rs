@@ -30,3 +30,10 @@ pub struct SetupStatusEvent {
     pub title_params: Option<HashMap<String, String>>,
     pub progress: f64,
 }
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ReleaseNotesHandlerEvent {
+    pub release_notes: String,
+    pub is_app_update_available: bool,
+    pub should_show_dialog: bool,
+}
