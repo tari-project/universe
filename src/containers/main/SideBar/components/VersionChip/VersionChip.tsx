@@ -11,7 +11,7 @@ interface Props {
 export default function VersionChip({ version }: Props) {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.connected_peers?.length > 0);
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
 
     return (
         <Wrapper>

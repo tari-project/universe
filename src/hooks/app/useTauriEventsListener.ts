@@ -12,9 +12,9 @@ import {
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 
-const FRONTEND_EVENT = 'frontend_event';
+const BACKEND_STATE_UPDATE = 'backend_state_update';
 
-type FrontendEvent =
+type BackendStateUpdateEvent =
     | {
           event_type: 'WalletAddressUpdate';
           payload: {
@@ -65,7 +65,7 @@ const useTauriEventsListener = () => {
     const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
 
     useEffect(() => {
-        const unlisten = listen(FRONTEND_EVENT, ({ payload: event }: { payload: FrontendEvent }) => {
+        const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
             switch (event.event_type) {
                 case 'WalletAddressUpdate':
                     setWalletAddress(event.payload);

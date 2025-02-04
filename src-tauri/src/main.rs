@@ -194,20 +194,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
-        events_manager
-            .handle_internal_wallet_loaded_or_created(&move_app)
-            .await;
-        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
-            Ok(devices) => devices,
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to get GPU devices: {:?}", e);
-                vec![]
-            }
-        };
-        events_manager
-            .handle_gpu_devices_update(&move_app, gpu_devices)
-            .await;
-
         let current_block_height = node_status_watch_rx.borrow().block_height;
         events_manager
             .wait_for_initial_wallet_scan(&move_app, current_block_height)
@@ -905,8 +891,6 @@ async fn setup_inner(
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
-    #[allow(dead_code)]
-    wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -1027,7 +1011,6 @@ fn main() {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
-        wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),

@@ -9,7 +9,7 @@ function BlockTime() {
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
-    const isConnectedToTari = useMiningMetricsStore((s) => s.connected_peers?.length > 0);
+    const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
     const isMining = isCPUMining || isGPUMining;
 
     const { daysString, hoursString, minutes, seconds } = displayBlockTime || {};

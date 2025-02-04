@@ -27,7 +27,7 @@ export const useWebsocket = () => {
     const gpuMiningStatus = useMiningMetricsStore((state) => state.gpu_mining_status);
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
-    const isConnectedToNetwork = useMiningMetricsStore((state) => state.connected_peers?.length > 0);
+    const isConnectedToNetwork = useMiningMetricsStore((state) => state.isNodeConnected);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);

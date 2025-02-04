@@ -4,6 +4,7 @@ import { WalletText, Warning, Wrapper } from './styles';
 import { Trans, useTranslation } from 'react-i18next';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
+import { CircularProgress } from '@app/components/elements/CircularProgress';
 
 interface Props {
     onButtonClick: () => void;
@@ -14,9 +15,8 @@ export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
     const calculated_balance = useWalletStore((state) => state.calculated_balance);
-    const formatted_balance = calculated_balance
-        ? formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT)
-        : '-'; // Wallet still scanning
+    const isWalletScanning = !Number.isFinite(calculated_balance);
+    const formatted_balance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT); // Wallet still scanning
 
     return (
         <Wrapper>
@@ -27,13 +27,17 @@ export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
             <Text>{t('intro.text')}</Text>
 
             <WalletText>
-                <Trans
-                    i18nKey="staged-security:intro.balance"
-                    components={{
-                        span: <span />,
-                    }}
-                    values={{ balance: formatted_balance }}
-                />
+                {isWalletScanning ? (
+                    <CircularProgress />
+                ) : (
+                    <Trans
+                        i18nKey="staged-security:intro.balance"
+                        components={{
+                            span: <span />,
+                        }}
+                        values={{ balance: formatted_balance }}
+                    />
+                )}
             </WalletText>
 
             <BlackButton onClick={onButtonClick}>

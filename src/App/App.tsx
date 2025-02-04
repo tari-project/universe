@@ -17,7 +17,6 @@ import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
 import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
 import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
-import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 
 export default function App() {
     const isAppReady = useIsAppReady();
@@ -26,7 +25,6 @@ export default function App() {
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
     const { t } = useTranslation('common', { useSuspense: false });
-    useTauriEventsListener();
 
     useEffect(() => {
         if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {

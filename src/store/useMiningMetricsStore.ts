@@ -14,6 +14,7 @@ interface Actions {
 }
 
 interface MiningMetricsStoreState {
+    isNodeConnected: boolean;
     base_node_status: BaseNodeStatus;
     connected_peers: string[];
     cpu_devices: PublicDeviceParameters[];
@@ -25,6 +26,7 @@ interface MiningMetricsStoreState {
 type MiningMetricsStore = MiningMetricsStoreState & Actions;
 
 const initialState: MiningMetricsStoreState = {
+    isNodeConnected: false,
     base_node_status: {
         block_height: 0,
         block_time: 0,
@@ -61,12 +63,12 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
         set({ cpu_mining_status });
     },
     handleConnectedPeersUpdate: (connected_peers) => {
-        set({ connected_peers });
+        const wasNodeConnected = getState().isNodeConnected;
+        const isNodeConnected = connected_peers?.length > 0;
+        set({ connected_peers, isNodeConnected });
 
         const { miningInitiated } = useMiningStore.getState();
-        const wasNodeConnected = getState().connected_peers?.length > 0;
         if (miningInitiated) {
-            const isNodeConnected = connected_peers?.length > 0;
             if (!isNodeConnected && wasNodeConnected) {
                 // Lost connection
                 setAnimationState('stop');
