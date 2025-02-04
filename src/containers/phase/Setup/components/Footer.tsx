@@ -1,11 +1,12 @@
 import { memo } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+import SetupProgress from './SetupProgress';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { Container, LottieWrapper, StatusWrapper } from './Footer.styles';
 import animationData from './lil-soon-cookies.json';
 import AirdropPermission from './AirdropPermission/AirdropPermission';
-import SetupProgress from './SetupProgress';
+import AppVersion from './AppVersion/AppVersion';
 
 const Footer = memo(function Footer() {
     const created_at = useAppConfigStore((s) => s.created_at);
@@ -23,7 +24,7 @@ const Footer = memo(function Footer() {
                 </LottieWrapper>
                 <SetupProgress />
             </StatusWrapper>
-            {isFirstLoad ? <AirdropPermission /> : null}
+            {isFirstLoad ? <AirdropPermission /> : <AppVersion />}
         </Container>
     );
 });
