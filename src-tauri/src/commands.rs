@@ -211,9 +211,24 @@ pub async fn download_and_start_installer(
     Ok(())
 }
 
+pub async fn inner_exit_application(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let is_shutdown = state.is_shutting_down.lock().await;
+    if *is_shutdown {
+        return Ok(());
+    }
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    stop_all_processes(&app.clone(), true).await
+}
+
 #[tauri::command]
-pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+pub async fn exit_application(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    inner_exit_application(app.clone(), state).await?;
 
     app.exit(0);
     Ok(())
@@ -769,7 +784,7 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), false).await?;
+    stop_all_processes(&app.clone(), false).await?;
 
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
@@ -816,7 +831,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+    stop_all_processes(&app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -943,7 +958,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(app.clone(), true).await?;
+        stop_all_processes(&app.clone(), true).await?;
     }
 
     app.restart();

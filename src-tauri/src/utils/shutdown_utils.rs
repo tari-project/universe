@@ -27,7 +27,7 @@ use tauri::Manager;
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
 
 pub async fn stop_all_processes(
-    app_handle: tauri::AppHandle,
+    app_handle: &tauri::AppHandle,
     should_shutdown: bool,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "Stopping all miners");
