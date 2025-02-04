@@ -15,6 +15,29 @@ import towerWin from '/assets/img/setup/tower-win.png';
 import tower from '/assets/img/setup/tower.png';
 import { useParallax } from '@app/hooks/ui/useParallax';
 
+const STEP_IMAGES = [
+    [towerWin, towerWinClouds],
+    [fancy, fancyClouds],
+    [coins, coinsClouds],
+    [cubes, cubesClouds],
+    [tower, towerClouds],
+    [tari, tariCloud],
+] as const;
+
+const MAIN_IMAGE_ANIMATION = {
+    initial: { opacity: 0, y: 50, scale: 0.9 },
+    animate: { opacity: 1, y: 0, scale: 1 },
+    exit: { opacity: 0, scale: 0.9 },
+    transition: { duration: 2, ease: 'anticipate' },
+} as const;
+
+const CLOUD_ANIMATION = {
+    initial: { opacity: 0, scale: 1.1 },
+    animate: { opacity: 1, scale: 1 },
+    exit: { opacity: 0, scale: 1.1 },
+    transition: { duration: 2, ease: 'anticipate' },
+} as const;
+
 interface InfoItemGraphicProps {
     step?: number;
 }
@@ -23,37 +46,17 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
     const { x, y } = useParallax(10);
     const { x: x2, y: y2 } = useParallax(15);
 
-    const stepGraphics = [
-        [towerWin, towerWinClouds],
-        [fancy, fancyClouds],
-        [coins, coinsClouds],
-        [cubes, cubesClouds],
-        [tower, towerClouds],
-        [tari, tariCloud],
-    ];
-
-    const [mainImage, cloudOverlay] = stepGraphics[step - 1];
+    const [mainImage, cloudOverlay] = STEP_IMAGES[step - 1];
 
     return (
         <GraphicContainer>
-            <StepImg
-                src={mainImage}
-                alt={`Step ${step} main image`}
-                style={{ x, y }}
-                initial={{ opacity: 0, y: 50, scale: 0.9 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 2, ease: 'anticipate' }}
-            />
+            <StepImg src={mainImage} alt={`Step ${step} main image`} style={{ x, y }} {...MAIN_IMAGE_ANIMATION} />
             {cloudOverlay && (
                 <StepImgCloud
                     src={cloudOverlay}
                     alt={`Step ${step} cloud`}
                     style={{ x: x2, y: y2 }}
-                    initial={{ opacity: 0, scale: 1.1 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 1.1 }}
-                    transition={{ duration: 2, ease: 'anticipate' }}
+                    {...CLOUD_ANIMATION}
                 />
             )}
         </GraphicContainer>

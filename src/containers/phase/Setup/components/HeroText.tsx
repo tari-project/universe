@@ -69,6 +69,9 @@ const GridReference = styled.div<{ $minHeight: number }>`
     z-index: 1;
 `;
 
+const BEFORE_GHOSTS = Array(3).fill(null);
+const AFTER_GHOSTS = Array(7).fill(null);
+
 export default function HeroText() {
     const { t } = useTranslation('common');
     const heightRef = useRef<HTMLDivElement>(null);
@@ -77,18 +80,20 @@ export default function HeroText() {
 
     return (
         <GridReference $minHeight={textHeight + 80}>
-            <TextWrapper $height={textHeight} style={{ x, y }}>
-                {Array(3)
-                    .fill(null)
-                    .map((_, i) => (
-                        <SetupTextGhost key={`ghost-before-${i}`}>{t('tari-universe')}</SetupTextGhost>
-                    ))}
+            <TextWrapper
+                $height={textHeight}
+                style={{ x, y }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 1 }}
+            >
+                {BEFORE_GHOSTS.map((_, i) => (
+                    <SetupTextGhost key={`ghost-before-${i}`}>{t('tari-universe')}</SetupTextGhost>
+                ))}
                 <SetupTextMain ref={heightRef}>{t('tari-universe')}</SetupTextMain>
-                {Array(7)
-                    .fill(null)
-                    .map((_, i) => (
-                        <SetupTextGhost key={`ghost-after-${i}`}>{t('tari-universe')}</SetupTextGhost>
-                    ))}
+                {AFTER_GHOSTS.map((_, i) => (
+                    <SetupTextGhost key={`ghost-after-${i}`}>{t('tari-universe')}</SetupTextGhost>
+                ))}
             </TextWrapper>
         </GridReference>
     );
