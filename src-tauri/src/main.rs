@@ -899,6 +899,8 @@ async fn setup_inner(
 struct UniverseAppState {
     stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
+    #[allow(dead_code)]
+    wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -1019,6 +1021,7 @@ fn main() {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
+        wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
