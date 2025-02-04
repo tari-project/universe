@@ -116,7 +116,6 @@ impl ProcessAdapter for P2poolAdapter {
                 squad_prefix = "mini";
                 num_squads = 1;
             }
-
         }
         args.push(squad_prefix.to_string());
         args.push("--num-squads".to_string());
