@@ -42,7 +42,7 @@ use crate::{events::ReleaseNotesHandlerEvent, UniverseAppState, APPLICATION_FOLD
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn.jsdelivr.net/gh/tari-project/universe@main/CHANGELOG.md";
 const RELEASE_NOTES_FILE_NAME: &str = "CHANGELOG.json";
-const TIME_BETWEEN_FETCHES: Duration = Duration::from_secs(60 * 60 * 1); // 1 hour
+const TIME_BETWEEN_FETCHES: Duration = Duration::from_secs(60 * 60); // 1 hour
 static INSTANCE: LazyLock<ReleaseNotes> = LazyLock::new(ReleaseNotes::new);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
