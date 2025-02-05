@@ -255,16 +255,13 @@ impl NodeManager {
             is_synced,
             block_height: local_tip,
             ..
-        } = status_monitor
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .map_err(|e| {
-                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
-                    NodeManagerError::NodeNotStarted
-                } else {
-                    NodeManagerError::UnknownError(e.into())
-                }
-            })?;
+        } = status_monitor.get_network_state().await.map_err(|e| {
+            if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                NodeManagerError::NodeNotStarted
+            } else {
+                NodeManagerError::UnknownError(e.into())
+            }
+        })?;
         if !is_synced {
             info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);

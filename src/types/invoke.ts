@@ -2,9 +2,7 @@ import {
     AppConfig,
     ApplicationsVersions,
     ExternalDependency,
-    MinerMetrics,
     P2poolStatsResult,
-    TariWalletDetails,
     TorConfig,
     TransactionInfo,
     MaxConsumptionLevels,
@@ -55,8 +53,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
     function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
-    function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
-    function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(
         param: 'set_excluded_gpu_devices',

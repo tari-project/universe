@@ -127,12 +127,12 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ cpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+        if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
             await pauseMining();
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated && (enabled || metricsState.gpu.mining.is_mining)) {
+                if (miningState.miningInitiated && (enabled || metricsState.gpu_mining_status.is_mining)) {
                     await startMining();
                 } else {
                     await stopMining();
@@ -146,8 +146,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
 
                 if (
                     miningState.miningInitiated &&
-                    !metricsState.cpu.mining.is_mining &&
-                    !metricsState.gpu.mining.is_mining
+                    !metricsState.cpu_mining_status.is_mining &&
+                    !metricsState.gpu_mining_status.is_mining
                 ) {
                     void stopMining();
                 }
@@ -157,15 +157,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        const totalGpuDevices = metricsState.gpu.hardware.length;
+        const totalGpuDevices = metricsState.gpu_devices.length;
         const excludedDevices = miningState.excludedGpuDevices.length;
-        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+        if (metricsState.cpu_mining_status.is_mining || metricsState.cpu_mining_status.is_mining) {
             await pauseMining();
         }
 
         try {
             await invoke('set_gpu_mining_enabled', { enabled });
-            if (miningState.miningInitiated && (metricsState.cpu.mining.is_mining || enabled)) {
+            if (miningState.miningInitiated && (metricsState.cpu_mining_status.is_mining || enabled)) {
                 await startMining();
             } else {
                 void stopMining();
@@ -181,8 +181,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
 
             if (
                 miningState.miningInitiated &&
-                !metricsState.cpu.mining.is_mining &&
-                !metricsState.gpu.mining.is_mining
+                !metricsState.cpu_mining_status.is_mining &&
+                !metricsState.gpu_mining_status.is_mining
             ) {
                 void stopMining();
             }
