@@ -10,15 +10,13 @@ export function BlockHeightAccent() {
 
     const heightStringArr = heightString?.split('') || [];
 
-    const windowHeight = useMotionValue(window.innerHeight);
-    const windowWidth = useMotionValue(window.innerWidth);
+    const windowDimensions = useMotionValue({ height: window.innerHeight, width: window.innerWidth });
     const width = useMotionValue(170);
     const scale = useMotionValue(7.5);
 
     useEffect(() => {
         function handleResize() {
-            windowHeight.set(window.innerHeight);
-            windowWidth.set(window.innerWidth);
+            windowDimensions.set({ height: window.innerHeight, width: window.innerWidth });
         }
         window.addEventListener('resize', handleResize);
         handleResize();
@@ -26,15 +24,13 @@ export function BlockHeightAccent() {
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, [windowHeight, windowWidth]);
+    }, [windowDimensions]);
 
     const size = useTransform(() => {
-        const height = windowHeight.get();
-        const width = windowWidth.get();
+        const { height, width } = windowDimensions.get();
         let dividend = (height - 110) / (heightStringArr.length >= 4 ? heightStringArr.length : 4);
-
         // checking discrepancy between height to mitigate overlap a bit
-        if (Math.abs(height - width) < 190 && height / width >= 0.55) {
+        if (Math.abs(height - width) < 190 && height / width >= 0.5) {
             dividend = dividend * 0.5;
         }
         return Math.floor(dividend);
@@ -42,7 +38,7 @@ export function BlockHeightAccent() {
 
     useMotionValueEvent(size, 'change', (latest) => {
         width.set(latest);
-        scale.set(Math.min(10, latest * 0.05));
+        scale.set(Math.min(11, latest * 0.06));
     });
 
     return (

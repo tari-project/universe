@@ -25,7 +25,6 @@ export const AccentText = styled(m.div)`
     user-select: none;
     height: min-content;
     rotate: -90deg;
-    //font-size: 16px;
 `;
 
 export const SpacedNum = styled.span<{ $isDec?: boolean }>`
