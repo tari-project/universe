@@ -22,7 +22,7 @@ function BlockTime() {
     ) : null;
 
     return displayBlockTime && isMining && isConnectedToTari ? (
-        <BlockTimeContainer layout layoutId="block-time">
+        <BlockTimeContainer>
             <TimerTypography>
                 {daysMarkup}
                 {hourMarkup}
