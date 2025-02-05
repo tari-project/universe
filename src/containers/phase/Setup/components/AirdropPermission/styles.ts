@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled, { keyframes } from 'styled-components';
 
 export const Position = styled(m.div)`
