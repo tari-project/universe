@@ -54,7 +54,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -123,52 +123,6 @@ pub struct SignWsDataResponse {
 }
 
 #[tauri::command]
-pub async fn close_splashscreen(app: tauri::AppHandle) {
-    let close_max_retries: u32 = 10; // Maximum number of retries
-    let retry_delay_ms: u64 = 100; // Delay between retries in milliseconds
-
-    let mut retries = 0;
-
-    let (splashscreen_window, main_window) = loop {
-        let splashscreen_window = app.get_webview_window("splashscreen");
-        let main_window = app.get_webview_window("main");
-
-        if let (Some(splashscreen), Some(main)) = (splashscreen_window, main_window) {
-            break (splashscreen, main);
-        }
-
-        retries += 1;
-        if retries >= close_max_retries {
-            error!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows after {} retries", close_max_retries);
-            return;
-        }
-
-        info!(target: "LOG_TARGET", "Failed to fetch both 'splashscreen' and 'main' windows. Retrying in {}ms", retry_delay_ms);
-        tokio::time::sleep(Duration::from_millis(retry_delay_ms)).await;
-    };
-
-    if let (Ok(window_position), Ok(window_size)) = (
-        splashscreen_window.outer_position(),
-        splashscreen_window.inner_size(),
-    ) {
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-        if let Err(e) = main_window
-            .set_position(PhysicalPosition::new(window_position.x, window_position.y))
-            .and_then(|_| {
-                main_window.set_size(PhysicalSize::new(window_size.width, window_size.height))
-            })
-        {
-            error!(target: LOG_TARGET, "Could not set window position or size: {:?}", e);
-        }
-    } else {
-        error!(target: LOG_TARGET, "Could not get window position or size");
-        splashscreen_window.close().expect("could not close");
-        main_window.show().expect("could not show");
-    }
-}
-
-#[tauri::command]
 pub async fn download_and_start_installer(
     _missing_dependency: ExternalDependency,
 ) -> Result<(), String> {
@@ -194,9 +148,35 @@ pub async fn download_and_start_installer(
     Ok(())
 }
 
+pub async fn inner_exit_application(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let mut is_shutdown = state.is_shutting_down.lock().await;
+    let window = match app.get_webview_window("main") {
+        Some(window) => window,
+        None => {
+            error!(target: LOG_TARGET, "Could not get main window");
+            return Err("Could not get main window".to_string());
+        }
+    };
+    if *is_shutdown {
+        return Ok(());
+    }
+    let _unused = window
+        .emit("is_shutting_down", true)
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit is_shutting_down: {:?}", e));
+    *is_shutdown = true;
+    tokio::time::sleep(Duration::from_millis(250)).await;
+    stop_all_processes(&app.clone(), true).await
+}
+
 #[tauri::command]
-pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+pub async fn exit_application(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    inner_exit_application(app.clone(), state).await?;
 
     app.exit(0);
     Ok(())
@@ -638,7 +618,7 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), false).await?;
+    stop_all_processes(&app.clone(), false).await?;
 
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
@@ -685,7 +665,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+    stop_all_processes(&app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -812,7 +792,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(app.clone(), true).await?;
+        stop_all_processes(&app.clone(), true).await?;
     }
 
     app.restart();

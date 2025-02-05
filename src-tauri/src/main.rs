@@ -24,6 +24,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use commands::inner_exit_application;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -46,18 +47,18 @@ use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{AppHandle, Emitter, Manager, RunEvent, WindowEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
 use tokio::sync::{Mutex, RwLock};
-use tokio::time;
+use tokio::time::{self};
 use utils::logging_utils::setup_logging;
 
 use app_config::AppConfig;
@@ -147,6 +148,9 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+
+pub static EXIT_LOCKED: LazyLock<std::sync::Mutex<bool>> =
+    LazyLock::new(|| std::sync::Mutex::new(true));
 
 struct CpuMinerConfig {
     node_connection: CpuMinerConnection,
@@ -925,6 +929,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    is_shutting_down: Arc<Mutex<bool>>,
     events_manager: Arc<RwLock<EventsManager>>,
 }
 
@@ -1045,6 +1050,7 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        is_shutting_down: Arc::new(Mutex::new(false)),
         events_manager: Arc::new(RwLock::new(EventsManager::new(wallet_state_watch_rx))),
     };
     let app_state_clone = app_state.clone();
@@ -1240,7 +1246,6 @@ fn main() {
             });
         })
         .invoke_handler(tauri::generate_handler![
-            commands::close_splashscreen,
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
@@ -1322,12 +1327,14 @@ fn main() {
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            let state = app_handle.state::<UniverseAppState>().clone();
+            let _unused = block_on(inner_exit_application(app_handle.clone(), state));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            let state = app_handle.state::<UniverseAppState>().clone();
+            let _unused = block_on(inner_exit_application(app_handle.clone(),  state));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
