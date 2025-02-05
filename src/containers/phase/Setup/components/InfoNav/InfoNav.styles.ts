@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export const Container = styled.div`
     display: flex;
@@ -25,11 +25,32 @@ export const Copy = styled.div`
     letter-spacing: -0.8px;
 `;
 
-export const AnimatedTextContainer = styled(m.div)`
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+export const AnimatedTextContainer = styled.div`
     height: max-content;
+    opacity: 0;
+    animation: ${fadeIn} 0.3s ease-out forwards;
+
     span {
-        white-space: break-spaces;
+        white-space: pre;
+        display: inline-block;
+        opacity: 0;
+        animation: ${fadeIn} 0.3s ease-out forwards;
     }
+`;
+
+export const AnimatedSpan = styled.span<{ $index: number }>`
+    animation-delay: ${({ $index }) => $index * 0.025}s !important;
 `;
 
 export const NavContainer = styled.div`

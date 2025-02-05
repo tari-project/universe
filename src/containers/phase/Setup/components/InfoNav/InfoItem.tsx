@@ -1,5 +1,4 @@
-import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
-import { m, Variants } from 'motion/react';
+import { Container, Heading, Copy, AnimatedTextContainer, AnimatedSpan } from './InfoNav.styles';
 import { memo } from 'react';
 
 interface InfoItemProps {
@@ -7,41 +6,20 @@ interface InfoItemProps {
     text: string;
 }
 
-const container: Variants = {
-    hidden: {
-        opacity: 0,
-    },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.01,
-            delayChildren: 0.005,
-        },
-    },
-};
-
-const child: Variants = {
-    hidden: {
-        opacity: 0,
-    },
-    visible: {
-        opacity: 1,
-        transition: {
-            type: 'spring',
-            stiffness: 120,
-            damping: 10,
-        },
-    },
+const splitIntoWords = (text: string) => {
+    // This regex matches emojis, words, and preserves spaces
+    const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
+    return text.match(regex) || [];
 };
 
 const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }) {
-    const txtArr = Array.from(text);
+    const words = splitIntoWords(text);
     return (
-        <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
-            {txtArr.map((char, i) => (
-                <m.span key={`char:${i}-${char}`} variants={child}>
-                    {char}
-                </m.span>
+        <AnimatedTextContainer aria-hidden>
+            {words.map((word, i) => (
+                <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
+                    {word}
+                </AnimatedSpan>
             ))}
         </AnimatedTextContainer>
     );

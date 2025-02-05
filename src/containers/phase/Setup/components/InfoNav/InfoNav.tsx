@@ -70,9 +70,8 @@ const InfoNav = memo(function InfoNav() {
 
     return (
         <NavContainer>
-            <AnimatePresence mode="wait">
-                <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} />
-            </AnimatePresence>
+            <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} />
+
             <AnimatePresence>
                 <InfoItemGraphic key={`step-${currentStep}-graphics-wrapper`} step={currentStep} />
             </AnimatePresence>
