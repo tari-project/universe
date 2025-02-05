@@ -24,11 +24,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
-<<<<<<< HEAD
 use commands::inner_exit_application;
-=======
 use events_manager::EventsManager;
->>>>>>> main
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{debug, error, info, warn};
@@ -932,11 +929,8 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
-<<<<<<< HEAD
     is_shutting_down: Arc<Mutex<bool>>,
-=======
     events_manager: Arc<RwLock<EventsManager>>,
->>>>>>> main
 }
 
 #[derive(Clone, serde::Serialize)]
