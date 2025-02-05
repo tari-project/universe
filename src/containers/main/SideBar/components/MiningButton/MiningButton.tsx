@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { GiPauseButton } from 'react-icons/gi';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
 import ButtonOrbitAnimation from '../../Miner/components/ButtonOrbitAnimation.tsx';
@@ -27,12 +25,9 @@ export default function MiningButton() {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
-    const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
-    const isGPUMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isMining = isCPUMining || isGPUMining;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
-    const anyMiningEnabled = isCpuMiningEnabled || isGPUMiningEnabled;
-    const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !anyMiningEnabled;
+    const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled;
     const isAppLoading = isAppSettingUp || isMiningLoading;
 
     const miningButtonStateText = useMemo(() => {
@@ -61,7 +56,7 @@ export default function MiningButton() {
                 $isLoading={isAppLoading}
             >
                 {!isAppLoading ? <span>{t(`mining-button-text.${miningButtonStateText}`)}</span> : <LoadingSvg />}
-                <AnimatePresence>{isMining ? <ButtonOrbitAnimation /> : null}</AnimatePresence>
+                {isMining ? <ButtonOrbitAnimation /> : null}
             </StyledButton>
         </ButtonWrapper>
     );

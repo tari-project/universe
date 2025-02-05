@@ -1,5 +1,6 @@
 import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
-import { m, Variants } from 'framer-motion';
+import { m, Variants } from 'motion/react';
+import { memo } from 'react';
 
 interface InfoItemProps {
     title: string;
@@ -33,9 +34,8 @@ const child: Variants = {
     },
 };
 
-function AnimatedLetters({ text }: { text: string }) {
+const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }) {
     const txtArr = Array.from(text);
-
     return (
         <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
             {txtArr.map((char, i) => (
@@ -45,7 +45,7 @@ function AnimatedLetters({ text }: { text: string }) {
             ))}
         </AnimatedTextContainer>
     );
-}
+});
 
 export default function InfoItem({ title, text }: InfoItemProps) {
     return (

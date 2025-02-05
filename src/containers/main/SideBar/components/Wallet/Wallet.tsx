@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';

@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const Container = styled.div`
@@ -47,7 +47,7 @@ export const Nav = styled.div`
     z-index: 2;
 `;
 
-export const NavItem = styled(m.div)<{ $selected?: boolean }>`
+export const NavItem = styled.div<{ $selected?: boolean }>`
     border-radius: 50px;
     position: relative;
     display: flex;
