@@ -170,13 +170,19 @@ pub async fn inner_exit_application(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let mut is_shutdown = state.is_shutting_down.lock().await;
-    let window = app
-        .get_webview_window("main")
-        .expect("failed to obtain window");
+    let window = match app.get_webview_window("main") {
+        Some(window) => window,
+        None => {
+            error!(target: LOG_TARGET, "Could not get main window");
+            return Err("Could not get main window".to_string());
+        }
+    };
     if *is_shutdown {
         return Ok(());
     }
-    window.emit("is_shutting_down", true).unwrap();
+    let _unused = window
+        .emit("is_shutting_down", true)
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit is_shutting_down: {:?}", e));
     *is_shutdown = true;
     tokio::time::sleep(Duration::from_millis(250)).await;
     stop_all_processes(&app.clone(), true).await

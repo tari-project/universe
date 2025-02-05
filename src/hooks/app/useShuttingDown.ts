@@ -15,12 +15,12 @@ export function useShuttingDown() {
                 invoke('exit_application');
             }
         });
-        const isShuttingDownLitener = listen('is_shutting_down', ({ payload }: { payload: boolean }) => {
+        const isShuttingDownListener = listen('is_shutting_down', ({ payload }: { payload: boolean }) => {
             setIsShuttingDown(payload);
         });
         return () => {
             onWindowCloseListener.then((unlisten) => unlisten());
-            isShuttingDownLitener.then((unlisten) => unlisten());
+            isShuttingDownListener.then((unlisten) => unlisten());
         };
     }, [isShuttingDown]);
 
