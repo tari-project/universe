@@ -31,16 +31,15 @@ use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
-use crate::systemtray_manager::SystemTrayData;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::wallet_adapter::{TransactionInfo, WalletBalance};
+use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
-use crate::{airdrop, node_adapter, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -92,22 +91,6 @@ pub struct CpuMinerMetrics {
 pub struct GpuMinerMetrics {
     hardware: Vec<PublicDeviceProperties>,
     mining: GpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct MinerMetrics {
-    sha_network_hash_rate: u64,
-    randomx_network_hash_rate: u64,
-    cpu: CpuMinerMetrics,
-    gpu: GpuMinerMetrics,
-    base_node: BaseNodeStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct TariWalletDetails {
-    wallet_balance: Option<WalletBalance>,
-    tari_address_base58: String,
-    tari_address_emoji: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -359,113 +342,6 @@ pub async fn get_network(
     Ok(Network::get_current_or_user_setting_or_default().to_string())
 }
 
-#[allow(clippy::too_many_lines)]
-#[tauri::command]
-pub async fn get_miner_metrics(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<MinerMetrics, String> {
-    let timer = Instant::now();
-    if state.is_getting_miner_metrics.load(Ordering::SeqCst) {
-        let read = state.cached_miner_metrics.read().await;
-        if let Some(metrics) = &*read {
-            debug!(target: LOG_TARGET, "Already getting miner metrics, returning cached value");
-            return Ok(metrics.clone());
-        }
-        warn!(target: LOG_TARGET, "Already getting miner metrics");
-        return Err("Already getting miner metrics".to_string());
-    }
-    state.is_getting_miner_metrics.store(true, Ordering::SeqCst);
-
-    let node_status = state.base_node_latest_status.borrow().clone();
-    let node_adapter::BaseNodeStatus {
-        sha_network_hashrate,
-        randomx_network_hashrate,
-        block_height,
-        block_time,
-        block_reward,
-        ..
-    } = node_status;
-
-    let cpu_miner = state.cpu_miner.read().await;
-    let cpu_mining_status = match cpu_miner
-        .status(randomx_network_hashrate, block_reward)
-        .await
-        .map_err(|e| e.to_string())
-    {
-        Ok(cpu) => cpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-            state
-                .is_getting_miner_metrics
-                .store(false, Ordering::SeqCst);
-            return Err(e);
-        }
-    };
-    drop(cpu_miner);
-
-    let gpu_miner = state.gpu_miner.read().await;
-    let gpu_mining_status = state.gpu_latest_status.borrow().clone();
-    let gpu_mining_status = gpu_miner
-        .status(sha_network_hashrate, block_reward, gpu_mining_status)
-        .await
-        .unwrap_or_default();
-
-    let gpu_public_parameters = HardwareStatusMonitor::current()
-        .get_gpu_devices_public_properties()
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let connected_peers = state
-        .node_manager
-        .list_connected_peers()
-        .await
-        .unwrap_or_default();
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_miner_metrics took too long: {:?}", timer.elapsed());
-    }
-
-    let new_systemtray_data = SystemTrayData {
-        cpu_hashrate: cpu_mining_status.hash_rate,
-        gpu_hashrate: gpu_mining_status.hash_rate,
-        estimated_earning: (cpu_mining_status.estimated_earnings
-            + gpu_mining_status.estimated_earnings) as f64,
-    };
-
-    state
-        .systemtray_manager
-        .write()
-        .await
-        .update_tray(new_systemtray_data);
-
-    let metrics_ret = MinerMetrics {
-        sha_network_hash_rate: sha_network_hashrate,
-        randomx_network_hash_rate: randomx_network_hashrate,
-        cpu: CpuMinerMetrics {
-            // hardware: cpu_public_parameters.clone(),
-            mining: cpu_mining_status,
-        },
-        gpu: GpuMinerMetrics {
-            hardware: gpu_public_parameters.clone(),
-            mining: gpu_mining_status,
-        },
-        base_node: BaseNodeStatus {
-            block_height,
-            block_time,
-            is_connected: !connected_peers.is_empty(),
-            connected_peers,
-        },
-    };
-
-    let mut lock = state.cached_miner_metrics.write().await;
-    *lock = Some(metrics_ret.clone());
-    state
-        .is_getting_miner_metrics
-        .store(false, Ordering::SeqCst);
-
-    Ok(metrics_ret)
-}
-
 #[tauri::command]
 pub async fn get_monero_seed_words(
     state: tauri::State<'_, UniverseAppState>,
@@ -582,17 +458,29 @@ pub async fn get_used_p2pool_stats_server_port(
 }
 
 #[tauri::command]
-pub async fn get_paper_wallet_details(app: tauri::AppHandle) -> Result<PaperWalletConfig, String> {
+pub async fn get_paper_wallet_details(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+    auth_uuid: Option<String>,
+) -> Result<PaperWalletConfig, String> {
     let timer = Instant::now();
     let config_path = app
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
+    let balance = state
+        .wallet_state_watch_rx
+        .borrow()
+        .clone()
+        .and_then(|state| state.balance);
+    let anon_id = state.config.read().await.anon_id().to_string();
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
+
+    warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
     let result = internal_wallet
-        .get_paper_wallet_details()
+        .get_paper_wallet_details(anon_id, balance, auth_uuid)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -632,25 +520,6 @@ pub async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
-}
-
-#[tauri::command]
-pub async fn emit_tari_wallet_details(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<TariWalletDetails, String> {
-    let timer = Instant::now();
-    let tari_address = state.tari_address.read().await;
-    let wallet_balance = state.wallet_latest_balance.borrow().clone();
-    let result = TariWalletDetails {
-        wallet_balance,
-        tari_address_base58: tari_address.to_base58(),
-        tari_address_emoji: tari_address.to_emoji_string(),
-    };
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_tari_wallet_details took too long: {:?}", timer.elapsed());
-    }
-
-    Ok(result)
 }
 
 #[tauri::command]
@@ -1427,7 +1296,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.base_node_latest_status.borrow().clone();
+            let node_status = state.node_status_watch_rx.borrow().clone();
             let cpu_miner = state.cpu_miner.read().await;
             let cpu_mining_status = match cpu_miner
                 .status(
@@ -1440,9 +1309,6 @@ pub async fn set_airdrop_tokens<'r>(
                 Ok(cpu) => cpu,
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    state
-                        .is_getting_miner_metrics
-                        .store(false, Ordering::SeqCst);
                     return Err(e);
                 }
             };

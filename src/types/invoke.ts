@@ -2,9 +2,7 @@ import {
     AppConfig,
     ApplicationsVersions,
     ExternalDependency,
-    MinerMetrics,
     P2poolStatsResult,
-    TariWalletDetails,
     TorConfig,
     TransactionInfo,
     MaxConsumptionLevels,
@@ -28,7 +26,7 @@ declare module '@tauri-apps/api/core' {
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
-    function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
+    function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
@@ -55,8 +53,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
     function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
-    function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
-    function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(
         param: 'set_excluded_gpu_devices',
