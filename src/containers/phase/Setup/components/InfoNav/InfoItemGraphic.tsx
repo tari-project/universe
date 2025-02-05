@@ -50,12 +50,19 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
 
     return (
         <GraphicContainer>
-            <StepImg src={mainImage} alt={`Step ${step} main image`} style={{ x, y }} {...MAIN_IMAGE_ANIMATION} />
+            <StepImg
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                style={{ x: x as any, y: y as any }}
+                src={mainImage}
+                alt={`Step ${step} main image`}
+                {...MAIN_IMAGE_ANIMATION}
+            />
             {cloudOverlay && (
                 <StepImgCloud
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    style={{ x: x2 as any, y: y2 as any }}
                     src={cloudOverlay}
                     alt={`Step ${step} cloud`}
-                    style={{ x: x2, y: y2 }}
                     {...CLOUD_ANIMATION}
                 />
             )}

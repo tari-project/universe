@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useMotionValue, useSpring, useTransform, MotionValue } from 'framer-motion';
+import { useMotionValue, useSpring, useTransform, MotionValue } from 'motion/react';
 
 interface ParallaxOutput {
     x: MotionValue<number>;
@@ -7,15 +7,16 @@ interface ParallaxOutput {
 }
 
 export const useParallax = (amount = 10): ParallaxOutput => {
-    const pos = useMotionValue({ x: 0, y: 0 });
+    const posX = useMotionValue(0);
+    const posY = useMotionValue(0);
 
     const x = useSpring(
-        useTransform(pos, ({ x }) => (x / 500) * amount),
+        useTransform(posX, (x) => (x / 500) * amount),
         { damping: 50, stiffness: 300 }
     );
 
     const y = useSpring(
-        useTransform(pos, ({ y }) => (y / 500) * amount),
+        useTransform(posY, (y) => (y / 500) * amount),
         { damping: 50, stiffness: 300 }
     );
 
@@ -24,10 +25,8 @@ export const useParallax = (amount = 10): ParallaxOutput => {
         const handleMouseMove = (e: MouseEvent) => {
             cancelAnimationFrame(frame);
             frame = requestAnimationFrame(() => {
-                pos.set({
-                    x: e.clientX - window.innerWidth / 2,
-                    y: e.clientY - window.innerHeight / 2,
-                });
+                posX.set(e.clientX - window.innerWidth / 2);
+                posY.set(e.clientY - window.innerHeight / 2);
             });
         };
 
@@ -36,7 +35,7 @@ export const useParallax = (amount = 10): ParallaxOutput => {
             window.removeEventListener('mousemove', handleMouseMove);
             cancelAnimationFrame(frame);
         };
-    }, [pos]);
+    }, [posX, posY]);
 
     return { x, y };
 };
