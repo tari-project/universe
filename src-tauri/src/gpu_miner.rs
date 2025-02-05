@@ -22,6 +22,8 @@
 
 use log::info;
 use serde::Deserialize;
+use tauri::{AppHandle, Emitter};
+use std::fs::read_dir;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
@@ -31,6 +33,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::events::DetectedAvailableGpuEngines;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_utils;
@@ -58,12 +61,39 @@ pub(crate) struct GpuConfig {
     pub max_grid_size: u32,
     pub block_size: u32,
 }
+#[derive(Debug, PartialEq, Clone)]
+pub enum EngineType {
+    Cuda,
+    OpenCL,
+    Metal,
+}
+
+impl EngineType {
+    pub fn to_string(&self) -> String {
+        match self {
+            EngineType::Cuda => "CUDA".to_string(),
+            EngineType::OpenCL => "OpenCL".to_string(),
+            EngineType::Metal => "Metal".to_string(),
+        }
+    }
+
+    pub fn from_string(engine_type: &str) -> Result<EngineType, anyhow::Error> {
+        match engine_type {
+            "CUDA" => Ok(EngineType::Cuda),
+            "OpenCL" => Ok(EngineType::OpenCL),
+            "Metal" => Ok(EngineType::Metal),
+            _ => Err(anyhow::anyhow!("Invalid engine type")),
+        }
+    }
+}
+
 
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
     gpu_devices: Vec<GpuConfig>,
     excluded_gpu_devices: Vec<u8>,
+    curent_selected_engine: EngineType,
 }
 
 impl GpuMiner {
@@ -81,6 +111,7 @@ impl GpuMiner {
             is_available: false,
             gpu_devices: vec![],
             excluded_gpu_devices: vec![],
+            curent_selected_engine: EngineType::OpenCL,
         }
     }
 
@@ -118,7 +149,8 @@ impl GpuMiner {
                 Binaries::GpuMiner,
             )
             .await?;
-        info!(target: LOG_TARGET, "xtrgpuminer started");
+        info!(target: LOG_TARGET, 
+            "xtrgpuminer started");
 
         Ok(())
     }
@@ -149,7 +181,7 @@ impl GpuMiner {
         lock.is_pid_file_exists(base_path)
     }
 
-    pub async fn detect(&mut self, config_dir: PathBuf) -> Result<(), anyhow::Error> {
+    pub async fn detect(&mut self,app: AppHandle, config_dir: PathBuf) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
 
         let config_file = config_dir
@@ -159,7 +191,8 @@ impl GpuMiner {
             .to_string();
         let gpu_status_file = config_dir
             .join("gpuminer")
-            .join("gpu_status.json")
+            .join("engine_statuses")
+            .join(format!("{}_gpu_status.json", self.curent_selected_engine.to_string()))
             .to_string_lossy()
             .to_string();
 
@@ -187,6 +220,10 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
+                app.emit("detected-available-gpu-engines", DetectedAvailableGpuEngines {
+                    engines: self.get_available_gpu_engines(config_dir).await.unwrap().iter().map(|x| x.to_string()).collect(),
+                    selected_engine: self.curent_selected_engine.to_string(),
+                })?;
                 Ok(())
             }
             _ => {
@@ -198,6 +235,41 @@ impl GpuMiner {
             }
         }
     }
+
+    pub async fn get_available_gpu_engines(&self, config_dir: PathBuf) -> Result<Vec<EngineType>, anyhow::Error> {
+        let mut available_engines: Vec<EngineType> = vec![];
+        let engine_statuses_directory = config_dir
+            .join("gpuminer")
+            .join("engine_statuses");
+
+        for entry in read_dir(engine_statuses_directory)? {
+            info!(target: LOG_TARGET, "Reading engine status file");
+            info!(target: LOG_TARGET, "Engine status file: {:?}", entry);
+            let entry = entry?;
+            let path = entry.path();
+            let file_name = path.file_name().unwrap().to_str().unwrap();
+
+            let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
+            let engine_type = EngineType::from_string(&sanitized_file_name);
+
+            info!(target: LOG_TARGET, "File name: {:?}", file_name);
+            info!(target: LOG_TARGET, "Sanitized file name: {:?}", sanitized_file_name);
+
+            match engine_type {
+                Ok(engine) => {
+                    available_engines.push(engine);
+                }
+                Err(_) => {
+                    info!(target: LOG_TARGET, "Invalid engine type: {:?}", sanitized_file_name);
+                }
+            }
+
+        };
+
+        Ok(available_engines)
+
+    }
+        
 
     pub async fn status(
         &self,
@@ -234,6 +306,12 @@ impl GpuMiner {
         self.excluded_gpu_devices = excluded_gpu_devices;
         Ok(())
     }
+
+
+    pub fn set_selected_engine(&mut self, engine: EngineType){
+        self.curent_selected_engine = engine;
+    }
+    
 
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuConfig>, anyhow::Error> {
         Ok(self.gpu_devices.clone())

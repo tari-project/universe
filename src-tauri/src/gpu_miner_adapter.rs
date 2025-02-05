@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::app_config::GpuThreads;
+use crate::gpu_miner::EngineType;
 use crate::gpu_miner::GpuConfig;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
@@ -62,6 +63,7 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) excluded_gpu_devices: Vec<u8>,
     pub(crate) gpu_devices: Vec<GpuConfig>,
     pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+    pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
@@ -83,6 +85,7 @@ impl GpuMinerAdapter {
             excluded_gpu_devices: vec![],
             gpu_devices,
             latest_status_broadcast,
+            curent_selected_engine: EngineType::OpenCL,
         }
     }
 
@@ -183,6 +186,8 @@ impl ProcessAdapter for GpuMinerAdapter {
             log_dir.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
             "1".to_string(),
+            "--engine".to_string(),
+            self.curent_selected_engine.to_string(),
         ];
 
         // Only available after 0.1.8-pre.2

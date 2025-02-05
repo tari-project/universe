@@ -8,6 +8,7 @@ import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import App from './App.tsx';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
+import { useListenForGpuEngines } from '@app/hooks/app/useListenForGpuEngines.ts';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
 
@@ -19,6 +20,7 @@ export default function AppWrapper() {
     useListenForExternalDependencies();
     useListenForCriticalProblem();
     useListenForAppUpdated({ triggerEffect: true });
+    useListenForGpuEngines();
 
     useEffect(() => {
         async function initialize() {
