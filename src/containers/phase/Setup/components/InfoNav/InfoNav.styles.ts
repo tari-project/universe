@@ -23,6 +23,15 @@ const slideIn = keyframes`
   }
 `;
 
+const widthIn = keyframes`
+  from {
+    width: 0%;
+  }
+  to {
+    width: 100%;
+  }
+`;
+
 export const Container = styled(m.div)`
     display: flex;
     flex-direction: column;
@@ -76,35 +85,45 @@ export const NavContainer = styled.div`
 
 export const Nav = styled.div`
     display: flex;
+    align-items: center;
     gap: 5px;
     position: relative;
     z-index: 2;
+    height: 10px;
 `;
 
-export const NavItem = styled.div<{ $selected?: boolean }>`
+export const NavItem = styled.div`
     border-radius: 50px;
     position: relative;
     display: flex;
     width: 70px;
-    height: 4px;
+    height: 5px;
     cursor: pointer;
+    overflow: hidden;
 
-    transition: transform 0.3s ease;
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 200px;
+
+    transition:
+        background 0.2s ease,
+        height 0.2s ease;
+    will-change: background, height;
 
     &:hover {
-        transform: scaleY(2);
+        background: rgba(0, 0, 0, 0.2);
+        height: 10px;
     }
 `;
 
-export const NavItemCurrent = styled.div`
-    border-radius: 50px;
-    position: absolute;
-    top: 0;
-    left: 0;
-    display: flex;
-    width: 71px;
-    height: 4px;
+export const NavItemCurrent = styled.div<{
+    $duration?: number;
+}>`
+    border-radius: 200px;
+    height: 100%;
     z-index: 1;
+    background: #000;
+    animation: ${widthIn} ${({ $duration = 0.3 }) => $duration}s linear forwards;
+    will-change: width, opacity;
 `;
 
 export const GraphicContainer = styled.div`

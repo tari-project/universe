@@ -1,4 +1,3 @@
-import { LinearProgress } from '@app/components/elements/LinearProgress';
 import InfoItemGraphic from '@app/containers/phase/Setup/components/InfoNav/InfoItemGraphic';
 import { AnimatePresence } from 'motion/react';
 import { memo, useCallback, useState } from 'react';
@@ -52,17 +51,9 @@ const InfoNav = memo(function InfoNav() {
         const duration = calculateReadingTime(title + text);
 
         return (
-            <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
-                <LinearProgress value={0} variant="tiny" />
+            <NavItem key={key} onClick={() => handleStepClick(step)}>
                 {isSelected ? (
-                    <NavItemCurrent key={`selected:${key}`}>
-                        <LinearProgress
-                            value={100}
-                            duration={duration}
-                            variant="tiny"
-                            onAnimationComplete={handleNextStep}
-                        />
-                    </NavItemCurrent>
+                    <NavItemCurrent key={`selected:${key}`} $duration={duration} onAnimationEnd={handleNextStep} />
                 ) : null}
             </NavItem>
         );
