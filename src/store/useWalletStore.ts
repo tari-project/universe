@@ -1,14 +1,13 @@
 import { create } from './create';
-import { TariWalletDetails, TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { WalletAddress, TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 
-interface State extends WalletBalance {
+interface State {
     tari_address_base58: string;
     tari_address_emoji: string;
-    tari_address?: string;
-    balance: number | null;
+    balance?: WalletBalance;
+    calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
@@ -16,7 +15,8 @@ interface State extends WalletBalance {
 }
 
 interface Actions {
-    setWalletDetails: (tari_wallet_details: TariWalletDetails) => void;
+    setWalletAddress: (wallet_address: WalletAddress) => void;
+    setWalletBalance: (wallet_balance: WalletBalance) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
     fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
     refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
@@ -27,11 +27,6 @@ type WalletStoreState = State & Actions;
 const initialState: State = {
     tari_address_base58: '',
     tari_address_emoji: '',
-    balance: null,
-    available_balance: 0,
-    timelocked_balance: 0,
-    pending_incoming_balance: 0,
-    pending_outgoing_balance: 0,
     coinbase_transactions: [],
     has_more_coinbase_transactions: true,
     is_reward_history_loading: false,
@@ -40,25 +35,16 @@ const initialState: State = {
 
 export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
     ...initialState,
-    setWalletDetails: (tari_wallet_details) => {
-        const {
-            available_balance = 0,
-            timelocked_balance = 0,
-            pending_incoming_balance = 0,
-        } = tari_wallet_details.wallet_balance || {};
-        // Q: Should we subtract pending_outgoing_balance here?
-        const newBalance = available_balance + timelocked_balance + pending_incoming_balance; //TM
-
-        set({
-            ...tari_wallet_details.wallet_balance,
-            tari_address_base58: tari_wallet_details.tari_address_base58,
-            tari_address_emoji: tari_wallet_details.tari_address_emoji,
-            balance: tari_wallet_details?.wallet_balance ? newBalance : null,
-        });
+    setWalletAddress: (wallet_address) => {
+        set({ ...wallet_address });
+    },
+    setWalletBalance: (balance) => {
+        const calculated_balance =
+            balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
+        set({ balance, calculated_balance });
     },
     fetchCoinbaseTransactions: async (continuation, limit) => {
-        const setupProgress = useAppStateStore.getState().setupProgress;
-        if (useWalletStore.getState().is_reward_history_loading || setupProgress < 0.75) {
+        if (useWalletStore.getState().is_reward_history_loading) {
             return [];
         }
 

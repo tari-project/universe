@@ -1,8 +1,8 @@
-import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
+import { memo } from 'react';
 import { useParallax } from '@app/hooks/ui/useParallax';
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 
 const TEXT_STYLE_BASE = css`
     font-family: Druk, sans-serif;
@@ -50,39 +50,38 @@ const SetupTextGhost = styled.div`
     ${TEXT_STYLE_BASE}
 `;
 
-const TextWrapper = styled(m.div)<{ $height: number }>`
+const TextWrapper = styled(m.div)`
     display: grid;
     gap: calc(0.15rem + 1vh);
     grid-template-columns: 1fr 1fr 1fr;
     grid-auto-flow: dense;
     position: absolute;
-    top: ${({ $height }) => `-${$height * 0.75}px`};
+    top: -100px;
     left: 0;
     user-select: none;
     pointer-events: none;
 `;
 
-const GridReference = styled.div<{ $minHeight: number }>`
+const GridReference = styled.div`
     grid-area: hero;
     position: relative;
-    min-height: ${({ $minHeight }) => $minHeight}px;
+    min-height: 160px;
     z-index: 1;
 `;
 
 const BEFORE_GHOSTS = Array(3).fill(null);
 const AFTER_GHOSTS = Array(7).fill(null);
 
-export default function HeroText() {
+const HeroText = memo(function HeroText() {
     const { t } = useTranslation('common');
-    const heightRef = useRef<HTMLDivElement>(null);
-    const textHeight = heightRef?.current?.offsetHeight || 180;
     const { x, y } = useParallax(2.5);
 
     return (
-        <GridReference $minHeight={textHeight + 80}>
+        <GridReference>
             <TextWrapper
-                $height={textHeight}
-                style={{ x, y }}
+                style={{
+                    transform: `translate3d(${x}px, ${y}px, 0)`,
+                }}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 1, delay: 1 }}
@@ -90,11 +89,13 @@ export default function HeroText() {
                 {BEFORE_GHOSTS.map((_, i) => (
                     <SetupTextGhost key={`ghost-before-${i}`}>{t('tari-universe')}</SetupTextGhost>
                 ))}
-                <SetupTextMain ref={heightRef}>{t('tari-universe')}</SetupTextMain>
+                <SetupTextMain>{t('tari-universe')}</SetupTextMain>
                 {AFTER_GHOSTS.map((_, i) => (
                     <SetupTextGhost key={`ghost-after-${i}`}>{t('tari-universe')}</SetupTextGhost>
                 ))}
             </TextWrapper>
         </GridReference>
     );
-}
+});
+
+export default HeroText;

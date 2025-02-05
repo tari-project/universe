@@ -1,12 +1,13 @@
 import { Column, MarkGroup, RulerMark, RulerMarkGroup, Wrapper } from './Ruler.styles.ts';
 import { useTheme } from 'styled-components';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
+import { useMotionValue } from 'motion/react';
 
 export function Ruler() {
     const theme = useTheme();
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
-    const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+    const windowWidth = useMotionValue(window.innerWidth);
 
     const columnRef = useRef<HTMLDivElement>(null);
 
@@ -18,7 +19,7 @@ export function Ruler() {
     const topMarkSegments = topSegments.map((segment, i) => {
         const groupOpacity = segment * 0.05;
         return (
-            <MarkGroup key={`row-${segment}-${i}`} style={{ opacity: groupOpacity }} layout>
+            <MarkGroup key={`row-${segment}-${i}`} style={{ opacity: groupOpacity }}>
                 <RulerMarkGroup>
                     <RulerMark $opacity={1} />
                     <RulerMark />
@@ -45,7 +46,7 @@ export function Ruler() {
                 ? heightSegment?.toLocaleString()
                 : '';
         return (
-            <MarkGroup key={`row-${segment}-${i}`} layout style={{ opacity: groupOpacity }}>
+            <MarkGroup key={`row-${segment}-${i}`} style={{ opacity: groupOpacity }}>
                 <RulerMarkGroup>
                     <RulerMark $opacity={1} data-before={numberMark} />
                     <RulerMark />
@@ -59,26 +60,26 @@ export function Ruler() {
 
     useLayoutEffect(() => {
         function handleResize() {
-            setWindowWidth(window.innerWidth);
+            windowWidth.set(window.innerWidth);
         }
         window.addEventListener('resize', handleResize);
         handleResize();
         return () => {
             window.removeEventListener('resize', handleResize);
         };
-    }, []);
+    }, [windowWidth]);
 
     return (
-        <Wrapper layoutId="ruler-wrapper">
+        <Wrapper>
             {height && height > 0 ? (
-                <Column layoutId="ruler-column" ref={columnRef}>
+                <Column ref={columnRef}>
                     {topMarkSegments}
-                    <RulerMarkGroup layout>
+                    <RulerMarkGroup>
                         <RulerMark
                             $opacity={1}
                             data-before={height?.toLocaleString()}
                             animate={{
-                                fontSize: windowWidth < 1200 ? '18px' : '25px',
+                                fontSize: windowWidth.get() < 1200 ? '18px' : '25px',
                                 fontFamily: 'DrukWide, sans-serif',
                                 color: theme.palette.text.primary,
                             }}
