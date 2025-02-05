@@ -30,6 +30,7 @@ use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
+use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
@@ -1797,5 +1798,29 @@ pub async fn proceed_with_update(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_selected_engine(
+    selected_engine: &str,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "set_selected_engine called with engine: {:?}", selected_engine);
+    let timer = Instant::now();
+
+    info!(target: LOG_TARGET, "Setting selected engine");
+    let engine_type = EngineType::from_string(selected_engine).map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Selected engine set to {:?}", engine_type);
+    state
+        .gpu_miner
+        .write()
+        .await
+        .set_selected_engine(engine_type);
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }

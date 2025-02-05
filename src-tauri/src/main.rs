@@ -461,7 +461,7 @@ async fn setup_inner(
         .gpu_miner
         .write()
         .await
-        .detect(config_dir.clone())
+        .detect(app.clone(), config_dir.clone())
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
@@ -1196,7 +1196,8 @@ fn main() {
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
-            commands::get_airdrop_tokens
+            commands::get_airdrop_tokens,
+            commands::set_selected_engine
         ])
         .build(tauri::generate_context!())
         .inspect_err(

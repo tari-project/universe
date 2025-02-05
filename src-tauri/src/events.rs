@@ -37,3 +37,9 @@ pub struct ReleaseNotesHandlerEvent {
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
 }
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DetectedAvailableGpuEngines {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}

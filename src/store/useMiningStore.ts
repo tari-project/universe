@@ -17,6 +17,8 @@ interface State {
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
     network: string;
+    engine?: string;
+    availableEngines: string[];
 }
 
 interface Actions {
@@ -25,6 +27,8 @@ interface Actions {
     setExcludedGpuDevice: (excludeGpuDevice: number[]) => Promise<void>;
     setCustomLevelsDialogOpen: (customLevelsDialogOpen: boolean) => void;
     getMaxAvailableThreads: () => void;
+    setEngine: (engine: string) => Promise<void>;
+    setAvailableEngines: (availableEngines: string[], currentEngine: string) => void;
 }
 type MiningStoreState = State & Actions;
 
@@ -36,6 +40,8 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
+    availableEngines: [],
+    engine: undefined,
 
     network: 'unknown',
     excludedGpuDevices: [],
@@ -93,4 +99,21 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             set({ excludedGpuDevices: undefined });
         }
     },
+    setEngine: async (engine) => {
+        console.log('Setting engine: ', engine);
+        const current_engine = useMiningStore.getState().engine;
+        try {
+            console.info('Setting engine: ', engine);
+            await invoke('set_selected_engine', { selectedEngine: engine });
+            set({ engine });
+            await useMiningStore.getState().restartMining();
+        } catch (e) {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set engine: ', e);
+            appStateStore.setError(e as string);
+            set({ engine: current_engine || undefined });
+        }
+    },
+    setAvailableEngines: (availableEngines: string[], currentEngine: string) =>
+        set({ availableEngines, engine: currentEngine }),
 }));
