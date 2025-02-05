@@ -1,9 +1,9 @@
 {
     "binaries": {
         "xmrig": "=6.22.0",
-        "mmproxy": "=1.11.1-rc.1",
-        "minotari_node": "=1.11.1-rc.1",
-        "wallet": "=1.11.1-rc.1",
+        "mmproxy": "=1.11.3-rc.0",
+        "minotari_node": "=1.11.3-rc.0",
+        "wallet": "=1.11.3-rc.0",
         "sha-p2pool": "=0.22.1",
         "xtrgpuminer": "=0.2.12",
         "tor": "=13.5.7"
