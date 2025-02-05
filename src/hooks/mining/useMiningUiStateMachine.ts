@@ -7,8 +7,8 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
-    const cpuIsMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
-    const gpuIsMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
+    const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
+    const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const isMining = cpuIsMining || gpuIsMining;
 

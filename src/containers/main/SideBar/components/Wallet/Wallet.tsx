@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
@@ -22,8 +22,7 @@ import WalletBalanceMarkup from './WalletBalanceMarkup.tsx';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-
-    const balance = useWalletStore((s) => s.balance);
+    const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const transactions = useWalletStore((s) => s.coinbase_transactions);
     const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
@@ -66,7 +65,8 @@ export default function Wallet() {
                             text={t('paper-wallet-tooltip-message')}
                         />
                     )}
-                    {balance ? (
+                    {/* TODO: User might have spent his rewards */}
+                    {calculated_balance ? (
                         <CornerButton onClick={handleShowClick} $hasReward={showCount}>
                             {showCount && (
                                 <CornerButtonBadge>
