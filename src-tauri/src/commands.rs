@@ -55,7 +55,8 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -183,6 +184,33 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
     }
+}
+
+#[tauri::command]
+pub async fn frontend_ready(app: tauri::AppHandle) {
+    let app_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let state = app_handle.state::<UniverseAppState>().clone();
+        let setup_complete_clone = state.is_setup_finished.read().await;
+        let missing_dependencies = state.missing_dependencies.read().await;
+        let setup_complete_value = *setup_complete_clone;
+
+        let prog = ProgressTracker::new(app_handle.clone(), None);
+        prog.send_last_action("".to_string()).await;
+
+        time::sleep(Duration::from_secs(3)).await;
+        app_handle
+            .emit("app_ready", setup_complete_value)
+            .expect("Could not emit event 'app_ready'");
+
+        let has_missing = missing_dependencies.is_some();
+        let external_dependencies = missing_dependencies.clone();
+        if has_missing {
+            app_handle
+                .emit("missing-applications", external_dependencies)
+                .expect("Could not emit event 'missing-applications");
+        }
+    });
 }
 
 #[tauri::command]
