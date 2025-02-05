@@ -1136,7 +1136,6 @@ fn main() {
             });
         })
         .invoke_handler(tauri::generate_handler![
-            commands::close_splashscreen,
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
