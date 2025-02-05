@@ -1,10 +1,21 @@
-import * as m from 'motion/react-m';
 import styled, { keyframes } from 'styled-components';
+import { m } from 'motion/react';
 
 const fadeIn = keyframes`
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+const slideIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(50px);
   }
   to {
     opacity: 1;
@@ -39,13 +50,15 @@ export const Copy = styled.div`
 export const AnimatedTextContainer = styled.div`
     height: max-content;
     opacity: 0;
-    animation: ${fadeIn} 0.3s ease-out forwards;
+    animation: ${fadeIn} 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+    will-change: transform, opacity;
 
     span {
         white-space: pre;
         display: inline-block;
         opacity: 0;
-        animation: ${fadeIn} 0.3s ease-out forwards;
+        animation: ${fadeIn} 0.5s cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+        will-change: transform, opacity;
     }
 `;
 
@@ -83,7 +96,7 @@ export const NavItem = styled.div<{ $selected?: boolean }>`
     }
 `;
 
-export const NavItemCurrent = styled(m.div)`
+export const NavItemCurrent = styled.div`
     border-radius: 50px;
     position: absolute;
     top: 0;
@@ -94,7 +107,7 @@ export const NavItemCurrent = styled(m.div)`
     z-index: 1;
 `;
 
-export const GraphicContainer = styled(m.div)`
+export const GraphicContainer = styled.div`
     position: fixed;
     pointer-events: none;
     width: 40vw;
@@ -106,16 +119,22 @@ export const GraphicContainer = styled(m.div)`
     justify-content: flex-end;
     z-index: 1;
     transition: height 0.3s ease;
+    animation: ${slideIn} 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    will-change: height, transform, opacity;
 
     @media (max-width: 1200px) and (min-height: 850px) {
         height: 70vh;
     }
 `;
 
-export const StepImg = styled(m.img)`
+export const StepImg = styled.img<{ $index: number }>`
     max-height: 100%;
     position: absolute;
     bottom: 0;
     right: 0;
     pointer-events: none;
+    opacity: 0;
+    animation: ${fadeIn} 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    animation-delay: ${({ $index }) => $index * 0.1}s;
+    will-change: transform, opacity;
 `;

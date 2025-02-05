@@ -13,7 +13,7 @@ const emojis = {
     'step-6': ['🙏'],
 };
 
-const calculateReadingTime = (text) => {
+const calculateReadingTime = (text: string) => {
     const words = text.split(' ').length;
     return (words / 350) * 60 + 3; // Convert to seconds + 3s for a pause
 };
@@ -73,9 +73,7 @@ const InfoNav = memo(function InfoNav() {
             <AnimatePresence mode="wait">
                 <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} />
             </AnimatePresence>
-            <AnimatePresence>
-                <InfoItemGraphic key={`step-${currentStep}-graphics-wrapper`} step={currentStep} />
-            </AnimatePresence>
+            <InfoItemGraphic key={`step-${currentStep}-graphics-wrapper`} step={currentStep} />
             <Nav>{sliderMarkup}</Nav>
         </NavContainer>
     );
