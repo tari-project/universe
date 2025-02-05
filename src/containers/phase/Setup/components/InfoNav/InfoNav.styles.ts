@@ -1,7 +1,18 @@
 import * as m from 'motion/react-m';
 import styled, { keyframes } from 'styled-components';
 
-export const Container = styled.div`
+const fadeIn = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
+export const Container = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 16px;
@@ -23,17 +34,6 @@ export const Copy = styled.div`
     font-size: min(calc(1rem + 1vmin), 30px);
     line-height: 1.2;
     letter-spacing: -0.8px;
-`;
-
-const fadeIn = keyframes`
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 `;
 
 export const AnimatedTextContainer = styled.div`

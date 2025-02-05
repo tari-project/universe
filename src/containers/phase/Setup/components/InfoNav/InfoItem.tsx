@@ -7,7 +7,6 @@ interface InfoItemProps {
 }
 
 const splitIntoWords = (text: string) => {
-    // This regex matches emojis, words, and preserves spaces
     const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
     return text.match(regex) || [];
 };
@@ -16,7 +15,7 @@ const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }
     const words = splitIntoWords(text);
     return (
         <AnimatedTextContainer aria-hidden>
-            {words.map((word, i) => (
+            {words.map((word: string, i: number) => (
                 <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
                     {word}
                 </AnimatedSpan>
@@ -27,7 +26,7 @@ const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }
 
 export default function InfoItem({ title, text }: InfoItemProps) {
     return (
-        <Container>
+        <Container initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
             <Heading>
                 <AnimatedLetters text={title} />
             </Heading>
