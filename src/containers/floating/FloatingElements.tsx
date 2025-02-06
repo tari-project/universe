@@ -13,10 +13,11 @@ import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
+import { memo } from 'react';
 
 const environment = import.meta.env.MODE;
 
-export default function FloatingElements() {
+const FloatingElements = memo(function FloatingElements() {
     return (
         <FloatingTree>
             <SettingsModal />
@@ -34,4 +35,6 @@ export default function FloatingElements() {
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );
-}
+});
+
+export default FloatingElements;

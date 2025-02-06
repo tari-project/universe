@@ -19,7 +19,7 @@ const baseOptions: UserConfig = {
         alias: {
             '@app': path.resolve(__dirname, './src'),
             // TODO: Remove from production build
-            // 'react-dom/client': 'react-dom/profiling',
+            'react-dom/client': 'react-dom/profiling',
         },
     },
     logLevel: 'error',
