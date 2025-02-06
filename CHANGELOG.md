@@ -1,4 +1,31 @@
-# 🌟 Tari Universe - Testnet v0.8.46: "Fortunes Favor, Part 2"
+# 🌟 TARI UNIVERSE v0.9.5: The Great Pool War, Episode 1
+
+🔄 Rolling out via auto-update
+
+Dear Community,
+
+We’ve been building up to this point for many weeks together: today begins the great pool war. Tari Universe v0.9.5 is an important one featuring significant improvements to hash-tiers (low-hash rate miners, ftw!) and the addition of another pool to the Tari world (3 total now: 2 “fast” and 1 “slow”). This release will hopefully improve the overall win frequency for ALL miners on the Tari testnet. A reminder: we define win frequency as the % of miners who earn a reward daily. Our mission is to achieve an 80%+ win frequency during this phase of the Tari testnet
+
+Let the great pool war commence!
+
+## ✨ What's New
+
+🔗 Stabilized multi-pool network connectivity
+⚡ Added low-hash tier pool for lower-end miners
+🤝 Auto-calibration at startup assigns optimal hash tier
+🚀 Improved CPU efficiency via Tari node optimization of cryptographic operations (especially beneficial for lower-power machines)
+
+## 🔜 Coming Soon
+
+⚖️ P2Pool optimization for all power levels
+💾 Memory usage stability improvements
+⚙️ Persistent window settings restoration
+🖥️ Enhanced GPU support, monitoring, and reporting
+📝 Automatic release notes pop-up
+
+---
+
+# 🌟 Tari Universe - Testnet v0.8.52: "Fortunes Favor, Part 2"
 
 _January 27, 2025_
 
@@ -20,34 +47,6 @@ _January 27, 2025_
 ## ⚠️ Important Notes
 
 In this sequel to Fortune’s Favor, our champion, Tari Universe, is aiming to beat the 70% 24-hour win rate record that we achieved together in version .44. For higher-power machines (above 1kH/s CPU), the win rate should be closer to 95%+. Contributors are busy implementing hash-tiers, which we hope will improve the win frequency for lower-power miners
-
----
-
-# 🌟 Tari Universe - Testnet v0.8.46: "Fortunes Favor, Part 2"
-
-_January 22, 2025_
-
-## 🔄 Staged Rollout
-
-- Rolling out via auto-update
-
-## 📊 What's New
-
-- Fixed p2pool restart problem to improve sync
-- Fixed sluggish wallet history performance
-- Resolved memory issues by temporarily removing system tray status
-- Fixed loading sync stalls at 0%, 30%, and 75%
-- Release notes pop-up automatically on every release
-
-## 🔜 What's Next
-
-- Restoring persistent window settings
-- Expanded GPU support, monitoring, and reporting
-- Optimizing p2pool for computers of all power levels
-
-## ⚠️ Important Notes
-
-We're aiming to beat our 70% 24-hour win rate record in the last release. For higher-power machines (above 1kH/s CPU), the win rate should be closer to 100%. Contributors are busy optimizing the lower-hash-tier miners, which represent 25% of the miner base. The Fortunes Favor series of releases will feature multiple parts as we refine and improve Tari Universe's overall performance and stability.
 
 ---
 
