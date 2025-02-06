@@ -1,5 +1,6 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
 import {
     BlackButton,
@@ -59,7 +60,7 @@ export default function ShareRewardModal() {
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(shareUrl);
+        writeText(shareUrl);
         setCopied(true);
     };
 

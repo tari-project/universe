@@ -5,6 +5,7 @@ import { useAppStateStore } from './appStateStore';
 
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining } from '@app/store/miningStoreActions.ts';
+import { useAppConfigStore } from './useAppConfigStore';
 
 interface State {
     hashrateReady?: boolean;
@@ -35,7 +36,6 @@ const initialState: State = {
     miningInitiated: false,
     isChangingMode: false,
     miningControlsEnabled: true,
-
     network: 'unknown',
     excludedGpuDevices: [],
 };
@@ -57,7 +57,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
 
     restartMining: async () => {
         const state = useMiningMetricsStore.getState();
-        if (state.cpu.mining.is_mining || state.gpu.mining.is_mining) {
+        if (state.cpu_mining_status.is_mining || state.gpu_mining_status.is_mining) {
             console.info('Restarting mining...');
             try {
                 await pauseMining();
@@ -72,11 +72,29 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             }
         }
     },
-    setMiningControlsEnabled: (miningControlsEnabled) => set({ miningControlsEnabled }),
+    setMiningControlsEnabled: (miningControlsEnabled) =>
+        set((state) => {
+            const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+            const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+            return {
+                miningControlsEnabled:
+                    state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled)
+                        ? false
+                        : miningControlsEnabled,
+            };
+        }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
-        set({ excludedGpuDevices });
+        const hardware = useMiningMetricsStore.getState().gpu_devices;
+        const totalGpuDevices = hardware.length;
+        console.error('Excluded GPU devices: ', excludedGpuDevices);
+        console.error('Hardware: ', hardware);
         try {
             await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+            if (excludedGpuDevices.length === totalGpuDevices) {
+                const appConfigStore = useAppConfigStore.getState();
+                appConfigStore.setGpuMiningEnabled(false);
+            }
+            set({ excludedGpuDevices });
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);

@@ -3,7 +3,7 @@ import { ThemeColourGroup } from '@app/theme/palettes/colors.ts';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
-export type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info';
+export type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info' | 'grey';
 
 export type IconPosition = 'end' | 'start' | 'hug';
 

@@ -33,6 +33,7 @@ use tokio::time::sleep;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
@@ -43,6 +44,7 @@ pub struct P2poolConfig {
     pub grpc_port: u16,
     pub stats_server_port: u16,
     pub base_node_address: String,
+    pub cpu_benchmark_hashrate: Option<u64>,
 }
 
 pub struct P2poolConfigBuilder {
@@ -69,6 +71,14 @@ impl P2poolConfigBuilder {
         self
     }
 
+    pub fn with_cpu_benchmark_hashrate(
+        &mut self,
+        cpu_benchmark_hashrate: Option<u64>,
+    ) -> &mut Self {
+        self.config.cpu_benchmark_hashrate = cpu_benchmark_hashrate;
+        self
+    }
+
     pub fn build(&self) -> Result<P2poolConfig, anyhow::Error> {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
 
@@ -76,6 +86,7 @@ impl P2poolConfigBuilder {
             grpc_port,
             stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
+            cpu_benchmark_hashrate: self.config.cpu_benchmark_hashrate,
         })
     }
 }
@@ -92,6 +103,7 @@ impl Default for P2poolConfig {
             grpc_port: 18145,
             stats_server_port: 19000,
             base_node_address: String::from("http://127.0.0.1:18142"),
+            cpu_benchmark_hashrate: None,
         }
     }
 }
@@ -109,10 +121,13 @@ pub struct P2poolManager {
 }
 
 impl P2poolManager {
-    pub fn new(stats_broadcast: watch::Sender<Option<P2poolStats>>) -> Self {
+    pub fn new(
+        stats_broadcast: watch::Sender<Option<P2poolStats>>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter);
-        process_watcher.expected_startup_time = Duration::from_secs(30);
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool());
+        process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

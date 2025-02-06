@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
 export const Wrapper = styled.div`
@@ -12,6 +12,7 @@ export const Header = styled.div`
     padding: 20px 0;
     cursor: pointer;
     font-weight: 500;
+    gap: 10px;
 `;
 
 export const TextWrapper = styled.div`
@@ -48,6 +49,7 @@ export const ChevronIcon = styled.svg<{ $isOpen: boolean }>`
     height: 22px;
     transform: scaleY(1);
     transition: transform 0.3s ease;
+    flex-shrink: 0;
 
     ${({ $isOpen }) =>
         $isOpen &&

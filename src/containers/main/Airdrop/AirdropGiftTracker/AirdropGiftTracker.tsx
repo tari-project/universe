@@ -18,9 +18,9 @@ export default function AirdropGiftTracker() {
     const isLoggedIn = !!airdropTokens;
 
     return (
-        <Wrapper layout>
+        <Wrapper>
             <TitleWrapper>
-                <Title>{t('airdropGame')}</Title>
+                <Title>{isLoggedIn ? t('loggedInTitle') : t('loggedOutTitle')}</Title>
                 <InfoTooltip title={t('topTooltipTitle')} text={t('topTooltipText')} />
             </TitleWrapper>
 

@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 
 export const Wrapper = styled(m.div)`
     width: 100%;

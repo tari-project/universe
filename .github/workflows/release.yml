@@ -25,6 +25,8 @@ env:
 jobs:
   builds:
     name: Building ${{ matrix.platform }}
+    # best effort disabled by default
+    continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
       contents: write
     strategy:
@@ -33,6 +35,9 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: ''
+          - platform: 'ubuntu-24.04-arm'
+            args: ''
+            best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'

@@ -30,7 +30,10 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
-use minotari_node_grpc_client::grpc::{GetBalanceRequest, GetCompletedTransactionsRequest};
+use minotari_node_grpc_client::grpc::{
+    GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
+    GetStateRequest, NetworkStatusResponse,
+};
 use serde::Serialize;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
@@ -39,7 +42,8 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::sync::watch;
+use tokio::sync::{watch, Mutex};
+use tonic::Streaming;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -54,11 +58,11 @@ pub struct WalletAdapter {
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
-    balance_broadcast: watch::Sender<Option<WalletBalance>>,
+    state_broadcast: watch::Sender<Option<WalletState>>,
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool, balance_broadcast: watch::Sender<Option<WalletBalance>>) -> Self {
+    pub fn new(use_tor: bool, state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
@@ -69,7 +73,7 @@ impl WalletAdapter {
             spend_key: "".to_string(),
             tcp_listener_port,
             grpc_port,
-            balance_broadcast,
+            state_broadcast,
         }
     }
 }
@@ -191,7 +195,8 @@ impl ProcessAdapter for WalletAdapter {
             },
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
-                latest_balance_broadcast: self.balance_broadcast.clone(),
+                state_broadcast: self.state_broadcast.clone(),
+                completed_transactions_stream: Mutex::new(None),
             },
         ))
     }
@@ -215,18 +220,28 @@ pub enum WalletStatusMonitorError {
     UnknownError(#[from] anyhow::Error),
 }
 
-#[derive(Clone)]
 pub struct WalletStatusMonitor {
     grpc_port: u16,
-    latest_balance_broadcast: watch::Sender<Option<WalletBalance>>,
+    state_broadcast: watch::Sender<Option<WalletState>>,
+    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
+}
+
+impl Clone for WalletStatusMonitor {
+    fn clone(&self) -> Self {
+        Self {
+            grpc_port: self.grpc_port,
+            state_broadcast: self.state_broadcast.clone(),
+            completed_transactions_stream: Mutex::new(None),
+        }
+    }
 }
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        match self.get_balance().await {
-            Ok(b) => {
-                let _result = self.latest_balance_broadcast.send(Some(b));
+        match self.get_status().await {
+            Ok(s) => {
+                let _result = self.state_broadcast.send(Some(s));
                 HealthStatus::Healthy
             }
             Err(e) => {
@@ -237,7 +252,56 @@ impl StatusMonitor for WalletStatusMonitor {
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct WalletState {
+    pub scanned_height: u64,
+    pub balance: Option<WalletBalance>,
+    pub network: Option<NetworkStatus>,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Clone)]
+pub struct NetworkStatus {
+    pub status: ConnectivityStatus,
+    pub avg_latency_ms: u32,
+    pub num_node_connections: u32,
+}
+
+impl NetworkStatus {
+    pub fn from(res: Option<NetworkStatusResponse>) -> Option<Self> {
+        match res {
+            Some(res) => Some(Self {
+                status: match res.status {
+                    0 => ConnectivityStatus::Initializing,
+                    1 => ConnectivityStatus::Online(res.num_node_connections as usize),
+                    2 => ConnectivityStatus::Degraded(res.num_node_connections as usize),
+                    3 => ConnectivityStatus::Offline,
+                    _ => return None,
+                },
+                avg_latency_ms: res.avg_latency_ms,
+                num_node_connections: res.num_node_connections,
+            }),
+            None => None,
+        }
+    }
+}
+
+#[allow(dead_code)]
+#[derive(Default, Debug, Clone)]
+pub enum ConnectivityStatus {
+    /// Initial connectivity status before the Connectivity actor has initialized.
+    #[default]
+    Initializing,
+    /// Connectivity is online.
+    Online(usize),
+    /// Connectivity is less than the required minimum, but some connections are still active.
+    Degraded(usize),
+    /// There are no active connections.
+    Offline,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct WalletBalance {
     pub available_balance: MicroMinotari,
     pub timelocked_balance: MicroMinotari,
@@ -245,56 +309,77 @@ pub struct WalletBalance {
     pub pending_outgoing_balance: MicroMinotari,
 }
 
-#[derive(Debug, Serialize)]
+impl WalletBalance {
+    pub fn from(res: Option<GetBalanceResponse>) -> Option<Self> {
+        res.map(|balance| Self {
+            available_balance: MicroMinotari(balance.available_balance),
+            timelocked_balance: MicroMinotari(balance.timelocked_balance),
+            pending_incoming_balance: MicroMinotari(balance.pending_incoming_balance),
+            pending_outgoing_balance: MicroMinotari(balance.pending_outgoing_balance),
+        })
+    }
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct TransactionInfo {
     pub tx_id: u64,
     pub source_address: String,
     pub dest_address: String,
     pub status: i32,
-    pub direction: i32,
     pub amount: MicroMinotari,
     pub fee: u64,
-    pub is_cancelled: bool,
-    pub excess_sig: String,
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
 }
 
+// TODO: We should get rid of methods from here
+// TODO: Store client connection??
 impl WalletStatusMonitor {
     fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
     }
 
-    pub async fn get_balance(&self) -> Result<WalletBalance, WalletStatusMonitorError> {
+    pub async fn get_status(&self) -> Result<WalletState, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
             .await
             .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
         let res = client
-            .get_balance(GetBalanceRequest {})
+            .get_state(GetStateRequest {})
             .await
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let res = res.into_inner();
+        let status = res.into_inner();
 
-        Ok(WalletBalance {
-            available_balance: MicroMinotari(res.available_balance),
-            timelocked_balance: MicroMinotari(res.timelocked_balance),
-            pending_incoming_balance: MicroMinotari(res.pending_incoming_balance),
-            pending_outgoing_balance: MicroMinotari(res.pending_outgoing_balance),
+        Ok(WalletState {
+            scanned_height: status.scanned_height,
+            balance: WalletBalance::from(status.balance),
+            network: NetworkStatus::from(status.network),
         })
     }
 
-    pub async fn get_transaction_history(
+    pub async fn get_coinbase_transactions(
         &self,
+        continuation: bool,
+        limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_completed_transactions(GetCompletedTransactionsRequest {})
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let mut stream = res.into_inner();
+        // TODO: Implement starting point instead of continuation
+        let mut stream =
+            if continuation && self.completed_transactions_stream.lock().await.is_some() {
+                self.completed_transactions_stream
+                    .lock()
+                    .await
+                    .take()
+                    .expect("completed_transactions_stream not found")
+            } else {
+                let mut client = WalletClient::connect(self.wallet_grpc_address())
+                    .await
+                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+                let res = client
+                    .get_completed_transactions(GetCompletedTransactionsRequest {})
+                    .await
+                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+                res.into_inner()
+            };
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
 
@@ -304,22 +389,32 @@ impl WalletStatusMonitor {
             .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
         {
             let tx = message.transaction.expect("Transaction not found");
-
+            if tx.status != 12 && tx.status != 13 {
+                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
+                continue;
+            }
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
                 dest_address: tx.dest_address.to_hex(),
                 status: tx.status,
-                direction: tx.direction,
                 amount: MicroMinotari(tx.amount),
                 fee: tx.fee,
-                is_cancelled: tx.is_cancelled,
-                excess_sig: tx.excess_sig.to_hex(),
                 timestamp: tx.timestamp,
                 payment_id: tx.payment_id.to_hex(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
+            if let Some(limit) = limit {
+                if transactions.len() >= limit as usize {
+                    break;
+                }
+            }
         }
+
+        self.completed_transactions_stream
+            .lock()
+            .await
+            .replace(stream);
         Ok(transactions)
     }
 
