@@ -19,14 +19,12 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
-export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
-
-export default function ShareRewardModal() {
+const ShareRewardModal = memo(function ShareRewardModal() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
@@ -105,4 +103,6 @@ export default function ShareRewardModal() {
             )}
         </AnimatePresence>
     );
-}
+});
+
+export default ShareRewardModal;

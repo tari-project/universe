@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { Toast } from './Toast/Toast';
 import { useToastStore } from './useToastStore';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { Inside, Wrapper } from './styles';
 
-export const ToastStack = () => {
+const ToastStack = memo(function ToastStack() {
     const { toasts } = useToastStore();
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const [isHovered, setIsHovered] = useState(false);
@@ -42,4 +42,6 @@ export const ToastStack = () => {
             </Wrapper>
         </>
     );
-};
+});
+
+export default ToastStack;

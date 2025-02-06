@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { memo, useEffect } from 'react';
+import { memo } from 'react';
 import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
 

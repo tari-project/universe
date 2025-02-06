@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
@@ -35,7 +35,7 @@ const markups = {
     releaseNotes: <ReleaseNotes />,
 };
 
-export default function SettingsModal() {
+const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
@@ -74,4 +74,6 @@ export default function SettingsModal() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default SettingsModal;
