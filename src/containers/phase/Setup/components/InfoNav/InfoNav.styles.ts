@@ -1,5 +1,6 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
+import { convertHexToRGBA } from '@app/utils';
 
 export const Container = styled.div`
     display: flex;
@@ -97,4 +98,11 @@ export const StepImg = styled(m.img)`
     bottom: 0;
     right: 0;
     pointer-events: none;
+`;
+
+export const ProgressShell = styled.div`
+    width: 100%;
+    padding: 0;
+    height: 4px;
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
 `;

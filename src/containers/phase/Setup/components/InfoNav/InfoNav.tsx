@@ -3,7 +3,7 @@ import InfoItemGraphic from '@app/containers/phase/Setup/components/InfoNav/Info
 import { AnimatePresence } from 'motion/react';
 import { memo, useCallback, useState } from 'react';
 import InfoItem from './InfoItem';
-import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
+import { ProgressShell, Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
 import { useTranslation } from 'react-i18next';
 
 const steps = Array.from({ length: 6 }, (_, i) => i + 1);
@@ -53,7 +53,7 @@ const InfoNav = memo(function InfoNav() {
 
         return (
             <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
-                <LinearProgress value={0} variant="tiny" />
+                <ProgressShell />
                 {isSelected ? (
                     <NavItemCurrent key={`selected:${key}`}>
                         <LinearProgress
