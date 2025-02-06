@@ -89,6 +89,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
                 }
                 return device;
             });
+            console.log('Updated devices: ', updatedDevices);
             const isAllExcluded = updatedDevices.every((device) => device.is_excluded);
             if (isAllExcluded) {
                 const appConfigStore = useAppConfigStore.getState();
