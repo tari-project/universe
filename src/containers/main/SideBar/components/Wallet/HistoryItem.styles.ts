@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import * as m from 'motion/react-m';
 
 export const PaddingWrapper = styled.div`
-    padding: 2px 0;
+    padding: 3px 0;
 `;
 
 export const Wrapper = styled(m.div)`
