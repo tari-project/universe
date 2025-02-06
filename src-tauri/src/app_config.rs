@@ -117,6 +117,8 @@ pub struct AppConfigFromFile {
     last_changelog_version: String,
     #[serde(default)]
     airdrop_tokens: Option<AirdropTokens>,
+    #[serde(default = "default_true")]
+    audio_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -161,6 +163,7 @@ impl Default for AppConfigFromFile {
             pre_release: false,
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
+            audio_enabled: true,
         }
     }
 }
@@ -281,6 +284,7 @@ pub(crate) struct AppConfig {
     pre_release: bool,
     last_changelog_version: String,
     airdrop_tokens: Option<AirdropTokens>,
+    audio_enabled: bool,
 }
 
 impl AppConfig {
@@ -327,6 +331,7 @@ impl AppConfig {
             pre_release: false,
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
+            audio_enabled: true,
         }
     }
 
@@ -406,6 +411,7 @@ impl AppConfig {
                 self.pre_release = config.pre_release;
                 self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
+                self.audio_enabled = config.audio_enabled;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -538,6 +544,16 @@ impl AppConfig {
         airdrop_tokens: Option<AirdropTokens>,
     ) -> Result<(), anyhow::Error> {
         self.airdrop_tokens = airdrop_tokens;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
+    pub fn audio_enabled(&self) -> bool {
+        self.audio_enabled
+    }
+
+    pub async fn set_audio_enabled(&mut self, audio_enabled: bool) -> Result<(), anyhow::Error> {
+        self.audio_enabled = audio_enabled;
         self.update_config_file().await?;
         Ok(())
     }
@@ -833,6 +849,7 @@ impl AppConfig {
             pre_release: self.pre_release,
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
+            audio_enabled: self.audio_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
