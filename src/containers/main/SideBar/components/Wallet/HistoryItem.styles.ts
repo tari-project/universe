@@ -1,6 +1,10 @@
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
 
+export const PaddingWrapper = styled.div`
+    padding: 2px 0;
+`;
+
 export const Wrapper = styled(m.div)`
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
