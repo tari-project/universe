@@ -33,7 +33,7 @@ use tokio::sync::{watch, RwLock};
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::events::DetectedAvailableGpuEngines;
+use crate::events::{DetectedAvailableGpuEngines, DetectedDevices};
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuStatus, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -323,10 +323,34 @@ impl GpuMiner {
         Ok(())
     }
 
-    pub async fn set_selected_engine(&mut self, engine: EngineType) {
+    pub async fn set_selected_engine(
+        &mut self,
+        engine: EngineType,
+        config_dir: PathBuf,
+        app: AppHandle,
+    ) -> Result<(), anyhow::Error> {
         self.curent_selected_engine = engine.clone();
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.curent_selected_engine = engine;
+
+        let gpu_status_file_name = format!(
+            "{}_gpu_status.json",
+            self.curent_selected_engine.to_string()
+        );
+        let gpu_status_file_path =
+            get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
+        let gpu_settings = GpuStatusFile::load(&gpu_status_file_path)?;
+
+        self.gpu_devices = gpu_settings.gpu_devices;
+
+        app.emit(
+            "detected-devices",
+            DetectedDevices {
+                devices: self.gpu_devices.clone(),
+            },
+        )?;
+
+        Ok(())
     }
 
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuStatus>, anyhow::Error> {

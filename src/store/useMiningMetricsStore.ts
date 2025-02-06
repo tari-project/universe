@@ -1,5 +1,6 @@
 import { GpuStatus, MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
+import { useAppConfigStore } from './useAppConfigStore';
 
 interface Actions {
     setMiningMetrics: (metrics: MinerMetrics) => void;
@@ -39,5 +40,12 @@ const initialState: MinerMetrics = {
 export const useMiningMetricsStore = create<MiningMetricsStoreState>()((set) => ({
     ...initialState,
     setMiningMetrics: (metrics) => set({ ...metrics }),
-    setGpuHardware: (hardware) => set((state) => ({ ...state, gpu: { ...state.gpu, hardware } })),
+    setGpuHardware: (hardware) => {
+        set((state) => ({ ...state, gpu: { ...state.gpu, hardware } }));
+
+        if (hardware.some((gpu) => gpu.is_available && !gpu.is_excluded)) {
+            const appConfigStore = useAppConfigStore.getState();
+            appConfigStore.setGpuMiningEnabled(true);
+        }
+    },
 }));

@@ -1813,6 +1813,7 @@ pub async fn proceed_with_update(
 pub async fn set_selected_engine(
     selected_engine: &str,
     state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "set_selected_engine called with engine: {:?}", selected_engine);
     let timer = Instant::now();
@@ -1820,12 +1821,17 @@ pub async fn set_selected_engine(
     info!(target: LOG_TARGET, "Setting selected engine");
     let engine_type = EngineType::from_string(selected_engine).map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "Selected engine set to {:?}", engine_type);
+    let config = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
     state
         .gpu_miner
         .write()
         .await
-        .set_selected_engine(engine_type)
-        .await;
+        .set_selected_engine(engine_type, config, app)
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
