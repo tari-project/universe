@@ -32,7 +32,7 @@ use crate::external_dependencies::{
 };
 use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::hardware::hardware_status_monitor::{HardwareStatusMonitor, PublicDeviceProperties};
+use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
@@ -91,7 +91,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
+    hardware: Vec<GpuStatus>,
     mining: GpuMinerStatus,
 }
 
@@ -431,10 +431,13 @@ pub async fn get_miner_metrics(
         .await
         .unwrap_or_default();
 
-    let gpu_public_parameters = HardwareStatusMonitor::current()
-        .get_gpu_devices_public_properties()
+    let gpu_public_parameters = state
+        .gpu_miner
+        .read()
         .await
-        .map_err(|e| e.to_string())?;
+        .get_gpu_devices()
+        .await
+        .unwrap_or_default();
 
     let connected_peers = state
         .node_manager
@@ -1120,17 +1123,22 @@ pub async fn set_display_mode(
 
     Ok(())
 }
-
 #[tauri::command]
-pub async fn set_excluded_gpu_devices(
-    excluded_gpu_devices: Vec<u8>,
+pub async fn toggle_device_exclusion(
+    device_index: u32,
+    excluded: bool,
+    app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let mut gpu_miner = state.gpu_miner.write().await;
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
     gpu_miner
-        .set_excluded_device(excluded_gpu_devices)
+        .toggle_device_exclusion(config_dir, device_index, excluded)
         .await
-        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
+        .inspect_err(|e| error!("error at toggle_device_exclusion {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1816,7 +1824,8 @@ pub async fn set_selected_engine(
         .gpu_miner
         .write()
         .await
-        .set_selected_engine(engine_type);
+        .set_selected_engine(engine_type)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());

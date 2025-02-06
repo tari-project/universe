@@ -22,7 +22,7 @@
 
 use crate::app_config::GpuThreads;
 use crate::gpu_miner::EngineType;
-use crate::gpu_miner::GpuConfig;
+use crate::gpu_status_file::GpuStatus;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -60,15 +60,14 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
-    pub(crate) excluded_gpu_devices: Vec<u8>,
-    pub(crate) gpu_devices: Vec<GpuConfig>,
+    pub(crate) gpu_devices: Vec<GpuStatus>,
     pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
     pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
     pub fn new(
-        gpu_devices: Vec<GpuConfig>,
+        gpu_devices: Vec<GpuStatus>,
         latest_status_broadcast: watch::Sender<GpuMinerStatus>,
     ) -> Self {
         Self {
@@ -82,7 +81,6 @@ impl GpuMinerAdapter {
                 .collect(),
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
-            excluded_gpu_devices: vec![],
             gpu_devices,
             latest_status_broadcast,
             curent_selected_engine: EngineType::OpenCL,
@@ -117,10 +115,6 @@ impl GpuMinerAdapter {
             }
         }
     }
-
-    pub fn set_excluded_gpu_devices(&mut self, excluded_gpu_devices: Vec<u8>) {
-        self.excluded_gpu_devices = excluded_gpu_devices;
-    }
 }
 
 impl ProcessAdapter for GpuMinerAdapter {
@@ -154,6 +148,13 @@ impl ProcessAdapter for GpuMinerAdapter {
             }
         };
 
+        let gpu_engine_statuses = config_dir
+            .join("gpuminer")
+            .join("engine_statuses")
+            .clone()
+            .to_string_lossy()
+            .to_string();
+
         let grid_size = self
             .gpu_grid_size
             .iter()
@@ -182,6 +183,8 @@ impl ProcessAdapter for GpuMinerAdapter {
                 .join("log4rs_config.yml")
                 .to_string_lossy()
                 .to_string(),
+            "--gpu-status-file".to_string(),
+            gpu_engine_statuses.clone(),
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
@@ -200,17 +203,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         ) {
             args.push("--p2pool-enabled".to_string());
         }
-        if !self.excluded_gpu_devices.is_empty() {
-            info!(target: LOG_TARGET, "Gpu miner: add argument --exclude-devices {:?}", self.excluded_gpu_devices);
-            args.push("--exclude-devices".to_string());
-            args.push(
-                self.excluded_gpu_devices
-                    .iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join(","),
-            );
-        }
+
         info!(target: LOG_TARGET, "Run Gpu miner with args: {:?}", args.join(" "));
         let mut envs = std::collections::HashMap::new();
         match Network::get_current_or_user_setting_or_default() {

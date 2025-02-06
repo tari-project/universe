@@ -59,10 +59,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
     function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
-    function invoke(
-        param: 'set_excluded_gpu_devices',
-        payload: { excludedGpuDevice: number | undefined }
-    ): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
@@ -86,6 +82,10 @@ declare module '@tauri-apps/api/core' {
     ): Promise<void>;
     function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
+    function invoke(
+        param: 'toggle_device_exclusion',
+        payload: { device_index: number; excluded: boolean }
+    ): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }

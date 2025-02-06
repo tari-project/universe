@@ -1,15 +1,15 @@
-import { MinerMetrics } from '@app/types/app-status';
+import { GpuStatus, MinerMetrics } from '@app/types/app-status';
 import { create } from './create';
 
 interface Actions {
     setMiningMetrics: (metrics: MinerMetrics) => void;
+    setGpuHardware: (hardware: GpuStatus[]) => void;
 }
 
 type MiningMetricsStoreState = MinerMetrics & Actions;
 
 const initialState: MinerMetrics = {
     cpu: {
-        hardware: [],
         mining: {
             is_mining: false,
             hash_rate: 0,
@@ -39,4 +39,5 @@ const initialState: MinerMetrics = {
 export const useMiningMetricsStore = create<MiningMetricsStoreState>()((set) => ({
     ...initialState,
     setMiningMetrics: (metrics) => set({ ...metrics }),
+    setGpuHardware: (hardware) => set((state) => ({ ...state, gpu: { ...state.gpu, hardware } })),
 }));

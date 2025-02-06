@@ -103,6 +103,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -1170,7 +1171,6 @@ fn main() {
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
             commands::set_display_mode,
-            commands::set_excluded_gpu_devices,
             commands::set_gpu_mining_enabled,
             commands::set_mine_on_app_start,
             commands::set_mode,
@@ -1193,6 +1193,7 @@ fn main() {
             commands::set_pre_release,
             commands::check_for_updates,
             commands::try_update,
+            commands::toggle_device_exclusion,
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,

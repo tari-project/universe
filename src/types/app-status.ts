@@ -77,12 +77,11 @@ export interface CriticalProblem {
 }
 
 export interface CpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
     mining: CpuMinerStatus;
 }
 
 export interface GpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
+    hardware: GpuStatus[];
     mining: GpuMinerStatus;
 }
 
@@ -202,11 +201,14 @@ export interface DeviceParameters {
     current_temperature: number;
     max_temperature: number;
 }
-export interface PublicDeviceParameters {
-    vendor: HardwareVendor;
-    name: string;
-    status: DeviceStatus;
-    parameters?: DeviceParameters;
+export interface GpuStatus {
+    device_index: number;
+    device_name: string;
+    is_available: boolean;
+    is_excluded: boolean;
+    grid_size: number;
+    max_grid_size: number;
+    block_size: number;
 }
 export interface HardwareParameters {
     label: string;

@@ -15,6 +15,7 @@ import {
 import { Stack } from '@app/components/elements/Stack';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { GpuStatus } from '@app/types/app-status.ts';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -27,20 +28,13 @@ const GpuDevices = () => {
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isMiningInProgress = isCPUMining || isGPUMining;
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
-    const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
-    const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
+    const toggleDeviceExclusion = useMiningStore((s) => s.toggleDeviceExclusion);
 
     const handleSetExcludedDevice = useCallback(
-        async (device: number) => {
-            if (!excludedDevices.includes(device)) {
-                excludedDevices.push(device);
-                await setExcludedDevice([...excludedDevices]);
-            } else {
-                excludedDevices.splice(excludedDevices.indexOf(device), 1);
-                await setExcludedDevice([...excludedDevices]);
-            }
+        async (device: GpuStatus) => {
+            toggleDeviceExclusion(device.device_index, !device.is_excluded);
         },
-        [excludedDevices, setExcludedDevice]
+        [toggleDeviceExclusion]
     );
 
     return (
@@ -59,19 +53,19 @@ const GpuDevices = () => {
                         {(gpuDevices || []).length > 0 ? (
                             gpuDevices.map((device, i) => (
                                 <Stack
-                                    key={device.name}
+                                    key={device.device_name}
                                     direction="row"
                                     alignItems="center"
                                     justifyContent="space-between"
                                 >
                                     <Typography variant="h6">
-                                        {i + 1}. {device.name}
+                                        {i + 1}. {device.device_name}
                                     </Typography>
                                     <ToggleSwitch
-                                        key={device.name}
-                                        checked={!excludedDevices.includes(i) && isGpuMiningEnabled}
+                                        key={device.device_index}
+                                        checked={!device.is_excluded}
                                         disabled={isDisabled}
-                                        onChange={() => handleSetExcludedDevice(i)}
+                                        onChange={() => handleSetExcludedDevice(device)}
                                     />
                                 </Stack>
                             ))
