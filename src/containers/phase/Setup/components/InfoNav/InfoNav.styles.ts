@@ -1,4 +1,4 @@
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { m } from 'motion/react';
 
 const fadeIn = keyframes`
@@ -15,11 +15,11 @@ const fadeIn = keyframes`
 const slideIn = keyframes`
   from {
     opacity: 0;
-    transform: translateY(50px);
+    transform: translateY(50px) scale(1.1);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 `;
 
@@ -40,7 +40,7 @@ export const Container = styled(m.div)`
     z-index: 2;
 `;
 
-export const Heading = styled.div`
+export const Heading = styled.div<{ $step: number }>`
     font-weight: 700;
     font-size: calc(2.6rem + 1vmin);
     color: ${({ theme }) => theme.palette.text.primary};
@@ -48,12 +48,21 @@ export const Heading = styled.div`
     line-height: 1;
     letter-spacing: -2px;
     white-space: pre-line;
+
+    ${({ $step }) => {
+        if ($step === 1) {
+            return css`
+                max-width: 410px;
+            `;
+        }
+    }}
 `;
 
 export const Copy = styled.div`
     font-size: min(calc(1rem + 1vmin), 30px);
     line-height: 1.2;
     letter-spacing: -0.8px;
+    max-width: 520px;
 `;
 
 export const AnimatedTextContainer = styled.div`
@@ -115,9 +124,7 @@ export const NavItem = styled.div`
     }
 `;
 
-export const NavItemCurrent = styled.div<{
-    $duration?: number;
-}>`
+export const NavItemCurrent = styled.div<{ $duration?: number }>`
     border-radius: 200px;
     height: 100%;
     z-index: 1;
@@ -126,7 +133,7 @@ export const NavItemCurrent = styled.div<{
     will-change: width, opacity;
 `;
 
-export const GraphicContainer = styled.div`
+export const GraphicContainer = styled(m.div)`
     position: fixed;
     pointer-events: none;
     width: 40vw;
@@ -138,8 +145,6 @@ export const GraphicContainer = styled.div`
     justify-content: flex-end;
     z-index: 1;
     transition: height 0.3s ease;
-    animation: ${slideIn} 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    will-change: height, transform, opacity;
 
     @media (max-width: 1200px) and (min-height: 850px) {
         height: 70vh;
@@ -153,7 +158,6 @@ export const StepImg = styled.img<{ $index: number }>`
     right: 0;
     pointer-events: none;
     opacity: 0;
-    animation: ${fadeIn} 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-    animation-delay: ${({ $index }) => $index * 0.1}s;
+    animation: ${slideIn} 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     will-change: transform, opacity;
 `;

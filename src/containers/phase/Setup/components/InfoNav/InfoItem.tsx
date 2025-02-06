@@ -4,6 +4,7 @@ import { memo } from 'react';
 interface InfoItemProps {
     title: string;
     text: string;
+    step: number;
 }
 
 const splitIntoWords = (text: string) => {
@@ -24,10 +25,10 @@ const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }
     );
 });
 
-export default function InfoItem({ title, text }: InfoItemProps) {
+export default function InfoItem({ title, text, step }: InfoItemProps) {
     return (
         <Container initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
-            <Heading>
+            <Heading $step={step}>
                 <AnimatedLetters text={title} />
             </Heading>
             <Copy>

@@ -45,5 +45,9 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
         }
     });
 
-    return <GraphicContainer>{graphicsMarkup}</GraphicContainer>;
+    return (
+        <GraphicContainer initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            {graphicsMarkup}
+        </GraphicContainer>
+    );
 }
