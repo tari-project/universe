@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
+import { useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
 
 import { fetchAppConfig } from '../store/useAppConfigStore.ts';
 import setupLogger from '../utils/shared-logger.ts';
@@ -14,7 +14,6 @@ import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts
 
 setupLogger();
 export default function AppWrapper() {
-    useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();
     useListenForExternalDependencies();
