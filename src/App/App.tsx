@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
 
@@ -23,36 +23,43 @@ const CurrentAppSection = memo(function CurrentAppSection() {
     const isShuttingDown = useShuttingDown();
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
-    const showSetup = isSettingUp && !isShuttingDown && isAppReady;
-    const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
-
-    return (
-        <AnimatePresence mode="popLayout">
-            {!isAppReady ? (
+    const currentSection = useMemo(() => {
+        const showSetup = isSettingUp && !isShuttingDown && isAppReady;
+        const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
+        if (!isAppReady) {
+            return (
                 <AppContentContainer key="splashscreen" initial="hidden">
                     <Splashscreen />
                 </AppContentContainer>
-            ) : null}
+            );
+        }
 
-            {showSetup ? (
+        if (showSetup) {
+            return (
                 <AppContentContainer key="setup" initial="hidden">
                     <Setup />
                 </AppContentContainer>
-            ) : null}
+            );
+        }
 
-            {showMainView ? (
+        if (showMainView) {
+            return (
                 <AppContentContainer key="main" initial="dashboardInitial">
                     <MainView />
                 </AppContentContainer>
-            ) : null}
+            );
+        }
 
-            {isShuttingDown && isAppReady ? (
+        if (isShuttingDown) {
+            return (
                 <AppContentContainer key="shutdown" initial="hidden">
                     <ShuttingDownScreen />
                 </AppContentContainer>
-            ) : null}
-        </AnimatePresence>
-    );
+            );
+        }
+    }, [isAppReady, isSettingUp, isShuttingDown]);
+
+    return <AnimatePresence mode="popLayout">{currentSection}</AnimatePresence>;
 });
 
 export default function App() {

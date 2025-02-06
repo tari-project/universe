@@ -1,5 +1,4 @@
 import { memo, useMemo } from 'react';
-// import { memo, useEffect, useMemo } from 'react';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import SetupProgress from './SetupProgress';
 
@@ -19,8 +18,6 @@ const Footer = memo(function Footer() {
         const diff = config_creation_date ? now.getTime() - config_creation_date.getTime() : 0;
         return diff > 0 && diff < 1000 * 60; // 1 min buffer
     }, [created_at]);
-
-    // useEffect(() => console.debug('wen'));
 
     return (
         <Container>

@@ -1,6 +1,6 @@
 import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
 import { m, Variants } from 'motion/react';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface InfoItemProps {
     title: string;
@@ -34,28 +34,31 @@ const child: Variants = {
     },
 };
 
-const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }) {
-    const txtArr = Array.from(text);
-    return (
-        <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
-            {txtArr.map((char, i) => (
-                <m.span key={`char:${i}-${char}`} variants={child}>
-                    {char}
-                </m.span>
-            ))}
-        </AnimatedTextContainer>
-    );
-});
-
-export default function InfoItem({ title, text }: InfoItemProps) {
+const InfoItem = memo(function InfoItem({ title, text }: InfoItemProps) {
+    function getChars(text: string) {
+        const txtArr = Array.from(text);
+        return txtArr.map((char, i) => (
+            <m.span key={`char:${i}-${char}`} variants={child}>
+                {char}
+            </m.span>
+        ));
+    }
+    const titleMarkup = useMemo(() => getChars(title), [title]);
+    const bodyTextMarkup = useMemo(() => getChars(text), [text]);
     return (
         <Container>
             <Heading>
-                <AnimatedLetters text={title} />
+                <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
+                    {titleMarkup}
+                </AnimatedTextContainer>
             </Heading>
             <Copy>
-                <AnimatedLetters text={text} />
+                <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
+                    {bodyTextMarkup}
+                </AnimatedTextContainer>
             </Copy>
         </Container>
     );
-}
+});
+
+export default InfoItem;
