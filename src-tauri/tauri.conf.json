@@ -31,21 +31,22 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": "v1Compatible"
+        "createUpdaterArtifacts": "v1Compatible",
+        "resources": ["audio/block_win.mp3"]
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "csp": null,
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost",
             "pattern": {
                 "use": "isolation",
                 "options": {
                     "dir": "../dist-isolation"
                 }
+            },
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["$RESOURCE/audio"]
             }
         },
         "trayIcon": {
@@ -75,9 +76,7 @@
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }
