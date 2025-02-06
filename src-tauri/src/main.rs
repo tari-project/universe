@@ -939,11 +939,6 @@ struct FEPayload {
     token: Option<String>,
 }
 
-#[derive(Clone, serde::Serialize)]
-struct SetupPayload {
-    setup_complete: bool,
-}
-
 #[allow(clippy::too_many_lines)]
 fn main() {
     let _unused = fix_path_env::fix();
@@ -1049,6 +1044,7 @@ fn main() {
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
@@ -1214,31 +1210,6 @@ fn main() {
                 }
             }
         })
-        .on_page_load(|webview, _ | {
-            info!(target: LOG_TARGET, "Frontend is ready");
-            let w = webview.clone();
-            tauri::async_runtime::spawn(async move {
-                let app_handle = w.app_handle();
-                let state = app_handle.state::<UniverseAppState>().clone();
-                let setup_complete_clone = state.is_setup_finished.read().await;
-                let missing_dependencies = state.missing_dependencies.read().await;
-                let setup_complete_value = *setup_complete_clone;
-
-                let prog = ProgressTracker::new(app_handle.clone(), None);
-                prog.send_last_action("".to_string()).await;
-
-                time::sleep(Duration::from_secs(3)).await;
-                app_handle.clone().emit("app_ready", SetupPayload { setup_complete: setup_complete_value }).expect("Could not emit event 'app_ready'");
-
-
-                let has_missing = missing_dependencies.is_some();
-                let external_dependencies = missing_dependencies.clone();
-                if has_missing {
-                    app_handle.clone().emit("missing-applications", external_dependencies).expect("Could not emit event 'missing-applications");
-                }
-
-            });
-        })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,
             commands::download_and_start_installer,
@@ -1296,7 +1267,10 @@ fn main() {
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
-            commands::get_airdrop_tokens
+            commands::get_airdrop_tokens,
+            commands::get_audio_enabled,
+            commands::set_audio_enabled,
+            commands::frontend_ready
         ])
         .build(tauri::generate_context!())
         .inspect_err(
