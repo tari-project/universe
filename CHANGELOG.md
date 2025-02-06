@@ -1,4 +1,6 @@
-🌟 **TARI UNIVERSE v0.9.6: The Great Pool War, Episode 2**
+# 🌟 TARI UNIVERSE v0.9.6: The Great Pool War, Episode 2
+
+_February 6, 2025_
 
 Dear Community,
 Great generals know how to maximize their resources to win battles (blocks!). Today’s release makes Tari Universe a leaner, meaner mining machine. The GUI now uses less memory and is smarter with its overall resource utilization. Will you win The Great Pool War? We are rooting for you anon
@@ -23,6 +25,8 @@ Great generals know how to maximize their resources to win battles (blocks!). To
 ---
 
 # 🌟 TARI UNIVERSE v0.9.5: The Great Pool War, Episode 1
+
+_February 4, 2025_
 
 Dear Community,
 
