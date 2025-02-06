@@ -4,10 +4,11 @@
   "app-restart-required": "アプリの再起動が必要です",
   "application-info": "アプリケーション情報",
   "applyInviteCode": "招待コードを適用",
+  "audio-enabled": "Audio enabled",
   "cancel": "キャンセル",
   "change-language": "言語",
-  "confirm": "Confirm",
-  "confirm-action": "Confirm action",
+  "confirm": "確認",
+  "confirm-action": "アクションを確認",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "接続されたピア",
@@ -48,9 +49,9 @@
     "title": "マシンがアイドルと見なされるまでの時間"
   },
   "importing-wallet": "ウォレットのインポート",
-  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
+  "importing-wallet-copy": "ウォレットがインポートされると、Tari Universe は自動的に再起動します",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
-  "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port": "無効な統計サーバーポート",
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
@@ -86,15 +87,15 @@
   "pool-mining": "プールマイニング",
   "pool-mining-description": "有効にすると、プールでマイニングし、マイナーのグループに参加します。",
   "pre-release": {
-    "description": "Explore the latest features before they go live and provide feedback",
-    "title": "Use pre-release version"
+    "description": "最新の機能を公開前に探索し、フィードバックを提供",
+    "title": "プレリリース版を使用"
   },
-  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
+  "pre-release-note": "アプリケーションのプレリリース版に切り替えようとしています。このバージョンは、エキサイティングな新機能や改善を提供する可能性がありますが、まだ改良中の部分に遭遇する可能性もあります。",
   "randomx-network-hash-rate": "Randomxネットワークのハッシュレート",
   "refresh-versions": "バージョンを更新",
   "release-notes": {
-    "loading": "Loading release notes...",
-    "upgrade-available": "⚠️ Upgrade Available"
+    "loading": "リリースノートを読み込み中...",
+    "upgrade-available": "⚠️ アップグレード可能"
   },
   "report-issue": "問題を報告する",
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
@@ -115,8 +116,8 @@
     "title": "システム起動時に自動開始"
   },
   "should-use-system-language": "システム言語を使用",
-  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
-  "stats-server-port": "Stats server port",
+  "stable-version-note": "アプリケーションのプレリリース版をオフにすると、信頼性と一貫性を重視した安定版に戻ります。最新の機能や改善を逃す可能性があります。",
+  "stats-server-port": "統計サーバーポート",
   "tabs": {
     "airdrop": "エアドロップ",
     "connections": "接続",
@@ -124,7 +125,7 @@
     "general": "一般",
     "mining": "マイニング",
     "p2p": "プールマイニング",
-    "releaseNotes": "Release Notes",
+    "releaseNotes": "リリースノート",
     "very_experimental": "非常に実験的",
     "wallet": "ウォレット"
   },
@@ -143,7 +144,7 @@
   },
   "use-dynamic-fail-data": "動的フェイルデータを使用",
   "use-random-control-port": "ランダムな制御ポートを使用",
-  "use-random-port": "Use random port",
+  "use-random-port": "ランダムポートを使用",
   "use-tor": "Torを使用する",
   "use-tor-bridges": "Torブリッジを使用",
   "visual-mode": "ビジュアルモード",

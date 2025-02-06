@@ -1,5 +1,5 @@
 {
-    "version": "0.8.11",
+    "version": "0.9.7",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -11,7 +11,7 @@
     },
     "bundle": {
         "active": true,
-        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+        "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -31,12 +31,23 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true
+        "createUpdaterArtifacts": "v1Compatible",
+        "resources": ["audio/block_win.mp3"]
     },
     "app": {
         "security": {
             "capabilities": ["desktop-capability", "default", "migrated"],
-            "csp": null
+            "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost",
+            "pattern": {
+                "use": "isolation",
+                "options": {
+                    "dir": "../dist-isolation"
+                }
+            },
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["$RESOURCE/audio"]
+            }
         },
         "trayIcon": {
             "id": "universe-tray-id",
@@ -48,14 +59,6 @@
         "windows": [
             {
                 "title": "Tari Universe (Alpha) | Testnet",
-                "width": 1380,
-                "height": 780,
-                "label": "splashscreen",
-                "url": "/splash.html",
-                "center": true
-            },
-            {
-                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
@@ -64,8 +67,9 @@
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
-                "visible": false,
-                "center": true
+                "visible": true,
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },
@@ -76,6 +80,15 @@
             "windows": {
                 "installMode": "passive"
             }
+        },
+        "cli": {
+            "args": [
+                {
+                    "name": "import-backup",
+                    "description": "Imports a minotari node backup file",
+                    "takesValue": true
+                }
+            ]
         }
     }
 }

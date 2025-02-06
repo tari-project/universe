@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 import { EarningsContainer, EarningsWrapper, RecapText, WinText, WinWrapper } from './Earnings.styles.ts';
 
@@ -52,13 +52,13 @@ export default function Earnings() {
     ) : null;
 
     const replayText =
-        replayItem?.amount && replayItem.blockHeight ? (
+        replayItem?.amount && replayItem.mined_in_block_height ? (
             <RecapText>
                 <Trans
                     ns="mining-view"
                     i18nKey={'you-won-block'}
                     values={{
-                        blockHeight: replayItem.blockHeight,
+                        blockHeight: replayItem.mined_in_block_height,
                     }}
                     components={{ span: <span /> }}
                 />

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
@@ -23,7 +22,7 @@ import {
     ReleaseNotes,
 } from './sections';
 
-import { Container, ContentContainer, HeaderContainer, SectionWrapper, variants } from './SettingsModal.styles.ts';
+import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 
 const markups = {
     general: <GeneralSettings />,
@@ -52,6 +51,9 @@ export default function SettingsModal() {
         setIsSettingsOpen(!isSettingsOpen);
     }
 
+    const sectionTitle = t(`tabs.${activeSection}`);
+    const title = activeSection === 'releaseNotes' ? sectionTitle : `${sectionTitle} ${t('settings')}`;
+
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
@@ -59,17 +61,13 @@ export default function SettingsModal() {
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
-                            <Typography variant="h4">{`${t(`tabs.${activeSection}`)} ${t('settings')}`}</Typography>
+                            <Typography variant="h4">{title}</Typography>
                             <IconButton onClick={() => onOpenChange()}>
                                 <IoClose size={18} />
                             </IconButton>
                         </HeaderContainer>
 
-                        <AnimatePresence mode="wait">
-                            <SectionWrapper variants={variants} key={activeSection}>
-                                {sectionMarkup}
-                            </SectionWrapper>
-                        </AnimatePresence>
+                        <SectionWrapper key={activeSection}>{sectionMarkup}</SectionWrapper>
                     </ContentContainer>
                 </Container>
                 <RestartDialog />

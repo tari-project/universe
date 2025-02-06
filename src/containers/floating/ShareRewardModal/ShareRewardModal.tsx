@@ -1,5 +1,6 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
 import {
     BlackButton,
@@ -52,14 +53,14 @@ export default function ShareRewardModal() {
 
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
-    const block = item?.blockHeight || 0;
+    const block = item?.mined_in_block_height || 0;
     const reward = item?.amount || 0;
     const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.TXTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(shareUrl);
+        writeText(shareUrl);
         setCopied(true);
     };
 
@@ -71,9 +72,11 @@ export default function ShareRewardModal() {
 
                     <ContentWrapper>
                         <Title>{t('share.title')}</Title>
-                        <WinnerPill>
-                            {t('share.winner-pill')} #{block.toLocaleString()}
-                        </WinnerPill>
+                        {block ? (
+                            <WinnerPill>
+                                {t('share.winner-pill')} #{block.toLocaleString()}
+                            </WinnerPill>
+                        ) : null}
 
                         <BlackButton onClick={handleCopy}>
                             <AnimatePresence>

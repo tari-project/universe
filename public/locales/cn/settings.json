@@ -4,10 +4,11 @@
   "app-restart-required": "需要重启应用",
   "application-info": "应用信息",
   "applyInviteCode": "应用邀请代码",
+  "audio-enabled": "Audio enabled",
   "cancel": "取消",
   "change-language": "更改语言",
-  "confirm": "Confirm",
-  "confirm-action": "Confirm action",
+  "confirm": "确认",
+  "confirm-action": "确认操作",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "已连接的节点",
@@ -48,9 +49,9 @@
     "title": "机器被视为空闲的时间"
   },
   "importing-wallet": "正在导入钱包",
-  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
+  "importing-wallet-copy": "钱包导入后，Tari Universe 将自动重启",
   "invalid-seed-words": "输入24个用空格分隔的单词",
-  "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port": "无效的统计服务器端口",
   "inviteCode": "邀请代码",
   "is-on-orphan-chain": "您似乎连接到了一个分叉，而不是主链。您赢得的任何区块可能会被作废。",
   "last-block-added-time": "最后添加到链的块时间",
@@ -86,15 +87,15 @@
   "pool-mining": "矿池挖矿",
   "pool-mining-description": "启用后，您将在矿池中挖矿并加入一组矿工（部落）。",
   "pre-release": {
-    "description": "Explore the latest features before they go live and provide feedback",
-    "title": "Use pre-release version"
+    "description": "在最新功能上线前探索并提供反馈",
+    "title": "使用预发布版本"
   },
-  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
+  "pre-release-note": "您即将切换到应用程序的预发布版本。此版本可能提供令人兴奋的新功能和增强，但可能会遇到仍在改进的区域。",
   "randomx-network-hash-rate": "Randomx 网络算力",
   "refresh-versions": "刷新版本",
   "release-notes": {
-    "loading": "Loading release notes...",
-    "upgrade-available": "⚠️ Upgrade Available"
+    "loading": "正在加载发布说明...",
+    "upgrade-available": "⚠️ 可用升级"
   },
   "report-issue": "报告问题",
   "reset-permanently": "您确定要永久重置所有设置吗？",
@@ -115,8 +116,8 @@
     "title": "系统启动时自动启动"
   },
   "should-use-system-language": "使用系统语言",
-  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
-  "stats-server-port": "Stats server port",
+  "stable-version-note": "关闭应用程序的预发布版本后，您将恢复到稳定版本，该版本优先考虑可靠性和一致性。您可能会错过最新的功能和增强。",
+  "stats-server-port": "统计服务器端口",
   "tabs": {
     "airdrop": "空投",
     "connections": "连接",
@@ -124,7 +125,7 @@
     "general": "常规",
     "mining": "挖矿",
     "p2p": "矿池挖矿",
-    "releaseNotes": "Release Notes",
+    "releaseNotes": "发布说明",
     "very_experimental": "非常实验性",
     "wallet": "钱包"
   },
@@ -143,7 +144,7 @@
   },
   "use-dynamic-fail-data": "使用动态失败数据",
   "use-random-control-port": "使用随机控制端口",
-  "use-random-port": "Use random port",
+  "use-random-port": "使用随机端口",
   "use-tor": "使用Tor",
   "use-tor-bridges": "使用Tor桥接",
   "visual-mode": "视觉模式",

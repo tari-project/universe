@@ -4,47 +4,83 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useHandleWsUserIdEvent } from './ws/useHandleWsUserIdEvent';
+import { invoke } from '@tauri-apps/api/core';
+import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { useAppStateStore } from '@app/store/appStateStore';
+import { MINING_EVENT_INTERVAL_MS, useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 let socket: ReturnType<typeof io> | null;
 
-const MINING_EVENT_INTERVAL = 15000;
 const MINING_EVENT_NAME = 'mining-status';
+
+interface SignData {
+    signature: string;
+    pubKey: string;
+}
 
 export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
-    const cpu = useMiningStore((state) => state.cpu);
-    const gpu = useMiningStore((state) => state.gpu);
+    const cpuMiningStatus = useMiningMetricsStore((state) => state.cpu_mining_status);
+    const gpuMiningStatus = useMiningMetricsStore((state) => state.gpu_mining_status);
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
-    const base_node = useMiningStore((state) => state.base_node);
+    const isConnectedToNetwork = useMiningMetricsStore((state) => state.isNodeConnected);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const applicationsVersions = useAppStateStore((state) => state.applications_versions);
+    const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
 
     const isMining = useMemo(() => {
-        const isMining = (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
-        return isMining;
-    }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
+        return (cpuMiningStatus?.is_mining || gpuMiningStatus?.is_mining) && isConnectedToNetwork;
+    }, [isConnectedToNetwork, cpuMiningStatus?.is_mining, gpuMiningStatus?.is_mining]);
 
     const handleEmitMiningStatus = useCallback(
-        (isMining: boolean) => {
+        async (isMining: boolean) => {
             if (!socket || !connectedSocket) return;
-            const arg = { isMining, timestamp: new Date().toISOString() };
+            const payload = {
+                isMining,
+                appId,
+                blockHeight: height,
+                version: applicationsVersions?.tari_universe,
+                network,
+                userId,
+            };
             try {
-                socket.emit(MINING_EVENT_NAME, arg);
+                const transformedPayload = `${payload.version},${payload.network},${payload.appId},${payload.userId},${payload.isMining},${payload.blockHeight}`;
+                const signatureData = (await invoke('sign_ws_data', {
+                    data: transformedPayload,
+                })) as SignData;
+
+                const statusResponse: { error?: string; success: boolean } = await socket
+                    .timeout(5000)
+                    .emitWithAck(MINING_EVENT_NAME, {
+                        data: payload,
+                        signature: signatureData.signature,
+                        pubKey: signatureData.pubKey,
+                    });
+                if (statusResponse) {
+                    registerWsConnectionEvent({
+                        state: statusResponse.success ? 'up' : 'error',
+                        error: `shell of secrets mining error - reason: ${statusResponse.error}`,
+                    });
+                }
             } catch (e) {
                 console.error(e);
             }
         },
-        [connectedSocket]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
     );
 
     useEffect(() => {
         if (isMining) {
             const intervalId = setInterval(() => {
                 handleEmitMiningStatus(isMining);
-            }, MINING_EVENT_INTERVAL);
+            }, MINING_EVENT_INTERVAL_MS);
             return () => clearInterval(intervalId);
         } else {
             handleEmitMiningStatus(isMining);
@@ -57,7 +93,12 @@ export const useWebsocket = () => {
                 socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
-                    auth: { token: airdropToken, appId: appId, network: network },
+                    auth: {
+                        token: airdropToken,
+                        appId: appId,
+                        network: network,
+                        version: applicationsVersions?.tari_universe,
+                    },
                 });
             }
 
@@ -66,11 +107,37 @@ export const useWebsocket = () => {
             socket.emit('subscribe-to-gem-updates');
             socket.on('connect', () => {
                 if (!socket) return;
+                registerWsConnectionEvent({
+                    state: 'up',
+                });
                 setConnectedSocket(true);
                 socket.emit('auth', airdropToken);
                 socket.on(userId as string, handleWsUserIdEvent);
             });
+
+            socket.on('connect_error', (_e) => {
+                registerWsConnectionEvent({
+                    state: 'error',
+                    error: 'could not connect to server',
+                });
+            });
+            socket.on('disconnect', (reason, details) => {
+                registerWsConnectionEvent({
+                    state: 'error',
+                    error: 'disconnected from server',
+                });
+                console.error(reason, details);
+            });
+            socket.io.on('reconnect', (_e) => {
+                registerWsConnectionEvent({
+                    state: 'up',
+                });
+            });
         } catch (e) {
+            registerWsConnectionEvent({
+                state: 'error',
+                error: 'error at initiating connection',
+            });
             console.error(e);
         }
     };
@@ -80,10 +147,17 @@ export const useWebsocket = () => {
             if (socket) {
                 setConnectedSocket(false);
                 handleEmitMiningStatus(isMining);
+                registerWsConnectionEvent({
+                    state: 'off',
+                });
                 socket.disconnect();
                 socket = null;
             }
         } catch (e) {
+            registerWsConnectionEvent({
+                state: 'error',
+                error: 'error at disconnecting',
+            });
             console.error(e);
         }
     };

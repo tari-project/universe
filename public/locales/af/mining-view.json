@@ -21,13 +21,13 @@
     "waiting-for-idle": "Wag tot onaktief"
   },
   "orphan-chain-tooltip": {
-    "heading": "Things to try:",
-    "step_1": "Check your Internet connection",
-    "step_2": "Wait 30 mins",
-    "step_3": "Restart the app",
-    "step_4": "Try using a Tor Bridge (in Settings)",
-    "step_5": "Try disabling Tor (in Settings)",
-    "step_6": "Try an app reset (in Settings)"
+    "heading": "Dinge om te probeer:",
+    "step_1": "Kontroleer jou internetverbinding",
+    "step_2": "Wag 30 minute",
+    "step_3": "Herbegin die toepassing",
+    "step_4": "Probeer \"n Tor-brug gebruik (in Instellings)",
+    "step_5": "Probeer Tor deaktiveer (in Instellings)",
+    "step_6": "Probeer \"n toepassingherstel (in Instellings)"
   },
   "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
   "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",

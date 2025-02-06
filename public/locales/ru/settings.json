@@ -4,10 +4,11 @@
   "app-restart-required": "Требуется перезапуск приложения",
   "application-info": "Информация о приложении",
   "applyInviteCode": "Применить код приглашения",
+  "audio-enabled": "Audio enabled",
   "cancel": "Отмена",
   "change-language": "Язык",
-  "confirm": "Confirm",
-  "confirm-action": "Confirm action",
+  "confirm": "Подтвердить",
+  "confirm-action": "Подтвердить действие",
   "confirm-import-wallet": "Abandon current wallet?",
   "confirm-import-wallet-copy": "Are you sure you want to import a new wallet?",
   "connected-peers": "Подключенные узлы",
@@ -48,9 +49,9 @@
     "title": "Время, после которого машина считается в простое"
   },
   "importing-wallet": "Импорт кошелька",
-  "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
+  "importing-wallet-copy": "Tari Universe автоматически перезапустится после импорта вашего кошелька",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
-  "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port": "Неверный порт сервера статистики",
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, вы подключены к форку, а не к основной цепочке. Любые выигранные вами блоки могут быть аннулированы.",
   "last-block-added-time": "Время добавления последнего блока в цепь",
@@ -86,15 +87,15 @@
   "pool-mining": "Майнинг в пуле",
   "pool-mining-description": "При включении вы будете майнить в пуле и присоединитесь к группе майнеров.",
   "pre-release": {
-    "description": "Explore the latest features before they go live and provide feedback",
-    "title": "Use pre-release version"
+    "description": "Изучите последние функции до их выхода и оставьте отзыв",
+    "title": "Использовать предварительную версию"
   },
-  "pre-release-note": "You are about to switch to the pre-release version of the application. This version can offer exciting new features and enhancements, with the possibility of encountering areas that may still be under refinement.",
+  "pre-release-note": "Вы собираетесь переключиться на предварительную версию приложения. Эта версия может предложить захватывающие новые функции и улучшения, с возможностью столкнуться с областями, которые все еще могут быть в стадии доработки.",
   "randomx-network-hash-rate": "Хэшрейт сети Randomx",
   "refresh-versions": "Обновить версии",
   "release-notes": {
-    "loading": "Loading release notes...",
-    "upgrade-available": "⚠️ Upgrade Available"
+    "loading": "Загрузка примечаний к выпуску...",
+    "upgrade-available": "⚠️ Доступно обновление"
   },
   "report-issue": "Сообщить о проблеме",
   "reset-permanently": "Вы уверены, что хотите сбросить все настройки навсегда?",
@@ -115,8 +116,8 @@
     "title": "Автозапуск при загрузке системы"
   },
   "should-use-system-language": "Использовать системный язык",
-  "stable-version-note": "By turning off the pre-release version of the application, you will revert to the stable release, which prioritizes reliability and consistency. While you may miss out on the latest features and enhancements.",
-  "stats-server-port": "Stats server port",
+  "stable-version-note": "Отключив предварительную версию приложения, вы вернетесь к стабильному выпуску, который приоритетно обеспечивает надежность и согласованность. Однако вы можете упустить последние функции и улучшения.",
+  "stats-server-port": "Порт сервера статистики",
   "tabs": {
     "airdrop": "Эйрдроп",
     "connections": "Подключения",
@@ -124,7 +125,7 @@
     "general": "Общие",
     "mining": "Майнинг",
     "p2p": "Майнинг в пуле",
-    "releaseNotes": "Release Notes",
+    "releaseNotes": "Примечания к выпуску",
     "very_experimental": "Очень экспериментальные",
     "wallet": "Кошелек"
   },
@@ -143,7 +144,7 @@
   },
   "use-dynamic-fail-data": "Использовать динамические данные отказа",
   "use-random-control-port": "Использовать случайный управляющий порт",
-  "use-random-port": "Use random port",
+  "use-random-port": "Использовать случайный порт",
   "use-tor": "Использовать Tor",
   "use-tor-bridges": "Использовать мосты Tor",
   "visual-mode": "Визуальный режим",

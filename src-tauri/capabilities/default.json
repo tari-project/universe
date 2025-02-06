@@ -1,6 +1,6 @@
 {
     "identifier": "default",
-    "windows": ["main"],
+    "windows": ["main", "splashscreen"],
     "permissions": [
         "core:path:default",
         "core:event:default",
@@ -16,6 +16,15 @@
         "shell:allow-open",
         "sentry:default",
         "process:allow-restart",
-        "process:default"
+        "process:default",
+        "clipboard-manager:allow-write-text",
+        {
+            "identifier": "fs:allow-read-file",
+            "allow": [{ "path": "$RESOURCE/audio/block_win.mp3" }]
+        },
+        {
+            "identifier": "fs:allow-read-dir",
+            "allow": [{ "path": "$RESOURCE/audio" }]
+        }
     ]
 }

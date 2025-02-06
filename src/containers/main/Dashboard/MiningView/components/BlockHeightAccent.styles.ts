@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
 
 export const AccentWrapper = styled(m.div)`
     overflow: hidden;
@@ -10,12 +10,13 @@ export const AccentWrapper = styled(m.div)`
     justify-content: center;
     display: flex;
     top: 0;
-    right: -25px;
+    right: -30px;
 `;
 
 export const AccentText = styled(m.div)`
     display: flex;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     white-space: pre;
     line-height: 1;
     opacity: 0.55;
@@ -23,9 +24,10 @@ export const AccentText = styled(m.div)`
     color: ${({ theme }) => (theme.mode === 'dark' ? 'rgba(255, 255, 255, 0.095)' : 'rgba(255, 255, 255, 0.4)')};
     user-select: none;
     height: min-content;
+    rotate: -90deg;
 `;
 
-export const SpacedNum = styled(m.span)<{ $isDec?: boolean }>`
+export const SpacedNum = styled.span<{ $isDec?: boolean }>`
     font-variant-numeric: tabular-nums;
     display: flex;
     position: relative;

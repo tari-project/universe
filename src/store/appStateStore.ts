@@ -3,42 +3,56 @@ import { setAnimationState } from '@app/visuals';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
-import { useMiningStore } from './useMiningStore';
-import { addToast } from '@app/components/ToastStack/useToastStore';
 
-interface AppState {
-    criticalError?: string;
-    setCriticalError: (value: string | undefined) => void;
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { startMining } from '@app/store/miningStoreActions.ts';
+
+interface State {
     error?: string;
-    setError: (value: string | undefined) => void;
     criticalProblem?: Partial<CriticalProblem>;
-    setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
-    topStatus: string;
-    setTopStatus: (value: string) => void;
     setupTitle: string;
     setupTitleParams: Record<string, string>;
     setupProgress: number;
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
     isSettingsOpen: boolean;
-    setIsSettingsOpen: (value: boolean) => void;
-    isSettingUp: boolean;
-    setIsSettingUp: (value: boolean) => void;
-    setSettingUpFinished: () => Promise<void>;
+    criticalError?: string;
+    setupComplete: boolean;
     externalDependencies: ExternalDependency[];
-    fetchExternalDependencies: () => Promise<void>;
-    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
+    missingExternalDependencies?: ExternalDependency[];
+    issueReference?: string;
     applications_versions?: ApplicationsVersions;
+    releaseNotes: string;
+    isAppUpdateAvailable: boolean;
+}
+interface Actions {
+    setCriticalError: (value: string | undefined) => void;
+    setError: (value: string | undefined) => void;
+    setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
+    setIsSettingsOpen: (value: boolean) => void;
+    fetchExternalDependencies: () => Promise<void>;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
-    issueReference?: string;
     setIssueReference: (value: string) => void;
+    setReleaseNotes: (value: string) => void;
+    setIsAppUpdateAvailable: (value: boolean) => void;
 }
+type AppState = State & Actions;
+
+const initialstate: State = {
+    setupTitle: '',
+    setupTitleParams: {},
+    setupProgress: 0,
+    isSettingsOpen: false,
+    setupComplete: false,
+    externalDependencies: [],
+    missingExternalDependencies: [],
+    releaseNotes: '',
+    isAppUpdateAvailable: false,
+};
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
-    criticalError: undefined,
+    ...initialstate,
     setCriticalError: (criticalError) => set({ criticalError }),
-    error: undefined,
     setError: (error) => {
         set({ error });
         addToast({
@@ -48,29 +62,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         });
     },
     setCriticalProblem: (criticalProblem) => set({ criticalProblem }),
-    topStatus: 'Not mining',
-    setTopStatus: (value) => set({ topStatus: value }),
-    setupTitle: '',
-    setupTitleParams: {},
-    setupProgress: 0,
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-        set({ setupTitle, setupTitleParams, setupProgress }),
-    isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
-    isSettingUp: true,
-    setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
-    setSettingUpFinished: async () => {
-        setAnimationState('showVisual');
-
-        // Proceed with auto mining when enabled
-        const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
-        if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            const startMining = useMiningStore.getState().startMining;
-            await startMining();
-        }
-        set({ isSettingUp: false });
-    },
-    applications_versions: undefined,
     fetchApplicationsVersions: async () => {
         try {
             console.info('Fetching applications versions');
@@ -104,7 +96,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error updating applications versions', error);
         }
     },
-    externalDependencies: [],
     fetchExternalDependencies: async () => {
         try {
             const externalDependencies = await invoke('get_external_dependencies');
@@ -113,7 +104,23 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error loading missing external dependencies', error);
         }
     },
-    missingExternalDependencies: [],
-    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
     setIssueReference: (issueReference) => set({ issueReference }),
+    setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
+    setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
+
+export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
+    useAppStateStore.setState({ setupTitle, setupTitleParams, setupProgress });
+
+export const setSetupComplete = async () => {
+    setAnimationState('showVisual');
+    // Proceed with auto mining when enabled
+    const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
+    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
+        await startMining();
+    }
+    useAppStateStore.setState({ setupComplete: true });
+};
+
+export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
+    useAppStateStore.setState({ externalDependencies });

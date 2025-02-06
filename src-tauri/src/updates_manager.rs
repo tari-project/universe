@@ -36,7 +36,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
 const LOG_TARGET: &str = "tari::universe::updates_manager";
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,
@@ -58,15 +57,6 @@ impl DownloadProgressPayload {
 pub struct AskForUpdatePayload {
     pub event_type: String,
     pub version: String,
-}
-
-impl AskForUpdatePayload {
-    pub fn new(version: String) -> Self {
-        Self {
-            event_type: "ask_for_update".to_string(),
-            version,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -211,11 +201,11 @@ impl UpdatesManager {
                     }
                 },
                 || {
-                    app.restart();
+                    info!(target: LOG_TARGET, "Latest version download finished");
                 },
             )
             .await?;
 
-        Ok(())
+        app.restart();
     }
 }

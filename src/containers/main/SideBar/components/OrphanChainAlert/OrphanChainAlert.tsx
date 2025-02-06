@@ -10,7 +10,7 @@ import {
     TooltipTop,
     AlertIconWrapper,
 } from './OrphanChainAlert.styles.ts';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { List } from '@app/components/elements/List.tsx';
 
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
@@ -47,7 +47,7 @@ export const OrphanChainAlert = () => {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-    }, [setIsOrphanChain]);
+    }, []);
 
     const steps = Array.from({ length: 6 }).map((_, i) => t(`mining-view:orphan-chain-tooltip.step_${i + 1}`));
 

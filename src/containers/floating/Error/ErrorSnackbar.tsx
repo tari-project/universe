@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, MouseEvent } from 'react';
 import { IoClose } from 'react-icons/io5';
 
 import { ButtonWrapper, ContentWrapper, SnackWrapper, Wrapper } from './ErrorSnackbar.styles.ts';
-import { AnimatePresence, easeIn, Variants } from 'framer-motion';
+import { AnimatePresence, easeIn, Variants } from 'motion/react';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
@@ -51,14 +51,12 @@ export default function ErrorSnackbar() {
 
     const { getFloatingProps } = useInteractions([dismiss, role]);
 
-    const handleClose = useCallback(
-        (e?: MouseEvent) => {
-            e?.preventDefault();
-            e?.stopPropagation();
-            setError(undefined);
-        },
-        [setError]
-    );
+    const handleClose = useCallback((e?: MouseEvent) => {
+        e?.preventDefault();
+        e?.stopPropagation();
+        setError(undefined);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     useEffect(() => {
         setShow(Boolean(error && error?.length));

@@ -4,7 +4,7 @@ import { Theme } from '@app/theme/types.ts';
 import { animationDarkBg, animationLightBg, setAnimationProperties } from '@app/visuals.ts';
 import { useAppConfigStore } from './useAppConfigStore.ts';
 
-export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate'] as const;
+export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number];
 
@@ -26,7 +26,6 @@ interface Actions {
     setView: (view: State['view']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
     setLatestVersion: (latestVersion: string) => void;
     setIsWebglNotSupported: (isWebglNotSupported: boolean) => void;
@@ -56,7 +55,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setView: (view) => set({ view }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
     setIsWebglNotSupported: (isWebglNotSupported) => {
@@ -65,3 +63,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     },
     setAdminShow: (adminShow) => set({ adminShow }),
 }));
+
+export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
+    useUIStore.setState({ showExternalDependenciesDialog });
