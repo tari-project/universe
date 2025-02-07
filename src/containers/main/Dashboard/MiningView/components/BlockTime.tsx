@@ -6,13 +6,13 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
-    const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
-    const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
-    const isConnectedToTari = useMiningMetricsStore((s) => s.base_node?.is_connected);
+    const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
+    const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
+    const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
+    const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
     const isMining = isCPUMining || isGPUMining;
 
-    const { daysString, hoursString, minutes, seconds } = blockTime || {};
+    const { daysString, hoursString, minutes, seconds } = displayBlockTime || {};
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
 
@@ -21,8 +21,8 @@ function BlockTime() {
         <>{hoursString?.split('').map((c, i) => <SpacedNum key={`hr-${i}-${c}`}>{c}</SpacedNum>)}:</>
     ) : null;
 
-    return blockTime && isMining && isConnectedToTari ? (
-        <BlockTimeContainer layout layoutId="block-time">
+    return displayBlockTime && isMining && isConnectedToTari ? (
+        <BlockTimeContainer>
             <TimerTypography>
                 {daysMarkup}
                 {hourMarkup}

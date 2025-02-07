@@ -20,8 +20,8 @@ function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const mode = useAppConfigStore((s) => s.mode);
-    const isCPUMining = useMiningMetricsStore((s) => s.cpu.mining.is_mining);
-    const isGPUMining = useMiningMetricsStore((s) => s.gpu.mining.is_mining);
+    const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
+    const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const setCustomLevelsDialog = useMiningStore((s) => s.setCustomLevelsDialogOpen);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
@@ -64,7 +64,7 @@ function ModeSelect() {
     }, [custom_power_levels_enabled]);
 
     return (
-        <TileItem layoutId="miner-mode-select-tile" layout>
+        <TileItem>
             <Typography>{t('mode')}</Typography>
             <ModeSelectWrapper>
                 <Select

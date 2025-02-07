@@ -37,6 +37,7 @@ interface Actions {
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
+    setAudioEnabled: (audioEnabled: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -68,6 +69,7 @@ const initialState: State = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
+    audio_enabled: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -126,12 +128,12 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ cpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+        if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
             await pauseMining();
         }
         invoke('set_cpu_mining_enabled', { enabled })
             .then(async () => {
-                if (miningState.miningInitiated && (enabled || metricsState.gpu.mining.is_mining)) {
+                if (miningState.miningInitiated && (enabled || metricsState.gpu_mining_status.is_mining)) {
                     await startMining();
                 } else {
                     await stopMining();
@@ -145,8 +147,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
 
                 if (
                     miningState.miningInitiated &&
-                    !metricsState.cpu.mining.is_mining &&
-                    !metricsState.gpu.mining.is_mining
+                    !metricsState.cpu_mining_status.is_mining &&
+                    !metricsState.gpu_mining_status.is_mining
                 ) {
                     void stopMining();
                 }
@@ -156,15 +158,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        const totalGpuDevices = metricsState.gpu.hardware.length;
+        const totalGpuDevices = metricsState.gpu_devices.length;
         const excludedDevices = miningState.excludedGpuDevices.length;
-        if (metricsState.cpu.mining.is_mining || metricsState.gpu.mining.is_mining) {
+        if (metricsState.cpu_mining_status.is_mining || metricsState.cpu_mining_status.is_mining) {
             await pauseMining();
         }
 
         try {
             await invoke('set_gpu_mining_enabled', { enabled });
-            if (miningState.miningInitiated && (metricsState.cpu.mining.is_mining || enabled)) {
+            if (miningState.miningInitiated && (metricsState.cpu_mining_status.is_mining || enabled)) {
                 await startMining();
             } else {
                 void stopMining();
@@ -180,8 +182,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
 
             if (
                 miningState.miningInitiated &&
-                !metricsState.cpu.mining.is_mining &&
-                !metricsState.gpu.mining.is_mining
+                !metricsState.cpu_mining_status.is_mining &&
+                !metricsState.gpu_mining_status.is_mining
             ) {
                 void stopMining();
             }
@@ -293,6 +295,15 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set pre release', e);
             appStateStore.setError('Could not change pre release');
             set({ pre_release: !preRelease });
+        });
+    },
+    setAudioEnabled: async (audioEnabled) => {
+        set({ audio_enabled: audioEnabled });
+        invoke('set_audio_enabled', { audioEnabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set audio enabled', e);
+            appStateStore.setError('Could not change audio enabled');
+            set({ audio_enabled: !audioEnabled });
         });
     },
 }));

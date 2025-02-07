@@ -9,6 +9,7 @@ import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import { loadTowerAnimation } from '@tari-project/tari-tower';
 import { sidebarTowerOffset } from '@app/store/useUIStore.ts';
 import App from './App.tsx';
+import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
 
 // FOR ANYTHING THAT NEEDS TO BE INITIALISED
@@ -21,6 +22,7 @@ export default function AppWrapper() {
     useLangaugeResolver();
     useListenForExternalDependencies();
     useListenForCriticalProblem();
+    useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
 
     useEffect(() => {
