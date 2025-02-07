@@ -94,7 +94,9 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "Toggling auto-launcher");
         let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
         info!(target: LOG_TARGET, "Auto-launcher is enabled: {}, config_is_auto_launcher_enabled: {}", auto_launcher_is_enabled, config_is_auto_launcher_enabled);
-        if config_is_auto_launcher_enabled && !auto_launcher_is_enabled {
+        if (config_is_auto_launcher_enabled && !auto_launcher_is_enabled)
+            || (config_is_auto_launcher_enabled && auto_launcher_is_enabled)
+        {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
