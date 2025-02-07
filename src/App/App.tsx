@@ -65,6 +65,7 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 export default function App() {
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
+
     const { t } = useTranslation('common', { useSuspense: false });
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
@@ -72,7 +73,6 @@ export default function App() {
         setIsWebglNotSupported(true);
         setError(t('webgl-not-supported'));
     }
-
     return (
         <ThemeProvider>
             <GlobalReset />
