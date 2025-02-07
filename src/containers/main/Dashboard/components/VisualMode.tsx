@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { setVisualMode, useAppConfigStore } from '@app/store/useAppConfigStore';
-import { sidebarTowerOffset, useUIStore } from '@app/store/useUIStore';
+import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,
@@ -26,16 +26,16 @@ function VisualMode() {
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const handleDisable = useCallback(() => {
-        const canvas = document.getElementById('tower-canvas');
+        const canvas = document.getElementById(TOWER_CANVAS_ID);
         if (canvas) {
             canvas.style.opacity = '0';
         }
         setVisualMode(false);
-        removeTowerAnimation({ canvasId: 'tower-canvas' });
+        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID });
     }, []);
 
     const handleEnable = useCallback(() => {
-        loadTowerAnimation({ canvasId: 'tower-canvas', offset: sidebarTowerOffset }).then(() => {
+        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset }).then(() => {
             setVisualMode(true);
             setAnimationState('showVisual');
         });

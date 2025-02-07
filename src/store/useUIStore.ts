@@ -5,6 +5,7 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './useAppConfigStore.ts';
 
 export const sidebarTowerOffset = 348 + 20; // sidebar + padding
+export const TOWER_CANVAS_ID = 'tower-canvas';
 
 export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
