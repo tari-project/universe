@@ -91,7 +91,10 @@ impl AutoLauncher {
         auto_launcher: &AutoLaunch,
         config_is_auto_launcher_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        if config_is_auto_launcher_enabled {
+        info!(target: LOG_TARGET, "Toggling auto-launcher");
+        let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
+        info!(target: LOG_TARGET, "Auto-launcher is enabled: {}, config_is_auto_launcher_enabled: {}", auto_launcher_is_enabled, config_is_auto_launcher_enabled);
+        if config_is_auto_launcher_enabled && !auto_launcher_is_enabled {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
@@ -111,7 +114,8 @@ impl AutoLauncher {
                 }
             }
             auto_launcher.enable()?;
-        } else {
+        }
+        if !config_is_auto_launcher_enabled && auto_launcher_is_enabled {
             info!(target: LOG_TARGET, "Disabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
@@ -131,16 +135,16 @@ impl AutoLauncher {
     #[cfg(target_os = "windows")]
     async fn toggle_windows_admin_auto_launcher(
         &self,
-        config_is_auto_launcher_enabled: bool,
+        should_be_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        if config_is_auto_launcher_enabled {
+        if should_be_enabled {
             info!(target: LOG_TARGET, "Enabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(true)
                 .await
                 .map_err(|e| anyhow!("Failed to create task scheduler for admin startup: {}", e))?;
         };
 
-        if !config_is_auto_launcher_enabled {
+        if !should_be_enabled {
             info!(target: LOG_TARGET, "Disabling admin auto-launcher");
             self.create_task_scheduler_for_admin_startup(false)
                 .await
@@ -167,6 +171,8 @@ impl AutoLauncher {
             .to_str()
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
+
+        info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
 
         schedule_builder
             .create_logon()
@@ -196,6 +202,8 @@ impl AutoLauncher {
                 TaskCreationFlags::CreateOrUpdate as i32,
             )?;
 
+        info!(target: LOG_TARGET, "Task scheduler for admin startup created");
+
         Ok(())
     }
 
@@ -218,12 +226,19 @@ impl AutoLauncher {
             .ok_or(anyhow!("Failed to convert path to string"))?
             .to_string();
 
+        info!(target: LOG_TARGET, "Building auto-launcher with app_name: {} and app_path: {}", app_name, app_path);
         let auto_launcher = AutoLauncher::build_auto_launcher(app_name, &app_path)?;
+
+        info!(target: LOG_TARGET, "Auto-launcher built");
 
         self.toggle_auto_launcher(&auto_launcher, is_auto_launcher_enabled)
             .await?;
 
+        info!(target: LOG_TARGET, "Auto-launcher toggled");
+
         let _ = &self.auto_launcher.write().await.replace(auto_launcher);
+
+        info!(target: LOG_TARGET, "Auto-launcher initialized");
 
         Ok(())
     }
