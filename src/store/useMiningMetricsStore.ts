@@ -1,7 +1,7 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, PublicDeviceParameters } from '@app/types/app-status';
 import { create } from './create';
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
-import { setAnimationState } from '@app/visuals';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { useMiningStore } from './useMiningStore';
 
 interface Actions {

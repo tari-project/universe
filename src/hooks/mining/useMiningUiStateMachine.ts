@@ -1,7 +1,7 @@
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
-import { animationStatus, setAnimationState, animationStatusIndex } from '@tari-project/tari-tower';
+import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
@@ -15,7 +15,7 @@ export const useUiMiningStateMachine = () => {
     const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isMining = cpuIsMining || gpuIsMining;
 
-    const indexTrigger = animationStatusIndex;
+    const indexTrigger = animationStatus;
 
     useEffect(() => {
         if (!visualMode || visualModeToggleLoading) return;
