@@ -31,7 +31,7 @@ jsonwebtoken = "9.3.0"
 keyring = { version = "3.0.5", features = [
   "windows-native",
   "apple-native",
-  "linux-native",
+  "linux-native-sync-persistent",
 ] }
 libsqlite3-sys = { version = "0.25.1", features = [
   "bundled",

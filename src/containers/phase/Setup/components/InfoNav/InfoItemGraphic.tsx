@@ -18,31 +18,6 @@ interface InfoItemGraphicProps {
     step?: number;
 }
 
-const transition = { duration: 0.8, ease: 'easeInOut' };
-
-const wrapper = {
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            ...transition,
-        },
-    },
-    hidden: {
-        opacity: 0,
-        y: -8,
-        transition: {
-            ...transition,
-            duration: 0.2,
-        },
-    },
-};
-
-const graphic = {
-    visible: { opacity: 1, transition: { ease: 'linear', duration: 0.3 } },
-    hidden: { opacity: 0, transition: { ease: 'linear', duration: 0.2 } },
-};
-
 export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
     const theme = useTheme();
     const stepGraphics = [
@@ -61,16 +36,17 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
             return (
                 <StepImg
                     key={key}
-                    variants={graphic}
                     src={img}
                     alt={`Step ${step} image #${i + 1}`}
                     style={{ zIndex: i + 1 }}
+                    $index={i}
                 />
             );
         }
     });
+
     return (
-        <GraphicContainer variants={wrapper} initial="hidden" animate="visible">
+        <GraphicContainer initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {graphicsMarkup}
         </GraphicContainer>
     );
