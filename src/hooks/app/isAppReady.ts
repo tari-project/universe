@@ -1,26 +1,25 @@
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
 import { setSetupComplete } from '@app/store/appStateStore.ts';
-import { invoke } from '@tauri-apps/api/core';
 
+interface Payload {
+    setup_complete?: boolean;
+}
 export const useIsAppReady = () => {
     const [isAppReady, setIsAppReady] = useState(false);
     useEffect(() => {
-        const setupListener = async () => {
-            const listener = await listen('app_ready', ({ payload }: { payload: boolean }) => {
-                if (payload) {
+        const listener = listen('app_ready', ({ event: _, payload: p }) => {
+            if (p) {
+                const payload = p as Payload;
+
+                if (payload.setup_complete) {
                     setSetupComplete();
                 }
-                setIsAppReady(true);
-            });
-            await invoke('frontend_ready');
-            return listener;
-        };
-
-        const cleanup = setupListener();
-
+            }
+            setIsAppReady(true);
+        });
         return () => {
-            cleanup.then((unlisten) => unlisten());
+            listener.then((unlisten) => unlisten());
         };
     }, []);
     return isAppReady;

@@ -47,15 +47,14 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
-use tokio::time;
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -167,33 +166,6 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
         splashscreen_window.close().expect("could not close");
         main_window.show().expect("could not show");
     }
-}
-
-#[tauri::command]
-pub async fn frontend_ready(app: tauri::AppHandle) {
-    let app_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
-    });
 }
 
 #[tauri::command]
@@ -1378,38 +1350,6 @@ pub async fn set_airdrop_tokens<'r>(
             airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
         }
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
-    let enabled = state.config.read().await.audio_enabled();
-    Ok(enabled)
-}
-
-#[tauri::command]
-pub async fn set_audio_enabled(
-    audio_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    state
-        .config
-        .write()
-        .await
-        .set_audio_enabled(audio_enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-    let telemetry_service = state.telemetry_service.read().await;
-    telemetry_service
-        .send("audio-enabled".to_string(), json!(audio_enabled))
-        .await
-        .inspect_err(|e| {
-            error!(
-                "error at sending telemetry data for get_audio_enabled {:?}",
-                e
-            )
-        })
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
