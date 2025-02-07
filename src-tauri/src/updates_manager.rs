@@ -142,7 +142,7 @@ impl UpdatesManager {
         let is_pre_release = self.config.read().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
-        let update = app
+        let builder = app
             .updater_builder()
             .version_comparator(move |current, update| {
                 if enable_downgrade {
@@ -151,14 +151,17 @@ impl UpdatesManager {
                 } else {
                     update.version > current
                 }
-            })
+            });
+        let builder = builder
             .endpoints(vec![updates_url])
-            .expect("Failed to set update URL")
+            .map_err(|e| anyhow!("Failed to set update URL: {}", e))?;
+        let updater = builder
             .build()
-            .expect("Failed to build updater")
+            .map_err(|e| anyhow!("Failed to build updater: {}", e))?;
+        let update = updater
             .check()
             .await
-            .expect("Failed to check for updates");
+            .map_err(|e| anyhow!("Failed to check for updates: {}", e))?;
 
         Ok(update)
     }
