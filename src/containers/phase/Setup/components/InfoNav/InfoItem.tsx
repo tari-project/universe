@@ -1,5 +1,5 @@
 import { Container, Heading, Copy, AnimatedTextContainer, AnimatedSpan } from './InfoNav.styles';
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 
 interface InfoItemProps {
     title: string;
@@ -7,33 +7,31 @@ interface InfoItemProps {
     step: number;
 }
 
-const splitIntoWords = (text: string) => {
-    const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
-    return text.match(regex) || [];
-};
-
-const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }) {
-    const words = splitIntoWords(text);
-    return (
-        <AnimatedTextContainer aria-hidden>
-            {words.map((word: string, i: number) => (
-                <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
-                    {word}
-                </AnimatedSpan>
-            ))}
-        </AnimatedTextContainer>
-    );
-});
-
-export default function InfoItem({ title, text, step }: InfoItemProps) {
+const InfoItem = memo(function InfoItem({ title, text, step }: InfoItemProps) {
+    function getChars(text: string) {
+        const splitIntoWords = (text: string) => {
+            const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
+            return text.match(regex) || [];
+        };
+        const words = splitIntoWords(text);
+        return words.map((word: string, i: number) => (
+            <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
+                {word}
+            </AnimatedSpan>
+        ));
+    }
+    const titleMarkup = useMemo(() => getChars(title), [title]);
+    const bodyTextMarkup = useMemo(() => getChars(text), [text]);
     return (
         <Container initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
             <Heading $step={step}>
-                <AnimatedLetters text={title} />
+                <AnimatedTextContainer aria-hidden>{titleMarkup}</AnimatedTextContainer>
             </Heading>
             <Copy>
-                <AnimatedLetters text={text} />
+                <AnimatedTextContainer aria-hidden>{bodyTextMarkup}</AnimatedTextContainer>
             </Copy>
         </Container>
     );
-}
+});
+
+export default InfoItem;

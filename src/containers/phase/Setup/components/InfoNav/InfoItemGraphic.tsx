@@ -13,12 +13,13 @@ import towerClouds from '/assets/img/setup/tower-clouds.png';
 import towerWinClouds from '/assets/img/setup/tower-win-clouds.png';
 import towerWin from '/assets/img/setup/tower-win.png';
 import tower from '/assets/img/setup/tower.png';
+import { memo } from 'react';
 
 interface InfoItemGraphicProps {
     step?: number;
 }
 
-export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
+const InfoItemGraphic = memo(function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
     const theme = useTheme();
     const stepGraphics = [
         [towerWin, towerWinClouds],
@@ -50,4 +51,6 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
             {graphicsMarkup}
         </GraphicContainer>
     );
-}
+});
+
+export default InfoItemGraphic;
