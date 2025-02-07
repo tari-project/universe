@@ -20,8 +20,9 @@ export default function ActiveTappletView() {
     const fetchTappConfig = useCallback(async () => {
         try {
             if (!tapplet) return;
-            const config: TappletConfig = await (await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`)).json();
-
+            const resp = await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`);
+            if (!resp.ok) return;
+            const config: TappletConfig = await resp.json();
             if (!config) return;
             if (!tappProvider && tapplet) {
                 // assign permissions

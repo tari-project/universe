@@ -1,8 +1,6 @@
 import { create } from './create.ts';
 import { useTappletProviderStore } from './useTappletProviderStore.ts';
-import { substateIdToString } from '@tari-project/wallet_jrpc_client';
 import { OotleAccount } from '@app/types/ootle/account.ts';
-import { VaultData } from '@tari-project/tarijs';
 import { AccountInfo } from '@tari-project/typescript-bindings';
 
 interface State {

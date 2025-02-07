@@ -131,14 +131,14 @@ export class TappletProvider implements TariProvider {
 
     public async getAccount(): Promise<OotleAccount> {
         const { account, public_key } = await this.client.accountsGetDefault({});
-        console.info('TAPP ACCOUNT GET DEF -> ', account, public_key);
+        console.info('🔌 [TU][Provider] getAccount with accountsGetDefault', account, public_key);
         //TODO debug error
         //tip: if fails try `account: { ComponentAddress: account.address }`
         const { balances } = await this.client.accountsGetBalances({
             account: { ComponentAddress: substateIdToString(account.address) },
             refresh: false,
         });
-
+        console.info('[TU][TappletProvider] getAccount', account.name, balances);
         return {
             account_id: account.key_index,
             address: substateIdToString(account.address), //TODO tari.js SubstateId type
@@ -160,7 +160,7 @@ export class TappletProvider implements TariProvider {
         };
     }
 
-    public async getAccountBalancesByAddress(componentAddress: string): Promise<AccountsGetBalancesResponse> {
+    public async getAccountBalances(componentAddress: string): Promise<AccountsGetBalancesResponse> {
         return await this.client.accountsGetBalances({
             account: { ComponentAddress: componentAddress },
             refresh: true,
@@ -174,7 +174,7 @@ export class TappletProvider implements TariProvider {
         });
     }
 
-    public async getAccountBalancesByName(accountName: string, refresh = false): Promise<AccountsGetBalancesResponse> {
+    public async getAccountsBalances(accountName: string, refresh = false): Promise<AccountsGetBalancesResponse> {
         return await this.client.accountsGetBalances({ account: { Name: accountName }, refresh });
     }
 
@@ -191,23 +191,28 @@ export class TappletProvider implements TariProvider {
     }
 
     public async submitTransaction(req: SubmitTransactionRequest): Promise<SubmitTransactionResponse> {
-        const params = {
+        const params: TransactionSubmitRequest = {
             transaction: {
-                instructions: req.instructions as Instruction[],
-                fee_instructions: req.fee_instructions as Instruction[],
-                inputs: req.required_substates.map((s) => ({
-                    // TODO: Hmm The bindings want a SubstateId object, but the wallet only wants a string. Any is used to skip type checking here
-                    substate_id: s.substate_id as any,
-                    version: null,
-                })),
-                min_epoch: null,
-                max_epoch: null,
+                V1: {
+                    network: req.network,
+                    fee_instructions: req.fee_instructions as any[], //TODO fix type
+                    instructions: req.instructions as any[], //TODO fix type
+                    inputs: req.required_substates.map((s) => ({
+                        // TODO: Hmm The bindings want a SubstateId object, but the wallet only wants a string. Any is used to skip type checking here
+                        substate_id: s.substate_id as any,
+                        version: s.version ?? null,
+                    })),
+                    min_epoch: null,
+                    max_epoch: null,
+                    is_seal_signer_authorized: req.is_seal_signer_authorized,
+                },
             },
             signing_key_index: req.account_id,
             autofill_inputs: [],
             detect_inputs: true,
             proof_ids: [],
-        } as TransactionSubmitRequest;
+            detect_inputs_use_unversioned: req.detect_inputs_use_unversioned,
+        };
 
         const res = await this.client.submitTransaction(params);
         return { transaction_id: res.transaction_id };

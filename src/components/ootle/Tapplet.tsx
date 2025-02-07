@@ -1,6 +1,6 @@
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { TappletProvider } from '@app/types/ootle/TappletProvider';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 interface TappletProps {
     source: string;
@@ -33,14 +33,17 @@ export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
                 provider?.sendWindowSizeMessage(tappletWindow, source);
             }
         } else if (event.data.type === 'provider-call') {
-            console.log('eeeeeloszki! tapplet method', event.data);
-            fetchTappletConfig(event);
+            console.info('🤝 [TU Tapplet][handle msg] event data:', event.data);
+            runTappletTx(event);
         }
     }
 
-    const fetchTappletConfig = async (event: MessageEvent) => {
-        await runTransaction(event);
-    };
+    const runTappletTx = useCallback(
+        async (event: MessageEvent) => {
+            await runTransaction(event);
+        },
+        [runTransaction]
+    );
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);
@@ -50,6 +53,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
             window.removeEventListener('resize', sendWindowSize);
             window.removeEventListener('message', handleMessage);
         };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return <iframe src={source} width="100%" height="100%" ref={tappletRef} onLoad={sendWindowSize}></iframe>;
