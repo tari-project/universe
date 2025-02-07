@@ -16,10 +16,9 @@ interface ShowReleaseNotesPayload {
 export const useListenForAppUpdated = (options: UseListenForAppUpdatedOptions) => {
     const { triggerEffect } = options;
     const { setDialogToShow } = useUIStore();
-    const { setReleaseNotes, setIsAppUpdateAvailable } = useAppStateStore((state) => ({
-        setReleaseNotes: state.setReleaseNotes,
-        setIsAppUpdateAvailable: state.setIsAppUpdateAvailable,
-    }));
+    const setReleaseNotes = useAppStateStore((state) => state.setReleaseNotes);
+    const setIsAppUpdateAvailable = useAppStateStore((state) => state.setIsAppUpdateAvailable);
+
     useEffect(() => {
         if (!triggerEffect) return;
 
