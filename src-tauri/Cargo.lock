@@ -7160,9 +7160,9 @@ dependencies = [
  "thiserror 2.0.10",
  "tokio",
  "tokio-util 0.7.13",
- "whoami",
  "tonic",
  "urlencoding",
+ "whoami",
  "winreg 0.52.0",
  "xz2",
  "zip",
@@ -9127,7 +9127,7 @@ version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "372d5b87f58ec45c384ba03563b03544dc5fadc3983e434b286913f5b4a9bb6d"
 dependencies = [
- "redox_syscall",
+ "redox_syscall 0.5.8",
  "wasite",
  "web-sys",
 ]
