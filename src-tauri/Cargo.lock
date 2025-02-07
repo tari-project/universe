@@ -2911,12 +2911,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-range"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21dec9db110f5f872ed9699c3ecf50cf16f423502706ba5c72462e28d3157573"
-
-[[package]]
 name = "httparse"
 version = "1.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7219,7 +7213,6 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-cli",
  "tauri-plugin-clipboard-manager",
- "tauri-plugin-fs",
  "tauri-plugin-os",
  "tauri-plugin-process",
  "tauri-plugin-sentry",
@@ -7711,7 +7704,6 @@ dependencies = [
  "gtk",
  "heck 0.5.0",
  "http",
- "http-range",
  "image",
  "jni",
  "libc",
@@ -7856,29 +7848,6 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "thiserror 2.0.10",
-]
-
-[[package]]
-name = "tauri-plugin-fs"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a1a1edf18000f02903a7c2e5997fb89aca455ecbc0acc15c6535afbb883be223"
-dependencies = [
- "anyhow",
- "dunce",
- "glob",
- "percent-encoding",
- "schemars",
- "serde",
- "serde_json",
- "serde_repr",
- "tauri",
- "tauri-plugin",
- "tauri-utils",
- "thiserror 2.0.10",
- "toml 0.8.19",
- "url",
- "uuid",
 ]
 
 [[package]]
