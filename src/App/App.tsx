@@ -35,13 +35,6 @@ export default function App() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    useEffect(() => {
-        const canvasElement = document.getElementById('canvas');
-        if (canvasElement) {
-            canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
-        }
-    }, [isShuttingDown, isSettingUp]);
-
     const showSetup = isSettingUp && !isShuttingDown && isAppReady;
     const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
     return (

@@ -26,10 +26,6 @@ function VisualMode() {
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const handleDisable = useCallback(() => {
-        const canvas = document.getElementById(TOWER_CANVAS_ID);
-        if (canvas) {
-            canvas.style.opacity = '0';
-        }
         setVisualMode(false);
         removeTowerAnimation({ canvasId: TOWER_CANVAS_ID });
     }, []);
