@@ -1,4 +1,3 @@
-import { LinearProgress } from '@app/components/elements/LinearProgress';
 import InfoItemGraphic from '@app/containers/phase/Setup/components/InfoNav/InfoItemGraphic';
 import { AnimatePresence } from 'motion/react';
 import { memo, useCallback, useState } from 'react';
@@ -13,7 +12,7 @@ const emojis = {
     'step-6': ['🙏'],
 };
 
-const calculateReadingTime = (text) => {
+const calculateReadingTime = (text: string) => {
     const words = text.split(' ').length;
     return (words / 350) * 60 + 3; // Convert to seconds + 3s for a pause
 };
@@ -52,17 +51,9 @@ const InfoNav = memo(function InfoNav() {
         const duration = calculateReadingTime(title + text);
 
         return (
-            <NavItem key={key} $selected={isSelected} onClick={() => handleStepClick(step)}>
-                <LinearProgress value={0} variant="tiny" />
+            <NavItem key={key} onClick={() => handleStepClick(step)}>
                 {isSelected ? (
-                    <NavItemCurrent key={`selected:${key}`}>
-                        <LinearProgress
-                            value={100}
-                            duration={duration}
-                            variant="tiny"
-                            onAnimationComplete={handleNextStep}
-                        />
-                    </NavItemCurrent>
+                    <NavItemCurrent key={`selected:${key}`} $duration={duration} onAnimationEnd={handleNextStep} />
                 ) : null}
             </NavItem>
         );
@@ -71,7 +62,7 @@ const InfoNav = memo(function InfoNav() {
     return (
         <NavContainer>
             <AnimatePresence mode="wait">
-                <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} />
+                <InfoItem key={`step-${currentStep}-content-wrapper`} title={title} text={text} step={currentStep} />
             </AnimatePresence>
             <AnimatePresence>
                 <InfoItemGraphic key={`step-${currentStep}-graphics-wrapper`} step={currentStep} />
