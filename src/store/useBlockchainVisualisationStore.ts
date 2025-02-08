@@ -68,7 +68,7 @@ async function playBlockWinAudio() {
             console.error('Audio element not found');
             return;
         }
-        audioElement.load();
+        audioElement.currentTime = 0;
         audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
         audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
         audioElement.play();
