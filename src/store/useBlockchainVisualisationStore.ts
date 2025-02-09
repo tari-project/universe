@@ -63,11 +63,15 @@ async function playBlockWinAudio() {
         if (!audioEnabled || isPlayingAudio) {
             return;
         }
-        const audioElement = document.getElementById('player') as HTMLAudioElement;
+
+        const asset = 'assets/block_win.mp3';
+        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
+        const audioElement = new Audio(blobUrl);
         if (!audioElement) {
             console.error('Audio element not found');
             return;
         }
+
         audioElement.currentTime = 0;
         audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
         audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
