@@ -7,6 +7,7 @@ import setupLogger from '../utils/shared-logger.ts';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import App from './App.tsx';
+import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
 import { useListenForGpuEngines } from '@app/hooks/app/useListenForGpuEngines.ts';
 
@@ -19,6 +20,7 @@ export default function AppWrapper() {
     useLangaugeResolver();
     useListenForExternalDependencies();
     useListenForCriticalProblem();
+    useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
     useListenForGpuEngines();
 

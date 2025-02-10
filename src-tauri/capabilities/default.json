@@ -17,6 +17,14 @@
         "sentry:default",
         "process:allow-restart",
         "process:default",
-        "clipboard-manager:allow-write-text"
+        "clipboard-manager:allow-write-text",
+        {
+            "identifier": "fs:allow-read-file",
+            "allow": [{ "path": "$RESOURCE/audio/block_win.mp3" }]
+        },
+        {
+            "identifier": "fs:allow-read-dir",
+            "allow": [{ "path": "$RESOURCE/audio" }]
+        }
     ]
 }

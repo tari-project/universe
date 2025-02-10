@@ -48,6 +48,7 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    audio_enabled: boolean;
 }
 
 export enum ExternalDependencyStatus {
@@ -75,26 +76,7 @@ export interface CriticalProblem {
     title: string;
     description: string;
 }
-
-export interface CpuMinerMetrics {
-    mining: CpuMinerStatus;
-}
-
-export interface GpuMinerMetrics {
-    hardware: GpuStatus[];
-    mining: GpuMinerStatus;
-}
-
-export interface MinerMetrics {
-    sha_network_hash_rate: number;
-    randomx_network_hash_rate: number;
-    cpu: CpuMinerMetrics;
-    gpu: GpuMinerMetrics;
-    base_node: BaseNodeStatus;
-}
-
-export interface TariWalletDetails {
-    wallet_balance: WalletBalance;
+export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
 }
@@ -196,11 +178,6 @@ export interface DeviceStatus {
     is_reader_implemented: boolean;
 }
 
-export interface DeviceParameters {
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
-}
 export interface GpuStatus {
     device_index: number;
     device_name: string;
@@ -209,12 +186,6 @@ export interface GpuStatus {
     grid_size: number;
     max_grid_size: number;
     block_size: number;
-}
-export interface HardwareParameters {
-    label: string;
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
 }
 
 export interface CpuMinerStatus {
@@ -238,15 +209,16 @@ export interface GpuMinerStatus {
 export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
-    is_connected: boolean;
-    connected_peers: string[];
+    is_synced: boolean;
+    sha_network_hashrate: number;
+    randomx_network_hashrate: number;
 }
 
 export interface WalletBalance {
-    available_balance?: number;
-    timelocked_balance?: number;
-    pending_incoming_balance?: number;
-    pending_outgoing_balance?: number;
+    available_balance: number;
+    timelocked_balance: number;
+    pending_incoming_balance: number;
+    pending_outgoing_balance: number;
 }
 
 export interface ApplicationsVersions {
