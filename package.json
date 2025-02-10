@@ -39,7 +39,6 @@
         "react-markdown": "^9.0.3",
         "socket.io-client": "^4.8.1",
         "styled-components": "^6.1.14",
-        "tauri-plugin-sentry-api": "^0.2.0",
         "use-sync-external-store": "^1.4.0",
         "uuid": "^10.0.0",
         "vite-tsconfig-paths": "^5.1.4",
@@ -48,7 +47,6 @@
     "devDependencies": {
         "@eslint/js": "^9.9.0",
         "@nabla/vite-plugin-eslint": "^2.0.5",
-        "@sentry/vite-plugin": "^2.22.7",
         "@taplo/cli": "^0.7.0",
         "@tauri-apps/cli": "^2.2.2",
         "@types/eslint__js": "^8.42.3",
