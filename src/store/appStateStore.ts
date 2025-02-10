@@ -116,7 +116,11 @@ export const setSetupComplete = async () => {
     // Proceed with auto mining when enabled
     const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled, visual_mode } = useAppConfigStore.getState();
     if (visual_mode) {
-        setAnimationState('showVisual');
+        try {
+            setAnimationState('showVisual');
+        } catch (error) {
+            console.error('Failed to set animation state:', error);
+        }
     }
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();

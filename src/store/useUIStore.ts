@@ -4,7 +4,9 @@ import { Theme } from '@app/theme/types.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './useAppConfigStore.ts';
 
-export const sidebarTowerOffset = 348 + 20; // sidebar + padding
+const sideBarWidth = 348;
+const sideBarPaddingBuffer = 20;
+export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
 export const TOWER_CANVAS_ID = 'tower-canvas';
 
 export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
