@@ -177,6 +177,7 @@ impl AutoLauncher {
             .to_string();
 
         info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
+        info!(target: LOG_TARGET, "UserName: {}", username());
 
         schedule_builder
             .create_logon()
