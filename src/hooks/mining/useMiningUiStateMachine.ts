@@ -18,20 +18,40 @@ export const useUiMiningStateMachine = () => {
     const indexTrigger = animationStatus;
 
     useEffect(() => {
+        let isLatestEffect = true;
         if (!visualMode || visualModeToggleLoading) return;
         const notStarted = !animationStatus || animationStatus == 'not-started';
         if (isMining && notStarted) {
-            setAnimationState('start');
+            // Debounce animation state changes
+            const timer = setTimeout(() => {
+                if (isLatestEffect) {
+                    setAnimationState('start');
+                }
+            }, 300);
+            return () => {
+                clearTimeout(timer);
+                isLatestEffect = false;
+            };
         }
     }, [indexTrigger, isMining, visualMode, visualModeToggleLoading]);
 
     useEffect(() => {
+        let isLatestEffect = true;
         if (!visualMode || visualModeToggleLoading) return;
         const notStopped = animationStatus !== 'not-started';
         const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
         const shouldStop = !isMining && notStopped && !preventStop;
         if (shouldStop) {
-            setAnimationState('stop');
+            // Debounce animation state changes
+            const timer = setTimeout(() => {
+                if (isLatestEffect) {
+                    setAnimationState('stop');
+                }
+            }, 300);
+            return () => {
+                clearTimeout(timer);
+                isLatestEffect = false;
+            };
         }
     }, [indexTrigger, setupComplete, isMiningInitiated, isMining, isChangingMode, visualMode, visualModeToggleLoading]);
 };

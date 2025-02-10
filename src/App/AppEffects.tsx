@@ -8,8 +8,6 @@ import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
-import { sidebarTowerOffset, TOWER_CANVAS_ID } from '@app/store/useUIStore.ts';
-import { loadTowerAnimation } from '@tari-project/tari-tower';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
@@ -26,11 +24,7 @@ export default function AppEffects() {
 
     useEffect(() => {
         async function initialize() {
-            const config = await fetchAppConfig();
-            if (config?.visual_mode) {
-                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
-            }
-
+            await fetchAppConfig();
             await setMiningNetwork();
         }
         void initialize();

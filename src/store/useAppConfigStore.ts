@@ -6,9 +6,11 @@ import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
+
+import { loadTowerAnimation } from '@tari-project/tari-tower';
 
 type State = Partial<AppConfig> & {
     visualModeToggleLoading: boolean;
@@ -307,11 +309,18 @@ export const fetchAppConfig = async () => {
             canvasElement.style.display = 'none';
         }
 
+        if (appConfig.visual_mode) {
+            try {
+                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
+            } catch (e) {
+                console.error('Error at loadTowerAnimation:', e);
+                useAppConfigStore.setState({ visual_mode: false });
+            }
+        }
+
         if (configTheme) {
             await useAppConfigStore.getState().setTheme(configTheme as displayMode);
         }
-
-        return appConfig;
     } catch (e) {
         console.error('Could not get app config: ', e);
     }

@@ -50,7 +50,7 @@ const initialState: State = {
     showExternalDependenciesDialog: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
+export const useUIStore = create<UIStoreState>()((set, getState) => ({
     ...initialState,
     setTheme: (theme) => {
         setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
@@ -63,6 +63,10 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
     setIsWebglNotSupported: (isWebglNotSupported) => {
+        const current = getState();
+        if (current.isWebglNotSupported === isWebglNotSupported) {
+            return;
+        }
         setVisualMode(false);
         set({ isWebglNotSupported });
     },
