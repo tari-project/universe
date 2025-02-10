@@ -1361,25 +1361,36 @@ pub async fn start_mining<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
+
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
     let custom_gpu_usage = config.custom_gpu_usage();
-    let cpu_miner_running = state.cpu_miner.read().await.is_running().await;
-    let gpu_miner_running = state.gpu_miner.read().await.is_running().await;
-
-    let cpu_miner_config = state.cpu_miner_config.read().await;
-    let tari_address = cpu_miner_config.tari_address.clone();
     let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
+    drop(config);
+
+    let cpu_miner_running = {
+        let cpu_miner = state.cpu_miner.read().await;
+        cpu_miner.is_running().await
+    };
+
+    let gpu_miner_running = {
+        let gpu_miner = state.gpu_miner.read().await;
+        gpu_miner.is_running().await
+    };
+
     let mut telemetry_id = state
         .telemetry_manager
         .read()
         .await
         .get_unique_string()
         .await;
+
+    let cpu_miner_config = &state.cpu_miner_config.read().await;
+    let tari_address = cpu_miner_config.tari_address.clone();
 
     if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
@@ -1388,38 +1399,35 @@ pub async fn start_mining<'r>(
             .await
             .map_err(|e| e.to_string())?;
 
-        let res = state
-            .cpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                &cpu_miner_config,
-                monero_address.to_string(),
-                mm_proxy_port,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                custom_cpu_usage,
-            )
-            .await;
+        {
+            let mut cpu_miner = state.cpu_miner.write().await;
+            let res = cpu_miner
+                .start(
+                    state.shutdown.to_signal(),
+                    cpu_miner_config,
+                    monero_address.to_string(),
+                    mm_proxy_port,
+                    app.path()
+                        .app_local_data_dir()
+                        .expect("Could not get data dir"),
+                    app.path()
+                        .app_config_dir()
+                        .expect("Could not get config dir"),
+                    app.path().app_log_dir().expect("Could not get log dir"),
+                    mode,
+                    custom_cpu_usage,
+                )
+                .await;
 
-        if let Err(e) = res {
-            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-            state
-                .cpu_miner
-                .write()
-                .await
-                .stop()
-                .await
-                .inspect_err(|e| error!("error at stopping cpu miner {:?}", e))
-                .ok();
-            return Err(e.to_string());
+            if let Err(e) = res {
+                error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
+                cpu_miner
+                    .stop()
+                    .await
+                    .inspect_err(|e| error!("error at stopping cpu miner {:?}", e))
+                    .ok();
+                return Err(e.to_string());
+            }
         }
     }
 
