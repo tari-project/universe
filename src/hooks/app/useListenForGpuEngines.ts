@@ -34,6 +34,7 @@ export const useListenForGpuEngines = () => {
         const listenerForGpuHardware = listen(
             'detected-devices',
             ({ payload }: { payload: DetectedGpuHardwarePayload }) => {
+                console.log('payload.devices', payload.devices);
                 setGpus(payload.devices);
             }
         );

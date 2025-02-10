@@ -37,6 +37,8 @@ const GpuDevices = () => {
         [toggleDeviceExclusion]
     );
 
+    console.log('gpuDevices', gpuDevices);
+
     return (
         <>
             <SettingsGroupWrapper>

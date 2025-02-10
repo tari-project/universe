@@ -105,10 +105,11 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
         });
     },
     setGpuHardware: (hardware) => {
-        set((state) => ({ ...state, gpu: { ...state.gpu, hardware } }));
+        set((state) => ({ ...state, gpu_devices: hardware }));
 
         if (hardware.some((gpu) => gpu.is_available && !gpu.is_excluded)) {
             const appConfigStore = useAppConfigStore.getState();
+            console.log('Setting GPU mining enabled');
             appConfigStore.setGpuMiningEnabled(true);
         }
     },

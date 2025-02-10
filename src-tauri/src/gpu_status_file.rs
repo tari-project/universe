@@ -4,6 +4,9 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use anyhow::anyhow;
+use log::debug;
+
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct GpuStatus {
     pub device_index: u32,
@@ -40,14 +43,17 @@ impl GpuStatusFile {
         Ok(config)
     }
 
-    pub fn save(content: Vec<GpuStatus>, path: &Path) -> Result<(), anyhow::Error> {
-        let file = File::create(path)?;
-        serde_json::to_writer_pretty(
-            file,
-            &GpuStatusFile {
-                gpu_devices: content,
-            },
-        )?;
+    pub fn save(new_content: Vec<GpuStatus>, path: &Path) -> Result<(), anyhow::Error> {
+        debug!(
+            "Updating gpu status file with {:?}, at path: {:?}",
+            new_content, path
+        );
+        let content = serde_json::to_string_pretty(&GpuStatusFile {
+            gpu_devices: new_content,
+        })?;
+
+        std::fs::write(path, content)
+            .map_err(|e| anyhow!("Failed to save gpu status file: {}", e))?;
         Ok(())
     }
 }

@@ -227,6 +227,13 @@ impl GpuMiner {
                         selected_engine: self.curent_selected_engine.to_string(),
                     },
                 )?;
+                app.emit(
+                    "detected-devices",
+                    DetectedDevices {
+                        devices: self.gpu_devices.clone(),
+                    },
+                )?;
+
                 Ok(())
             }
             _ => {
