@@ -43,10 +43,10 @@
             "capabilities": ["desktop-capability", "default", "migrated"],
             "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' asset: tauri: URL: blob: data:",
+                "default-src": "'self' asset: tauri: URL: blob: data: https:",
                 "script-src": "'wasm-unsafe-eval'",
                 "style-src": "'self' 'unsafe-inline'",
-                "connect-src": "tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
+                "connect-src": "https: tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
             },
             "pattern": {
                 "use": "isolation",
