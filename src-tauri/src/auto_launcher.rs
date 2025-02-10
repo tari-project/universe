@@ -94,9 +94,15 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "Toggling auto-launcher");
         let auto_launcher_is_enabled = auto_launcher.is_enabled()?;
         info!(target: LOG_TARGET, "Auto-launcher is enabled: {}, config_is_auto_launcher_enabled: {}", auto_launcher_is_enabled, config_is_auto_launcher_enabled);
-        if (config_is_auto_launcher_enabled && !auto_launcher_is_enabled)
-            || (config_is_auto_launcher_enabled && auto_launcher_is_enabled)
-        {
+
+        let should_toggle_to_enabled = config_is_auto_launcher_enabled && !auto_launcher_is_enabled;
+        let should_ensure_to_enable_at_first_startup =
+            auto_launcher_is_enabled && config_is_auto_launcher_enabled;
+
+        let should_toggle_to_disabled =
+            !config_is_auto_launcher_enabled && auto_launcher_is_enabled;
+
+        if should_toggle_to_enabled || should_ensure_to_enable_at_first_startup {
             info!(target: LOG_TARGET, "Enabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::MacOS => {
@@ -115,9 +121,7 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                 }
             }
-            auto_launcher.enable()?;
-        }
-        if !config_is_auto_launcher_enabled && auto_launcher_is_enabled {
+        } else if should_toggle_to_disabled {
             info!(target: LOG_TARGET, "Disabling auto-launcher");
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
@@ -129,6 +133,8 @@ impl AutoLauncher {
                     auto_launcher.disable()?;
                 }
             }
+        } else {
+            warn!(target: LOG_TARGET, "Auto-launcher is already in the desired state");
         }
 
         Ok(())
@@ -180,7 +186,7 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "UserName: {}", username());
 
         let mut interval = Duration::new();
-        interval.seconds = Some(10);
+        interval.minutes = Some(1);
 
         schedule_builder
             .create_logon()
@@ -204,8 +210,14 @@ impl AutoLauncher {
                 disallow_start_if_on_batteries: Some(false),
                 hidden: Some(false),
                 multiple_instances_policy: Some(InstancesPolicy::StopExisting),
-                restart_count: Some(4),
+                restart_count: Some(3),
                 restart_interval: Some(interval.to_string()),
+                idle_settings: Some(IdleSettings {
+                    stop_on_idle_end: Some(false),
+                    restart_on_idle: Some(false),
+                    ..Default::default()
+                }),
+                allow_demand_start: Some(true),
                 ..Default::default()
             })?
             .build()?
