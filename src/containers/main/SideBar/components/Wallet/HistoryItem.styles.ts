@@ -149,7 +149,8 @@ export const FlexButton = styled.button`
     align-items: center;
     gap: 8px;
     border-radius: 159px;
-    background: linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
+    background:
+        linear-gradient(0deg, #c9eb00 0%, #c9eb00 100%), linear-gradient(180deg, #755cff 0%, #2946d9 100%),
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
     position: relative;
