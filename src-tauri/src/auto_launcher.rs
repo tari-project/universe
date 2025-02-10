@@ -161,7 +161,7 @@ impl AutoLauncher {
         &self,
         is_triggered: bool,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        use planif::settings::{IdleSettings, InstancesPolicy};
+        use planif::settings::{Duration, IdleSettings, InstancesPolicy};
 
         let task_scheduler = TaskScheduler::new()?;
         let com_runtime = task_scheduler.get_com();
@@ -178,6 +178,9 @@ impl AutoLauncher {
 
         info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
         info!(target: LOG_TARGET, "UserName: {}", username());
+
+        let interval = Duration::new();
+        interval.seconds = Some(10);
 
         schedule_builder
             .create_logon()
@@ -202,7 +205,7 @@ impl AutoLauncher {
                 hidden: Some(false),
                 multiple_instances_policy: Some(InstancesPolicy::StopExisting),
                 restart_count: Some(4),
-                restart_interval: Some(10),
+                restart_interval: Some(interval.to_string()),
                 ..Default::default()
             })?
             .build()?
