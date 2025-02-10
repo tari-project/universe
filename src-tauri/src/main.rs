@@ -177,16 +177,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
             .await;
-        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
-            Ok(devices) => devices,
-            Err(e) => {
-                error!(target: LOG_TARGET, "Failed to get GPU devices: {:?}", e);
-                vec![]
-            }
-        };
-        events_manager
-            .handle_gpu_devices_update(&move_app, gpu_devices)
-            .await;
     });
 
     let move_app = app.clone();
