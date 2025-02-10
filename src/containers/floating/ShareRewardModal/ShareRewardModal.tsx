@@ -19,7 +19,7 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 
-import { memo, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
@@ -57,10 +57,11 @@ const ShareRewardModal = memo(function ShareRewardModal() {
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
-    const handleCopy = () => {
-        writeText(shareUrl);
-        setCopied(true);
-    };
+    const handleCopy = useCallback(() => {
+        writeText(shareUrl).then(() => {
+            setCopied(true);
+        });
+    }, [shareUrl]);
 
     return (
         <AnimatePresence>

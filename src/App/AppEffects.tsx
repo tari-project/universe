@@ -1,4 +1,4 @@
-import { memo, useEffect } from 'react';
+import { useEffect } from 'react';
 
 import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
 
@@ -13,7 +13,7 @@ import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
 
 setupLogger();
-const AppEffects = memo(function AppEffects() {
+export default function AppEffects() {
     useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();
@@ -31,6 +31,4 @@ const AppEffects = memo(function AppEffects() {
     }, []);
 
     return null;
-});
-
-export default AppEffects;
+}

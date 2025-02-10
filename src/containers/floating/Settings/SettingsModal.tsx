@@ -24,23 +24,23 @@ import {
 
 import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 
-const markups = {
-    general: <GeneralSettings />,
-    mining: <MiningSettings />,
-    connections: <ConnectionsSettings />,
-    p2p: <PoolMiningSettings />,
-    wallet: <WalletSettings />,
-    airdrop: <AirdropSettings />,
-    experimental: <ExperimentalSettings />,
-    releaseNotes: <ReleaseNotes />,
-};
-
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
 
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
+
+    const markups = {
+        general: <GeneralSettings />,
+        mining: <MiningSettings />,
+        connections: <ConnectionsSettings />,
+        p2p: <PoolMiningSettings />,
+        wallet: <WalletSettings />,
+        airdrop: <AirdropSettings />,
+        experimental: <ExperimentalSettings />,
+        releaseNotes: <ReleaseNotes />,
+    };
 
     const sectionMarkup = markups[activeSection];
 

@@ -41,7 +41,7 @@ const BarSVG = styled.svg`
     border-radius: 50px;
 `;
 const BarLine = styled(m.line)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
-    stroke-width: ${({ $variant }) => ($variant ? '5px' : '10px')};
+    stroke-width: ${({ $variant }) => ($variant === 'primary' ? '5px' : '10px')};
     stroke: ${({ theme }) => theme.palette.contrast};
 `;
 

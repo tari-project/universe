@@ -5,14 +5,16 @@ import InfoItem from './InfoItem';
 import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
 import { useTranslation } from 'react-i18next';
 
+const steps = Array.from({ length: 6 }, (_, i) => i + 1);
+const emojis = {
+    'step-1': ['💜', '🐢'],
+    'step-6': ['🙏'],
+};
+
 const InfoNav = memo(function InfoNav() {
     const { t } = useTranslation('info');
     const [currentStep, setCurrentStep] = useState(1);
-    const steps = Array.from({ length: 6 }, (_, i) => i + 1);
-    const emojis = {
-        'step-1': ['💜', '🐢'],
-        'step-6': ['🙏'],
-    };
+
     const calculateReadingTime = (text: string) => {
         const words = text.split(' ').length;
         return (words / 350) * 60 + 3; // Convert to seconds + 3s for a pause

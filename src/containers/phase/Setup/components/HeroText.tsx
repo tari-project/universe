@@ -61,11 +61,10 @@ const TextWrapper = styled.div`
     }
 `;
 
+const BEFORE_GHOSTS = Array(3).fill(null);
+const AFTER_GHOSTS = Array(7).fill(null);
 const HeroText = memo(function HeroText() {
     const { t } = useTranslation('common');
-    const BEFORE_GHOSTS = Array(3).fill(null);
-    const AFTER_GHOSTS = Array(7).fill(null);
-
     const title = t('tari-universe');
 
     return (

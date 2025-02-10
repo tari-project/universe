@@ -6,7 +6,7 @@ import { ButtonWrapper, CountdownNumber, KeepButton, RevertButton, Text, TextWra
 import { useTranslation } from 'react-i18next';
 import { changeMiningMode } from '@app/store/miningStoreActions.ts';
 
-function Countdown({ onComplete }: { onComplete: () => void }) {
+const Countdown = memo(function Countdown({ onComplete }: { onComplete: () => void }) {
     const [count, setCount] = useState(30);
 
     useEffect(() => {
@@ -19,7 +19,7 @@ function Countdown({ onComplete }: { onComplete: () => void }) {
     }, [count, onComplete]);
 
     return <CountdownNumber>{count < 10 ? `0${count}` : count}</CountdownNumber>;
-}
+});
 
 const LudicrousCofirmationDialog = memo(function LudicrousCofirmationDialog() {
     const { t } = useTranslation('components', { useSuspense: false });

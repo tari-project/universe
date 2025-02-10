@@ -7,19 +7,19 @@ interface InfoItemProps {
     step: number;
 }
 
+function getWords(text: string) {
+    const splitIntoWords = (text: string) => {
+        const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
+        return text.match(regex) || [];
+    };
+    const words = splitIntoWords(text);
+    return words.map((word: string, i: number) => (
+        <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
+            {word}
+        </AnimatedSpan>
+    ));
+}
 const InfoItem = memo(function InfoItem({ title, text, step }: InfoItemProps) {
-    function getWords(text: string) {
-        const splitIntoWords = (text: string) => {
-            const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
-            return text.match(regex) || [];
-        };
-        const words = splitIntoWords(text);
-        return words.map((word: string, i: number) => (
-            <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
-                {word}
-            </AnimatedSpan>
-        ));
-    }
     const titleMarkup = useMemo(() => getWords(title), [title]);
     const bodyTextMarkup = useMemo(() => getWords(text), [text]);
     return (

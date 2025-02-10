@@ -12,8 +12,7 @@ const ReleaseNotesDialog = memo(function ReleaseNotesDialog() {
 
     const handleClose = useCallback(async () => {
         setDialogToShow(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [setDialogToShow]);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
