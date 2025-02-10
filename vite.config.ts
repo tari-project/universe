@@ -62,6 +62,7 @@ export default defineConfig(({ command, mode }) => {
                         './dist/assets/textures/**',
                         './dist/assets/models/**',
                         './dist/assets/glApp.js',
+                        './dist/assets/block_win.mp3',
                     ],
                 },
             }),

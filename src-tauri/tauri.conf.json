@@ -1,5 +1,5 @@
 {
-    "version": "0.9.6",
+    "version": "0.9.7",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -12,6 +12,11 @@
     "bundle": {
         "active": true,
         "targets": "all",
+        "linux": {
+            "appimage": {
+                "bundleMediaFramework": true
+            }
+        },
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -31,22 +36,23 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": "v1Compatible",
-        "resources": ["audio/block_win.mp3"]
+        "createUpdaterArtifacts": "v1Compatible"
     },
     "app": {
         "security": {
             "capabilities": ["desktop-capability", "default", "migrated"],
-            "csp": "default-src 'self'; img-src 'self' asset: https://asset.localhost; media-src 'self' asset: https://asset.localhost",
+            "dangerousDisableAssetCspModification": ["style-src"],
+            "csp": {
+                "default-src": "'self' asset: tauri: URL: blob: data:",
+                "script-src": "'wasm-unsafe-eval'",
+                "style-src": "'self' 'unsafe-inline'",
+                "connect-src": "tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
+            },
             "pattern": {
                 "use": "isolation",
                 "options": {
                     "dir": "../dist-isolation"
                 }
-            },
-            "assetProtocol": {
-                "enable": true,
-                "scope": ["$RESOURCE/audio"]
             }
         },
         "trayIcon": {
