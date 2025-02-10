@@ -44,7 +44,6 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
@@ -63,13 +62,17 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
-        setTimeout(() => {
+
+        const winTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
             useMiningStore.getState().setMiningControlsEnabled(true);
         }, 2000);
+
+        clearTimeout(winTimeout);
     } else {
+        await useWalletStore.getState().refreshCoinbaseTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -81,11 +84,12 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
-        setTimeout(() => {
+        const failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
             useMiningStore.getState().setMiningControlsEnabled(true);
         }, 1000);
+        clearTimeout(failTimeout);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
     }
