@@ -179,7 +179,7 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
         info!(target: LOG_TARGET, "UserName: {}", username());
 
-        let interval = Duration::new();
+        let mut interval = Duration::new();
         interval.seconds = Some(10);
 
         schedule_builder
