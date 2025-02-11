@@ -124,11 +124,6 @@ const MonerodMarkup = () => {
                             </IconButton>
                         </Stack>
                     ))}
-                    {/*<Stack direction="row" alignItems="center" justifyContent="flex-end" style={{ margin: '4px 0' }}>*/}
-                    {/*    <IconButton onClick={() => append('')}>*/}
-                    {/*        <IoAddCircleOutline color="green" size={20} />*/}
-                    {/*    </IconButton>*/}
-                    {/*</Stack>*/}
                 </NodesSettingsContainer>
             ) : null}
         </SettingsGroupWrapper>
