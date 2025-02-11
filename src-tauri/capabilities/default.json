@@ -1,6 +1,6 @@
 {
     "identifier": "default",
-    "windows": ["main", "splashscreen"],
+    "windows": ["main"],
     "permissions": [
         "core:path:default",
         "core:event:default",
