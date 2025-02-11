@@ -23,7 +23,7 @@ export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = fals
     const progressInterval = useRef<NodeJS.Timeout>();
     const elapsedTimeRef = useRef<number>(0);
     const lastUpdateRef = useRef<number>(Date.now());
-    const { removeToast } = useToastStore();
+    const removeToast = useToastStore((s) => s.removeToast);
     const [finished, setFinished] = useState(false);
 
     const handleHide = useCallback((id: number | string = 0) => {
