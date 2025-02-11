@@ -1,12 +1,12 @@
 import { useUIStore } from '@app/store/useUIStore';
 
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { ButtonWrapper, CountdownNumber, KeepButton, RevertButton, Text, TextWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { changeMiningMode } from '@app/store/miningStoreActions.ts';
 
-function Countdown({ onComplete }: { onComplete: () => void }) {
+const Countdown = memo(function Countdown({ onComplete }: { onComplete: () => void }) {
     const [count, setCount] = useState(30);
 
     useEffect(() => {
@@ -19,9 +19,9 @@ function Countdown({ onComplete }: { onComplete: () => void }) {
     }, [count, onComplete]);
 
     return <CountdownNumber>{count < 10 ? `0${count}` : count}</CountdownNumber>;
-}
+});
 
-export default function LudicrousCofirmationDialog() {
+const LudicrousCofirmationDialog = memo(function LudicrousCofirmationDialog() {
     const { t } = useTranslation('components', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'ludicrousConfirmation');
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
@@ -56,4 +56,6 @@ export default function LudicrousCofirmationDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default LudicrousCofirmationDialog;

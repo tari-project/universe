@@ -3,7 +3,7 @@ import lockImage from './images/locked-image.png';
 import { LockImage } from './styles';
 import { AnimatePresence } from 'motion/react';
 import ProtectIntro from './sections/ProtectIntro/ProtectIntro';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import SeedPhrase from './sections/SeedPhrase/SeedPhrase';
 import VerifySeedPhrase from './sections/VerifySeedPhrase/VerifySeedPhrase';
 import { useStagedSecurityStore } from '@app/store/useStagedSecurityStore';
@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 
 export type StagedSecuritySectionType = 'ProtectIntro' | 'SeedPhrase' | 'VerifySeedPhrase';
 
-export default function StagedSecurity() {
+const StagedSecurity = memo(function StagedSecurity() {
     const { t } = useTranslation(['staged-security'], { useSuspense: false });
 
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
@@ -96,4 +96,6 @@ export default function StagedSecurity() {
             />
         </>
     );
-}
+});
+
+export default StagedSecurity;
