@@ -5,17 +5,17 @@
         "config": ["vite.config.ts"]
     },
     "rules": {
-        "files": "off",
-        "dependencies": "off",
-        "unlisted": "off",
+        "files": "error",
+        "dependencies": "warn",
+        "unlisted": "warn",
         "binaries": "off",
         "unresolved": "off",
-        "exports": "off",
-        "types": "error",
+        "exports": "warn",
+        "types": "warn",
         "nsExports": "off",
         "nsTypes": "off",
         "enumMembers": "off",
         "classMembers": "off",
-        "duplicates": "off"
+        "duplicates": "error"
     }
 }
