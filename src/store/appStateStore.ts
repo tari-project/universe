@@ -6,6 +6,7 @@ import { useAppConfigStore } from './useAppConfigStore';
 
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { startMining } from '@app/store/miningStoreActions.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 interface State {
     error?: string;
@@ -109,8 +110,13 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
 
-export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-    useAppStateStore.setState({ setupTitle, setupTitleParams, setupProgress });
+export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
+export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
+export const setSetupParams = (setupTitleParams: Record<string, string>) =>
+    useAppStateStore.setState((current) => {
+        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
+        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
+    });
 
 export const setSetupComplete = async () => {
     // Proceed with auto mining when enabled
