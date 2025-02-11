@@ -15,7 +15,7 @@ import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts
 setupLogger();
 export default function AppEffects() {
     useDetectMode();
-    // useDisableRefresh();
+    useDisableRefresh();
     useLangaugeResolver();
     useListenForExternalDependencies();
     useListenForCriticalProblem();
