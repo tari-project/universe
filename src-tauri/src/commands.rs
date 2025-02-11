@@ -48,7 +48,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -1380,6 +1380,38 @@ pub async fn set_airdrop_tokens<'r>(
             airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
         }
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
+    let enabled = state.config.read().await.audio_enabled();
+    Ok(enabled)
+}
+
+#[tauri::command]
+pub async fn set_audio_enabled(
+    audio_enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    state
+        .config
+        .write()
+        .await
+        .set_audio_enabled(audio_enabled)
+        .await
+        .map_err(|e| e.to_string())?;
+    let telemetry_service = state.telemetry_service.read().await;
+    telemetry_service
+        .send("audio-enabled".to_string(), json!(audio_enabled))
+        .await
+        .inspect_err(|e| {
+            error!(
+                "error at sending telemetry data for get_audio_enabled {:?}",
+                e
+            )
+        })
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
 

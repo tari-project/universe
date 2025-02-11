@@ -1360,6 +1360,8 @@ fn main() {
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
+            commands::get_audio_enabled,
+            commands::set_audio_enabled,
             commands::frontend_ready
         ])
         .build(tauri::generate_context!())
