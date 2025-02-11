@@ -13,21 +13,25 @@ import towerClouds from '/assets/img/setup/tower-clouds.png';
 import towerWinClouds from '/assets/img/setup/tower-win-clouds.png';
 import towerWin from '/assets/img/setup/tower-win.png';
 import tower from '/assets/img/setup/tower.png';
+import { memo, useMemo } from 'react';
 
 interface InfoItemGraphicProps {
     step?: number;
 }
 
-export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
+const InfoItemGraphic = memo(function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
     const theme = useTheme();
-    const stepGraphics = [
-        [towerWin, towerWinClouds],
-        [fancy, fancyClouds],
-        [coins, coinsClouds],
-        [theme.mode === 'dark' ? cubes : cubesLight],
-        [tower, towerClouds],
-        [tari, tariCloud],
-    ];
+    const stepGraphics = useMemo(
+        () => [
+            [towerWin, towerWinClouds],
+            [fancy, fancyClouds],
+            [coins, coinsClouds],
+            [theme.mode === 'dark' ? cubes : cubesLight],
+            [tower, towerClouds],
+            [tari, tariCloud],
+        ],
+        [theme.mode]
+    );
     const graphics = stepGraphics[step - 1];
 
     const graphicsMarkup = graphics?.map((img, i) => {
@@ -50,4 +54,6 @@ export default function InfoItemGraphic({ step = 1 }: InfoItemGraphicProps) {
             {graphicsMarkup}
         </GraphicContainer>
     );
-}
+});
+
+export default InfoItemGraphic;

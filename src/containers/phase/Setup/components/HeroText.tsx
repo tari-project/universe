@@ -14,7 +14,6 @@ const TextWrapper = styled.div`
     gap: calc(0.15rem + 1vh);
     grid-template-columns: 1fr 1fr 1fr;
     grid-auto-flow: dense;
-    position: absolute;
     top: -100px;
     left: 0;
     user-select: none;
@@ -28,7 +27,6 @@ const TextWrapper = styled.div`
     white-space: nowrap;
     position: relative;
     width: min-content;
-    user-select: none;
 
     .title-main {
         color: ${({ theme }) => theme.palette.text.contrast};
@@ -65,10 +63,8 @@ const TextWrapper = styled.div`
 
 const BEFORE_GHOSTS = Array(3).fill(null);
 const AFTER_GHOSTS = Array(7).fill(null);
-
 const HeroText = memo(function HeroText() {
     const { t } = useTranslation('common');
-
     const title = t('tari-universe');
 
     return (
