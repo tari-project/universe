@@ -130,7 +130,7 @@ export const setSetupComplete = async () => {
     // Proceed with auto mining when enabled
     const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
+        startMining();
     }
     useAppStateStore.setState({ setupComplete: true });
 };

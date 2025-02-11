@@ -67,8 +67,6 @@ impl CpuMiner {
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
-        let mut lock = self.watcher.write().await;
-
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
                 XmrigNodeConnection::LocalMmproxy {
@@ -106,24 +104,26 @@ impl CpuMiner {
             }
             MiningMode::Ludicrous => None,
         };
+        {
+            let mut lock = self.watcher.write().await;
+            lock.adapter.node_connection = Some(xmrig_node_connection);
+            lock.adapter.monero_address = Some(monero_address.clone());
+            lock.adapter.cpu_threads = Some(cpu_max_percentage);
+            lock.adapter.extra_options = match mode {
+                MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
+                MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
+                MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
+            };
 
-        lock.adapter.node_connection = Some(xmrig_node_connection);
-        lock.adapter.monero_address = Some(monero_address.clone());
-        lock.adapter.cpu_threads = Some(cpu_max_percentage);
-        lock.adapter.extra_options = match mode {
-            MiningMode::Eco => cpu_miner_config.eco_mode_xmrig_options.clone(),
-            MiningMode::Ludicrous => cpu_miner_config.ludicrous_mode_xmrig_options.clone(),
-            MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
-        };
-
-        lock.start(
-            app_shutdown.clone(),
-            base_path.clone(),
-            config_path.clone(),
-            log_dir.clone(),
-            Binaries::Xmrig,
-        )
-        .await?;
+            lock.start(
+                app_shutdown.clone(),
+                base_path.clone(),
+                config_path.clone(),
+                log_dir.clone(),
+                Binaries::Xmrig,
+            )
+            .await?;
+        }
         Ok(())
     }
 
@@ -135,23 +135,19 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
     ) -> Result<u64, anyhow::Error> {
-        let mut lock = self.watcher.write().await;
-
-        let xmrig_node_connection = XmrigNodeConnection::Benchmark;
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
             Err(_) => 1,
         };
 
-        lock.adapter.node_connection = Some(xmrig_node_connection);
-        // We're going to use benchmarking, so the address isn't used
-        lock.adapter.monero_address = Some("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string());
-        lock.adapter.cpu_threads = Some(Some(1)); // Use one thread so that the machine doesn't lock up
-        lock.adapter.extra_options = vec![];
+        {
+            let mut lock = self.watcher.write().await;
+            lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
+            lock.adapter.monero_address = Some("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string());
+            lock.adapter.cpu_threads = Some(Some(1));
+            lock.adapter.extra_options = vec![];
 
-        let timeout_duration = duration + Duration::from_secs(10);
-        let res = match timeout(timeout_duration, async move {
             lock.start(
                 app_shutdown.clone(),
                 base_path.clone(),
@@ -160,26 +156,43 @@ impl CpuMiner {
                 Binaries::Xmrig,
             )
             .await?;
+        }
+
+        let status = {
             let mut status = None;
             for _ in 0..10 {
+                let lock = self.watcher.read().await;
                 if let Some(s) = lock.status_monitor.as_ref() {
                     status = Some(s.clone());
                     break;
                 }
+                drop(lock);
                 sleep(Duration::from_secs(1)).await;
             }
-            if status.is_none() {
-                error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
-                return Ok(0);
+
+            match status {
+                Some(s) => s,
+                None => {
+                    error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
+                    // Stop the miner before returning
+                    self.stop().await?;
+                    return Ok(0);
+                }
             }
-            let status = status.expect("Can't fail");
+        };
+
+        let timeout_duration = duration + Duration::from_secs(10);
+        let result = match timeout(timeout_duration, async move {
             let start_time = Instant::now();
             let mut max_hashrate = 0f64;
+
             loop {
                 if app_shutdown.is_triggered() {
                     break;
                 }
+
                 sleep(Duration::from_secs(1)).await;
+
                 if let Ok(stats) = status.summary().await {
                     let hash_rate = stats.hashrate.total[0].unwrap_or_default();
                     if hash_rate > max_hashrate {
@@ -189,18 +202,21 @@ impl CpuMiner {
                         break;
                     }
                 }
-            } // wait until we have stats from xmrig, so its started
+            }
+
             #[allow(clippy::cast_possible_truncation)]
             Ok::<u64, anyhow::Error>(max_hashrate.floor() as u64)
         })
         .await
         {
-            Ok(res) => Ok(res? * u64::from(max_cpu_available)),
-            Err(_) => Ok(0),
+            Ok(res) => res? * u64::from(max_cpu_available),
+            Err(_) => 0,
         };
-        let mut lock2 = self.watcher.write().await;
-        lock2.stop().await?;
-        res
+
+        // Stop the miner
+        self.stop().await?;
+
+        Ok(result)
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
