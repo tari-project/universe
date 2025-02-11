@@ -24,7 +24,7 @@ env:
 
 jobs:
   builds:
-    name: Building ${{ matrix.platform }}
+    name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
@@ -34,9 +34,18 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-22.04'
-            args: ''
+            args: '--bundles deb,appimage,updater'
+            extra: '-x64'
           - platform: 'ubuntu-24.04-arm'
-            args: ''
+            args: '--bundles deb,appimage,updater'
+            best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles rpm'
+            extra: '-x64-rpm'
+            best_effort: true
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles rpm'
+            extra: '-rpm'
             best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
@@ -239,5 +248,5 @@ jobs:
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
-          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"

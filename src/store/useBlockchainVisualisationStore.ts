@@ -1,13 +1,12 @@
+let winTimeout: NodeJS.Timeout | undefined;
+let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { resourceDir, join } from '@tauri-apps/api/path';
-import { readFile } from '@tauri-apps/plugin-fs';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
-import { useAppConfigStore } from './useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -23,7 +22,6 @@ interface State {
     recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
-    isPlayingAudio: boolean;
 }
 
 interface Actions {
@@ -31,7 +29,6 @@ interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
-    setIsPlayingAudio: (isPlayingAudio: boolean) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -49,40 +46,11 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-    isPlayingAudio: false,
-
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
-    setIsPlayingAudio: (isPlayingAudio) => set({ isPlayingAudio }),
 }));
-
-async function playBlockWinAudio() {
-    const audioEnabled = useAppConfigStore.getState().audio_enabled;
-    const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
-    if (!audioEnabled || isPlayingAudio) {
-        return;
-    }
-    const resourceDirPath = await resourceDir();
-    const filePath = await join(resourceDirPath, 'audio/block_win.mp3');
-    readFile(filePath)
-        .catch((err) => {
-            console.error(err);
-        })
-        .then((res) => {
-            const fileBlob = new Blob([res as ArrayBuffer], { type: 'audio/mpeg' });
-            const reader = new FileReader();
-            reader.readAsDataURL(fileBlob);
-            const url = URL.createObjectURL(fileBlob);
-            const audio = new Audio(url);
-            audio.onended = () => {
-                useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
-            };
-            useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
-            audio.play();
-        });
-}
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
     const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
@@ -96,26 +64,32 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
-        setTimeout(() => {
+        if (winTimeout) {
+            clearTimeout(winTimeout);
+        }
+        winTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
             useMiningStore.getState().setMiningControlsEnabled(true);
         }, 2000);
     } else {
+        await useWalletStore.getState().refreshCoinbaseTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
             earnings: undefined,
         }));
     }
-    playBlockWinAudio();
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
-        setTimeout(() => {
+        if (failTimeout) {
+            clearTimeout(failTimeout);
+        }
+        failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
             useMiningStore.getState().setMiningControlsEnabled(true);
@@ -140,7 +114,6 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState({ replayItem: txItem });
     setAnimationState(successTier, true);
-    playBlockWinAudio();
     setTimeout(() => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
