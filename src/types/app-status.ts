@@ -110,12 +110,12 @@ interface P2poolConnectionInfo {
     network_info: P2poolNetworkInfo;
 }
 
-export interface P2poolNetworkInfo {
+interface P2poolNetworkInfo {
     num_peers: number;
     connection_counters: P2poolConnectionCounters;
 }
 
-export interface P2poolConnectionCounters {
+interface P2poolConnectionCounters {
     pending_incoming: number;
     pending_outgoing: number;
     established_incoming: number;
@@ -130,7 +130,7 @@ export interface P2poolStats {
     p2pool_block_stats: P2poolBlockStats;
 }
 
-export interface PeerInfo {
+interface PeerInfo {
     version: number;
     peer_id?: string;
     current_sha3x_height: number;
@@ -155,17 +155,17 @@ export interface P2poolConnections {
     peers: ConnectedPeerInfo[];
 }
 
-export interface P2poolSquadDetails {
+interface P2poolSquadDetails {
     id: string;
     name: string;
 }
 
-export interface P2poolBlockStats {
+interface P2poolBlockStats {
     accepted: number;
     rejected: number;
     submitted: number;
 }
-export enum HardwareVendor {
+enum HardwareVendor {
     Nvidia = 'Nvidia',
     Amd = 'Amd',
     Intel = 'Intel',
@@ -173,12 +173,12 @@ export enum HardwareVendor {
     Unknown = 'Unknown',
 }
 
-export interface DeviceStatus {
+interface DeviceStatus {
     is_available: boolean;
     is_reader_implemented: boolean;
 }
 
-export interface DeviceParameters {
+interface DeviceParameters {
     usage_percentage: number;
     current_temperature: number;
     max_temperature: number;
@@ -197,7 +197,7 @@ export interface CpuMinerStatus {
     connection: CpuMinerConnectionStatus;
 }
 
-export interface CpuMinerConnectionStatus {
+interface CpuMinerConnectionStatus {
     is_connected: boolean;
 }
 
