@@ -14,7 +14,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
-export interface SeedWordsEditProps {
+interface SeedWordsEditProps {
     toggleEdit: () => Promise<void>;
     seedWords: string[];
     seedWordsFetching: boolean;

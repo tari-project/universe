@@ -6,7 +6,7 @@ import { useAppConfigStore } from './useAppConfigStore.ts';
 
 const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
-export type DialogType = DialogTypeTuple[number];
+type DialogType = DialogTypeTuple[number];
 
 interface State {
     theme: Theme;

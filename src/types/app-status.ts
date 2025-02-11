@@ -7,7 +7,7 @@ export interface TorConfig {
     bridges: string[];
 }
 
-export interface WindowSettings {
+interface WindowSettings {
     width: number;
     height: number;
     x: number;
@@ -56,7 +56,7 @@ export enum ExternalDependencyStatus {
     Unknown = 'Unknown',
 }
 
-export interface Manufacturer {
+interface Manufacturer {
     name: string;
     logo: string;
     url: string;
@@ -103,7 +103,7 @@ export interface P2poolStatsResult {
     sha3x_stats: P2poolStats;
 }
 
-export interface P2poolConnectionInfo {
+interface P2poolConnectionInfo {
     listener_addresses: string[];
     connected_peers: number;
     network_info: P2poolNetworkInfo;
@@ -187,12 +187,6 @@ export interface PublicDeviceParameters {
     name: string;
     status: DeviceStatus;
     parameters?: DeviceParameters;
-}
-export interface HardwareParameters {
-    label: string;
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
 }
 
 export interface CpuMinerStatus {

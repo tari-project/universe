@@ -54,7 +54,7 @@ export interface UserPoints {
     referralCount?: ReferralCount;
 }
 
-export interface User {
+interface User {
     is_bot: boolean;
     twitter_followers: number;
     id: string;
@@ -101,7 +101,7 @@ export interface AirdropTokens {
     expiresAt?: number;
 }
 
-export interface BackendInMemoryConfig {
+interface BackendInMemoryConfig {
     airdropUrl: string;
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
@@ -109,7 +109,7 @@ export interface BackendInMemoryConfig {
 
 type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 
-export interface ReferralQuestPoints {
+interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
