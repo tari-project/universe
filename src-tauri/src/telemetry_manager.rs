@@ -495,10 +495,7 @@ async fn get_telemetry_data(
         started.elapsed().as_secs().to_string(),
     );
 
-    extra_data.insert(
-        "current_os".to_string(),
-        std::env::consts::OS.to_string(),
-    );
+    extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
 
     add_process_stats(
         &mut extra_data,
