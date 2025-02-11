@@ -7,6 +7,7 @@ export const BlockTimeContainer = styled.div`
     font-weight: 500;
     position: relative;
     align-items: flex-end;
+    z-index: 1;
 `;
 
 export const TitleTypography = styled(Typography)`

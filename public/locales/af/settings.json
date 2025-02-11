@@ -52,7 +52,6 @@
   "invalid-seed-words": "Voer 24 woorde in, geskei deur spasies",
   "invalid-stats-server-port": "Ongeldige statistieke bedienerpoort",
   "invalid-stats-server-port-empty": "Stats server port cannot be empty",
-  "invalid-stats-server-port_empty": "Stats server port cannot be empty",
   "inviteCode": "Uitnodigingskode",
   "is-on-orphan-chain": "Dit lyk of jy aan \"n vurk gekoppel is, en nie die hoofketting nie. Enige blokke wat jy wen, mag ongeldig verklaar word.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",

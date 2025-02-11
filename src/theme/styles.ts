@@ -14,11 +14,12 @@ export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     &:after {
         content: '';
         position: absolute;
-        box-shadow: -55px -40px 25px -20px white inset;
+        background: radial-gradient(120% 90% at 32% 20%, transparent 92%, #fff 98%);
         right: -50px;
         top: 0;
-        width: 70%;
+        width: calc(100% + 50px);
         height: 100%;
+        z-index: 0;
     }
 
     ${({ $visualModeOff, theme }) =>
