@@ -51,6 +51,8 @@
   "importing-wallet-copy": "Tari Universe redémarrera automatiquement une fois que votre portefeuille aura été importé",
   "invalid-seed-words": "Entrez 24 mots séparés par des espaces",
   "invalid-stats-server-port": "Port du serveur de statistiques invalide",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
+  "invalid-stats-server-port_empty": "Stats server port cannot be empty",
   "inviteCode": "Code d\"invitation",
   "is-on-orphan-chain": "Vous semblez être connecté à une branche secondaire, et non à la chaîne principale. Tout bloc que vous gagnez pourrait être invalidé.",
   "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",

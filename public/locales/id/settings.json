@@ -51,6 +51,8 @@
   "importing-wallet-copy": "Tari Universe akan memulai ulang secara otomatis setelah dompet Anda diimpor",
   "invalid-seed-words": "Masukkan 24 kata yang dipisahkan oleh spasi",
   "invalid-stats-server-port": "Port server statistik tidak valid",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
+  "invalid-stats-server-port_empty": "Stats server port cannot be empty",
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",

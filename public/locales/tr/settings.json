@@ -51,6 +51,8 @@
   "importing-wallet-copy": "Cüzdanınız içe aktarıldığında Tari Universe otomatik olarak yeniden başlayacak",
   "invalid-seed-words": "Boşluklarla ayrılmış 24 kelime girin",
   "invalid-stats-server-port": "Geçersiz istatistik sunucu portu",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
+  "invalid-stats-server-port_empty": "Stats server port cannot be empty",
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",

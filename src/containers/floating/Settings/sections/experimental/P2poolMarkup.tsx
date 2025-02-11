@@ -36,7 +36,6 @@ const P2poolMarkup = () => {
     const [editedCustomStatsServerPort, setEditedCustomStatsServerPort] = useState(customStatsServerPort);
     const [isRandomStatsServerPort, setIsRandomStatsServerPort] = useState(!customStatsServerPort);
     const [currentStatsServerPort, setCurrentStatsServerPort] = useState(customStatsServerPort);
-
     useEffect(() => {
         invoke('get_used_p2pool_stats_server_port').then(setCurrentStatsServerPort).catch(console.error);
     }, []);
@@ -76,6 +75,12 @@ const P2poolMarkup = () => {
         [currentStatsServerPort, editedCustomStatsServerPort, isRandomStatsServerPort]
     );
 
+    const errorMessage = !currentStatsServerInputPort
+        ? t('invalid-stats-server-port-empty')
+        : hasStatsServerPortError(currentStatsServerInputPort)
+          ? t('invalid-stats-server-port')
+          : null;
+
     return (
         <>
             <SettingsGroupWrapper>
@@ -88,7 +93,7 @@ const P2poolMarkup = () => {
                             </Typography>
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
-                    <SettingsGroupAction style={{ alignItems: 'center' }}>
+                    <SettingsGroupAction style={{ alignItems: 'center', minHeight: 50 }}>
                         {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
                     </SettingsGroupAction>
                 </SettingsGroup>
@@ -108,9 +113,7 @@ const P2poolMarkup = () => {
                                 setEditedCustomStatsServerPort(Number(target.value.trim()));
                             }}
                         />
-                        <ErrorTypography variant="p">
-                            {hasStatsServerPortError(currentStatsServerInputPort) && t('invalid-stats-server-port')}
-                        </ErrorTypography>
+                        <ErrorTypography variant="p">{!isRandomStatsServerPort && errorMessage}</ErrorTypography>
                     </SettingsGroupContent>
                     <SettingsGroupAction>
                         <ToggleSwitch
