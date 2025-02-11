@@ -68,7 +68,7 @@ export default function App() {
     const { t } = useTranslation('common', { useSuspense: false });
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
-        Sentry.captureMessage('WebGL not supported by the browser', { extra: { userAgent: navigator.userAgent } });
+        console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
         setIsWebglNotSupported(true);
         setError(t('webgl-not-supported'));
     }
