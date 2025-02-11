@@ -1,3 +1,5 @@
+let winTimeout: NodeJS.Timeout | undefined;
+let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
@@ -93,13 +95,17 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
-        setTimeout(() => {
+        if (winTimeout) {
+            clearTimeout(winTimeout);
+        }
+        winTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
             useMiningStore.getState().setMiningControlsEnabled(true);
         }, 2000);
     } else {
+        await useWalletStore.getState().refreshCoinbaseTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -112,7 +118,10 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
-        setTimeout(() => {
+        if (failTimeout) {
+            clearTimeout(failTimeout);
+        }
+        failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
             useMiningStore.getState().setMiningControlsEnabled(true);
