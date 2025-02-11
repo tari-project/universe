@@ -11,7 +11,8 @@
         "lint": "eslint src/",
         "lint:fix": "eslint src/ --fix",
         "lint:taplo": "taplo format --check",
-        "translate": "node ./scripts/translator.js"
+        "translate": "node ./scripts/translator.js",
+        "knip": "knip"
     },
     "dependencies": {
         "@floating-ui/react": "^0.27.4",
@@ -49,7 +50,7 @@
         "@taplo/cli": "^0.7.0",
         "@tauri-apps/cli": "^2.2.2",
         "@types/eslint__js": "^8.42.3",
-        "@types/node": "^22.10.5",
+        "@types/node": "^22.13.1",
         "@types/react": "^18.3.18",
         "@types/react-dom": "^18.3.5",
         "@types/uuid": "^10.0.0",
@@ -62,6 +63,7 @@
         "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react": "^7.37.3",
         "eslint-plugin-react-hooks": "^5.1.0",
+        "knip": "^5.44.0",
         "prettier": "^3.5.0",
         "prettier-eslint": "^16.3.0",
         "react-qr-code": "^2.0.15",
