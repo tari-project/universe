@@ -28,7 +28,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::CpuMinerConfig;
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -135,8 +135,6 @@ impl CpuMiner {
         config_path: PathBuf,
         log_dir: PathBuf,
     ) -> Result<u64, anyhow::Error> {
-        info!(target: LOG_TARGET, "start start_benchmarking");
-
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
@@ -218,7 +216,6 @@ impl CpuMiner {
         // Stop the miner
         self.stop().await?;
 
-        info!(target: LOG_TARGET, "stop start_benchmarking");
         Ok(result)
     }
 

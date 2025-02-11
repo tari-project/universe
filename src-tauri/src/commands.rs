@@ -36,6 +36,7 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
+use crate::utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -1390,7 +1391,7 @@ pub async fn start_mining<'r>(
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
 
-    let config = state.config.read().await;
+    let config = try_read_with_retry(&state.config, 10).await?;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
@@ -1401,12 +1402,12 @@ pub async fn start_mining<'r>(
     drop(config);
 
     let cpu_miner_running = {
-        let cpu_miner = state.cpu_miner.read().await;
+        let cpu_miner = try_read_with_retry(&state.cpu_miner, 10).await?;
         cpu_miner.is_running().await
     };
 
     let gpu_miner_running = {
-        let gpu_miner = state.gpu_miner.read().await;
+        let gpu_miner = try_read_with_retry(&state.gpu_miner, 10).await?;
         gpu_miner.is_running().await
     };
 
@@ -1417,7 +1418,7 @@ pub async fn start_mining<'r>(
         .get_unique_string()
         .await;
 
-    let cpu_miner_config = &state.cpu_miner_config.read().await;
+    let cpu_miner_config = &try_read_with_retry(&state.cpu_miner_config, 10).await?;
     let tari_address = cpu_miner_config.tari_address.clone();
 
     if cpu_mining_enabled && !cpu_miner_running {
@@ -1428,7 +1429,7 @@ pub async fn start_mining<'r>(
             .map_err(|e| e.to_string())?;
 
         {
-            let mut cpu_miner = state.cpu_miner.write().await;
+            let mut cpu_miner = try_write_with_retry(&state.cpu_miner, 10).await?;
             let res = cpu_miner
                 .start(
                     state.shutdown.to_signal(),
@@ -1459,7 +1460,9 @@ pub async fn start_mining<'r>(
         }
     }
 
-    let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
+    let gpu_available = try_read_with_retry(&state.gpu_miner, 10)
+        .await?
+        .is_gpu_mining_available();
     info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
     if gpu_mining_enabled && gpu_available && !gpu_miner_running {
@@ -1486,10 +1489,8 @@ pub async fn start_mining<'r>(
         }
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
-        let res = state
-            .gpu_miner
-            .write()
-            .await
+        let res = try_write_with_retry(&state.gpu_miner, 10)
+            .await?
             .start(
                 state.shutdown.to_signal(),
                 tari_address,
@@ -1511,9 +1512,13 @@ pub async fn start_mining<'r>(
         if let Err(e) = res {
             error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
             drop(
-                state.gpu_miner.write().await.stop().await.inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
-                ),
+                try_write_with_retry(&state.gpu_miner, 10)
+                    .await?
+                    .stop()
+                    .await
+                    .inspect_err(
+                        |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
+                    ),
             );
             return Err(e.to_string());
         }
