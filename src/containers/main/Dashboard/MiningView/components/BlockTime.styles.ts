@@ -8,11 +8,23 @@ export const BlockTimeContainer = styled.div`
     position: relative;
     align-items: flex-end;
     z-index: 1;
+
+    &:after {
+        content: '';
+        position: absolute;
+        background: linear-gradient(150deg, transparent 50%, #fff 90%);
+        right: 0;
+        bottom: 0;
+        width: 130px;
+        height: 120px;
+        z-index: 0;
+    }
 `;
 
 export const TitleTypography = styled(Typography)`
     font-size: 13px;
     color: ${({ theme }) => theme.palette.text.secondary};
+    z-index: 1;
 `;
 
 export const TimerTypography = styled.div`
@@ -24,6 +36,7 @@ export const TimerTypography = styled.div`
     gap: 2px;
     display: flex;
     text-transform: uppercase;
+    z-index: 1;
 `;
 
 export const SpacedNum = styled('span')`
