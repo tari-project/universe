@@ -152,16 +152,27 @@ impl UpdatesManager {
                     update.version > current
                 }
             });
-        let builder = builder
-            .endpoints(vec![updates_url])
-            .map_err(|e| anyhow!("Failed to set update URL: {}", e))?;
-        let updater = builder
-            .build()
-            .map_err(|e| anyhow!("Failed to build updater: {}", e))?;
-        let update = updater
-            .check()
-            .await
-            .map_err(|e| anyhow!("Failed to check for updates: {}", e))?;
+        let builder = match builder.endpoints(vec![updates_url]) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to set update URL: {}", e);
+                return Ok(None);
+            }
+        };
+        let updater = match builder.build() {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to build updater: {}", e);
+                return Ok(None);
+            }
+        };
+        let update = match updater.check().await {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to check for updates: {}", e);
+                return Ok(None);
+            }
+        };
 
         Ok(update)
     }
