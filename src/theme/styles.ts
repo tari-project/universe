@@ -11,6 +11,16 @@ export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     padding: 20px;
     height: 100%;
 
+    &:after {
+        content: '';
+        position: absolute;
+        box-shadow: -55px -40px 25px -20px white inset;
+        right: -50px;
+        top: 0;
+        width: 70%;
+        height: 100%;
+    }
+
     ${({ $visualModeOff, theme }) =>
         $visualModeOff &&
         css`
