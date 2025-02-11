@@ -3,6 +3,7 @@
     "platforms": ["macOS", "windows", "linux"],
     "windows": ["main"],
     "permissions": [
+        "updater:default",
         "core:path:default",
         "core:event:default",
         "core:window:default",
