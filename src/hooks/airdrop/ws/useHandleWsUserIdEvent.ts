@@ -1,21 +1,19 @@
-import { useAirdropStore } from '@app/store/useAirdropStore';
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
+import { setFlareAnimationType, setUserGems } from '@app/store';
 
 export const useHandleWsUserIdEvent = () => {
     const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
-    const setUserGems = useAirdropStore((state) => state.setUserGems);
-    const setFlare = useAirdropStore((state) => state.setFlareAnimationType);
     const { fetchCrewMemberDetails } = useGetSosReferrals();
 
     return (event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
         switch (eventParsed.name) {
             case WebsocketEventNames.REFERRAL_INSTALL_REWARD:
-                setFlare('FriendAccepted');
+                setFlareAnimationType('FriendAccepted');
                 break;
             case WebsocketEventNames.COMPLETED_QUEST:
                 if (eventParsed.data.userPoints?.gems) {

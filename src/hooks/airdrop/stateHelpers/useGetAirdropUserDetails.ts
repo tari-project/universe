@@ -1,82 +1,77 @@
 import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount, BonusTier } from '@app/store/useAirdropStore';
 import { useCallback, useEffect } from 'react';
 import { useAirdropRequest } from '../utils/useHandleRequest';
+import { handleAirdropLogout, setBonusTiers, setReferralCount, setUserDetails, setUserPoints } from '@app/store';
 
 export const useGetAirdropUserDetails = () => {
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
-    const setUserDetails = useAirdropStore((state) => state.setUserDetails);
-    const setUserPoints = useAirdropStore((state) => state.setUserPoints);
-    const setReferralCount = useAirdropStore((state) => state.setReferralCount);
     const handleRequest = useAirdropRequest();
-    const setBonusTiers = useAirdropStore((state) => state.setBonusTiers);
-    const logout = useAirdropStore((state) => state.logout);
 
     const handleErrorLogout = useCallback(() => {
         console.error('Error fetching user details, logging out');
-        logout();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        handleAirdropLogout();
     }, []);
-
-    // GET USER DETAILS
-    const fetchUserDetails = useCallback(async () => {
-        return handleRequest<UserDetails>({
-            path: '/user/details',
-            method: 'GET',
-            onError: handleErrorLogout,
-        })
-            .then((data) => {
-                if (data?.user?.id) {
-                    setUserDetails(data);
-                    return data.user;
-                } else {
-                    handleErrorLogout();
-                }
-            })
-            .catch(() => handleErrorLogout());
-    }, [handleRequest, setUserDetails, handleErrorLogout]);
-
-    // GET USER POINTS
-    const fetchUserPoints = useCallback(async () => {
-        const data = await handleRequest<UserEntryPoints>({
-            path: '/user/score',
-            method: 'GET',
-        });
-        if (!data?.entry || !data?.entry?.gems) return;
-        setUserPoints({
-            base: {
-                gems: data.entry.gems,
-                shells: data.entry.shells,
-                hammers: data.entry.hammers,
-            },
-        });
-    }, [handleRequest, setUserPoints]);
-
-    // GET USER REFERRAL POINTS
-    const fetchUserReferralPoints = useCallback(async () => {
-        const data = await handleRequest<{ count: ReferralCount }>({
-            path: '/miner/download/referral-count',
-            method: 'GET',
-        });
-        if (!data?.count) return;
-        setReferralCount({
-            gems: data.count.gems,
-            count: data.count.count,
-        });
-    }, [handleRequest, setReferralCount]);
-
-    // FETCH BONUS TIERS
-    const fetchBonusTiers = useCallback(async () => {
-        const data = await handleRequest<{ tiers: BonusTier[] }>({
-            path: '/miner/download/bonus-tiers',
-            method: 'GET',
-        });
-        if (!data?.tiers) return;
-        setBonusTiers(data?.tiers);
-    }, [handleRequest, setBonusTiers]);
 
     // FETCH ALL USER DATA
     useEffect(() => {
+        // GET USER DETAILS
+        const fetchUserDetails = async () => {
+            return handleRequest<UserDetails>({
+                path: '/user/details',
+                method: 'GET',
+                onError: handleErrorLogout,
+            })
+                .then((data) => {
+                    if (data?.user?.id) {
+                        setUserDetails(data);
+                        return data.user;
+                    } else {
+                        handleErrorLogout();
+                    }
+                })
+                .catch(() => handleErrorLogout());
+        };
+
+        // GET USER POINTS
+        const fetchUserPoints = async () => {
+            const data = await handleRequest<UserEntryPoints>({
+                path: '/user/score',
+                method: 'GET',
+            });
+            if (!data?.entry || !data?.entry?.gems) return;
+            setUserPoints({
+                base: {
+                    gems: data.entry.gems,
+                    shells: data.entry.shells,
+                    hammers: data.entry.hammers,
+                },
+            });
+        };
+
+        // GET USER REFERRAL POINTS
+        const fetchUserReferralPoints = async () => {
+            const data = await handleRequest<{ count: ReferralCount }>({
+                path: '/miner/download/referral-count',
+                method: 'GET',
+            });
+            if (!data?.count) return;
+            setReferralCount({
+                gems: data.count.gems,
+                count: data.count.count,
+            });
+        };
+
+        // FETCH BONUS TIERS
+        const fetchBonusTiers = async () => {
+            const data = await handleRequest<{ tiers: BonusTier[] }>({
+                path: '/miner/download/bonus-tiers',
+                method: 'GET',
+            });
+            if (!data?.tiers) return;
+            setBonusTiers(data?.tiers);
+        };
+
         const fetchData = async () => {
             const details = await fetchUserDetails();
 
@@ -95,6 +90,5 @@ export const useGetAirdropUserDetails = () => {
         if (airdropToken) {
             fetchData();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [airdropToken, baseUrl]);
+    }, [airdropToken, handleErrorLogout, handleRequest, baseUrl]);
 };

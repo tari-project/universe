@@ -12,18 +12,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
 
 import { v4 as uuidv4 } from 'uuid';
-import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
 import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { setAllowTelemetry } from '@app/store';
+import { setAirdropTokens, setAllowTelemetry, setAuthUuid, setFlareAnimationType } from '@app/store';
 
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const [claimCode, setClaimCode] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { authUuid, setAuthUuid, backendInMemoryConfig, setFlareAnimationType } = useAirdropStore();
+    const { authUuid, backendInMemoryConfig } = useAirdropStore((s) => ({
+        authUuid: s.authUuid,
+        backendInMemoryConfig: s.backendInMemoryConfig,
+    }));
 
     const handleAuth = useCallback(() => {
         const token = uuidv4();
@@ -36,9 +39,7 @@ export const ApplyInviteCode = () => {
                 void open(refUrl);
             });
         }
-
-        // TODo: move setAuthUuid
-    }, [backendInMemoryConfig?.airdropUrl, claimCode, setAuthUuid]);
+    }, [backendInMemoryConfig?.airdropUrl, claimCode]);
 
     const handleToken = useCallback(() => {
         if (authUuid) {
@@ -70,7 +71,7 @@ export const ApplyInviteCode = () => {
 
             return false;
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setFlareAnimationType]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl]);
 
     useEffect(() => {
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
@@ -93,7 +94,7 @@ export const ApplyInviteCode = () => {
                 setLoading(false);
             };
         }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken, setAuthUuid]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken]);
 
     return (
         <SettingsGroupWrapper>

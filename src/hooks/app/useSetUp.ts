@@ -10,7 +10,7 @@ import {
     setSetupTitle,
     useAppStateStore,
 } from '../../store/appStateStore.ts';
-import { airdropSetup } from '@app/store/useAirdropStore.ts';
+import { airdropSetup } from '@app/store';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);

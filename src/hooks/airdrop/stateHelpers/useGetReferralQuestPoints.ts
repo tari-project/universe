@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAirdropRequest } from '../utils/useHandleRequest';
-import { useAirdropStore } from '@app/store/useAirdropStore';
+
+import { setReferralQuestPoints } from '@app/store';
 
 export enum QuestNames {
     MinerReceivedGift = 'miner-received-gift',
@@ -23,7 +24,6 @@ interface QuestDataResponse {
 
 export const useGetReferralQuestPoints = () => {
     const handleRequest = useAirdropRequest();
-    const setReferralQuestPoints = useAirdropStore((s) => s.setReferralQuestPoints);
 
     useEffect(() => {
         const handleFetch = async () => {
@@ -50,8 +50,7 @@ export const useGetReferralQuestPoints = () => {
             );
             setReferralQuestPoints(reducedQuest);
         };
-
         handleFetch();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+        // TODO: refactor handleRequest - doesnt' need to be a hook
+    }, [handleRequest]);
 };

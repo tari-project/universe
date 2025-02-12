@@ -2,7 +2,6 @@ import { createWithEqualityFn as create } from 'zustand/traditional';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
-export const MAX_GEMS = 10000;
 
 // Helpers
 
@@ -91,7 +90,7 @@ export interface ReferralQuestPoints {
 
 //////////////////////////////////////////
 
-export interface MiningPoint {
+interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
