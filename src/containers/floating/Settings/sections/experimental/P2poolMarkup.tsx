@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
+
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -17,6 +17,7 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
+import { setDialogToShow } from '@app/store';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -30,7 +31,6 @@ const hasStatsServerPortError = (cp: number) => {
 
 const P2poolMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const customStatsServerPort = useAppConfigStore((s) => s.p2pool_stats_server_port);
     const setCustomStatsServerPort = useAppConfigStore((s) => s.setP2poolStatsServerPort);
     const [editedCustomStatsServerPort, setEditedCustomStatsServerPort] = useState(customStatsServerPort);
@@ -50,7 +50,7 @@ const P2poolMarkup = () => {
             console.error('P2Pool unhandled case', editedCustomStatsServerPort);
         }
         setDialogToShow('restart');
-    }, [isRandomStatsServerPort, setDialogToShow, setCustomStatsServerPort, editedCustomStatsServerPort]);
+    }, [isRandomStatsServerPort, setCustomStatsServerPort, editedCustomStatsServerPort]);
 
     const isSaveButtonVisible = useMemo(() => {
         if (isRandomStatsServerPort) {

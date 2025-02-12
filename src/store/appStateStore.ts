@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
 
 import { addToast } from '@app/components/ToastStack/useToastStore';
-import { startMining } from '@app/store/miningStoreActions.ts';
+import { startMining } from './actions/miningStoreActions.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 interface State {

@@ -11,11 +11,11 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { setDialogToShow } from '@app/store';
 
 export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const showLogsDialog = dialogToShow === 'logs';
 
@@ -29,7 +29,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
         } else {
             setDialogToShow('logs');
         }
-    }, [setDialogToShow, showLogsDialog]);
+    }, [showLogsDialog]);
 
     const sendLogs = useCallback(() => {
         setLoading(true);
@@ -51,7 +51,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
             .finally(() => {
                 setLoading(false);
             });
-    }, [feedback, onSetReference, setDialogToShow, t]);
+    }, [feedback, onSetReference, t]);
 
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>

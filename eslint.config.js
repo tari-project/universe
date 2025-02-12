@@ -1,3 +1,4 @@
+import reactCompiler from 'eslint-plugin-react-compiler';
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import react from 'eslint-plugin-react';
@@ -53,6 +54,8 @@ export default [
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
             'i18next/no-literal-string': ['error', { markupOnly: true }],
+            'react-compiler/react-compiler': 'warn',
         },
     },
+    reactCompiler.configs.recommended,
 ];

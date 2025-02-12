@@ -3,6 +3,7 @@ import RadioButton, { RadioVariant } from '@app/components/elements/inputs/Radio
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useCallback } from 'react';
+import { setTheme } from '@app/store';
 
 const Wrapper = styled.fieldset`
     width: 100%;
@@ -14,17 +15,13 @@ const Wrapper = styled.fieldset`
 const themeOptions = ['system', 'light', 'dark'];
 export default function ThemeSelector() {
     const configTheme = useAppConfigStore((s) => s.display_mode);
-    const setTheme = useAppConfigStore((s) => s.setTheme);
 
-    const handleChange = useCallback(
-        async (e) => {
-            const themeName = e.target.id;
-            if (e.target.checked) {
-                await setTheme(themeName);
-            }
-        },
-        [setTheme]
-    );
+    const handleChange = useCallback(async (e) => {
+        const themeName = e.target.id;
+        if (e.target.checked) {
+            setTheme(themeName);
+        }
+    }, []);
     return (
         <Wrapper>
             {themeOptions.map((themeOption) => {

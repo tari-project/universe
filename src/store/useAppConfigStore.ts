@@ -6,9 +6,9 @@ import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import { setTheme as setUITheme } from './actions/uiStoreActions.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
+import { pauseMining, startMining, stopMining } from './actions/miningStoreActions.ts';
 
 type State = Partial<AppConfig>;
 interface SetModeProps {
@@ -256,7 +256,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
 
         const prevTheme = useAppConfigStore.getState().display_mode;
-        const setUITheme = useUIStore.getState().setTheme;
+
         const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
 
         setUITheme(uiTheme);

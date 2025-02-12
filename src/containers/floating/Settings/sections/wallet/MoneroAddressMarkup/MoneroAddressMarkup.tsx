@@ -5,21 +5,20 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useUIStore } from '@app/store/useUIStore.ts';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles.ts';
+import { setDialogToShow } from '@app/store';
 
 const MoneroAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const moneroAddress = useAppConfigStore((s) => s.monero_address);
     const setMoneroAddress = useAppConfigStore((s) => s.setMoneroAddress);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleMoneroAddressChange = useCallback(
         async (moneroAddress: string) => {
             await setMoneroAddress(moneroAddress);
             setDialogToShow('restart');
         },
-        [setDialogToShow, setMoneroAddress]
+        [setMoneroAddress]
     );
 
     return (

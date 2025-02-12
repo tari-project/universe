@@ -1,9 +1,10 @@
 /* eslint-disable i18next/no-literal-string */
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 import { useUIStore } from '@app/store/useUIStore';
+import { setTheme } from '@app/store';
 
 export function ThemeGroup() {
-    const { setTheme, theme } = useUIStore();
+    const theme = useUIStore((s) => s.theme);
 
     return (
         <>

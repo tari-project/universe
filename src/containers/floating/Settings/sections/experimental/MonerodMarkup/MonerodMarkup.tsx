@@ -1,5 +1,3 @@
-import { useUIStore } from '@app/store/useUIStore.ts';
-
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { Trans, useTranslation } from 'react-i18next';
@@ -20,6 +18,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
+import { setDialogToShow } from '@app/store';
 
 interface FormValues {
     use_monero_fail: boolean;
@@ -30,7 +29,7 @@ const node_url_regex = /^(https?:\/\/[a-zA-Z0-9.-]+(:\d{1,5})?)(\/.*)?$/;
 
 const MonerodMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+
     const use_monero_fail = useAppConfigStore((s) => Boolean(s.mmproxy_use_monero_fail));
     const monero_nodes = useAppConfigStore((s) => s.mmproxy_monero_nodes || []);
     const setMonerodConfig = useAppConfigStore((s) => s.setMonerodConfig);

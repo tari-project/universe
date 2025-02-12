@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -24,6 +23,7 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
+import { setDialogToShow } from '@app/store';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -43,7 +43,8 @@ const hasControlPortError = (cp: number) => {
 
 export const TorMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+
+    const [hasCheckedOs, setHasCheckedOs] = useState(false);
     const [defaultTorConfig, setDefaultTorConfig] = useState<TorConfig>();
     const [isMac, setIsMac] = useState(false);
     const defaultUseTor = useAppConfigStore((s) => s.use_tor);
@@ -52,20 +53,18 @@ export const TorMarkup = () => {
     const [editedConfig, setEditedConfig] = useState<EditedTorConfig>();
     const [isRandomControlPort, setIsRandomControlPort] = useState(false);
 
-    const hasCheckedOs = useRef(false);
-
     const checkPlatform = useCallback(async () => {
         const osType = type();
         if (osType) {
             setIsMac(osType === 'macos');
 
-            hasCheckedOs.current = true;
+            setHasCheckedOs(true);
         }
     }, []);
     useEffect(() => {
-        if (hasCheckedOs.current) return;
+        if (hasCheckedOs) return;
         checkPlatform();
-    }, [checkPlatform]);
+    }, [checkPlatform, hasCheckedOs]);
 
     useEffect(() => {
         invoke('get_tor_config')
@@ -102,7 +101,7 @@ export const TorMarkup = () => {
             }
         }
         setDialogToShow('restart');
-    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor, setDialogToShow, setUseTor]);
+    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor, setUseTor]);
 
     const isSaveButtonVisible = useMemo(() => {
         if (editedUseTor !== defaultUseTor) return true;
@@ -245,7 +244,7 @@ export const TorMarkup = () => {
                     </TorSettingsContainer>
                 ) : null}
             </SettingsGroupWrapper>
-            {defaultUseTor && hasCheckedOs.current && <TorDebug isMac={isMac} />}
+            {defaultUseTor && hasCheckedOs && <TorDebug isMac={isMac} />}
         </>
     );
 };
