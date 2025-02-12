@@ -213,6 +213,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         };
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+        let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         let current_block_height = node_status_watch_rx.borrow().block_height;
@@ -287,6 +288,41 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         sentry::capture_message(err_msg, sentry::Level::Error);
                     };
                 },
+                _ = cpu_miner_status_watch_rx.changed() => {
+                    let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
+
+                    match try_read_with_retry(&app_state.events_manager, 3).await {
+                        Ok(em) => {
+                            em.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                        },
+                        Err(e) => {
+                            let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(&err_msg, sentry::Level::Error);
+                            continue;
+                        }
+                    }
+
+                    // Update systemtray data
+                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                    let systray_data = SystemTrayData {
+                        cpu_hashrate: cpu_status.hash_rate,
+                        gpu_hashrate: gpu_status.hash_rate,
+                        estimated_earning: (cpu_status.estimated_earnings
+                            + gpu_status.estimated_earnings) as f64,
+                    };
+
+                    match try_write_with_retry(&app_state.systemtray_manager, 3).await {
+                        Ok(mut sm) => {
+                            sm.update_tray(systray_data);
+                        },
+                        Err(e) => {
+                            let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(&err_msg, sentry::Level::Error);
+                        }
+                    }
+                }
                 _ = shutdown_signal.wait() => {
                     break;
                 },
@@ -297,69 +333,12 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
             select! {
                 _ = interval.tick() => {
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
-
-                    // CPU status
-                    let cpu_miner = match try_read_with_retry(&app_state.cpu_miner, 3).await {
-                        Ok(cm) => cm,
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
-                            continue;
-                        }
-                    };
-
-                    if let Ok(cpu_status) = cpu_miner
-                        .status(node_status.randomx_network_hashrate, node_status.block_reward)
-                        .await
-                    {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
-                            Ok(em) => {
-                                em.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                                continue;
-                            }
-                        }
-
-                        // Update systemtray data
-                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        let systray_data = SystemTrayData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            gpu_hashrate: gpu_status.hash_rate,
-                            estimated_earning: (cpu_status.estimated_earnings
-                                + gpu_status.estimated_earnings) as f64,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 3).await {
-                            Ok(mut sm) => {
-                                sm.update_tray(systray_data);
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                            }
-                        }
-                    } else {
-                        let err_msg = "Error getting cpu miner status";
-                        error!(target: LOG_TARGET, "{}", err_msg);
-                        sentry::capture_message(err_msg, sentry::Level::Error);
-                    };
-
-                    // Connected peers
                     if let Ok(connected_peers) = app_state
                         .node_manager
                         .list_connected_peers()
@@ -995,6 +974,7 @@ struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
+    cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -1084,7 +1064,14 @@ fn main() {
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector, cpu_miner_status_watch_tx, base_node_watch_rx.clone()).into());
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
+        CpuMiner::new(
+            &mut stats_collector,
+            cpu_miner_status_watch_tx,
+            base_node_watch_rx.clone(),
+        )
+        .into(),
+    );
     let gpu_miner: Arc<RwLock<GpuMiner>> =
         Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
 
@@ -1094,7 +1081,7 @@ fn main() {
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
-        cpu_miner.clone(),
+        cpu_miner_status_watch_rx.clone(),
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
@@ -1113,6 +1100,7 @@ fn main() {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
+        cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),

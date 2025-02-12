@@ -22,6 +22,7 @@
 
 use crate::airdrop;
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::commands::CpuMinerStatus;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node_adapter::BaseNodeStatus;
@@ -190,7 +191,7 @@ pub struct TelemetryData {
 }
 
 pub struct TelemetryManager {
-    cpu_miner: Arc<RwLock<CpuMiner>>,
+    cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     pub cancellation_token: CancellationToken,
@@ -203,7 +204,7 @@ pub struct TelemetryManager {
 
 impl TelemetryManager {
     pub fn new(
-        cpu_miner: Arc<RwLock<CpuMiner>>,
+        cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         network: Option<Network>,
@@ -214,7 +215,7 @@ impl TelemetryManager {
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
-            cpu_miner,
+            cpu_miner_status_watch_rx,
             config,
             cancellation_token,
             node_network: network,
@@ -283,7 +284,7 @@ impl TelemetryManager {
         app_handle: tauri::AppHandle,
     ) -> Result<(), TelemetryManagerError> {
         let uptime = Instant::now();
-        let cpu_miner = self.cpu_miner.clone();
+        let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_status = self.gpu_status.clone();
         let node_status = self.node_status.clone();
         let p2pool_status = self.p2pool_status.clone();
@@ -302,7 +303,7 @@ impl TelemetryManager {
                         let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                            let telemetry_data = get_telemetry_data(&cpu_miner, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
+                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
@@ -320,7 +321,7 @@ impl TelemetryManager {
 
 #[allow(clippy::too_many_lines)]
 async fn get_telemetry_data(
-    cpu_miner: &RwLock<CpuMiner>,
+    cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
@@ -336,17 +337,7 @@ async fn get_telemetry_data(
         ..
     } = node_latest_status.borrow().clone();
 
-    let cpu_miner = cpu_miner.read().await;
-    let cpu = match cpu_miner
-        .status(randomx_network_hashrate, block_reward)
-        .await
-    {
-        Ok(cpu) => cpu,
-        Err(e) => {
-            warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-            return Err(TelemetryManagerError::Other(e));
-        }
-    };
+    let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
 
     let gpu_hardware_parameters = HardwareStatusMonitor::current()
@@ -361,8 +352,8 @@ async fn get_telemetry_data(
     let p2pool_stats = p2pool_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
-    let is_mining_active = cpu.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
-    let cpu_hash_rate = Some(cpu.hash_rate);
+    let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
+    let cpu_hash_rate = Some(cpu_miner_status.hash_rate);
 
     let cpu_utilization = if let Some(cpu_hardware_parameters) = cpu_hardware_parameters.clone() {
         let filtered_cpus = cpu_hardware_parameters

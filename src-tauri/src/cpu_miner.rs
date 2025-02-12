@@ -138,7 +138,7 @@ impl CpuMiner {
             .await?;
         }
 
-        CpuMiner::initialize_status_updates(self.cpu_miner_status_watch_tx.clone(), self.summary_watch_rx.clone(), self.node_status_watch_rx.clone(), app_shutdown).await;
+        self.initialize_status_updates(app_shutdown).await;
 
         Ok(())
     }
@@ -251,12 +251,11 @@ impl CpuMiner {
         lock.is_pid_file_exists(base_path)
     }
 
-    async fn initialize_status_updates(
-        cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
-        mut summary_watch_rx: watch::Receiver<Option<Summary>>,
-        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
-        mut app_shutdown: ShutdownSignal,
-    ) {
+    async fn initialize_status_updates(&mut self, mut app_shutdown: ShutdownSignal) {
+        let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
+        let mut summary_watch_rx = self.summary_watch_rx.clone();
+        let node_status_watch_rx = self.node_status_watch_rx.clone();
+
         tauri::async_runtime::spawn(async move {
             loop {
                 select! {
@@ -299,69 +298,5 @@ impl CpuMiner {
                 }
             }
         });
-    }
-
-    pub async fn status(
-        &self,
-        network_hash_rate: u64,
-        block_reward: MicroMinotari,
-    ) -> Result<CpuMinerStatus, anyhow::Error> {
-        let lock = self.watcher.read().await;
-        if !lock.is_running() {
-            return Ok(CpuMinerStatus {
-                is_mining: false,
-                hash_rate: 0.0,
-                estimated_earnings: 0,
-                connection: CpuMinerConnectionStatus {
-                    is_connected: false,
-                    // error: None,
-                },
-            });
-        }
-
-        let client = &lock.status_monitor;
-
-        if let Some(client) = client.as_ref() {
-            let (hash_rate, _hashrate_sum, estimated_earnings, is_connected) =
-                match client.summary().await {
-                    Ok(xmrig_status) => {
-                        let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
-                        let estimated_earnings =
-                            estimate_earning(network_hash_rate, hash_rate, block_reward);
-
-                        let hasrate_sum = xmrig_status
-                            .hashrate
-                            .total
-                            .iter()
-                            .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
-                        (
-                            hash_rate,
-                            hasrate_sum,
-                            estimated_earnings,
-                            xmrig_status.connection.uptime > 0,
-                        )
-                    }
-                    Err(e) => {
-                        warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
-                        (0.0, 0.0, 0, false)
-                    }
-                };
-            Ok(CpuMinerStatus {
-                is_mining: true,
-                hash_rate,
-                estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
-                connection: CpuMinerConnectionStatus { is_connected },
-            })
-        } else {
-            Ok(CpuMinerStatus {
-                is_mining: false,
-                hash_rate: 0.0,
-                estimated_earnings: 0,
-                connection: CpuMinerConnectionStatus {
-                    is_connected: false,
-                    // error: None,
-                },
-            })
-        }
     }
 }

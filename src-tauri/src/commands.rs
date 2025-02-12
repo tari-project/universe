@@ -1367,22 +1367,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_status_watch_rx.borrow().clone();
-            let cpu_miner = state.cpu_miner.read().await;
-            let cpu_mining_status = match cpu_miner
-                .status(
-                    node_status.randomx_network_hashrate,
-                    node_status.block_reward,
-                )
-                .await
-                .map_err(|e| e.to_string())
-            {
-                Ok(cpu) => cpu,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    return Err(e);
-                }
-            };
+            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
