@@ -18,7 +18,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setMonerodConfig } from '@app/store';
 
 interface FormValues {
     use_monero_fail: boolean;
@@ -29,10 +29,9 @@ const node_url_regex = /^(https?:\/\/[a-zA-Z0-9.-]+(:\d{1,5})?)(\/.*)?$/;
 
 const MonerodMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-
     const use_monero_fail = useAppConfigStore((s) => Boolean(s.mmproxy_use_monero_fail));
     const monero_nodes = useAppConfigStore((s) => s.mmproxy_monero_nodes || []);
-    const setMonerodConfig = useAppConfigStore((s) => s.setMonerodConfig);
+
     const {
         control,
         watch,
@@ -57,8 +56,9 @@ const MonerodMarkup = () => {
         !errors.monero_nodes?.length;
 
     const onSave = async (formValues: FormValues) => {
-        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes);
-        setDialogToShow('restart');
+        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes).then(() => {
+            setDialogToShow('restart');
+        });
     };
 
     return (

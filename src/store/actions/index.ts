@@ -1,9 +1,30 @@
 export * from './miningStoreActions';
-export * from './appConfigStoreActions.ts';
 export {
     setShowExternalDependenciesDialog,
-    setTheme,
+    setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
     setAdminShow,
 } from './uiStoreActions';
+export {
+    fetchAppConfig,
+    setAllowTelemetry,
+    setApplicationLanguage,
+    setAudioEnabled,
+    setAutoUpdate,
+    setCpuMiningEnabled,
+    setCustomStatsServerPort,
+    setGpuMiningEnabled,
+    setMineOnAppStart,
+    setMode,
+    setMoneroAddress,
+    setMonerodConfig,
+    setP2poolEnabled,
+    setPreRelease,
+    setShouldAlwaysUseSystemLanguage,
+    setShouldAutoLaunch,
+    setShowExperimentalSettings,
+    setTheme,
+    setUseTor,
+    setVisualMode,
+} from './appConfigStoreActions.ts';

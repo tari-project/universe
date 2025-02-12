@@ -17,7 +17,7 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
-import { setDialogToShow } from '@app/store';
+import { setCustomStatsServerPort, setDialogToShow } from '@app/store';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -32,7 +32,6 @@ const hasStatsServerPortError = (cp: number) => {
 const P2poolMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const customStatsServerPort = useAppConfigStore((s) => s.p2pool_stats_server_port);
-    const setCustomStatsServerPort = useAppConfigStore((s) => s.setP2poolStatsServerPort);
     const [editedCustomStatsServerPort, setEditedCustomStatsServerPort] = useState(customStatsServerPort);
     const [isRandomStatsServerPort, setIsRandomStatsServerPort] = useState(!customStatsServerPort);
     const [currentStatsServerPort, setCurrentStatsServerPort] = useState(customStatsServerPort);
@@ -50,7 +49,7 @@ const P2poolMarkup = () => {
             console.error('P2Pool unhandled case', editedCustomStatsServerPort);
         }
         setDialogToShow('restart');
-    }, [isRandomStatsServerPort, setCustomStatsServerPort, editedCustomStatsServerPort]);
+    }, [isRandomStatsServerPort, editedCustomStatsServerPort]);
 
     const isSaveButtonVisible = useMemo(() => {
         if (isRandomStatsServerPort) {

@@ -14,14 +14,12 @@ import { Input } from '@app/components/elements/inputs/Input';
 import { v4 as uuidv4 } from 'uuid';
 import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { setAllowTelemetry } from '@app/store';
 
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
-
     const [claimCode, setClaimCode] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -38,7 +36,9 @@ export const ApplyInviteCode = () => {
                 void open(refUrl);
             });
         }
-    }, [backendInMemoryConfig?.airdropUrl, claimCode]);
+
+        // TODo: move setAuthUuid
+    }, [backendInMemoryConfig?.airdropUrl, claimCode, setAuthUuid]);
 
     const handleToken = useCallback(() => {
         if (authUuid) {
@@ -93,8 +93,7 @@ export const ApplyInviteCode = () => {
                 setLoading(false);
             };
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, {}]);
+    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, handleToken, setAuthUuid]);
 
     return (
         <SettingsGroupWrapper>

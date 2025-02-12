@@ -23,7 +23,7 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setUseTor } from '@app/store';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -43,12 +43,10 @@ const hasControlPortError = (cp: number) => {
 
 export const TorMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-
+    const defaultUseTor = useAppConfigStore((s) => s.use_tor);
     const [hasCheckedOs, setHasCheckedOs] = useState(false);
     const [defaultTorConfig, setDefaultTorConfig] = useState<TorConfig>();
     const [isMac, setIsMac] = useState(false);
-    const defaultUseTor = useAppConfigStore((s) => s.use_tor);
-    const setUseTor = useAppConfigStore((s) => s.setUseTor);
     const [editedUseTor, setEditedUseTor] = useState(Boolean(defaultUseTor));
     const [editedConfig, setEditedConfig] = useState<EditedTorConfig>();
     const [isRandomControlPort, setIsRandomControlPort] = useState(false);
@@ -101,7 +99,7 @@ export const TorMarkup = () => {
             }
         }
         setDialogToShow('restart');
-    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor, setUseTor]);
+    }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
 
     const isSaveButtonVisible = useMemo(() => {
         if (editedUseTor !== defaultUseTor) return true;

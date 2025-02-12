@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { Theme } from '@app/theme/types.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { setTheme } from '@app/store';
+import { setUITheme } from '@app/store';
 
 export function useDetectMode() {
     const configTheme = useAppConfigStore((s) => s.display_mode);
@@ -13,7 +13,7 @@ export function useDetectMode() {
             if (payload) {
                 const themePayload = payload as Theme;
 
-                setTheme(themePayload);
+                setUITheme(themePayload);
             }
         });
         return () => {

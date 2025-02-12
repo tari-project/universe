@@ -6,20 +6,16 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles.ts';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setMoneroAddress } from '@app/store';
 
 const MoneroAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const moneroAddress = useAppConfigStore((s) => s.monero_address);
-    const setMoneroAddress = useAppConfigStore((s) => s.setMoneroAddress);
 
-    const handleMoneroAddressChange = useCallback(
-        async (moneroAddress: string) => {
-            await setMoneroAddress(moneroAddress);
-            setDialogToShow('restart');
-        },
-        [setMoneroAddress]
-    );
+    const handleMoneroAddressChange = useCallback(async (moneroAddress: string) => {
+        await setMoneroAddress(moneroAddress);
+        setDialogToShow('restart');
+    }, []);
 
     return (
         <SettingsGroupWrapper $advanced>

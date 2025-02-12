@@ -9,14 +9,12 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
+import { setAudioEnabled } from '@app/store';
 
 export default function AudioSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
 
-    const { audioEnabled, setAudioEnabled } = useAppConfigStore((s) => ({
-        audioEnabled: s.audio_enabled,
-        setAudioEnabled: s.setAudioEnabled,
-    }));
+    const audioEnabled = useAppConfigStore((s) => s.audio_enabled);
 
     return (
         <SettingsGroupWrapper>
