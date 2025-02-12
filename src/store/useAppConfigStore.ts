@@ -1,3 +1,4 @@
+let loadingTimeout: NodeJS.Timeout | undefined;
 import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
 import { AppConfig, GpuThreads } from '../types/app-status.ts';
@@ -315,12 +316,9 @@ export const fetchAppConfig = async () => {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
         const configTheme = appConfig.display_mode?.toLowerCase();
-        const canvasElement = document.getElementById('canvas');
-        if (canvasElement && !appConfig.visual_mode) {
-            canvasElement.style.display = 'none';
-        }
+        const canvasElement = document.getElementById(TOWER_CANVAS_ID);
 
-        if (appConfig.visual_mode) {
+        if (appConfig.visual_mode && !canvasElement) {
             try {
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
             } catch (e) {
@@ -346,5 +344,12 @@ export const setVisualMode = (enabled: boolean) => {
             appStateStore.setError('Could not change visual mode');
             useAppConfigStore.setState({ visual_mode: !enabled });
         })
-        .finally(() => useAppConfigStore.setState({ visualModeToggleLoading: false }));
+        .finally(() => {
+            if (loadingTimeout) {
+                clearTimeout(loadingTimeout);
+            }
+            loadingTimeout = setTimeout(() => {
+                useAppConfigStore.setState({ visualModeToggleLoading: false });
+            }, 3500);
+        });
 };

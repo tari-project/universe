@@ -120,7 +120,10 @@ export const setSetupParams = (setupTitleParams: Record<string, string>) =>
 
 export const setSetupComplete = async () => {
     // Proceed with auto mining when enabled
-    const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled, visual_mode } = useAppConfigStore.getState();
+    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
+    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+    const visual_mode = useAppConfigStore.getState().visual_mode;
     if (visual_mode) {
         try {
             setAnimationState('showVisual');
@@ -129,7 +132,7 @@ export const setSetupComplete = async () => {
         }
     }
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        startMining();
+        await startMining();
     }
     useAppStateStore.setState({ setupComplete: true });
 };

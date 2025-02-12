@@ -67,7 +67,7 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
         const isNodeConnected = connected_peers?.length > 0;
         set({ connected_peers, isNodeConnected });
 
-        const { miningInitiated } = useMiningStore.getState();
+        const miningInitiated = useMiningStore.getState().miningInitiated;
         if (miningInitiated) {
             if (!isNodeConnected && wasNodeConnected) {
                 // Lost connection

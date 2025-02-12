@@ -30,7 +30,9 @@ function VisualMode() {
         removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
             .then(() => {
                 // Force garbage collection to clean up WebGL context
-                if (window.gc) window.gc();
+                if (window.gc) {
+                    window.gc();
+                }
             })
             .catch((e) => {
                 console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
@@ -70,7 +72,7 @@ function VisualMode() {
                     <ToggleSwitch
                         disabled={visualModeToggleLoading || isWebglNotSupported}
                         checked={visualMode}
-                        onChange={handleSwitch}
+                        onChange={() => handleSwitch()}
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
