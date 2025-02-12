@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
+use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::gpu_miner_adapter::GpuMinerStatus;
@@ -29,10 +30,6 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
-use crate::{
-    app_config::{AppConfig, MiningMode},
-    cpu_miner::CpuMiner,
-};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -331,8 +328,6 @@ async fn get_telemetry_data(
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
-        randomx_network_hashrate,
-        block_reward,
         block_height,
         ..
     } = node_latest_status.borrow().clone();
