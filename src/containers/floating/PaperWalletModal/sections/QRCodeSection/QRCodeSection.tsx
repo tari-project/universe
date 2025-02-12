@@ -92,10 +92,6 @@ export default function QRCodeSection({ onDoneClick }: Props) {
                 <BlackButton onClick={onDoneClick}>
                     <span>{t('qrcode.blackButton')}</span>
                 </BlackButton>
-
-                {
-                    // <TextButton onClick={handleTextButtonClick}>{t('qrcode.textButton')}</TextButton>
-                }
             </ButtonWrapper>
         </Wrapper>
     );

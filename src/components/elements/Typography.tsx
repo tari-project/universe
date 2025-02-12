@@ -4,7 +4,7 @@ import { DynamicTypography } from './styled';
 
 export type TagVariants = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
 
-export interface TypographyProps extends HTMLAttributes<HTMLDivElement> {
+interface TypographyProps extends HTMLAttributes<HTMLDivElement> {
     variant?: TagVariants;
     children: ReactNode;
     fontFamily?: string;

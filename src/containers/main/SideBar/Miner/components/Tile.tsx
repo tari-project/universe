@@ -6,7 +6,7 @@ import { colorsAll } from '@app/theme/palettes/colors.ts';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
-export interface TileProps {
+interface TileProps {
     title: string;
     stats: string;
     unit?: string;

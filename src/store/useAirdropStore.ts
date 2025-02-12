@@ -4,7 +4,6 @@ import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useA
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
-export const MAX_GEMS = 10000;
 
 // Helpers
 function parseJwt(token: string): TokenResponse {
@@ -55,7 +54,7 @@ export interface UserPoints {
     referralCount?: ReferralCount;
 }
 
-export interface User {
+interface User {
     is_bot: boolean;
     twitter_followers: number;
     id: string;
@@ -102,7 +101,7 @@ export interface AirdropTokens {
     expiresAt?: number;
 }
 
-export interface BackendInMemoryConfig {
+interface BackendInMemoryConfig {
     airdropUrl: string;
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
@@ -110,7 +109,7 @@ export interface BackendInMemoryConfig {
 
 type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 
-export interface ReferralQuestPoints {
+interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
@@ -214,7 +213,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
     }
 };
 
-export const getExistingTokens = async () => {
+const getExistingTokens = async () => {
     const existingTokensStore = localStorage.getItem('airdrop-store');
     let existingTokens: AirdropTokens | undefined = undefined;
     if (existingTokensStore) {
@@ -252,7 +251,7 @@ export const getExistingTokens = async () => {
     }
 };
 
-export const fetchBackendInMemoryConfig = async () => {
+const fetchBackendInMemoryConfig = async () => {
     let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
 
     try {
