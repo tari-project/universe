@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
-import { GpuStatus } from '@app/types/app-status';
+import { GpuDevice } from '@app/types/app-status';
 
 export interface DetectedAvailableGpuEnginesPayload {
     engines: string[];
@@ -10,12 +10,12 @@ export interface DetectedAvailableGpuEnginesPayload {
 }
 
 export interface DetectedGpuHardwarePayload {
-    devices: GpuStatus[];
+    devices: GpuDevice[];
 }
 
 export const useListenForGpuEngines = () => {
     const setAvailableEngines = useMiningStore((state) => state.setAvailableEngines);
-    const setGpus = useMiningMetricsStore((state) => state.setGpuHardware);
+    const setGpuDevices = useMiningMetricsStore((state) => state.setGpuDevices);
 
     useEffect(() => {
         const listenerForDetectecAvailableGpuEngines = listen(
@@ -35,7 +35,7 @@ export const useListenForGpuEngines = () => {
             'detected-devices',
             ({ payload }: { payload: DetectedGpuHardwarePayload }) => {
                 console.log('payload.devices', payload.devices);
-                setGpus(payload.devices);
+                setGpuDevices(payload.devices);
             }
         );
 

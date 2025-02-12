@@ -24,7 +24,7 @@ const GpuMiningMarkup = () => {
         if (!gpuDevicesHardware) return false;
         if (gpuDevicesHardware.length === 0) return false;
 
-        return gpuDevicesHardware.some((device) => device.is_available);
+        return gpuDevicesHardware.some((device) => device.settings.is_available);
     }, [gpuDevicesHardware]);
 
     const handleGpuMiningEnabled = useCallback(async () => {

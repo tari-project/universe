@@ -22,6 +22,7 @@
 
 use crate::app_config::GpuThreads;
 use crate::gpu_miner::EngineType;
+use crate::gpu_status_file::GpuDevice;
 use crate::gpu_status_file::GpuStatus;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
@@ -60,23 +61,24 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
-    pub(crate) gpu_devices: Vec<GpuStatus>,
+    pub(crate) gpu_devices: HashMap<String, GpuDevice>,
     pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
     pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
     pub fn new(
-        gpu_devices: Vec<GpuStatus>,
+        gpu_devices: HashMap<String, GpuDevice>,
         latest_status_broadcast: watch::Sender<GpuMinerStatus>,
     ) -> Self {
         Self {
             tari_address: TariAddress::default(),
             gpu_grid_size: gpu_devices
+                .clone()
                 .iter()
-                .map(|x| GpuThreads {
-                    gpu_name: x.device_name.clone(),
-                    max_gpu_threads: x.max_grid_size,
+                .map(|(name, content)| GpuThreads {
+                    gpu_name: name.to_string(),
+                    max_gpu_threads: content.status.max_grid_size,
                 })
                 .collect(),
             node_source: None,
@@ -93,8 +95,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|device| GpuThreads {
-                        gpu_name: device.device_name.clone(),
+                    .map(|(k, v)| GpuThreads {
+                        gpu_name: k.clone(),
                         max_gpu_threads: 2,
                     })
                     .collect()
@@ -103,16 +105,13 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|device| GpuThreads {
-                        gpu_name: device.device_name.clone(),
-                        // get 90% of max grid size
+                    .map(|(k, v)| GpuThreads {
+                        gpu_name: k.clone(),
                         max_gpu_threads: 1024,
                     })
                     .collect()
             }
-            MiningMode::Custom => {
-                self.gpu_grid_size = custom_max_gpus_grid_size;
-            }
+            MiningMode::Custom => self.gpu_grid_size = custom_max_gpus_grid_size,
         }
     }
 }

@@ -1,4 +1,4 @@
-import { GpuStatus, BaseNodeStatus, CpuMinerStatus, GpuMinerStatus } from '@app/types/app-status';
+import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, GpuDevice } from '@app/types/app-status';
 import { create } from './create';
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 import { setAnimationState } from '@app/visuals';
@@ -7,19 +7,18 @@ import { useAppConfigStore } from './useAppConfigStore';
 
 interface Actions {
     handleBaseNodeStatusUpdate: (baseNodeStatus: BaseNodeStatus) => void;
-    setGpuDevices: (gpuDevices: GpuStatus[]) => void;
+    setGpuDevices: (gpuDevices: GpuDevice[]) => void;
     setCpuMiningStatus: (cpuMiningStatus: CpuMinerStatus) => void;
     setGpuMiningStatus: (gpuMiningStatus: GpuMinerStatus) => void;
     handleConnectedPeersUpdate: (connectedPeers: string[]) => void;
     handleMiningModeChange: () => void;
-    setGpuHardware: (hardware: GpuStatus[]) => void;
 }
 
 interface MiningMetricsStoreState {
     isNodeConnected: boolean;
     base_node_status: BaseNodeStatus;
     connected_peers: string[];
-    gpu_devices: GpuStatus[];
+    gpu_devices: GpuDevice[];
     gpu_mining_status: GpuMinerStatus;
     cpu_mining_status: CpuMinerStatus;
 }
@@ -54,7 +53,13 @@ const initialState: MiningMetricsStoreState = {
 export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState) => ({
     ...initialState,
     setGpuDevices: (gpu_devices) => {
-        set({ gpu_devices });
+        set((state) => ({ ...state, gpu_devices }));
+
+        if (gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_available)) {
+            const appConfigStore = useAppConfigStore.getState();
+            console.log('Setting GPU mining enabled');
+            appConfigStore.setGpuMiningEnabled(true);
+        }
     },
     setGpuMiningStatus: (gpu_mining_status) => {
         set({ gpu_mining_status });
@@ -103,14 +108,5 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
                 estimated_earnings: 0,
             },
         });
-    },
-    setGpuHardware: (hardware) => {
-        set((state) => ({ ...state, gpu_devices: hardware }));
-
-        if (hardware.some((gpu) => gpu.is_available && !gpu.is_excluded)) {
-            const appConfigStore = useAppConfigStore.getState();
-            console.log('Setting GPU mining enabled');
-            appConfigStore.setGpuMiningEnabled(true);
-        }
     },
 }));

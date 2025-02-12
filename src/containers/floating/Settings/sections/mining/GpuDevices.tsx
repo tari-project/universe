@@ -15,7 +15,7 @@ import {
 import { Stack } from '@app/components/elements/Stack';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { GpuStatus } from '@app/types/app-status.ts';
+import { GpuDevice } from '@app/types/app-status.ts';
 
 const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -31,8 +31,8 @@ const GpuDevices = () => {
     const toggleDeviceExclusion = useMiningStore((s) => s.toggleDeviceExclusion);
 
     const handleSetExcludedDevice = useCallback(
-        async (device: GpuStatus) => {
-            toggleDeviceExclusion(device.device_index, !device.is_excluded);
+        async (device: GpuDevice) => {
+            toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
         },
         [toggleDeviceExclusion]
     );
@@ -55,7 +55,7 @@ const GpuDevices = () => {
                         {(gpuDevices || []).length > 0 ? (
                             gpuDevices.map((device, i) => (
                                 <Stack
-                                    key={device.device_name}
+                                    key={device.device_index}
                                     direction="row"
                                     alignItems="center"
                                     justifyContent="space-between"
@@ -65,7 +65,7 @@ const GpuDevices = () => {
                                     </Typography>
                                     <ToggleSwitch
                                         key={device.device_index}
-                                        checked={!device.is_excluded}
+                                        checked={!device.settings.is_excluded}
                                         disabled={isDisabled}
                                         onChange={() => handleSetExcludedDevice(device)}
                                     />

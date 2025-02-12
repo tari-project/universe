@@ -179,13 +179,21 @@ export interface DeviceStatus {
 }
 
 export interface GpuStatus {
-    device_index: number;
-    device_name: string;
-    is_available: boolean;
-    is_excluded: boolean;
-    grid_size: number;
+    recommended_grid_size: number;
+    recommended_block_size: number;
     max_grid_size: number;
-    block_size: number;
+}
+
+export interface GpuSettings {
+    is_excluded: boolean;
+    is_available: boolean;
+}
+
+export interface GpuDevice {
+    device_name: string;
+    device_index: number;
+    status: GpuStatus;
+    settings: GpuSettings;
 }
 
 export interface CpuMinerStatus {

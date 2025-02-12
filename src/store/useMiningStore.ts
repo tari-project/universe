@@ -94,16 +94,16 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             const devices = useMiningMetricsStore.getState().gpu_devices;
             const updatedDevices = devices.map((device) => {
                 if (device.device_index === deviceIndex) {
-                    return { ...device, is_excluded: excluded };
+                    return { ...device, settings: { ...device.settings, is_excluded: excluded } };
                 }
                 return device;
             });
-            const isAllExcluded = updatedDevices.every((device) => device.is_excluded);
+            const isAllExcluded = updatedDevices.every((device) => device.settings.is_excluded);
             if (isAllExcluded) {
                 const appConfigStore = useAppConfigStore.getState();
                 appConfigStore.setGpuMiningEnabled(false);
             }
-            useMiningMetricsStore.getState().setGpuHardware(updatedDevices);
+            useMiningMetricsStore.getState().setGpuDevices(updatedDevices);
         } catch (e) {
             const appStateStore = useAppStateStore.getState();
             console.error('Could not set excluded gpu device: ', e);

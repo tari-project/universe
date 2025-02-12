@@ -23,7 +23,7 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::gpu_status_file::GpuStatus;
+use crate::gpu_status_file::{GpuDevice, GpuStatus};
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SetupStatusEvent {
@@ -48,5 +48,5 @@ pub struct DetectedAvailableGpuEngines {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct DetectedDevices {
-    pub devices: Vec<GpuStatus>,
+    pub devices: Vec<GpuDevice>,
 }
