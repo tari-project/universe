@@ -129,7 +129,7 @@ export const setSetupComplete = async () => {
         }
     }
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
+        startMining();
     }
     useAppStateStore.setState({ setupComplete: true });
 };
