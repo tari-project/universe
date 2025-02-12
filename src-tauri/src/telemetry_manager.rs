@@ -327,10 +327,7 @@ async fn get_telemetry_data(
     started: Instant,
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus {
-        block_height,
-        ..
-    } = node_latest_status.borrow().clone();
+    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
