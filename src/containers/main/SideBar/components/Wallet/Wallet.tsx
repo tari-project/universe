@@ -51,7 +51,6 @@ export default function Wallet() {
     };
 
     const showCount = Boolean(recapCount && recapCount > 0 && !showHistory);
-
     return (
         <>
             <WalletContainer>

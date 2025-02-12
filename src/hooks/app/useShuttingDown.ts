@@ -21,10 +21,11 @@ export function useShuttingDown() {
 
     useEffect(() => {
         if (isShuttingDown) {
-            setTimeout(async () => {
+            const shutDownTimout = setTimeout(async () => {
                 resetAllStores();
                 await invoke('exit_application');
             }, 250);
+            return () => clearTimeout(shutDownTimout);
         }
     }, [isShuttingDown]);
 

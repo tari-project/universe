@@ -6,10 +6,10 @@ import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-export const CriticalProblemDialog = () => {
+const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const { t } = useTranslation('common', { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
@@ -45,4 +45,6 @@ export const CriticalProblemDialog = () => {
             </DialogContent>
         </Dialog>
     );
-};
+});
+
+export default CriticalProblemDialog;

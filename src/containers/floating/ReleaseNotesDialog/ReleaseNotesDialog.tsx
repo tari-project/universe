@@ -1,19 +1,18 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { ReleaseNotes } from '../Settings/sections';
 import { Button, ButtonWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 
-export default function ReleaseNotesDialog() {
+const ReleaseNotesDialog = memo(function ReleaseNotesDialog() {
     const open = useUIStore((s) => s.dialogToShow === 'releaseNotes');
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { t } = useTranslation('components', { useSuspense: false });
 
     const handleClose = useCallback(async () => {
         setDialogToShow(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [setDialogToShow]);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -30,4 +29,6 @@ export default function ReleaseNotesDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default ReleaseNotesDialog;

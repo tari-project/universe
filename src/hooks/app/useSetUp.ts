@@ -3,7 +3,13 @@ import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 
-import { setSetupComplete, setSetupDetails, useAppStateStore } from '../../store/appStateStore.ts';
+import {
+    setSetupComplete,
+    setSetupParams,
+    setSetupProgress,
+    setSetupTitle,
+    useAppStateStore,
+} from '../../store/appStateStore.ts';
 import { airdropSetup } from '@app/store/useAirdropStore.ts';
 
 export function useSetUp() {
@@ -23,7 +29,9 @@ export function useSetUp() {
             switch (p.event_type) {
                 case 'setup_status':
                     if (p.progress > 0) {
-                        setSetupDetails(p.title, p.title_params, p.progress);
+                        setSetupTitle(p.title);
+                        setSetupParams(p.title_params);
+                        setSetupProgress(p.progress);
                     }
                     if (p.progress >= 1) {
                         await handlePostSetup();

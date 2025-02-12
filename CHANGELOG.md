@@ -1,6 +1,32 @@
+# 🌟 TARI UNIVERSE v0.9.6: The Great Pool War, Episode 2
+
+_February 6, 2025_
+
+Dear Community,
+Great generals know how to maximize their resources to win battles (blocks!). Today’s release makes Tari Universe a leaner, meaner mining machine. The GUI now uses less memory and is smarter with its overall resource utilization. Will you win The Great Pool War? We are rooting for you anon
+
+✨ **What's New**
+
+- Reduced CPU usage on the frontend
+- Fixed splash screen freeze issue
+- Enhanced phone sync for faster Universe Mobile data display
+- Reworked wallet event management across Tari Core and Universe frontend - faster win confirmations and instant animations
+- Implemented fallbacks if Monero nodes can't be reached (static templates)
+- Automated cleanup of temporary Tor files
+
+🔜 **Coming Soon**
+
+- ⚖️ P2Pool optimization for all power levels
+- ⚙️ Persistent window settings restoration
+- 🖥️ Enhanced GPU support, monitoring, and reporting
+- 📋 Roadmap for older OS and GPU support, minimum OS versions
+- 🔉 A surprise.. 
+
+---
+
 # 🌟 TARI UNIVERSE v0.9.5: The Great Pool War, Episode 1
 
-🔄 Rolling out via auto-update
+_February 4, 2025_
 
 Dear Community,
 

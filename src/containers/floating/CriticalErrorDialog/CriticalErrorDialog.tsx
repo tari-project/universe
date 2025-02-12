@@ -7,7 +7,7 @@ import { IoAlertCircleOutline, IoCheckmarkOutline, IoCopyOutline } from 'react-i
 import { Trans, useTranslation } from 'react-i18next';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { useUIStore } from '@app/store/useUIStore.ts';
@@ -16,7 +16,7 @@ import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.ts
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 
-const CriticalErrorDialog = () => {
+const CriticalErrorDialog = memo(function CriticalErrorDialog() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
@@ -81,6 +81,6 @@ const CriticalErrorDialog = () => {
             </DialogContent>
         </Dialog>
     );
-};
+});
 
 export default CriticalErrorDialog;

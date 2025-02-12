@@ -1,8 +1,8 @@
+let winTimeout: NodeJS.Timeout | undefined;
+let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { resourceDir, join } from '@tauri-apps/api/path';
-import { readFile } from '@tauri-apps/plugin-fs';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
@@ -59,29 +59,28 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
 }));
 
 async function playBlockWinAudio() {
-    const audioEnabled = useAppConfigStore.getState().audio_enabled;
-    const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
-    if (!audioEnabled || isPlayingAudio) {
-        return;
+    try {
+        const audioEnabled = useAppConfigStore.getState().audio_enabled;
+        const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
+        if (!audioEnabled || isPlayingAudio) {
+            return;
+        }
+
+        const asset = 'assets/block_win.mp3';
+        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
+        const audioElement = new Audio(blobUrl);
+        if (!audioElement) {
+            console.error('Audio element not found');
+            return;
+        }
+
+        audioElement.currentTime = 0;
+        audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
+        audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
+        audioElement.play();
+    } catch (err) {
+        console.error(`Failed to play block win sound: ${err}`);
     }
-    const resourceDirPath = await resourceDir();
-    const filePath = await join(resourceDirPath, 'audio/block_win.mp3');
-    readFile(filePath)
-        .catch((err) => {
-            console.error(err);
-        })
-        .then((res) => {
-            const fileBlob = new Blob([res as ArrayBuffer], { type: 'audio/mpeg' });
-            const reader = new FileReader();
-            reader.readAsDataURL(fileBlob);
-            const url = URL.createObjectURL(fileBlob);
-            const audio = new Audio(url);
-            audio.onended = () => {
-                useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
-            };
-            useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
-            audio.play();
-        });
 }
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
@@ -96,13 +95,17 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
-        setTimeout(() => {
+        if (winTimeout) {
+            clearTimeout(winTimeout);
+        }
+        winTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
             useMiningStore.getState().setMiningControlsEnabled(true);
         }, 2000);
     } else {
+        await useWalletStore.getState().refreshCoinbaseTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -115,7 +118,10 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         setAnimationState('fail');
-        setTimeout(() => {
+        if (failTimeout) {
+            clearTimeout(failTimeout);
+        }
+        failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
             useMiningStore.getState().setMiningControlsEnabled(true);

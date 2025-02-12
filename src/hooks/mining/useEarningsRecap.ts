@@ -10,7 +10,6 @@ export default function useEarningsRecap() {
     const getMissedEarnings = useCallback(() => {
         if (recapIds.length && coinbase_transactions.length) {
             const missedWins = coinbase_transactions.filter((tx) => recapIds.includes(tx.tx_id));
-
             const count = missedWins.length;
             if (count > 0) {
                 const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);

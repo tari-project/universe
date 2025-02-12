@@ -8,7 +8,7 @@ import { Typography } from '@app/components/elements/Typography';
 
 import { UpdatedStatus } from './UpdatedStatus';
 import { ButtonsWrapper } from './AutoUpdateDialog.styles';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -23,7 +23,7 @@ interface AskForUpdatePayload {
     version: string;
 }
 
-export default function AutoUpdateDialog() {
+const AutoUpdateDialog = memo(function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
@@ -97,4 +97,6 @@ export default function AutoUpdateDialog() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default AutoUpdateDialog;
