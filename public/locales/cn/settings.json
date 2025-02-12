@@ -52,6 +52,7 @@
   "importing-wallet-copy": "钱包导入后，Tari Universe 将自动重启",
   "invalid-seed-words": "输入24个用空格分隔的单词",
   "invalid-stats-server-port": "无效的统计服务器端口",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "邀请代码",
   "is-on-orphan-chain": "您似乎连接到了一个分叉，而不是主链。您赢得的任何区块可能会被作废。",
   "last-block-added-time": "最后添加到链的块时间",

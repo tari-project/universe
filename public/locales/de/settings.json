@@ -52,6 +52,7 @@
   "importing-wallet-copy": "Tari Universe wird automatisch neu starten, sobald dein Wallet importiert wurde",
   "invalid-seed-words": "Geben Sie 24 Wörter ein, getrennt durch Leerzeichen",
   "invalid-stats-server-port": "Ungültiger Statistik-Server-Port",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",

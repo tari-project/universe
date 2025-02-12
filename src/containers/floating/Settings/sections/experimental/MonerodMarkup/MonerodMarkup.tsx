@@ -11,7 +11,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
-import { NodesSettingsContainer, StyledInput } from './MonerodMarkup.styles';
+import { AddButtonContainer, NodesSettingsContainer, StyledInput } from './MonerodMarkup.styles';
 
 import {
     SettingsGroup,
@@ -89,9 +89,13 @@ const MonerodMarkup = () => {
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>
-
             {!form_use_monero_fail ? (
                 <NodesSettingsContainer>
+                    <AddButtonContainer>
+                        <IconButton onClick={() => append('')}>
+                            <IoAddCircleOutline color="green" size={20} />
+                        </IconButton>
+                    </AddButtonContainer>
                     {fields.map((field, index) => (
                         <Stack key={field.id} direction="row" alignItems="center" style={{ margin: '4px 0' }}>
                             <Controller
@@ -115,16 +119,11 @@ const MonerodMarkup = () => {
                                     );
                                 }}
                             />
-                            {fields.length > 1 && (
-                                <IconButton onClick={() => remove(index)}>
-                                    <IoRemoveCircleOutline color="red" size={20} />
-                                </IconButton>
-                            )}
+                            <IconButton onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                <IoRemoveCircleOutline color="red" size={20} />
+                            </IconButton>
                         </Stack>
                     ))}
-                    <IconButton onClick={() => append('')}>
-                        <IoAddCircleOutline color="green" size={20} />
-                    </IconButton>
                 </NodesSettingsContainer>
             ) : null}
         </SettingsGroupWrapper>
