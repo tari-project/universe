@@ -75,11 +75,10 @@ const P2poolMarkup = () => {
         [currentStatsServerPort, editedCustomStatsServerPort, isRandomStatsServerPort]
     );
 
-    const errorMessage = !currentStatsServerInputPort
-        ? t('invalid-stats-server-port-empty')
-        : hasStatsServerPortError(currentStatsServerInputPort)
-          ? t('invalid-stats-server-port')
-          : null;
+    const emptyContext = currentStatsServerInputPort ? '' : 'empty';
+    const errorMessage = hasStatsServerPortError(currentStatsServerInputPort)
+        ? t('invalid-stats-server-port', { context: emptyContext })
+        : null;
 
     return (
         <>
