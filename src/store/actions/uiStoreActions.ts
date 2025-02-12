@@ -11,7 +11,6 @@ export const setTheme = (theme: Theme) => {
     useUIStore.setState({ theme });
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
-export const setLatestVersion = (latestVersion: string) => useUIStore.setState({ latestVersion });
 export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useAppConfigStore.getState().setVisualMode(false);
     useUIStore.setState({ isWebglNotSupported });
