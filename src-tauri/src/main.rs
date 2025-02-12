@@ -40,6 +40,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
@@ -169,9 +170,16 @@ struct CriticalProblemEvent {
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
-        // Initial updates
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = app_state.events_manager.read().await;
+        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
+            Ok(em) => em,
+            Err(e) => {
+                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                error!(target: LOG_TARGET, "{}", err_msg);
+                sentry::capture_message(&err_msg, sentry::Level::Error);
+                return;
+            }
+        };
 
         events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
@@ -179,7 +187,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
             Ok(devices) => devices,
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to get GPU devices: {:?}", e);
+                let err_msg = format!("Failed to get GPU devices: {:?}", e);
+                error!(target: LOG_TARGET, "{}", err_msg);
+                sentry::capture_message(&err_msg, sentry::Level::Error);
                 vec![]
             }
         };
@@ -191,7 +201,15 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = app_state.events_manager.read().await;
+        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
+            Ok(em) => em,
+            Err(e) => {
+                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                error!(target: LOG_TARGET, "{}", err_msg);
+                sentry::capture_message(&err_msg, sentry::Level::Error);
+                return;
+            }
+        };
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
@@ -209,26 +227,63 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            app_state.events_manager.read().await
-                                .handle_new_block_height(&move_app, latest_updated_block_height).await;
+                            match try_read_with_retry(&app_state.events_manager, 3).await {
+                                Ok(em) => {
+                                    em.handle_new_block_height(&move_app, latest_updated_block_height).await;
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                                    error!(target: LOG_TARGET, "{}", err_msg);
+                                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                                    continue;
+                                }
+                            }
                         }
                     } else {
-                        app_state.events_manager.read().await
-                            .handle_base_node_update(&move_app, node_status.clone()).await;
+                        match try_read_with_retry(&app_state.events_manager, 3).await {
+                            Ok(em) => {
+                                em.handle_base_node_update(&move_app, node_status.clone()).await;
+                            },
+                            Err(e) => {
+                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                                error!(target: LOG_TARGET, "{}", err_msg);
+                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                            }
+                        }
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
                     let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
-                    if let Ok(gpu_status) = app_state.gpu_miner.read().await
+
+                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 3).await {
+                        Ok(gm) => gm,
+                        Err(e) => {
+                            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(&err_msg, sentry::Level::Error);
+                            continue;
+                        }
+                    };
+
+                    if let Ok(gpu_status) = gpu_miner
                         .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
                         .await
                     {
-                        app_state.events_manager.read().await
-                            .handle_gpu_mining_update(&move_app, gpu_status).await;
+                        match try_read_with_retry(&app_state.events_manager, 3).await {
+                            Ok(em) => {
+                                em.handle_gpu_mining_update(&move_app, gpu_status).await;
+                            },
+                            Err(e) => {
+                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                                error!(target: LOG_TARGET, "{}", err_msg);
+                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                            }
+                        }
                     } else {
-                        let e = "Error getting gpu miner status".to_string();
-                        error!(target: LOG_TARGET, "{}", e);
+                        let err_msg = "Error getting gpu miner status";
+                        error!(target: LOG_TARGET, "{}", err_msg);
+                        sentry::capture_message(err_msg, sentry::Level::Error);
                     };
                 },
                 _ = shutdown_signal.wait() => {
@@ -238,13 +293,11 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         }
     });
 
-    // TODO: Use receivers for the following:
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-        let _app_handle = move_app.app_handle().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
 
@@ -254,14 +307,33 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
                     // CPU status
-                    if let Ok(cpu_status) = app_state.cpu_miner.read().await
+                    let cpu_miner = match try_read_with_retry(&app_state.cpu_miner, 3).await {
+                        Ok(cm) => cm,
+                        Err(e) => {
+                            let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(&err_msg, sentry::Level::Error);
+                            continue;
+                        }
+                    };
+
+                    if let Ok(cpu_status) = cpu_miner
                         .status(node_status.randomx_network_hashrate, node_status.block_reward)
                         .await
                     {
-                        app_state.events_manager.read().await
-                            .handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                        match try_read_with_retry(&app_state.events_manager, 3).await {
+                            Ok(em) => {
+                                em.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                            },
+                            Err(e) => {
+                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                                error!(target: LOG_TARGET, "{}", err_msg);
+                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                                continue;
+                            }
+                        }
 
-                        // Update systemtray data - no better place until rewritten to channels
+                        // Update systemtray data
                         let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
                         let systray_data = SystemTrayData {
                             cpu_hashrate: cpu_status.hash_rate,
@@ -269,21 +341,42 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                             estimated_earning: (cpu_status.estimated_earnings
                                 + gpu_status.estimated_earnings) as f64,
                         };
-                        app_state.systemtray_manager.write().await
-                            .update_tray(systray_data);
+
+                        match try_write_with_retry(&app_state.systemtray_manager, 3).await {
+                            Ok(mut sm) => {
+                                sm.update_tray(systray_data);
+                            },
+                            Err(e) => {
+                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                                error!(target: LOG_TARGET, "{}", err_msg);
+                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                            }
+                        }
                     } else {
-                        let e = "Error getting cpu miner status".to_string();
-                        error!(target: LOG_TARGET, "{}", e);
+                        let err_msg = "Error getting cpu miner status";
+                        error!(target: LOG_TARGET, "{}", err_msg);
+                        sentry::capture_message(err_msg, sentry::Level::Error);
                     };
+
                     // Connected peers
                     if let Ok(connected_peers) = app_state
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            app_state.events_manager.read().await
-                                .handle_connected_peers_update(&move_app, connected_peers).await;
+                            match try_read_with_retry(&app_state.events_manager, 3).await {
+                                Ok(em) => {
+                                    em.handle_connected_peers_update(&move_app, connected_peers).await;
+                                },
+                                Err(e) => {
+                                    let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
+                                    error!(target: LOG_TARGET, "{}", err_msg);
+                                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                                }
+                            }
                         } else {
-                            error!(target: LOG_TARGET, "Error getting connected peers");
+                            let err_msg = "Error getting connected peers";
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(err_msg, sentry::Level::Error);
                         }
                 },
                 _ = shutdown_signal.wait() => {
