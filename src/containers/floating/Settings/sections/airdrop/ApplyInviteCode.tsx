@@ -38,7 +38,6 @@ export const ApplyInviteCode = () => {
                 void open(refUrl);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [backendInMemoryConfig?.airdropUrl, claimCode]);
 
     const handleToken = useCallback(() => {

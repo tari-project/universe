@@ -1,4 +1,5 @@
 export * from './miningStoreActions';
+export * from './appConfigStoreActions.ts';
 export {
     setShowExternalDependenciesDialog,
     setTheme,

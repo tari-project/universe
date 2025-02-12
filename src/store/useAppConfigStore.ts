@@ -39,7 +39,7 @@ interface Actions {
     setAudioEnabled: (audioEnabled: boolean) => Promise<void>;
 }
 
-type AppConfigStoreState = State & Actions;
+type AppConfigStoreState = State ;
 
 const initialState: State = {
     config_version: 0,
