@@ -1,11 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { modeType } from '@app/store/types.ts';
 import { GpuThreads } from '@app/types/app-status.ts';
+import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
+import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
+import { useAppStateStore } from '../appStateStore.ts';
+import { useMiningStore } from '../useMiningStore.ts';
+import { modeType } from '../types.ts';
+import { setMode } from './appConfigStoreActions.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -67,8 +67,7 @@ const changeMiningMode = async (params: ChangeMiningModeArgs) => {
         await pauseMining();
     }
     try {
-        const appConfigState = useAppConfigStore.getState();
-        await appConfigState.setMode({
+        await setMode({
             mode: mode as modeType,
             customGpuLevels: customGpuLevels || [],
             customCpuLevels,

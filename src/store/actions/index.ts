@@ -1,11 +1,19 @@
-export * from './miningStoreActions';
 export {
-    setShowExternalDependenciesDialog,
-    setUITheme,
-    setDialogToShow,
-    setIsWebglNotSupported,
-    setAdminShow,
-} from './uiStoreActions';
+    airdropSetup,
+    fetchBackendInMemoryConfig,
+    getExistingTokens,
+    logout,
+    setAirdropTokens,
+    setAuthUuid,
+    setBonusTiers,
+    setFlareAnimationType,
+    setMiningRewardPoints,
+    setReferralCount,
+    setReferralQuestPoints,
+    setUserDetails,
+    setUserGems,
+    setUserPoints,
+} from './airdropStoreActions.ts';
 export {
     fetchAppConfig,
     setAllowTelemetry,
@@ -28,3 +36,11 @@ export {
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
+export { startMining, pauseMining, stopMining, changeMiningMode, setMiningNetwork } from './miningStoreActions.ts';
+export {
+    setShowExternalDependenciesDialog,
+    setUITheme,
+    setDialogToShow,
+    setIsWebglNotSupported,
+    setAdminShow,
+} from './uiStoreActions.ts';
