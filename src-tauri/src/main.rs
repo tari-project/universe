@@ -24,6 +24,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -1058,6 +1059,8 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
+        watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let wallet_manager = WalletManager::new(
         node_manager.clone(),
         wallet_state_watch_tx,
@@ -1081,7 +1084,7 @@ fn main() {
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector).into());
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector, cpu_miner_status_watch_tx, base_node_watch_rx.clone()).into());
     let gpu_miner: Arc<RwLock<GpuMiner>> =
         Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
 

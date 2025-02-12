@@ -112,6 +112,27 @@ pub struct CpuMinerStatus {
     pub connection: CpuMinerConnectionStatus,
 }
 
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+
+impl Default for CpuMinerConnectionStatus {
+    fn default() -> Self {
+        Self {
+            is_connected: false,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,

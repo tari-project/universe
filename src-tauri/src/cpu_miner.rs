@@ -26,8 +26,9 @@ use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStat
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
+use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::CpuMinerConfig;
+use crate::{BaseNodeStatus, CpuMinerConfig};
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -35,7 +36,8 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::RwLock;
+use tokio::select;
+use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
@@ -43,14 +45,25 @@ const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
+    cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
+    summary_watch_rx: watch::Receiver<Option<Summary>>,
+    node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
 }
 
 impl CpuMiner {
-    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
-        let xmrig_adapter = XmrigAdapter::new();
+    pub fn new(
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+        cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
+        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    ) -> Self {
+        let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
+        let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
         let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner());
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            cpu_miner_status_watch_tx,
+            summary_watch_rx,
+            node_status_watch_rx,
         }
     }
 
@@ -124,6 +137,9 @@ impl CpuMiner {
             )
             .await?;
         }
+
+        CpuMiner::initialize_status_updates(self.cpu_miner_status_watch_tx.clone(), self.summary_watch_rx.clone(), self.node_status_watch_rx.clone(), app_shutdown).await;
+
         Ok(())
     }
 
@@ -233,6 +249,56 @@ impl CpuMiner {
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
+    }
+
+    async fn initialize_status_updates(
+        cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
+        mut summary_watch_rx: watch::Receiver<Option<Summary>>,
+        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+        mut app_shutdown: ShutdownSignal,
+    ) {
+        tauri::async_runtime::spawn(async move {
+            loop {
+                select! {
+                    _ = summary_watch_rx.changed() => {
+                        let node_status = node_status_watch_rx.borrow().clone();
+                        let xmrig_summary = summary_watch_rx.borrow().clone();
+
+                        let cpu_status = match xmrig_summary {
+                            Some(xmrig_status) => {
+                                let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
+                                let estimated_earnings =
+                                    estimate_earning(node_status.randomx_network_hashrate, hash_rate, node_status.block_reward);
+
+                                // // UNUSED, commented for now
+                                // let hasrate_sum = xmrig_status
+                                //     .hashrate
+                                //     .total
+                                //     .iter()
+                                //     .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
+                                let is_connected = xmrig_status.connection.uptime > 0;
+
+                                CpuMinerStatus {
+                                    is_mining: true,
+                                    hash_rate,
+                                    estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
+                                    connection: CpuMinerConnectionStatus { is_connected },
+                                }
+                            }
+                            None => {
+                                warn!(target: LOG_TARGET, "Failed to get xmrig summary");
+                                CpuMinerStatus::default()
+                            }
+                        };
+
+                        let _result = cpu_miner_status_watch_tx.send(cpu_status);
+                    },
+                    _ = app_shutdown.wait() => {
+                        break;
+                    },
+                }
+            }
+        });
     }
 
     pub async fn status(
