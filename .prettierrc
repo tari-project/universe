@@ -12,12 +12,6 @@
             "options": {
                 "tabWidth": 2
             }
-        },
-        {
-            "files": "*.txt",
-            "options": {
-                "printWidth": 9999999
-            }
         }
     ]
 }
