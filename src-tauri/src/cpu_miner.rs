@@ -238,6 +238,9 @@ impl CpuMiner {
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
         let mut lock = self.watcher.write().await;
         lock.stop().await?;
+        let _result = self
+            .cpu_miner_status_watch_tx
+            .send_replace(CpuMinerStatus::default());
         Ok(())
     }
 
