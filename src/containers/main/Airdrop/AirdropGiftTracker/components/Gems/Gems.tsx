@@ -1,6 +1,6 @@
 import { Wrapper, Number, Label, GemImage, GemsAnimation, GemAnimatedImage } from './styles';
 import gemImage from '../../images/gem.png';
-import { AnimatePresence, useSpring } from 'framer-motion';
+import { AnimatePresence, useSpring } from 'motion/react';
 import { useEffect, useState } from 'react';
 
 interface Props {
@@ -49,7 +49,20 @@ export default function Gems({ number, label }: Props) {
             <Number>
                 <GemImage src={gemImage} alt="" />
 
-                {displayValue.toLocaleString()}
+                {displayValue
+                    .toLocaleString()
+                    .split('')
+                    .map((char, index) =>
+                        char === ',' || char === '.' ? (
+                            <span key={index} className="digit-char">
+                                {char}
+                            </span>
+                        ) : (
+                            <span key={index} className="digit-num">
+                                {char}
+                            </span>
+                        )
+                    )}
 
                 <AnimatePresence>
                     {animate && (

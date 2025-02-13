@@ -23,7 +23,10 @@
     "waiting-for-block-sync": "Warte auf Block-Synchronisierung. {{local_height}}/{{tip_height}} Blöcke synchronisiert",
     "waiting-for-header-sync": "Warte auf Header-Synchronisierung. {{local_height}}/{{tip_height}} Header synchronisiert",
     "waiting-for-node": "Warte auf Synchronisierung des Knotens",
-    "waiting-for-wallet": "Warte auf Wallet"
+    "waiting-for-wallet": "Warte auf Wallet",
+    "waiting-for-minotari-node-to-start": "Warten auf den Start des Minotari-Knotens",
+    "wallet-started": "Wallet gestartet",
+    "minotari-node-restarting": "Minotari-Knotendaten waren beschädigt, alte Daten werden bereinigt"
   },
   "would-you-like-to-install": "Möchtest du Tari Universe {{version}} jetzt installieren?",
   "yes": "Ja"

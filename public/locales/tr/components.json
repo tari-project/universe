@@ -7,5 +7,16 @@
     "invalid-url": "Geçerli bir URL adresi olmalıdır",
     "password-too-short": "Şifre en az 8 karakterden oluşmalıdır",
     "required": "Alan gerekli"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
   }
 }

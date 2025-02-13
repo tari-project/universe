@@ -23,7 +23,10 @@
     "waiting-for-block-sync": "等待区块同步。{{local_height}}/{{tip_height}} 个区块已同步",
     "waiting-for-header-sync": "等待头同步。{{local_height}}/{{tip_height}} 个头已同步",
     "waiting-for-node": "等待节点同步",
-    "waiting-for-wallet": "等待钱包"
+    "waiting-for-wallet": "等待钱包",
+    "waiting-for-minotari-node-to-start": "正在等待 Minotari 节点启动",
+    "minotari-node-restarting": "Minotari 节点数据损坏，正在清理旧数据",
+    "wallet-started": "钱包已启动"
   },
   "would-you-like-to-install": "您想现在安装 Tari Universe {{version}} 吗？",
   "yes": "是"

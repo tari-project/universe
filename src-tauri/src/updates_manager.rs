@@ -35,7 +35,6 @@ use crate::{app_config::AppConfig, utils::system_status::SystemStatus};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,

@@ -16,8 +16,11 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');
-    const sha_network_hash_rate = useMiningMetricsStore((state) => state?.sha_network_hash_rate);
-    const randomx_network_hash_rate = useMiningMetricsStore((state) => state?.randomx_network_hash_rate);
+    const sha_network_hashrate = useMiningMetricsStore((state) => state?.base_node_status?.sha_network_hashrate);
+    const randomx_network_hashrate = useMiningMetricsStore(
+        (state) => state?.base_node_status?.randomx_network_hashrate
+    );
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -32,13 +35,13 @@ export default function Network() {
                             <Stack direction="row">
                                 <Typography>{t('sha-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(sha_network_hash_rate || 0)}</b>
+                                    <b>{formatHashrate(sha_network_hashrate || 0)}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('randomx-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(randomx_network_hash_rate || 0)}</b>
+                                    <b>{formatHashrate(randomx_network_hashrate || 0)}</b>
                                 </Typography>
                             </Stack>
                         </Stack>

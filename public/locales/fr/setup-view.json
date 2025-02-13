@@ -23,7 +23,10 @@
     "waiting-for-block-sync": "En attente de synchronisation des blocs. Blocs {{local_height}}/{{tip_height}} synchronisés",
     "waiting-for-header-sync": "En attente de synchronisation des en-têtes. En-têtes {{local_height}}/{{tip_height}} synchronisés",
     "waiting-for-node": "En attente de la synchronisation du nœud",
-    "waiting-for-wallet": "En attente du porte-monnaie"
+    "waiting-for-wallet": "En attente du porte-monnaie",
+    "waiting-for-minotari-node-to-start": "En attente du démarrage du nœud Minotari",
+    "wallet-started": "Portefeuille démarré",
+    "minotari-node-restarting": "Les données du nœud Minotari étaient corrompues, nettoyage des anciennes données"
   },
   "would-you-like-to-install": "Souhaitez-vous installer Tari Universe {{version}} maintenant ?",
   "yes": "Oui"

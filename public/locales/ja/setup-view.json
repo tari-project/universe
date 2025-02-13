@@ -23,7 +23,10 @@
     "waiting-for-block-sync": "ブロック同期を待っています。{{local_height}}/{{tip_height}} ブロックが同期されました",
     "waiting-for-header-sync": "ヘッダー同期を待っています。{{local_height}}/{{tip_height}} ヘッダーが同期されました",
     "waiting-for-node": "ノードの同期を待っています",
-    "waiting-for-wallet": "ウォレットを待っています"
+    "waiting-for-wallet": "ウォレットを待っています",
+    "waiting-for-minotari-node-to-start": "Minotariノードの起動を待っています",
+    "minotari-node-restarting": "Minotariノードのデータが破損しました。古いデータをクリーニングしています",
+    "wallet-started": "ウォレットが起動しました"
   },
   "would-you-like-to-install": "Tari Universe {{version}} を今すぐインストールしますか？",
   "yes": "はい"

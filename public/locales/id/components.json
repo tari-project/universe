@@ -7,5 +7,16 @@
     "invalid-url": "Harus berupa alamat URL yang valid",
     "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
     "required": "Kolom diperlukan"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
   }
 }

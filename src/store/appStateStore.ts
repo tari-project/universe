@@ -6,40 +6,54 @@ import { useAppConfigStore } from './useAppConfigStore';
 
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { startMining } from '@app/store/miningStoreActions.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
-interface AppState {
-    criticalError?: string;
-    setCriticalError: (value: string | undefined) => void;
+interface State {
     error?: string;
-    setError: (value: string | undefined) => void;
     criticalProblem?: Partial<CriticalProblem>;
-    setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
-    topStatus: string;
-    setTopStatus: (value: string) => void;
     setupTitle: string;
     setupTitleParams: Record<string, string>;
     setupProgress: number;
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) => void;
     isSettingsOpen: boolean;
-    setIsSettingsOpen: (value: boolean) => void;
-    isSettingUp: boolean;
-    setIsSettingUp: (value: boolean) => void;
-    setSettingUpFinished: () => Promise<void>;
+    criticalError?: string;
+    setupComplete: boolean;
     externalDependencies: ExternalDependency[];
-    fetchExternalDependencies: () => Promise<void>;
-    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
+    missingExternalDependencies?: ExternalDependency[];
+    issueReference?: string;
     applications_versions?: ApplicationsVersions;
+    releaseNotes: string;
+    isAppUpdateAvailable: boolean;
+}
+interface Actions {
+    setCriticalError: (value: string | undefined) => void;
+    setError: (value: string | undefined) => void;
+    setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
+    setIsSettingsOpen: (value: boolean) => void;
+    fetchExternalDependencies: () => Promise<void>;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
-    issueReference?: string;
     setIssueReference: (value: string) => void;
+    setReleaseNotes: (value: string) => void;
+    setIsAppUpdateAvailable: (value: boolean) => void;
 }
+type AppState = State & Actions;
+
+const initialstate: State = {
+    setupTitle: '',
+    setupTitleParams: {},
+    setupProgress: 0,
+    isSettingsOpen: false,
+    setupComplete: false,
+    externalDependencies: [],
+    missingExternalDependencies: [],
+    releaseNotes: '',
+    isAppUpdateAvailable: false,
+};
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
-    criticalError: undefined,
+    ...initialstate,
     setCriticalError: (criticalError) => set({ criticalError }),
-    error: undefined,
     setError: (error) => {
         set({ error });
         addToast({
@@ -49,28 +63,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
         });
     },
     setCriticalProblem: (criticalProblem) => set({ criticalProblem }),
-    topStatus: 'Not mining',
-    setTopStatus: (value) => set({ topStatus: value }),
-    setupTitle: '',
-    setupTitleParams: {},
-    setupProgress: 0,
-    setSetupDetails: (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-        set({ setupTitle, setupTitleParams, setupProgress }),
-    isSettingsOpen: false,
     setIsSettingsOpen: (value: boolean) => set({ isSettingsOpen: value }),
-    isSettingUp: true,
-    setIsSettingUp: (value: boolean) => set({ isSettingUp: value }),
-    setSettingUpFinished: async () => {
-        setAnimationState('showVisual');
-
-        // Proceed with auto mining when enabled
-        const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
-        if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-            await startMining();
-        }
-        set({ isSettingUp: false });
-    },
-    applications_versions: undefined,
     fetchApplicationsVersions: async () => {
         try {
             console.info('Fetching applications versions');
@@ -104,7 +97,6 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error updating applications versions', error);
         }
     },
-    externalDependencies: [],
     fetchExternalDependencies: async () => {
         try {
             const externalDependencies = await invoke('get_external_dependencies');
@@ -113,7 +105,35 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error loading missing external dependencies', error);
         }
     },
-    missingExternalDependencies: [],
-    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
     setIssueReference: (issueReference) => set({ issueReference }),
+    setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
+    setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
+
+export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
+export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
+export const setSetupParams = (setupTitleParams: Record<string, string>) =>
+    useAppStateStore.setState((current) => {
+        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
+        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
+    });
+
+export const setSetupComplete = async () => {
+    const visualMode = useAppConfigStore.getState().visual_mode;
+    if (visualMode) {
+        const canvas = document.getElementById('canvas');
+        if (canvas) {
+            canvas.style.opacity = '1';
+            setAnimationState('showVisual');
+        }
+    }
+    // Proceed with auto mining when enabled
+    const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
+    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
+        startMining();
+    }
+    useAppStateStore.setState({ setupComplete: true });
+};
+
+export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
+    useAppStateStore.setState({ externalDependencies });

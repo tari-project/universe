@@ -189,11 +189,14 @@
             }
         </style>
     </head>
-
     <body>
-        <main>
-            <canvas id="canvas"></canvas>
+        <main id="main">
             <div id="root"></div>
+
+            <audio id="player" preload="auto">
+                <source src="/assets/block_win.mp3" type="audio/mpeg" />
+            </audio>
+            <canvas id="canvas" style="opacity: 0"></canvas>
             <script type="module" src="src/main.tsx"></script>
             <script>
                 let time;

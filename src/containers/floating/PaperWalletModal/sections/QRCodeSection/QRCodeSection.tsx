@@ -1,3 +1,4 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { BlackButton } from '../../styles';
 import {
     ButtonWrapper,
@@ -41,8 +42,7 @@ export default function QRCodeSection({ onDoneClick }: Props) {
     };
 
     const handleCopyClick = () => {
-        navigator.clipboard.writeText(identificationCode);
-        setCopied(true);
+        writeText(identificationCode).then(() => setCopied(true));
     };
 
     useEffect(() => {

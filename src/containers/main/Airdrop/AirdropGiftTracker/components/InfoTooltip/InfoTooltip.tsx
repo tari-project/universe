@@ -1,4 +1,4 @@
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { Menu, Text, Title, Trigger } from './styles';
 import { useState } from 'react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
@@ -32,7 +32,7 @@ export default function InfoTooltip({ title, text }: Props) {
 
     return (
         <>
-            <Trigger ref={refs.setReference} {...getReferenceProps()} layout>
+            <Trigger ref={refs.setReference} {...getReferenceProps()}>
                 <QuestionMarkSvg />
             </Trigger>
 

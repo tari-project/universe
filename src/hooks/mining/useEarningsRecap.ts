@@ -5,19 +5,18 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 export default function useEarningsRecap() {
     const recapIds = useBlockchainVisualisationStore((s) => s.recapIds);
-    const transactions = useWalletStore((s) => s.transactions);
+    const coinbase_transactions = useWalletStore((s) => s.coinbase_transactions);
 
     const getMissedEarnings = useCallback(() => {
-        if (recapIds.length && transactions.length) {
-            const missedWins = transactions.filter((tx) => recapIds.includes(tx.tx_id));
-
+        if (recapIds.length && coinbase_transactions.length) {
+            const missedWins = coinbase_transactions.filter((tx) => recapIds.includes(tx.tx_id));
             const count = missedWins.length;
             if (count > 0) {
                 const totalEarnings = missedWins.reduce((earnings, cur) => earnings + cur.amount, 0);
                 handleWinRecap({ count, totalEarnings });
             }
         }
-    }, [recapIds, transactions]);
+    }, [recapIds, coinbase_transactions]);
 
     useEffect(() => {
         const listener = listen<string>('tauri://focus', () => {

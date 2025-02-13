@@ -40,7 +40,7 @@ export default function Flare({ gems, animationType }: Props) {
             exit={{ opacity: 0 }}
             onClick={() => setFlareAnimationType()}
         >
-            {animationType === 'GoalComplete' && <GoalComplete gems={gems} />}
+            {animationType === 'GoalComplete' && gems > 0 && <GoalComplete gems={gems} />}
             {animationType === 'FriendAccepted' && <FriendAccepted gems={gems} />}
             {animationType === 'BonusGems' && <BonusGems gems={gems} />}
         </Wrapper>
