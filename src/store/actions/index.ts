@@ -13,6 +13,7 @@ export {
 } from './airdropStoreActions.ts';
 export {
     fetchAppConfig,
+    setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
     setAudioEnabled,

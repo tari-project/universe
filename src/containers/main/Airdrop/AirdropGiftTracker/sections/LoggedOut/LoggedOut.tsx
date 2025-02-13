@@ -1,79 +1,42 @@
-import { AirdropTokens, GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
 import { useTranslation } from 'react-i18next';
+import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
+import { setAuthUuid } from '@app/store/actions/airdropStoreActions';
+import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import gemImage from '../../images/gem.png';
-import { setAirdropTokens, setAuthUuid, setFlareAnimationType } from '@app/store';
-import { useGetAirdropUserDetails } from '@app/hooks/airdrop/stateHelpers/useGetAirdropUserDetails.ts';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
+import useFetchAirdropToken from '@app/hooks/airdrop/stateHelpers/useFetchAirdropToken.ts';
+import { setAllowTelemetry, useAppConfigStore } from '@app/store';
 
 export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const fetchUserData = useGetAirdropUserDetails();
-    const { referralQuestPoints, authUuid, backendInMemoryConfig } = useAirdropStore((s) => ({
+    const [linkOpened, setLinkOpened] = useState(false);
+    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const { referralQuestPoints, airdropUrl } = useAirdropStore((s) => ({
         referralQuestPoints: s.referralQuestPoints,
         authUuid: s.authUuid,
-        backendInMemoryConfig: s.backendInMemoryConfig,
+        airdropUrl: s.backendInMemoryConfig?.airdropUrl,
     }));
 
+    useFetchAirdropToken({ canListen: linkOpened });
+
     const handleAuth = useCallback(
-        (code?: string) => {
+        async (code?: string) => {
             const token = uuidv4();
-            if (backendInMemoryConfig?.airdropUrl) {
+            if (!allowTelemetry) {
+                await setAllowTelemetry(true);
+            }
+            if (airdropUrl) {
                 setAuthUuid(token);
-                void open(
-                    `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
-                );
+                open(`${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`).then(() => {
+                    setLinkOpened(true);
+                });
             }
         },
 
-        [backendInMemoryConfig?.airdropUrl]
+        [airdropUrl, allowTelemetry]
     );
-
-    useEffect(() => {
-        if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
-            const interval = setInterval(async () => {
-                if (authUuid) {
-                    try {
-                        const tokenResponse = await handleAirdropRequest<AirdropTokens>({
-                            path: `/auth/get-token/${authUuid}`,
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        });
-
-                        console.debug(tokenResponse);
-                        if (tokenResponse) {
-                            clearInterval(interval);
-                            await setAirdropTokens(tokenResponse);
-                            await fetchUserData();
-
-                            if (tokenResponse.installReward) {
-                                setFlareAnimationType('FriendAccepted');
-                            }
-                        }
-                    } catch (e) {
-                        console.error('fetch airdrop token error: ', e);
-                    }
-                }
-            }, 1000);
-            const timeout = setTimeout(
-                () => {
-                    clearInterval(interval);
-                    setAuthUuid('');
-                },
-                1000 * 60 * 5
-            );
-
-            return () => {
-                clearInterval(interval);
-                clearTimeout(timeout);
-            };
-        }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, fetchUserData]);
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 

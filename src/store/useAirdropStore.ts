@@ -1,11 +1,7 @@
-import { createWithEqualityFn as create } from 'zustand/traditional';
+import { create } from './create';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
-
-// Helpers
-
-//////////////////////////////////////////
 
 export interface BonusTier {
     id: string;
@@ -81,22 +77,18 @@ export interface BackendInMemoryConfig {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
 }
-
 export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
-
 export interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
-
-//////////////////////////////////////////
-
 interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
+//////////////////////////////////////////
 
-interface AirdropState {
+export interface AirdropStoreState {
     authUuid?: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
@@ -108,8 +100,6 @@ interface AirdropState {
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
 }
-
-export type AirdropStoreState = Partial<AirdropState>;
 
 const initialState: AirdropStoreState = {
     authUuid: '',

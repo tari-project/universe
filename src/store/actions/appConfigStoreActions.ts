@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
-import { useAppConfigStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
+import { AirdropTokens, useAppConfigStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
 import { pauseMining, startMining, stopMining, setExcludedGpuDevices } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
@@ -30,6 +30,22 @@ export const fetchAppConfig = async () => {
     } catch (e) {
         console.error('Could not get app config:', e);
     }
+};
+export const setAirdropTokensInConfig = (
+    airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined
+) => {
+    const airdropTokens = airdropTokensParam
+        ? {
+              token: airdropTokensParam.token,
+              refresh_token: airdropTokensParam.refreshToken,
+          }
+        : undefined;
+
+    invoke('set_airdrop_tokens', { airdropTokens })
+        .then(() => {
+            useAppConfigStore.setState({ airdrop_tokens: airdropTokensParam });
+        })
+        .catch((e) => console.error('Failed to store airdrop tokens: ', e));
 };
 export const setAllowTelemetry = async (allowTelemetry: boolean) => {
     useAppConfigStore.setState({ allow_telemetry: allowTelemetry });

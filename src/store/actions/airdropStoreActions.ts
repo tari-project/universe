@@ -8,7 +8,9 @@ import {
     BonusTier,
     ReferralCount,
     ReferralQuestPoints,
+    setAirdropTokensInConfig,
     useAirdropStore,
+    useAppConfigStore,
     UserDetails,
     UserPoints,
 } from '@app/store';
@@ -79,35 +81,23 @@ const fetchBackendInMemoryConfig = async () => {
     return backendInMemoryConfig;
 };
 const getExistingTokens = async () => {
-    const existingTokensStore = localStorage.getItem('airdrop-store');
-    let existingTokens: AirdropTokens | undefined = undefined;
-    if (existingTokensStore) {
+    const localStorageTokens = localStorage.getItem('airdrop-store');
+    const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
+    const storedTokens = useAppConfigStore.getState().airdrop_tokens || parsedStorageTokens;
+    if (storedTokens) {
         try {
-            const parsedStore = JSON.parse(existingTokensStore);
-            if (parsedStore.state && parsedStore.state.airdropTokens) {
-                existingTokens = parsedStore.state.airdropTokens;
-                if (!existingTokens?.token || !existingTokens?.refreshToken) {
-                    return undefined;
-                }
-
-                const currentState = useAirdropStore.getState();
-
-                useAirdropStore.setState({
-                    ...currentState,
-                    airdropTokens: {
-                        ...existingTokens,
-                        expiresAt: parseJwt(existingTokens.token).exp,
-                    },
-                });
-
-                await invoke('set_airdrop_tokens', {
-                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
-                });
-
-                // Remove old tokens
-                localStorage.removeItem('airdrop-store');
-                console.info('Previous tokens set local store cleared');
+            if (!storedTokens?.token || !storedTokens?.refreshToken) {
+                return undefined;
             }
+
+            useAirdropStore.setState((currentState) => ({
+                ...currentState,
+                airdropTokens: {
+                    ...storedTokens,
+                    expiresAt: parseJwt(storedTokens.token).exp,
+                },
+            }));
+            setAirdropTokensInConfig(storedTokens);
         } catch (e) {
             console.error('Failed to parse existing tokens:', e);
         }
@@ -130,39 +120,40 @@ export const airdropSetup = async () => {
         console.error('Error in airdropSetup: ', error);
     }
 };
-
 export const handleAirdropLogout = async () => {
     console.error('Error fetching user details, logging out');
     await setAirdropTokens(undefined);
 };
+
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
-    const currentState = useAirdropStore.getState();
     if (airdropTokens) {
         useAirdropStore.setState({
             airdropTokens: {
-                ...currentState,
                 ...airdropTokens,
                 expiresAt: parseJwt(airdropTokens.token).exp,
             },
         });
 
-        await invoke('set_airdrop_tokens', {
-            airdropTokens: {
-                token: airdropTokens.token,
-                refresh_token: airdropTokens.refreshToken,
-            },
+        setAirdropTokensInConfig({
+            token: airdropTokens.token,
+            refreshToken: airdropTokens.refreshToken,
         });
     } else {
         // User not connected
-        const clearedState = { ...currentState, ...clearState, syncedWithBackend: true, airdropTokens: undefined };
-        useAirdropStore.setState(clearedState);
+        useAirdropStore.setState((currentState) => ({
+            ...currentState,
+            ...clearState,
+            syncedWithBackend: true,
+            airdropTokens: undefined,
+        }));
         try {
-            await invoke('set_airdrop_tokens', { airdropTokens: undefined });
+            setAirdropTokensInConfig(undefined);
         } catch (e) {
             console.error('Error clearing airdrop access token:', e);
         }
     }
 };
+
 export const setAuthUuid = (authUuid: string) => useAirdropStore.setState({ authUuid });
 export const setBonusTiers = (bonusTiers: BonusTier[]) => useAirdropStore.setState({ bonusTiers });
 export const setFlareAnimationType = (flareAnimationType?: AnimationType) =>
