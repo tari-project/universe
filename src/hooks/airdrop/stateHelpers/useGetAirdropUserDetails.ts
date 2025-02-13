@@ -1,12 +1,15 @@
 import { useAirdropStore, UserEntryPoints, UserDetails, ReferralCount, BonusTier } from '@app/store/useAirdropStore';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { handleAirdropLogout, setBonusTiers, setReferralCount, setUserDetails, setUserPoints } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
-const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
-const airdropToken = useAirdropStore.getState().airdropTokens?.token;
 export const useGetAirdropUserDetails = () => {
+    const { baseUrl, airdropToken } = useAirdropStore((s) => ({
+        baseUrl: s.backendInMemoryConfig?.airdropApiUrl,
+        airdropToken: s.airdropTokens?.token,
+    }));
+
     const urlRef = useRef(baseUrl);
     const tokenRef = useRef(airdropToken);
 
@@ -20,20 +23,15 @@ export const useGetAirdropUserDetails = () => {
     );
 
     // FETCH ALL USER DATA
-    useEffect(() => {
-        console.debug('should only run once', tokenRef.current);
-
+    return useCallback(async () => {
         // GET USER DETAILS
         const fetchUserDetails = async () => {
-            console.debug('fetchUserDetails');
             return await handleAirdropRequest<UserDetails>({
                 path: '/user/details',
                 method: 'GET',
                 onError: handleAirdropLogout,
             })
                 .then((data) => {
-                    console.debug('data');
-                    console.debug(data);
                     if (data?.user?.id) {
                         setUserDetails(data);
                         return data.user;
@@ -42,7 +40,6 @@ export const useGetAirdropUserDetails = () => {
                     }
                 })
                 .catch(() => {
-                    console.debug('catch!');
                     handleAirdropLogout();
                 });
         };
@@ -84,6 +81,7 @@ export const useGetAirdropUserDetails = () => {
         };
         const fetchData = async () => {
             const details = await fetchUserDetails();
+
             if (!details) return;
             const requests: Promise<void>[] = [];
             if (!details?.rank?.gems) {

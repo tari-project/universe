@@ -5,38 +5,39 @@ interface RequestProps {
     method: 'GET' | 'POST';
     body?: Record<string, unknown>;
     onError?: (e: unknown) => void;
+    headers?: HeadersInit | undefined;
 }
 
-export async function handleAirdropRequest<T>({ body, method, path, onError }: RequestProps) {
+export async function handleAirdropRequest<T>({ body, method, path, onError, headers }: RequestProps) {
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
-    if (!baseUrl || !airdropToken || isTokenExpired) return;
+
+    if (!headers && (!baseUrl || !airdropToken || isTokenExpired)) return;
 
     const fullUrl = `${baseUrl}${path}`;
-
-    const response = await fetch(fullUrl, {
-        method: method,
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${airdropToken}`,
-        },
-        body: JSON.stringify(body),
-    });
-
     try {
+        const response = await fetch(fullUrl, {
+            method: method,
+            headers: headers ?? {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${airdropToken}`,
+            },
+            body: JSON.stringify(body),
+        });
+
         if (!response.ok) {
             console.error(`Error fetching airdrop request at ${fullUrl}: `, response);
             if (onError) {
                 onError(response);
             }
             return;
+        } else {
+            return (await response.json()) as T;
         }
-        return response.json() as Promise<T>;
     } catch (e) {
-        console.debug(e);
         console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
 
         if (onError) {

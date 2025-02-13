@@ -73,6 +73,7 @@ export interface AirdropTokens {
     token: string;
     refreshToken: string;
     expiresAt?: number;
+    installReward?: boolean;
 }
 
 export interface BackendInMemoryConfig {
