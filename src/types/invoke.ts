@@ -12,7 +12,6 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
-import { AirdropTokens } from '@app/store/useAirdropStore';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
