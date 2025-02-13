@@ -126,7 +126,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     const metricsState = useMiningMetricsStore.getState();
     const totalGpuDevices = metricsState.gpu_devices.length;
     const excludedDevices = miningState.excludedGpuDevices.length;
-    if (metricsState.cpu_mining_status.is_mining || metricsState.cpu_mining_status.is_mining) {
+    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         await pauseMining();
     }
     try {
