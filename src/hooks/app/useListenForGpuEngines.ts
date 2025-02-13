@@ -34,7 +34,6 @@ export const useListenForGpuEngines = () => {
         const listenerForGpuHardware = listen(
             'detected-devices',
             ({ payload }: { payload: DetectedGpuHardwarePayload }) => {
-                console.log('payload.devices', payload.devices);
                 setGpuDevices(payload.devices);
             }
         );
@@ -42,5 +41,5 @@ export const useListenForGpuEngines = () => {
         return () => {
             listenerForGpuHardware.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [setGpuDevices]);
 };

@@ -154,7 +154,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             });
     },
     setGpuMiningEnabled: async (enabled) => {
-        console.log('Dupa Setting GPU mining enabled, ', enabled);
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
@@ -164,7 +163,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         }
 
         try {
-            console.log('Store: Setting GPU mining enabled, ', enabled);
             await invoke('set_gpu_mining_enabled', { enabled });
             if (miningState.miningInitiated && (metricsState.cpu_mining_status.is_mining || enabled)) {
                 await startMining();
@@ -172,7 +170,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
                 void stopMining();
             }
             if (enabled && gpu_devices.every((device) => device.settings.is_excluded)) {
-                console.log('Test');
                 for (const device of gpu_devices) {
                     miningState.toggleDeviceExclusion(device.device_index, false);
                 }

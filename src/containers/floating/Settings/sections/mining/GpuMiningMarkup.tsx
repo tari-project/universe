@@ -28,11 +28,8 @@ const GpuMiningMarkup = () => {
     }, [gpuDevicesHardware]);
 
     const handleGpuMiningEnabled = useCallback(async () => {
-        console.log('Fired');
         await setGpuMiningEnabled(!isGpuMiningEnabled);
     }, [isGpuMiningEnabled, setGpuMiningEnabled]);
-
-    console.log('isGpuMiningEnabled', isGpuMiningEnabled);
 
     return (
         <SettingsGroupWrapper>
