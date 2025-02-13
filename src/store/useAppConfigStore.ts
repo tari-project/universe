@@ -171,10 +171,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             } else {
                 void stopMining();
             }
-            if (enabled && gpu_devices.every((device) => device.is_excluded)) {
+            if (enabled && gpu_devices.every((device) => device.settings.is_excluded)) {
                 console.log('Test');
                 for (const device of gpu_devices) {
-                    await invoke('toggle_device_exclusion', { deviceIndex: device.device_index, excluded: false });
+                    miningState.toggleDeviceExclusion(device.device_index, false);
                 }
             }
         } catch (e) {

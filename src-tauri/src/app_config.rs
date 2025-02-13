@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use crate::gpu_miner::EngineType;
 use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
@@ -119,6 +120,8 @@ pub struct AppConfigFromFile {
     airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_true")]
     audio_enabled: bool,
+    #[serde(default = "default_gpu_engine")]
+    gpu_engine: String,
 }
 
 impl Default for AppConfigFromFile {
@@ -164,6 +167,7 @@ impl Default for AppConfigFromFile {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             audio_enabled: true,
+            gpu_engine: default_gpu_engine(),
         }
     }
 }
@@ -285,6 +289,7 @@ pub(crate) struct AppConfig {
     last_changelog_version: String,
     airdrop_tokens: Option<AirdropTokens>,
     audio_enabled: bool,
+    gpu_engine: String,
 }
 
 impl AppConfig {
@@ -332,6 +337,7 @@ impl AppConfig {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             audio_enabled: true,
+            gpu_engine: EngineType::OpenCL.to_string(),
         }
     }
 
@@ -412,6 +418,7 @@ impl AppConfig {
                 self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.audio_enabled = config.audio_enabled;
+                self.gpu_engine = config.gpu_engine;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -493,6 +500,13 @@ impl AppConfig {
 
     pub fn last_changelog_version(&self) -> &str {
         &self.last_changelog_version
+    }
+
+    pub fn gpu_engine(&self) -> EngineType {
+        match EngineType::from_string(&self.gpu_engine) {
+            Ok(engine) => engine,
+            Err(_) => EngineType::OpenCL,
+        }
     }
 
     pub async fn set_mode(
@@ -800,6 +814,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn set_gpu_engine(&mut self, engine: &str) {
+        self.gpu_engine = engine.to_string();
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -850,6 +868,7 @@ impl AppConfig {
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
             audio_enabled: self.audio_enabled,
+            gpu_engine: self.gpu_engine.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -897,6 +916,10 @@ fn default_system_time() -> SystemTime {
 
 fn default_monero_address() -> String {
     DEFAULT_MONERO_ADDRESS.to_string()
+}
+
+fn default_gpu_engine() -> String {
+    EngineType::OpenCL.to_string()
 }
 
 async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {

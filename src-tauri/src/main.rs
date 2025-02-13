@@ -678,7 +678,11 @@ async fn setup_inner(
         .gpu_miner
         .write()
         .await
-        .detect(app.clone(), config_dir.clone())
+        .detect(
+            app.clone(),
+            config_dir.clone(),
+            state.config.read().await.gpu_engine(),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 

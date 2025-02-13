@@ -165,8 +165,10 @@ impl GpuMiner {
         &mut self,
         app: AppHandle,
         config_dir: PathBuf,
+        engine: EngineType,
     ) -> Result<(), anyhow::Error> {
         info!(target: LOG_TARGET, "Verify if gpu miner can work on the system");
+        self.curent_selected_engine = engine;
 
         let config_file = config_dir
             .join("gpuminer")

@@ -1836,6 +1836,8 @@ pub async fn set_selected_engine(
         .await
         .map_err(|e| e.to_string())?;
 
+    state.config.write().await.set_gpu_engine(selected_engine);
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
