@@ -19,6 +19,7 @@ export default function LoggedOut() {
         (code?: string) => {
             const token = uuidv4();
             if (backendInMemoryConfig?.airdropUrl) {
+                console.debug(`setAuthUuid(token);= `, token);
                 setAuthUuid(token);
                 open(
                     `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
@@ -29,11 +30,8 @@ export default function LoggedOut() {
         [backendInMemoryConfig?.airdropUrl]
     );
 
-    const handleClick = () => {
-        handleAuth();
-    };
-
     useEffect(() => {
+        console.debug(`authUuid= `, authUuid);
         if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
             const interval = setInterval(() => {
                 if (authUuid) {
@@ -45,6 +43,7 @@ export default function LoggedOut() {
                     })
                         .then((response) => response.json())
                         .then((data) => {
+                            console.debug(data);
                             if (!data.error) {
                                 clearInterval(interval);
                                 setAirdropTokens(data);
@@ -74,7 +73,7 @@ export default function LoggedOut() {
 
     return (
         <Wrapper>
-            <ClaimButton onClick={handleClick}>
+            <ClaimButton onClick={() => handleAuth()}>
                 <Title>{t('joinAirdrop')}</Title>
 
                 <GemPill>

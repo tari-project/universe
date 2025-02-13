@@ -7,11 +7,11 @@ interface RequestProps {
     onError?: (e: unknown) => void;
 }
 
-const airdropToken = useAirdropStore.getState().airdropTokens?.token;
-const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
-const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
-
 export async function handleAirdropRequest<T>({ body, method, path, onError }: RequestProps) {
+    const airdropToken = useAirdropStore.getState().airdropTokens?.token;
+    const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
+    const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
     if (!baseUrl || !airdropToken || isTokenExpired) return;
 
@@ -36,6 +36,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError }: R
         }
         return response.json() as Promise<T>;
     } catch (e) {
+        console.debug(e);
         console.error(`Caught error fetching airdrop data at ${fullUrl}: `, e);
 
         if (onError) {

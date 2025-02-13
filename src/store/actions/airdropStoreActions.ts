@@ -132,6 +132,7 @@ export const airdropSetup = async () => {
 };
 
 export const handleAirdropLogout = async () => {
+    console.error('Error fetching user details, logging out');
     await setAirdropTokens(undefined);
 };
 export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
