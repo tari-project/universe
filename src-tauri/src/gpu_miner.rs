@@ -21,9 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::info;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::read_dir;
+use std::path::Path;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
@@ -217,8 +217,7 @@ impl GpuMiner {
                     DetectedAvailableGpuEngines {
                         engines: self
                             .get_available_gpu_engines(config_dir)
-                            .await
-                            .unwrap()
+                            .await?
                             .iter()
                             .map(|x| x.to_string())
                             .collect(),
@@ -256,10 +255,15 @@ impl GpuMiner {
             info!(target: LOG_TARGET, "Engine status file: {:?}", entry);
             let entry = entry?;
             let path = entry.path();
-            let file_name = path.file_name().unwrap().to_str().unwrap();
+            // let file_name = path.file_name().unwrap().to_str().unwrap();
+            let file_name = path
+                .file_name()
+                .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?
+                .to_str()
+                .ok_or_else(|| anyhow::anyhow!("Failed conversion to string"))?;
 
             let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
-            let engine_type = EngineType::from_string(&sanitized_file_name);
+            let engine_type = EngineType::from_string(sanitized_file_name);
 
             info!(target: LOG_TARGET, "File name: {:?}", file_name);
             info!(target: LOG_TARGET, "Sanitized file name: {:?}", sanitized_file_name);
@@ -369,6 +373,6 @@ impl GpuMiner {
     }
 }
 
-fn get_gpu_engines_statuses_path(config_dir: &PathBuf) -> PathBuf {
+fn get_gpu_engines_statuses_path(config_dir: &Path) -> PathBuf {
     config_dir.join("gpuminer").join("engine_statuses").clone()
 }

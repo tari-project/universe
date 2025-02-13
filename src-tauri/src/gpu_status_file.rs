@@ -74,15 +74,6 @@ impl Default for GpuStatusFile {
 }
 
 impl GpuStatusFile {
-    pub fn new(gpu_devices: Vec<GpuDevice>, file_path: &PathBuf) -> Self {
-        let resolved_gpu_file_content =
-            Self::resolve_settings_for_detected_devices(gpu_devices, file_path);
-
-        Self {
-            gpu_devices: resolved_gpu_file_content,
-        }
-    }
-
     pub fn load(path: &PathBuf) -> Result<Self, anyhow::Error> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -100,39 +91,5 @@ impl GpuStatusFile {
         std::fs::write(path, content)
             .map_err(|e| anyhow!("Failed to save gpu status file: {}", e))?;
         Ok(())
-    }
-
-    fn resolve_settings_for_detected_devices(
-        gpu_devices: Vec<GpuDevice>,
-        file_path: &PathBuf,
-    ) -> HashMap<String, GpuDevice> {
-        match Self::load(file_path) {
-            Ok(file) => {
-                let mut resolved_gpu_devices = HashMap::new();
-                for device in gpu_devices {
-                    let device_name = device.device_name.clone();
-                    let resolved_device = match file.gpu_devices.get(&device_name) {
-                        Some(existing_device) => {
-                            let mut resolved_device = device.clone();
-                            resolved_device.settings = existing_device.settings.clone();
-                            resolved_device
-                        }
-                        None => device,
-                    };
-                    resolved_gpu_devices.insert(device_name, resolved_device);
-                }
-                resolved_gpu_devices
-            }
-            Err(e) => {
-                warn!(
-                    "Could not load GPU status file: {}. Using detected devices",
-                    e
-                );
-                gpu_devices
-                    .into_iter()
-                    .map(|device| (device.device_name.clone(), device))
-                    .collect()
-            }
-        }
     }
 }

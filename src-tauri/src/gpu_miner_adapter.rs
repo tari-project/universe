@@ -23,7 +23,6 @@
 use crate::app_config::GpuThreads;
 use crate::gpu_miner::EngineType;
 use crate::gpu_status_file::GpuDevice;
-use crate::gpu_status_file::GpuStatus;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::HealthStatus;
 use crate::process_adapter::ProcessStartupSpec;
@@ -95,8 +94,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(k, v)| GpuThreads {
-                        gpu_name: k.clone(),
+                    .map(|(gpu_name, _)| GpuThreads {
+                        gpu_name: gpu_name.clone(),
                         max_gpu_threads: 2,
                     })
                     .collect()
@@ -105,8 +104,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(k, v)| GpuThreads {
-                        gpu_name: k.clone(),
+                    .map(|(gpu_name, _)| GpuThreads {
+                        gpu_name: gpu_name.clone(),
                         max_gpu_threads: 1024,
                     })
                     .collect()

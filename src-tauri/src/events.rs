@@ -23,7 +23,7 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::gpu_status_file::{GpuDevice, GpuStatus};
+use crate::gpu_status_file::GpuDevice;
 
 #[derive(Debug, Serialize, Clone)]
 pub struct SetupStatusEvent {
