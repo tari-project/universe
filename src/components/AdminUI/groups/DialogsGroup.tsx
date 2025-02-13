@@ -2,12 +2,19 @@
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import { setDialogToShow, setShowExternalDependenciesDialog } from '@app/store';
+import {
+    setCriticalError,
+    setCriticalProblem,
+    setDialogToShow,
+    setShowExternalDependenciesDialog,
+} from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export function DialogsGroup() {
-    const { setCriticalError, criticalError } = useAppStateStore();
-    const { setCriticalProblem, criticalProblem } = useAppStateStore();
+    const { criticalError, criticalProblem } = useAppStateStore((s) => ({
+        criticalError: s.criticalError,
+        criticalProblem: s.criticalProblem,
+    }));
     const { dialogToShow, showExternalDependenciesDialog } = useUIStore((s) => ({
         dialogToShow: s.dialogToShow,
         showExternalDependenciesDialog: s.showExternalDependenciesDialog,

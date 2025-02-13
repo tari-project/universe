@@ -1,21 +1,21 @@
 import { memo, useMemo } from 'react';
-import { AppContentContainer } from '@app/App/App.styles';
-import { useShuttingDown } from '@app/hooks';
-
-import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 
+import { useIsAppReady } from '../hooks/app/isAppReady.ts';
+import { useShuttingDown } from '../hooks';
+
+import { useAppStateStore } from '../store/appStateStore';
+import { setError, setIsWebglNotSupported } from '../store/actions';
+import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
+import ThemeProvider from '../theme/ThemeProvider.tsx';
+import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
 import MainView from '../containers/main/MainView.tsx';
 import Setup from '../containers/phase/Setup/Setup';
 
-import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
-import ThemeProvider from '../theme/ThemeProvider.tsx';
-import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
-import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
-import { setIsWebglNotSupported } from '@app/store';
+import { AppContentContainer } from './App.styles.ts';
 
 const CurrentAppSection = memo(function CurrentAppSection() {
     const isAppReady = useIsAppReady();
@@ -62,7 +62,6 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 });
 
 export default function App() {
-    const setError = useAppStateStore((s) => s.setError);
     const { t } = useTranslation('common', { useSuspense: false });
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {

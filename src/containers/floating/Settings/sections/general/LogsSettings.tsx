@@ -18,13 +18,12 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setIssueReference } from '@app/store';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const issueReference = useAppStateStore((s) => s.issueReference);
-    const setIssueReference = useAppStateStore((s) => s.setIssueReference);
 
     const openLogsDirectory = () => {
         invoke('open_log_dir')
@@ -66,7 +65,7 @@ export default function LogsSettings() {
                     <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
                     <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
                 </SettingsGroupAction>
-                <SendLogsDialog onSetReference={setIssueReference} />
+                <SendLogsDialog onSetReference={(reference) => setIssueReference(reference)} />
             </SettingsGroup>
         </SettingsGroupWrapper>
     );

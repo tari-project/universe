@@ -1,7 +1,6 @@
-import { useAppStateStore } from '@app/store/appStateStore';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setIsAppUpdateAvailable, setReleaseNotes } from '@app/store';
 
 interface UseListenForAppUpdatedOptions {
     triggerEffect?: boolean;
@@ -15,8 +14,6 @@ interface ShowReleaseNotesPayload {
 
 export const useListenForAppUpdated = (options: UseListenForAppUpdatedOptions) => {
     const { triggerEffect } = options;
-    const setReleaseNotes = useAppStateStore((state) => state.setReleaseNotes);
-    const setIsAppUpdateAvailable = useAppStateStore((state) => state.setIsAppUpdateAvailable);
 
     useEffect(() => {
         if (!triggerEffect) return;
@@ -35,5 +32,5 @@ export const useListenForAppUpdated = (options: UseListenForAppUpdatedOptions) =
         return () => {
             listToShowReleaseNotes.then((unlisten) => unlisten());
         };
-    }, [setReleaseNotes, setIsAppUpdateAvailable, triggerEffect]);
+    }, [triggerEffect]);
 };

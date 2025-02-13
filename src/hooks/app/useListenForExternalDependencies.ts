@@ -1,4 +1,4 @@
-import { loadExternalDependencies } from '@app/store/appStateStore';
+import { loadExternalDependencies } from '@app/store/actions/appStateStoreActions.ts';
 import { setShowExternalDependenciesDialog } from '@app/store';
 import { ExternalDependency } from '@app/types/app-status';
 import { listen } from '@tauri-apps/api/event';

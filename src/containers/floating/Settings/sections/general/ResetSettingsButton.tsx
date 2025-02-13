@@ -1,7 +1,8 @@
+import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/core';
-import { useAppStateStore } from '@app/store/appStateStore';
+
+import { setError } from '@app/store/actions';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
@@ -21,11 +22,10 @@ import {
 } from '../../components/SettingsGroup.styles.ts';
 
 export const ResetSettingsButton = () => {
+    const { t } = useTranslation('settings', { useSuspense: false });
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
-    const setError = useAppStateStore((state) => state.setError);
     const [resetWallet, setResetWallet] = useState(false);
-    const { t } = useTranslation('settings', { useSuspense: false });
 
     const resetSettings = () => {
         setLoading(true);

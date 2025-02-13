@@ -33,6 +33,26 @@ export {
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
+
+export {
+    fetchApplicationsVersions,
+    fetchApplicationsVersionsWithRetry,
+    fetchExternalDependencies,
+    loadExternalDependencies,
+    setCriticalError,
+    setCriticalProblem,
+    setError,
+    setIsAppUpdateAvailable,
+    setIsSettingsOpen,
+    setIssueReference,
+    setReleaseNotes,
+    setSetupComplete,
+    setSetupParams,
+    setSetupProgress,
+    setSetupTitle,
+    updateApplicationsVersions,
+} from './appStateStoreActions.ts';
+
 export {
     changeMiningMode,
     getMaxAvailableThreads,

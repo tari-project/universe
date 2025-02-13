@@ -2,11 +2,12 @@ import { invoke } from '@tauri-apps/api/core';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
-import { useAppStateStore } from '../appStateStore.ts';
+
 import { useMiningStore } from '../useMiningStore.ts';
 import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
+import { setError } from './appStateStoreActions.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -48,9 +49,8 @@ export const getMaxAvailableThreads = async () => {
         const maxAvailableThreads = await invoke('get_max_consumption_levels');
         useMiningStore.setState({ maxAvailableThreads });
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Failed to get max available threads: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
     }
 };
 export const pauseMining = async () => {
@@ -59,9 +59,8 @@ export const pauseMining = async () => {
         await invoke('stop_mining', {});
         console.info('Mining paused.');
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Failed to pause (stop) mining: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
         useMiningStore.setState({ miningInitiated: true });
     }
 };
@@ -92,13 +91,12 @@ export const setExcludedGpuDevices = async (excludedGpuDevices: number[]) => {
     try {
         await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
         if (excludedGpuDevices.length === totalGpuDevices) {
-            setGpuMiningEnabled(false);
+            await setGpuMiningEnabled(false);
         }
         useMiningStore.setState({ excludedGpuDevices });
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Could not set excluded gpu device: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
         useMiningStore.setState({ excludedGpuDevices: undefined });
     }
 };
@@ -116,9 +114,8 @@ export const setMiningNetwork = async () => {
         const network = (await invoke('get_network', {})) as string;
         useMiningStore.setState({ network });
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Could not get network: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
         useMiningStore.setState({ excludedGpuDevices: undefined });
     }
 };
@@ -132,9 +129,8 @@ export const startMining = async () => {
         await invoke('start_mining', {});
         console.info('Mining started.');
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Failed to start mining: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
         useMiningStore.setState({ miningInitiated: false });
     }
 };
@@ -145,9 +141,8 @@ export const stopMining = async () => {
         await invoke('stop_mining', {});
         console.info('Mining stopped.');
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Failed to stop mining: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
         useMiningStore.setState({ miningInitiated: true });
     }
 };
