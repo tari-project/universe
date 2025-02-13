@@ -1,10 +1,9 @@
 import { useEffect } from 'react';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { AirdropTokens, setAirdropTokens, setAuthUuid, setFlareAnimationType, useAirdropStore } from '@app/store';
-import { useGetAirdropUserDetails } from '@app/hooks/airdrop/stateHelpers/useGetAirdropUserDetails.ts';
+import { fetchAllUserData } from '@app/store/actions/airdropStoreActions.ts';
 
 export default function useFetchAirdropToken({ canListen = false }: { canListen?: boolean }) {
-    const fetchUserData = useGetAirdropUserDetails();
     const { authUuid, apiUrl } = useAirdropStore((s) => ({
         authUuid: s.authUuid,
         apiUrl: s.backendInMemoryConfig?.airdropApiUrl,
@@ -23,11 +22,10 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                             },
                         });
 
-                        console.debug(tokenResponse);
                         if (tokenResponse) {
                             clearInterval(interval);
                             await setAirdropTokens(tokenResponse);
-                            await fetchUserData();
+                            await fetchAllUserData();
 
                             if (tokenResponse.installReward) {
                                 setFlareAnimationType('FriendAccepted');
@@ -51,5 +49,5 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                 clearTimeout(timeout);
             };
         }
-    }, [authUuid, apiUrl, fetchUserData, canListen]);
+    }, [authUuid, apiUrl, canListen]);
 }
