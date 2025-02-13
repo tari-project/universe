@@ -814,8 +814,10 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn set_gpu_engine(&mut self, engine: &str) {
+    pub async fn set_gpu_engine(&mut self, engine: &str) -> Result<(), anyhow::Error> {
         self.gpu_engine = engine.to_string();
+        self.update_config_file().await?;
+        Ok(())
     }
 
     // Allow needless update because in future there may be fields that are
