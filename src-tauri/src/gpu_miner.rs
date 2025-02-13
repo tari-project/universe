@@ -22,6 +22,7 @@
 
 use log::info;
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
 use std::time::Duration;
@@ -55,15 +56,17 @@ pub enum EngineType {
     Metal,
 }
 
-impl EngineType {
-    pub fn to_string(&self) -> String {
+impl Display for EngineType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EngineType::Cuda => "CUDA".to_string(),
-            EngineType::OpenCL => "OpenCL".to_string(),
-            EngineType::Metal => "Metal".to_string(),
+            EngineType::Cuda => write!(f, "CUDA"),
+            EngineType::OpenCL => write!(f, "OpenCL"),
+            EngineType::Metal => write!(f, "Metal"),
         }
     }
+}
 
+impl EngineType {
     pub fn from_string(engine_type: &str) -> Result<EngineType, anyhow::Error> {
         match engine_type {
             "CUDA" => Ok(EngineType::Cuda),

@@ -28,7 +28,7 @@ use std::{
 };
 
 use anyhow::anyhow;
-use log::{debug, warn};
+use log::debug;
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct GpuStatus {
