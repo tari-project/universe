@@ -49,6 +49,5 @@ export const useGetReferralQuestPoints = () => {
             setReferralQuestPoints(reducedQuest);
         };
         handleFetch();
-        // TODO: refactor handleRequest - doesnt' need to be a hook
     }, []);
 };

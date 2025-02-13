@@ -1,13 +1,13 @@
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
-// import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
+import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
 import { setFlareAnimationType, setUserGems } from '@app/store';
 
 export const useHandleWsUserIdEvent = () => {
     const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
-    // const { fetchCrewMemberDetails } = useGetSosReferrals();
+    const fetchCrewMemberDetails = useGetSosReferrals();
 
     return (event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
@@ -21,7 +21,7 @@ export const useHandleWsUserIdEvent = () => {
                 }
                 break;
             case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
-                // fetchCrewMemberDetails(eventParsed.data.crewMember.id);
+                fetchCrewMemberDetails(eventParsed.data.crewMember.id);
                 setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
                 break;
             }

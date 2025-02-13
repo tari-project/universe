@@ -7,7 +7,7 @@ import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.
 const MAX_REFERRALS = 100;
 
 export const useGetSosReferrals = () => {
-    const [intervalSeconds, setIntervalSeconds] = useState(0);
+    const [intervalSeconds, _setIntervalSeconds] = useState(0);
 
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
@@ -80,9 +80,5 @@ export const useGetSosReferrals = () => {
         }
     }, [fetchUserReferrals, intervalSeconds]);
 
-    return {
-        fetchUserReferrals,
-        setRefetchIntervalSeconds: setIntervalSeconds,
-        fetchCrewMemberDetails,
-    };
+    return fetchCrewMemberDetails;
 };
