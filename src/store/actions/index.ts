@@ -33,7 +33,18 @@ export {
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
-export { startMining, pauseMining, stopMining, changeMiningMode, setMiningNetwork } from './miningStoreActions.ts';
+export {
+    changeMiningMode,
+    getMaxAvailableThreads,
+    pauseMining,
+    restartMining,
+    setCustomLevelsDialogOpen,
+    setExcludedGpuDevices,
+    setMiningControlsEnabled,
+    setMiningNetwork,
+    startMining,
+    stopMining,
+} from './miningStoreActions.ts';
 export {
     setShowExternalDependenciesDialog,
     setUITheme,

@@ -1,8 +1,8 @@
 import { invoke } from '@tauri-apps/api/core';
 import { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
-import { useAppConfigStore, useAppStateStore, useMiningMetricsStore, useMiningStore } from '@app/store';
-import { pauseMining, startMining, stopMining } from './miningStoreActions';
+import { useAppConfigStore, useAppStateStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
+import { pauseMining, startMining, stopMining, setExcludedGpuDevices } from './miningStoreActions';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
@@ -126,7 +126,7 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
             void stopMining();
         }
         if (enabled && excludedDevices === totalGpuDevices) {
-            miningState.setExcludedGpuDevice([]);
+            await setExcludedGpuDevices([]);
         }
     } catch (e) {
         const appStateStore = useAppStateStore.getState();

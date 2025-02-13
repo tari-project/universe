@@ -13,8 +13,7 @@ const useListenForCriticalProblem = () => {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [setCriticalProblem]);
 };
 
 export default useListenForCriticalProblem;

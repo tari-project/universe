@@ -77,8 +77,7 @@ export const useGetSosReferrals = () => {
             const intervalId = setInterval(fetchUserReferrals, intervalSeconds * 1000);
             return () => clearInterval(intervalId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [intervalSeconds]);
+    }, [fetchUserReferrals, intervalSeconds]);
 
     return {
         fetchUserReferrals,

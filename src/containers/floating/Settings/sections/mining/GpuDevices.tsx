@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
@@ -15,8 +15,9 @@ import {
 import { Stack } from '@app/components/elements/Stack';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { setExcludedGpuDevices } from '@app/store';
 
-const GpuDevices = () => {
+const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const miningAllowed = useAppStateStore((s) => s.setupComplete);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
@@ -28,19 +29,18 @@ const GpuDevices = () => {
     const isMiningInProgress = isCPUMining || isGPUMining;
     const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
     const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
-    const setExcludedDevice = useMiningStore((s) => s.setExcludedGpuDevice);
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
             if (!excludedDevices.includes(device)) {
                 excludedDevices.push(device);
-                await setExcludedDevice([...excludedDevices]);
+                await setExcludedGpuDevices([...excludedDevices]);
             } else {
                 excludedDevices.splice(excludedDevices.indexOf(device), 1);
-                await setExcludedDevice([...excludedDevices]);
+                await setExcludedGpuDevices([...excludedDevices]);
             }
         },
-        [excludedDevices, setExcludedDevice]
+        [excludedDevices]
     );
 
     return (
@@ -83,6 +83,6 @@ const GpuDevices = () => {
             </SettingsGroupWrapper>
         </>
     );
-};
+});
 
 export default GpuDevices;

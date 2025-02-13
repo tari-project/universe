@@ -14,7 +14,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setDialogToShow } from '@app/store';
+import { setDialogToShow, setP2poolEnabled } from '@app/store';
 
 interface P2pMarkupProps {
     setDisabledStats: (value: boolean) => void;
@@ -23,7 +23,6 @@ interface P2pMarkupProps {
 const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
-    const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
     const miningAllowed = useAppStateStore((s) => s.setupComplete);
 
     const isDisabled = !miningAllowed;
@@ -34,7 +33,7 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
             setDisabledStats(!event.target.checked);
             setDialogToShow('restart');
         },
-        [setDisabledStats, setP2poolEnabled]
+        [setDisabledStats]
     );
 
     return (
