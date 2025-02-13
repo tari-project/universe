@@ -15,11 +15,9 @@ const Wrapper = styled(m.div)`
 
 export default function GpuEngine() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const { availableEngines, selectedEngine, setEngine } = useMiningStore((state) => ({
-        availableEngines: state.availableEngines,
-        selectedEngine: state.engine,
-        setEngine: state.setEngine,
-    }));
+    const availableEngines = useMiningStore((state) => state.availableEngines);
+    const selectedEngine = useMiningStore((state) => state.engine);
+    const setEngine = useMiningStore((state) => state.setEngine);
 
     const engineOptions = useMemo(() => {
         return availableEngines.map((engine) => ({
@@ -40,18 +38,21 @@ export default function GpuEngine() {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('change-gpu-engine', { ns: 'settings' })}</Typography>
             </SettingsGroupTitle>
-
-            <SettingsGroupContent>
-                <Wrapper>
-                    <Select
-                        options={engineOptions}
-                        onChange={handleEngineChange}
-                        selectedValue={selectedEngine}
-                        variant="bordered"
-                        forceHeight={36}
-                    />
-                </Wrapper>
-            </SettingsGroupContent>
+            {availableEngines.length > 0 ? (
+                <SettingsGroupContent>
+                    <Wrapper>
+                        <Select
+                            options={engineOptions}
+                            onChange={handleEngineChange}
+                            selectedValue={selectedEngine}
+                            variant="bordered"
+                            forceHeight={36}
+                        />
+                    </Wrapper>
+                </SettingsGroupContent>
+            ) : (
+                <Typography variant="p">{t('gpu-device-no-found', { ns: 'settings' })}</Typography>
+            )}
         </SettingsGroupWrapper>
     );
 }
