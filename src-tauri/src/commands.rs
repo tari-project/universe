@@ -112,6 +112,27 @@ pub struct CpuMinerStatus {
     pub connection: CpuMinerConnectionStatus,
 }
 
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+
+impl Default for CpuMinerConnectionStatus {
+    fn default() -> Self {
+        Self {
+            is_connected: false,
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Clone)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
@@ -1346,22 +1367,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_status_watch_rx.borrow().clone();
-            let cpu_miner = state.cpu_miner.read().await;
-            let cpu_mining_status = match cpu_miner
-                .status(
-                    node_status.randomx_network_hashrate,
-                    node_status.block_reward,
-                )
-                .await
-                .map_err(|e| e.to_string())
-            {
-                Ok(cpu) => cpu,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    return Err(e);
-                }
-            };
+            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
@@ -1430,7 +1436,7 @@ pub async fn start_mining<'r>(
             let err_msg = format!("Failed to acquire config read lock: {}", e);
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
+            return Err("Initializing error, please try again".to_string());
         }
     };
 
@@ -1450,7 +1456,7 @@ pub async fn start_mining<'r>(
                 let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
                 error!(target: LOG_TARGET, "{}", err_msg);
                 sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
+                return Err("Initializing error, please try again".to_string());
             }
         };
         cpu_miner.is_running().await
@@ -1463,7 +1469,7 @@ pub async fn start_mining<'r>(
                 let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
                 error!(target: LOG_TARGET, "{}", err_msg);
                 sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
+                return Err("Initializing error, please try again".to_string());
             }
         };
         gpu_miner.is_running().await
@@ -1482,7 +1488,7 @@ pub async fn start_mining<'r>(
             let err_msg = format!("Failed to acquire cpu_miner_config read lock: {}", e);
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
+            return Err("Initializing error, please try again".to_string());
         }
     };
     let tari_address = cpu_miner_config.tari_address.clone();
@@ -1501,7 +1507,7 @@ pub async fn start_mining<'r>(
                     let err_msg = format!("Failed to acquire cpu_miner write lock: {}", e);
                     error!(target: LOG_TARGET, "{}", err_msg);
                     sentry::capture_message(&err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
+                    return Err("Initializing error, please try again".to_string());
                 }
             };
 
@@ -1546,7 +1552,7 @@ pub async fn start_mining<'r>(
             let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
+            return Err("Initializing error, please try again".to_string());
         }
     };
 
@@ -1582,7 +1588,7 @@ pub async fn start_mining<'r>(
                 let err_msg = format!("Failed to acquire gpu_miner write lock: {}", e);
                 error!(target: LOG_TARGET, "{}", err_msg);
                 sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
+                return Err("Initializing error, please try again".to_string());
             }
         };
 
@@ -1619,7 +1625,7 @@ pub async fn start_mining<'r>(
                     );
                     error!(target: LOG_TARGET, "{}", lock_err_msg);
                     sentry::capture_message(&lock_err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
+                    return Err("Initializing error, please try again".to_string());
                 }
             };
 
@@ -1627,7 +1633,7 @@ pub async fn start_mining<'r>(
                 error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
             }
 
-            return Err(e.to_string());
+            return Err("Initializing error, please try again".to_string());
         }
     }
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
