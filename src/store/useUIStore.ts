@@ -1,8 +1,13 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
-import { animationDarkBg, animationLightBg, setAnimationProperties } from '@app/visuals.ts';
-import { useAppConfigStore } from './useAppConfigStore.ts';
+import { setAnimationProperties } from '@tari-project/tari-tower';
+import { setVisualMode } from './useAppConfigStore.ts';
+
+const sideBarWidth = 348;
+const sideBarPaddingBuffer = 20;
+export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
+export const TOWER_CANVAS_ID = 'tower-canvas';
 
 export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof DIALOG_TYPES;
@@ -45,7 +50,7 @@ const initialState: State = {
     showExternalDependenciesDialog: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
+export const useUIStore = create<UIStoreState>()((set, getState) => ({
     ...initialState,
     setTheme: (theme) => {
         setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
@@ -58,7 +63,11 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
     setIsWebglNotSupported: (isWebglNotSupported) => {
-        useAppConfigStore.getState().setVisualMode(false);
+        const current = getState();
+        if (current.isWebglNotSupported === isWebglNotSupported) {
+            return;
+        }
+        setVisualMode(false);
         set({ isWebglNotSupported });
     },
     setAdminShow: (adminShow) => set({ adminShow }),
@@ -66,3 +75,29 @@ export const useUIStore = create<UIStoreState>()((set) => ({
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
+
+export const animationLightBg = [
+    { property: 'bgColor1', value: '#ffffff' },
+    { property: 'bgColor2', value: '#d0d0d0' },
+    { property: 'neutralColor', value: '#ffffff' },
+    { property: 'mainColor', value: '#0096ff' },
+    { property: 'successColor', value: '#00c881' },
+    { property: 'failColor', value: '#ca0101' },
+    { property: 'particlesColor', value: '#505050' },
+    { property: 'goboIntensity', value: 0.45 },
+    { property: 'particlesOpacity', value: 0.75 },
+    { property: 'particlesSize', value: 0.01 },
+];
+
+export const animationDarkBg = [
+    { property: 'bgColor1', value: '#212121' },
+    { property: 'bgColor2', value: '#212121' },
+    { property: 'neutralColor', value: '#040723' },
+    { property: 'successColor', value: '#c9eb00' },
+    { property: 'mainColor', value: '#813bf5' },
+    { property: 'failColor', value: '#fe2c3f' },
+    { property: 'particlesColor', value: '#813bf5' },
+    { property: 'goboIntensity', value: 0.75 },
+    { property: 'particlesOpacity', value: 0.95 },
+    { property: 'particlesSize', value: 0.02 },
+];
