@@ -824,6 +824,8 @@ pub async fn reset_settings<'r>(
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -938,18 +940,6 @@ pub async fn set_auto_update(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
         .map_err(|e| e.to_string())?;
-
-    if auto_update {
-        SystemStatus::current()
-            .spawn_listener()
-            .await
-            .map_err(|e| e.to_string())?;
-    } else {
-        SystemStatus::current()
-            .stop_listener()
-            .await
-            .map_err(|e| e.to_string())?;
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());

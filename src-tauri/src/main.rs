@@ -88,7 +88,7 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::stop_all_processes;
+use utils::shutdown_utils::{resume_all_processes, stop_all_processes};
 
 mod airdrop;
 mod app_config;
@@ -466,15 +466,8 @@ async fn setup_inner(
     let app_config = state.config.read().await;
 
     let use_tor = app_config.use_tor();
-    let is_auto_update_enabled = app_config.auto_update();
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
-
-    if is_auto_update_enabled {
-        SystemStatus::current().spawn_listener().await?;
-    } else {
-        SystemStatus::current().stop_listener().await?;
-    }
 
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -990,6 +983,28 @@ async fn setup_inner(
                     error!(target: LOG_TARGET, "{}", e);
                 }
             }
+        }
+    });
+
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut last_state = SystemStatus::current().check_if_in_sleep_mode().await;
+        let mut interval: time::Interval = time::interval(Duration::from_secs(5));
+        loop {
+            interval.tick().await;
+            let current_state = SystemStatus::current().check_if_in_sleep_mode().await;
+
+            if last_state && !current_state {
+                info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                let _unused = resume_all_processes(app_handle_clone.clone()).await;
+            }
+
+            if !last_state && current_state {
+                info!(target: LOG_TARGET, "System entered sleep mode");
+                let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+            }
+
+            last_state = current_state;
         }
     });
 

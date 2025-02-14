@@ -117,7 +117,7 @@ impl SystemStatus {
         Ok(())
     }
 
-    pub async fn is_in_sleep_mode(&self) -> bool {
+    pub async fn check_if_in_sleep_mode(&self) -> bool {
         *self.is_in_sleep_mode.read().await
     }
 
