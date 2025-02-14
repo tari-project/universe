@@ -1,0 +1,67 @@
+---
+name: CI Changelog
+
+'on':
+  workflow_dispatch:
+  push:
+    branches:
+      - 'ci-changelog-*'
+      - 'main'
+    paths:
+      - 'CHANGELOG.md'
+  merge_group:
+
+concurrency:
+  # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/v') || github.ref != 'refs/heads/main' }}
+
+permissions: {}
+
+jobs:
+  changelog-sync:
+    name: changelog sync
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: sync assets to S3
+        continue-on-error: true
+        if: ${{ env.AWS_SECRET_ACCESS_KEY != '' && runner.name != 'self-hosted' }}
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          S3CMD: 'cp'
+          S3OPTIONS: '--content-type "text/plain; charset=utf-8"'
+        run: |
+          docker run --rm -t \
+            -v ${PWD}:/work/data \
+            -w /work/data \
+            -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+            -e AWS_DEFAULT_REGION="WEUR" \
+            amazon/aws-cli:2.22.35 \
+              s3 ${{ env.S3OPTIONS }} ${{ env.S3CMD }} \
+                CHANGELOG.md \
+                s3://${{ env.BASE_URL }}/
+
+      - name: cache invalidation
+        continue-on-error: true
+        if: ${{ env.CF_AUTHORIZATION_BEARER != '' && runner.name != 'self-hosted' }}
+        env:
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_AUTHORIZATION_BEARER: ${{ secrets.CF_AUTHORIZATION_BEARER }}
+        run: |
+          curl --request POST \
+            --url https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
+            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md\"] }"
