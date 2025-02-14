@@ -24,7 +24,7 @@ export default function TappletsDev() {
     const { t } = useTranslation('ootle', { useSuspense: false });
     const initialDevTappEndpoint = '';
     const setError = useAppStateStore((s) => s.setError);
-    const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
+    const { devTapplets, setActiveTappById, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
     const devTappletsCount = devTapplets?.length || 0;
 
@@ -65,32 +65,43 @@ export default function TappletsDev() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
+    // const handleLaunch = useCallback(
+    //     async (tapplet: DevTapplet) => {
+    //         try {
+    //             // const tapplet = await invoke('launch_tapplet', { tappletId: id });
+    //             console.info('SET ACTIVE TAP', tapplet);
+    //             const resp = await fetch(`${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`);
+    //             if (!resp.ok) return;
+    //             const config: TappletConfig = await resp.json();
+    //             console.info('Dev Tapplet config', config);
+    //             if (!config) return;
+    //             const activeTapplet: ActiveTapplet = {
+    //                 tapplet_id: tapplet.id,
+    //                 version: config.version,
+    //                 display_name: tapplet.display_name,
+    //                 source: tapplet.endpoint,
+    //                 permissions: config.permissions,
+    //                 supportedChain: config.supportedChain,
+    //             };
+    //             setActiveTapp(activeTapplet);
+    //             setIsSettingsOpen(!isSettingsOpen);
+    //         } catch (e) {
+    //             setError(`Error while launching dev tapplet: ${e}`);
+    //             console.error(`Error while launching dev tapplet: ${e}`);
+    //         }
+    //     },
+    //     [isSettingsOpen, setActiveTapp, setError, setIsSettingsOpen]
+    // );
     const handleLaunch = useCallback(
-        async (tapplet: DevTapplet) => {
+        async (tappletId: number) => {
             try {
-                // const tapplet = await invoke('launch_tapplet', { tappletId: id });
-                console.info('SET ACTIVE TAP', tapplet);
-                const resp = await fetch(`${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`);
-                if (!resp.ok) return;
-                const config: TappletConfig = await resp.json();
-                console.info('Dev Tapplet config', config);
-                if (!config) return;
-                const activeTapplet: ActiveTapplet = {
-                    tapplet_id: tapplet.id,
-                    version: config.version,
-                    display_name: tapplet.display_name,
-                    source: tapplet.endpoint,
-                    permissions: config.permissions,
-                    supportedChain: config.supportedChain,
-                };
-                setActiveTapp(activeTapplet);
+                setActiveTappById(tappletId, true);
                 setIsSettingsOpen(!isSettingsOpen);
             } catch (e) {
                 setError(`Error while launching dev tapplet: ${e}`);
-                console.error(`Error while launching dev tapplet: ${e}`);
             }
         },
-        [isSettingsOpen, setActiveTapp, setError, setIsSettingsOpen]
+        [isSettingsOpen, setActiveTappById, setError, setIsSettingsOpen]
     );
 
     return (
@@ -161,7 +172,7 @@ export default function TappletsDev() {
                                 <IconButton
                                     aria-label="launch"
                                     style={{ marginRight: 10 }}
-                                    onClick={() => handleLaunch(item)}
+                                    onClick={() => handleLaunch(item.id)}
                                 >
                                     {/* <NavLink
                                         to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}

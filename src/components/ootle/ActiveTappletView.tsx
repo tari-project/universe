@@ -8,51 +8,45 @@ import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
 import { useAppStateStore } from '@app/store/appStateStore';
 
-const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
+export const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
 export default function ActiveTappletView() {
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);
     const setTappletProvider = useTappletProviderStore((s) => s.setTappletProvider);
     const tapplet = useTappletsStore((s) => s.activeTapplet);
-    const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
+    const deactivateTapplet = useTappletsStore((s) => s.deactivateTapplet);
     const setError = useAppStateStore((s) => s.setError);
 
-    const fetchTappConfig = useCallback(async () => {
-        try {
-            if (!tapplet) return;
-            const resp = await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`);
-            if (!resp.ok) return;
-            const config: TappletConfig = await resp.json();
-            console.info('Dev Tapplet config', config);
-            if (!config) return;
-            if (!tappProvider && tapplet) {
-                setTappletProvider(config.packageName, tapplet);
-                // // assign permissions
-                // tapplet.permissions = config.permissions;
-                // tapplet.supportedChain = config.supportedChain;
-                // tapplet.version = config.version;
-                // console.info('Dev Tapplet provider not found - setting new one: ', tapplet);
-                // setActiveTapp(tapplet);
-            }
-            if (!config.permissions) {
-                // TODO error translation
-                setError('Dev Tapplet config file not found');
-                console.error('Dev Tapplet config file not found');
-            }
-        } catch (e) {
-            setError(e as string);
-            console.error(e);
-        }
-    }, [setError, setTappletProvider, tappProvider, tapplet]);
+    // const getProvider = useCallback(async () => {
+    //     try {
+    //         if (!tappProvider ) {
+    //             setTappletProvider(config.packageName, tapplet);
+    //             // // assign permissions
+    //             // tapplet.permissions = config.permissions;
+    //             // tapplet.supportedChain = config.supportedChain;
+    //             // tapplet.version = config.version;
+    //             // console.info('Dev Tapplet provider not found - setting new one: ', tapplet);
+    //             // setActiveTapp(tapplet);
+    //         }
+    //         if (!config.permissions) {
+    //             // TODO error translation
+    //             setError('Dev Tapplet config file not found');
+    //             console.error('Dev Tapplet config file not found');
+    //         }
+    //     } catch (e) {
+    //         setError(e as string);
+    //         console.error(e);
+    //     }
+    // }, [setError, setTappletProvider, tappProvider, tapplet]);
 
-    useEffect(() => {
-        fetchTappConfig();
-    }, [fetchTappConfig]);
+    // useEffect(() => {
+    //     getProvider();
+    // }, [getProvider]);
 
     return (
         <>
             <HeaderContainer>
-                <IconButton onClick={() => setActiveTapp(undefined)}>
+                <IconButton onClick={() => deactivateTapplet()}>
                     <MdClose size={18} />
                 </IconButton>
                 <Typography variant="h6">

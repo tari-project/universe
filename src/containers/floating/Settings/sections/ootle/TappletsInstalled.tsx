@@ -16,7 +16,7 @@ import { Count } from './OotleSettings.styles.ts';
 export default function TappletsInstalled() {
     const { t } = useTranslation('ootle', { useSuspense: false });
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
-    const setActiveTapp = useTappletsStore((s) => s.setActiveTapp);
+    const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
     const deleteInstalledTapp = useTappletsStore((s) => s.deleteInstalledTapp);
     const updateInstalledTapp = useTappletsStore((s) => s.updateInstalledTapp);
     const getInstalledTapps = useTappletsStore((s) => s.getInstalledTapps);
@@ -49,14 +49,15 @@ export default function TappletsInstalled() {
     const handleLaunch = useCallback(
         async (id: number) => {
             try {
-                const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
-                setActiveTapp(tapplet);
+                // const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
+                // setActiveTapp(tapplet);
+                setActiveTappById(id);
                 setIsSettingsOpen(!isSettingsOpen);
             } catch (e) {
                 console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
             }
         },
-        [isSettingsOpen, setActiveTapp, setIsSettingsOpen]
+        [isSettingsOpen, setActiveTappById, setIsSettingsOpen]
     );
 
     useEffect(() => {

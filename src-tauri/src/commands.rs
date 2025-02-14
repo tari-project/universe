@@ -1840,6 +1840,7 @@ pub async fn launch_tapplet(
         }
     };
 
+    //TODO SERVER RUNNING ERROR IF LAUNCHED INSTALLED TAPPLET 2 TIMES
     match locked_tokens.insert(installed_tapplet_id.clone(), cancel_token) {
         Some(_) => {
             return Err(TappletServerError(AlreadyRunning)).map_err(|e| e.to_string())?;
@@ -2101,18 +2102,15 @@ pub async fn add_dev_tapplet(
     endpoint: String,
     db_connection: tauri::State<'_, DatabaseConnection>,
 ) -> Result<DevTapplet, Error> {
-    let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
-    // let config_endpoint = format!("{}/tapplet.config.json", endpoint); TODO
-    info!(
-        "🌟 Add dev tapplet to db endpoint: {:?}",
-        &manifest_endpoint
-    );
-    let tapp_manifest = reqwest::get(&manifest_endpoint)
+    // let manifest_endpoint = format!("{}/tapplet.manifest.json", endpoint);
+    let config_endpoint = format!("{}/tapplet.config.json", endpoint);
+    info!("🌟 Add dev tapplet to db endpoint: {:?}", &config_endpoint);
+    let tapp_manifest = reqwest::get(&config_endpoint)
         .await
         .inspect_err(|e| {
             error!(
                 "❌ Fetching tapplet manifest endpoint {:?} error: {:?}",
-                manifest_endpoint, e
+                config_endpoint, e
             )
         })
         .map_err(|_| {

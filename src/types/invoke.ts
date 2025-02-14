@@ -111,8 +111,6 @@ declare module '@tauri-apps/api/core' {
         param: 'update_tapp',
         payload: { tappletId: string; installedTappletId: string }
     ): Promise<InstalledTappletWithAssets[]>;
-    //TODO add payload type
-    // function invoke(param: 'get_balances', payload: {}): Promise<AccountsGetBalancesResponse>;
     function invoke(param: 'get_assets_server_addr'): Promise<string>;
     function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
     function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
