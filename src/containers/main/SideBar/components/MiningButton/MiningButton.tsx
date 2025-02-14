@@ -30,6 +30,16 @@ export default function MiningButton() {
     const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled;
     const isAppLoading = isAppSettingUp || isMiningLoading;
 
+    console.log('isSettingUp', isAppSettingUp);
+    console.log('isMiningControlsEnabled', isMiningControlsEnabled);
+    console.log('isMiningInitiated', isMiningInitiated);
+    console.log('isCPUMining', isCPUMining);
+    console.log('isGPUMining', isGPUMining);
+    console.log('isMining', isMining);
+    console.log('isMiningLoading', isMiningLoading);
+    console.log('isMiningButtonDisabled', isMiningButtonDisabled);
+    console.log('isAppLoading', isAppLoading);
+
     const miningButtonStateText = useMemo(() => {
         return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
     }, [isMining, isMiningInitiated]);
