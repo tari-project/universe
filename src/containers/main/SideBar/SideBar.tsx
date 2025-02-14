@@ -1,6 +1,6 @@
 import AirdropGiftTracker from '../Airdrop/AirdropGiftTracker/AirdropGiftTracker.tsx';
 import Wallet from './components/Wallet/Wallet.tsx';
-import Heading from './components/Heading';
+import Heading from './components/Heading/Heading.tsx';
 import LostConnectionAlert from './components/LostConnectionAlert';
 import MiningButton from './components/MiningButton/MiningButton';
 import Miner from './Miner/Miner';
