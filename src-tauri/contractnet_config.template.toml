@@ -87,7 +87,7 @@ dns_seeds = ["seeds.esmeralda.tari.com"]
 # (Default: peer_seeds = [])
 dns_seeds = []
 # Custom specified peer seed nodes (Default: peer_seeds = [])
-peer_seeds = ["8e18f14bdf49e23da64a6594eef29d315402cf3cd3652ce8386450d58a63817c::/ip4/18.216.193.9/tcp/12020"]
+peer_seeds = ["921f9248b3e4a2b72c8b702a4ed8cc779a6301fe241eaf470065e51531cb5162::/ip4/18.217.22.26/tcp/12000"]
 
 [mainnet.p2p.seeds]
 # DNS seeds hosts - DNS TXT records are queried from these hosts and the resulting peers added to the comms peer list.
