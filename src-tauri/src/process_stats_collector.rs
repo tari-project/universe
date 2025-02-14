@@ -39,6 +39,10 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_tx: Option<Sender<ProcessWatcherStats>>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    indexer_tx: Option<Sender<ProcessWatcherStats>>,
+    indexer_rx: Receiver<ProcessWatcherStats>,
+    validator_node_tx: Option<Sender<ProcessWatcherStats>>,
+    validator_node_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollectorBuilder {
@@ -53,6 +57,9 @@ impl ProcessStatsCollectorBuilder {
         let (p2pool_tx, p2pool_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
+        let (indexer_tx, indexer_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
+        let (validator_node_tx, validator_node_rx) =
+            tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
             cpu_miner_tx: Some(cpu_miner_tx),
@@ -69,6 +76,10 @@ impl ProcessStatsCollectorBuilder {
             tor_rx,
             wallet_tx: Some(wallet_tx),
             wallet_rx,
+            indexer_tx: Some(indexer_tx),
+            indexer_rx,
+            validator_node_tx: Some(validator_node_tx),
+            validator_node_rx,
         }
     }
 
@@ -112,6 +123,18 @@ impl ProcessStatsCollectorBuilder {
             .expect("Cannot take wallet more than once")
     }
 
+    pub fn take_indexer(&mut self) -> Sender<ProcessWatcherStats> {
+        self.indexer_tx
+            .take()
+            .expect("Cannot take indexer more than once")
+    }
+
+    pub fn take_validator_node(&mut self) -> Sender<ProcessWatcherStats> {
+        self.validator_node_tx
+            .take()
+            .expect("Cannot take validator_node more than once")
+    }
+
     pub fn build(self) -> ProcessStatsCollector {
         ProcessStatsCollector {
             cpu_miner_rx: self.cpu_miner_rx,
@@ -121,6 +144,8 @@ impl ProcessStatsCollectorBuilder {
             p2pool_rx: self.p2pool_rx,
             tor_rx: self.tor_rx,
             wallet_rx: self.wallet_rx,
+            indexer_rx: self.indexer_rx,
+            validator_node_rx: self.validator_node_rx,
         }
     }
 }
@@ -134,6 +159,8 @@ pub(crate) struct ProcessStatsCollector {
     p2pool_rx: Receiver<ProcessWatcherStats>,
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    indexer_rx: Receiver<ProcessWatcherStats>,
+    validator_node_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollector {
@@ -162,5 +189,11 @@ impl ProcessStatsCollector {
 
     pub fn get_wallet_stats(&self) -> ProcessWatcherStats {
         self.wallet_rx.borrow().clone()
+    }
+    pub fn get_indexer_stats(&self) -> ProcessWatcherStats {
+        self.indexer_rx.borrow().clone()
+    }
+    pub fn get_validator_node_stats(&self) -> ProcessWatcherStats {
+        self.validator_node_rx.borrow().clone()
     }
 }

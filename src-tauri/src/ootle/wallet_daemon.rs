@@ -1,11 +1,4 @@
-use std::{
-    fs,
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    panic,
-    path::PathBuf,
-    process,
-    str::FromStr,
-};
+use std::{fs, net::SocketAddr, panic, path::PathBuf, process, str::FromStr};
 
 use crate::{consts::DAN_WALLET_JSON_ADDRESS, utils::logging_utils::setup_logging};
 use log::{info, warn};
@@ -13,6 +6,7 @@ use tari_common_dan2::configuration::Network;
 use tari_dan_app_utilities::configuration::load_configuration;
 use tari_dan_wallet_daemon::{cli::Cli, config::ApplicationConfig, run_tari_dan_wallet_daemon};
 use tari_shutdown_dan2::Shutdown;
+use tauri::Url;
 
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
@@ -60,11 +54,12 @@ pub async fn start_wallet_daemon(
     // config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
 
     // ======= LOCAL SWARM CONFIG
-    let json_rpc_port = 18010; //TODO set port from the swarm config
+    let json_rpc_port = 18009; //TODO set port from the swarm config
     let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
+    let indexer_port = 18007;
 
-    config.dan_wallet_daemon.indexer_node_json_rpc_url =
-        "http://localhost:18007/json_rpc".to_string();
+    config.dan_wallet_daemon.indexer_json_rpc_url =
+        Url::parse(&format!("http://localhost:{}/json_rpc", indexer_port)).unwrap();
     config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&DAN_WALLET_JSON_ADDRESS).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
     config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
 

@@ -11,6 +11,7 @@ use tokio::time::sleep;
 use crate::indexer_adapter::IndexerAdapter;
 use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
+use crate::ProcessStatsCollectorBuilder;
 
 const LOG_TARGET: &str = "tari::universe::validator_node_manager";
 
@@ -155,9 +156,9 @@ pub struct IndexerManager {
 }
 
 impl IndexerManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let adapter = IndexerAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_indexer());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

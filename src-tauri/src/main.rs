@@ -25,8 +25,8 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
-use events_manager::EventsManager;
 use consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR};
+use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use indexer_manager::{IndexerConfig, IndexerManager};
@@ -653,7 +653,7 @@ async fn setup_inner(
             .set_last_binaries_update_timestamp(now)
             .await?;
     }
-    
+
     //drop binary resolver to release the lock
     drop(binary_resolver);
 
@@ -1147,8 +1147,8 @@ fn main() {
     let wallet_manager2 = wallet_manager.clone();
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
-    let validator_node_manager = ValidatorNodeManager::new();
-    let indexer_manager = IndexerManager::new();
+    let validator_node_manager = ValidatorNodeManager::new(&mut stats_collector);
+    let indexer_manager = IndexerManager::new(&mut stats_collector);
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
@@ -1458,7 +1458,7 @@ fn main() {
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
-            commands::frontend_ready
+            commands::frontend_ready,
             commands::fetch_registered_tapplets,
             commands::launch_tapplet,
             commands::insert_tapp_registry_db,

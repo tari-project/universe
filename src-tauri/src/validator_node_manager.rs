@@ -11,6 +11,7 @@ use tokio::time::sleep;
 use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 use crate::validator_node_adapter::ValidatorNodeAdapter;
+use crate::ProcessStatsCollectorBuilder;
 
 const LOG_TARGET: &str = "tari::universe::validator_node_manager";
 
@@ -160,9 +161,9 @@ pub struct ValidatorNodeManager {
 }
 
 impl ValidatorNodeManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let adapter = ValidatorNodeAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_validator_node());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
