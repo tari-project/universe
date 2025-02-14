@@ -48,7 +48,6 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
-    audio_enabled: boolean;
     airdrop_tokens?: {
         token: string;
         refreshToken: string;

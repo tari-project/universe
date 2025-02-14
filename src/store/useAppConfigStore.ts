@@ -28,7 +28,6 @@ const initialState: AppConfigStoreState = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
-    audio_enabled: true,
     airdrop_tokens: undefined,
 };
 export const useAppConfigStore = create<AppConfigStoreState>()(() => ({

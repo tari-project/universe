@@ -68,14 +68,6 @@ export const setApplicationLanguage = async (applicationLanguage: Language) => {
             useAppConfigStore.setState({ application_language: prevApplicationLanguage });
         });
 };
-export const setAudioEnabled = async (audioEnabled: boolean) => {
-    useAppConfigStore.setState({ audio_enabled: audioEnabled });
-    invoke('set_audio_enabled', { audioEnabled }).catch((e) => {
-        console.error('Could not set audio enabled', e);
-        setError('Could not change audio enabled');
-        useAppConfigStore.setState({ audio_enabled: !audioEnabled });
-    });
-};
 export const setAutoUpdate = async (autoUpdate: boolean) => {
     useAppConfigStore.setState({ auto_update: autoUpdate });
     invoke('set_auto_update', { autoUpdate }).catch((e) => {
