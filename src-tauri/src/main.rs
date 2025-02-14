@@ -172,7 +172,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
+        let events_manager = match try_read_with_retry(&app_state.events_manager, 6).await {
             Ok(em) => em,
             Err(e) => {
                 let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
@@ -202,7 +202,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
+        let events_manager = match try_read_with_retry(&app_state.events_manager, 6).await {
             Ok(em) => em,
             Err(e) => {
                 let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
@@ -229,7 +229,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            match try_read_with_retry(&app_state.events_manager, 3).await {
+                            match try_read_with_retry(&app_state.events_manager, 6).await {
                                 Ok(em) => {
                                     em.handle_new_block_height(&move_app, latest_updated_block_height).await;
                                 },
@@ -242,7 +242,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                             }
                         }
                     } else {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
+                        match try_read_with_retry(&app_state.events_manager, 6).await {
                             Ok(em) => {
                                 em.handle_base_node_update(&move_app, node_status.clone()).await;
                             },
@@ -258,7 +258,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
                     let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
-                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 3).await {
+                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 6).await {
                         Ok(gm) => gm,
                         Err(e) => {
                             let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
@@ -272,7 +272,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
                         .await
                     {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
+                        match try_read_with_retry(&app_state.events_manager, 6).await {
                             Ok(em) => {
                                 em.handle_gpu_mining_update(&move_app, gpu_status).await;
                             },
@@ -291,7 +291,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
 
-                    match try_read_with_retry(&app_state.events_manager, 3).await {
+                    match try_read_with_retry(&app_state.events_manager, 6).await {
                         Ok(em) => {
                             em.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
                         },
@@ -312,7 +312,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                             + gpu_status.estimated_earnings) as f64,
                     };
 
-                    match try_write_with_retry(&app_state.systemtray_manager, 3).await {
+                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
                         Ok(mut sm) => {
                             sm.update_tray(systray_data);
                         },
