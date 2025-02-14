@@ -37,7 +37,7 @@ jobs:
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           S3CMD: 'cp'
-          S3OPTIONS: ''
+          S3OPTIONS: '--content-type "text/plain; charset=utf-8"'
         run: |
           docker run --rm -t \
             -v ${PWD}:/work/data \
