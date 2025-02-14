@@ -25,7 +25,7 @@ use std::{sync::LazyLock, time::Duration};
 use anyhow::{anyhow, Error};
 use log::info;
 use psp::monitor::{PowerMonitor, PowerState};
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::external_dependencies";
@@ -35,18 +35,21 @@ static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
 pub struct SystemStatus {
     power_monitor: PowerMonitor,
     cancelation_token: RwLock<Option<CancellationToken>>,
-    is_in_sleep_mode: RwLock<bool>,
+    sleep_mode_watcher_sender: watch::Sender<bool>,
+    sleep_mode_watcher_receiver: watch::Receiver<bool>,
 }
 
 impl SystemStatus {
     fn new() -> Self {
         let power_monitor = PowerMonitor::new();
         SystemStatus::start_listener(&power_monitor).expect("Error starting listener");
+        let (sleep_mode_watcher_sender, sleep_mode_watcher_receiver) = watch::channel(false);
 
         Self {
             power_monitor,
             cancelation_token: RwLock::new(None),
-            is_in_sleep_mode: RwLock::new(false),
+            sleep_mode_watcher_sender,
+            sleep_mode_watcher_receiver,
         }
     }
 
@@ -61,23 +64,23 @@ impl SystemStatus {
             match event {
                 PowerState::ScreenLocked => {
                     info!(target: LOG_TARGET, "Screen locked");
-                    *self.is_in_sleep_mode.write().await = true;
+                    self.sleep_mode_watcher_sender.send(true);
                 }
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");
-                    *self.is_in_sleep_mode.write().await = true;
+                    self.sleep_mode_watcher_sender.send(true);
                 }
                 PowerState::Resume => {
                     info!(target: LOG_TARGET, "Resume");
-                    *self.is_in_sleep_mode.write().await = false;
+                    self.sleep_mode_watcher_sender.send(false);
                 }
                 PowerState::ScreenUnlocked => {
                     info!(target: LOG_TARGET, "Screen unlocked");
-                    *self.is_in_sleep_mode.write().await = false;
+                    self.sleep_mode_watcher_sender.send(false);
                 }
                 _ => {
                     info!(target: LOG_TARGET, "Other event");
-                    *self.is_in_sleep_mode.write().await = false;
+                    self.sleep_mode_watcher_sender.send(false);
                 }
             }
         }
@@ -117,8 +120,8 @@ impl SystemStatus {
         Ok(())
     }
 
-    pub async fn check_if_in_sleep_mode(&self) -> bool {
-        *self.is_in_sleep_mode.read().await
+    pub fn get_sleep_mode_watcher(&self) -> watch::Receiver<bool> {
+        self.sleep_mode_watcher_receiver.clone()
     }
 
     pub fn current() -> &'static SystemStatus {

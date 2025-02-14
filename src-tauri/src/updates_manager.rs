@@ -122,7 +122,7 @@ impl UpdatesManager {
                 *self.update.write().await = Some(update);
                 let is_auto_update = self.config.read().await.auto_update();
 
-                let is_screen_locked = SystemStatus::current().check_if_in_sleep_mode().await;
+                let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
 
                 if is_screen_locked && is_auto_update {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");

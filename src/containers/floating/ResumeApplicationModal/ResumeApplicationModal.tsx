@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'motion/react';
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useRef } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
@@ -10,14 +10,27 @@ import { startMining, stopMining } from '@app/store/miningStoreActions';
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const { t } = useTranslation('components');
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
     const appResumePayload = useAppStateStore((state) => state.appResumePayload);
     const showModal = appResumePayload?.is_resuming;
+    const wasMiningInitiatedRef = useRef(isMiningInitiated);
+
+    console.log('wasMiningInitiatedRef', wasMiningInitiatedRef.current);
 
     useEffect(() => {
-        if (isMiningInitiated && !appResumePayload?.is_resuming) {
-            startMining();
-        } else if (!isMiningInitiated && !appResumePayload?.is_resuming) {
+        if (appResumePayload?.is_resuming) {
+            setMiningControlsEnabled(false);
+        }
+
+        if (isMiningInitiated && appResumePayload?.is_resuming) {
+            wasMiningInitiatedRef.current = true;
             stopMining();
+        }
+
+        if (wasMiningInitiatedRef.current && !appResumePayload?.is_resuming) {
+            console.log('wasMiningInitiatedRef in mining start', wasMiningInitiatedRef.current);
+            setMiningControlsEnabled(true);
+            startMining();
         }
     }, [isMiningInitiated, appResumePayload?.is_resuming]);
 

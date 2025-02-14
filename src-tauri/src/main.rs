@@ -906,23 +906,26 @@ async fn setup_inner(
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
-        let mut last_state = SystemStatus::current().check_if_in_sleep_mode().await;
-        let mut interval: time::Interval = time::interval(Duration::from_secs(5));
+        let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+        let mut last_state = *receiver.borrow();
         loop {
-            interval.tick().await;
-            let current_state = SystemStatus::current().check_if_in_sleep_mode().await;
+            if receiver.changed().await.is_ok() {
+                let current_state = *receiver.borrow();
 
-            if last_state && !current_state {
-                info!(target: LOG_TARGET, "System is no longer in sleep mode");
-                let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                if last_state && !current_state {
+                    info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                    let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                }
+
+                if !last_state && current_state {
+                    info!(target: LOG_TARGET, "System entered sleep mode");
+                    let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+                }
+
+                last_state = current_state;
+            } else {
+                error!(target: LOG_TARGET, "Failed to receive sleep mode change");
             }
-
-            if !last_state && current_state {
-                info!(target: LOG_TARGET, "System entered sleep mode");
-                let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
-            }
-
-            last_state = current_state;
         }
     });
 
