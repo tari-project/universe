@@ -195,6 +195,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
+
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
@@ -224,7 +225,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
                     let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
-                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 3).await {
+                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 6).await {
                         Ok(gm) => gm,
                         Err(e) => {
                             let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
@@ -258,7 +259,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                             + gpu_status.estimated_earnings) as f64,
                     };
 
-                    match try_write_with_retry(&app_state.systemtray_manager, 3).await {
+                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
                         Ok(mut sm) => {
                             sm.update_tray(systray_data);
                         },
