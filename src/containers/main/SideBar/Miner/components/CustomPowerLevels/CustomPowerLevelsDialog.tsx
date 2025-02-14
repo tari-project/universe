@@ -18,7 +18,7 @@ import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { changeMiningMode } from '@app/store/miningStoreActions.ts';
+import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 
 enum FormFields {
     CPU = 'cpu',

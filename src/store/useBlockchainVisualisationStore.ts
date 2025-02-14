@@ -7,6 +7,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
+import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -59,7 +60,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
     if (canAnimate) {
-        useMiningStore.getState().setMiningControlsEnabled(false);
+        setMiningControlsEnabled(false);
         const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
@@ -71,7 +72,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
-            useMiningStore.getState().setMiningControlsEnabled(true);
+            setMiningControlsEnabled(true);
         }, 2000);
     } else {
         await useWalletStore.getState().refreshCoinbaseTransactions();
@@ -84,7 +85,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
-        useMiningStore.getState().setMiningControlsEnabled(false);
+        setMiningControlsEnabled(false);
         setAnimationState('fail');
         if (failTimeout) {
             clearTimeout(failTimeout);
@@ -92,7 +93,7 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
         failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
-            useMiningStore.getState().setMiningControlsEnabled(true);
+            setMiningControlsEnabled(true);
         }, 1000);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
@@ -100,12 +101,12 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
 };
 
 export const handleWinRecap = (recapData: Recap) => {
-    useMiningStore.getState().setMiningControlsEnabled(false);
+    setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
     useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
     setTimeout(() => {
-        useMiningStore.getState().setMiningControlsEnabled(true);
+        setMiningControlsEnabled(true);
         useBlockchainVisualisationStore.setState({ recapData: undefined, recapIds: [] });
     }, 2000);
 };

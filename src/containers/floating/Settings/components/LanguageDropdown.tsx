@@ -3,7 +3,8 @@ import { Language, LanguageList, resolveI18nLanguage } from '@app/i18initializer
 import styled from 'styled-components';
 import i18n from 'i18next';
 import * as m from 'motion/react-m';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { setApplicationLanguage } from '@app/store';
+import { memo } from 'react';
 
 type LanguageOption = SelectOption;
 
@@ -18,9 +19,7 @@ const Wrapper = styled(m.div)`
     position: relative;
 `;
 
-export default function LanguageDropdown() {
-    const setApplicationLanguage = useAppConfigStore((s) => s.setApplicationLanguage);
-
+const LanguageDropdown = memo(function LanguageDropdown() {
     return (
         <Wrapper>
             <Select
@@ -32,4 +31,6 @@ export default function LanguageDropdown() {
             />
         </Wrapper>
     );
-}
+});
+
+export default LanguageDropdown;

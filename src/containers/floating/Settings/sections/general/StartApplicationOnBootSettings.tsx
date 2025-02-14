@@ -9,14 +9,11 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
+import { setShouldAutoLaunch } from '@app/store';
 
 export default function StartApplicationOnBootSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-
-    const { shouldAutoLaunch, setShouldAutoLaunch } = useAppConfigStore((s) => ({
-        shouldAutoLaunch: s.should_auto_launch,
-        setShouldAutoLaunch: s.setShouldAutoLaunch,
-    }));
+    const shouldAutoLaunch = useAppConfigStore((s) => s.should_auto_launch);
 
     return (
         <SettingsGroupWrapper>

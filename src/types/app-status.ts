@@ -48,6 +48,10 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    airdrop_tokens?: {
+        token: string;
+        refreshToken: string;
+    };
 }
 
 export enum ExternalDependencyStatus {

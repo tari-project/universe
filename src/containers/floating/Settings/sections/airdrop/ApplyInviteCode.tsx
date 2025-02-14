@@ -8,94 +8,41 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Input } from '@app/components/elements/inputs/Input';
 
 import { v4 as uuidv4 } from 'uuid';
-import { setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
+import { useAirdropStore } from '@app/store/useAirdropStore';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { open } from '@tauri-apps/plugin-shell';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { setAllowTelemetry, setAuthUuid, useAppConfigStore } from '@app/store';
+import useFetchAirdropToken from '@app/hooks/airdrop/stateHelpers/useFetchAirdropToken.ts';
 
 export const ApplyInviteCode = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
-
+    const [linkOpened, setLinkOpened] = useState(false);
     const [claimCode, setClaimCode] = useState('');
     const [loading, setLoading] = useState(false);
 
-    const { authUuid, setAuthUuid, backendInMemoryConfig, setFlareAnimationType } = useAirdropStore();
+    useFetchAirdropToken({ canListen: linkOpened });
+    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropUrl);
 
-    const handleAuth = useCallback(() => {
+    const handleAuth = useCallback(async () => {
         const token = uuidv4();
-        if (backendInMemoryConfig?.airdropUrl) {
+        if (airdropUrl) {
             setLoading(true);
-            const refUrl = `${backendInMemoryConfig?.airdropUrl}/auth?tauri=${token}${claimCode ? `&universeReferral=${claimCode}` : ''}`;
-
-            setAllowTelemetry(true).then(() => {
-                setAuthUuid(token);
-                void open(refUrl);
+            const refUrl = `${airdropUrl}/auth?tauri=${token}${claimCode ? `&universeReferral=${claimCode}` : ''}`;
+            if (!allowTelemetry) {
+                await setAllowTelemetry(true);
+            }
+            setAuthUuid(token);
+            open(refUrl).then(() => {
+                setLinkOpened(true);
             });
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [backendInMemoryConfig?.airdropUrl, claimCode]);
-
-    const handleToken = useCallback(() => {
-        if (authUuid) {
-            fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/get-token/${authUuid}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    if (!data.error) {
-                        setAirdropTokens(data)
-                            .then(() => {
-                                if (data.installReward) {
-                                    setFlareAnimationType('FriendAccepted');
-                                }
-                                return true;
-                            })
-                            .catch(() => {
-                                return false;
-                            });
-                    }
-                })
-                .catch((e) => {
-                    console.error('Backend memory config error:', e);
-                    return false;
-                });
-
-            return false;
-        }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, setFlareAnimationType]);
-
-    useEffect(() => {
-        if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
-            const interval = setInterval(() => {
-                const canClear = handleToken();
-                if (canClear) {
-                    clearInterval(interval);
-                }
-            }, 1000);
-            const timeout = setTimeout(
-                () => {
-                    clearInterval(interval);
-                    setAuthUuid('');
-                },
-                1000 * 60 * 5
-            );
-            return () => {
-                clearInterval(interval);
-                clearTimeout(timeout);
-                setLoading(false);
-            };
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, {}]);
+    }, [allowTelemetry, airdropUrl, claimCode]);
 
     return (
         <SettingsGroupWrapper>

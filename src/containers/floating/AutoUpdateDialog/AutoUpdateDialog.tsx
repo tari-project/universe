@@ -11,6 +11,7 @@ import { ButtonsWrapper } from './AutoUpdateDialog.styles';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { invoke } from '@tauri-apps/api/core';
+import { setDialogToShow } from '@app/store';
 
 interface DownloadProgressPayload {
     event_type: 'download_progress';
@@ -26,7 +27,6 @@ interface AskForUpdatePayload {
 const AutoUpdateDialog = memo(function AutoUpdateDialog() {
     const { t } = useTranslation('setup-view', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'autoUpdate');
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const [version, setVersion] = useState('');
     const [downloaded, setDownloaded] = useState(0);
     const [contentLength, setContentLength] = useState(0);
@@ -61,13 +61,11 @@ const AutoUpdateDialog = memo(function AutoUpdateDialog() {
         return () => {
             unlistenPromise.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
     const handleClose = useCallback(() => {
         console.info('Update declined');
         setDialogToShow(null);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const handleUpdate = useCallback(() => {

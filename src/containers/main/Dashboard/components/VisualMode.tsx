@@ -12,6 +12,7 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
+import { setVisualMode } from '@app/store';
 
 export const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -19,7 +20,6 @@ export const ErrorTypography = styled(Typography)(({ theme }) => ({
 
 function VisualMode() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const setVisualMode = useAppConfigStore((s) => s.setVisualMode);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
 
@@ -29,7 +29,7 @@ function VisualMode() {
             canvasElement.style.display = visualMode ? 'none' : 'block';
         }
         setVisualMode(!visualMode);
-    }, [setVisualMode, visualMode]);
+    }, [visualMode]);
 
     return (
         <SettingsGroupWrapper>

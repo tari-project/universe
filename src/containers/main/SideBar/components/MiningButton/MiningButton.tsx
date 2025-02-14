@@ -11,7 +11,7 @@ import ButtonOrbitAnimation from '../../Miner/components/ButtonOrbitAnimation.ts
 import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { startMining, stopMining } from '@app/store/miningStoreActions.ts';
+import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',

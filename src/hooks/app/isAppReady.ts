@@ -1,6 +1,6 @@
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useState } from 'react';
-import { setSetupComplete } from '@app/store/appStateStore.ts';
+import { setSetupComplete } from '@app/store/actions/appStateStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
 
 export const useIsAppReady = () => {

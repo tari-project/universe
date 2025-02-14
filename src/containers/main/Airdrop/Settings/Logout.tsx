@@ -10,11 +10,11 @@ import {
 
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { Trans, useTranslation } from 'react-i18next';
+import { handleAirdropLogout } from '@app/store';
 
 export default function AirdropLogout() {
     const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
 
-    const logout = useAirdropStore((state) => state.logout);
     const { authUuid, userDetails } = useAirdropStore();
     if (!userDetails && !authUuid) return null;
     return (
@@ -34,7 +34,7 @@ export default function AirdropLogout() {
                     </Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <Button color="warning" size="small" onClick={logout}>
+                    <Button color="warning" size="small" onClick={() => handleAirdropLogout()}>
                         {t('disconnect')}
                     </Button>
                 </SettingsGroupAction>
