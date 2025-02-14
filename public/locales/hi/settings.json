@@ -51,6 +51,7 @@
   "importing-wallet-copy": "एक बार आपका वॉलेट आयात हो जाने पर Tari Universe स्वचालित रूप से पुनः आरंभ होगा",
   "invalid-seed-words": "24 शब्दों को स्पेस से अलग करके दर्ज करें",
   "invalid-stats-server-port": "अमान्य सांख्यिकी सर्वर पोर्ट",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",

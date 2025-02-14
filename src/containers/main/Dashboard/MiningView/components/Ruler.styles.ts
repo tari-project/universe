@@ -3,7 +3,6 @@ import * as m from 'motion/react-m';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled.div`
-    overflow: hidden;
     top: 40px;
     width: 60vw;
     display: flex;
