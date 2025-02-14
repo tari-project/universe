@@ -14,15 +14,16 @@ import { useCallback, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { ActiveTapplet, DevTapplet } from '@app/types/ootle/tapplet.ts';
+import { ActiveTapplet, DevTapplet, TappletConfig } from '@app/types/ootle/tapplet.ts';
 import { Count, StyledForm, StyledInput, StyledStack } from './OotleSettings.styles.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}?$/;
+const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle', { useSuspense: false });
     const initialDevTappEndpoint = '';
-
+    const setError = useAppStateStore((s) => s.setError);
     const { devTapplets, setActiveTapp, addDevTapp, deleteDevTapp, getDevTapps } = useTappletsStore();
     const { isSettingsOpen, setIsSettingsOpen } = useAppStateStore();
     const devTappletsCount = devTapplets?.length || 0;
@@ -68,22 +69,28 @@ export default function TappletsDev() {
         async (tapplet: DevTapplet) => {
             try {
                 // const tapplet = await invoke('launch_tapplet', { tappletId: id });
-                console.log('SET ACTIVE TAP', tapplet);
+                console.info('SET ACTIVE TAP', tapplet);
+                const resp = await fetch(`${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`);
+                if (!resp.ok) return;
+                const config: TappletConfig = await resp.json();
+                console.info('Dev Tapplet config', config);
+                if (!config) return;
                 const activeTapplet: ActiveTapplet = {
                     tapplet_id: tapplet.id,
-                    version: '0.0.1', //TODO
+                    version: config.version,
                     display_name: tapplet.display_name,
                     source: tapplet.endpoint,
-                    permissions: undefined,
-                    supportedChain: [],
+                    permissions: config.permissions,
+                    supportedChain: config.supportedChain,
                 };
                 setActiveTapp(activeTapplet);
                 setIsSettingsOpen(!isSettingsOpen);
             } catch (e) {
-                console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+                setError(`Error while launching dev tapplet: ${e}`);
+                console.error(`Error while launching dev tapplet: ${e}`);
             }
         },
-        [isSettingsOpen, setActiveTapp, setIsSettingsOpen]
+        [isSettingsOpen, setActiveTapp, setError, setIsSettingsOpen]
     );
 
     return (

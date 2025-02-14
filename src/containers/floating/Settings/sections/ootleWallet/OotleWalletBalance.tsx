@@ -11,6 +11,7 @@ import { CardContainer, ConnectionIcon } from '../../components/Settings.styles'
 import { CardComponent } from '../../components/Card.component';
 import SelectAccount from './SelectOotleAccount';
 import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
+import { shortenSubstateAddress } from '@app/utils';
 
 const OotleWalletBalance = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
@@ -76,16 +77,20 @@ const OotleWalletBalance = () => {
                 </SettingsGroup>
                 <SettingsGroup>
                     <SettingsGroupContent>
-                        <Stack>
+                        <Stack direction="column" justifyContent="space-between" alignItems="left">
                             <CardContainer>
                                 {Object.entries(ootleAccount?.resources || []).map(([key, value]) => (
                                     <CardComponent
                                         key={key}
-                                        heading={`${value.token_symbol} (${value.resource_address})`}
+                                        heading={`${value.token_symbol}`}
                                         labels={[
                                             {
                                                 labelText: 'balance',
                                                 labelValue: value.balance || t('unknown', { ns: 'common' }),
+                                            },
+                                            {
+                                                labelText: 'address',
+                                                labelValue: shortenSubstateAddress(value.resource_address),
                                             },
                                         ]}
                                     />

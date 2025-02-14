@@ -23,15 +23,16 @@ export default function ActiveTappletView() {
             const resp = await fetch(`${tapplet?.source}/${TAPPLET_CONFIG_FILE}`);
             if (!resp.ok) return;
             const config: TappletConfig = await resp.json();
+            console.info('Dev Tapplet config', config);
             if (!config) return;
             if (!tappProvider && tapplet) {
-                // assign permissions
-                tapplet.permissions = config.permissions;
-                tapplet.supportedChain = config.supportedChain;
-                tapplet.version = config.version;
-                console.info('Dev Tapplet provider not found - setting new one: ', tapplet);
                 setTappletProvider(config.packageName, tapplet);
-                setActiveTapp(tapplet);
+                // // assign permissions
+                // tapplet.permissions = config.permissions;
+                // tapplet.supportedChain = config.supportedChain;
+                // tapplet.version = config.version;
+                // console.info('Dev Tapplet provider not found - setting new one: ', tapplet);
+                // setActiveTapp(tapplet);
             }
             if (!config.permissions) {
                 // TODO error translation
@@ -42,7 +43,7 @@ export default function ActiveTappletView() {
             setError(e as string);
             console.error(e);
         }
-    }, [setActiveTapp, setError, setTappletProvider, tappProvider, tapplet]);
+    }, [setError, setTappletProvider, tappProvider, tapplet]);
 
     useEffect(() => {
         fetchTappConfig();
