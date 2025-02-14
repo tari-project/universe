@@ -16,7 +16,6 @@ export {
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
-    setAudioEnabled,
     setAutoUpdate,
     setCpuMiningEnabled,
     setCustomStatsServerPort,
