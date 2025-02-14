@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 
 import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
 
-import { fetchAppConfig } from '../store/useAppConfigStore.ts';
+import { fetchAppConfig, fetchAudioFeatureEnabled } from '../store/useAppConfigStore.ts';
 import setupLogger from '../utils/shared-logger.ts';
 import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
@@ -25,6 +25,7 @@ export default function AppEffects() {
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
+            await fetchAudioFeatureEnabled();
             await setMiningNetwork();
         }
         void initialize();

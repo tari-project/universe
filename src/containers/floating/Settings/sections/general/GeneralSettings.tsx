@@ -10,8 +10,10 @@ import AutoUpdate from './AutoUpdate.tsx';
 import PreReleaseSettings from './PreReleaseSettings.tsx';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
 import AudioSettings from './AudioSettings.tsx';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export const GeneralSettings = () => {
+    const isAudioFeatureEnabled = useAppConfigStore.getState().isAudioFeatureEnabled;
     return (
         <>
             <StartApplicationOnBootSettings />
@@ -20,7 +22,7 @@ export const GeneralSettings = () => {
             <AirdropPermissionSettings />
             <LanguageSettings />
             <VisualMode />
-            <AudioSettings />
+            {isAudioFeatureEnabled ? <AudioSettings /> : null}
             <ThemeSettings />
             <LogsSettings />
             <SettingsGroupWrapper $advanced>

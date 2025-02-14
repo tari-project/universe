@@ -225,6 +225,11 @@ pub async fn download_and_start_installer(
 }
 
 #[tauri::command]
+pub async fn is_audio_feature_enabled() -> bool {
+    return cfg!(feature = "audio");
+}
+
+#[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
     stop_all_processes(app.clone(), true).await?;
 

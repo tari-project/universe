@@ -98,4 +98,5 @@ declare module '@tauri-apps/api/core' {
     ): Promise<ApplicationsVersions>;
     function invoke(param: 'get_audio_enabled'): Promise<boolean>;
     function invoke(param: 'set_audio_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'is_audio_feature_enabled'): Promise<boolean>;
 }
