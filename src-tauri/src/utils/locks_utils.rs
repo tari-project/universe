@@ -27,7 +27,7 @@ use tokio::{
     time::sleep,
 };
 
-const LOCK_RETRY_DELAY: Duration = Duration::from_millis(100);
+const LOCK_RETRY_DELAY: Duration = Duration::from_millis(500);
 
 pub async fn try_read_with_retry<T>(
     lock: &RwLock<T>,
