@@ -7,4 +7,3 @@ export const ALREADY_FETCHING = {
     METRICS,
     BALANCE,
 };
-export const IGNORE_FETCHING = Object.values(ALREADY_FETCHING);

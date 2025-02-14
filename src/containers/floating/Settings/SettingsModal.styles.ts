@@ -38,29 +38,6 @@ export const ContentContainer = styled.div`
     position: relative;
 `;
 
-const transition = {
-    ease: 'linear',
-    duration: 0.25,
-};
-
-export const variants = {
-    initial: {
-        x: -15,
-        opacity: 0,
-        transition,
-    },
-    exit: {
-        x: 20,
-        opacity: 0,
-        transition,
-    },
-    visible: {
-        x: 0,
-        opacity: 1,
-        transition,
-    },
-};
-
 export const SectionWrapper = styled.div`
     max-width: 100%;
     display: flex;

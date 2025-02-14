@@ -1,8 +1,8 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
-export const SLIDER_WIDTH = 570;
-export const SLIDER_THUMB_WIDTH = 30;
+const SLIDER_WIDTH = 570;
+const SLIDER_THUMB_WIDTH = 30;
 
 export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;

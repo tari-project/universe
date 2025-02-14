@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes } from 'react';
 import styled, { css } from 'styled-components';
 import { ButtonSize } from './button.types.ts';
 
-export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     size?: ButtonSize;
 }
 interface StyleProps {

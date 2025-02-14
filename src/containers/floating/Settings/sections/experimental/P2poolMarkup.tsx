@@ -18,7 +18,7 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
     // Prevent jumping when the error message appears
     minHeight: '14px',
