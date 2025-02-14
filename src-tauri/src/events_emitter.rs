@@ -103,6 +103,7 @@ impl EventsEmitter {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn emit_gpu_devices_update(
         app_handle: &AppHandle,
         gpu_public_devices: Vec<PublicDeviceProperties>,

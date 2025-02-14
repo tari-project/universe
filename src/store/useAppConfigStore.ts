@@ -157,9 +157,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        const totalGpuDevices = metricsState.gpu_devices.length;
-        const excludedDevices = miningState.excludedGpuDevices.length;
-        if (metricsState.cpu_mining_status.is_mining || metricsState.cpu_mining_status.is_mining) {
+        const gpu_devices = metricsState.gpu_devices;
+        if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
             await pauseMining();
         }
 
@@ -170,8 +169,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             } else {
                 void stopMining();
             }
-            if (enabled && excludedDevices === totalGpuDevices) {
-                miningState.setExcludedGpuDevice([]);
+            if (enabled && gpu_devices.every((device) => device.settings.is_excluded)) {
+                for (const device of gpu_devices) {
+                    miningState.toggleDeviceExclusion(device.device_index, false);
+                }
             }
         } catch (e) {
             const appStateStore = useAppStateStore.getState();

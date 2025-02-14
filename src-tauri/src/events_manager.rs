@@ -124,6 +124,7 @@ impl EventsManager {
         EventsEmitter::emit_connected_peers_update(app, connected_peers).await;
     }
 
+    #[allow(dead_code)]
     pub async fn handle_gpu_devices_update(
         &self,
         app: &AppHandle,

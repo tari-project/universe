@@ -178,22 +178,22 @@ export interface DeviceStatus {
     is_reader_implemented: boolean;
 }
 
-export interface DeviceParameters {
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
+export interface GpuStatus {
+    recommended_grid_size: number;
+    recommended_block_size: number;
+    max_grid_size: number;
 }
-export interface PublicDeviceParameters {
-    vendor: HardwareVendor;
-    name: string;
-    status: DeviceStatus;
-    parameters?: DeviceParameters;
+
+export interface GpuSettings {
+    is_excluded: boolean;
+    is_available: boolean;
 }
-export interface HardwareParameters {
-    label: string;
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
+
+export interface GpuDevice {
+    device_name: string;
+    device_index: number;
+    status: GpuStatus;
+    settings: GpuSettings;
 }
 
 export interface CpuMinerStatus {
