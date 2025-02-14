@@ -1,4 +1,4 @@
-import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
+import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore';
 import {
     ButtonWrapper,
     EarningsWrapper,
@@ -8,6 +8,7 @@ import {
     HoverWrapper,
     InfoWrapper,
     LeftContent,
+    PaddingWrapper,
     ReplayButton,
     SquadIconWrapper,
     Wrapper,
@@ -17,8 +18,8 @@ import { useTheme } from 'styled-components';
 import { TariSvg } from '@app/assets/icons/tari.tsx';
 
 import { useTranslation } from 'react-i18next';
-import { useCallback, useMemo, useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
@@ -53,8 +54,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
 
-    const handleWinReplay = useBlockchainVisualisationStore((s) => s.handleWinReplay);
-
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
@@ -66,10 +65,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const { colour, colour1, colour2 } = useMemo(() => {
         return randomGradientColours[getRandomInt(9)];
     }, []);
-
-    const handleReplay = useCallback(() => {
-        handleWinReplay(item);
-    }, [handleWinReplay, item]);
 
     const itemTitle = `${t('block')} #${item.mined_in_block_height}`;
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
@@ -88,52 +83,54 @@ export default function HistoryItem({ item }: HistoryItemProps) {
     const isLoggedIn = !!airdropTokens;
     const showShareButton = sharingEnabled && isLoggedIn;
     return (
-        <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
-            <AnimatePresence>
-                {hovering && (
-                    <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                        <ButtonWrapper
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: 5 }}
-                        >
-                            {showShareButton && (
-                                <FlexButton onClick={handleShareClick}>
-                                    {t('share.history-item-button')}
-                                    <GemPill>
-                                        <span>{gemsValue}</span>
-                                        <GemImage src={gemImage} alt="" />
-                                    </GemPill>
-                                </FlexButton>
-                            )}
-                            <ReplayButton onClick={handleReplay}>
-                                <ReplaySVG />
-                            </ReplayButton>
-                        </ButtonWrapper>
-                    </HoverWrapper>
-                )}
-            </AnimatePresence>
-            <LeftContent>
-                <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
-                    <TariSvg />
-                </SquadIconWrapper>
-                <InfoWrapper>
-                    {item.mined_in_block_height ? (
-                        <>
-                            <Typography>{itemTitle}</Typography>
-                            <Typography variant="p">{itemTime}</Typography>
-                        </>
-                    ) : (
-                        <Typography>{itemTime}</Typography>
+        <PaddingWrapper>
+            <Wrapper onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)}>
+                <AnimatePresence>
+                    {hovering && (
+                        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            <ButtonWrapper
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 5 }}
+                            >
+                                {showShareButton && (
+                                    <FlexButton onClick={handleShareClick}>
+                                        {t('share.history-item-button')}
+                                        <GemPill>
+                                            <span>{gemsValue}</span>
+                                            <GemImage src={gemImage} alt="" />
+                                        </GemPill>
+                                    </FlexButton>
+                                )}
+                                <ReplayButton onClick={() => handleWinReplay(item)}>
+                                    <ReplaySVG />
+                                </ReplayButton>
+                            </ButtonWrapper>
+                        </HoverWrapper>
                     )}
-                </InfoWrapper>
-            </LeftContent>
-            <EarningsWrapper>
-                <Typography variant="h5" style={{ color: theme.palette.success.main }}>
-                    {`+ `}
-                </Typography>
-                <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
-            </EarningsWrapper>
-        </Wrapper>
+                </AnimatePresence>
+                <LeftContent>
+                    <SquadIconWrapper $colour={colour} $colour1={colour1} $colour2={colour2}>
+                        <TariSvg />
+                    </SquadIconWrapper>
+                    <InfoWrapper>
+                        {item.mined_in_block_height ? (
+                            <>
+                                <Typography>{itemTitle}</Typography>
+                                <Typography variant="p">{itemTime}</Typography>
+                            </>
+                        ) : (
+                            <Typography>{itemTime}</Typography>
+                        )}
+                    </InfoWrapper>
+                </LeftContent>
+                <EarningsWrapper>
+                    <Typography variant="h5" style={{ color: theme.palette.success.main }}>
+                        {`+ `}
+                    </Typography>
+                    <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
+                </EarningsWrapper>
+            </Wrapper>
+        </PaddingWrapper>
     );
 }

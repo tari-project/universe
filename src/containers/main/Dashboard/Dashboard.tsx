@@ -9,7 +9,7 @@ export default function Dashboard() {
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);
 
     return (
-        <DashboardContentContainer layout $ootleModeOn={ootleMode}>
+        <DashboardContentContainer>
             {ootleMode && activeTapplet ? <ActiveTappletView /> : <MiningView />}
         </DashboardContentContainer>
     );

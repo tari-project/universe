@@ -194,6 +194,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "arboard"
+version = "3.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df099ccb16cd014ff054ac1bf392c67feeef57164b05c42f037cd40f5d4357f4"
+dependencies = [
+ "clipboard-win",
+ "core-graphics 0.23.2",
+ "image",
+ "log",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
+ "parking_lot 0.12.3",
+ "windows-sys 0.48.0",
+ "x11rb",
+]
+
+[[package]]
 name = "arc-swap"
 version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -477,15 +495,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "async-semaphore"
-version = "1.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "538c756e85eb6ffdefaec153804afb6da84b033e2e5ec3e9d459c34b4bf4d3f6"
-dependencies = [
- "event-listener 2.5.3",
 ]
 
 [[package]]
@@ -1215,33 +1224,6 @@ dependencies = [
 
 [[package]]
 name = "cargo_metadata"
-version = "0.14.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4acbb09d9ee8e23699b9634375c72795d095bf268439da88562cf9b501f181fa"
-dependencies = [
- "camino",
- "cargo-platform",
- "semver",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "cargo_metadata"
-version = "0.18.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d886547e41f740c616ae73108f6eb70afe6d940c7bc697cb30f13daec073037"
-dependencies = [
- "camino",
- "cargo-platform",
- "semver",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "cargo_metadata"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8769706aad5d996120af43197bf46ef6ad0fda35216b4505f926a365a232d924"
@@ -1251,7 +1233,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
@@ -1295,9 +1277,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.2.9"
+version = "1.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8293772165d9345bdaaa39b45b2109591e63fe5e6fbc23c6ff930a048aa310b"
+checksum = "a012a0df96dd6d06ba9a1b29d6402d1a5d77c6befd2566afdc26e10603dc93d7"
 dependencies = [
  "jobserver",
  "libc",
@@ -1482,23 +1464,6 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "3.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ea181bf566f71cb9a5d17a59e1871af638180a18fb0035c92ae62b705207123"
-dependencies = [
- "atty",
- "bitflags 1.3.2",
- "clap_derive 3.2.25",
- "clap_lex 0.2.4",
- "indexmap 1.9.3",
- "once_cell",
- "strsim 0.10.0",
- "termcolor",
- "textwrap 0.16.1",
-]
-
-[[package]]
-name = "clap"
 version = "4.5.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8eb5e908ef3a6efbe1ed62520fb7287959888c88485abe072543190ecc66783"
@@ -1530,19 +1495,6 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "3.2.25"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae6371b8bdc8b7d3959e9cf7b22d4435ef3e79e138688421ec654acf8c81b008"
-dependencies = [
- "heck 0.4.1",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "clap_derive"
 version = "4.5.24"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54b755194d6389280185988721fffba69495eed5ee9feeee9a599b53db80318c"
@@ -1555,27 +1507,27 @@ dependencies = [
 
 [[package]]
 name = "clap_lex"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2850f2f5a82cbf437dd5af4d49848fbdfc27c157c3d010345776f952765261c5"
-dependencies = [
- "os_str_bytes",
-]
-
-[[package]]
-name = "clap_lex"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f46ad14479a25103f283c0f10005961cf086d8dc42205bb44c46ac563475dca6"
 
 [[package]]
 name = "clap_mangen"
-version = "0.2.26"
+version = "0.2.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "724842fa9b144f9b89b3f3d371a89f3455eea660361d13a554f68f8ae5d6c13a"
+checksum = "acbfe6ac42a2438d0968beba18e3c35cacf16b0c25310bc22b1f5f3cffff09f4"
 dependencies = [
  "clap 4.5.26",
  "roff",
+]
+
+[[package]]
+name = "clipboard-win"
+version = "5.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "15efe7a882b08f34e38556b14f2fb3daa98769d06c7f0c1b076dfd0d983bc892"
+dependencies = [
+ "error-code",
 ]
 
 [[package]]
@@ -1588,7 +1540,7 @@ dependencies = [
  "block",
  "cocoa-foundation",
  "core-foundation 0.10.0",
- "core-graphics",
+ "core-graphics 0.24.0",
  "foreign-types 0.5.0",
  "libc",
  "objc",
@@ -1603,7 +1555,7 @@ dependencies = [
  "bitflags 2.7.0",
  "block",
  "core-foundation 0.10.0",
- "core-graphics-types",
+ "core-graphics-types 0.2.0",
  "libc",
  "objc",
 ]
@@ -1750,14 +1702,38 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
 name = "core-graphics"
+version = "0.23.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081"
+dependencies = [
+ "bitflags 1.3.2",
+ "core-foundation 0.9.4",
+ "core-graphics-types 0.1.3",
+ "foreign-types 0.5.0",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics"
 version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fa95a34622365fa5bbf40b20b75dba8dfa8c94c734aea8ac9a5ca38af14316f1"
 dependencies = [
  "bitflags 2.7.0",
  "core-foundation 0.10.0",
- "core-graphics-types",
+ "core-graphics-types 0.2.0",
  "foreign-types 0.5.0",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics-types"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf"
+dependencies = [
+ "bitflags 1.3.2",
+ "core-foundation 0.9.4",
  "libc",
 ]
 
@@ -1907,7 +1883,7 @@ dependencies = [
  "crash-context",
  "libc",
  "mach2",
- "parking_lot",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -2098,17 +2074,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "d3ne"
-version = "0.8.0-pre.0"
-source = "git+https://github.com/stringhandler/d3ne-rs.git?tag=v0.8.0-pre.3#05cd46e3d1cd2a23f37e9eba9a3b965bfc3303a8"
-dependencies = [
- "anyhow",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "darling"
 version = "0.20.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2128,7 +2093,7 @@ dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
- "strsim 0.11.1",
+ "strsim",
  "syn 2.0.96",
 ]
 
@@ -2144,56 +2109,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "dashmap"
-version = "5.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "978747c1d849a7d2ee5e8adc0159961c48fb7e5db2f06af6723b80123bb53856"
-dependencies = [
- "cfg-if",
- "hashbrown 0.14.5",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
-name = "dashmap"
-version = "6.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
-dependencies = [
- "cfg-if",
- "crossbeam-utils",
- "hashbrown 0.14.5",
- "lock_api",
- "once_cell",
- "parking_lot_core",
-]
-
-[[package]]
 name = "data-encoding"
 version = "2.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8566979429cf69b49a5c740c60791108e86440e8be149bbea4fe54d2c32d6e2"
 
 [[package]]
-name = "data-encoding-macro"
-version = "0.1.15"
+name = "dbus"
+version = "0.9.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1559b6cba622276d6d63706db152618eeb15b89b3e4041446b05876e352e639"
+checksum = "1bb21987b9fb1613058ba3843121dd18b163b254d8a6e797e144cbac14d96d1b"
 dependencies = [
- "data-encoding",
- "data-encoding-macro-internal",
+ "libc",
+ "libdbus-sys",
+ "winapi",
 ]
 
 [[package]]
-name = "data-encoding-macro-internal"
-version = "0.1.13"
+name = "dbus-secret-service"
+version = "4.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "332d754c0af53bc87c108fed664d121ecf59207ec4196041f04d6ab9002ad33f"
+checksum = "b42a16374481d92aed73ae45b1f120207d8e71d24fb89f357fadbd8f946fd84b"
 dependencies = [
- "data-encoding",
- "syn 1.0.109",
+ "dbus",
+ "futures-util",
+ "num",
+ "once_cell",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -2481,15 +2423,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dlib"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "330c60081dcc4c72131f8eb70510f1ac07223e5d4163db481a04a0befcffa412"
-dependencies = [
- "libloading 0.8.6",
-]
-
-[[package]]
 name = "dlopen2"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2510,15 +2443,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "dlv-list"
-version = "0.5.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "442039f5147480ba31067cb00ada1adae6892028e40e45fc5de7b7df6dcc1b5f"
-dependencies = [
- "const-random",
 ]
 
 [[package]]
@@ -2709,26 +2633,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "enum-iterator"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4eeac5c5edb79e4e39fe8439ef35207780a11f69c52cbe424ce3dfad4cb78de6"
-dependencies = [
- "enum-iterator-derive",
-]
-
-[[package]]
-name = "enum-iterator-derive"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c134c37760b27a871ba422106eedbb8247da973a09e82558bf26d619c882b159"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "enumflags2"
 version = "0.7.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2747,40 +2651,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "enumset"
-version = "1.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d07a4b049558765cef5f0c1a273c3fc57084d768b44d2f98127aef4cceb17293"
-dependencies = [
- "enumset_derive",
-]
-
-[[package]]
-name = "enumset_derive"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59c3b24c345d8c314966bdc1832f6c2635bfcce8e7cf363bd115987bba2ee242"
-dependencies = [
- "darling",
- "proc-macro2",
- "quote",
- "syn 2.0.96",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
-dependencies = [
- "atty",
- "humantime 1.3.0",
- "log",
- "regex",
- "termcolor",
 ]
 
 [[package]]
@@ -2810,25 +2680,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "error-chain"
-version = "0.12.4"
+name = "error-code"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d2f06b9cac1506ece98fe3231e3cc9c4410ec3d5b1f24ae1c8946f0742cdefc"
-dependencies = [
- "version_check",
-]
-
-[[package]]
-name = "ethnum"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b90ca2580b73ab6a1f724b76ca11ab632df820fd6040c336200d2c1df7b3c82c"
-
-[[package]]
-name = "event-listener"
-version = "2.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0206175f82b8d6bf6652ff7d71a1e27fd2e4efde587fd368662814d6ec1d9ce0"
+checksum = "a5d9305ccc6942a704f4335694ecd3de2ea531b114ac2d51f5f843750787a92f"
 
 [[package]]
 name = "event-listener"
@@ -3139,17 +2994,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "futures-rustls"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8f2f12607f92c69b12ed746fabf9ca4f5c482cba46679c1a75b874ed7c26adb"
-dependencies = [
- "futures-io",
- "rustls 0.23.21",
- "rustls-pki-types",
-]
-
-[[package]]
 name = "futures-sink"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3324,6 +3168,16 @@ dependencies = [
 
 [[package]]
 name = "gethostname"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0176e0459c2e4a1fe232f984bca6890e681076abb9934f6cea7c326f3fc47818"
+dependencies = [
+ "libc",
+ "windows-targets 0.48.5",
+]
+
+[[package]]
+name = "gethostname"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc3655aa6818d65bc620d6911f05aa7b6aeb596291e1e9f79e52df85583d1e30"
@@ -3482,18 +3336,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8d1add55171497b4705a648c6b583acafb01d58050a51727785f0b2c8e0a2b2"
 
 [[package]]
-name = "gloo-timers"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbb143cf96099802033e0d4f4963b19fd2e0b728bcf076cd9cf7f6634f092994"
-dependencies = [
- "futures-channel",
- "futures-core",
- "js-sys",
- "wasm-bindgen",
-]
-
-[[package]]
 name = "gobject-sys"
 version = "0.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3576,25 +3418,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "h2"
-version = "0.3.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
-dependencies = [
- "bytes 1.9.0",
- "fnv",
- "futures-core",
- "futures-sink",
- "futures-util",
- "http 0.2.12",
- "indexmap 2.7.0",
- "slab",
- "tokio",
- "tokio-util 0.7.13",
- "tracing",
 ]
 
 [[package]]
@@ -3867,7 +3690,7 @@ dependencies = [
  "ipconfig",
  "lru-cache",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.12.3",
  "rand 0.8.5",
  "resolv-conf",
  "smallvec 1.13.2",
@@ -4046,9 +3869,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.32"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "41dfc780fdec9373c01bae43289ea34c972e40ee3c9f6b3c8801a35f35586ce7"
+checksum = "256fb8d4bd6413123cc9d91832d78325c48ff41677595be797d90f42969beae0"
 dependencies = [
  "bytes 1.9.0",
  "futures-channel",
@@ -4418,6 +4241,7 @@ dependencies = [
  "byteorder-lite",
  "num-traits",
  "png",
+ "tiff",
 ]
 
 [[package]]
@@ -4535,6 +4359,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
 dependencies = [
  "cfg-if",
+ "js-sys",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -4699,6 +4526,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "jpeg-decoder"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f5d4a7da358eff58addd2877a45865158f0d78c911d43a5784ceb7bbf52833b0"
+
+[[package]]
 name = "js-sys"
 version = "0.3.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4797,6 +4630,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2f8fe839464d4e4b37d756d7e910063696af79a7e877282cb1825e4ec5f10833"
 dependencies = [
  "byteorder",
+ "dbus-secret-service",
  "linux-keyutils",
  "log",
  "security-framework 2.11.1",
@@ -4869,14 +4703,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5aba8db14291edd000dfcc4d620c7ebfb122c613afb886ca8803fa4e128a20a"
 
 [[package]]
-name = "libgit2-sys"
-version = "0.17.0+1.8.1"
+name = "libdbus-sys"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10472326a8a6477c3c20a64547b0059e4b0d086869eee31e6d7da728a8eb7224"
+checksum = "06085512b750d640299b79be4bad3d2fa90a9c00b1fd9e1b46364f66f0485c72"
 dependencies = [
- "cc",
- "libc",
- "libz-sys",
  "pkg-config",
 ]
 
@@ -5427,7 +5258,7 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags 2.7.0",
  "libc",
- "redox_syscall",
+ "redox_syscall 0.5.8",
 ]
 
 [[package]]
@@ -5541,7 +5372,7 @@ dependencies = [
  "log",
  "log-mdc",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.12.3",
  "rand 0.8.5",
  "serde",
  "serde-value",
@@ -5856,7 +5687,7 @@ dependencies = [
  "libc",
  "log",
  "minidump-writer",
- "parking_lot",
+ "parking_lot 0.12.3",
  "polling",
  "scroll",
  "thiserror 1.0.69",
@@ -5899,8 +5730,8 @@ dependencies = [
 
 [[package]]
 name = "minotari_app_grpc"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "argon2",
  "base64 0.13.1",
@@ -5912,14 +5743,13 @@ dependencies = [
  "rand 0.8.5",
  "rcgen 0.12.1",
  "subtle",
- "tari_common_types 1.7.0-pre.3",
- "tari_comms 1.7.0-pre.3",
- "tari_core 1.7.0-pre.3",
+ "tari_common_types",
+ "tari_comms",
+ "tari_core",
  "tari_crypto",
- "tari_features 1.7.0-pre.3",
- "tari_max_size 1.7.0-pre.3",
- "tari_script 1.7.0-pre.3",
- "tari_sidechain",
+ "tari_features",
+ "tari_max_size",
+ "tari_script",
  "tari_utilities",
  "thiserror 1.0.69",
  "tokio",
@@ -5929,77 +5759,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "minotari_app_grpc"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "argon2",
- "base64 0.13.1",
- "borsh",
- "chrono",
- "log",
- "prost 0.13.4",
- "prost-types 0.13.4",
- "rand 0.8.5",
- "rcgen 0.12.1",
- "subtle",
- "tari_common_types 1.9.1-rc.1",
- "tari_comms 1.9.1-rc.1",
- "tari_core 1.9.1-rc.1",
- "tari_crypto",
- "tari_features 1.9.1-rc.1",
- "tari_max_size 1.9.1-rc.1",
- "tari_script 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tonic",
- "tonic-build",
- "zeroize",
-]
-
-[[package]]
-name = "minotari_app_utilities"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "clap 3.2.25",
- "dialoguer",
- "futures 0.3.31",
- "json5",
- "log",
- "rand 0.8.5",
- "serde",
- "tari_common 1.7.0-pre.3",
- "tari_common_types 1.7.0-pre.3",
- "tari_comms 1.7.0-pre.3",
- "tari_features 1.7.0-pre.3",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tonic",
-]
-
-[[package]]
 name = "minotari_ledger_wallet_common"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "bs58 0.5.1",
-]
-
-[[package]]
-name = "minotari_ledger_wallet_common"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "bs58 0.5.1",
-]
-
-[[package]]
-name = "minotari_ledger_wallet_common"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "bs58 0.5.1",
 ]
@@ -6007,7 +5769,7 @@ dependencies = [
 [[package]]
 name = "minotari_node_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "minotari_app_grpc 1.9.1-rc.1",
 ]
@@ -6023,7 +5785,7 @@ dependencies = [
 [[package]]
 name = "minotari_wallet_grpc_client"
 version = "0.1.0"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "minotari_app_grpc 1.9.1-rc.1",
  "tari_common_types 1.9.1-rc.1",
@@ -6408,12 +6170,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "num"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "35bd024e8b2ff75562e5f34e7f4905839deb4b22955ef5e73d2fea1b9813cb23"
+dependencies = [
+ "num-bigint",
+ "num-complex",
+ "num-integer",
+ "num-iter",
+ "num-rational",
+ "num-traits",
+]
+
+[[package]]
 name = "num-bigint"
 version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a5e44f723f1133c9deac646763579fdb3ac745e418f2a7af9cd0c431da1f20b9"
 dependencies = [
  "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-complex"
+version = "0.4.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
+dependencies = [
  "num-traits",
 ]
 
@@ -6450,6 +6235,28 @@ version = "0.1.46"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7969661fd2958a5cb096e56c8e1ad0444ac2bbcd0061bd28660485a44879858f"
 dependencies = [
+ "num-traits",
+]
+
+[[package]]
+name = "num-iter"
+version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1429034a0490724d0075ebb2bc9e875d6503c3cf69e235a8941aa757d83ef5bf"
+dependencies = [
+ "autocfg",
+ "num-integer",
+ "num-traits",
+]
+
+[[package]]
+name = "num-rational"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f83d14da390562dca69fc84082e73e548e1ad308d24accdedd2720017cb37824"
+dependencies = [
+ "num-bigint",
+ "num-integer",
  "num-traits",
 ]
 
@@ -6998,12 +6805,37 @@ checksum = "f38d5652c16fde515bb1ecef450ab0f6a219d619a7274976324d5e377f7dceba"
 
 [[package]]
 name = "parking_lot"
+version = "0.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
+dependencies = [
+ "instant",
+ "lock_api",
+ "parking_lot_core 0.8.6",
+]
+
+[[package]]
+name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
 dependencies = [
  "lock_api",
- "parking_lot_core",
+ "parking_lot_core 0.9.10",
+]
+
+[[package]]
+name = "parking_lot_core"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
+dependencies = [
+ "cfg-if",
+ "instant",
+ "libc",
+ "redox_syscall 0.2.16",
+ "smallvec",
+ "winapi",
 ]
 
 [[package]]
@@ -7014,8 +6846,8 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall",
- "smallvec 1.13.2",
+ "redox_syscall 0.5.8",
+ "smallvec",
  "windows-targets 0.52.6",
 ]
 
@@ -7495,9 +7327,9 @@ dependencies = [
 
 [[package]]
 name = "prettyplease"
-version = "0.2.29"
+version = "0.2.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6924ced06e1f7dfe3fa48d57b9f74f55d8915f5036121bef647ef4b204895fac"
+checksum = "483f8c21f64f3ea09fe0f30f5d48c3e8eefe5dac9129f0075f76593b4c1da705"
 dependencies = [
  "proc-macro2",
  "syn 2.0.96",
@@ -7719,7 +7551,7 @@ dependencies = [
  "multimap 0.10.0",
  "once_cell",
  "petgraph",
- "prettyplease 0.2.29",
+ "prettyplease 0.2.27",
  "prost 0.13.4",
  "prost-types 0.13.4",
  "regex",
@@ -7777,16 +7609,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "prost-types"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "534b7a0e836e3c482d2693070f982e39e7611da9695d4d1f5a4b186b51faef0a"
-dependencies = [
- "bytes 1.9.0",
- "prost 0.9.0",
 ]
 
 [[package]]
@@ -7928,7 +7750,7 @@ dependencies = [
  "rustc-hash",
  "rustls 0.23.21",
  "socket2",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "tokio",
  "tracing",
 ]
@@ -7947,7 +7769,7 @@ dependencies = [
  "rustls 0.23.21",
  "rustls-pki-types",
  "slab",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "tinyvec",
  "tracing",
  "web-time",
@@ -7983,7 +7805,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51de85fb3fb6524929c8a2eb85e6b6d363de4e8c48f9e2c2eac4944abc181c93"
 dependencies = [
  "log",
- "parking_lot",
+ "parking_lot 0.12.3",
  "scheduled-thread-pool",
 ]
 
@@ -8169,6 +7991,15 @@ checksum = "be105c72a1e6a5a1198acee3d5b506a15676b74a02ecd78060042a447f408d94"
 
 [[package]]
 name = "redox_syscall"
+version = "0.2.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
+dependencies = [
+ "bitflags 1.3.2",
+]
+
+[[package]]
+name = "redox_syscall"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "03a862b389f93e68874fbf580b9de08dd02facb9a788ebadaf4a3fd33cf58834"
@@ -8262,46 +8093,6 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.27"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd67538700a17451e7cba03ac727fb961abb7607553461627b97de0b89cf4a62"
-dependencies = [
- "base64 0.21.7",
- "bytes 1.9.0",
- "encoding_rs",
- "futures-core",
- "futures-util",
- "h2 0.3.26",
- "http 0.2.12",
- "http-body 0.4.6",
- "hyper 0.14.32",
- "hyper-tls 0.5.0",
- "ipnet",
- "js-sys",
- "log",
- "mime",
- "native-tls",
- "once_cell",
- "percent-encoding",
- "pin-project-lite",
- "rustls-pemfile 1.0.4",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "sync_wrapper 0.1.2",
- "system-configuration 0.5.1",
- "tokio",
- "tokio-native-tls",
- "tower-service",
- "url",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "winreg 0.50.0",
-]
-
-[[package]]
-name = "reqwest"
 version = "0.12.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43e734407157c3c2034e0258f5e4473ddb361b1e85f95a66690d67264d7cd1da"
@@ -8354,6 +8145,43 @@ dependencies = [
 ]
 
 [[package]]
+name = "reqwest-middleware"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d1ccd3b55e711f91a9885a2fa6fbbb2e39db1776420b062efc058c6410f7e5e3"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
+ "reqwest",
+ "serde",
+ "thiserror 1.0.69",
+ "tower-service",
+]
+
+[[package]]
+name = "reqwest-retry"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "29c73e4195a6bfbcb174b790d9b3407ab90646976c55de58a6515da25d851178"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures 0.3.31",
+ "getrandom 0.2.15",
+ "http",
+ "hyper",
+ "parking_lot 0.11.2",
+ "reqwest",
+ "reqwest-middleware",
+ "retry-policies",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "wasm-timer",
+]
+
+[[package]]
 name = "resolv-conf"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8364,53 +8192,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "rfc6979"
+name = "retry-policies"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8dd2a808d456c4a54e300a23e9f5a67e122c3024119acbfd73e3bf664491cb2"
+checksum = "5875471e6cab2871bc150ecb8c727db5113c9338cc3354dc5ee3425b6aa40a1c"
 dependencies = [
- "hmac",
- "subtle",
-]
-
-[[package]]
-name = "rfd"
-version = "0.15.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6a24763657bff09769a8ccf12c8b8a50416fb035fe199263b4c5071e4e3f006f"
-dependencies = [
- "ashpd",
- "block2",
- "core-foundation 0.10.0",
- "core-foundation-sys",
- "glib-sys",
- "gobject-sys",
- "gtk-sys",
- "js-sys",
- "log",
- "objc2",
- "objc2-app-kit",
- "objc2-foundation",
- "raw-window-handle",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "ring"
-version = "0.16.20"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
-dependencies = [
- "cc",
- "libc",
- "once_cell",
- "spin 0.5.2",
- "untrusted 0.7.1",
- "web-sys",
- "winapi",
+ "rand 0.8.5",
 ]
 
 [[package]]
@@ -8611,18 +8398,6 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.21.12"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f56a14d1f48b391359b22f731fd4bd7e43c97f3c50eee276f3aa09c94784d3e"
-dependencies = [
- "log",
- "ring 0.17.8",
- "rustls-webpki 0.101.7",
- "sct",
-]
-
-[[package]]
-name = "rustls"
 version = "0.23.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f287924602bf649d949c63dc8ac8b235fa5387d394020705b80c4eb597ce5b8"
@@ -8691,16 +8466,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7c45b9784283f1b2e7fb61b42047c2fd678ef0960d4f6f1eba131594cc369d4"
 
 [[package]]
-name = "rw-stream-sink"
-version = "0.4.0"
-source = "git+https://github.com/tari-project/rust-libp2p.git?rev=3d918ccbf5ae1cbec0815a2156079b0fba4ba558#3d918ccbf5ae1cbec0815a2156079b0fba4ba558"
-dependencies = [
- "futures 0.3.31",
- "pin-project 1.1.8",
- "static_assertions",
-]
-
-[[package]]
 name = "ryu"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8740,7 +8505,7 @@ version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3cbc66816425a074528352f5789333ecff06ca41b36b0b0efdfbb29edc391a19"
 dependencies = [
- "parking_lot",
+ "parking_lot 0.12.3",
 ]
 
 [[package]]
@@ -8800,16 +8565,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "sct"
-version = "0.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
-dependencies = [
- "ring 0.17.8",
- "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -9014,7 +8769,7 @@ checksum = "b3b211916a3aed3398125b02b98a5cd4fc530c5626dd28a3c86865fe6cd93935"
 dependencies = [
  "minidumper-child",
  "sentry",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
@@ -9379,21 +9134,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56199f7ddabf13fe5074ce809e7d3f42b42ae711800501b5b16ea82ad029c39d"
 
 [[package]]
-name = "skeptic"
-version = "0.13.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16d23b015676c90a0f01c197bfdc786c20342c73a0afdda9025adb0bc42940a8"
-dependencies = [
- "bytecount",
- "cargo_metadata 0.14.2",
- "error-chain",
- "glob",
- "pulldown-cmark",
- "tempfile",
- "walkdir",
-]
-
-[[package]]
 name = "slab"
 version = "0.4.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9429,15 +9169,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "smol_str"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd538fb6910ac1099850255cf94a94df6551fbdd602454387d0adb2d1ca6dead"
-dependencies = [
- "serde",
 ]
 
 [[package]]
@@ -9497,7 +9228,7 @@ checksum = "18051cdd562e792cad055119e0cdb2cfc137e44e3987532e0f9659a77931bb08"
 dependencies = [
  "bytemuck",
  "cfg_aliases 0.2.1",
- "core-graphics",
+ "core-graphics 0.24.0",
  "foreign-types 0.5.0",
  "js-sys",
  "log",
@@ -9505,7 +9236,7 @@ dependencies = [
  "objc2-foundation",
  "objc2-quartz-core",
  "raw-window-handle",
- "redox_syscall",
+ "redox_syscall 0.5.8",
  "wasm-bindgen",
  "web-sys",
  "windows-sys 0.59.0",
@@ -9608,7 +9339,7 @@ checksum = "f91138e76242f575eb1d3b38b4f1362f10d3a43f47d182a5b359af488a02293b"
 dependencies = [
  "new_debug_unreachable",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.12.3",
  "phf_shared 0.10.0",
  "precomputed-hash",
  "serde",
@@ -9921,7 +9652,7 @@ dependencies = [
  "bitflags 2.7.0",
  "cocoa",
  "core-foundation 0.10.0",
- "core-graphics",
+ "core-graphics 0.24.0",
  "crossbeam-channel",
  "dispatch",
  "dlopen2",
@@ -9938,7 +9669,7 @@ dependencies = [
  "ndk-sys",
  "objc",
  "once_cell",
- "parking_lot",
+ "parking_lot 0.12.3",
  "raw-window-handle",
  "scopeguard",
  "tao-macros",
@@ -9996,7 +9727,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.8.42"
+version = "0.9.803"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10035,8 +9766,10 @@ dependencies = [
  "phraze",
  "rand 0.8.5",
  "regex",
- "reqwest 0.12.12",
- "ring 0.17.8",
+ "reqwest",
+ "reqwest-middleware",
+ "reqwest-retry",
+ "ring",
  "ring-compat",
  "sanitize-filename",
  "semver",
@@ -10061,19 +9794,20 @@ dependencies = [
  "tari_utilities",
  "tari_wallet_daemon_client",
  "tauri",
- "tauri-build 2.0.5",
+ "tauri-build",
  "tauri-plugin-cli",
- "tauri-plugin-dialog",
+ "tauri-plugin-clipboard-manager",
  "tauri-plugin-os",
  "tauri-plugin-process",
  "tauri-plugin-sentry",
  "tauri-plugin-shell",
  "tauri-plugin-single-instance",
  "tauri-plugin-updater",
- "thiserror 1.0.69",
+ "thiserror 2.0.10",
  "tokio",
  "tokio-util 0.7.13",
- "tower-http 0.5.2",
+ "tonic",
+ "urlencoding",
  "winreg 0.52.0",
  "xz2",
  "zip",
@@ -10131,8 +9865,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "cargo_toml 0.20.5",
@@ -10149,55 +9883,7 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "structopt",
- "tari_features 1.7.0-pre.3",
- "tempfile",
- "thiserror 1.0.69",
- "toml 0.5.11",
-]
-
-[[package]]
-name = "tari_common"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "anyhow",
- "config",
- "dirs-next",
- "log",
- "log4rs",
- "multiaddr 0.14.0",
- "path-clean",
- "prost-build 0.11.9",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "structopt",
- "tari_features 1.9.1-rc.1",
- "tempfile",
- "thiserror 1.0.69",
- "toml 0.5.11",
-]
-
-[[package]]
-name = "tari_common"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "anyhow",
- "config",
- "dirs-next",
- "log",
- "log4rs",
- "multiaddr 0.14.0",
- "path-clean",
- "prost-build 0.11.9",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "structopt",
- "tari_features 1.9.2-pre.0",
+ "tari_features",
  "tempfile",
  "thiserror 1.0.69",
  "toml 0.5.11",
@@ -10205,36 +9891,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common_sqlite"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "diesel",
- "diesel_migrations",
- "log",
- "serde",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "tari_common_sqlite"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "diesel",
- "diesel_migrations",
- "log",
- "serde",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "tari_common_sqlite"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "diesel",
  "diesel_migrations",
@@ -10247,8 +9905,8 @@ dependencies = [
 
 [[package]]
 name = "tari_common_types"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "base64 0.21.7",
  "bitflags 2.7.0",
@@ -10257,67 +9915,15 @@ dependencies = [
  "bs58 0.5.1",
  "chacha20poly1305",
  "digest",
- "minotari_ledger_wallet_common 1.7.0-pre.3",
+ "minotari_ledger_wallet_common",
  "newtype-ops",
  "once_cell",
  "primitive-types",
  "rand 0.8.5",
  "serde",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "tari_common 1.7.0-pre.3",
- "tari_crypto",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_common_types"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "base64 0.21.7",
- "bitflags 2.7.0",
- "blake2",
- "borsh",
- "bs58 0.5.1",
- "chacha20poly1305",
- "digest",
- "minotari_ledger_wallet_common 1.9.1-rc.1",
- "newtype-ops",
- "once_cell",
- "primitive-types",
- "rand 0.8.5",
- "serde",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "tari_common 1.9.1-rc.1",
- "tari_crypto",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_common_types"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "base64 0.21.7",
- "bitflags 2.7.0",
- "blake2",
- "borsh",
- "bs58 0.5.1",
- "chacha20poly1305",
- "digest",
- "minotari_ledger_wallet_common 1.9.2-pre.0",
- "newtype-ops",
- "once_cell",
- "primitive-types",
- "rand 0.8.5",
- "serde",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "tari_common 1.9.2-pre.0",
+ "strum",
+ "strum_macros",
+ "tari_common",
  "tari_crypto",
  "tari_utilities",
  "thiserror 1.0.69",
@@ -10325,8 +9931,8 @@ dependencies = [
 
 [[package]]
 name = "tari_comms"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -10352,10 +9958,10 @@ dependencies = [
  "serde_derive",
  "sha3",
  "snow",
- "tari_common 1.7.0-pre.3",
+ "tari_common",
  "tari_crypto",
- "tari_shutdown 1.7.0-pre.3",
- "tari_storage 1.7.0-pre.3",
+ "tari_shutdown",
+ "tari_storage",
  "tari_utilities",
  "thiserror 1.0.69",
  "tokio",
@@ -10363,102 +9969,14 @@ dependencies = [
  "tokio-util 0.6.10",
  "tower 0.4.13",
  "tracing",
- "yamux 0.13.4",
- "zeroize",
-]
-
-[[package]]
-name = "tari_comms"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "anyhow",
- "async-trait",
- "bitflags 2.7.0",
- "blake2",
- "bytes 1.9.0",
- "chrono",
- "cidr",
- "data-encoding",
- "derivative",
- "digest",
- "futures 0.3.31",
- "lmdb-zero",
- "log",
- "log-mdc",
- "multiaddr 0.14.0",
- "nom",
- "once_cell",
- "pin-project 1.1.8",
- "prost 0.13.4",
- "rand 0.8.5",
- "serde",
- "serde_derive",
- "sha3",
- "snow",
- "tari_common 1.9.1-rc.1",
- "tari_crypto",
- "tari_shutdown 1.9.1-rc.1",
- "tari_storage 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tokio-util 0.6.10",
- "tower 0.4.13",
- "tracing",
- "yamux 0.13.4",
- "zeroize",
-]
-
-[[package]]
-name = "tari_comms"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "anyhow",
- "async-trait",
- "bitflags 2.7.0",
- "blake2",
- "bytes 1.9.0",
- "chrono",
- "cidr",
- "data-encoding",
- "derivative",
- "digest",
- "futures 0.3.31",
- "lmdb-zero",
- "log",
- "log-mdc",
- "multiaddr 0.14.0",
- "nom",
- "once_cell",
- "pin-project 1.1.8",
- "prost 0.13.4",
- "rand 0.8.5",
- "serde",
- "serde_derive",
- "sha3",
- "snow",
- "tari_common 1.9.2-pre.0",
- "tari_crypto",
- "tari_shutdown 1.9.2-pre.0",
- "tari_storage 1.9.2-pre.0",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tokio-util 0.6.10",
- "tower 0.4.13",
- "tracing",
- "yamux 0.13.4",
+ "yamux",
  "zeroize",
 ]
 
 [[package]]
 name = "tari_comms_dht"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "bitflags 2.7.0",
@@ -10476,83 +9994,13 @@ dependencies = [
  "prost 0.13.4",
  "rand 0.8.5",
  "serde",
- "tari_common 1.7.0-pre.3",
- "tari_common_sqlite 1.7.0-pre.3",
- "tari_comms 1.7.0-pre.3",
- "tari_comms_rpc_macros 1.7.0-pre.3",
+ "tari_common",
+ "tari_common_sqlite",
+ "tari_comms",
+ "tari_comms_rpc_macros",
  "tari_crypto",
- "tari_shutdown 1.7.0-pre.3",
- "tari_storage 1.7.0-pre.3",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tower 0.4.13",
- "zeroize",
-]
-
-[[package]]
-name = "tari_comms_dht"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "anyhow",
- "bitflags 2.7.0",
- "blake2",
- "chacha20 0.7.3",
- "chacha20poly1305",
- "chrono",
- "diesel",
- "diesel_migrations",
- "digest",
- "futures 0.3.31",
- "log",
- "log-mdc",
- "pin-project 0.4.30",
- "prost 0.13.4",
- "rand 0.8.5",
- "serde",
- "tari_common 1.9.1-rc.1",
- "tari_common_sqlite 1.9.1-rc.1",
- "tari_comms 1.9.1-rc.1",
- "tari_comms_rpc_macros 1.9.1-rc.1",
- "tari_crypto",
- "tari_shutdown 1.9.1-rc.1",
- "tari_storage 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tower 0.4.13",
- "zeroize",
-]
-
-[[package]]
-name = "tari_comms_dht"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "anyhow",
- "bitflags 2.7.0",
- "blake2",
- "chacha20 0.7.3",
- "chacha20poly1305",
- "chrono",
- "diesel",
- "diesel_migrations",
- "digest",
- "futures 0.3.31",
- "log",
- "log-mdc",
- "pin-project 0.4.30",
- "prost 0.13.4",
- "rand 0.8.5",
- "serde",
- "tari_common 1.9.2-pre.0",
- "tari_common_sqlite 1.9.2-pre.0",
- "tari_comms 1.9.2-pre.0",
- "tari_comms_rpc_macros 1.9.2-pre.0",
- "tari_crypto",
- "tari_shutdown 1.9.2-pre.0",
- "tari_storage 1.9.2-pre.0",
+ "tari_shutdown",
+ "tari_storage",
  "tari_utilities",
  "thiserror 1.0.69",
  "tokio",
@@ -10562,131 +10010,18 @@ dependencies = [
 
 [[package]]
 name = "tari_comms_rpc_macros"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "tari_comms_rpc_macros"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "tari_comms_rpc_macros"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "tari_consensus"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "anyhow",
- "async-trait",
- "indexmap 2.7.0",
- "log",
- "serde",
- "tari_common 1.7.0-pre.3",
- "tari_common_types 1.7.0-pre.3",
- "tari_crypto",
- "tari_dan_common_types",
- "tari_dan_storage",
- "tari_engine_types",
- "tari_epoch_manager",
- "tari_shutdown 1.7.0-pre.3",
- "tari_sidechain",
- "tari_state_tree",
- "tari_transaction",
- "thiserror 1.0.69",
- "tokio",
 ]
 
 [[package]]
 name = "tari_core"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "async-trait",
- "bincode",
- "bitflags 2.7.0",
- "blake2",
- "borsh",
- "bytes 0.5.6",
- "chacha20poly1305",
- "chrono",
- "decimal-rs",
- "derivative",
- "digest",
- "dirs-next",
- "fs2",
- "futures 0.3.31",
- "hex",
- "integer-encoding",
- "lmdb-zero",
- "log",
- "log-mdc",
- "monero",
- "newtype-ops",
- "num-derive",
- "num-format",
- "num-traits",
- "once_cell",
- "primitive-types",
- "prost 0.13.4",
- "rand 0.8.5",
- "randomx-rs",
- "serde",
- "serde_json",
- "serde_repr",
- "sha2",
- "sha3",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "tari-tiny-keccak",
- "tari_common 1.7.0-pre.3",
- "tari_common_sqlite 1.7.0-pre.3",
- "tari_common_types 1.7.0-pre.3",
- "tari_comms 1.7.0-pre.3",
- "tari_comms_dht 1.7.0-pre.3",
- "tari_comms_rpc_macros 1.7.0-pre.3",
- "tari_crypto",
- "tari_features 1.7.0-pre.3",
- "tari_hashing 1.7.0-pre.3",
- "tari_key_manager 1.7.0-pre.3",
- "tari_max_size 1.7.0-pre.3",
- "tari_mmr 1.7.0-pre.3",
- "tari_p2p 1.7.0-pre.3",
- "tari_script 1.7.0-pre.3",
- "tari_service_framework 1.7.0-pre.3",
- "tari_shutdown 1.7.0-pre.3",
- "tari_sidechain",
- "tari_storage 1.7.0-pre.3",
- "tari_test_utils 1.7.0-pre.3",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "zeroize",
-]
-
-[[package]]
-name = "tari_core"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -11199,104 +10534,23 @@ source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c
 
 [[package]]
 name = "tari_features"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-
-[[package]]
-name = "tari_features"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 
 [[package]]
 name = "tari_hashing"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "blake2",
- "borsh",
- "digest",
- "tari_crypto",
-]
-
-[[package]]
-name = "tari_hashing"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "borsh",
  "digest",
  "tari_crypto",
-]
-
-[[package]]
-name = "tari_hashing"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "borsh",
- "digest",
- "tari_crypto",
-]
-
-[[package]]
-name = "tari_indexer_client"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "anyhow",
- "multiaddr 0.18.1",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "tari_base_node_client",
- "tari_common_types 1.7.0-pre.3",
- "tari_dan_common_types",
- "tari_dan_storage",
- "tari_engine_types",
- "tari_template_abi",
- "tari_transaction",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_indexer_lib"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "async-trait",
- "futures 0.3.31",
- "log",
- "rand 0.8.5",
- "serde",
- "tari_dan_common_types",
- "tari_dan_storage",
- "tari_engine_types",
- "tari_epoch_manager",
- "tari_template_lib",
- "tari_transaction",
- "tari_validator_node_rpc",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "tari_jellyfish"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "borsh",
- "digest",
- "indexmap 2.7.0",
- "serde",
- "tari_crypto",
- "tari_hashing 1.7.0-pre.3",
- "thiserror 2.0.11",
 ]
 
 [[package]]
 name = "tari_key_manager"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "argon2",
  "async-trait",
@@ -11316,76 +10570,10 @@ dependencies = [
  "strum 0.22.0",
  "strum_macros 0.22.0",
  "subtle",
- "tari_common_sqlite 1.7.0-pre.3",
- "tari_common_types 1.7.0-pre.3",
+ "tari_common_sqlite",
+ "tari_common_types",
  "tari_crypto",
- "tari_service_framework 1.7.0-pre.3",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "zeroize",
-]
-
-[[package]]
-name = "tari_key_manager"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "argon2",
- "async-trait",
- "blake2",
- "chacha20 0.7.3",
- "chacha20poly1305",
- "chrono",
- "crc32fast",
- "derivative",
- "diesel",
- "diesel_migrations",
- "digest",
- "futures 0.3.31",
- "log",
- "rand 0.8.5",
- "serde",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "subtle",
- "tari_common_sqlite 1.9.1-rc.1",
- "tari_common_types 1.9.1-rc.1",
- "tari_crypto",
- "tari_service_framework 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "zeroize",
-]
-
-[[package]]
-name = "tari_key_manager"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "argon2",
- "async-trait",
- "blake2",
- "chacha20 0.7.3",
- "chacha20poly1305",
- "chrono",
- "crc32fast",
- "derivative",
- "diesel",
- "diesel_migrations",
- "digest",
- "futures 0.3.31",
- "log",
- "rand 0.8.5",
- "serde",
- "strum 0.22.0",
- "strum_macros 0.22.0",
- "subtle",
- "tari_common_sqlite 1.9.2-pre.0",
- "tari_common_types 1.9.2-pre.0",
- "tari_crypto",
- "tari_service_framework 1.9.2-pre.0",
+ "tari_service_framework",
  "tari_utilities",
  "thiserror 1.0.69",
  "tokio",
@@ -11394,30 +10582,8 @@ dependencies = [
 
 [[package]]
 name = "tari_max_size"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "borsh",
- "serde",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_max_size"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "borsh",
- "serde",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_max_size"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "borsh",
  "serde",
@@ -11427,8 +10593,8 @@ dependencies = [
 
 [[package]]
 name = "tari_mmr"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "borsh",
  "digest",
@@ -11437,76 +10603,32 @@ dependencies = [
  "tari_crypto",
  "tari_utilities",
  "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_mmr"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "borsh",
- "digest",
- "log",
- "serde",
- "tari_crypto",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_mmr"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "borsh",
- "digest",
- "log",
- "serde",
- "tari_crypto",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_networking"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "anyhow",
- "async-trait",
- "libp2p",
- "log",
- "rand 0.8.5",
- "tari_rpc_framework",
- "tari_shutdown 1.7.0-pre.3",
- "tari_swarm",
- "thiserror 1.0.69",
- "tokio",
 ]
 
 [[package]]
 name = "tari_p2p"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "fs2",
  "futures 0.3.31",
  "hickory-client",
- "hickory-resolver 0.25.0-alpha.2",
+ "hickory-proto",
+ "hickory-resolver",
  "lmdb-zero",
  "log",
  "prost 0.13.4",
  "rand 0.8.5",
  "rustls 0.23.21",
  "serde",
- "tari_common 1.7.0-pre.3",
- "tari_comms 1.7.0-pre.3",
- "tari_comms_dht 1.7.0-pre.3",
+ "tari_common",
+ "tari_comms",
+ "tari_comms_dht",
  "tari_crypto",
- "tari_service_framework 1.7.0-pre.3",
- "tari_shutdown 1.7.0-pre.3",
- "tari_storage 1.7.0-pre.3",
+ "tari_service_framework",
+ "tari_shutdown",
+ "tari_storage",
  "tari_utilities",
  "thiserror 1.0.69",
  "tokio",
@@ -11516,107 +10638,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "tari_p2p"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "anyhow",
- "fs2",
- "futures 0.3.31",
- "hickory-client",
- "hickory-proto 0.25.0-alpha.2",
- "hickory-resolver 0.25.0-alpha.2",
- "lmdb-zero",
- "log",
- "prost 0.13.4",
- "rand 0.8.5",
- "rustls 0.23.21",
- "serde",
- "tari_common 1.9.1-rc.1",
- "tari_comms 1.9.1-rc.1",
- "tari_comms_dht 1.9.1-rc.1",
- "tari_crypto",
- "tari_service_framework 1.9.1-rc.1",
- "tari_shutdown 1.9.1-rc.1",
- "tari_storage 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tower 0.4.13",
- "webpki-roots",
-]
-
-[[package]]
-name = "tari_p2p"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "anyhow",
- "fs2",
- "futures 0.3.31",
- "hickory-client",
- "hickory-proto 0.25.0-alpha.2",
- "hickory-resolver 0.25.0-alpha.2",
- "lmdb-zero",
- "log",
- "prost 0.13.4",
- "rand 0.8.5",
- "rustls 0.23.21",
- "serde",
- "tari_common 1.9.2-pre.0",
- "tari_comms 1.9.2-pre.0",
- "tari_comms_dht 1.9.2-pre.0",
- "tari_crypto",
- "tari_service_framework 1.9.2-pre.0",
- "tari_shutdown 1.9.2-pre.0",
- "tari_storage 1.9.2-pre.0",
- "tari_utilities",
- "thiserror 1.0.69",
- "tokio",
- "tokio-stream",
- "tower 0.4.13",
- "webpki-roots",
-]
-
-[[package]]
-name = "tari_rpc_framework"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "async-trait",
- "bitflags 2.7.0",
- "bytes 1.9.0",
- "futures 0.3.31",
- "libp2p",
- "libp2p-substream",
- "log",
- "pin-project 1.1.8",
- "prost 0.12.6",
- "prost-build 0.12.6",
- "proto_builder",
- "tari_shutdown 1.7.0-pre.3",
- "thiserror 1.0.69",
- "tokio",
- "tokio-util 0.7.13",
- "tower 0.4.13",
- "tracing",
-]
-
-[[package]]
-name = "tari_rpc_macros"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
 name = "tari_script"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "blake2",
  "borsh",
@@ -11626,87 +10650,21 @@ dependencies = [
  "sha2",
  "sha3",
  "tari_crypto",
- "tari_max_size 1.7.0-pre.3",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_script"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "blake2",
- "borsh",
- "digest",
- "integer-encoding",
- "serde",
- "sha2",
- "sha3",
- "tari_crypto",
- "tari_max_size 1.9.1-rc.1",
- "tari_utilities",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_script"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "blake2",
- "borsh",
- "digest",
- "integer-encoding",
- "serde",
- "sha2",
- "sha3",
- "tari_crypto",
- "tari_max_size 1.9.2-pre.0",
+ "tari_max_size",
  "tari_utilities",
  "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "tari_service_framework"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "anyhow",
  "async-trait",
  "futures 0.3.31",
  "log",
- "tari_shutdown 1.7.0-pre.3",
- "thiserror 1.0.69",
- "tokio",
- "tower-service",
-]
-
-[[package]]
-name = "tari_service_framework"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures 0.3.31",
- "log",
- "tari_shutdown 1.9.1-rc.1",
- "thiserror 1.0.69",
- "tokio",
- "tower-service",
-]
-
-[[package]]
-name = "tari_service_framework"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "anyhow",
- "async-trait",
- "futures 0.3.31",
- "log",
- "tari_shutdown 1.9.2-pre.0",
+ "tari_shutdown",
  "thiserror 1.0.69",
  "tokio",
  "tower-service",
@@ -11714,88 +10672,16 @@ dependencies = [
 
 [[package]]
 name = "tari_shutdown"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "futures 0.3.31",
-]
-
-[[package]]
-name = "tari_shutdown"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "futures 0.3.31",
-]
-
-[[package]]
-name = "tari_shutdown"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "futures 0.3.31",
-]
-
-[[package]]
-name = "tari_sidechain"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
-dependencies = [
- "borsh",
- "log",
- "serde",
- "tari_common_types 1.7.0-pre.3",
- "tari_crypto",
- "tari_hashing 1.7.0-pre.3",
- "tari_jellyfish",
- "tari_utilities",
- "thiserror 2.0.11",
-]
-
-[[package]]
-name = "tari_state_store_sqlite"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "anyhow",
- "bigdecimal",
- "diesel",
- "diesel_migrations",
- "hex",
- "indexmap 2.7.0",
- "log",
- "serde",
- "serde_json",
- "tari_common_types 1.7.0-pre.3",
- "tari_dan_common_types",
- "tari_dan_storage",
- "tari_engine_types",
- "tari_state_tree",
- "tari_transaction",
- "tari_utilities",
- "thiserror 1.0.69",
- "time",
-]
-
-[[package]]
-name = "tari_state_tree"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "log",
- "serde",
- "tari_common_types 1.7.0-pre.3",
- "tari_dan_common_types",
- "tari_engine_types",
- "tari_jellyfish",
- "tari_template_lib",
- "thiserror 1.0.69",
 ]
 
 [[package]]
 name = "tari_storage"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "bincode",
  "lmdb-zero",
@@ -11805,138 +10691,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "tari_storage"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "bincode",
- "lmdb-zero",
- "log",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_storage"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "bincode",
- "lmdb-zero",
- "log",
- "serde",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_swarm"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "libp2p",
- "libp2p-messaging",
- "libp2p-peersync",
- "libp2p-substream",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "tari_template_abi"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "serde",
- "tari_bor",
-]
-
-[[package]]
-name = "tari_template_builtin"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "tari_engine_types",
-]
-
-[[package]]
-name = "tari_template_lib"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "borsh",
- "newtype-ops",
- "serde",
- "serde_with",
- "tari_bor",
- "tari_template_abi",
- "tari_template_macros",
-]
-
-[[package]]
-name = "tari_template_macros"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 1.0.109",
- "tari_bor",
- "tari_template_abi",
-]
-
-[[package]]
 name = "tari_test_utils"
-version = "1.7.0-pre.3"
-source = "git+https://github.com/tari-project/tari.git?branch=feature-dan2#0e72c119054c835481f21d94926163dea0a1f73c"
+version = "1.11.0-pre.0"
+source = "git+https://github.com/tari-project/tari.git?tag=v1.11.0-pre.0#36ff43680ac9eacada86621aee873149d86175ad"
 dependencies = [
  "futures 0.3.31",
  "rand 0.8.5",
- "tari_comms 1.7.0-pre.3",
- "tari_shutdown 1.7.0-pre.3",
+ "tari_comms",
+ "tari_shutdown",
  "tempfile",
  "tokio",
-]
-
-[[package]]
-name = "tari_test_utils"
-version = "1.9.1-rc.1"
-source = "git+https://github.com/tari-project/tari.git?tag=v1.9.1-rc.1#65a61008a5f7c05c34453535894b9a24132d2665"
-dependencies = [
- "futures 0.3.31",
- "rand 0.8.5",
- "tari_comms 1.9.1-rc.1",
- "tari_shutdown 1.9.1-rc.1",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "tari_test_utils"
-version = "1.9.2-pre.0"
-source = "git+https://github.com/tari-project/tari.git?branch=development#16fb40c1044adf71888fe8fce98901e9a2d3ca32"
-dependencies = [
- "futures 0.3.31",
- "rand 0.8.5",
- "tari_comms 1.9.2-pre.0",
- "tari_shutdown 1.9.2-pre.0",
- "tempfile",
- "tokio",
-]
-
-[[package]]
-name = "tari_transaction"
-version = "0.7.0"
-source = "git+https://github.com/tari-project/tari-dan.git?branch=development#953b9766698d0e530bd3cda0e7942501d9050d4b"
-dependencies = [
- "borsh",
- "indexmap 2.7.0",
- "log",
- "rand 0.8.5",
- "serde",
- "tari_common_types 1.7.0-pre.3",
- "tari_crypto",
- "tari_dan_common_types",
- "tari_engine_types",
- "tari_template_lib",
 ]
 
 [[package]]
@@ -12020,8 +10784,9 @@ dependencies = [
 
 [[package]]
 name = "tauri"
-version = "2.1.1"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2e2e3349fbb2be7af9fad1b43d61ac83ba55ab48d47fbe1b2732f0c8211610a9"
 dependencies = [
  "anyhow",
  "bytes 1.9.0",
@@ -12052,16 +10817,17 @@ dependencies = [
  "serde_repr",
  "serialize-to-javascript",
  "swift-rs",
- "tauri-build 2.0.3",
+ "tauri-build",
  "tauri-macros",
  "tauri-runtime",
  "tauri-runtime-wry",
- "tauri-utils 2.1.0",
- "thiserror 2.0.11",
+ "tauri-utils",
+ "thiserror 2.0.10",
  "tokio",
  "tray-icon",
  "url",
  "urlpattern",
+ "uuid",
  "webkit2gtk",
  "webview2-com",
  "window-vibrancy",
@@ -12070,8 +10836,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-build"
-version = "2.0.3"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b274ec7239ada504deb615f1c8abd7ba99631e879709e6f10e5d17217058d976"
 dependencies = [
  "anyhow",
  "cargo_toml 0.17.2",
@@ -12083,29 +10850,8 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "tauri-utils 2.1.0",
- "tauri-winres",
- "toml 0.8.19",
- "walkdir",
-]
-
-[[package]]
-name = "tauri-build"
-version = "2.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e950124f6779c6cf98e3260c7a6c8488a74aa6350dd54c6950fdaa349bca2df"
-dependencies = [
- "anyhow",
- "cargo_toml 0.21.0",
- "dirs 5.0.1",
- "glob",
- "heck 0.5.0",
- "json-patch",
- "schemars",
- "semver",
- "serde",
- "serde_json",
- "tauri-utils 2.1.1",
+ "tauri-codegen",
+ "tauri-utils",
  "tauri-winres",
  "toml 0.8.19",
  "walkdir",
@@ -12113,8 +10859,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-codegen"
-version = "2.0.3"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f77894f9ddb5cb6c04fcfe8c8869ebe0aded4dabf19917118d48be4a95599ab5"
 dependencies = [
  "base64 0.22.1",
  "brotli",
@@ -12129,8 +10876,8 @@ dependencies = [
  "serde_json",
  "sha2",
  "syn 2.0.96",
- "tauri-utils 2.1.0",
- "thiserror 2.0.11",
+ "tauri-utils",
+ "thiserror 2.0.10",
  "time",
  "url",
  "uuid",
@@ -12139,15 +10886,16 @@ dependencies = [
 
 [[package]]
 name = "tauri-macros"
-version = "2.0.3"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3240a5caed760a532e8f687be6f05b2c7d11a1d791fb53ccc08cfeb3e5308736"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
  "quote",
  "syn 2.0.96",
  "tauri-codegen",
- "tauri-utils 2.1.0",
+ "tauri-utils",
 ]
 
 [[package]]
@@ -12162,7 +10910,7 @@ dependencies = [
  "schemars",
  "serde",
  "serde_json",
- "tauri-utils 2.1.1",
+ "tauri-utils",
  "toml 0.8.19",
  "walkdir",
 ]
@@ -12170,7 +10918,8 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-cli"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5458ae16eac81bdbe8d9da2a9f3e01e8cdedbc381cc1727c01127542c8a61c5"
 dependencies = [
  "clap 4.5.26",
  "log",
@@ -12178,54 +10927,31 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-plugin",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
-name = "tauri-plugin-dialog"
+name = "tauri-plugin-clipboard-manager"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5be2c6f5d82396c1a86d5b16052cc97976a82e92244bf074dd6e2f6272d8619d"
 dependencies = [
+ "arboard",
  "log",
- "raw-window-handle",
- "rfd",
  "serde",
  "serde_json",
  "tauri",
  "tauri-plugin",
- "tauri-plugin-fs",
- "thiserror 2.0.11",
- "url",
-]
-
-[[package]]
-name = "tauri-plugin-fs"
-version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
-dependencies = [
- "anyhow",
- "dunce",
- "glob",
- "percent-encoding",
- "schemars",
- "serde",
- "serde_json",
- "serde_repr",
- "tauri",
- "tauri-plugin",
- "tauri-utils 2.1.1",
- "thiserror 2.0.11",
- "toml 0.8.19",
- "url",
- "uuid",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
 name = "tauri-plugin-os"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dda2d571a9baf0664c1f2088db227e3072f9028602fafa885deade7547c3b738"
 dependencies = [
- "gethostname",
+ "gethostname 0.5.0",
  "log",
  "os_info",
  "serde",
@@ -12234,13 +10960,14 @@ dependencies = [
  "sys-locale",
  "tauri",
  "tauri-plugin",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
 name = "tauri-plugin-process"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "40cc553ab29581c8c43dfa5fb0c9d5aee8ba962ad3b42908eea26c79610441b7"
 dependencies = [
  "tauri",
  "tauri-plugin",
@@ -12248,8 +10975,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-sentry"
-version = "0.3.0"
-source = "git+https://github.com/tari-project/sentry-tauri?rev=7554b9a8738d6442d175aa2add55ecc11c52842d#7554b9a8738d6442d175aa2add55ecc11c52842d"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9b3b2c8b1f9f445d03ce7f5ce99687cb5b277b58501deca6704a2b0ce891088"
 dependencies = [
  "base64 0.22.1",
  "schemars",
@@ -12258,13 +10986,14 @@ dependencies = [
  "serde",
  "tauri",
  "tauri-plugin",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
 ]
 
 [[package]]
 name = "tauri-plugin-shell"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bb2c50a63e60fb8925956cc5b7569f4b750ac197a4d39f13b8dd46ea8e2bad79"
 dependencies = [
  "encoding_rs",
  "log",
@@ -12277,19 +11006,20 @@ dependencies = [
  "shared_child",
  "tauri",
  "tauri-plugin",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "tokio",
 ]
 
 [[package]]
 name = "tauri-plugin-single-instance"
 version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0f36019ee9832dc99e4450bb55a21cfad8633b19c2c18bd17c7741939b070ede"
 dependencies = [
  "serde",
  "serde_json",
  "tauri",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "tracing",
  "windows-sys 0.59.0",
  "zbus 4.4.0",
@@ -12297,8 +11027,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-updater"
-version = "2.3.0"
-source = "git+https://github.com/tari-project/tauri-plugins-workspace?rev=09f29b0abe2cb1eb81365b65a3aa3f73325e4e17#09f29b0abe2cb1eb81365b65a3aa3f73325e4e17"
+version = "2.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce2d39224390c41ba544f02b4f1721f42256320b3fb8c371e9425cbddeb4a68c"
 dependencies = [
  "base64 0.22.1",
  "dirs 5.0.1",
@@ -12316,7 +11047,7 @@ dependencies = [
  "tauri",
  "tauri-plugin",
  "tempfile",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "time",
  "tokio",
  "url",
@@ -12326,8 +11057,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-runtime"
-version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2274ef891ccc0a8d318deffa9d70053f947664d12d58b9c0d1ae5e89237e01f7"
 dependencies = [
  "dpi",
  "gtk",
@@ -12336,16 +11068,17 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "serde_json",
- "tauri-utils 2.1.0",
- "thiserror 2.0.11",
+ "tauri-utils",
+ "thiserror 2.0.10",
  "url",
  "windows 0.58.0",
 ]
 
 [[package]]
 name = "tauri-runtime-wry"
-version = "2.2.0"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
+version = "2.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3707b40711d3b9f6519150869e358ffbde7c57567fb9b5a8b51150606939b2a0"
 dependencies = [
  "gtk",
  "http 1.2.0",
@@ -12359,7 +11092,7 @@ dependencies = [
  "softbuffer",
  "tao",
  "tauri-runtime",
- "tauri-utils 2.1.0",
+ "tauri-utils",
  "url",
  "webkit2gtk",
  "webview2-com",
@@ -12369,49 +11102,16 @@ dependencies = [
 
 [[package]]
 name = "tauri-utils"
-version = "2.1.0"
-source = "git+https://github.com/tari-project/tauri.git?rev=67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25#67a06c8a9bae94f412b8059dfa8b4d8dd8ea0a25"
-dependencies = [
- "brotli",
- "cargo_metadata 0.18.1",
- "ctor",
- "dunce",
- "glob",
- "html5ever",
- "http 1.2.0",
- "infer",
- "json-patch",
- "kuchikiki",
- "log",
- "memchr",
- "phf 0.11.3",
- "proc-macro2",
- "quote",
- "regex",
- "schemars",
- "semver",
- "serde",
- "serde-untagged",
- "serde_json",
- "serde_with",
- "swift-rs",
- "thiserror 2.0.11",
- "toml 0.8.19",
- "url",
- "urlpattern",
- "uuid",
- "walkdir",
-]
-
-[[package]]
-name = "tauri-utils"
 version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96fb10e7cc97456b2d5b9c03e335b5de5da982039a303a20d10006885e4523a0"
 dependencies = [
- "cargo_metadata 0.19.1",
+ "aes-gcm",
+ "brotli",
+ "cargo_metadata",
  "ctor",
  "dunce",
+ "getrandom 0.2.15",
  "glob",
  "html5ever",
  "http 1.2.0",
@@ -12430,8 +11130,9 @@ dependencies = [
  "serde-untagged",
  "serde_json",
  "serde_with",
+ "serialize-to-javascript",
  "swift-rs",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "toml 0.8.19",
  "url",
  "urlpattern",
@@ -12515,11 +11216,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.11"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d452f284b73e6d76dd36758a0c8684b1d5be31f92b89d07fd5822175732206fc"
+checksum = "a3ac7f54ca534db81081ef1c1e7f6ea8a3ef428d2fc069097c079443d24124d3"
 dependencies = [
- "thiserror-impl 2.0.11",
+ "thiserror-impl 2.0.10",
 ]
 
 [[package]]
@@ -12535,9 +11236,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.11"
+version = "2.0.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26afc1baea8a989337eeb52b6e72a039780ce45c3edfcc9c5b9d112feeb173c2"
+checksum = "9e9465d30713b56a37ede7185763c3492a91be2f5fa68d958c44e41ab9248beb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -12572,6 +11273,17 @@ checksum = "cfe8f25bbdd100db7e1d34acf7fd2dc59c4bf8f7483f505eaa7d4f12f76cc0ea"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "tiff"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba1310fcea54c6a9a4fd1aad794ecc02c31682f6bfbecdf460bf19533eed1e3e"
+dependencies = [
+ "flate2",
+ "jpeg-decoder",
+ "weezl",
 ]
 
 [[package]]
@@ -12649,7 +11361,7 @@ dependencies = [
  "bytes 1.9.0",
  "libc",
  "mio",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -12806,7 +11518,7 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "winnow 0.6.24",
+ "winnow 0.6.22",
 ]
 
 [[package]]
@@ -12847,7 +11559,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9557ce109ea773b399c9b9e5dca39294110b74f1f342cb347a80d1fce8c26a11"
 dependencies = [
- "prettyplease 0.2.29",
+ "prettyplease 0.2.27",
  "proc-macro2",
  "prost-build 0.13.4",
  "prost-types 0.13.4",
@@ -12885,7 +11597,7 @@ dependencies = [
  "futures-core",
  "futures-util",
  "pin-project-lite",
- "sync_wrapper 1.0.2",
+ "sync_wrapper",
  "tokio",
  "tower-layer",
  "tower-service",
@@ -12996,7 +11708,7 @@ version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d48a05076dd272615d03033bf04f480199f7d1b66a8ac64d75c625fc4a70c06b"
 dependencies = [
- "core-graphics",
+ "core-graphics 0.24.0",
  "crossbeam-channel",
  "dirs 5.0.1",
  "libappindicator",
@@ -13278,6 +11990,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "urlencoding"
+version = "2.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
+
+[[package]]
 name = "urlpattern"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13539,243 +12257,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasmer"
-version = "4.4.0"
+name = "wasm-timer"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2d920d06243e9f456c336c428a34560357dedf59d9febaae14f1995ac120cff6"
+checksum = "be0ecb0db480561e9a7642b5d3e4187c128914e58aa84330b9493e3eb68c5e7f"
 dependencies = [
- "bytes 1.9.0",
- "cfg-if",
- "derivative",
- "indexmap 1.9.3",
+ "futures 0.3.31",
  "js-sys",
- "more-asserts",
- "rustc-demangle",
- "serde",
- "serde-wasm-bindgen",
- "shared-buffer",
- "target-lexicon",
- "thiserror 1.0.69",
- "tracing",
+ "parking_lot 0.11.2",
+ "pin-utils",
  "wasm-bindgen",
- "wasmer-compiler",
- "wasmer-compiler-cranelift",
- "wasmer-derive",
- "wasmer-types",
- "wasmer-vm",
- "wat",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "wasmer-compiler"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0e01832173aa52345e480965f18c638a8a5a9e5e4d85a48675bdf1964147dc7f"
-dependencies = [
- "backtrace",
- "bytes 1.9.0",
- "cfg-if",
- "enum-iterator",
- "enumset",
- "lazy_static",
- "leb128",
- "libc",
- "memmap2 0.6.2",
- "more-asserts",
- "region",
- "rkyv",
- "self_cell",
- "shared-buffer",
- "smallvec 1.13.2",
- "thiserror 1.0.69",
- "wasmer-types",
- "wasmer-vm",
- "wasmparser",
- "windows-sys 0.59.0",
- "xxhash-rust",
-]
-
-[[package]]
-name = "wasmer-compiler-cranelift"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1c1618f53b492cf6649beeb372930e376e0f52d9842c0c5eb5aa2b548251dab6"
-dependencies = [
- "cranelift-codegen",
- "cranelift-entity",
- "cranelift-frontend",
- "gimli 0.26.2",
- "more-asserts",
- "rayon",
- "smallvec 1.13.2",
- "target-lexicon",
- "tracing",
- "wasmer-compiler",
- "wasmer-types",
-]
-
-[[package]]
-name = "wasmer-derive"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9c5875633aea92153b6a561cb07363785ca9e07792ca6cd7c1cc371761001d8f"
-dependencies = [
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn 1.0.109",
-]
-
-[[package]]
-name = "wasmer-middlewares"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b88a9e1deb02d6547ac672ffcea9fd0c63d725047883282a8b2a297a4819bd81"
-dependencies = [
- "wasmer",
- "wasmer-types",
- "wasmer-vm",
-]
-
-[[package]]
-name = "wasmer-types"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fb32f0d231b591e4c8a65e81d4647fa3180496d71a123d4948dba8551bba9c2"
-dependencies = [
- "bytecheck",
- "enum-iterator",
- "enumset",
- "getrandom 0.2.15",
- "hex",
- "indexmap 1.9.3",
- "more-asserts",
- "rkyv",
- "sha2",
- "target-lexicon",
- "thiserror 1.0.69",
- "xxhash-rust",
-]
-
-[[package]]
-name = "wasmer-vm"
-version = "4.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e38e9301f5bb9f18da9cda4002d74d2cb6ac1f36dcf919fd77f91fca321fb1e5"
-dependencies = [
- "backtrace",
- "cc",
- "cfg-if",
- "corosensei",
- "crossbeam-queue",
- "dashmap 6.1.0",
- "derivative",
- "enum-iterator",
- "fnv",
- "indexmap 1.9.3",
- "lazy_static",
- "libc",
- "mach2",
- "memoffset 0.9.1",
- "more-asserts",
- "region",
- "scopeguard",
- "thiserror 1.0.69",
- "wasmer-types",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "wasmparser"
-version = "0.121.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9dbe55c8f9d0dbd25d9447a5a889ff90c0cc3feaa7395310d3d826b2c703eaab"
-dependencies = [
- "bitflags 2.7.0",
- "indexmap 2.7.0",
- "semver",
-]
-
-[[package]]
-name = "wast"
-version = "64.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a259b226fd6910225aa7baeba82f9d9933b6d00f2ce1b49b80fa4214328237cc"
-dependencies = [
- "leb128",
- "memchr",
- "unicode-width 0.1.14",
- "wasm-encoder",
-]
-
-[[package]]
-name = "wat"
-version = "1.0.71"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53253d920ab413fca1c7dc2161d601c79b4fdf631d0ba51dd4343bf9b556c3f6"
-dependencies = [
- "wast",
-]
-
-[[package]]
-name = "wayland-backend"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "056535ced7a150d45159d3a8dc30f91a2e2d588ca0b23f70e56033622b8016f6"
-dependencies = [
- "cc",
- "downcast-rs",
- "rustix",
- "scoped-tls",
- "smallvec 1.13.2",
- "wayland-sys",
-]
-
-[[package]]
-name = "wayland-client"
-version = "0.31.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b66249d3fc69f76fd74c82cc319300faa554e9d865dab1f7cd66cc20db10b280"
-dependencies = [
- "bitflags 2.7.0",
- "rustix",
- "wayland-backend",
- "wayland-scanner",
-]
-
-[[package]]
-name = "wayland-protocols"
-version = "0.32.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7cd0ade57c4e6e9a8952741325c30bf82f4246885dca8bf561898b86d0c1f58e"
-dependencies = [
- "bitflags 2.7.0",
- "wayland-backend",
- "wayland-client",
- "wayland-scanner",
-]
-
-[[package]]
-name = "wayland-scanner"
-version = "0.31.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "597f2001b2e5fc1121e3d5b9791d3e78f05ba6bfa4641053846248e3a13661c3"
-dependencies = [
- "proc-macro2",
- "quick-xml 0.36.2",
- "quote",
-]
-
-[[package]]
-name = "wayland-sys"
-version = "0.31.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efa8ac0d8e8ed3e3b5c9fc92c7881406a268e11555abe36493efabe649a29e09"
-dependencies = [
- "dlib",
- "log",
- "pkg-config",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]
@@ -14056,9 +12549,9 @@ dependencies = [
 
 [[package]]
 name = "webview2-com"
-version = "0.33.0"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f61ff3d9d0ee4efcb461b14eb3acfda2702d10dc329f339303fc3e57215ae2c"
+checksum = "823e7ebcfaea51e78f72c87fc3b65a1e602c321f407a0b36dbb327d7bb7cd921"
 dependencies = [
  "webview2-com-macros",
  "webview2-com-sys",
@@ -14081,14 +12574,20 @@ dependencies = [
 
 [[package]]
 name = "webview2-com-sys"
-version = "0.33.0"
+version = "0.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a3a3e2eeb58f82361c93f9777014668eb3d07e7d174ee4c819575a9208011886"
+checksum = "7a82bce72db6e5ee83c68b5de1e2cd6ea195b9fbff91cb37df5884cbe3222df4"
 dependencies = [
  "thiserror 1.0.69",
  "windows 0.58.0",
  "windows-core 0.58.0",
 ]
+
+[[package]]
+name = "weezl"
+version = "0.1.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53a85b86a771b1c87058196170769dd264f66c0782acf1ae6cc51bfd64b39082"
 
 [[package]]
 name = "which"
@@ -14292,17 +12791,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "windows-implement"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83577b051e2f49a058c308f17f273b570a6a758386fc291b5f6a934dd84e48c1"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.96",
-]
-
-[[package]]
 name = "windows-interface"
 version = "0.57.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14318,17 +12806,6 @@ name = "windows-interface"
 version = "0.58.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "053c4c462dc91d3b1504c6fe5a726dd15e216ba718e84a0e46a88fbe5ded3515"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.96",
-]
-
-[[package]]
-name = "windows-interface"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb26fd936d991781ea39e87c3a27285081e3c0da5ca0fcbc02d368cc6f52ff01"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -14538,12 +13015,6 @@ checksum = "86b8d5f90ddd19cb4a147a5fa63ca848db3df085e25fee3cc10b39b6eebae764"
 
 [[package]]
 name = "windows_aarch64_msvc"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd761fd3eb9ab8cc1ed81e56e567f02dd82c4c837e48ac3b2181b9ffc5060807"
-
-[[package]]
-name = "windows_aarch64_msvc"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e08e8864a60f06ef0d0ff4ba04124db8b0fb3be5776a5cd47641e942e58c4d43"
@@ -14565,12 +13036,6 @@ name = "windows_aarch64_msvc"
 version = "0.53.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c7651a1f62a11b8cbd5e0d42526e55f2c99886c77e007179efff86c2b137e66c"
-
-[[package]]
-name = "windows_i686_gnu"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cab0cf703a96bab2dc0c02c0fa748491294bf9b7feb27e1f4f96340f208ada0e"
 
 [[package]]
 name = "windows_i686_gnu"
@@ -14610,12 +13075,6 @@ checksum = "9ce6ccbdedbf6d6354471319e781c0dfef054c81fbc7cf83f338a4296c0cae11"
 
 [[package]]
 name = "windows_i686_msvc"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8cfdbe89cc9ad7ce618ba34abc34bbb6c36d99e96cae2245b7943cd75ee773d0"
-
-[[package]]
-name = "windows_i686_msvc"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "44d840b6ec649f480a41c8d80f9c65108b92d89345dd94027bfe06ac444d1060"
@@ -14637,12 +13096,6 @@ name = "windows_i686_msvc"
 version = "0.53.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "581fee95406bb13382d2f65cd4a908ca7b1e4c2f1917f143ba16efe98a589b5d"
-
-[[package]]
-name = "windows_x86_64_gnu"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4dd9b0c0e9ece7bb22e84d70d01b71c6d6248b81a3c60d11869451b4cb24784"
 
 [[package]]
 name = "windows_x86_64_gnu"
@@ -14694,12 +13147,6 @@ checksum = "0a6e035dd0599267ce1ee132e51c27dd29437f63325753051e71dd9e42406c57"
 
 [[package]]
 name = "windows_x86_64_msvc"
-version = "0.33.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff1e4aa646495048ec7f3ffddc411e1d829c026a2ec62b39da15c1055e406eaa"
-
-[[package]]
-name = "windows_x86_64_msvc"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9aec5da331524158c6d1a4ac0ab1541149c0b9505fde06423b02f5ef0106b9f0"
@@ -14733,9 +13180,9 @@ dependencies = [
 
 [[package]]
 name = "winnow"
-version = "0.6.24"
+version = "0.6.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c8d71a593cc5c42ad7876e2c1fda56f314f3754c084128833e64f1345ff8a03a"
+checksum = "39281189af81c07ec09db316b302a3e67bf9bd7cbf6c820b50e35fee9c2fa980"
 dependencies = [
  "memchr",
 ]
@@ -14795,9 +13242,9 @@ checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
 
 [[package]]
 name = "wry"
-version = "0.47.2"
+version = "0.48.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61ce51277d65170f6379d8cda935c80e3c2d1f0ff712a123c8bddb11b31a4b73"
+checksum = "1e644bf458e27b11b0ecafc9e5633d1304fdae82baca1d42185669752fe6ca4f"
 dependencies = [
  "base64 0.22.1",
  "block2",
@@ -14825,7 +13272,7 @@ dependencies = [
  "sha2",
  "soup3",
  "tao-macros",
- "thiserror 1.0.69",
+ "thiserror 2.0.10",
  "url",
  "webkit2gtk",
  "webkit2gtk-sys",
@@ -14867,51 +13314,21 @@ dependencies = [
 ]
 
 [[package]]
-name = "x25519-dalek"
-version = "2.0.1"
+name = "x11rb"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7e468321c81fb07fa7f4c636c3972b9100f0346e5b6a9f2bd0603a52f7ed277"
+checksum = "5d91ffca73ee7f68ce055750bf9f6eca0780b8c85eff9bc046a3b0da41755e12"
 dependencies = [
- "curve25519-dalek",
- "rand_core 0.6.4",
- "serde",
- "zeroize",
+ "gethostname 0.4.3",
+ "rustix",
+ "x11rb-protocol",
 ]
 
 [[package]]
-name = "x509-parser"
-version = "0.15.1"
+name = "x11rb-protocol"
+version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7069fba5b66b9193bd2c5d3d4ff12b839118f6bcbef5328efafafb5395cf63da"
-dependencies = [
- "asn1-rs 0.5.2",
- "data-encoding",
- "der-parser 8.2.0",
- "lazy_static",
- "nom",
- "oid-registry 0.6.1",
- "ring 0.16.20",
- "rusticata-macros",
- "thiserror 1.0.69",
- "time",
-]
-
-[[package]]
-name = "x509-parser"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fcbc162f30700d6f3f82a24bf7cc62ffe7caea42c0b2cba8bf7f3ae50cf51f69"
-dependencies = [
- "asn1-rs 0.6.2",
- "data-encoding",
- "der-parser 9.0.0",
- "lazy_static",
- "nom",
- "oid-registry 0.7.1",
- "rusticata-macros",
- "thiserror 1.0.69",
- "time",
-]
+checksum = "ec107c4503ea0b4a98ef47356329af139c0a4f7750e621cf2973cd3385ebcb3d"
 
 [[package]]
 name = "xattr"
@@ -14999,7 +13416,7 @@ dependencies = [
  "futures 0.3.31",
  "log",
  "nohash-hasher",
- "parking_lot",
+ "parking_lot 0.12.3",
  "pin-project 1.1.8",
  "rand 0.8.5",
  "static_assertions",
@@ -15117,22 +13534,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
- "zvariant_utils 2.1.0",
-]
-
-[[package]]
-name = "zbus_macros"
-version = "5.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "445efc01929302aee95e2b25bbb62a301ea8a6369466e4278e58e7d1dfb23631"
-dependencies = [
- "proc-macro-crate 3.2.0",
- "proc-macro2",
- "quote",
- "syn 2.0.96",
- "zbus_names 4.1.1",
- "zvariant 5.2.0",
- "zvariant_utils 3.1.0",
+ "zvariant_utils",
 ]
 
 [[package]]
@@ -15264,7 +13666,7 @@ dependencies = [
  "pbkdf2",
  "rand 0.8.5",
  "sha1",
- "thiserror 2.0.11",
+ "thiserror 2.0.10",
  "time",
  "zeroize",
  "zopfli",
@@ -15352,20 +13754,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
- "zvariant_utils 2.1.0",
-]
-
-[[package]]
-name = "zvariant_derive"
-version = "5.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "573a8dd76961957108b10f7a45bac6ab1ea3e9b7fe01aff88325dc57bb8f5c8b"
-dependencies = [
- "proc-macro-crate 3.2.0",
- "proc-macro2",
- "quote",
- "syn 2.0.96",
- "zvariant_utils 3.1.0",
+ "zvariant_utils",
 ]
 
 [[package]]
@@ -15377,18 +13766,4 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.96",
-]
-
-[[package]]
-name = "zvariant_utils"
-version = "3.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddd46446ea2a1f353bfda53e35f17633afa79f4fe290a611c94645c69fe96a50"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde",
- "static_assertions",
- "syn 2.0.96",
- "winnow 0.6.24",
 ]

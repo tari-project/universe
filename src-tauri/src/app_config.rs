@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -112,6 +113,10 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default = "default_changelog_version")]
+    last_changelog_version: String,
+    #[serde(default)]
+    airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_true")]
     ootle_enabled: bool,
     // enable localnet: check binaries and run base node + Ootle locally
@@ -159,6 +164,8 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
+            airdrop_tokens: None,
             ootle_enabled: true,
             ootle_localnet_enabled: false,
         }
@@ -170,6 +177,12 @@ pub enum DisplayMode {
     System,
     Dark,
     Light,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AirdropTokens {
+    pub token: String,
+    pub refresh_token: String,
 }
 
 impl DisplayMode {
@@ -239,7 +252,6 @@ pub(crate) struct AppConfig {
     created_at: Option<DateTime<Utc>>,
     mode: MiningMode,
     display_mode: DisplayMode,
-    auto_mining: bool,
     mine_on_app_start: bool,
     p2pool_enabled: bool,
     last_binaries_update_timestamp: SystemTime,
@@ -274,6 +286,8 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    last_changelog_version: String,
+    airdrop_tokens: Option<AirdropTokens>,
     ootle_enabled: bool,
     ootle_localnet_enabled: bool,
 }
@@ -286,7 +300,6 @@ impl AppConfig {
             created_at: None,
             mode: MiningMode::Eco,
             display_mode: DisplayMode::Light,
-            auto_mining: true,
             mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
@@ -321,6 +334,8 @@ impl AppConfig {
             keyring_accessed: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
+            airdrop_tokens: None,
             ootle_enabled: true,
             ootle_localnet_enabled: false,
         }
@@ -400,6 +415,8 @@ impl AppConfig {
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.last_changelog_version = config.last_changelog_version;
+                self.airdrop_tokens = config.airdrop_tokens;
                 self.ootle_enabled = config.ootle_enabled;
 
                 KEYRING_ACCESSED.store(
@@ -480,6 +497,10 @@ impl AppConfig {
         &self.anon_id
     }
 
+    pub fn last_changelog_version(&self) -> &str {
+        &self.last_changelog_version
+    }
+
     pub async fn set_mode(
         &mut self,
         mode: String,
@@ -518,6 +539,19 @@ impl AppConfig {
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
         self.custom_max_gpu_usage.clone()
+    }
+
+    pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
+        self.airdrop_tokens.clone()
+    }
+
+    pub async fn set_airdrop_tokens(
+        &mut self,
+        airdrop_tokens: Option<AirdropTokens>,
+    ) -> Result<(), anyhow::Error> {
+        self.airdrop_tokens = airdrop_tokens;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_max_gpu_usage(
@@ -578,7 +612,7 @@ impl AppConfig {
         Ok(())
     }
 
-    // Config temporarily unused
+    // TODO: BRING BACK AFTER RESOLVING WINDOWS SIZING PERSISTENCE
     // pub async fn set_window_settings(
     //     &mut self,
     //     window_settings: WindowSettings,
@@ -599,10 +633,6 @@ impl AppConfig {
         self.show_experimental_settings = show_experimental_settings;
         self.update_config_file().await?;
         Ok(())
-    }
-
-    pub fn auto_mining(&self) -> bool {
-        self.auto_mining
     }
 
     pub fn should_auto_launch(&self) -> bool {
@@ -757,6 +787,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_last_changelog_version(
+        &mut self,
+        version: String,
+    ) -> Result<(), anyhow::Error> {
+        self.last_changelog_version = version;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     pub fn ootle_enabled(&self) -> bool {
         self.ootle_enabled
     }
@@ -827,6 +866,8 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            last_changelog_version: self.last_changelog_version.clone(),
+            airdrop_tokens: self.airdrop_tokens.clone(),
             ootle_enabled: self.ootle_enabled,
             ootle_localnet_enabled: self.ootle_localnet_enabled,
         };
@@ -923,4 +964,8 @@ fn default_window_settings() -> Option<WindowSettings> {
 
 fn default_p2pool_stats_server_port() -> Option<u16> {
     None
+}
+
+fn default_changelog_version() -> String {
+    Version::new(0, 0, 0).to_string()
 }

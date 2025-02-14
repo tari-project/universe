@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IoClose } from 'react-icons/io5';
 
@@ -26,25 +26,25 @@ import {
 
 import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 
-const markups = {
-    general: <GeneralSettings />,
-    mining: <MiningSettings />,
-    connections: <ConnectionsSettings />,
-    p2p: <PoolMiningSettings />,
-    wallet: <WalletSettings />,
-    airdrop: <AirdropSettings />,
-    experimental: <ExperimentalSettings />,
-    releaseNotes: <ReleaseNotes />,
-    ootle: <OotleSettings />,
-    ootleWallet: <OotleWalletSettings />,
-};
-
-export default function SettingsModal() {
+const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isSettingsOpen = useAppStateStore((s) => s.isSettingsOpen);
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
 
     const [activeSection, setActiveSection] = useState<SettingsType>(SETTINGS_TYPES[0]);
+
+    const markups = {
+        general: <GeneralSettings />,
+        mining: <MiningSettings />,
+        connections: <ConnectionsSettings />,
+        p2p: <PoolMiningSettings />,
+        wallet: <WalletSettings />,
+        airdrop: <AirdropSettings />,
+        experimental: <ExperimentalSettings />,
+        releaseNotes: <ReleaseNotes />,
+        ootle: <OotleSettings />,
+        ootleWallet: <OotleWalletSettings />,
+    };
 
     const sectionMarkup = markups[activeSection];
 
@@ -55,6 +55,9 @@ export default function SettingsModal() {
         setIsSettingsOpen(!isSettingsOpen);
     }
 
+    const sectionTitle = t(`tabs.${activeSection}`);
+    const title = activeSection === 'releaseNotes' ? sectionTitle : `${sectionTitle} ${t('settings')}`;
+
     return (
         <Dialog open={isSettingsOpen} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
@@ -62,7 +65,7 @@ export default function SettingsModal() {
                     <SettingsNavigation activeSection={activeSection} onChangeActiveSection={setActiveSection} />
                     <ContentContainer>
                         <HeaderContainer>
-                            <Typography variant="h4">{`${t(`tabs.${activeSection}`)} ${t('settings')}`}</Typography>
+                            <Typography variant="h4">{title}</Typography>
                             <IconButton onClick={() => onOpenChange()}>
                                 <IoClose size={18} />
                             </IconButton>
@@ -75,4 +78,6 @@ export default function SettingsModal() {
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export default SettingsModal;

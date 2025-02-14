@@ -25,13 +25,16 @@ use serde::Deserialize;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::{watch, RwLock};
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_utils;
+use crate::utils::math_utils::estimate_earning;
 use crate::{
     app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
@@ -64,9 +67,12 @@ pub(crate) struct GpuMiner {
 }
 
 impl GpuMiner {
-    pub fn new(status_broadcast: watch::Sender<GpuMinerStatus>) -> Self {
+    pub fn new(
+        status_broadcast: watch::Sender<GpuMinerStatus>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         let adapter = GpuMinerAdapter::new(vec![], status_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter);
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner());
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
 
@@ -191,6 +197,30 @@ impl GpuMiner {
                 ))
             }
         }
+    }
+
+    pub async fn status(
+        &self,
+        network_hash_rate: u64,
+        block_reward: MicroMinotari,
+        gpu_latest_status: GpuMinerStatus,
+    ) -> Result<GpuMinerStatus, anyhow::Error> {
+        let lock = self.watcher.read().await;
+        if !lock.is_running() {
+            // warn!(target: LOG_TARGET, "Gpu miner is not running");
+            return Ok(GpuMinerStatus {
+                is_mining: false,
+                hash_rate: 0.0,
+                estimated_earnings: 0,
+            });
+        }
+        let hash_rate = gpu_latest_status.hash_rate;
+        let estimated_earnings = estimate_earning(network_hash_rate, hash_rate, block_reward);
+
+        Ok(GpuMinerStatus {
+            estimated_earnings: MicroMinotari(estimated_earnings).as_u64(),
+            ..gpu_latest_status
+        })
     }
 
     pub fn is_gpu_mining_available(&self) -> bool {

@@ -1,5 +1,15 @@
 {
-    "identifier": "desktop-capability",
-    "platforms": ["macOS", "windows", "linux"],
-    "permissions": ["updater:default", "dialog:default"]
+  "identifier": "desktop-capability",
+  "platforms": [
+    "macOS",
+    "windows",
+    "linux"
+  ],
+  "windows": [
+    "main",
+    "splashscreen"
+  ],
+  "permissions": [
+    "updater:default"
+  ]
 }

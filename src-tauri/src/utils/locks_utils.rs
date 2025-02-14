@@ -20,56 +20,53 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::{Arc, Mutex};
-use tokio::time::{sleep, Duration};
+use std::time::Duration;
 
-#[derive(Debug)]
-pub struct AutoRollback<T> {
-    value: Arc<Mutex<T>>,
-    initial_value: T,
-}
+use tokio::{
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
+    time::sleep,
+};
 
-impl<T> AutoRollback<T>
-where
-    T: Clone + Send + 'static,
-{
-    pub fn new(value: T) -> Self {
-        AutoRollback {
-            value: Arc::new(Mutex::new(value.clone())),
-            initial_value: value,
-        }
-    }
+const LOCK_RETRY_DELAY: Duration = Duration::from_millis(500);
 
-    pub async fn set_value(&self, new_value: T, rollback_delay: Duration) {
-        // Update the value
-        {
-            if let Ok(mut val) = self.value.lock() {
-                *val = new_value;
+pub async fn try_read_with_retry<T>(
+    lock: &RwLock<T>,
+    retries: u32,
+) -> Result<RwLockReadGuard<T>, String> {
+    for i in 0..retries {
+        match lock.try_read() {
+            Ok(guard) => return Ok(guard),
+            Err(_) => {
+                if i == retries - 1 {
+                    return Err(format!(
+                        "Failed to acquire read lock after {} retries",
+                        retries
+                    ));
+                }
+                sleep(LOCK_RETRY_DELAY).await;
             }
         }
-
-        // Spawn a task that will rollback the value after the delay
-        let value_clone = Arc::clone(&self.value);
-        let initial_value = self.initial_value.clone();
-        tokio::spawn(async move {
-            sleep(rollback_delay).await;
-
-            println!("Rollback finished after {:?}", rollback_delay);
-            // Rollback to the initial value
-            if let Ok(mut val) = value_clone.lock() {
-                *val = initial_value;
-            };
-        });
     }
+    Err("Failed to acquire read lock".to_string())
+}
 
-    pub fn get_value(&self) -> T
-    where
-        T: Clone,
-    {
-        if let Ok(val) = self.value.lock() {
-            val.clone()
-        } else {
-            self.initial_value.clone()
+pub async fn try_write_with_retry<T>(
+    lock: &RwLock<T>,
+    retries: u32,
+) -> Result<RwLockWriteGuard<T>, String> {
+    for i in 0..retries {
+        match lock.try_write() {
+            Ok(guard) => return Ok(guard),
+            Err(_) => {
+                if i == retries - 1 {
+                    return Err(format!(
+                        "Failed to acquire write lock after {} retries",
+                        retries
+                    ));
+                }
+                sleep(LOCK_RETRY_DELAY).await;
+            }
         }
     }
+    Err("Failed to acquire write lock".to_string())
 }

@@ -18,6 +18,7 @@ import {
     ExpandedContentTile,
 } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Miner() {
     useMiningStatesSync();
@@ -27,17 +28,13 @@ export default function Miner() {
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
-    const { cpu_estimated_earnings, cpu_hash_rate, cpu_is_mining } = useMiningStore((s) => ({
-        cpu_estimated_earnings: s.cpu.mining.estimated_earnings,
-        cpu_hash_rate: s.cpu.mining.hash_rate,
-        cpu_is_mining: s.cpu.mining.is_mining,
-    }));
-    const { gpu_estimated_earnings, gpu_hash_rate, gpu_is_mining } = useMiningStore((s) => ({
-        gpu_estimated_earnings: s.gpu.mining.estimated_earnings,
-        gpu_hash_rate: s.gpu.mining.hash_rate,
-        gpu_is_mining: s.gpu.mining.is_mining,
-    }));
+    const cpu_estimated_earnings = useMiningMetricsStore((s) => s.cpu_mining_status.estimated_earnings);
+    const cpu_hash_rate = useMiningMetricsStore((s) => s.cpu_mining_status.hash_rate);
+    const cpu_is_mining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
 
+    const gpu_estimated_earnings = useMiningMetricsStore((s) => s.gpu_mining_status.estimated_earnings);
+    const gpu_hash_rate = useMiningMetricsStore((s) => s.gpu_mining_status.hash_rate);
+    const gpu_is_mining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isMiningInProgress = cpu_is_mining || gpu_is_mining;
 
     const isWaitingForCPUHashRate = isCpuMiningEnabled && cpu_is_mining && cpu_hash_rate <= 0;
