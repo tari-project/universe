@@ -8,7 +8,7 @@ import {
     TariPermissionNftGetOwnershipProof,
     TariPermissionTransactionGet,
     TariPermissionTransactionSend,
-} from '@tari-project/tarijs/dist/providers/wallet_daemon/tari_permissions';
+} from '@tari-project/tari-permissions';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function toPermission(permission: any): TariPermission {
