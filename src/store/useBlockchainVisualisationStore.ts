@@ -4,7 +4,7 @@ import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
-import { setAnimationState } from '@app/visuals.ts';
+import { setAnimationComplete, setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
 import { useAppConfigStore } from './useAppConfigStore.ts';
@@ -58,7 +58,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setIsPlayingAudio: (isPlayingAudio) => set({ isPlayingAudio }),
 }));
 
-async function playBlockWinAudio() {
+async function playNotificationAudio() {
     try {
         const audioEnabled = useAppConfigStore.getState().audio_enabled;
         const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
@@ -66,7 +66,44 @@ async function playBlockWinAudio() {
             return;
         }
 
-        const asset = 'assets/block_win.mp3';
+        const asset = 'assets/Notification.wav';
+        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
+        const audioElement = new Audio(blobUrl);
+        if (!audioElement) {
+            console.error('Audio element not found');
+            return;
+        }
+
+        audioElement.currentTime = 0;
+        audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
+        audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
+        audioElement.play();
+    } catch (err) {
+        console.error(`Failed to play block win sound: ${err}`);
+    }
+}
+
+function selectAudioAssetOnSuccessTier(tier: string) {
+    if (tier === 'success') {
+        return 'assets/Success_Level_01.wav';
+    } else if (tier === 'success2') {
+        return 'assets/Success_Level_02.wav';
+    } else if (tier === 'success3') {
+        return 'assets/Success_Level_03.wav';
+    } else {
+        throw new Error('Invalid tier');
+    }
+}
+
+async function playBlockWinAudio(successTier: string) {
+    try {
+        const audioEnabled = useAppConfigStore.getState().audio_enabled;
+        const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
+        if (!audioEnabled || isPlayingAudio) {
+            //return;
+        }
+
+        const asset = selectAudioAssetOnSuccessTier(successTier);
         const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
         const audioElement = new Audio(blobUrl);
         if (!audioElement) {
@@ -88,10 +125,10 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     const earnings = coinbase_transaction.amount;
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
+    const successTier = getSuccessTier(earnings);
 
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
-        const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
@@ -112,7 +149,8 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             earnings: undefined,
         }));
     }
-    playBlockWinAudio();
+    playNotificationAudio();
+    setTimeout(() => playBlockWinAudio(successTier), 2500);
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
@@ -134,6 +172,7 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
 export const handleWinRecap = (recapData: Recap) => {
     useMiningStore.getState().setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
+    setAnimationComplete(3, true);
     setAnimationState(successTier);
     useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
     setTimeout(() => {
@@ -146,7 +185,8 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState({ replayItem: txItem });
     setAnimationState(successTier, true);
-    playBlockWinAudio();
+    playNotificationAudio();
+    setTimeout(() => playBlockWinAudio(successTier), 2500);
     setTimeout(() => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
