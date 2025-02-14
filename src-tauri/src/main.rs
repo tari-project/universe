@@ -173,7 +173,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
-        &app_state
+        let _ = &app_state
             .events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
             .await;
@@ -186,7 +186,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 vec![]
             }
         };
-        &app_state
+        let _ = &app_state
             .events_manager
             .handle_gpu_devices_update(&move_app, gpu_devices)
             .await;
@@ -201,7 +201,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         let current_block_height = node_status_watch_rx.borrow().block_height;
-        &app_state
+        let _ = &app_state
             .events_manager
             .wait_for_initial_wallet_scan(&move_app, current_block_height)
             .await;
@@ -214,10 +214,10 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
+                            let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
                     } else {
-                        &app_state.events_manager.handle_base_node_update(&move_app, node_status.clone()).await;
+                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status.clone()).await;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
@@ -238,7 +238,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
                         .await
                     {
-                        &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
+                        let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
                     } else {
                         let err_msg = "Error getting gpu miner status";
                         error!(target: LOG_TARGET, "{}", err_msg);
@@ -247,7 +247,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 },
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                    &app_state.events_manager.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                    let _ = &app_state.events_manager.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
 
                     // Update systemtray data
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
@@ -289,7 +289,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                                    &app_state.events_manager.handle_connected_peers_update(&move_app, connected_peers).await;
+                            let _ = &app_state.events_manager.handle_connected_peers_update(&move_app, connected_peers).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
