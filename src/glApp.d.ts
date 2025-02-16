@@ -24,6 +24,7 @@ interface PreloadArgs {
 export interface GlApp {
     setState(e: GlAppState, isReplay?: boolean): void;
     init: () => void;
+    initAudio: (notificationCB: () => void, blockWinCB: () => void) => void;
     render: (dt: number) => void;
     setSize: (w: number, h: number) => void;
     properties: Properties;

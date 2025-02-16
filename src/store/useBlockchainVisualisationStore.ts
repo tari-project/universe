@@ -62,32 +62,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setIsNotificationAudioPlaying: (isPlayingAudio) => set({ isNotificationAudioPlaying: isPlayingAudio }),
 }));
 
-async function playNotificationAudio() {
-    try {
-        const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
-        const isPlayingAudio = useBlockchainVisualisationStore.getState().isNotificationAudioPlaying;
-
-        if (!audio_enabled || !isAudioFeatureEnabled || isPlayingAudio) {
-            return;
-        }
-
-        const asset = 'assets/Notification.wav';
-        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
-        const audioElement = new Audio(blobUrl);
-        if (!audioElement) {
-            console.error('Audio element not found');
-            return;
-        }
-
-        audioElement.currentTime = 0;
-        audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(true);
-        audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(false);
-        audioElement.play();
-    } catch (err) {
-        console.error(`Failed to play block win sound: ${err}`);
-    }
-}
-
 function selectAudioAssetOnSuccessTier(tier: string) {
     if (tier === 'success') {
         return 'assets/Success_Level_01.wav';
@@ -100,6 +74,45 @@ function selectAudioAssetOnSuccessTier(tier: string) {
     }
 }
 
+function getAudioElementId(tier: string) {
+    if (tier === 'success') {
+        return 'success1-player';
+    } else if (tier === 'success2') {
+        return 'success2-player';
+    } else if (tier === 'success3') {
+        return 'success3-player';
+    } else {
+        throw new Error('Invalid tier');
+    }
+}
+
+async function playNotificationAudio() {
+    try {
+        const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
+        const isPlayingAudio = useBlockchainVisualisationStore.getState().isNotificationAudioPlaying;
+
+        if (!audio_enabled || !isAudioFeatureEnabled || isPlayingAudio) {
+            return;
+        }
+
+        const asset = 'assets/Notification.wav';
+        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
+        const notificationAudioElement = document.getElementById('notification-player') as HTMLAudioElement;
+        if (notificationAudioElement) {
+            notificationAudioElement.setAttribute('src', blobUrl);
+        }
+
+        notificationAudioElement.currentTime = 0;
+        notificationAudioElement.onplay = () =>
+            useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(true);
+        notificationAudioElement.onended = () =>
+            useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(false);
+        notificationAudioElement.play();
+    } catch (err) {
+        console.error(`Failed to play block win sound: ${err}`);
+    }
+}
+
 async function playBlockWinAudio(successTier: string) {
     try {
         const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
@@ -109,21 +122,26 @@ async function playBlockWinAudio(successTier: string) {
         }
 
         const asset = selectAudioAssetOnSuccessTier(successTier);
+        const player = getAudioElementId(successTier);
         const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
-        const audioElement = new Audio(blobUrl);
-        if (!audioElement) {
-            console.error('Audio element not found');
-            return;
+        const blockWinAudioElement = document.getElementById(player) as HTMLAudioElement;
+        if (blockWinAudioElement) {
+            blockWinAudioElement.setAttribute('src', blobUrl);
         }
 
-        audioElement.currentTime = 0;
-        audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(true);
-        audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(false);
-        audioElement.play();
+        blockWinAudioElement.currentTime = 0;
+        blockWinAudioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(true);
+        blockWinAudioElement.onended = () =>
+            useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(false);
+        blockWinAudioElement.play();
     } catch (err) {
         console.error(`Failed to play block win sound: ${err}`);
     }
 }
+
+export const initAnimationAudio = () => {
+    window.glApp.initAudio(playNotificationAudio, () => playBlockWinAudio('success3'));
+};
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
     const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
@@ -154,9 +172,8 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             earnings: undefined,
         }));
     }
-    playNotificationAudio();
-    setTimeout(() => playBlockWinAudio(successTier), 2500);
 };
+
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
@@ -189,8 +206,6 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState({ replayItem: txItem });
     setAnimationState(successTier, true);
-    playNotificationAudio();
-    setTimeout(() => playBlockWinAudio(successTier), 2500);
     setTimeout(() => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
