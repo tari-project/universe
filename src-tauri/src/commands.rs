@@ -47,7 +47,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -513,10 +513,7 @@ pub async fn set_p2pool_stats_server_port(
     info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_p2pool_stats_server_port".to_string(),
-            json!(port),
-        )
+        .send("set_p2pool_stats_server_port".to_string(), json!(port))
         .await;
     drop(telemetry_service);
     state
@@ -996,10 +993,7 @@ pub async fn set_cpu_mining_enabled<'r>(
     info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_cpu_mining_enabled".to_string(),
-            json!(enabled),
-        )
+        .send("set_cpu_mining_enabled".to_string(), json!(enabled))
         .await;
     drop(telemetry_service);
     let mut config = state.config.write().await;
@@ -1051,10 +1045,7 @@ pub async fn set_display_mode(
     info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_display_mode".to_string(),
-            json!(display_mode),
-        )
+        .send("set_display_mode".to_string(), json!(display_mode))
         .await;
     drop(telemetry_service);
     state
@@ -1096,10 +1087,7 @@ pub async fn set_gpu_mining_enabled(
     info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_gpu_mining_enabled".to_string(),
-            json!(enabled),
-        )
+        .send("set_gpu_mining_enabled".to_string(), json!(enabled))
         .await;
     drop(telemetry_service);
     let mut config = state.config.write().await;
@@ -1223,10 +1211,7 @@ pub async fn set_p2pool_enabled(
     info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_p2pool_enabled".to_string(),
-            json!(p2pool_enabled),
-        )
+        .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
         .await;
     drop(telemetry_service);
     state
@@ -1412,10 +1397,7 @@ pub async fn set_visual_mode<'r>(
     info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_visual_mode".to_string(),
-            json!(enabled),
-        )
+        .send("set_visual_mode".to_string(), json!(enabled))
         .await;
     drop(telemetry_service);
     let mut config = state.config.write().await;
@@ -1479,39 +1461,6 @@ pub async fn set_airdrop_tokens<'r>(
             airdrop::restart_mm_proxy_with_new_telemetry_id(state.clone()).await?;
         }
     }
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
-    let enabled = state.config.read().await.audio_enabled();
-    Ok(enabled)
-}
-
-#[tauri::command]
-pub async fn set_audio_enabled(
-    audio_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_audio_enabled] called with flag: {:?}", audio_enabled);
-    state
-        .config
-        .write()
-        .await
-        .set_audio_enabled(audio_enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-    let telemetry_service = state.telemetry_service.read().await;
-    telemetry_service
-        .send("audio-enabled".to_string(), json!(audio_enabled))
-        .await
-        .inspect_err(|e| {
-            error!(
-                "error at sending telemetry data for get_audio_enabled {:?}",
-                e
-            )
-        })
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -1756,10 +1705,7 @@ pub async fn set_pre_release(
     info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send(
-            "set_pre_release".to_string(),
-            json!(pre_release),
-        )
+        .send("set_pre_release".to_string(), json!(pre_release))
         .await;
     drop(telemetry_service);
     state
