@@ -515,7 +515,7 @@ pub async fn set_p2pool_stats_server_port(
     let _res = telemetry_service
         .send(
             "set_p2pool_stats_server_port".to_string(),
-            json!({ "port": port }),
+            json!(port),
         )
         .await;
     drop(telemetry_service);
@@ -943,7 +943,7 @@ pub async fn set_application_language(
     let _res = telemetry_service
         .send(
             "set_application_language".to_string(),
-            json!({ "application_language": application_language }),
+            json!(application_language.clone()),
         )
         .await;
     drop(telemetry_service);
@@ -951,7 +951,7 @@ pub async fn set_application_language(
         .config
         .write()
         .await
-        .set_application_language(application_language.clone())
+        .set_application_language(application_language)
         .await
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -998,7 +998,7 @@ pub async fn set_cpu_mining_enabled<'r>(
     let _res = telemetry_service
         .send(
             "set_cpu_mining_enabled".to_string(),
-            json!({ "cpu_mining_enabled": enabled }),
+            json!(enabled),
         )
         .await;
     drop(telemetry_service);
@@ -1053,7 +1053,7 @@ pub async fn set_display_mode(
     let _res = telemetry_service
         .send(
             "set_display_mode".to_string(),
-            json!({ "display_mode": display_mode }),
+            json!(display_mode),
         )
         .await;
     drop(telemetry_service);
@@ -1098,7 +1098,7 @@ pub async fn set_gpu_mining_enabled(
     let _res = telemetry_service
         .send(
             "set_gpu_mining_enabled".to_string(),
-            json!({ "gpu_mining_enabled": enabled }),
+            json!(enabled),
         )
         .await;
     drop(telemetry_service);
@@ -1129,7 +1129,7 @@ pub async fn set_mine_on_app_start(
     let _res = telemetry_service
         .send(
             "set_mine_on_app_start".to_string(),
-            json!({ "mine_on_app_start": mine_on_app_start }),
+            json!(mine_on_app_start),
         )
         .await;
     drop(telemetry_service);
@@ -1225,7 +1225,7 @@ pub async fn set_p2pool_enabled(
     let _res = telemetry_service
         .send(
             "set_p2pool_enabled".to_string(),
-            json!({ "p2pool_enabled": p2pool_enabled }),
+            json!(p2pool_enabled),
         )
         .await;
     drop(telemetry_service);
@@ -1314,7 +1314,7 @@ pub async fn set_should_auto_launch(
     let _res = telemetry_service
         .send(
             "set_should_auto_launch".to_string(),
-            json!({ "should_auto_launch": should_auto_launch }),
+            json!(should_auto_launch),
         )
         .await;
     drop(telemetry_service);
@@ -1374,7 +1374,7 @@ pub async fn set_use_tor(
     info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
-        .send("set_use_tor".to_string(), json!({ "use_tor": use_tor }))
+        .send("set_use_tor".to_string(), json!(use_tor))
         .await;
     drop(telemetry_service);
     state
@@ -1414,7 +1414,7 @@ pub async fn set_visual_mode<'r>(
     let _res = telemetry_service
         .send(
             "set_visual_mode".to_string(),
-            json!({ "visual_mode": enabled }),
+            json!(enabled),
         )
         .await;
     drop(telemetry_service);
@@ -1758,7 +1758,7 @@ pub async fn set_pre_release(
     let _res = telemetry_service
         .send(
             "set_pre_release".to_string(),
-            json!({ "pre_release": pre_release }),
+            json!(pre_release),
         )
         .await;
     drop(telemetry_service);
