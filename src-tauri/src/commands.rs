@@ -512,6 +512,14 @@ pub async fn set_p2pool_stats_server_port(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_p2pool_stats_server_port".to_string(),
+            json!({ "port": port }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -932,6 +940,14 @@ pub async fn set_application_language(
     application_language: String,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "[set_application_language] called with language: {}", application_language);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_application_language".to_string(),
+            json!({ "application_language": application_language }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -949,6 +965,14 @@ pub async fn set_auto_update(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_auto_update".to_string(),
+            json!({ "auto_update": auto_update }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -971,6 +995,14 @@ pub async fn set_cpu_mining_enabled<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_cpu_mining_enabled".to_string(),
+            json!({ "cpu_mining_enabled": enabled }),
+        )
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_cpu_mining_enabled(enabled)
@@ -1018,6 +1050,14 @@ pub async fn set_display_mode(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_display_mode".to_string(),
+            json!({ "display_mode": display_mode }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1055,6 +1095,14 @@ pub async fn set_gpu_mining_enabled(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_gpu_mining_enabled".to_string(),
+            json!({ "gpu_mining_enabled": enabled }),
+        )
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_gpu_mining_enabled(enabled)
@@ -1078,6 +1126,14 @@ pub async fn set_mine_on_app_start(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_mine_on_app_start] called with flag: {:?}", mine_on_app_start);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_mine_on_app_start".to_string(),
+            json!({ "mine_on_app_start": mine_on_app_start }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1166,6 +1222,14 @@ pub async fn set_p2pool_enabled(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_p2pool_enabled".to_string(),
+            json!({ "p2pool_enabled": p2pool_enabled }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1247,6 +1311,14 @@ pub async fn set_should_auto_launch(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     info!(target: LOG_TARGET, "[set_should_auto_launch] called with flag: {:?}", should_auto_launch);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_should_auto_launch".to_string(),
+            json!({ "should_auto_launch": should_auto_launch }),
+        )
+        .await;
+    drop(telemetry_service);
     match state
         .config
         .write()
@@ -1301,6 +1373,11 @@ pub async fn set_use_tor(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_use_tor".to_string(), json!({ "use_tor": use_tor }))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1334,6 +1411,14 @@ pub async fn set_visual_mode<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_visual_mode".to_string(),
+            json!({ "visual_mode": enabled }),
+        )
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_visual_mode(enabled)
@@ -1742,6 +1827,14 @@ pub async fn set_pre_release(
 ) -> Result<(), String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_pre_release".to_string(),
+            json!({ "pre_release": pre_release }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
