@@ -36,7 +36,6 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
-use crate::utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -48,7 +47,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -110,6 +109,27 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
+}
+
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+
+impl Default for CpuMinerConnectionStatus {
+    fn default() -> Self {
+        Self {
+            is_connected: false,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1351,22 +1371,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_status_watch_rx.borrow().clone();
-            let cpu_miner = state.cpu_miner.read().await;
-            let cpu_mining_status = match cpu_miner
-                .status(
-                    node_status.randomx_network_hashrate,
-                    node_status.block_reward,
-                )
-                .await
-                .map_err(|e| e.to_string())
-            {
-                Ok(cpu) => cpu,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    return Err(e);
-                }
-            };
+            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
@@ -1388,38 +1393,6 @@ pub async fn set_airdrop_tokens<'r>(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
-    let enabled = state.config.read().await.audio_enabled();
-    Ok(enabled)
-}
-
-#[tauri::command]
-pub async fn set_audio_enabled(
-    audio_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    state
-        .config
-        .write()
-        .await
-        .set_audio_enabled(audio_enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-    let telemetry_service = state.telemetry_service.read().await;
-    telemetry_service
-        .send("audio-enabled".to_string(), json!(audio_enabled))
-        .await
-        .inspect_err(|e| {
-            error!(
-                "error at sending telemetry data for get_audio_enabled {:?}",
-                e
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn start_mining<'r>(
@@ -1429,16 +1402,7 @@ pub async fn start_mining<'r>(
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
 
-    let config = match try_read_with_retry(&state.config, 10).await {
-        Ok(config) => config,
-        Err(e) => {
-            let err_msg = format!("Failed to acquire config read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
-
+    let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
@@ -1448,32 +1412,6 @@ pub async fn start_mining<'r>(
     let monero_address = config.monero_address().to_string();
     drop(config);
 
-    let cpu_miner_running = {
-        let cpu_miner = match try_read_with_retry(&state.cpu_miner, 10).await {
-            Ok(cm) => cm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
-        cpu_miner.is_running().await
-    };
-
-    let gpu_miner_running = {
-        let gpu_miner = match try_read_with_retry(&state.gpu_miner, 10).await {
-            Ok(gm) => gm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
-        gpu_miner.is_running().await
-    };
-
     let mut telemetry_id = state
         .telemetry_manager
         .read()
@@ -1481,16 +1419,9 @@ pub async fn start_mining<'r>(
         .get_unique_string()
         .await;
 
-    let cpu_miner_config = match try_read_with_retry(&state.cpu_miner_config, 10).await {
-        Ok(config) => config,
-        Err(e) => {
-            let err_msg = format!("Failed to acquire cpu_miner_config read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
-    let tari_address = cpu_miner_config.tari_address.clone();
+    let cpu_miner = state.cpu_miner.read().await;
+    let cpu_miner_running = cpu_miner.is_running().await;
+    drop(cpu_miner);
 
     if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
@@ -1500,16 +1431,8 @@ pub async fn start_mining<'r>(
             .map_err(|e| e.to_string())?;
 
         {
-            let mut cpu_miner = match try_write_with_retry(&state.cpu_miner, 10).await {
-                Ok(cm) => cm,
-                Err(e) => {
-                    let err_msg = format!("Failed to acquire cpu_miner write lock: {}", e);
-                    error!(target: LOG_TARGET, "{}", err_msg);
-                    sentry::capture_message(&err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
-                }
-            };
-
+            let cpu_miner_config = state.cpu_miner_config.read().await;
+            let mut cpu_miner = state.cpu_miner.write().await;
             let res = cpu_miner
                 .start(
                     state.shutdown.to_signal(),
@@ -1527,6 +1450,7 @@ pub async fn start_mining<'r>(
                     custom_cpu_usage,
                 )
                 .await;
+            drop(cpu_miner_config);
 
             if let Err(e) = res {
                 let err_msg = format!("Could not start CPU mining: {}", e);
@@ -1545,15 +1469,10 @@ pub async fn start_mining<'r>(
         }
     }
 
-    let gpu_available = match try_read_with_retry(&state.gpu_miner, 10).await {
-        Ok(gm) => gm.is_gpu_mining_available(),
-        Err(e) => {
-            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
+    let gpu_miner = state.gpu_miner.read().await;
+    let gpu_miner_running = gpu_miner.is_running().await;
+    let gpu_available = gpu_miner.is_gpu_mining_available();
+    drop(gpu_miner);
 
     info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
@@ -1581,16 +1500,11 @@ pub async fn start_mining<'r>(
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-        let mut gpu_miner = match try_write_with_retry(&state.gpu_miner, 10).await {
-            Ok(gm) => gm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire gpu_miner write lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
+        let cpu_miner_config = state.cpu_miner_config.read().await;
+        let tari_address = cpu_miner_config.tari_address.clone();
+        drop(cpu_miner_config);
 
+        let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
                 state.shutdown.to_signal(),
@@ -1614,19 +1528,6 @@ pub async fn start_mining<'r>(
             let err_msg = format!("Could not start GPU mining: {}", e);
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
-
-            let gpu_miner = match try_write_with_retry(&state.gpu_miner, 10).await {
-                Ok(gm) => gm,
-                Err(lock_err) => {
-                    let lock_err_msg = format!(
-                        "Failed to acquire gpu_miner write lock for cleanup: {}",
-                        lock_err
-                    );
-                    error!(target: LOG_TARGET, "{}", lock_err_msg);
-                    sentry::capture_message(&lock_err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
-                }
-            };
 
             if let Err(stop_err) = gpu_miner.stop().await {
                 error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
