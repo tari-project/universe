@@ -62,27 +62,29 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setIsNotificationAudioPlaying: (isPlayingAudio) => set({ isNotificationAudioPlaying: isPlayingAudio }),
 }));
 
-function selectAudioAssetOnSuccessTier(tier: string) {
-    if (tier === 'success') {
-        return 'assets/Success_Level_01.wav';
-    } else if (tier === 'success2') {
-        return 'assets/Success_Level_02.wav';
-    } else if (tier === 'success3') {
-        return 'assets/Success_Level_03.wav';
-    } else {
-        throw new Error('Invalid tier');
+function selectAudioAssetOnSuccessTier(tier: number) {
+    switch (tier) {
+        case 1:
+            return 'assets/Success_Level_01.wav';
+        case 2:
+            return 'assets/Success_Level_02.wav';
+        case 3:
+            return 'assets/Success_Level_03.wav';
+        default:
+            throw new Error('Invalid tier');
     }
 }
 
-function getAudioElementId(tier: string) {
-    if (tier === 'success') {
-        return 'success1-player';
-    } else if (tier === 'success2') {
-        return 'success2-player';
-    } else if (tier === 'success3') {
-        return 'success3-player';
-    } else {
-        throw new Error('Invalid tier');
+function getAudioElementId(tier: number) {
+    switch (tier) {
+        case 1:
+            return 'success1-player';
+        case 2:
+            return 'success2-player';
+        case 3:
+            return 'success3-player';
+        default:
+            throw new Error('Invalid tier');
     }
 }
 
@@ -113,7 +115,7 @@ async function playNotificationAudio() {
     }
 }
 
-async function playBlockWinAudio(successTier: string) {
+async function playBlockWinAudio(successTier: number) {
     try {
         const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
         const isPlayingAudio = useBlockchainVisualisationStore.getState().isBlockWinAudioPlaying;
@@ -140,7 +142,7 @@ async function playBlockWinAudio(successTier: string) {
 }
 
 export const initAnimationAudio = () => {
-    window.glApp.initAudio(playNotificationAudio, () => playBlockWinAudio('success3'));
+    window.glApp.initAudio(playNotificationAudio, (tier: number) => playBlockWinAudio(tier));
 };
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
