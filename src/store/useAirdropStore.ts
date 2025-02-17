@@ -242,13 +242,13 @@ export const getExistingTokens = async () => {
 
                 // Remove old tokens
                 localStorage.removeItem('airdrop-store');
-                console.debug('Previous tokens set local store cleared');
+                console.info('Previous tokens set local store cleared');
             }
         } catch (e) {
             console.error('Failed to parse existing tokens:', e);
         }
     } else {
-        console.debug('No existing tokens found');
+        console.info('No existing tokens found');
     }
 };
 
@@ -284,12 +284,12 @@ export const fetchBackendInMemoryConfig = async () => {
 
 export const airdropSetup = async () => {
     try {
-        console.debug('Fetching backend in memory config');
+        console.info('Fetching backend in memory config');
         const beConfig = await fetchBackendInMemoryConfig();
-        console.debug('Getting existing tokens');
+        console.info('Getting existing tokens');
         await getExistingTokens();
         if (beConfig?.airdropUrl) {
-            console.debug('Refreshing airdrop tokens');
+            console.info('Refreshing airdrop tokens');
             await handleRefreshAirdropTokens(beConfig.airdropUrl);
         }
     } catch (error) {

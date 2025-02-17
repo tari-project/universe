@@ -1,5 +1,5 @@
 {
-    "version": "0.9.7",
+    "version": "0.9.803",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -31,7 +31,7 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": "v1Compatible"
+        "createUpdaterArtifacts": "v1Compatible""createUpdaterArtifacts": "v1Compatible"
     },
     "app": {
         "security": {
@@ -40,7 +40,15 @@
                 "default",
                 "migrated"
             ],
-            "csp": null,
+            "dangerousDisableAssetCspModification": [
+                "style-src"
+            ],
+            "csp": {
+                "default-src": "'self' asset: tauri: URL: blob: data: https:",
+                "script-src": "'wasm-unsafe-eval'",
+                "style-src": "'self' 'unsafe-inline'",
+                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
+            },
             "pattern": {
                 "use": "isolation",
                 "options": {

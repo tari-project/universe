@@ -22,6 +22,7 @@
 
 pub mod file_utils;
 pub mod formatting_utils;
+pub mod locks_utils;
 pub mod logging_utils;
 pub mod macos_utils;
 pub mod math_utils;

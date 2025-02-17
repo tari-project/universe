@@ -185,8 +185,11 @@ impl AutoLauncher {
         info!(target: LOG_TARGET, "Creating task scheduler for admin startup with app_path: {}", app_path);
         info!(target: LOG_TARGET, "UserName: {}", username());
 
-        let mut interval = Duration::new();
-        interval.minutes = Some(1);
+        let mut retry_interval = Duration::new();
+        retry_interval.minutes = Some(1);
+
+        let mut delay_duration = Duration::new();
+        delay_duration.seconds = Some(30);
 
         schedule_builder
             .create_logon()
@@ -209,9 +212,9 @@ impl AutoLauncher {
                 enabled: Some(true),
                 disallow_start_if_on_batteries: Some(false),
                 hidden: Some(false),
-                multiple_instances_policy: Some(InstancesPolicy::StopExisting),
+                multiple_instances_policy: Some(InstancesPolicy::Parallel),
                 restart_count: Some(3),
-                restart_interval: Some(interval.to_string()),
+                restart_interval: Some(retry_interval.to_string()),
                 idle_settings: Some(IdleSettings {
                     stop_on_idle_end: Some(false),
                     restart_on_idle: Some(false),
@@ -220,6 +223,7 @@ impl AutoLauncher {
                 allow_demand_start: Some(true),
                 ..Default::default()
             })?
+            .delay(delay_duration)?
             .build()?
             .register(
                 "Tari Universe startup",

@@ -1,61 +1,37 @@
-import { Container, Heading, Copy, AnimatedTextContainer } from './InfoNav.styles';
-import { m, Variants } from 'motion/react';
-import { memo } from 'react';
+import { Container, Heading, Copy, AnimatedTextContainer, AnimatedSpan } from './InfoNav.styles';
+import { memo, useMemo } from 'react';
 
 interface InfoItemProps {
     title: string;
     text: string;
+    step: number;
 }
 
-const container: Variants = {
-    hidden: {
-        opacity: 0,
-    },
-    visible: {
-        opacity: 1,
-        transition: {
-            staggerChildren: 0.01,
-            delayChildren: 0.005,
-        },
-    },
-};
-
-const child: Variants = {
-    hidden: {
-        opacity: 0,
-    },
-    visible: {
-        opacity: 1,
-        transition: {
-            type: 'spring',
-            stiffness: 120,
-            damping: 10,
-        },
-    },
-};
-
-const AnimatedLetters = memo(function AnimatedLetters({ text }: { text: string }) {
-    const txtArr = Array.from(text);
+function getWords(text: string) {
+    const splitIntoWords = (text: string) => {
+        const regex = /(\p{Extended_Pictographic}|\S+|\s+)/gu;
+        return text.match(regex) || [];
+    };
+    const words = splitIntoWords(text);
+    return words.map((word: string, i: number) => (
+        <AnimatedSpan key={`word:${i}-${word}`} $index={i}>
+            {word}
+        </AnimatedSpan>
+    ));
+}
+const InfoItem = memo(function InfoItem({ title, text, step }: InfoItemProps) {
+    const titleMarkup = useMemo(() => getWords(title), [title]);
+    const bodyTextMarkup = useMemo(() => getWords(text), [text]);
     return (
-        <AnimatedTextContainer aria-hidden variants={container} initial="hidden" animate="visible">
-            {txtArr.map((char, i) => (
-                <m.span key={`char:${i}-${char}`} variants={child}>
-                    {char}
-                </m.span>
-            ))}
-        </AnimatedTextContainer>
-    );
-});
-
-export default function InfoItem({ title, text }: InfoItemProps) {
-    return (
-        <Container>
-            <Heading>
-                <AnimatedLetters text={title} />
+        <Container initial={{ opacity: 0, y: 0 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}>
+            <Heading $step={step}>
+                <AnimatedTextContainer aria-hidden>{titleMarkup}</AnimatedTextContainer>
             </Heading>
             <Copy>
-                <AnimatedLetters text={text} />
+                <AnimatedTextContainer aria-hidden>{bodyTextMarkup}</AnimatedTextContainer>
             </Copy>
         </Container>
     );
-}
+});
+
+export default InfoItem;
