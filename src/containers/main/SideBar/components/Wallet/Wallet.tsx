@@ -23,8 +23,6 @@ import WalletBalanceMarkup from './WalletBalanceMarkup.tsx';
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
-    const transactions = useWalletStore((s) => s.coinbase_transactions);
-    const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
     const fetchCoinbaseTransactions = useWalletStore((s) => s.fetchCoinbaseTransactions);
@@ -38,13 +36,15 @@ export default function Wallet() {
         if (!showHistory) {
             await fetchCoinbaseTransactions(false, 20);
         }
-        if (transactions.length || is_reward_history_loading) {
-            // Question(A): Not sure what this was for
-            setRewardCount(undefined);
-        }
 
-        setShowHistory((c) => !c);
-    }, [showHistory, transactions.length, is_reward_history_loading, fetchCoinbaseTransactions, setRewardCount]);
+        setShowHistory((c) => {
+            if (!c) {
+                setRewardCount(undefined);
+            }
+
+            return !c;
+        });
+    }, [fetchCoinbaseTransactions, setRewardCount, showHistory]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);
