@@ -20,39 +20,53 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use serde::Deserialize;
+use std::time::Duration;
 
-#[derive(Deserialize, Debug, Clone)]
-pub(crate) struct Summary {
-    pub(crate) connection: Connection,
+use tokio::{
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
+    time::sleep,
+};
 
-    pub(crate) hashrate: Hashrate,
-    // hugepages: bool,
+const LOCK_RETRY_DELAY: Duration = Duration::from_millis(500);
+
+pub async fn try_read_with_retry<T>(
+    lock: &RwLock<T>,
+    retries: u32,
+) -> Result<RwLockReadGuard<T>, String> {
+    for i in 0..retries {
+        match lock.try_read() {
+            Ok(guard) => return Ok(guard),
+            Err(_) => {
+                if i == retries - 1 {
+                    return Err(format!(
+                        "Failed to acquire read lock after {} retries",
+                        retries
+                    ));
+                }
+                sleep(LOCK_RETRY_DELAY).await;
+            }
+        }
+    }
+    Err("Failed to acquire read lock".to_string())
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Resources {}
-
-#[derive(Deserialize, Debug)]
-pub struct Memory {}
-
-#[derive(Deserialize, Debug)]
-pub struct Results {
-    // Sometimes this is not present in v6.21.0
-    // error_log: Vec<String>,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Connection {
-    pub(crate) uptime: u64,
-    // Sometimes doesn't exist
-    // pub(crate) error_log: Vec<String>,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Cpu {}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Hashrate {
-    pub(crate) total: Vec<Option<f64>>,
+pub async fn try_write_with_retry<T>(
+    lock: &RwLock<T>,
+    retries: u32,
+) -> Result<RwLockWriteGuard<T>, String> {
+    for i in 0..retries {
+        match lock.try_write() {
+            Ok(guard) => return Ok(guard),
+            Err(_) => {
+                if i == retries - 1 {
+                    return Err(format!(
+                        "Failed to acquire write lock after {} retries",
+                        retries
+                    ));
+                }
+                sleep(LOCK_RETRY_DELAY).await;
+            }
+        }
+    }
+    Err("Failed to acquire write lock".to_string())
 }
