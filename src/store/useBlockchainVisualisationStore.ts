@@ -23,8 +23,6 @@ interface State {
     recapCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
-    isNotificationAudioPlaying: boolean;
-    isBlockWinAudioPlaying: boolean;
 }
 
 interface Actions {
@@ -32,8 +30,6 @@ interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
-    setIsNotificationAudioPlaying: (isPlayingAudio: boolean) => void;
-    setIsBlockWinAudioPlaying: (isPlayingAudio: boolean) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -58,8 +54,6 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
-    setIsBlockWinAudioPlaying: (isPlayingAudio) => set({ isBlockWinAudioPlaying: isPlayingAudio }),
-    setIsNotificationAudioPlaying: (isPlayingAudio) => set({ isNotificationAudioPlaying: isPlayingAudio }),
 }));
 
 function selectAudioAssetOnSuccessTier(tier: number) {
@@ -89,57 +83,37 @@ function getAudioElementId(tier: number) {
 }
 
 async function playNotificationAudio() {
-    try {
-        const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
-        const isPlayingAudio = useBlockchainVisualisationStore.getState().isNotificationAudioPlaying;
-
-        if (!audio_enabled || !isAudioFeatureEnabled || isPlayingAudio) {
-            return;
-        }
-
-        const asset = 'assets/Notification.wav';
-        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
-        const notificationAudioElement = document.getElementById('notification-player') as HTMLAudioElement;
-        if (notificationAudioElement) {
-            notificationAudioElement.setAttribute('src', blobUrl);
-        }
-
-        notificationAudioElement.currentTime = 0;
-        notificationAudioElement.onplay = () =>
-            useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(true);
-        notificationAudioElement.onended = () =>
-            useBlockchainVisualisationStore.getState().setIsNotificationAudioPlaying(false);
-        notificationAudioElement.play();
-    } catch (err) {
-        console.error(`Failed to play block win sound: ${err}`);
-    }
+    playAudio('notification-player', 'assets/Notification.wav');
 }
 
 async function playBlockWinAudio(successTier: number) {
+    const asset = selectAudioAssetOnSuccessTier(successTier);
+    const player = getAudioElementId(successTier);
+    playAudio(player, asset);
+}
+
+const playAudio = async (eleId: string, track: string) => {
     try {
         const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
-        const isPlayingAudio = useBlockchainVisualisationStore.getState().isBlockWinAudioPlaying;
-        if (!audio_enabled || !isAudioFeatureEnabled || isPlayingAudio) {
+        if (!audio_enabled || !isAudioFeatureEnabled) {
             return;
         }
 
-        const asset = selectAudioAssetOnSuccessTier(successTier);
-        const player = getAudioElementId(successTier);
-        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
-        const blockWinAudioElement = document.getElementById(player) as HTMLAudioElement;
+        const blobUrl = URL.createObjectURL(await fetch(track).then((res) => res.blob()));
+        const blockWinAudioElement = document.getElementById(eleId) as HTMLAudioElement;
         if (blockWinAudioElement) {
-            blockWinAudioElement.setAttribute('src', blobUrl);
+            blockWinAudioElement.setAttribute('src', blobUrl); // Rquired to make it work on an AppImage bundle
         }
 
-        blockWinAudioElement.currentTime = 0;
-        blockWinAudioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(true);
-        blockWinAudioElement.onended = () =>
-            useBlockchainVisualisationStore.getState().setIsBlockWinAudioPlaying(false);
+        if (blockWinAudioElement.currentTime !== 0) return;
+        blockWinAudioElement.onended = () => {
+            blockWinAudioElement.currentTime = 0;
+        };
         blockWinAudioElement.play();
     } catch (err) {
         console.error(`Failed to play block win sound: ${err}`);
     }
-}
+};
 
 export const initAnimationAudio = () => {
     window.glApp.initAudio(playNotificationAudio, (tier: number) => playBlockWinAudio(tier));
