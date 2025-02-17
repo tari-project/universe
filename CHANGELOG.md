@@ -1,3 +1,29 @@
+# 🌟 TARI UNIVERSE v0.9.803: New Normal
+
+_February 17, 2025_
+
+Dear Community,
+
+As the great pool war enters its 3rd phase, p2pool has maintained its ~80%+ win rate per 24 hours, rising to 90% for those mining for more than six hours. We are (largely) winning fam. Even if you're on the lower end of the hash rate spectrum (e.g., <1000 h/s CPU), each winning share can continue paying out for up to 12 hours—so keep the mining party rolling!
+
+## ✨ What's New
+
+- 🛠 **Resolved app load sequence freezes.**  
+- 🎭 **Animation fixes** improved reliability of state transitions.  
+- ⚠️ **Airdrop login button failures** traced to unsupported Ubuntu versions and missing OS dependencies.  
+  - ✅ **Minimum Ubuntu version: 22**  
+  - 📝 We're working on a more robust Linux FAQ since most issues stem from OS flavor/version mismatches. 
+
+## **Coming Soon**
+
+- ⚖️ More P2Pool fixes for lower hash power levels
+- ⚙️ Restorationof persistent window settings
+- 🖥️ Enhanced GPU support, monitoring, and reporting
+- 📋 Roadmap for older OS and GPU support, minimum OS versions
+- 🔉 A surprise… 
+
+---
+
 # 🌟 TARI UNIVERSE v0.9.6: The Great Pool War, Episode 2
 
 _February 6, 2025_
