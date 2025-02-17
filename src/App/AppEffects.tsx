@@ -30,7 +30,7 @@ export default function AppEffects() {
             await setMiningNetwork();
             initAnimationAudio();
         }
-        void initialize();
+        void initialize().catch((e) => console.error('Failed to initialize UI config: ', e));
     }, []);
 
     return null;

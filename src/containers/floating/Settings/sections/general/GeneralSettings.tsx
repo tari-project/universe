@@ -13,7 +13,7 @@ import AudioSettings from './AudioSettings.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export const GeneralSettings = () => {
-    const isAudioFeatureEnabled = useAppConfigStore.getState().isAudioFeatureEnabled;
+    const isAudioFeatureEnabled = useAppConfigStore((state) => state.isAudioFeatureEnabled);
     return (
         <>
             <StartApplicationOnBootSettings />

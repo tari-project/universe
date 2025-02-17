@@ -96,15 +96,20 @@ const playAudio = async (eleId: string, track: string) => {
             return;
         }
 
-        const blobUrl = URL.createObjectURL(await fetch(track).then((res) => res.blob()));
         const blockWinAudioElement = document.getElementById(eleId) as HTMLAudioElement;
+        if (!blockWinAudioElement) {
+            throw new Error(`Audio element with id ${eleId} not found`);
+        }
+
+        const blobUrl = URL.createObjectURL(await fetch(track).then((res) => res.blob()));
         if (blockWinAudioElement) {
-            blockWinAudioElement.setAttribute('src', blobUrl); // Rquired to make it work on an AppImage bundle
+            blockWinAudioElement.setAttribute('src', blobUrl); // Required to make it work on an AppImage bundle
         }
 
         if (blockWinAudioElement.currentTime !== 0) return;
         blockWinAudioElement.onended = () => {
             blockWinAudioElement.currentTime = 0;
+            URL.revokeObjectURL(blobUrl);
         };
         blockWinAudioElement.play();
     } catch (err) {
