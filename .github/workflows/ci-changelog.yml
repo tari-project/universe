@@ -47,7 +47,7 @@ jobs:
             -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
             -e AWS_DEFAULT_REGION="WEUR" \
             amazon/aws-cli:2.22.35 \
-              s3 ${{ env.S3OPTIONS }} ${{ env.S3CMD }} \
+              s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
                 CHANGELOG.md \
                 s3://${{ env.BASE_URL }}/
 
