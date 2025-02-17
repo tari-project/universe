@@ -190,6 +190,7 @@ impl AutoLauncher {
 
         let mut delay_duration = Duration::new();
         delay_duration.seconds = Some(30);
+        delay_duration.minutes = Some(0);
 
         schedule_builder
             .create_logon()
