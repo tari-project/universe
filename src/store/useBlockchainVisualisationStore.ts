@@ -61,12 +61,13 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
+    useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
-        useBlockchainVisualisationStore.setState((curr) => ({ earnings, rewardCount: (curr.rewardCount || 0) + 1 }));
+        useBlockchainVisualisationStore.setState({ earnings });
         if (winTimeout) {
             clearTimeout(winTimeout);
         }
