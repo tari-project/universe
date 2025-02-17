@@ -226,7 +226,7 @@ pub async fn download_and_start_installer(
 
 #[tauri::command]
 pub async fn is_audio_feature_enabled() -> bool {
-    return cfg!(feature = "audio");
+    cfg!(feature = "audio")
 }
 
 #[tauri::command]
