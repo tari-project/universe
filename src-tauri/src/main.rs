@@ -34,7 +34,7 @@ use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use serde_json::json;
-use std::fs::{remove_dir_all, remove_file, File};
+use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
@@ -1183,6 +1183,7 @@ fn main() {
                     }
                 }
 
+                create_dir_all(&config_path).map_err(|e| e.to_string())?;
                 File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
 
