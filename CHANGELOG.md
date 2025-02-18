@@ -1,4 +1,4 @@
-# 🌟 TARI UNIVERSE v0.9.803: New Normal
+# 🌟 TARI UNIVERSE v0.9.805: The Great Pool War, Episode 3
 
 _February 17, 2025_
 
