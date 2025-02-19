@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
+use anyhow::Ok;
 use log::info;
 use tauri::Manager;
 
@@ -34,10 +35,19 @@ pub async fn stop_all_processes(
 
     let state = app_handle.state::<UniverseAppState>().inner();
 
+    let rt = tokio::runtime::Handle::current();
+    let active_tasks = rt.metrics().num_alive_tasks();
+    info!(target: LOG_TARGET, "Active tasks: {}", active_tasks);
+
     if should_shutdown && !state.shutdown.is_triggered() {
         info!(target: LOG_TARGET, "Entering shutdown sequence");
         state.shutdown.clone().trigger();
     }
+    let tasks_tracker = state.tasks_tracker.clone();
+    tasks_tracker.close();
+    tasks_tracker.wait().await;
+    return Ok(()) // We need to convert from anyhow::Result to a Result<(), String>
+        .map_err(|e| e.to_string());
 
     let base_path = app_handle
         .path()
@@ -122,5 +132,9 @@ pub async fn stop_all_processes(
         state.shutdown.clone().trigger();
     }
 
-    Ok(())
+    let rt = tokio::runtime::Handle::current();
+    let active_tasks = rt.metrics().num_alive_tasks();
+    info!(target: LOG_TARGET, "Active tasks: {}", active_tasks);
+
+    Ok(()).map_err(|e| e.to_string())
 }

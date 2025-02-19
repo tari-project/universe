@@ -26,6 +26,7 @@ use log::warn;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
+use tokio_util::task::TaskTracker;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
@@ -95,6 +96,7 @@ impl ProcessAdapter for XmrigAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let xmrig_shutdown = Shutdown::new();
         let mut args = self

@@ -35,6 +35,7 @@ use reqwest::Client;
 use serde_json::json;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
+use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 
@@ -81,6 +82,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_verison_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 

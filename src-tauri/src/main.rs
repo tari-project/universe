@@ -40,6 +40,7 @@ use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
+use tokio_util::task::TaskTracker;
 use updates_manager::UpdatesManager;
 use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use wallet_adapter::WalletState;
@@ -58,7 +59,7 @@ use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::{Mutex, OnceCell, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
@@ -167,10 +168,13 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
+static TASKS_TRACKER: OnceCell<TaskTracker> = OnceCell::const_new();
+
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+    let tasks_tracker = move_app.state::<UniverseAppState>().tasks_tracker.clone();
+    tasks_tracker.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let _ = &app_state
@@ -193,7 +197,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+    tasks_tracker.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -278,7 +282,8 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+
+    tasks_tracker.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
@@ -613,6 +618,7 @@ async fn setup_inner(
 
     HardwareStatusMonitor::current().initialize().await?;
 
+    let tasks_tracker = state.tasks_tracker.clone();
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
         state
@@ -622,6 +628,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                tasks_tracker.clone(),
             )
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
@@ -649,6 +656,7 @@ async fn setup_inner(
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
+                tasks_tracker.clone(),
             )
             .await
         {
@@ -703,6 +711,7 @@ async fn setup_inner(
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
+            tasks_tracker.clone(),
         )
         .await?;
 
@@ -763,6 +772,7 @@ async fn setup_inner(
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
+            tasks_tracker.clone(),
         )
         .await?;
     drop(cpu_miner);
@@ -797,6 +807,7 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                tasks_tracker.clone(),
             )
             .await?;
     }
@@ -820,19 +831,22 @@ async fn setup_inner(
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
-        .start(StartConfig {
-            base_node_grpc_port,
-            p2pool_port,
-            app_shutdown: state.shutdown.to_signal().clone(),
-            base_path: data_dir.clone(),
-            config_path: config_dir.clone(),
-            log_path: log_dir.clone(),
-            tari_address: cpu_miner_config.tari_address.clone(),
-            coinbase_extra: telemetry_id,
-            p2pool_enabled,
-            monero_nodes: config.mmproxy_monero_nodes().clone(),
-            use_monero_fail: config.mmproxy_use_monero_fail(),
-        })
+        .start(
+            StartConfig {
+                base_node_grpc_port,
+                p2pool_port,
+                app_shutdown: state.shutdown.to_signal().clone(),
+                base_path: data_dir.clone(),
+                config_path: config_dir.clone(),
+                log_path: log_dir.clone(),
+                tari_address: cpu_miner_config.tari_address.clone(),
+                coinbase_extra: telemetry_id,
+                p2pool_enabled,
+                monero_nodes: config.mmproxy_monero_nodes().clone(),
+                use_monero_fail: config.mmproxy_use_monero_fail(),
+            },
+            tasks_tracker.clone(),
+        )
         .await?;
     mm_proxy_manager.wait_ready().await?;
     drop(config);
@@ -908,6 +922,7 @@ async fn setup_inner(
 
 #[derive(Clone)]
 struct UniverseAppState {
+    tasks_tracker: TaskTracker,
     stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
@@ -1034,6 +1049,7 @@ fn main() {
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
     let app_state = UniverseAppState {
+        tasks_tracker: TaskTracker::new(),
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),

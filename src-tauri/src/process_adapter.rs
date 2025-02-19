@@ -33,6 +33,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+use tokio_util::task::TaskTracker;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
@@ -49,6 +50,7 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
@@ -58,8 +60,15 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, config_folder, log_folder, binary_version_path)
+        self.spawn_inner(
+            base_folder,
+            config_folder,
+            log_folder,
+            binary_version_path,
+            tasks_tracker,
+        )
     }
 
     fn pid_file_name(&self) -> &str;

@@ -31,6 +31,7 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio_util::task::TaskTracker;
 
 use crate::port_allocator::PortAllocator;
 use crate::{
@@ -202,6 +203,7 @@ impl ProcessAdapter for TorAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 

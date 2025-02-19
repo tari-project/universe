@@ -33,6 +33,7 @@ use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
+use tokio_util::task::TaskTracker;
 
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
@@ -82,6 +83,7 @@ impl WalletManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(), WalletManagerError> {
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
@@ -106,6 +108,7 @@ impl WalletManager {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::Wallet,
+                tasks_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;

@@ -20,18 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use futures_util::future::FusedFuture;
 use std::sync::Arc;
 use tokio::time;
 
 use anyhow::anyhow;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 
 use serde::{Deserialize, Serialize};
-use tauri::{Emitter, Url};
+use tauri::{Emitter, Manager, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::app_config::AppConfig;
+use crate::{app_config::AppConfig, UniverseAppState};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
@@ -78,16 +79,21 @@ impl UpdatesManager {
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let app_clone = app.clone();
         let self_clone = self.clone();
-        tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(3600));
-            loop {
-                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
-                {
-                    break;
-                };
-                interval.tick().await;
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+        let state = app.state::<UniverseAppState>().clone();
+        let mut interval = time::interval(Duration::from_secs(3600));
+        let mut shutdown_signal = self_clone.app_shutdown.clone();
+        state.tasks_tracker.spawn(async move {
+            tokio::select! {
+                _ = async {
+                    loop {
+                        interval.tick().await;
+                        if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                            error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                        }
+                    }
+                } => {},
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
                 }
             }
         });

@@ -36,6 +36,7 @@ use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
 use tokio::sync::{watch, RwLock};
+use tokio_util::task::TaskTracker;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
@@ -108,6 +109,7 @@ impl NodeManager {
         log_path: PathBuf,
         use_tor: bool,
         tor_control_port: Option<u16>,
+        tasks_tracker: TaskTracker,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
@@ -122,6 +124,7 @@ impl NodeManager {
                     config_path,
                     log_path,
                     crate::binaries::Binaries::MinotariNode,
+                    tasks_tracker,
                 )
                 .await?;
         }
@@ -136,6 +139,7 @@ impl NodeManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
@@ -145,6 +149,7 @@ impl NodeManager {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::MinotariNode,
+                tasks_tracker,
             )
             .await?;
 

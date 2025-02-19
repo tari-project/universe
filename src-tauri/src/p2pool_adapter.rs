@@ -29,6 +29,7 @@ use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
+use tokio_util::task::TaskTracker;
 
 use crate::p2pool;
 use crate::p2pool::models::{Connections, P2poolStats};
@@ -72,6 +73,7 @@ impl ProcessAdapter for P2poolAdapter {
         _config_dir: PathBuf,
         log_path: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 

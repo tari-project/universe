@@ -27,11 +27,12 @@ use log::{error, info, warn};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::sync::watch;
+use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
+use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 
@@ -91,6 +92,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         config_path: PathBuf,
         log_path: PathBuf,
         binary: Binaries,
+        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
             return Ok(());
@@ -115,9 +117,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .await
             .resolve_path_to_binary_files(binary)?;
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
-        let (mut child, status_monitor) =
-            self.adapter
-                .spawn(base_path, config_path, log_path, binary_path)?;
+        let (mut child, status_monitor) = self.adapter.spawn(
+            base_path,
+            config_path,
+            log_path,
+            binary_path,
+            tasks_tracker.clone(),
+        )?;
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
@@ -125,7 +131,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(tauri::async_runtime::spawn(async move {
+        self.watcher_task = Some(tasks_tracker.spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
@@ -182,7 +188,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub fn is_running(&self) -> bool {
         if let Some(task) = self.watcher_task.as_ref() {
-            !task.inner().is_finished()
+            !task.is_finished()
         } else {
             false
         }
@@ -194,7 +200,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
-            if task.inner().is_finished() {
+            if task.is_finished() {
                 //let exit_code = task.await??;
 
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));

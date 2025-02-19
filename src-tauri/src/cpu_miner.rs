@@ -39,6 +39,7 @@ use tari_shutdown::ShutdownSignal;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};
+use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -79,6 +80,7 @@ impl CpuMiner {
         log_dir: PathBuf,
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
+        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
@@ -134,6 +136,7 @@ impl CpuMiner {
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                tasks_tracker,
             )
             .await?;
         }
@@ -150,6 +153,7 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<u64, anyhow::Error> {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
@@ -170,6 +174,7 @@ impl CpuMiner {
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                tasks_tracker,
             )
             .await?;
         }

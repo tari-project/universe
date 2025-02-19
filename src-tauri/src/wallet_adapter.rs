@@ -43,6 +43,7 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
 use tokio::sync::{watch, Mutex};
+use tokio_util::task::TaskTracker;
 use tonic::Streaming;
 
 #[cfg(target_os = "windows")]
@@ -88,6 +89,7 @@ impl ProcessAdapter for WalletAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
