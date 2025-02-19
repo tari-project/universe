@@ -45,6 +45,7 @@ use crate::interface::{
 };
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 
+use crate::ootle::OotleWallet;
 use crate::ootle::{
     error,
     error::{
@@ -1916,6 +1917,11 @@ pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<St
 }
 
 #[tauri::command]
+pub fn get_ootle_wallet_jrpc_port(state: tauri::State<'_, OotleWallet>) -> Result<String, String> {
+    Ok(format!("http://{}", state.jrpc_address))
+}
+
+#[tauri::command]
 pub async fn download_and_extract_tapp(
     tapplet_id: i32,
     db_connection: tauri::State<'_, DatabaseConnection>,
@@ -2136,6 +2142,7 @@ pub async fn call_wallet(
     method: String,
     params: String,
     tokens: tauri::State<'_, Tokens>,
+    ootle_wallet: tauri::State<'_, OotleWallet>,
 ) -> Result<serde_json::Value, Error> {
     let permission_token = tokens
         .permission
@@ -2147,9 +2154,10 @@ pub async fn call_wallet(
         .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
         .map_err(|e| error::Error::JsonParsingError(e))
         .unwrap();
+    let jrpc_port = ootle_wallet.jrpc_port;
 
-    info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?}", method);
-    match make_request(Some(permission_token), method, req_params, None).await {
+    info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?} on port {:?}", method, jrpc_port);
+    match make_request(Some(permission_token), method, req_params, Some(jrpc_port)).await {
         Ok(res) => Ok(res),
         Err(e) => {
             error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);

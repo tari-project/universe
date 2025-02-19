@@ -110,6 +110,7 @@ impl NodeManager {
         tor_control_port: Option<u16>,
     ) -> Result<(), NodeManagerError> {
         {
+            info!(target: LOG_TARGET, "🔥 [NODE_MANAGER] node ensure_started CONFIG PATH {:?}", &config_path);
             let mut process_watcher = self.watcher.write().await;
 
             process_watcher.adapter.use_tor = use_tor;
@@ -138,7 +139,7 @@ impl NodeManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
-        info!(target: LOG_TARGET, "🔥 MINOTARI NODE CONFIG PATH {:?}", &config_path);
+        info!(target: LOG_TARGET, "🔥 [NODE_MANAGER] node start CONFIG PATH {:?}", &config_path);
         process_watcher
             .start(
                 app_shutdown,

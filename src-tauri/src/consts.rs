@@ -36,4 +36,3 @@ pub const WALLET_DAEMON_CONFIG_FILE: &'static str = "wallet_daemon.config.toml";
 //TODO change to tari repo: "https://github.com/tari-project/tapp-registry"
 pub const REGISTRY_URL: &'static str =
     "https://raw.githubusercontent.com/karczuRF/tapp-registry/main";
-pub const DAN_WALLET_JSON_ADDRESS: &str = "127.0.0.1:18009"; 

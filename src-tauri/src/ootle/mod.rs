@@ -11,11 +11,12 @@ use log::{error, info};
 use tapplet_server::start;
 use tauri::Manager;
 use tokio_util::sync::CancellationToken;
-use wallet_daemon::start_wallet_daemon;
+use wallet_daemon::spawn_wallet_daemon;
 
 use crate::{
     consts::{DB_FILE_NAME, TAPPLETS_ASSETS_DIR, WALLET_DAEMON_CONFIG_FILE},
     database,
+    port_allocator::PortAllocator,
 };
 
 pub mod db_connection;
@@ -42,24 +43,56 @@ pub struct AssetServer {
     pub cancel_token: CancellationToken,
 }
 
+#[derive(Clone)]
+pub struct OotleWallet {
+    pub jrpc_port: u16,
+    pub jrpc_address: String,
+}
+
+impl Default for OotleWallet {
+    fn default() -> Self {
+        OotleWallet {
+            jrpc_port: 18010,
+            jrpc_address: format!("127.0.0.1:18010"),
+        }
+    }
+}
+
 pub async fn setup_ootle_wallet(
+    jrpc_port: u16,
     data_dir: PathBuf,
     log_dir: PathBuf,
     config_dir: PathBuf,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let wallet_daemon_config_file = config_dir.join(WALLET_DAEMON_CONFIG_FILE);
+    // let port = PortAllocator::new().assign_port_with_fallback();
     info!(target: LOG_TARGET,"🚨 Start wallet daemon");
-    if let Err(e) = start_wallet_daemon(log_dir, data_dir, wallet_daemon_config_file).await {
+    info!(target: LOG_TARGET,"🌟 🌟 🌟  DATA DIR {:?}", data_dir);
+    info!(target: LOG_TARGET,"🌟 🌟 🌟  CONFIG DIR {:?}", config_dir);
+    info!(target: LOG_TARGET,"🌟 🌟 🌟  DATA DIR {:?}", data_dir);
+    if let Err(e) =
+        spawn_wallet_daemon(log_dir, data_dir, wallet_daemon_config_file, jrpc_port).await
+    {
         error!(target: LOG_TARGET, "Could not start wallet daemon: {:?}", e);
     }
+    println!(
+        "------> 🌟 WALLET DAEMON DONE with assigned jrpc_port: {:?}",
+        &jrpc_port
+    );
+    info!(target: LOG_TARGET, "🌟 WALLET DAEMON DONE with jrpc_port {:?}", &jrpc_port);
     info!(target: LOG_TARGET, "🚀 Wallet daemon started successfully");
+
     Ok(())
 }
 
-pub async fn setup_tokens(app: tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn setup_tokens(
+    app: tauri::AppHandle,
+    jrpc_port: Option<u16>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    info!(target: LOG_TARGET,"🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨 Try get tokens");
+    println!("🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨 Try get tokens");
     let tokens = app.state::<Tokens>();
-    info!(target: LOG_TARGET,"🚨 Try get tokens");
-    let (permission_token, auth_token) = try_get_tokens(None).await;
+    let (permission_token, auth_token) = try_get_tokens(jrpc_port).await;
     info!(target: LOG_TARGET, "🚀 Tokens setup successfully");
     tokens
         .permission
@@ -74,5 +107,12 @@ pub async fn setup_tokens(app: tauri::AppHandle) -> Result<(), Box<dyn std::erro
         .unwrap()
         .replace_range(.., &auth_token);
     info!(target: LOG_TARGET, "🚀 Tokens initialized successfully");
+    info!(target: LOG_TARGET,"🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨  Tokens initialized successfully {:?}{:?}",
+            permission_token, auth_token
+    );
+    println!(
+        "🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨  Tokens initialized successfully {:?}{:?}",
+        permission_token, auth_token
+    );
     Ok(())
 }

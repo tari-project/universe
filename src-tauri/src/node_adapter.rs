@@ -144,6 +144,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
+            info!(target: LOG_TARGET, "🔥 MINOTARI TOR GRPC {:?} from conf dir {:?}", &self.grpc_port, &config_dir);
             // args.push("-p".to_string());
             // args.push(
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
@@ -171,8 +172,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     tor_control_port
                 ));
             }
-            info!(target: LOG_TARGET, "🔥 MINOTARI TOR GRPC {:?} from conf dir {:?}", &self.grpc_port, &config_dir);
         } else {
+            info!(target: LOG_TARGET, "🔥 MINOTARI NO-TOR GRPC {:?} from conf dir {:?}", &self.grpc_port, &config_dir);
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());

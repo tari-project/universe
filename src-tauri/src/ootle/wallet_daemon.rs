@@ -1,19 +1,33 @@
-use std::{fs, net::SocketAddr, panic, path::PathBuf, process, str::FromStr};
+use std::{
+    fs,
+    net::{IpAddr, Ipv4Addr, SocketAddr},
+    panic,
+    path::PathBuf,
+    process,
+    str::FromStr,
+};
 
-use crate::{consts::DAN_WALLET_JSON_ADDRESS, utils::logging_utils::setup_logging};
+use crate::{
+    ootle::rpc::make_request, port_allocator::PortAllocator, utils::logging_utils::setup_logging,
+};
 use log::{info, warn};
 use tari_common_dan2::configuration::Network;
 use tari_dan_app_utilities::configuration::load_configuration;
-use tari_dan_wallet_daemon::{cli::Cli, config::ApplicationConfig, run_tari_dan_wallet_daemon};
+use tari_dan_wallet_daemon::{
+    cli::Cli,
+    config::{ApplicationConfig, WalletDaemonConfig},
+    run_tari_dan_wallet_daemon,
+};
 use tari_shutdown_dan2::Shutdown;
 use tauri::Url;
 
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
 
-pub async fn start_wallet_daemon(
+pub async fn spawn_wallet_daemon(
     log_dir: PathBuf,
     data_dir_path: PathBuf,
     wallet_daemon_config_file: PathBuf,
+    port: u16,
 ) -> Result<(), anyhow::Error> {
     let default_hook = panic::take_hook();
     panic::set_hook(Box::new(move |info| {
@@ -24,6 +38,7 @@ pub async fn start_wallet_daemon(
         "------> 🚀 WALLET DAEMON CONFIG FILE {:?}",
         &wallet_daemon_config_file,
     );
+    info!(target: LOG_TARGET, "🌟 WALLET DAEMON config file {:?}", &wallet_daemon_config_file);
     let wallet_daemon_config_file = wallet_daemon_config_file.to_str().unwrap().to_owned();
     let log_config_file = log_dir
         .join("wallet_daemon")
@@ -38,32 +53,44 @@ pub async fn start_wallet_daemon(
     let mut cli = Cli::init();
     let network = Network::get_current_or_user_setting_or_default();
     println!("------> 🌟 WALLET DAEMON NETWORK {:?}", &network);
+    info!(target: LOG_TARGET, "🌟 WALLET DAEMON NETWORK {:?}", &network);
     cli.common.network = Some(network);
     cli.common.base_path = data_dir_path.to_str().unwrap().to_owned();
     cli.common.config = wallet_daemon_config_file.clone();
     cli.common.log_config = Some(log_config_file.clone());
 
     let cfg = load_configuration(wallet_daemon_config_file, true, &cli, None).unwrap();
+
     let mut config = ApplicationConfig::load_from(&cfg).unwrap();
-    // ======= LOCAL SWARM CONFIG
-    // let contractnet_json_rpc_address =
-    //     SocketAddr::new(IpAddr::V4(Ipv4Addr::new(18, 216, 193, 9)), 12028);
+    config.dan_wallet_daemon = WalletDaemonConfig::default();
+    // ======= CONTRACTNET CONFIG
+    // let port = PortAllocator::new().assign_port_with_fallback();
 
-    // config.dan_wallet_daemon.indexer_node_json_rpc_url =
-    //     "http://18.216.193.9:12026/json_rpc".to_string();
-    // config.dan_wallet_daemon.json_rpc_address = Some(contractnet_json_rpc_address);
-
-    // ======= LOCAL SWARM CONFIG
-    let json_rpc_port = 18009; //TODO set port from the swarm config
-    let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
-    let indexer_port = 18007;
+    let listening_json_rpc_address = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), port);
 
     config.dan_wallet_daemon.indexer_json_rpc_url =
-        Url::parse(&format!("http://localhost:{}/json_rpc", indexer_port)).unwrap();
-    config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&DAN_WALLET_JSON_ADDRESS).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
-    config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
+        Url::parse("http://18.217.22.26:12006/json_rpc").unwrap();
+    // "http://18.217.22.26:12006/json_rpc".to_string();
+    config.dan_wallet_daemon.json_rpc_address = Some(listening_json_rpc_address);
+    let ui_port = PortAllocator::new().assign_port_with_fallback();
+    config.dan_wallet_daemon.ui_connect_address = Some(format!("127.0.0.1:{}", ui_port)); //TODO
+    let signaling_server_port = PortAllocator::new().assign_port_with_fallback();
+    let signaling_server_addr = SocketAddr::new(
+        IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)),
+        signaling_server_port,
+    );
+    config.dan_wallet_daemon.signaling_server_address = Some(signaling_server_addr);
+    // ======= LOCAL SWARM CONFIG
+    // let json_rpc_port = 18009; //TODO set port from the swarm config
+    // let jrpc_address = format!("127.0.0.1:{}", json_rpc_port);
+    // let indexer_port = 18007;
 
-    println!("------> 🌟 WALLET DAEMON CONFIG: {:?}", &config);
+    // config.dan_wallet_daemon.indexer_json_rpc_url =
+    //     Url::parse(&format!("http://localhost:{}/json_rpc", indexer_port)).unwrap();
+    // config.dan_wallet_daemon.json_rpc_address = SocketAddr::from_str(&DAN_WALLET_JSON_ADDRESS).ok(); //TODO: get free port from OS https://github.com/tari-project/tari-universe/issues/70
+    // config.dan_wallet_daemon.ui_connect_address = Some("127.0.0.1:5100".to_string());
+
+    info!(target: LOG_TARGET, "🌟 WALLET DAEMON CONFIG: {:?}", &config);
 
     // Remove the file if it was left behind by a previous run
     let _file = fs::remove_file(data_dir_path.join("pid"));
@@ -71,17 +98,14 @@ pub async fn start_wallet_daemon(
     let shutdown = Shutdown::new();
     let shutdown_signal = shutdown.to_signal();
 
-    tokio::spawn(async move {
-        match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
-            Ok(_) => {
-                info!(target: LOG_TARGET, "🚀 Running wallet daemon");
-                return Ok(());
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
-                return Err(e);
-            }
+    match run_tari_dan_wallet_daemon(config, shutdown_signal).await {
+        Ok(_) => {
+            info!(target: LOG_TARGET, "🚀 Running wallet daemon");
+            return Ok(());
         }
-    });
-    Ok(())
+        Err(e) => {
+            warn!(target: LOG_TARGET, "Error running wallet daemon: {}", e);
+            return Err(e);
+        }
+    }
 }
