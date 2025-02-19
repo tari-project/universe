@@ -1,7 +1,6 @@
 import {
     WalletDaemonClient,
     stringToSubstateId,
-    SubstateType,
     substateIdToString,
     KeyBranch,
     AccountsGetBalancesResponse,
@@ -10,7 +9,6 @@ import {
 } from '@tari-project/wallet_jrpc_client';
 import {
     Account,
-    Instruction,
     SubmitTransactionRequest,
     SubmitTransactionResponse,
     Substate,
@@ -20,8 +18,7 @@ import {
     TransactionStatus,
     VaultBalances,
 } from '@tari-project/tarijs';
-import { ListSubstatesResponse } from '@tari-project/tarijs/dist/providers';
-import { AccountSetDefaultResponse, ComponentAccessRules } from '@tari-project/typescript-bindings';
+import { AccountSetDefaultResponse, ComponentAccessRules, ListSubstatesResponse, SubstateType } from '@tari-project/typescript-bindings';
 import { TappletPermissions } from './tapplet';
 import { IPCRpcTransport } from './ipc_transport';
 import { OotleAccount } from './account';
@@ -266,12 +263,19 @@ export class TappletProvider implements TariProvider {
             limit: limit ? BigInt(limit) : null,
             offset: offset ? BigInt(offset) : null,
         });
+        // const substates = res.substates.map((s) => ({
+        //     substate_id: substateIdToString(s.substate_id),
+        //     parent_id: null,
+        //     module_name: s.module_name,
+        //     version: s.version,
+        //     template_address: s.template_address,
+        // }));
         const substates = res.substates.map((s) => ({
-            substate_id: substateIdToString(s.substate_id),
-            parent_id: null,
+            substate_id: s.substate_id,
             module_name: s.module_name,
             version: s.version,
             template_address: s.template_address,
+            timestamp: BigInt(0),
         }));
 
         return { substates };
