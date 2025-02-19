@@ -105,16 +105,12 @@ pub async fn restart_mm_proxy_with_new_telemetry_id(
         .config()
         .await
         .ok_or("mm proxy config could not be found")?;
-    let tasks_tracker = state.tasks_tracker.clone();
     let _unused = state
         .mm_proxy_manager
-        .change_config(
-            MergeMiningProxyConfig {
-                coinbase_extra: telemetry_id.clone(),
-                ..mm_proxy_manager_config
-            },
-            tasks_tracker,
-        )
+        .change_config(MergeMiningProxyConfig {
+            coinbase_extra: telemetry_id.clone(),
+            ..mm_proxy_manager_config
+        })
         .await
         .map_err(|e| e.to_string());
     info!(target: LOG_TARGET, "mm_proxy restarted");

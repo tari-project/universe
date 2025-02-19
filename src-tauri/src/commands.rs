@@ -39,7 +39,7 @@ use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
-use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID, TASKS_TRACKER};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -194,7 +194,7 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
     let app_handle = app.clone();
-    let tasks_tracker = app.state::<UniverseAppState>().tasks_tracker.clone();
+    let tasks_tracker = TASKS_TRACKER.get().unwrap();
     tasks_tracker.spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
         let setup_complete_clone = state.is_setup_finished.read().await;
@@ -1172,7 +1172,6 @@ pub async fn set_p2pool_enabled(
 
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
-    let tasks_tracker = state.tasks_tracker.clone();
 
     match origin_config {
         None => {
@@ -1193,7 +1192,7 @@ pub async fn set_p2pool_enabled(
                 }
                 state
                     .mm_proxy_manager
-                    .change_config(origin_config, tasks_tracker)
+                    .change_config(origin_config)
                     .await
                     .map_err(|error| error.to_string())?;
             }
@@ -1430,7 +1429,6 @@ pub async fn start_mining<'r>(
         {
             let cpu_miner_config = state.cpu_miner_config.read().await;
             let mut cpu_miner = state.cpu_miner.write().await;
-            let tasks_tracker = state.tasks_tracker.clone();
             let res = cpu_miner
                 .start(
                     state.shutdown.to_signal(),
@@ -1446,7 +1444,6 @@ pub async fn start_mining<'r>(
                     app.path().app_log_dir().expect("Could not get log dir"),
                     mode,
                     custom_cpu_usage,
-                    tasks_tracker,
                 )
                 .await;
             drop(cpu_miner_config);
@@ -1504,7 +1501,6 @@ pub async fn start_mining<'r>(
         drop(cpu_miner_config);
 
         let mut gpu_miner = state.gpu_miner.write().await;
-        let tasks_tracker = state.tasks_tracker.clone();
         let res = gpu_miner
             .start(
                 state.shutdown.to_signal(),
@@ -1520,7 +1516,6 @@ pub async fn start_mining<'r>(
                 mode,
                 telemetry_id,
                 custom_gpu_usage,
-                tasks_tracker,
             )
             .await;
 

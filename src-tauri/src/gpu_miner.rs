@@ -28,7 +28,6 @@ use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::{watch, RwLock};
-use tokio_util::task::TaskTracker;
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
@@ -97,7 +96,6 @@ impl GpuMiner {
         mining_mode: MiningMode,
         coinbase_extra: String,
         custom_gpu_grid_size: Vec<GpuThreads>,
-        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
@@ -118,7 +116,6 @@ impl GpuMiner {
                 config_path,
                 log_path,
                 Binaries::GpuMiner,
-                tasks_tracker,
             )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");

@@ -37,7 +37,6 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
-use tokio_util::task::TaskTracker;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -131,7 +130,6 @@ impl ProcessAdapter for GpuMinerAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        _unused: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();

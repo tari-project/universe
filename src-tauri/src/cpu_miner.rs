@@ -28,7 +28,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{BaseNodeStatus, CpuMinerConfig};
+use crate::{BaseNodeStatus, CpuMinerConfig, TASKS_TRACKER};
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -39,7 +39,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};
-use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
@@ -80,7 +79,6 @@ impl CpuMiner {
         log_dir: PathBuf,
         mode: MiningMode,
         custom_cpu_threads: Option<u32>,
-        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         let xmrig_node_connection = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => {
@@ -136,7 +134,6 @@ impl CpuMiner {
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
-                tasks_tracker,
             )
             .await?;
         }
@@ -153,7 +150,6 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-        tasks_tracker: TaskTracker,
     ) -> Result<u64, anyhow::Error> {
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
@@ -174,7 +170,6 @@ impl CpuMiner {
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
-                tasks_tracker,
             )
             .await?;
         }
@@ -264,7 +259,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        tauri::async_runtime::spawn(async move {
+        TASKS_TRACKER.get().unwrap().spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {

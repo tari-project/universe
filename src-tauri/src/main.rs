@@ -173,7 +173,7 @@ static TASKS_TRACKER: OnceCell<TaskTracker> = OnceCell::const_new();
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    let tasks_tracker = move_app.state::<UniverseAppState>().tasks_tracker.clone();
+    let tasks_tracker = TASKS_TRACKER.get().unwrap();
     tasks_tracker.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
@@ -618,7 +618,6 @@ async fn setup_inner(
 
     HardwareStatusMonitor::current().initialize().await?;
 
-    let tasks_tracker = state.tasks_tracker.clone();
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
         state
@@ -628,7 +627,6 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
-                tasks_tracker.clone(),
             )
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
@@ -656,7 +654,6 @@ async fn setup_inner(
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
-                tasks_tracker.clone(),
             )
             .await
         {
@@ -711,7 +708,6 @@ async fn setup_inner(
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
-            tasks_tracker.clone(),
         )
         .await?;
 
@@ -772,7 +768,6 @@ async fn setup_inner(
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
-            tasks_tracker.clone(),
         )
         .await?;
     drop(cpu_miner);
@@ -807,7 +802,6 @@ async fn setup_inner(
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
-                tasks_tracker.clone(),
             )
             .await?;
     }
@@ -831,22 +825,19 @@ async fn setup_inner(
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
-        .start(
-            StartConfig {
-                base_node_grpc_port,
-                p2pool_port,
-                app_shutdown: state.shutdown.to_signal().clone(),
-                base_path: data_dir.clone(),
-                config_path: config_dir.clone(),
-                log_path: log_dir.clone(),
-                tari_address: cpu_miner_config.tari_address.clone(),
-                coinbase_extra: telemetry_id,
-                p2pool_enabled,
-                monero_nodes: config.mmproxy_monero_nodes().clone(),
-                use_monero_fail: config.mmproxy_use_monero_fail(),
-            },
-            tasks_tracker.clone(),
-        )
+        .start(StartConfig {
+            base_node_grpc_port,
+            p2pool_port,
+            app_shutdown: state.shutdown.to_signal().clone(),
+            base_path: data_dir.clone(),
+            config_path: config_dir.clone(),
+            log_path: log_dir.clone(),
+            tari_address: cpu_miner_config.tari_address.clone(),
+            coinbase_extra: telemetry_id,
+            p2pool_enabled,
+            monero_nodes: config.mmproxy_monero_nodes().clone(),
+            use_monero_fail: config.mmproxy_use_monero_fail(),
+        })
         .await?;
     mm_proxy_manager.wait_ready().await?;
     drop(config);
@@ -881,17 +872,14 @@ async fn setup_inner(
     );
 
     let app_handle_clone: tauri::AppHandle = app.clone();
-    tauri::async_runtime::spawn(async move {
+    let mut shutdown_signal = state.shutdown.to_signal();
+    TASKS_TRACKER.get().unwrap().spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
-        loop {
+        tokio::select! {
+            _ = interval.tick() => {
             let state = app_handle_clone.state::<UniverseAppState>().inner();
-            if state.shutdown.is_triggered() {
-                break;
-            }
-
-            interval.tick().await;
             let check_if_orphan = state
                 .node_manager
                 .check_if_is_orphan_chain(!has_send_error)
@@ -910,7 +898,11 @@ async fn setup_inner(
                     error!(target: LOG_TARGET, "{}", e);
                 }
             }
-        }
+            },
+            _ = shutdown_signal.wait() => {
+                info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+            }
+        };
     });
 
     let _unused = ReleaseNotes::current()
@@ -922,7 +914,6 @@ async fn setup_inner(
 
 #[derive(Clone)]
 struct UniverseAppState {
-    tasks_tracker: TaskTracker,
     stop_start_mutex: Arc<Mutex<()>>,
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
@@ -968,6 +959,7 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    let _unused = TASKS_TRACKER.set(TaskTracker::new());
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -1049,7 +1041,6 @@ fn main() {
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
     let app_state = UniverseAppState {
-        tasks_tracker: TaskTracker::new(),
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),

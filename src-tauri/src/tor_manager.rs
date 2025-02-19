@@ -26,7 +26,6 @@ use crate::tor_adapter::{TorAdapter, TorConfig};
 use std::{path::PathBuf, sync::Arc};
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
-use tokio_util::task::TaskTracker;
 
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
@@ -56,7 +55,6 @@ impl TorManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         {
             let mut process_watcher = self.watcher.write().await;
@@ -72,7 +70,6 @@ impl TorManager {
                     config_path,
                     log_path,
                     crate::binaries::Binaries::Tor,
-                    tasks_tracker,
                 )
                 .await?;
         }

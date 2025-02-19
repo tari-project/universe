@@ -22,6 +22,7 @@
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::TASKS_TRACKER;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
@@ -32,7 +33,6 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
-use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 
@@ -92,7 +92,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         config_path: PathBuf,
         log_path: PathBuf,
         binary: Binaries,
-        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
             return Ok(());
@@ -117,13 +116,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .await
             .resolve_path_to_binary_files(binary)?;
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
-        let (mut child, status_monitor) = self.adapter.spawn(
-            base_path,
-            config_path,
-            log_path,
-            binary_path,
-            tasks_tracker.clone(),
-        )?;
+        let (mut child, status_monitor) =
+            self.adapter
+                .spawn(base_path, config_path, log_path, binary_path)?;
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
@@ -131,7 +126,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(tasks_tracker.spawn(async move {
+        self.watcher_task = Some(TASKS_TRACKER.get().unwrap().spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {

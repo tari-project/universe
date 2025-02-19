@@ -29,7 +29,6 @@ use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
-use tokio_util::task::TaskTracker;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
@@ -102,11 +101,7 @@ impl MmProxyManager {
         lock.adapter.config.clone()
     }
 
-    pub async fn change_config(
-        &self,
-        config: MergeMiningProxyConfig,
-        tasks_tracker: TaskTracker,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
         if self.watcher.read().await.is_running() {
             let mut lock = self.watcher.write().await;
             lock.stop().await?;
@@ -117,7 +112,7 @@ impl MmProxyManager {
             Some(start_config) => {
                 let config_with_override = start_config.override_by(config);
                 drop(start_config_read);
-                self.start(config_with_override, tasks_tracker).await?;
+                self.start(config_with_override).await?;
                 self.wait_ready().await?;
             }
             None => {
@@ -130,11 +125,7 @@ impl MmProxyManager {
         Ok(())
     }
 
-    pub async fn start(
-        &self,
-        config: StartConfig,
-        tasks_tracker: TaskTracker,
-    ) -> Result<(), anyhow::Error> {
+    pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
@@ -158,7 +149,6 @@ impl MmProxyManager {
                 config.config_path,
                 config.log_path,
                 crate::binaries::Binaries::MergeMiningProxy,
-                tasks_tracker,
             )
             .await?;
 

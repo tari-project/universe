@@ -29,7 +29,6 @@ use log::warn;
 use tari_shutdown::ShutdownSignal;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
-use tokio_util::task::TaskTracker;
 
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::p2pool_adapter::P2poolAdapter;
@@ -161,7 +160,6 @@ impl P2poolManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        tasks_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
 
@@ -175,7 +173,6 @@ impl P2poolManager {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::ShaP2pool,
-                tasks_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;

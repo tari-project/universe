@@ -29,7 +29,7 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
-use crate::{airdrop, UniverseAppState};
+use crate::{airdrop, UniverseAppState, TASKS_TRACKER};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -294,10 +294,9 @@ impl TelemetryManager {
         let stats_collector = self.process_stats_collector.clone();
         let state = app_handle.state::<UniverseAppState>();
         let mut app_shutdown = state.shutdown.to_signal();
-        let tasks_tracker = state.tasks_tracker.clone();
         let mut interval = time::interval(timeout);
 
-        tasks_tracker.spawn(async move {
+        TASKS_TRACKER.get().unwrap().spawn(async move {
             tokio::select! {
                 _ = interval.tick() => {
                     debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");

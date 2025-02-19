@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{UniverseAppState, APPLICATION_FOLDER_ID, TASKS_TRACKER};
 use anyhow::Ok;
 use log::info;
 use tauri::Manager;
@@ -43,7 +43,7 @@ pub async fn stop_all_processes(
         info!(target: LOG_TARGET, "Entering shutdown sequence");
         state.shutdown.clone().trigger();
     }
-    let tasks_tracker = state.tasks_tracker.clone();
+    let tasks_tracker = TASKS_TRACKER.get().unwrap().clone();
     tasks_tracker.close();
     tasks_tracker.wait().await;
     return Ok(()) // We need to convert from anyhow::Result to a Result<(), String>

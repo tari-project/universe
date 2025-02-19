@@ -46,7 +46,6 @@ use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
 use tokio::time::timeout;
-use tokio_util::task::TaskTracker;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -89,7 +88,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        tasks_tracker: TaskTracker,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let status_shutdown = inner_shutdown.to_signal();
