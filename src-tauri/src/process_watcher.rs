@@ -126,7 +126,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(TASKS_TRACKER.get().unwrap().spawn(async move {
+        self.watcher_task = Some(TASKS_TRACKER.spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
@@ -187,10 +187,6 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         } else {
             false
         }
-    }
-
-    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        self.adapter.pid_file_exisits(base_path)
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {

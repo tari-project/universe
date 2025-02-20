@@ -296,7 +296,7 @@ impl TelemetryManager {
         let mut app_shutdown = state.shutdown.to_signal();
         let mut interval = time::interval(timeout);
 
-        TASKS_TRACKER.get().unwrap().spawn(async move {
+        TASKS_TRACKER.spawn(async move {
             tokio::select! {
                 _ = interval.tick() => {
                     debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");

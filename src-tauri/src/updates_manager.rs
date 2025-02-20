@@ -80,7 +80,7 @@ impl UpdatesManager {
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = self_clone.app_shutdown.clone();
-        TASKS_TRACKER.get().unwrap().spawn(async move {
+        TASKS_TRACKER.spawn(async move {
             tokio::select! {
                 _ = async {
                     loop {

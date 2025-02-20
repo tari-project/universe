@@ -49,7 +49,7 @@ use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
 use std::sync::atomic::AtomicBool;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
@@ -59,7 +59,7 @@ use tauri::async_runtime::{block_on, JoinHandle};
 use tauri::{Emitter, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
-use tokio::sync::{Mutex, OnceCell, RwLock};
+use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
@@ -168,13 +168,12 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
-static TASKS_TRACKER: OnceCell<TaskTracker> = OnceCell::const_new();
+static TASKS_TRACKER: LazyLock<TaskTracker> = LazyLock::new(TaskTracker::new);
 
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    let tasks_tracker = TASKS_TRACKER.get().unwrap();
-    tasks_tracker.spawn(async move {
+    TASKS_TRACKER.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let _ = &app_state
@@ -197,7 +196,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    tasks_tracker.spawn(async move {
+    TASKS_TRACKER.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -283,7 +282,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    tasks_tracker.spawn(async move {
+    TASKS_TRACKER.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
@@ -873,7 +872,7 @@ async fn setup_inner(
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     let mut shutdown_signal = state.shutdown.to_signal();
-    TASKS_TRACKER.get().unwrap().spawn(async move {
+    TASKS_TRACKER.spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
@@ -959,7 +958,6 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
-    let _unused = TASKS_TRACKER.set(TaskTracker::new());
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -1344,12 +1342,12 @@ fn main() {
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            let _unused = block_on(stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

@@ -249,17 +249,12 @@ impl CpuMiner {
         lock.is_running()
     }
 
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
-
     async fn initialize_status_updates(&mut self, mut app_shutdown: ShutdownSignal) {
         let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        TASKS_TRACKER.get().unwrap().spawn(async move {
+        TASKS_TRACKER.spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {
