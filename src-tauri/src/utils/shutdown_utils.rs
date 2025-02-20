@@ -21,25 +21,16 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{UniverseAppState, TASKS_TRACKER};
-use anyhow::Ok;
 use log::info;
 use tauri::Manager;
 
 static LOG_TARGET: &str = "tari::universe::async_utils";
 
-pub async fn stop_all_processes(app_handle: tauri::AppHandle) -> Result<(), String> {
+pub async fn stop_all_processes(app_handle: tauri::AppHandle) {
     info!(target: LOG_TARGET, "Entering shutdown sequence");
     let state = app_handle.state::<UniverseAppState>().inner();
-
-    let rt = tokio::runtime::Handle::current();
-    let active_tasks = rt.metrics().num_alive_tasks();
-    info!(target: LOG_TARGET, "Active tasks before: {}", active_tasks);
 
     state.shutdown.clone().trigger();
     TASKS_TRACKER.close();
     TASKS_TRACKER.wait().await;
-
-    let active_tasks = rt.metrics().num_alive_tasks();
-    info!(target: LOG_TARGET, "Active tasks after: {}", active_tasks);
-    Ok(()).map_err(|e| e.to_string())
 }

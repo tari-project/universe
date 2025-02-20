@@ -297,23 +297,27 @@ impl TelemetryManager {
         let mut interval = time::interval(timeout);
 
         TASKS_TRACKER.spawn(async move {
-            tokio::select! {
-                _ = interval.tick() => {
-                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
-                    let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
-                    let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
-                    if telemetry_collection_enabled {
-                        let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                        let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
-                        let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                        handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
+                        let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
+                        if telemetry_collection_enabled {
+                            let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
+                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
+                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
+                        }
+                    },
+                    _ = cancellation_token.cancelled() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
+                        break;
                     }
-                },
-                _ = cancellation_token.cancelled() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
-                }
-                _ = app_shutdown.wait() => {
-                    info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                    _ = app_shutdown.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                        break;
+                    }
                 }
             }
         });

@@ -876,32 +876,35 @@ async fn setup_inner(
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
-        tokio::select! {
-            _ = interval.tick() => {
-            let state = app_handle_clone.state::<UniverseAppState>().inner();
-            let check_if_orphan = state
-                .node_manager
-                .check_if_is_orphan_chain(!has_send_error)
-                .await;
-            match check_if_orphan {
-                Ok(is_stuck) => {
-                    if is_stuck {
-                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+        loop {
+            tokio::select! {
+                _ = interval.tick() => {
+                    let state = app_handle_clone.state::<UniverseAppState>().inner();
+                    let check_if_orphan = state
+                        .node_manager
+                        .check_if_is_orphan_chain(!has_send_error)
+                        .await;
+                    match check_if_orphan {
+                        Ok(is_stuck) => {
+                            if is_stuck {
+                                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                            }
+                            if is_stuck && !has_send_error {
+                                has_send_error = true;
+                            }
+                            drop(app_handle_clone.emit("is_stuck", is_stuck));
+                        }
+                        Err(ref e) => {
+                            error!(target: LOG_TARGET, "{}", e);
+                        }
                     }
-                    if is_stuck && !has_send_error {
-                        has_send_error = true;
-                    }
-                    drop(app_handle_clone.emit("is_stuck", is_stuck));
-                }
-                Err(ref e) => {
-                    error!(target: LOG_TARGET, "{}", e);
+                },
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+                    break;
                 }
             }
-            },
-            _ = shutdown_signal.wait() => {
-                info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
-            }
-        };
+        }
     });
 
     let _unused = ReleaseNotes::current()

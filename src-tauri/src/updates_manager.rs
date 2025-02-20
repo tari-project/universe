@@ -81,17 +81,17 @@ impl UpdatesManager {
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = self_clone.app_shutdown.clone();
         TASKS_TRACKER.spawn(async move {
-            tokio::select! {
-                _ = async {
-                    loop {
-                        interval.tick().await;
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
                         if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
                             error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                         }
+                    },
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
+                        break;
                     }
-                } => {},
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
                 }
             }
         });

@@ -115,33 +115,36 @@ impl TelemetryService {
                 user_id: user,
                 os,
             };
-            tokio::select! {
-                _ = async {
-                    debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
-                    while let Some(telemetry_data) = rx.recv().await {
-                        let config_guard = config_cloned.read().await;
-                        let telemetry_collection_enabled = config_guard.allow_telemetry();
-                        let app_id = config_guard.anon_id().to_string();
-                        if telemetry_collection_enabled {
-                            drop(retry_with_backoff(
-                                || {
-                                    Box::pin(send_telemetry_data(
-                                        telemetry_data.clone(),
-                                        telemetry_api_url.clone(),
-                                        system_info.clone(),
-                                        app_id.clone(),
-                                    ))
-                                },
-                                3,
-                                2,
-                                "send_telemetry_data",
-                            )
-                            .await);
+            loop {
+                tokio::select! {
+                    _ = async {
+                        debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
+                        while let Some(telemetry_data) = rx.recv().await {
+                            let config_guard = config_cloned.read().await;
+                            let telemetry_collection_enabled = config_guard.allow_telemetry();
+                            let app_id = config_guard.anon_id().to_string();
+                            if telemetry_collection_enabled {
+                                drop(retry_with_backoff(
+                                    || {
+                                        Box::pin(send_telemetry_data(
+                                            telemetry_data.clone(),
+                                            telemetry_api_url.clone(),
+                                            system_info.clone(),
+                                            app_id.clone(),
+                                        ))
+                                    },
+                                    3,
+                                    2,
+                                    "send_telemetry_data",
+                                )
+                                .await);
+                            }
                         }
+                    } => {},
+                    _ = cancellation_token.cancelled() => {
+                        debug!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                        break;
                     }
-                } => {},
-                _ = cancellation_token.cancelled() => {
-                    debug!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
                 }
             }
         });
