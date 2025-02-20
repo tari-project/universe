@@ -78,7 +78,7 @@ export class TappletProvider implements TariProvider {
     }
     /* eslint-disable @typescript-eslint/no-explicit-any */
     async runOne(method: TappletProviderMethod, args: any[]): Promise<any> {
-        console.log('[tapp provider] RUN ONE', method);
+        console.info('[TU][TappletProvider] runOne', method);
         const res = (this[method] as (...args: any) => Promise<any>)(...args);
         return res;
     }

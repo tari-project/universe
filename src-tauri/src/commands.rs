@@ -2156,7 +2156,7 @@ pub async fn call_wallet(
         .unwrap();
     let jrpc_port = ootle_wallet.jrpc_port;
 
-    info!(target: LOG_TARGET,"🚨🚨🚨 CALL WALLET method {:?} on port {:?}", method, jrpc_port);
+    info!(target: LOG_TARGET,"🚨 CALL WALLET method {:?} on port {:?}", method, jrpc_port);
     match make_request(Some(permission_token), method, req_params, Some(jrpc_port)).await {
         Ok(res) => Ok(res),
         Err(e) => {
@@ -2197,8 +2197,7 @@ pub async fn set_ootle_localnet_enabled<'r>(
     let log_dir = app.path().app_log_dir().expect("Could not get log dir");
 
     if enabled {
-        info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE START WITH CONFIG FROM {:?}", &config_dir);
-        info!(target: LOG_TARGET, "🚀 Run ootle with config data dir {:?}", &data_dir);
+        info!(target: LOG_TARGET, "🚀 Run ootle with data dir {:?} and config dir {:?}", &data_dir, &config_dir);
 
         let base_node_grpc_port = state
             .node_manager
