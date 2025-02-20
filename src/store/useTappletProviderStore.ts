@@ -2,9 +2,9 @@ import { create } from './create.ts';
 import { ActiveTapplet } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { TappletProvider, TappletProviderParams } from '@app/types/ootle/TappletProvider.ts';
-import { TariPermissions } from '@tari-project/tarijs';
 import { toPermission } from '@app/types/ootle/tariPermissions.ts';
 import { TransactionEvent } from '@app/types/ootle/transaction.ts';
+import { TariPermissions } from '@tari-project/tari-permissions';
 
 interface State {
     isInitialized: boolean;

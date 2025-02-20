@@ -1,7 +1,5 @@
-import '@tari-project/tarijs';
-import { TariPermission } from '@tari-project/tarijs/dist/providers/wallet_daemon';
+import { TariPermission } from '@tari-project/tari-permissions';
 
-//TODO tauri commands cammelCase to snake
 export interface RegisteredTapplet {
     id: string;
     registry_id: string;
@@ -87,6 +85,7 @@ export interface TappletConfig {
     supportedChain: SupportedChain[];
 }
 
+// TODO impor it from tari.js when is possible
 export interface TappletPermissions {
     requiredPermissions: TariPermission[];
     optionalPermissions: TariPermission[];

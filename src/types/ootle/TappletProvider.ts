@@ -18,7 +18,15 @@ import {
     TransactionStatus,
     VaultBalances,
 } from '@tari-project/tarijs';
-import { AccountSetDefaultResponse, ComponentAccessRules, ListSubstatesResponse, SubstateType } from '@tari-project/typescript-bindings';
+import type { ListSubstatesResponse } from '@tari-project/tari-provider';
+import {
+    AccountSetDefaultResponse,
+    ComponentAccessRules,
+    Instruction,
+    PublishTemplateRequest,
+    PublishTemplateResponse,
+    SubstateType,
+} from '@tari-project/typescript-bindings';
 import { TappletPermissions } from './tapplet';
 import { IPCRpcTransport } from './ipc_transport';
 import { OotleAccount } from './account';
@@ -85,7 +93,6 @@ export class TappletProvider implements TariProvider {
 
     // TODO account name should be included in TU Provider method definition to pass the arg
     public async createFreeTestCoins(accountName = 'test', amount = 1_000_000, fee?: number): Promise<Account> {
-        console.log('[tapp provider] create test coins', accountName);
         const res = await this.client.createFreeTestCoins({
             account: (accountName && { Name: accountName }) || null,
             amount,
@@ -122,23 +129,22 @@ export class TappletProvider implements TariProvider {
     }
 
     public requestParentSize(): Promise<WindowSize> {
-        // return new Promise<WindowSize>((resolve, _reject) => resolve({ width: this.width, height: this.height }));
         return Promise.resolve({ width: this.width, height: this.height });
     }
 
     public async getAccount(): Promise<OotleAccount> {
         const { account, public_key } = await this.client.accountsGetDefault({});
         console.info('🔌 [TU][Provider] getAccount with accountsGetDefault', account, public_key);
-        //TODO debug error
-        //tip: if fails try `account: { ComponentAddress: account.address }`
+
+        // TODO tip: if fails try `account: { ComponentAddress: account.address }`
         const { balances } = await this.client.accountsGetBalances({
             account: { ComponentAddress: substateIdToString(account.address) },
             refresh: false,
         });
-        console.info('[TU][TappletProvider] getAccount', account.name, balances);
+        console.info('[TU]appletProvider] getAccount', account.name, balances);
         return {
             account_id: account.key_index,
-            address: substateIdToString(account.address), //TODO tari.js SubstateId type
+            address: substateIdToString(account.address),
             account_name: account.name ?? '',
             public_key,
 
@@ -146,13 +152,13 @@ export class TappletProvider implements TariProvider {
                 type: b.resource_type,
                 resource_address: b.resource_address,
                 balance: b.balance + b.confidential_balance,
+                token_symbol: b.token_symbol,
                 vault_id:
                     typeof b.vault_address === 'string' && b.vault_address.length > 0
                         ? b.vault_address
                         : 'Vault' in b.vault_address
                           ? b.vault_address.Vault
                           : b.vault_address,
-                token_symbol: b.token_symbol,
             })),
         };
     }
@@ -192,8 +198,8 @@ export class TappletProvider implements TariProvider {
             transaction: {
                 V1: {
                     network: req.network,
-                    fee_instructions: req.fee_instructions as any[], //TODO fix type
-                    instructions: req.instructions as any[], //TODO fix type
+                    fee_instructions: req.fee_instructions as Instruction[],
+                    instructions: req.instructions as Instruction[],
                     inputs: req.required_substates.map((s) => ({
                         // TODO: Hmm The bindings want a SubstateId object, but the wallet only wants a string. Any is used to skip type checking here
                         substate_id: s.substate_id as any,
@@ -263,19 +269,11 @@ export class TappletProvider implements TariProvider {
             limit: limit ? BigInt(limit) : null,
             offset: offset ? BigInt(offset) : null,
         });
-        // const substates = res.substates.map((s) => ({
-        //     substate_id: substateIdToString(s.substate_id),
-        //     parent_id: null,
-        //     module_name: s.module_name,
-        //     version: s.version,
-        //     template_address: s.template_address,
-        // }));
         const substates = res.substates.map((s) => ({
-            substate_id: s.substate_id,
+            substate_id: substateIdToString(s.substate_id),
             module_name: s.module_name,
             version: s.version,
             template_address: s.template_address,
-            timestamp: BigInt(0),
         }));
 
         return { substates };
@@ -283,6 +281,10 @@ export class TappletProvider implements TariProvider {
 
     public async setDefaultAccount(accountName: string): Promise<AccountSetDefaultResponse> {
         return await this.client.accountsSetDefault({ account: { Name: accountName } });
+    }
+
+    public async transactionsPublishTemplate(request: PublishTemplateRequest): Promise<PublishTemplateResponse> {
+        return await this.client.publishTemplate(request);
     }
 }
 
