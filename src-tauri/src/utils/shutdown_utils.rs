@@ -33,14 +33,13 @@ pub async fn stop_all_processes(app_handle: tauri::AppHandle) -> Result<(), Stri
 
     let rt = tokio::runtime::Handle::current();
     let active_tasks = rt.metrics().num_alive_tasks();
-    info!(target: LOG_TARGET, "Active tasks: {}", active_tasks);
+    info!(target: LOG_TARGET, "Active tasks before: {}", active_tasks);
 
     state.shutdown.clone().trigger();
-    let tasks_tracker = TASKS_TRACKER.clone();
-    tasks_tracker.close();
-    tasks_tracker.wait().await;
+    TASKS_TRACKER.close();
+    TASKS_TRACKER.wait().await;
 
     let active_tasks = rt.metrics().num_alive_tasks();
-    info!(target: LOG_TARGET, "Active tasks: {}", active_tasks);
+    info!(target: LOG_TARGET, "Active tasks after: {}", active_tasks);
     Ok(()).map_err(|e| e.to_string())
 }
