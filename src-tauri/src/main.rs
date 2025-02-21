@@ -313,7 +313,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    SystemStatus::current().start_listener()?;
+
 
     app.emit(
         "setup_message",
@@ -1355,8 +1355,9 @@ fn main() {
         app.package_info().version
     );
 
+    let power_monitor = SystemStatus::current().start_listener().expect("test");
     app.run(move |app_handle, event| {
-        SystemStatus::current().recive_power_event();
+        SystemStatus::current().recive_power_event(&power_monitor);
 
         match event {
         tauri::RunEvent::Ready  => {

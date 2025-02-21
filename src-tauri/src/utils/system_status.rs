@@ -33,7 +33,6 @@ const LOG_TARGET: &str = "tari::universe::external_dependencies";
 static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
 
 pub struct SystemStatus {
-    power_monitor: PowerMonitor,
     // cancelation_token: RwLock<Option<CancellationToken>>,
     sleep_mode_watcher_sender: watch::Sender<bool>,
     sleep_mode_watcher_receiver: watch::Receiver<bool>,
@@ -41,27 +40,26 @@ pub struct SystemStatus {
 
 impl SystemStatus {
     fn new() -> Self {
-        let power_monitor = PowerMonitor::new();
         let (sleep_mode_watcher_sender, sleep_mode_watcher_receiver) = watch::channel(false);
 
         Self {
-            power_monitor,
             // cancelation_token: RwLock::new(None),
             sleep_mode_watcher_sender,
             sleep_mode_watcher_receiver,
         }
     }
 
-    pub fn start_listener(&self) -> Result<(), Error> {
-        self.power_monitor
+    pub fn start_listener(&self) -> Result<PowerMonitor, Error> {
+        let power_monitor = PowerMonitor::new();
+        power_monitor
             .start_listening()
             .map_err(|e| anyhow!(e))?;
-        Ok(())
+        Ok(power_monitor)
     }
 
-    pub fn recive_power_event(&self) -> Result<(), Error> {
+    pub fn recive_power_event(&self, power_monitor: &PowerMonitor) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Reciving power event");
-        if let Ok(event) = self.power_monitor.event_receiver().try_recv() {
+        if let Ok(event) = power_monitor.event_receiver().try_recv() {
             info!(target: LOG_TARGET, "Power event: {:?}", event);
             match event {
                 PowerState::ScreenLocked => {
