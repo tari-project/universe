@@ -1347,21 +1347,23 @@ fn main() {
         }
         tauri::RunEvent::ExitRequested { api: _, code, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
-            if code.unwrap() == RESTART_EXIT_CODE {
-                // RunEvent does not hold the exit code so we store it separately
-                is_restart_requested.store(true, Ordering::SeqCst);
+            if let Some(exit_code) = code {
+                if exit_code == RESTART_EXIT_CODE {
+                    // RunEvent does not hold the exit code so we store it separately
+                    is_restart_requested.store(true, Ordering::SeqCst);
+                }
             }
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
+            info!(target: LOG_TARGET, "App shutdown caught");
+            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             if is_restart_requested_clone.load(Ordering::SeqCst) {
                 app_handle.cleanup_before_exit();
                 let env = app_handle.env();
                 tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
             }
-            info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
