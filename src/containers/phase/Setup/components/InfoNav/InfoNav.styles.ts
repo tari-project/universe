@@ -119,7 +119,7 @@ export const NavItem = styled.div`
     will-change: background, height;
 
     &:hover {
-        background: rgba(0, 0, 0, 0.2);
+        background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.2)};
         height: 10px;
     }
 `;
@@ -128,7 +128,7 @@ export const NavItemCurrent = styled.div<{ $duration?: number }>`
     border-radius: 200px;
     height: 100%;
     z-index: 1;
-    background: ${({ theme }) => theme.palette.base};
+    background: ${({ theme }) => theme.palette.contrast};
     animation: ${widthIn} ${({ $duration = 0.3 }) => $duration}s linear forwards;
     will-change: width, opacity;
 `;
