@@ -37,7 +37,6 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::utils::system_status::SystemStatus;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};

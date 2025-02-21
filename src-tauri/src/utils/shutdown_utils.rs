@@ -137,7 +137,7 @@ pub async fn stop_all_processes(
 
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app_handle.state::<UniverseAppState>().inner();
-    let (tx, rx) = watch::channel("".to_string());
+    let (tx, _rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
 
     let data_dir = app_handle

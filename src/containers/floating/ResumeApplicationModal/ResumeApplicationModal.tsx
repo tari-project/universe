@@ -15,8 +15,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const showModal = appResumePayload?.is_resuming;
     const wasMiningInitiatedRef = useRef(isMiningInitiated);
 
-    console.log('wasMiningInitiatedRef', wasMiningInitiatedRef.current);
-
     useEffect(() => {
         if (appResumePayload?.is_resuming) {
             setMiningControlsEnabled(false);
@@ -28,7 +26,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         }
 
         if (wasMiningInitiatedRef.current && !appResumePayload?.is_resuming) {
-            console.log('wasMiningInitiatedRef in mining start', wasMiningInitiatedRef.current);
             startMining();
         }
         if (!appResumePayload?.is_resuming) {
