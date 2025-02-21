@@ -47,7 +47,7 @@ use wallet_adapter::WalletState;
 use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -141,6 +141,7 @@ mod xmrig;
 mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
+const RESTART_EXIT_CODE: i32 = i32::MAX;
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 #[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
@@ -1074,10 +1075,15 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
-            app.emit("single-instance", Payload { args: argv, cwd })
-                .unwrap_or_else(
-                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
-                );
+            match app.get_webview_window("main") {
+                Some(w) => {
+                    let _unused = w.show().map_err(|err| error!(target: LOG_TARGET, "Couldn't show the main window {:?}", err));
+                    let _unused = w.set_focus();
+                },
+                None => {
+                    error!(target: LOG_TARGET, "Could not find main window");
+                }
+            };
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
@@ -1324,6 +1330,10 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
+
+    let is_restart_requested = Arc::new(AtomicBool::new(false));
+    let is_restart_requested_clone = is_restart_requested.clone();
+
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
@@ -1335,12 +1345,21 @@ fn main() {
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
-        tauri::RunEvent::ExitRequested { api: _, .. } => {
-            info!(target: LOG_TARGET, "App shutdown request caught");
+        tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+            info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
+            if code.unwrap() == RESTART_EXIT_CODE {
+                // RunEvent does not hold the exit code so we store it separately
+                is_restart_requested.store(true, Ordering::SeqCst);
+            }
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
+            if is_restart_requested_clone.load(Ordering::SeqCst) {
+                app_handle.cleanup_before_exit();
+                let env = app_handle.env();
+                tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
+            }
             info!(target: LOG_TARGET, "App shutdown caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
@@ -1348,8 +1367,6 @@ fn main() {
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        _ => {
-            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
-        }
+        _ => {}
     });
 }
