@@ -313,7 +313,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    SystemStatus::current().spawn_listener().await?;
+    SystemStatus::current().start_listener()?;
 
     app.emit(
         "setup_message",
@@ -1354,7 +1354,11 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-    app.run(move |app_handle, event| match event {
+
+    app.run(move |app_handle, event| {
+        SystemStatus::current().recive_power_event();
+
+        match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
@@ -1381,5 +1385,31 @@ fn main() {
         _ => {
             debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
         }
+    };
     });
+
+    //     let app_handle_clone: tauri::AppHandle = app.clone();
+    // tauri::async_runtime::spawn(async move {
+    //     let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+    //     let mut last_state = *receiver.borrow();
+    //     loop {
+    //         if receiver.changed().await.is_ok() {
+    //             let current_state = *receiver.borrow();
+
+    //             if last_state && !current_state {
+    //                 info!(target: LOG_TARGET, "System is no longer in sleep mode");
+    //                 let _unused = resume_all_processes(app_handle_clone.clone()).await;
+    //             }
+
+    //             if !last_state && current_state {
+    //                 info!(target: LOG_TARGET, "System entered sleep mode");
+    //                 let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+    //             }
+
+    //             last_state = current_state;
+    //         } else {
+    //             error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+    //         }
+    //     }
+    // });
 }

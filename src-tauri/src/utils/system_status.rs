@@ -34,7 +34,7 @@ static INSTANCE: LazyLock<SystemStatus> = LazyLock::new(SystemStatus::new);
 
 pub struct SystemStatus {
     power_monitor: PowerMonitor,
-    cancelation_token: RwLock<Option<CancellationToken>>,
+    // cancelation_token: RwLock<Option<CancellationToken>>,
     sleep_mode_watcher_sender: watch::Sender<bool>,
     sleep_mode_watcher_receiver: watch::Receiver<bool>,
 }
@@ -42,23 +42,24 @@ pub struct SystemStatus {
 impl SystemStatus {
     fn new() -> Self {
         let power_monitor = PowerMonitor::new();
-        SystemStatus::start_listener(&power_monitor).expect("Error starting listener");
         let (sleep_mode_watcher_sender, sleep_mode_watcher_receiver) = watch::channel(false);
 
         Self {
             power_monitor,
-            cancelation_token: RwLock::new(None),
+            // cancelation_token: RwLock::new(None),
             sleep_mode_watcher_sender,
             sleep_mode_watcher_receiver,
         }
     }
 
-    fn start_listener(power_monitor: &PowerMonitor) -> Result<(), Error> {
-        power_monitor.start_listening().map_err(|e| anyhow!(e))?;
+    pub fn start_listener(&self) -> Result<(), Error> {
+        self.power_monitor
+            .start_listening()
+            .map_err(|e| anyhow!(e))?;
         Ok(())
     }
 
-    async fn recive_power_event(&self) -> Result<(), Error> {
+    pub fn recive_power_event(&self) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Reciving power event");
         if let Ok(event) = self.power_monitor.event_receiver().try_recv() {
             info!(target: LOG_TARGET, "Power event: {:?}", event);
@@ -89,37 +90,37 @@ impl SystemStatus {
         Ok(())
     }
 
-    pub async fn spawn_listener(&self) -> Result<(), Error> {
-        let cancelation_token = CancellationToken::new();
-        *self.cancelation_token.write().await = Some(cancelation_token.clone());
+    // pub async fn spawn_listener(&self) -> Result<(), Error> {
+    //     let cancelation_token = CancellationToken::new();
+    //     *self.cancelation_token.write().await = Some(cancelation_token.clone());
 
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = cancelation_token.cancelled() => {
-                    info!(target: LOG_TARGET, "Listener canceled");
-                },
-                _ = async {
-                    loop {
-                        SystemStatus::current().recive_power_event().await.expect("Error reciving power event");
-                        tokio::time::sleep(Duration::from_secs(5)).await;
-                    }
-                } => {
-                    info!(target: LOG_TARGET, "Listener finished");
-                }
-            }
-        });
+    //     tokio::spawn(async move {
+    //         tokio::select! {
+    //             _ = cancelation_token.cancelled() => {
+    //                 info!(target: LOG_TARGET, "Listener canceled");
+    //             },
+    //             _ = async {
+    //                 loop {
+    //                     SystemStatus::current().recive_power_event().await.expect("Error reciving power event");
+    //                     tokio::time::sleep(Duration::from_secs(5)).await;
+    //                 }
+    //             } => {
+    //                 info!(target: LOG_TARGET, "Listener finished");
+    //             }
+    //         }
+    //     });
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
-    pub async fn stop_listener(&self) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Stopping listener");
-        if let Some(cancelation_token) = self.cancelation_token.read().await.as_ref() {
-            cancelation_token.cancel();
-            info!(target: LOG_TARGET, "Listener canceled");
-        }
-        Ok(())
-    }
+    // pub async fn stop_listener(&self) -> Result<(), Error> {
+    //     info!(target: LOG_TARGET, "Stopping listener");
+    //     if let Some(cancelation_token) = self.cancelation_token.read().await.as_ref() {
+    //         cancelation_token.cancel();
+    //         info!(target: LOG_TARGET, "Listener canceled");
+    //     }
+    //     Ok(())
+    // }
 
     pub fn get_sleep_mode_watcher(&self) -> watch::Receiver<bool> {
         self.sleep_mode_watcher_receiver.clone()

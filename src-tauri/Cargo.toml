@@ -95,7 +95,7 @@ hex = "0.4.3"
 openssl = { version = "0.10", features = ["vendored"] }
 ring-compat = "0.8.0"
 der = "0.7.9"
-psp = { git = "https://github.com/Misieq01/psp.git", version = "0.1.0" }
+psp = { git = "https://github.com/Misieq01/psp.git", rev = "ddef0c6" }
 tonic = "0.12.3"
 tauri-plugin-clipboard-manager = "2.2.0"
 urlencoding = "2.1.3"

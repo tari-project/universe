@@ -5894,7 +5894,7 @@ dependencies = [
 [[package]]
 name = "psp"
 version = "0.1.0"
-source = "git+https://github.com/Misieq01/psp.git#ddef0c61aeedc0ad1891de31659fd6c2e1bcaedb"
+source = "git+https://github.com/Misieq01/psp.git?rev=ddef0c6#ddef0c61aeedc0ad1891de31659fd6c2e1bcaedb"
 dependencies = [
  "cocoa 0.24.1",
  "core-foundation 0.9.4",
