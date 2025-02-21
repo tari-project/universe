@@ -9,7 +9,7 @@ use tari_wallet_daemon_client::types::{
 };
 
 const LOG_TARGET: &str = "tari::dan::wallet_daemon";
-const DAN_WALLET_JSON_ADDRESS: &str = "127.0.0.1:18010"; //TODO tmp solution
+const DEFAULT_OOTLE_WALLET_JRPC_ADDRESS: &str = "127.0.0.1:18010";
 
 pub async fn permission_token(jrpc_port: Option<u16>) -> Result<(String, String), anyhow::Error> {
     let req_params = AuthLoginRequest {
@@ -44,7 +44,7 @@ pub async fn make_request<T: Serialize>(
 ) -> Result<serde_json::Value, anyhow::Error> {
     info!(target: LOG_TARGET, "Make request");
     let json_connect_address = jrpc_port.map_or_else(
-        || DAN_WALLET_JSON_ADDRESS.to_string(),
+        || DEFAULT_OOTLE_WALLET_JRPC_ADDRESS.to_string(),
         |port| format!("127.0.0.1:{}", port),
     );
     let address = SocketAddr::from_str(&json_connect_address).unwrap();

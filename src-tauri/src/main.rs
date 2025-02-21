@@ -33,10 +33,8 @@ use indexer_manager::{IndexerConfig, IndexerManager};
 use log::{debug, error, info, warn};
 use node_adapter::BaseNodeStatus;
 use ootle::tapplet_server::start;
-use ootle::{
-    setup_ootle_wallet, setup_tokens, AssetServer, DatabaseConnection, OotleWallet, ShutdownTokens,
-    Tokens,
-};
+use ootle::wallet_daemon::spawn_wallet_daemon;
+use ootle::{setup_tokens, AssetServer, DatabaseConnection, OotleWallet, ShutdownTokens, Tokens};
 use p2pool::models::Connections;
 use port_allocator::PortAllocator;
 use process_stats_collector::ProcessStatsCollectorBuilder;
@@ -899,7 +897,7 @@ async fn setup_inner(
         let db_path = app_data_dir.join(DB_FILE_NAME);
 
         app.manage(DatabaseConnection(Arc::new(std::sync::Mutex::new(
-            database::establish_connection(db_path.to_str().unwrap()),
+            database::establish_connection(db_path.to_str().unwrap_or_default()),
         ))));
         info!(target: LOG_TARGET, "🚀 DB connection established successfully");
 
@@ -909,40 +907,25 @@ async fn setup_inner(
         });
         app.manage(ShutdownTokens::default());
         let jrpc_port = PortAllocator::new().assign_port_with_fallback();
-        app.manage(OotleWallet {
-            jrpc_port,
-            jrpc_address: format!("127.0.0.1:{}", jrpc_port),
-        });
+        app.manage(OotleWallet { jrpc_port });
 
         info!(target: LOG_TARGET, "🚀🚀🚀 RUN OOTLE THREAD {:?}", jrpc_port);
         let _ = tauri::async_runtime::spawn(async move {
-            setup_ootle_wallet(jrpc_port, data_dir_clone, log_dir_clone, config_dir_clone)
+            spawn_wallet_daemon(jrpc_port, data_dir_clone, config_dir_clone, log_dir_clone)
                 .await
                 .inspect_err(
                     |e| error!(target: LOG_TARGET, "Could not start the Tari Ootle: {:?}", e),
                 )
                 .map_err(|e| e.to_string())
         });
-        // let _ = thread_ootle
-        //     .await
-        //     .inspect_err(
-        //         |e| error!(target: LOG_TARGET, "❌ Error launching The Tari Ootle: {:?}", e),
-        //     )
-        //     .map_err(|e| e.to_string());
 
         info!(target: LOG_TARGET, "🚀🚀🚀 RUN TOKEN THREAD");
-        //TODO permission tokens
-        let thread_tokens = tauri::async_runtime::spawn(async move {
-            setup_tokens(app_handle_clone, Some(jrpc_port))
+        let _ = tauri::async_runtime::spawn(async move {
+            setup_tokens(app_handle_clone)
                 .await
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not set tokens: {:?}", e))
                 .map_err(|e| e.to_string())
         });
-        // let _ = thread_tokens
-        //     .await
-        //     .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error getting tokens: {:?}", e))
-        //     .map_err(|e| e.to_string());
-
         let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
         let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
         app.manage(AssetServer { addr, cancel_token });
@@ -1157,8 +1140,8 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
-    tokens: Arc<RwLock<Tokens>>,                  //TODO
-    validator_node_manager: ValidatorNodeManager, //TODO
+    tokens: Arc<RwLock<Tokens>>,
+    validator_node_manager: ValidatorNodeManager,
     indexer_manager: IndexerManager,
     ootle_wallet: Arc<RwLock<OotleWallet>>,
 }

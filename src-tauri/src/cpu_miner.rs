@@ -29,7 +29,7 @@ use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
 use crate::{BaseNodeStatus, CpuMinerConfig};
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;

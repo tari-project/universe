@@ -8,7 +8,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
-use crate::port_allocator::PortAllocator;
 use crate::process_watcher::ProcessWatcher;
 use crate::validator_node_adapter::ValidatorNodeAdapter;
 use crate::ProcessStatsCollectorBuilder;

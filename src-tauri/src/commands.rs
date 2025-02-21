@@ -76,10 +76,10 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{self, read_dir, remove_dir_all, remove_file, File};
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
@@ -1917,8 +1917,8 @@ pub fn get_assets_server_addr(state: tauri::State<'_, AssetServer>) -> Result<St
 }
 
 #[tauri::command]
-pub fn get_ootle_wallet_jrpc_port(state: tauri::State<'_, OotleWallet>) -> Result<String, String> {
-    Ok(format!("http://{}", state.jrpc_address))
+pub fn get_ootle_wallet_jrpc_port(state: tauri::State<'_, OotleWallet>) -> Result<u16, String> {
+    Ok(state.jrpc_port)
 }
 
 #[tauri::command]
@@ -2154,10 +2154,15 @@ pub async fn call_wallet(
         .inspect_err(|e| error!(target: LOG_TARGET, "❌ Error at call_wallet: {:?}", e))
         .map_err(|e| error::Error::JsonParsingError(e))
         .unwrap();
-    let jrpc_port = ootle_wallet.jrpc_port;
 
-    info!(target: LOG_TARGET,"🚨 CALL WALLET method {:?} on port {:?}", method, jrpc_port);
-    match make_request(Some(permission_token), method, req_params, Some(jrpc_port)).await {
+    match make_request(
+        Some(permission_token),
+        method,
+        req_params,
+        Some(ootle_wallet.jrpc_port),
+    )
+    .await
+    {
         Ok(res) => Ok(res),
         Err(e) => {
             error!(target: LOG_TARGET,"❌ Error at call_wallet: {:?}", e);
