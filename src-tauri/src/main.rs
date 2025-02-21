@@ -961,6 +961,16 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -1345,12 +1355,12 @@ fn main() {
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone()));
+            block_on(stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone()));
+            block_on(stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
