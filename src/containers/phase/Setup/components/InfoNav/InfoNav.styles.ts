@@ -37,6 +37,8 @@ export const Container = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 16px;
+    user-select: none;
+    -webkit-user-select: none;
     max-width: 100%;
     z-index: 2;
 `;
@@ -91,6 +93,9 @@ export const NavContainer = styled.div`
     flex-direction: column;
     justify-content: space-between;
     height: clamp(240px, 38vh, 340px);
+    @media (min-height: 700px) {
+        height: clamp(320px, 40vh, 380px);
+    }
 `;
 
 export const Nav = styled.div`
