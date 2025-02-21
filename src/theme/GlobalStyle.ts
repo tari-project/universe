@@ -79,10 +79,7 @@ export const GlobalStyle = createGlobalStyle`
         letter-spacing: -0.02px;
         font-weight: 400;
 
-        color: #000;
-        @media (prefers-color-scheme: dark) {
-            color: #fff;
-        }
+        color: ${({ theme }) => theme.palette.text.primary};
         
         * {
             box-sizing: border-box;
@@ -96,6 +93,10 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
+    
+    html {
+        background: ${({ theme }) => theme.palette.base};
+    }
     #canvas {
         z-index: 0;
         top: 0;

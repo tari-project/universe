@@ -32,10 +32,10 @@ interface Actions {
 }
 
 type UIStoreState = State & Actions;
-
+const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const initialState: State = {
     isWebglNotSupported: false,
-    theme: 'light',
+    theme: initialDarkMode ? 'dark' : 'light',
     background: 'onboarding',
     view: 'setup',
     sidebarOpen: false,
