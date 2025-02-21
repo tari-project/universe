@@ -21,7 +21,6 @@ interface State {
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
-    setTheme: (theme: Theme) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
@@ -47,10 +46,6 @@ const initialState: State = {
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setTheme: (theme) => {
-        setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
-        set({ theme });
-    },
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
@@ -66,3 +61,8 @@ export const useUIStore = create<UIStoreState>()((set) => ({
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
+
+export const setUITheme = (theme: Theme) => {
+    setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
+    useUIStore.setState({ theme });
+};

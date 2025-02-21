@@ -1,5 +1,6 @@
 import styled, { css, keyframes } from 'styled-components';
 import { m } from 'motion/react';
+import { convertHexToRGBA } from '@app/utils';
 
 const fadeIn = keyframes`
   from {
@@ -102,7 +103,6 @@ export const Nav = styled.div`
 `;
 
 export const NavItem = styled.div`
-    border-radius: 50px;
     position: relative;
     display: flex;
     width: 70px;
@@ -110,7 +110,7 @@ export const NavItem = styled.div`
     cursor: pointer;
     overflow: hidden;
 
-    background: rgba(0, 0, 0, 0.1);
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     border-radius: 200px;
 
     transition:
@@ -128,7 +128,7 @@ export const NavItemCurrent = styled.div<{ $duration?: number }>`
     border-radius: 200px;
     height: 100%;
     z-index: 1;
-    background: #000;
+    background: ${({ theme }) => theme.palette.base};
     animation: ${widthIn} ${({ $duration = 0.3 }) => $duration}s linear forwards;
     will-change: width, opacity;
 `;

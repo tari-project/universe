@@ -89,11 +89,12 @@ export const GlobalStyle = createGlobalStyle`
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
         }
+
+       
     }
 
     html {
-        background: #fff;// for now
-        //background:  ${({ theme }) => theme.palette.base};
+        background:  ${({ theme }) => theme.palette.base};
     }
     
     #canvas {
