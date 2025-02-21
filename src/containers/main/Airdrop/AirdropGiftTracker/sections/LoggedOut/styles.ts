@@ -20,8 +20,8 @@ export const ClaimButton = styled('button')`
     padding: 12px 14px 12px 20px;
 
     border-radius: 60px;
-    background: ${({ theme }) => theme.palette.action.background.secondary};
-    color: ${({ theme }) => theme.palette.action.background.contrast};
+    background: #000;
+    color: #fff;
     transition: transform 0.2s ease;
     overflow: hidden;
     cursor: pointer;
@@ -40,7 +40,7 @@ export const Image = styled('img')`
 `;
 
 export const Title = styled('div')`
-    color: ${({ theme }) => theme.palette.base};
+    color: #fff;
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -55,8 +55,8 @@ export const GemPill = styled('div')`
     gap: 2px;
 
     border-radius: 100px;
-    background: ${({ theme }) => theme.palette.action.background.contrast};
-    color: ${({ theme }) => theme.palette.contrast};
+    background: ${({ theme }) => theme.colors.brightGreen[500]};
+    color: #000;
     text-align: center;
     font-size: 12px;
     font-weight: 600;

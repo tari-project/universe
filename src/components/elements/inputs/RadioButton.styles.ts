@@ -46,6 +46,7 @@ export const RadioButtonWrapper = styled.div<Props>`
 
 export const StyledLabel = styled.label<Props>`
     text-transform: capitalize;
+    user-select: none;
     text-align: center;
     width: 100%;
 

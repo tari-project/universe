@@ -19,7 +19,7 @@ export const animationDarkBg = [
     { property: 'neutralColor', value: '#040723' },
     { property: 'successColor', value: '#c9eb00' },
     { property: 'mainColor', value: '#813bf5' },
-    { property: 'failColor', value: '#fe2c3f' },
+    { property: 'failColor', value: '#ff5610' },
     { property: 'particlesColor', value: '#813bf5' },
     { property: 'goboIntensity', value: 0.75 },
     { property: 'particlesOpacity', value: 0.95 },
