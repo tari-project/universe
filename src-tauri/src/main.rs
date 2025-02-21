@@ -611,40 +611,62 @@ async fn setup_inner(
         )
         .await?;
     sleep(Duration::from_secs(1));
-    // if state.config.read().await.ootle_localnet_enabled() {
-    //     //TODO tari validator node binary
-    //     // should check for update - for now is set to false because of local build
-    //     progress.set_max(34).await;
-    //     progress
-    //         .update(
-    //             "checking-latest-version-tari-validator-node".to_string(),
-    //             None,
-    //             0,
-    //         )
-    //         .await;
-    //     binary_resolver
-    //         .initialize_binary_timeout(
-    //             Binaries::TariValidatorNode,
-    //             progress.clone(),
-    //             false,
-    //             rx.clone(),
-    //         )
-    //         .await?;
-    //     sleep(Duration::from_secs(1));
-    //     info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
 
-    //     //TODO tari ootle indexer binary
-    //     // should check for update - for now is set to false because of local build
-    //     progress.set_max(36).await;
-    //     progress
-    //         .update("checking-latest-version-tari-indexer".to_string(), None, 0)
-    //         .await;
-    //     binary_resolver
-    //         .initialize_binary_timeout(Binaries::TariIndexer, progress.clone(), false, rx.clone())
-    //         .await?;
-    //     sleep(Duration::from_secs(1));
-    //     info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
-    // }
+    info!(target: LOG_TARGET, "🚀🚀🚀 OOTLE SECTION");
+    if state.config.read().await.ootle_node_enabled() {
+        info!(target: LOG_TARGET, "🚀🚀🚀 CHECK OOTLE BINARIES");
+        //TODO tari validator node binary
+        // should check for update - for now is set to false because of local build
+        let _unused = telemetry_service
+            .send(
+                "checking-latest-version-tari-validator-node".to_string(),
+                json!({
+                    "service": "validator-node",
+                    "percentage":32,
+                }),
+            )
+            .await;
+
+        progress.set_max(34).await;
+        progress
+            .update(
+                "checking-latest-version-tari-validator-node".to_string(),
+                None,
+                0,
+            )
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(
+                Binaries::TariValidatorNode,
+                progress.clone(),
+                false,
+                rx.clone(),
+            )
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Validator node binary resolved");
+
+        let _unused = telemetry_service
+            .send(
+                "checking-latest-version-tari-indexer".to_string(),
+                json!({
+                    "service": "tari-indexer",
+                    "percentage":34,
+                }),
+            )
+            .await;
+        //TODO tari ootle indexer binary
+        // should check for update - for now is set to false because of local build
+        progress.set_max(36).await;
+        progress
+            .update("checking-latest-version-tari-indexer".to_string(), None, 0)
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(Binaries::TariIndexer, progress.clone(), false, rx.clone())
+            .await?;
+        sleep(Duration::from_secs(1));
+        info!(target: LOG_TARGET, "🚀 Tari Indexer binary resolved");
+    }
 
     if should_check_for_update {
         info!(target: LOG_TARGET, "🚀 Check update binary");
@@ -724,7 +746,7 @@ async fn setup_inner(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
                                     "service": "minotari_node",
-                                    "percentage":37,
+                                    "percentage":38,
                                 }),
                             )
                             .await;
@@ -803,7 +825,7 @@ async fn setup_inner(
             "starting-benchmarking".to_string(),
             json!({
                 "service": "starting_benchmarking",
-                "percentage":75,
+                "percentage":77,
             }),
         )
         .await;
@@ -867,51 +889,8 @@ async fn setup_inner(
 
     //TODO RUN OOTLE
     if state.config.read().await.ootle_enabled() {
-        progress.set_max(90).await;
+        progress.set_max(86).await;
         progress.update("starting-ootle".to_string(), None, 0).await;
-
-        // run localnet
-        if state.config.read().await.ootle_localnet_enabled() {
-            let base_node_grpc = state.node_manager.get_grpc_port().await?;
-            info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT VN {:?}", &base_node_grpc);
-            let validator_node_config = ValidatorNodeConfig::builder()
-                .with_base_node(base_node_grpc)
-                .with_base_path(&data_dir)
-                .build()?;
-            let tcp_port = state.node_manager.get_tcp_listener_port().await;
-            info!(target: LOG_TARGET, "🌐 Base Node TCP {:?}", &tcp_port);
-
-            state
-                .validator_node_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    validator_node_config,
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-
-            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
-
-            let indexer_config = IndexerConfig::builder()
-                .with_base_node(base_node_grpc)
-                .with_base_path(data_dir.clone())
-                .build()?;
-
-            state
-                .indexer_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    indexer_config,
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-
-            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
-        }
 
         let app_handle_clone = app.clone();
         let data_dir_clone = data_dir.clone();
@@ -967,15 +946,86 @@ async fn setup_inner(
         let tapp_assets_path = app_data_dir.join(TAPPLETS_ASSETS_DIR);
         let (addr, cancel_token) = start(tapp_assets_path).await.unwrap(); //TODO unwrap
         app.manage(AssetServer { addr, cancel_token });
-        let _unused = telemetry_service
-            .send(
-                "starting-ootle".to_string(),
-                json!({
-                    "service": "starting-ootle",
-                    "percentage":90,
-                }),
-            )
-            .await;
+
+        // run local node
+        if state.config.read().await.ootle_node_enabled() {
+            progress.set_max(88).await;
+            progress
+                .update("starting-ootle-local-node".to_string(), None, 0)
+                .await;
+
+            let _unused = telemetry_service
+                .send(
+                    "starting-validator-node".to_string(),
+                    json!({
+                        "service": "starting-validator-node",
+                        "percentage":86,
+                    }),
+                )
+                .await;
+
+            let base_node_grpc = state.node_manager.get_grpc_port().await?;
+            info!(target: LOG_TARGET, "🌐 Base Node GRPC PORT VN {:?}", &base_node_grpc);
+            let validator_node_config = ValidatorNodeConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(&data_dir)
+                .build()?;
+            let tcp_port = state.node_manager.get_tcp_listener_port().await;
+            info!(target: LOG_TARGET, "🌐 Base Node TCP {:?}", &tcp_port);
+
+            state
+                .validator_node_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    validator_node_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Validator Node started");
+            let _unused = telemetry_service
+                .send(
+                    "starting-tari-indexer".to_string(),
+                    json!({
+                        "service": "starting-tari-indexer",
+                        "percentage":88,
+                    }),
+                )
+                .await;
+
+            progress.set_max(90).await;
+            progress
+                .update("starting-ootle-indexer".to_string(), None, 0)
+                .await;
+            let indexer_config = IndexerConfig::builder()
+                .with_base_node(base_node_grpc)
+                .with_base_path(data_dir.clone())
+                .build()?;
+
+            state
+                .indexer_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    indexer_config,
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+
+            info!(target: LOG_TARGET, "🚀 Ootle enabled & Tari Indexer started");
+            let _unused = telemetry_service
+                .send(
+                    "starting-mmproxy".to_string(),
+                    json!({
+                        "service": "starting-mmproxy",
+                        "percentage":90,
+                    }),
+                )
+                .await;
+        }
     }
 
     progress.set_max(100).await;
@@ -1034,7 +1084,7 @@ async fn setup_inner(
             ),
     );
 
-    // TODO disable orphan checker for localnet
+    // TODO disable orphan checker for local node
     let app_handle_clone: tauri::AppHandle = app.clone();
     tauri::async_runtime::spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
@@ -1488,7 +1538,8 @@ fn main() {
             commands::delete_dev_tapplet,
             commands::call_wallet,
             commands::update_installed_tapplet,
-            commands::set_ootle_localnet_enabled,
+            commands::set_ootle_enabled,
+            commands::set_ootle_node_enabled,
             commands::upload_wasm_file
         ])
         .build(tauri::generate_context!())

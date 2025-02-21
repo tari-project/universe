@@ -36,8 +36,8 @@ interface Actions {
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
-    setOotleMode: (enabled: boolean) => void;
-    setLocalTariIndexer: (enabled: boolean) => void;
+    setOotleEnabled: (enabled: boolean) => void;
+    setOotleLocalNode: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -69,7 +69,7 @@ const initialState: State = {
     p2pool_stats_server_port: null,
     pre_release: false,
     ootle_enabled: false,
-    local_tari_indexer: false,
+    ootle_local_node: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -307,17 +307,23 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ pre_release: !preRelease });
         });
     },
-    setOotleMode: (enabled) => {
+    setOotleEnabled: (enabled) => {
         set({ ootle_enabled: enabled });
-    },
-    setLocalTariIndexer: async (enabled) => {
-        console.info('setlocalootle', enabled);
-        set({ local_tari_indexer: enabled });
-        invoke('set_ootle_localnet_enabled', { enabled }).catch((e) => {
+        invoke('set_ootle_enabled', { enabled }).catch((e) => {
             const appStateStore = useAppStateStore.getState();
-            console.error('Could not set ootle localnet enabled', e);
-            appStateStore.setError('Could not change ootle localnet enabled');
-            set({ local_tari_indexer: !enabled });
+            console.error('Could not set ootle local node enabled', e);
+            appStateStore.setError('Could not change ootle local node enabled');
+            set({ ootle_local_node: !enabled });
+        });
+    },
+    setOotleLocalNode: async (enabled) => {
+        console.info('setlocalootle', enabled);
+        set({ ootle_local_node: enabled });
+        invoke('set_ootle_node_enabled', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set ootle local node enabled', e);
+            appStateStore.setError('Could not change ootle local node enabled');
+            set({ ootle_local_node: !enabled });
         });
     },
 }));

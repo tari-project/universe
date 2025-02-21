@@ -2169,21 +2169,43 @@ pub async fn call_wallet(
 }
 
 #[tauri::command]
-pub async fn set_ootle_localnet_enabled<'r>(
+pub async fn set_ootle_enabled<'r>(
+    enabled: bool,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .config
+        .write()
+        .await
+        .set_ootle_enabled(enabled)
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_ootle_enabled {:?}", e))
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_ootle_enabled took too long: {:?}", timer.elapsed());
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_ootle_node_enabled<'r>(
     enabled: bool,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE LOCALNET {:?}", enabled);
+    info!(target: LOG_TARGET,"🚨🚨🚨 ENABLE OOTLE LOCAL NODE {:?}", enabled);
     let _lock = state.stop_start_mutex.lock().await;
     let timer = Instant::now();
     state
         .config
         .write()
         .await
-        .set_ootle_localnet_enabled(enabled)
+        .set_ootle_node_enabled(enabled)
         .await
-        .inspect_err(|e| error!("error at set_ootle_localnet_enabled {:?}", e))
+        .inspect_err(|e| error!("error at set_ootle_node_enabled {:?}", e))
         .map_err(|e| e.to_string())?;
 
     let config_dir = app

@@ -49,7 +49,7 @@ export interface AppConfig {
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
     ootle_enabled: boolean;
-    local_tari_indexer: boolean;
+    ootle_local_node: boolean;
 }
 
 export enum ExternalDependencyStatus {

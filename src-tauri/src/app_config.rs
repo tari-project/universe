@@ -119,9 +119,9 @@ pub struct AppConfigFromFile {
     airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_true")]
     ootle_enabled: bool,
-    // enable localnet: check binaries and run base node + Ootle locally
+    // enable local node & Indexer: check binaries and run base node
     #[serde(default = "default_false")]
-    ootle_localnet_enabled: bool,
+    ootle_node_enabled: bool,
 }
 
 impl Default for AppConfigFromFile {
@@ -167,7 +167,7 @@ impl Default for AppConfigFromFile {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             ootle_enabled: true,
-            ootle_localnet_enabled: false,
+            ootle_node_enabled: false,
         }
     }
 }
@@ -289,7 +289,7 @@ pub(crate) struct AppConfig {
     last_changelog_version: String,
     airdrop_tokens: Option<AirdropTokens>,
     ootle_enabled: bool,
-    ootle_localnet_enabled: bool,
+    ootle_node_enabled: bool,
 }
 
 impl AppConfig {
@@ -337,7 +337,7 @@ impl AppConfig {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             ootle_enabled: true,
-            ootle_localnet_enabled: false,
+            ootle_node_enabled: false,
         }
     }
 
@@ -806,15 +806,15 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn ootle_localnet_enabled(&self) -> bool {
-        self.ootle_localnet_enabled
+    pub fn ootle_node_enabled(&self) -> bool {
+        self.ootle_node_enabled
     }
 
-    pub async fn set_ootle_localnet_enabled(
+    pub async fn set_ootle_node_enabled(
         &mut self,
-        ootle_localnet_enabled: bool,
+        ootle_node_enabled: bool,
     ) -> Result<(), anyhow::Error> {
-        self.ootle_localnet_enabled = ootle_localnet_enabled;
+        self.ootle_node_enabled = ootle_node_enabled;
         self.update_config_file().await?;
         Ok(())
     }
@@ -869,7 +869,7 @@ impl AppConfig {
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
             ootle_enabled: self.ootle_enabled,
-            ootle_localnet_enabled: self.ootle_localnet_enabled,
+            ootle_node_enabled: self.ootle_node_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

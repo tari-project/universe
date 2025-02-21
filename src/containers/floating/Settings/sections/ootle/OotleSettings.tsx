@@ -17,18 +17,18 @@ import { TappletsOverview } from './TappletsOverview';
 export const OotleSettings = () => {
     const { t } = useTranslation(['settings', 'ootle'], { useSuspense: false });
     const ootleMode = useAppConfigStore((s) => s.ootle_enabled);
-    const localIndexer = useAppConfigStore((s) => s.local_tari_indexer);
+    const ootleLocalNode = useAppConfigStore((s) => s.ootle_local_node);
 
-    const setOotleMode = useAppConfigStore((s) => s.setOotleMode);
-    const setLocalTariIndexer = useAppConfigStore((s) => s.setLocalTariIndexer);
+    const setOotleEnabled = useAppConfigStore((s) => s.setOotleEnabled);
+    const setOotleLocalNode = useAppConfigStore((s) => s.setOotleLocalNode);
 
     const handleOotleSwitch = useCallback(() => {
-        setOotleMode(!ootleMode);
-    }, [ootleMode, setOotleMode]);
+        setOotleEnabled(!ootleMode);
+    }, [ootleMode, setOotleEnabled]);
 
     const handleIndexerSwitch = useCallback(() => {
-        setLocalTariIndexer(!localIndexer);
-    }, [localIndexer, setLocalTariIndexer]);
+        setOotleLocalNode(!ootleLocalNode);
+    }, [ootleLocalNode, setOotleLocalNode]);
 
     return (
         <>
@@ -56,7 +56,7 @@ export const OotleSettings = () => {
                                 <Typography>{t('Run Tari Indexer locally')}</Typography>
                             </SettingsGroupContent>
                             <SettingsGroupAction style={{ alignItems: 'center' }}>
-                                <ToggleSwitch checked={localIndexer} onChange={handleIndexerSwitch} />
+                                <ToggleSwitch checked={ootleLocalNode} onChange={handleIndexerSwitch} />
                             </SettingsGroupAction>
                         </SettingsGroup>
                         <TappletsOverview />
