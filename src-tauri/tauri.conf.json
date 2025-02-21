@@ -1,5 +1,5 @@
 {
-    "version": "0.9.8",
+    "version": "0.9.808",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -35,12 +35,14 @@
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "csp": null,
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "dangerousDisableAssetCspModification": ["style-src"],
+            "csp": {
+                "default-src": "'self' asset: tauri: URL: blob: data: https:",
+                "script-src": "'wasm-unsafe-eval'",
+                "style-src": "'self' 'unsafe-inline'",
+                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
+            },
             "pattern": {
                 "use": "isolation",
                 "options": {

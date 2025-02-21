@@ -55,6 +55,7 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tauri_plugin_sentry::sentry;
 use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
@@ -108,6 +109,27 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
+}
+
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+
+impl Default for CpuMinerConnectionStatus {
+    fn default() -> Self {
+        Self {
+            is_connected: false,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -1344,22 +1366,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_status_watch_rx.borrow().clone();
-            let cpu_miner = state.cpu_miner.read().await;
-            let cpu_mining_status = match cpu_miner
-                .status(
-                    node_status.randomx_network_hashrate,
-                    node_status.block_reward,
-                )
-                .await
-                .map_err(|e| e.to_string())
-            {
-                Ok(cpu) => cpu,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    return Err(e);
-                }
-            };
+            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
@@ -1389,25 +1396,27 @@ pub async fn start_mining<'r>(
 ) -> Result<(), String> {
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
+
     let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
     let custom_cpu_usage = config.custom_cpu_usage();
     let custom_gpu_usage = config.custom_gpu_usage();
-    let cpu_miner_running = state.cpu_miner.read().await.is_running().await;
-    let gpu_miner_running = state.gpu_miner.read().await.is_running().await;
-
-    let cpu_miner_config = state.cpu_miner_config.read().await;
-    let tari_address = cpu_miner_config.tari_address.clone();
     let p2pool_enabled = config.p2pool_enabled();
     let monero_address = config.monero_address().to_string();
+    drop(config);
+
     let mut telemetry_id = state
         .telemetry_manager
         .read()
         .await
         .get_unique_string()
         .await;
+
+    let cpu_miner = state.cpu_miner.read().await;
+    let cpu_miner_running = cpu_miner.is_running().await;
+    drop(cpu_miner);
 
     if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
@@ -1416,48 +1425,55 @@ pub async fn start_mining<'r>(
             .await
             .map_err(|e| e.to_string())?;
 
-        let res = state
-            .cpu_miner
-            .write()
-            .await
-            .start(
-                state.shutdown.to_signal(),
-                &cpu_miner_config,
-                monero_address.to_string(),
-                mm_proxy_port,
-                app.path()
-                    .app_local_data_dir()
-                    .expect("Could not get data dir"),
-                app.path()
-                    .app_config_dir()
-                    .expect("Could not get config dir"),
-                app.path().app_log_dir().expect("Could not get log dir"),
-                mode,
-                custom_cpu_usage,
-            )
-            .await;
+        {
+            let cpu_miner_config = state.cpu_miner_config.read().await;
+            let mut cpu_miner = state.cpu_miner.write().await;
+            let res = cpu_miner
+                .start(
+                    state.shutdown.to_signal(),
+                    &cpu_miner_config,
+                    monero_address.to_string(),
+                    mm_proxy_port,
+                    app.path()
+                        .app_local_data_dir()
+                        .expect("Could not get data dir"),
+                    app.path()
+                        .app_config_dir()
+                        .expect("Could not get config dir"),
+                    app.path().app_log_dir().expect("Could not get log dir"),
+                    mode,
+                    custom_cpu_usage,
+                )
+                .await;
+            drop(cpu_miner_config);
 
-        if let Err(e) = res {
-            error!(target: LOG_TARGET, "Could not start mining: {:?}", e);
-            state
-                .cpu_miner
-                .write()
-                .await
-                .stop()
-                .await
-                .inspect_err(|e| error!("error at stopping cpu miner {:?}", e))
-                .ok();
-            return Err(e.to_string());
+            if let Err(e) = res {
+                let err_msg = format!("Could not start CPU mining: {}", e);
+                error!(target: LOG_TARGET, "{}", err_msg);
+                sentry::capture_message(&err_msg, sentry::Level::Error);
+                cpu_miner
+                    .stop()
+                    .await
+                    .inspect_err(|e| {
+                        let stop_err = format!("Error stopping CPU miner: {}", e);
+                        error!(target: LOG_TARGET, "{}", stop_err);
+                    })
+                    .ok();
+                return Err(e.to_string());
+            }
         }
     }
 
-    let gpu_available = state.gpu_miner.read().await.is_gpu_mining_available();
-    info!(target: LOG_TARGET, "Gpu availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
+    let gpu_miner = state.gpu_miner.read().await;
+    let gpu_miner_running = gpu_miner.is_running().await;
+    let gpu_available = gpu_miner.is_gpu_mining_available();
+    drop(gpu_miner);
+
+    info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
     if gpu_mining_enabled && gpu_available && !gpu_miner_running {
         info!(target: LOG_TARGET, "1. Starting gpu miner");
-        // let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
-        // let p2pool_enabled = state.config.read().await.p2pool_enabled();
+
         let source = if p2pool_enabled {
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
@@ -1478,10 +1494,13 @@ pub async fn start_mining<'r>(
         }
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
-        let res = state
-            .gpu_miner
-            .write()
-            .await
+
+        let cpu_miner_config = state.cpu_miner_config.read().await;
+        let tari_address = cpu_miner_config.tari_address.clone();
+        drop(cpu_miner_config);
+
+        let mut gpu_miner = state.gpu_miner.write().await;
+        let res = gpu_miner
             .start(
                 state.shutdown.to_signal(),
                 tari_address,
@@ -1501,12 +1520,14 @@ pub async fn start_mining<'r>(
 
         info!(target: LOG_TARGET, "4. Starting gpu miner");
         if let Err(e) = res {
-            error!(target: LOG_TARGET, "Could not start gpu mining: {:?}", e);
-            drop(
-                state.gpu_miner.write().await.stop().await.inspect_err(
-                    |e| error!(target: LOG_TARGET, "Could not stop gpu miner: {:?}", e),
-                ),
-            );
+            let err_msg = format!("Could not start GPU mining: {}", e);
+            error!(target: LOG_TARGET, "{}", err_msg);
+            sentry::capture_message(&err_msg, sentry::Level::Error);
+
+            if let Err(stop_err) = gpu_miner.stop().await {
+                error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
+            }
+
             return Err(e.to_string());
         }
     }
