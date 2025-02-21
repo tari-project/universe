@@ -30,6 +30,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         }
         if (!appResumePayload?.is_resuming) {
             wasMiningInitiatedRef.current = false;
+            setMiningControlsEnabled(true);
         }
     }, [isMiningInitiated, appResumePayload?.is_resuming]);
 
