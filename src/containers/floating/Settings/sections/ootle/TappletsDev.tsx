@@ -14,11 +14,9 @@ import { useCallback, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { ActiveTapplet, DevTapplet, TappletConfig } from '@app/types/ootle/tapplet.ts';
 import { Count, StyledForm, StyledInput, StyledStack } from './OotleSettings.styles.ts';
 
 const endpointRegex = /^(https?:\/\/)?(localhost|127\.0\.0\.1):\d{1,6}?$/;
-const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
 export default function TappletsDev() {
     const { t } = useTranslation('ootle', { useSuspense: false });
@@ -65,33 +63,6 @@ export default function TappletsDev() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // const handleLaunch = useCallback(
-    //     async (tapplet: DevTapplet) => {
-    //         try {
-    //             // const tapplet = await invoke('launch_tapplet', { tappletId: id });
-    //             console.info('SET ACTIVE TAP', tapplet);
-    //             const resp = await fetch(`${tapplet.endpoint}/${TAPPLET_CONFIG_FILE}`);
-    //             if (!resp.ok) return;
-    //             const config: TappletConfig = await resp.json();
-    //             console.info('Dev Tapplet config', config);
-    //             if (!config) return;
-    //             const activeTapplet: ActiveTapplet = {
-    //                 tapplet_id: tapplet.id,
-    //                 version: config.version,
-    //                 display_name: tapplet.display_name,
-    //                 source: tapplet.endpoint,
-    //                 permissions: config.permissions,
-    //                 supportedChain: config.supportedChain,
-    //             };
-    //             setActiveTapp(activeTapplet);
-    //             setIsSettingsOpen(!isSettingsOpen);
-    //         } catch (e) {
-    //             setError(`Error while launching dev tapplet: ${e}`);
-    //             console.error(`Error while launching dev tapplet: ${e}`);
-    //         }
-    //     },
-    //     [isSettingsOpen, setActiveTapp, setError, setIsSettingsOpen]
-    // );
     const handleLaunch = useCallback(
         async (tappletId: number) => {
             try {
@@ -174,12 +145,6 @@ export default function TappletsDev() {
                                     style={{ marginRight: 10 }}
                                     onClick={() => handleLaunch(item.id)}
                                 >
-                                    {/* <NavLink
-                                        to={`/${TabKey.DEV_TAPPLETS}/${item.id}`}
-                                        state={item}
-                                        style={{ display: 'contents' }}
-                                    >
-                                    </NavLink> */}
                                     <MdLaunch color="primary" />
                                 </IconButton>
                                 <IconButton

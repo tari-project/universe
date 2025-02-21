@@ -9,7 +9,6 @@ import { useCallback, useEffect } from 'react';
 import { TappletsGroup, TappletsGroupWrapper } from './OotleSettings.styles.ts';
 import tariLogo from '@app/assets/tari.svg';
 import { useTappletsStore } from '@app/store/useTappletsStore.ts';
-import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Count } from './OotleSettings.styles.ts';
 
@@ -49,8 +48,6 @@ export default function TappletsInstalled() {
     const handleLaunch = useCallback(
         async (id: number) => {
             try {
-                // const tapplet = await invoke('launch_tapplet', { installedTappletId: id });
-                // setActiveTapp(tapplet);
                 setActiveTappById(id);
                 setIsSettingsOpen(!isSettingsOpen);
             } catch (e) {

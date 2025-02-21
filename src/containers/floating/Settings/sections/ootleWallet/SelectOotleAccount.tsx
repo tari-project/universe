@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import Box from '@mui/material/Box';
-import { DialogContent, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent } from '@mui/material';
+import { DialogContent, FormControl, MenuItem, Select, SelectChangeEvent } from '@mui/material';
 import { useOotleWalletStore } from '@app/store/useOotleWalletStore';
 import { AccountInfo } from '@tari-project/typescript-bindings';
 import { OotleAccount } from '@app/types/ootle';
@@ -14,7 +14,6 @@ interface SelectAccountProps {
 }
 
 function SelectOotleAccount({ accountsList, currentAccount }: SelectAccountProps) {
-    // const currentAccount = useOotleWalletStore((s) => s.ootleAccount);
     const createAccount = useOotleWalletStore((s) => s.createAccount);
     const setDefaultAccount = useOotleWalletStore((s) => s.setDefaultAccount);
     const currentAccountName = currentAccount?.account_name ?? '';

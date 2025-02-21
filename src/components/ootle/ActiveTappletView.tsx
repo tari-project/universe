@@ -1,13 +1,9 @@
-import { TappletConfig } from '@app/types/ootle/tapplet';
-import { useCallback, useEffect } from 'react';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 import { Box, IconButton, Typography } from '@mui/material';
 import { Tapplet } from './Tapplet';
 import { MdClose } from 'react-icons/md';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { HeaderContainer } from './styles';
-
-export const TAPPLET_CONFIG_FILE = 'tapplet.config.json';
 
 export default function ActiveTappletView() {
     const tappProvider = useTappletProviderStore((s) => s.tappletProvider);

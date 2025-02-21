@@ -9,8 +9,9 @@ import {
     TappletConfig,
 } from '@app/types/ootle/tapplet.ts';
 import { useAppStateStore } from './appStateStore.ts';
-import { TAPPLET_CONFIG_FILE } from '@app/components/ootle/ActiveTappletView.tsx';
 import { useTappletProviderStore } from './useTappletProviderStore.ts';
+
+export const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; //TODO
 
 interface State {
     isInitialized: boolean;

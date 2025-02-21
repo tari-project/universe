@@ -6,9 +6,6 @@ import { AccountInfo } from '@tari-project/typescript-bindings';
 interface State {
     ootleAccount?: OotleAccount;
     ootleAccountsList: AccountInfo[];
-    // ootleWalletAddress?: string;
-    // ootleWalletName?: string;
-    // balance: VaultData[];
 }
 
 interface Actions {
@@ -30,17 +27,15 @@ export const useOotleWalletStore = create<OotleWalletStoreState>()((set) => ({
     createAccount: async (name: string) => {
         const provider = useTappletProviderStore.getState().tappletProvider;
         try {
-            // if tapplet uses TU Provider it gets default account
-            // this is to make sure tapplet uses the account selected by the user
             if (!provider) {
                 return;
             }
 
             const responseNewAcc = await provider.createFreeTestCoins(name);
 
-            console.error('created acc: ', responseNewAcc);
+            console.info('created acc: ', responseNewAcc);
+            // this needs to be set manually
             await provider.setDefaultAccount(name);
-
             const account = await provider.getAccount();
             set({
                 ootleAccount: account,
@@ -52,14 +47,12 @@ export const useOotleWalletStore = create<OotleWalletStoreState>()((set) => ({
     setDefaultAccount: async (name: string) => {
         const provider = useTappletProviderStore.getState().tappletProvider;
         try {
-            // if tapplet uses TU Provider it gets default account
-            // this is to make sure tapplet uses the account selected by the user
             if (!provider) {
                 return;
             }
-
             await provider.setDefaultAccount(name);
-
+            // if tapplet uses TU Provider it gets default account
+            // this is to make sure tapplet uses the account selected by the user
             const account = await provider.getAccount();
             set({
                 ootleAccount: account,
@@ -71,16 +64,15 @@ export const useOotleWalletStore = create<OotleWalletStoreState>()((set) => ({
     getOotleAccountInfo: async () => {
         const provider = useTappletProviderStore.getState().tappletProvider;
         try {
-            // if tapplet uses TU Provider it gets default account
-            // this is to make sure tapplet uses the account selected by the user
             if (!provider) {
                 return;
             }
+            // if tapplet uses TU Provider it gets default account
+            // this is to make sure tapplet uses the account selected by the user
             const account = await provider.getAccount();
             set({
                 ootleAccount: account,
             });
-            // TODO
         } catch (error) {
             console.error('Could not get the Ootle account info: ', error);
         }
@@ -88,8 +80,6 @@ export const useOotleWalletStore = create<OotleWalletStoreState>()((set) => ({
     getOotleAccountsList: async () => {
         const provider = useTappletProviderStore.getState().tappletProvider;
         try {
-            // if tapplet uses TU Provider it gets default account
-            // this is to make sure tapplet uses the account selected by the user
             if (!provider) {
                 return;
             }
