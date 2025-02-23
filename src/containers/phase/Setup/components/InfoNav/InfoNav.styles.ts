@@ -1,5 +1,6 @@
 import styled, { css, keyframes } from 'styled-components';
 import { m } from 'motion/react';
+import { convertHexToRGBA } from '@app/utils';
 
 const fadeIn = keyframes`
   from {
@@ -36,6 +37,8 @@ export const Container = styled(m.div)`
     display: flex;
     flex-direction: column;
     gap: 16px;
+    user-select: none;
+    -webkit-user-select: none;
     max-width: 100%;
     z-index: 2;
 `;
@@ -90,6 +93,9 @@ export const NavContainer = styled.div`
     flex-direction: column;
     justify-content: space-between;
     height: clamp(240px, 38vh, 340px);
+    @media (min-height: 700px) {
+        height: clamp(320px, 40vh, 380px);
+    }
 `;
 
 export const Nav = styled.div`
@@ -102,7 +108,6 @@ export const Nav = styled.div`
 `;
 
 export const NavItem = styled.div`
-    border-radius: 50px;
     position: relative;
     display: flex;
     width: 70px;
@@ -110,7 +115,7 @@ export const NavItem = styled.div`
     cursor: pointer;
     overflow: hidden;
 
-    background: rgba(0, 0, 0, 0.1);
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
     border-radius: 200px;
 
     transition:
@@ -119,7 +124,7 @@ export const NavItem = styled.div`
     will-change: background, height;
 
     &:hover {
-        background: rgba(0, 0, 0, 0.2);
+        background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.2)};
         height: 10px;
     }
 `;
@@ -128,7 +133,7 @@ export const NavItemCurrent = styled.div<{ $duration?: number }>`
     border-radius: 200px;
     height: 100%;
     z-index: 1;
-    background: #000;
+    background: ${({ theme }) => theme.palette.contrast};
     animation: ${widthIn} ${({ $duration = 0.3 }) => $duration}s linear forwards;
     will-change: width, opacity;
 `;
