@@ -6,7 +6,7 @@ export const Wrapper = styled.div`
 `;
 
 export const Title = styled.div`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 22px;
     font-style: normal;
     font-weight: 600;
