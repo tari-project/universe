@@ -5,7 +5,7 @@ interface Props {
     $disabled?: boolean;
 }
 
-export const RadioButtonWrapper = styled.div<Props>`
+export const RadioButtonWrapper = styled.label<Props>`
     gap: 6px;
     display: flex;
     align-items: center;
@@ -45,7 +45,7 @@ export const RadioButtonWrapper = styled.div<Props>`
     }};
 `;
 
-export const StyledLabel = styled.label<Props>`
+export const StyledLabel = styled.div<Props>`
     text-transform: capitalize;
     text-align: center;
     width: 100%;
