@@ -12,6 +12,7 @@ interface State {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    isExcludingGpuDevices: boolean;
     excludedGpuDevices: number[];
     counter: number;
     customLevelsDialogOpen: boolean;
@@ -35,6 +36,7 @@ const initialState: State = {
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
+    isExcludingGpuDevices: false,
     miningControlsEnabled: true,
     network: 'unknown',
     excludedGpuDevices: [],
@@ -84,6 +86,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             };
         }),
     setExcludedGpuDevice: async (excludedGpuDevices) => {
+        set({ isExcludingGpuDevices: true });
         const metricsState = useMiningMetricsStore.getState();
 
         if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
@@ -111,5 +114,6 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             console.info('Restarting mining...');
             await startMining();
         }
+        set({ isExcludingGpuDevices: false });
     },
 }));
