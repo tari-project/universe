@@ -355,12 +355,8 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
-                    self.display_mode =
-                        DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
-                } else {
-                    self.display_mode = DisplayMode::Light;
-                }
+                self.display_mode =
+                    DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
