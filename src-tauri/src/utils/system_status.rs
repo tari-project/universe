@@ -22,7 +22,7 @@
 
 use std::sync::LazyLock;
 
-use anyhow::{anyhow, Error};
+use anyhow::Error;
 use log::{error, info};
 use psp::monitor::{PowerMonitor, PowerState};
 use tokio::sync::watch;
@@ -50,7 +50,7 @@ impl SystemStatus {
         let power_monitor = PowerMonitor::new();
         let _unused = power_monitor.start_listening().inspect_err(|e| {
             error!(target: LOG_TARGET, "Failed to start power monitor: {:?}", e);
-        })?;
+        });
 
         power_monitor
     }
