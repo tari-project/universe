@@ -18,8 +18,8 @@ export const GeneralSettings = () => {
             <PreReleaseSettings />
             <AirdropPermissionSettings />
             <LanguageSettings />
-            <VisualMode />
             <ThemeSettings />
+            <VisualMode />
             <LogsSettings />
             <SettingsGroupWrapper $advanced>
                 <AppDataSettings />
