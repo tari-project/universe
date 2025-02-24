@@ -126,10 +126,7 @@ impl UpdatesManager {
 
                 if is_screen_locked && is_auto_update {
                     info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
-                    let payload = CouldNotUpdatePayload {
-                        event_type: "could_not_update".to_string(),
-                        version,
-                    };
+                    let payload = CouldNotUpdatePayload::new(version);
                     drop(app.emit("updates_event", payload).inspect_err(|e| {
                         warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
                     }));

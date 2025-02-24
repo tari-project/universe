@@ -62,23 +62,23 @@ impl SystemStatus {
             match event {
                 PowerState::ScreenLocked => {
                     info!(target: LOG_TARGET, "Screen locked");
-                    self.sleep_mode_watcher_sender.send(true);
+                    self.sleep_mode_watcher_sender.send(true)?;
                 }
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");
-                    self.sleep_mode_watcher_sender.send(true);
+                    self.sleep_mode_watcher_sender.send(true)?;
                 }
                 PowerState::Resume => {
                     info!(target: LOG_TARGET, "Resume");
-                    self.sleep_mode_watcher_sender.send(false);
+                    self.sleep_mode_watcher_sender.send(false)?;
                 }
                 PowerState::ScreenUnlocked => {
                     info!(target: LOG_TARGET, "Screen unlocked");
-                    self.sleep_mode_watcher_sender.send(false);
+                    self.sleep_mode_watcher_sender.send(false)?;
                 }
                 _ => {
                     info!(target: LOG_TARGET, "Other event");
-                    self.sleep_mode_watcher_sender.send(false);
+                    self.sleep_mode_watcher_sender.send(false)?;
                 }
             }
         }

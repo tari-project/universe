@@ -1356,7 +1356,9 @@ fn main() {
     let power_monitor = SystemStatus::current().start_listener();
     app.run(move |app_handle, event| {
         // We can only recive system events from the event loop so this needs to be here
-        SystemStatus::current().recive_power_event(&power_monitor);
+        let _unused = SystemStatus::current().recive_power_event(&power_monitor).inspect_err(|e| {
+            error!(target: LOG_TARGET, "Could not recive power event: {:?}", e)
+        });
 
         match event {
         tauri::RunEvent::Ready  => {
