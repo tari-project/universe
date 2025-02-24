@@ -31,20 +31,18 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     cursor: pointer;
     overflow: hidden;
     padding: 16px 0;
-    background-color: rgba(255, 255, 255, 0.5);
-    background-image: ${({ $hasStarted }) =>
-        $hasStarted
-            ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.6) 0%, rgba(0,0,0,0.7) 99.49%)'
-            : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.5)};
+    background-image: ${({ $hasStarted, theme }) =>
+        $hasStarted ? theme.gradients.miningButton.started : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
 
     color: #fff;
     box-shadow: 0 0 3px 0 ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.58)} inset;
-    transition: opacity 0.4s ease-in-out background 0.4s ease-in-out;
+    transition: all 0.7s cubic-bezier(0.39, 0.3, 0.2, 0.87);
 
     &:hover {
-        background-image: ${({ $hasStarted }) =>
+        background-image: ${({ $hasStarted, theme }) =>
             $hasStarted
-                ? 'linear-gradient(90deg, rgba(100, 100, 100, 0.65) 0%, rgba(0, 0, 0, 0.65) 99.49%)'
+                ? theme.gradients.miningButton.hover
                 : 'linear-gradient(90deg, #046937 0%, rgba(17, 110, 64, 0.96) 92.49%)'};
     }
 

@@ -26,7 +26,6 @@ interface State {
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
-    setTheme: (theme: Theme) => void;
     setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
@@ -38,10 +37,10 @@ interface Actions {
 }
 
 type UIStoreState = State & Actions;
-
+const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const initialState: State = {
     isWebglNotSupported: false,
-    theme: 'light',
+    theme: initialDarkMode ? 'dark' : 'light',
     background: 'onboarding',
     view: 'setup',
     sidebarOpen: false,
@@ -50,12 +49,8 @@ const initialState: State = {
     showExternalDependenciesDialog: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set, getState) => ({
+export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setTheme: (theme) => {
-        setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
-        set({ theme });
-    },
     setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
@@ -63,10 +58,6 @@ export const useUIStore = create<UIStoreState>()((set, getState) => ({
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
     setIsWebglNotSupported: (isWebglNotSupported) => {
-        const current = getState();
-        if (current.isWebglNotSupported === isWebglNotSupported) {
-            return;
-        }
         setVisualMode(false);
         set({ isWebglNotSupported });
     },
@@ -75,6 +66,11 @@ export const useUIStore = create<UIStoreState>()((set, getState) => ({
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
+
+export const setUITheme = (theme: Theme) => {
+    setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
+    useUIStore.setState({ theme });
+};
 
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
@@ -88,16 +84,15 @@ export const animationLightBg = [
     { property: 'particlesOpacity', value: 0.75 },
     { property: 'particlesSize', value: 0.01 },
 ];
-
 export const animationDarkBg = [
     { property: 'bgColor1', value: '#212121' },
     { property: 'bgColor2', value: '#212121' },
     { property: 'neutralColor', value: '#040723' },
     { property: 'successColor', value: '#c9eb00' },
     { property: 'mainColor', value: '#813bf5' },
-    { property: 'failColor', value: '#fe2c3f' },
+    { property: 'failColor', value: '#ff5610' },
     { property: 'particlesColor', value: '#813bf5' },
     { property: 'goboIntensity', value: 0.75 },
     { property: 'particlesOpacity', value: 0.95 },
-    { property: 'particlesSize', value: 0.02 },
+    { property: 'particlesSize', value: 0.015 },
 ];
