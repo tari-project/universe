@@ -1,6 +1,5 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -19,8 +18,8 @@ export const InviteButton = styled('button')`
     padding: 12px 14px 12px 13px;
 
     border-radius: 60px;
-    background: ${({ theme }) => theme.palette.action.background.secondary};
-    color: ${({ theme }) => theme.palette.base};
+    background: #000;
+    color: #fff;
 
     transition: transform 0.2s ease;
     overflow: hidden;
@@ -29,10 +28,10 @@ export const InviteButton = styled('button')`
     svg {
         flex-shrink: 0;
         circle {
-            fill: ${({ theme }) => theme.palette.base};
+            fill: #fff;
         }
         path {
-            fill: ${({ theme }) => theme.palette.contrast};
+            fill: #000;
         }
     }
 
@@ -57,7 +56,7 @@ export const Image = styled('img')`
 `;
 
 export const Title = styled('div')`
-    color: ${({ theme }) => theme.palette.base};
+    color: #fff;
     text-align: center;
     font-size: 12px;
     font-weight: 600;
@@ -65,7 +64,7 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.5)};
+    color: rgba(255, 255, 255, 0.5);
     text-align: center;
     font-size: 11px;
     font-weight: 600;
@@ -85,8 +84,8 @@ export const GemPill = styled('div')`
     gap: 2px;
 
     border-radius: 100px;
-    background: ${({ theme }) => theme.palette.action.background.contrast};
-    color: ${({ theme }) => theme.palette.contrast};
+    background: ${({ theme }) => theme.colors.brightGreen[500]};
+    color: #000;
     text-align: center;
     font-size: 12px;
     font-weight: 600;

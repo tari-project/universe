@@ -77,8 +77,6 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_true")]
     paper_wallet_enabled: bool,
-    #[serde(default = "default_false")]
-    reset_earnings: bool,
     eco_mode_cpu_threads: Option<u32>,
     ludicrous_mode_cpu_threads: Option<u32>,
     #[serde(default = "default_vec_string")]
@@ -151,7 +149,6 @@ impl Default for AppConfigFromFile {
             mmproxy_use_monero_fail: false,
             keyring_accessed: false,
             auto_update: true,
-            reset_earnings: false,
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
@@ -260,7 +257,6 @@ pub(crate) struct AppConfig {
     application_language: String,
     paper_wallet_enabled: bool,
     use_tor: bool,
-    reset_earnings: bool,
     eco_mode_cpu_threads: Option<u32>,
     ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
@@ -308,7 +304,6 @@ impl AppConfig {
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: vec![],
             paper_wallet_enabled: true,
-            reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
             custom_mode_cpu_options: Vec::new(),
@@ -391,13 +386,7 @@ impl AppConfig {
                 self.custom_max_cpu_usage = config.custom_max_cpu_usage;
                 self.custom_max_gpu_usage = config.custom_max_gpu_usage.unwrap_or(vec![]);
                 self.auto_update = config.auto_update;
-                self.reset_earnings = config.reset_earnings;
                 self.custom_power_levels_enabled = config.custom_power_levels_enabled;
-                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
-                    self.reset_earnings = config.reset_earnings;
-                } else {
-                    self.reset_earnings = false;
-                }
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
@@ -814,7 +803,6 @@ impl AppConfig {
             custom_max_cpu_usage: self.custom_max_cpu_usage,
             custom_max_gpu_usage: Some(self.custom_max_gpu_usage.clone()),
             use_tor: self.use_tor,
-            reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
             custom_mode_cpu_options: self.custom_mode_cpu_options.clone(),
