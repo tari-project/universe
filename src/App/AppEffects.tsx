@@ -15,6 +15,14 @@ import { useListenForAppResuming } from '@app/hooks/app/useListenForAppResuming.
 
 setupLogger();
 export default function AppEffects() {
+    useEffect(() => {
+        async function initialize() {
+            await fetchAppConfig();
+            await setMiningNetwork();
+        }
+        void initialize();
+    }, []);
+
     useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();
@@ -23,14 +31,6 @@ export default function AppEffects() {
     useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
     useListenForAppResuming();
-
-    useEffect(() => {
-        async function initialize() {
-            await fetchAppConfig();
-            await setMiningNetwork();
-        }
-        void initialize();
-    }, []);
 
     return null;
 }
