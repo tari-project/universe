@@ -304,7 +304,9 @@ export const fetchAppConfig = async () => {
         useAppConfigStore.setState(appConfig);
         const configTheme = appConfig.display_mode?.toLowerCase();
         const canvasElement = document.getElementById(TOWER_CANVAS_ID);
-
+        if (configTheme) {
+            await useAppConfigStore.getState().setTheme(configTheme as displayMode);
+        }
         if (appConfig.visual_mode && !canvasElement) {
             try {
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
@@ -312,10 +314,6 @@ export const fetchAppConfig = async () => {
                 console.error('Error at loadTowerAnimation:', e);
                 useAppConfigStore.setState({ visual_mode: false });
             }
-        }
-
-        if (configTheme) {
-            await useAppConfigStore.getState().setTheme(configTheme as displayMode);
         }
     } catch (e) {
         console.error('Could not get app config: ', e);

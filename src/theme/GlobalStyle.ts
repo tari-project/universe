@@ -48,7 +48,7 @@ export const GlobalReset = createGlobalStyle`
     }
 `;
 
-export const GlobalStyle = createGlobalStyle`
+export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html,
     main,
     body,
@@ -104,6 +104,7 @@ export const GlobalStyle = createGlobalStyle`
         pointer-events: auto;
         width: 100vw;
         background: none;
+        visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
 
     #root {
