@@ -33,7 +33,6 @@ use log::{debug, info, warn};
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
-use tari_common::configuration::Network;
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
