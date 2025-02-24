@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 
@@ -17,6 +17,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 const GpuDevices = () => {
+    const [isLoading, setIsLoading] = useState(false);
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const miningAllowed = useAppStateStore((s) => s.setupComplete);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
@@ -27,6 +28,7 @@ const GpuDevices = () => {
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
+            setIsLoading(true);
             if (!excludedDevices.includes(device)) {
                 excludedDevices.push(device);
                 await setExcludedDevice([...excludedDevices]);
@@ -34,6 +36,7 @@ const GpuDevices = () => {
                 excludedDevices.splice(excludedDevices.indexOf(device), 1);
                 await setExcludedDevice([...excludedDevices]);
             }
+            setIsLoading(false);
         },
         [excludedDevices, setExcludedDevice]
     );
@@ -65,7 +68,7 @@ const GpuDevices = () => {
                                     <ToggleSwitch
                                         key={device.name}
                                         checked={!excludedDevices.includes(i)}
-                                        disabled={!miningAllowed || !isGpuMiningEnabled}
+                                        disabled={isLoading || !miningAllowed || !isGpuMiningEnabled}
                                         onChange={() => handleSetExcludedDevice(i)}
                                     />
                                 </Stack>
