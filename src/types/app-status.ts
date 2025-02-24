@@ -36,7 +36,6 @@ export interface AppConfig {
     monero_address: string;
     p2pool_enabled: boolean;
     paper_wallet_enabled: boolean;
-    reset_earnings: boolean;
     sharing_enabled: boolean;
     should_always_use_system_language: boolean;
     should_auto_launch: boolean;

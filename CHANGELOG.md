@@ -1,9 +1,9 @@
-# TARI UNIVERSE v0.9.806: Hotfix Released! 
+# TARI UNIVERSE v0.9.807: Hotfix Released! 
 
 _February 18, 2025_
 
 ## Hi Everyone,  
-Contributors have been working 24/7 to solve the network fork challenge, and we think we’ve finally nailed it. Introducing Tari Universe v0.9.806, the fork slayer. Please let us know if you continue to see the yellow fork message. Thank you! 🚀
+This fork challenge has proven to be a beast! Our valiant contributors will never give up! Introducing Tari Universe v0.9.807, revenge of the fork slayer. Please let us know if you continue to see the yellow fork message (we sure hope not!). Thank you fam! 💎
 
 ---
 

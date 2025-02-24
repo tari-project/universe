@@ -19,10 +19,10 @@ interface UIStoreState {
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
 }
-
+const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const initialState: UIStoreState = {
     isWebglNotSupported: false,
-    theme: 'light',
+    theme: initialDarkMode ? 'dark' : 'light',
     background: 'onboarding',
     sidebarOpen: false,
     dialogToShow: null,

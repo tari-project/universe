@@ -14,6 +14,7 @@ export const RadioButtonWrapper = styled.div<Props>`
     padding: 0 25px;
     height: 55px;
     color: transparent;
+    cursor: pointer;
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     border-width: 1px;
     border-style: solid;
@@ -48,7 +49,7 @@ export const StyledLabel = styled.label<Props>`
     text-transform: capitalize;
     text-align: center;
     width: 100%;
-
+    cursor: pointer;
     ${({ $variant }) => {
         switch ($variant) {
             case 'dark': {

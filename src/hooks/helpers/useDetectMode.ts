@@ -12,7 +12,6 @@ export function useDetectMode() {
         const listener = listen('tauri://theme-changed', async ({ payload }) => {
             if (payload) {
                 const themePayload = payload as Theme;
-
                 setUITheme(themePayload);
             }
         });
