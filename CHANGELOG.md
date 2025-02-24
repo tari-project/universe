@@ -1,4 +1,13 @@
-# 🌟 TARI UNIVERSE v0.9.803: New Normal
+# TARI UNIVERSE v0.9.807: Hotfix Released! 
+
+_February 18, 2025_
+
+## Hi Everyone,  
+This fork challenge has proven to be a beast! Our valiant contributors will never give up! Introducing Tari Universe v0.9.807, revenge of the fork slayer. Please let us know if you continue to see the yellow fork message (we sure hope not!). Thank you fam! 💎
+
+---
+
+# 🌟 TARI UNIVERSE v0.9.805: The Great Pool War, Episode 3
 
 _February 17, 2025_
 
