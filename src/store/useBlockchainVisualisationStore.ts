@@ -83,11 +83,11 @@ function getAudioElementId(tier: number) {
     }
 }
 
-async function playNotificationAudio() {
+export async function playNotificationAudio() {
     playAudio('notification-player', 'assets/Notification.wav');
 }
 
-async function playBlockWinAudio(successTier: number) {
+export async function playBlockWinAudio(successTier: number) {
     const asset = selectAudioAssetOnSuccessTier(successTier);
     const player = getAudioElementId(successTier);
     playAudio(player, asset);

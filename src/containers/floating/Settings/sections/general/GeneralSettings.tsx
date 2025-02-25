@@ -23,6 +23,7 @@ export const GeneralSettings = () => {
             <LanguageSettings />
             <ThemeSettings />
             <VisualMode />
+            {isAudioFeatureEnabled ? <AudioSettings /> : null}
             <LogsSettings />
             <SettingsGroupWrapper $advanced>
                 <AppDataSettings />
