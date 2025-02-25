@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { RadioType } from './RadioButton.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 interface Props {
     $variant: 'dark' | 'light' | 'neutral';
@@ -13,8 +14,7 @@ export const RadioButtonWrapper = styled.label<Props>`
     align-items: center;
     justify-content: stretch;
     width: 100%;
-    padding: 0 25px;
-    height: 55px;
+
     color: transparent;
     cursor: pointer;
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
@@ -25,7 +25,7 @@ export const RadioButtonWrapper = styled.label<Props>`
         color: #fff;
     }
 
-    ${({ theme, $variant }) => {
+    ${({ theme, $variant, $styleType }) => {
         switch ($variant) {
             case 'dark': {
                 return css`
@@ -40,16 +40,30 @@ export const RadioButtonWrapper = styled.label<Props>`
             case 'neutral':
             default: {
                 return css`
-                    background-color: ${theme.colorsAlpha.darkAlpha[10]};
+                    background-color: ${$styleType === 'minimal'
+                        ? convertHexToRGBA(theme.palette.contrast, 0.04)
+                        : theme.colorsAlpha.darkAlpha[10]};
                 `;
             }
         }
     }};
+
+    ${({ $styleType }) =>
+        $styleType === 'minimal'
+            ? css`
+                  padding: 0 12px;
+                  height: 40px;
+              `
+            : css`
+                  padding: 0 25px;
+                  height: 55px;
+              `}
 `;
 
 export const StyledLabel = styled.div<Props>`
     width: 100%;
     cursor: pointer;
+    -webkit-user-select: none;
     ${({ $variant }) => {
         switch ($variant) {
             case 'dark': {
@@ -72,9 +86,9 @@ export const StyledLabel = styled.div<Props>`
     }};
 
     ${({ $styleType }) =>
-        $styleType === 'aligned'
+        $styleType === 'minimal'
             ? css`
-                  padding-left: 14px;
+                  padding-left: 6px;
               `
             : css`
                   text-align: center;

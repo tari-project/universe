@@ -1,8 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-
-import { Divider } from '@app/components/elements/Divider.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -10,6 +8,19 @@ import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Button } from '@app/components/elements/buttons/Button';
 import RadioButton from '@app/components/elements/inputs/RadioButton.tsx';
+import styled from 'styled-components';
+
+const ExplainerContainer = styled.div`
+    display: flex;
+    height: 50px;
+    font-size: 0.8rem;
+    padding: 4px 8px 0;
+    width: 100%;
+    margin: 0 0 8px 0;
+    span {
+        line-height: 1.25;
+    }
+`;
 
 interface ResetSettingsDialogProps {
     isOpen: boolean;
@@ -18,7 +29,7 @@ interface ResetSettingsDialogProps {
 export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSettingsDialogProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
     const setError = useAppStateStore((state) => state.setError);
-    const [resetWalletSelected, setResetWalletSelected] = useState(false);
+    const [selectedItem, setSelectedItem] = useState<string | undefined>();
     const [loading, setLoading] = useState(false);
 
     function handleClose() {
@@ -26,7 +37,7 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     }
     function resetSettings() {
         setLoading(true);
-        invoke('reset_settings', { resetWallet })
+        invoke('reset_settings', { resetWallet: selectedItem === 'config_and_wallet' })
             .then(() => {
                 setLoading(false);
                 handleClose();
@@ -43,28 +54,36 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
         { id: 'config_only', label: 'Reset all configuration settings' },
         { id: 'config_and_wallet', label: 'Reset all configuration settings, and generate a new wallet' },
     ];
+
+    const explainerText = {
+        config_only:
+            'This option will remove all configuration, settings, databases, logs, peer connections, etc. in Universe, but will keep the wallet database so you retain your existing wallet address and balance.',
+        config_and_wallet:
+            'This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, including your existing wallet address and balance.',
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={loading}>
             <DialogContent>
-                <Stack alignItems="center" justifyContent="space-between" gap={12} style={{ width: 500 }}>
+                <Stack alignItems="center" justifyContent="space-between" gap={8} style={{ width: 500 }}>
                     <Typography variant="h2">{t('reset-settings')}</Typography>
-
                     {options.map(({ id, label }) => {
-                        const checked = id === 'config_and_wallet' ? resetWalletSelected : !resetWalletSelected;
                         return (
                             <RadioButton
                                 key={id}
                                 id={id}
                                 label={label}
                                 variant="neutral"
-                                styleType="aligned"
-                                checked={checked}
-                                onChange={(e) => setResetWalletSelected(e.target.id === 'config_and_wallet')}
+                                styleType="minimal"
+                                checked={selectedItem === id}
+                                onChange={(e) => setSelectedItem(e.target.id)}
                             />
                         );
                     })}
 
-                    <Divider />
+                    <ExplainerContainer>
+                        <Typography variant="span">{selectedItem ? explainerText[selectedItem] : null}</Typography>
+                    </ExplainerContainer>
 
                     <Stack direction="row" justifyContent="space-between" gap={8}>
                         <Button disabled={loading} onClick={handleClose}>
@@ -74,8 +93,8 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                         {loading ? (
                             <CircularProgress />
                         ) : (
-                            <Button disabled={loading} onClick={resetSettings} color="warning">
-                                {t('yes')}
+                            <Button disabled={!selectedItem || loading} onClick={resetSettings} color="warning">
+                                {`Reset`}
                             </Button>
                         )}
                     </Stack>

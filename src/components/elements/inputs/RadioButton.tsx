@@ -4,14 +4,14 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 export type RadioVariant = 'dark' | 'light' | 'neutral';
-export type RadioType = 'centered' | 'aligned';
+export type RadioType = 'primary' | 'minimal';
 
 interface RadioProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     variant?: RadioVariant;
     styleType?: RadioType;
 }
-export default function RadioButton({ label, variant = 'neutral', styleType = 'centered', ...props }: RadioProps) {
+export default function RadioButton({ label, variant = 'neutral', styleType = 'primary', ...props }: RadioProps) {
     return (
         <RadioButtonWrapper $variant={variant} $styleType={styleType}>
             <StyledRadio $variant={variant} type="radio" {...props} />
