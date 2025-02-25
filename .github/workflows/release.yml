@@ -193,7 +193,7 @@ jobs:
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           # WINDOWS_SIGN_COMMAND: C:\Users\runneradmin\.cargo\bin\trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d "${{ env.releaseName }}" -c Tarilabs %1
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'Tari Universe' -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
@@ -240,6 +240,7 @@ jobs:
 
       - name: Windows Debug
         if: startsWith(runner.os,'Windows')
+        shell: bash
         run: |
           ls -la
 
