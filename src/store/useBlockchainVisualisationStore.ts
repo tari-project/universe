@@ -21,6 +21,7 @@ interface State {
     earnings?: number;
     recapData?: Recap;
     recapCount?: number;
+    rewardCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
 }
@@ -30,6 +31,7 @@ interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
+    setRewardCount: (rewardCount?: number) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -51,6 +53,7 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
+    setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
@@ -59,6 +62,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
+    useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         setMiningControlsEnabled(false);
         const successTier = getSuccessTier(earnings);
