@@ -21,8 +21,8 @@ import {
     useMergeRefs,
     useRole,
 } from '@floating-ui/react';
-import { ContentWrapper, Overlay } from '@app/components/elements/dialog/Dialog.styles.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { ContentWrapper, Overlay } from './Dialog.styles.ts';
 
 interface DialogOptions {
     open: boolean;
@@ -30,11 +30,7 @@ interface DialogOptions {
     disableClose?: boolean;
 }
 
-export function useDialog({
-    open: controlledOpen,
-    onOpenChange: setControlledOpen,
-    disableClose = false,
-}: DialogOptions) {
+function useDialog({ open: controlledOpen, onOpenChange: setControlledOpen, disableClose = false }: DialogOptions) {
     const [labelId, setLabelId] = useState<string | undefined>();
     const [descriptionId, setDescriptionId] = useState<string | undefined>();
     const nodeId = useFloatingNodeId();
@@ -86,7 +82,7 @@ type ContextType =
 
 const DialogContext = createContext<ContextType>(null);
 
-export const useDialogContext = () => {
+const useDialogContext = () => {
     const context = useContext(DialogContext);
 
     if (context == null) {

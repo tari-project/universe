@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { CardItem, CardItemLabel, CardItemLabelValue, CardItemLabelWrapper, CardItemTitle } from './Settings.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 
-export interface CardComponentProps {
+interface CardComponentProps {
     heading?: string;
     labels: { labelText: ReactNode; labelValue: string | number }[];
 }
