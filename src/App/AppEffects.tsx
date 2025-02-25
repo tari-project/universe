@@ -15,14 +15,6 @@ import { initAnimationAudio } from '@app/store/useBlockchainVisualisationStore.t
 
 setupLogger();
 export default function AppEffects() {
-    useDetectMode();
-    useDisableRefresh();
-    useLangaugeResolver();
-    useListenForExternalDependencies();
-    useListenForCriticalProblem();
-    useTauriEventsListener();
-    useListenForAppUpdated({ triggerEffect: true });
-
     useEffect(() => {
         async function initialize() {
             await fetchAppConfig();
@@ -32,6 +24,14 @@ export default function AppEffects() {
         }
         void initialize().catch((e) => console.error('Failed to initialize UI config: ', e));
     }, []);
+
+    useDetectMode();
+    useDisableRefresh();
+    useLangaugeResolver();
+    useListenForExternalDependencies();
+    useListenForCriticalProblem();
+    useTauriEventsListener();
+    useListenForAppUpdated({ triggerEffect: true });
 
     return null;
 }

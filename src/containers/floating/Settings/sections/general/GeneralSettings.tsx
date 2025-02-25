@@ -21,9 +21,8 @@ export const GeneralSettings = () => {
             <PreReleaseSettings />
             <AirdropPermissionSettings />
             <LanguageSettings />
-            <VisualMode />
-            {isAudioFeatureEnabled ? <AudioSettings /> : null}
             <ThemeSettings />
+            <VisualMode />
             <LogsSettings />
             <SettingsGroupWrapper $advanced>
                 <AppDataSettings />
