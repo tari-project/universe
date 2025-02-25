@@ -14,7 +14,6 @@ export const RadioButtonWrapper = styled.label<Props>`
     align-items: center;
     justify-content: stretch;
     width: 100%;
-
     color: transparent;
     cursor: pointer;
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
@@ -52,7 +51,7 @@ export const RadioButtonWrapper = styled.label<Props>`
         $styleType === 'minimal'
             ? css`
                   padding: 0 12px;
-                  height: 40px;
+                  height: 36px;
               `
             : css`
                   padding: 0 25px;

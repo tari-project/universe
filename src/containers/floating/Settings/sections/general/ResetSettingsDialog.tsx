@@ -10,15 +10,22 @@ import { Button } from '@app/components/elements/buttons/Button';
 import RadioButton from '@app/components/elements/inputs/RadioButton.tsx';
 import styled from 'styled-components';
 
+const OptionContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 0 0 0;
+`;
 const ExplainerContainer = styled.div`
     display: flex;
-    height: 50px;
+    min-height: 38px;
     font-size: 0.8rem;
-    padding: 4px 8px 0;
-    width: 100%;
-    margin: 0 0 8px 0;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 12px;
+    text-align: justify;
     span {
-        line-height: 1.25;
+        line-height: 1.2;
         strong {
             font-weight: 600;
         }
@@ -37,6 +44,7 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
 
     function handleClose() {
         onOpenChange(false);
+        setSelectedItem(undefined);
     }
     function resetSettings() {
         setLoading(true);
@@ -61,48 +69,57 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={loading}>
             <DialogContent>
-                <Stack alignItems="center" justifyContent="space-between" gap={8} style={{ width: 500 }}>
-                    <Typography variant="h2">{t('reset-settings')}</Typography>
-                    {options.map(({ id, label }) => {
-                        return (
-                            <RadioButton
-                                key={id}
-                                id={id}
-                                label={label}
-                                variant="neutral"
-                                styleType="minimal"
-                                checked={selectedItem === id}
-                                onChange={(e) => setSelectedItem(e.target.id)}
-                            />
-                        );
-                    })}
+                <Stack alignItems="center" justifyContent="space-between" gap={10} style={{ width: 560 }}>
+                    <Typography variant="h3">{t('reset-settings')}</Typography>
+                    <Typography variant="p">{t('reset-restart')}</Typography>
 
+                    <OptionContainer>
+                        {options.map(({ id, label }) => {
+                            return (
+                                <RadioButton
+                                    key={id}
+                                    id={id}
+                                    label={label}
+                                    variant="neutral"
+                                    styleType="minimal"
+                                    checked={selectedItem === id}
+                                    onChange={(e) => setSelectedItem(e.target.id)}
+                                />
+                            );
+                        })}
+                    </OptionContainer>
                     <ExplainerContainer>
-                        {!selectedItem ? null : (
-                            <Typography variant="span">
+                        <Typography variant="span">
+                            {!selectedItem ? (
+                                ''
+                            ) : (
                                 <Trans
                                     ns="settings"
                                     i18nKey="reset-config-explainer"
                                     components={{ strong: <strong /> }}
                                     context={selectedItem === 'config_and_wallet' ? 'wallet' : ''}
                                 />
-                            </Typography>
-                        )}
+                            )}
+                        </Typography>
                     </ExplainerContainer>
+                    {loading ? (
+                        <CircularProgress />
+                    ) : (
+                        <Stack direction="row" justifyContent="space-between" alignItems="center" gap={8}>
+                            <Button size="medium" disabled={loading} onClick={handleClose}>
+                                {t('cancel')}
+                            </Button>
 
-                    <Stack direction="row" justifyContent="space-between" gap={8}>
-                        <Button disabled={loading} onClick={handleClose}>
-                            {t('cancel')}
-                        </Button>
-
-                        {loading ? (
-                            <CircularProgress />
-                        ) : (
-                            <Button disabled={!selectedItem || loading} onClick={resetSettings} color="warning">
+                            <Button
+                                size="medium"
+                                disabled={!selectedItem || loading}
+                                onClick={resetSettings}
+                                color="warning"
+                            >
                                 {t('reset')}
                             </Button>
-                        )}
-                    </Stack>
+                        </Stack>
+                    )}
                 </Stack>
             </DialogContent>
         </Dialog>
