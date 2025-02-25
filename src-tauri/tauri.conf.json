@@ -1,5 +1,5 @@
 {
-    "version": "0.9.803",
+    "version": "0.9.809",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -35,8 +35,14 @@
     },
     "app": {
         "security": {
-            "capabilities": ["desktop-capability", "default", "migrated"],
-            "dangerousDisableAssetCspModification": ["style-src"],
+            "capabilities": [
+                "desktop-capability",
+                "default",
+                "migrated"
+            ],
+            "dangerousDisableAssetCspModification": [
+                "style-src"
+            ],
             "csp": {
                 "default-src": "'self' asset: tauri: URL: blob: data: https:",
                 "script-src": "'wasm-unsafe-eval'",

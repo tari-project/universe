@@ -64,7 +64,7 @@ jobs:
           AIRDROP_BASE_URL: http://localhost:4000
           AIRDROP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
-          TELEMETRY_API_URL: http://localhost:3004  
+          TELEMETRY_API_URL: http://localhost:3004
         run: |
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
@@ -86,7 +86,7 @@ jobs:
       - name: cargo machete
         working-directory: ./src-tauri
         run: |
-          cargo install cargo-machete
+          cargo install --version 0.7.0 cargo-machete
           cargo machete
 
   tauri-test-build:

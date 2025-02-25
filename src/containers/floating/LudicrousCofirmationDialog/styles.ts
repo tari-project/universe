@@ -17,7 +17,7 @@ export const TextWrapper = styled.div`
 `;
 
 export const Title = styled.div`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 18px;
     font-weight: 600;
     line-height: 150%;
@@ -25,7 +25,7 @@ export const Title = styled.div`
 `;
 
 export const Text = styled.div`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 13px;
     font-weight: 500;
     line-height: 130.769%;
@@ -44,16 +44,16 @@ export const KeepButton = styled.button`
     justify-content: center;
     align-items: center;
 
-    padding: 0px 25px;
+    padding: 0 25px;
 
     width: 100%;
     height: 38px;
 
     border-radius: 20px;
-    background: #000;
-    border: 1px solid #000;
+    background: ${({ theme }) => theme.palette.contrast};
+    border: 1px solid ${({ theme }) => theme.palette.contrast};
 
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.contrast};
     text-align: center;
     font-size: 12px;
     font-weight: 500;
@@ -80,15 +80,15 @@ export const RevertButton = styled.button`
     align-items: center;
     gap: 10px;
 
-    padding: 0px 25px;
+    padding: 0 25px;
 
     width: 100%;
     height: 38px;
 
     border-radius: 20px;
-    border: 1px solid #000;
+    border: 1px solid ${({ theme }) => theme.palette.contrast};
 
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     text-align: center;
     font-size: 12px;
     font-weight: 500;
@@ -102,7 +102,7 @@ export const RevertButton = styled.button`
 `;
 
 export const CountdownNumber = styled.span`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-weight: 700;
     width: 17px;
     display: inline-block;
