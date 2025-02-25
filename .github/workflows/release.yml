@@ -195,6 +195,7 @@ jobs:
           WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d \"${{ env.releaseName }}\" -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
+          echo '{}' > ./tauri.windows.conf.json
           yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
           cargo install trusted-signing-cli@0.5.0 --locked
