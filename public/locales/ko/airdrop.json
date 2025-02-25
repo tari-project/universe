@@ -12,7 +12,7 @@
   "doLater": "나중에 할게요",
   "giftReferralCode": "Tari Universe에 친구를 초대할 때마다 {{gems}}개의 보석을 받으세요. 그들이 계정을 연결하면 보석이 지급됩니다.",
   "giftReferralCodeHeader": "추천 코드를 사용하여 <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> 보석을 받으세요.",
-  "inviteFirends": "친구 초대",
+  "inviteFriends": "친구 초대",
   "inviteFriendsText": "링크를 복사하여 공유하세요",
   "invitedAmount": "당신은 <span>{{count}}</span>명의 친구를 초대했습니다",
   "keep-mining-to-earn-rewards": "더 많은 보상을 얻기 위해 계속 채굴하세요!",

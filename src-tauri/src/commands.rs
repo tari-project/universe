@@ -47,7 +47,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -510,6 +510,12 @@ pub async fn set_p2pool_stats_server_port(
     port: Option<u16>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_p2pool_stats_server_port".to_string(), json!(port))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -735,6 +741,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[reset_settings] Resetting settings, reset_wallet: {:?}", reset_wallet);
     stop_all_processes(app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
@@ -782,7 +789,6 @@ pub async fn reset_settings<'r>(
                 if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if folder_block_list.contains(&file_name) {
-                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory", path);
                             continue;
                         }
                     }
@@ -803,15 +809,12 @@ pub async fn reset_settings<'r>(
                         .unwrap_or(false);
 
                     if !reset_wallet && contains_wallet_config {
-                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and reset_wallet is false", path);
                         continue;
                     }
                     if reset_wallet && contains_wallet_config && !is_network_dir {
-                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and does not matches network name", path);
                         continue;
                     }
 
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
                         format!("Could not remove directory: {}", e)
@@ -819,12 +822,10 @@ pub async fn reset_settings<'r>(
                 } else {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if files_block_list.contains(&file_name) {
-                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
                             continue;
                         }
                     }
 
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
                         format!("Could not remove file: {}", e)
@@ -900,6 +901,7 @@ pub async fn set_allow_telemetry(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_allow_telemetry] called with flag: {:?}", allow_telemetry);
     state
         .config
         .write()
@@ -933,11 +935,20 @@ pub async fn set_application_language(
     state: tauri::State<'_, UniverseAppState>,
     application_language: String,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_application_language] called with language: {}", application_language);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_application_language".to_string(),
+            json!(application_language.clone()),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
         .await
-        .set_application_language(application_language.clone())
+        .set_application_language(application_language)
         .await
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -949,6 +960,15 @@ pub async fn set_auto_update(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_auto_update".to_string(),
+            json!({ "auto_update": auto_update }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -970,6 +990,12 @@ pub async fn set_cpu_mining_enabled<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_cpu_mining_enabled".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_cpu_mining_enabled(enabled)
@@ -1016,6 +1042,12 @@ pub async fn set_display_mode(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_display_mode".to_string(), json!(display_mode))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1036,6 +1068,7 @@ pub async fn set_excluded_gpu_devices(
     excluded_gpu_devices: Vec<u8>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_excluded_gpu_devices] called with devices: {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
     gpu_miner
         .set_excluded_device(excluded_gpu_devices)
@@ -1051,6 +1084,12 @@ pub async fn set_gpu_mining_enabled(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_gpu_mining_enabled".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_gpu_mining_enabled(enabled)
@@ -1073,7 +1112,15 @@ pub async fn set_mine_on_app_start(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-
+    info!(target: LOG_TARGET, "[set_mine_on_app_start] called with flag: {:?}", mine_on_app_start);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_mine_on_app_start".to_string(),
+            json!(mine_on_app_start),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1098,7 +1145,7 @@ pub async fn set_mode(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+    info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
 
     state
         .config
@@ -1139,6 +1186,7 @@ pub async fn set_monerod_config(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
     state
         .config
         .write()
@@ -1160,6 +1208,12 @@ pub async fn set_p2pool_enabled(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1240,6 +1294,15 @@ pub async fn set_should_auto_launch(
     should_auto_launch: bool,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_should_auto_launch] called with flag: {:?}", should_auto_launch);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_should_auto_launch".to_string(),
+            json!(should_auto_launch),
+        )
+        .await;
+    drop(telemetry_service);
     match state
         .config
         .write()
@@ -1273,6 +1336,7 @@ pub async fn set_tor_config(
     _app: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_tor_config] called with config: {:?}", config);
     let tor_config = state
         .tor_manager
         .set_tor_config(config)
@@ -1292,6 +1356,12 @@ pub async fn set_use_tor(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_use_tor".to_string(), json!(use_tor))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1324,6 +1394,12 @@ pub async fn set_visual_mode<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_visual_mode".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_visual_mode(enabled)
@@ -1626,6 +1702,12 @@ pub async fn set_pre_release(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_pre_release".to_string(), json!(pre_release))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1633,8 +1715,6 @@ pub async fn set_pre_release(
         .set_pre_release(pre_release)
         .await
         .map_err(|e| e.to_string())?;
-
-    info!(target: LOG_TARGET, "Pre-release set to {}, try_update called", pre_release);
 
     state
         .updates_manager
