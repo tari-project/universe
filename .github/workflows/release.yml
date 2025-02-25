@@ -192,7 +192,7 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d '${{ env.releaseName }}' -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d "${{ env.releaseName }}" -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "{}" | \
