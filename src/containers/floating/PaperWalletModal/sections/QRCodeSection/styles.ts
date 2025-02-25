@@ -36,11 +36,6 @@ export const QRCodeWrapper = styled('div')`
     }
 `;
 
-export const QRCodeImage = styled('img')`
-    display: block;
-    width: 150px;
-`;
-
 export const QRContentWrapper = styled('div')`
     display: flex;
     flex-direction: column;
@@ -52,7 +47,7 @@ export const WarningText = styled('div')`
     font-weight: 600;
 
     height: 23px;
-    padding: 0px 12px 0px 10px;
+    padding: 0 12px 0 10px;
 
     display: flex;
     justify-content: center;
