@@ -1,7 +1,7 @@
 import { InputHTMLAttributes, ReactNode, useCallback, useState } from 'react';
 import { InputWrapper, StyledInput, StyledInputLabel } from './Input.styles.ts';
 
-export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     subIcon?: ReactNode;
     labelText?: string;
     endAdornment?: ReactNode;
