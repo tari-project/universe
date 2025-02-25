@@ -192,15 +192,17 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d "${{ env.releaseName }}" -c Tarilabs %1
+          # WINDOWS_SIGN_COMMAND: C:\Users\runneradmin\.cargo\bin\trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d "${{ env.releaseName }}" -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
-          WINDOWS_SIGN_COMMAND="${WINDOWS_SIGN_COMMAND//__VERSION__/${TU_VERSION}}"
+          # WINDOWS_SIGN_COMMAND="${WINDOWS_SIGN_COMMAND//__VERSION__/${TU_VERSION}}"
           echo '{}' > ./tauri.windows.conf.json
-          yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" -i ./tauri.windows.conf.json
+          yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
           cargo install trusted-signing-cli@0.5.0 --locked
+          trusted-signing-cli --version
 
       - name: Install Dependencies - Node
         run: |
@@ -235,6 +237,19 @@ jobs:
           includeDebug: false
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
+
+      - name: Windows Debug
+        if: startsWith(runner.os,'Windows')
+        run: |
+          ls -la
+
+      - name: Windows Debug upload
+        #if: startsWith(runner.os,'Windows')
+        if: ${{ false }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-debug-${{ matrix.platform }}${{ matrix.extra }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Debug Step - artifactPaths
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
