@@ -48,6 +48,7 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
+
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
