@@ -1,7 +1,9 @@
 import styled, { css } from 'styled-components';
+import { RadioType } from './RadioButton.tsx';
 
 interface Props {
     $variant: 'dark' | 'light' | 'neutral';
+    $styleType?: RadioType;
     $disabled?: boolean;
 }
 
@@ -46,8 +48,6 @@ export const RadioButtonWrapper = styled.label<Props>`
 `;
 
 export const StyledLabel = styled.div<Props>`
-    text-transform: capitalize;
-    text-align: center;
     width: 100%;
     cursor: pointer;
     ${({ $variant }) => {
@@ -70,6 +70,16 @@ export const StyledLabel = styled.div<Props>`
             }
         }
     }};
+
+    ${({ $styleType }) =>
+        $styleType === 'aligned'
+            ? css`
+                  padding-left: 14px;
+              `
+            : css`
+                  text-align: center;
+                  text-transform: capitalize;
+              `}
 
     ${({ $disabled }) =>
         $disabled &&
