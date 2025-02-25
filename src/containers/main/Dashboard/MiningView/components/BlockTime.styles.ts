@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const BlockTimeContainer = styled.div`
+export const BlockTimeContainer = styled.div<{ $visualModeOn?: boolean }>`
     display: flex;
     flex-direction: column;
     font-weight: 500;
@@ -13,12 +13,13 @@ export const BlockTimeContainer = styled.div`
     &:after {
         content: '';
         position: absolute;
-        background: linear-gradient(150deg, transparent 50%, #fff 90%);
+        background: ${({ theme }) => `linear-gradient(150deg, transparent 50%, ${theme.palette.background.main} 90%);`};
         right: 0;
         bottom: 0;
         width: 130px;
         height: 120px;
         z-index: 0;
+        display: ${({ $visualModeOn }) => ($visualModeOn ? 'flex' : 'none')};
     }
 `;
 
