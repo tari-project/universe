@@ -192,9 +192,11 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d \"${{ env.releaseName }}\" -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d "${{ env.releaseName }}" -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
+          TU_VERSION=$(jq -r .version tauri.conf.json)
+          WINDOWS_SIGN_COMMAND="${WINDOWS_SIGN_COMMAND//__VERSION__/${TU_VERSION}}"
           echo '{}' > ./tauri.windows.conf.json
           yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
