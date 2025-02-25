@@ -46,7 +46,7 @@ export const MarkdownWrapper = styled('div')<{ $showScrollBars?: boolean }>`
     overflow: hidden;
     overflow-y: auto;
     height: calc(70vh - 210px);
-    padding: 0px 0px 60px 0;
+    padding: 0 0 60px 0;
 
     @media (min-width: 1200px) {
         height: calc(80vh - 210px);
@@ -123,15 +123,6 @@ export const MarkdownWrapper = styled('div')<{ $showScrollBars?: boolean }>`
                 padding-right: 10px;
             }
         `}
-`;
-
-export const LoadingText = styled('div')`
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 116.667%;
-
-    padding: 20px 0;
 `;
 
 export const UpgradeButton = styled('button')`
