@@ -13,7 +13,7 @@ import ResetSettingsDialog from '@app/containers/floating/Settings/sections/gene
 
 export const ResetSettingsButton = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
 
     return (
         <>
