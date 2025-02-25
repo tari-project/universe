@@ -9,6 +9,7 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
+    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const isMining = cpuIsMining || gpuIsMining;
 
@@ -17,10 +18,10 @@ export const useUiMiningStateMachine = () => {
     useEffect(() => {
         const status = window?.glApp?.stateManager?.status;
         const notStarted = !status || status == 'not-started' || status == 'stop';
-        if (isMining && notStarted) {
+        if (isMining && notStarted && !isResuming) {
             setAnimationState('start');
         }
-    }, [statusIndex, isMining]);
+    }, [statusIndex, isMining, isResuming]);
 
     useEffect(() => {
         const notStopped = window?.glApp?.stateManager?.status !== 'not-started';
