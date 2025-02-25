@@ -1,4 +1,4 @@
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
@@ -19,6 +19,9 @@ const ExplainerContainer = styled.div`
     margin: 0 0 8px 0;
     span {
         line-height: 1.25;
+        strong {
+            font-weight: 600;
+        }
     }
 `;
 
@@ -55,13 +58,6 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
         { id: 'config_and_wallet', label: 'Reset all configuration settings, and generate a new wallet' },
     ];
 
-    const explainerText = {
-        config_only:
-            'This option will remove all configuration, settings, databases, logs, peer connections, etc. in Universe, but will keep the wallet database so you retain your existing wallet address and balance.',
-        config_and_wallet:
-            'This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, including your existing wallet address and balance.',
-    };
-
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange} disableClose={loading}>
             <DialogContent>
@@ -82,7 +78,16 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                     })}
 
                     <ExplainerContainer>
-                        <Typography variant="span">{selectedItem ? explainerText[selectedItem] : null}</Typography>
+                        {!selectedItem ? null : (
+                            <Typography variant="span">
+                                <Trans
+                                    ns="settings"
+                                    i18nKey="reset-config-explainer"
+                                    components={{ strong: <strong /> }}
+                                    context={selectedItem === 'config_and_wallet' ? 'wallet' : ''}
+                                />
+                            </Typography>
+                        )}
                     </ExplainerContainer>
 
                     <Stack direction="row" justifyContent="space-between" gap={8}>
@@ -94,7 +99,7 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
                             <CircularProgress />
                         ) : (
                             <Button disabled={!selectedItem || loading} onClick={resetSettings} color="warning">
-                                {`Reset`}
+                                {t('reset')}
                             </Button>
                         )}
                     </Stack>

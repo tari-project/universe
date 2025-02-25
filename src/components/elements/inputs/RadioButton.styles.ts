@@ -64,7 +64,7 @@ export const StyledLabel = styled.div<Props>`
     width: 100%;
     cursor: pointer;
     -webkit-user-select: none;
-    ${({ $variant }) => {
+    ${({ $variant, $styleType }) => {
         switch ($variant) {
             case 'dark': {
                 return css`
@@ -79,7 +79,8 @@ export const StyledLabel = styled.div<Props>`
             case 'neutral':
             default: {
                 return css`
-                    color: ${({ theme }) => theme.palette.text.primary};
+                    color: ${({ theme }) =>
+                        $styleType === 'minimal' ? theme.palette.text.accent : theme.palette.text.primary};
                 `;
             }
         }

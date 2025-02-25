@@ -97,6 +97,9 @@
     "upgrade-available": "⚠️ アップグレード可能"
   },
   "report-issue": "問題を報告する",
+  "reset": "Reset",
+  "reset-config-explainer": "This option will remove all configuration, settings, databases, logs, peer connections, etc. in Universe, but will <strong>keep the wallet database so you retain your existing wallet address and balance</strong>.",
+  "reset-config-explainer-wallet": "This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, <strong>including your existing wallet address and balance</strong>.",
   "reset-permanently": "すべての設定を永久にリセットしてもよろしいですか？",
   "reset-settings": "設定をリセット",
   "reset-wallet": "ウォレットをリセット",
