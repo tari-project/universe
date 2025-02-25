@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -21,6 +21,20 @@ export const Number = styled('div')`
     line-height: 100%;
 
     font-variant-numeric: tabular-nums;
+
+    span {
+        display: inline-block;
+    }
+
+    .digit-num {
+        width: 9px;
+        text-align: right;
+    }
+
+    .digit-char {
+        width: 3px;
+        text-align: right;
+    }
 `;
 
 export const Label = styled('div')`

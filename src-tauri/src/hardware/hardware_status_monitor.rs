@@ -38,7 +38,7 @@ use super::{
     },
 };
 use anyhow::Error;
-use log::{error, info, warn};
+use log::{debug, error, warn};
 use serde::{Deserialize, Serialize};
 use sysinfo::{CpuRefreshKind, RefreshKind, System};
 use tokio::sync::RwLock;
@@ -58,17 +58,6 @@ pub enum HardwareVendor {
 }
 
 impl HardwareVendor {
-    #[allow(clippy::inherent_to_string)]
-    pub fn to_string(&self) -> String {
-        match self {
-            HardwareVendor::Nvidia => "Nvidia".to_string(),
-            HardwareVendor::Amd => "Amd".to_string(),
-            HardwareVendor::Intel => "Intel".to_string(),
-            HardwareVendor::Apple => "Apple".to_string(),
-            HardwareVendor::Unknown => "Unknown".to_string(),
-        }
-    }
-
     pub fn is_nvidia(&self, vendor: &str) -> bool {
         vendor.to_lowercase().contains("nvidia")
     }
@@ -171,7 +160,7 @@ impl HardwareStatusMonitor {
     ) -> Result<GpuStatusFileContent, Error> {
         let file: PathBuf = config_dir.join("gpuminer").join("gpu_status.json");
         if file.exists() {
-            info!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
+            debug!(target: LOG_TARGET, "Loading gpu status from file: {:?}", file);
             let content = tokio::fs::read_to_string(file).await?;
             let gpu_status: GpuStatusFileContent = serde_json::from_str(&content)?;
             Ok(gpu_status)
@@ -205,7 +194,7 @@ impl HardwareStatusMonitor {
         let mut platform_devices = Vec::new();
 
         for gpu_device in &gpu_status_file_content.gpu_devices {
-            info!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
+            debug!(target: LOG_TARGET, "GPU device name: {:?}", gpu_device.device_name);
             let vendor = HardwareVendor::from_string(&gpu_device.device_name);
             let device_reader = self.select_reader_for_gpu_device(vendor.clone()).await;
             let platform_device = GpuDeviceProperties {
@@ -221,7 +210,7 @@ impl HardwareStatusMonitor {
                     },
                     parameters: None,
                     // parameters: if device_reader.clone().get_is_reader_implemented() {
-                    //     info!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
+                    //     debug!(target: LOG_TARGET, "Getting device parameters for: {:?}", gpu_device.device_name);
                     //     device_reader.clone().get_device_parameters(None).await.ok()
                     // } else {
                     //     None
@@ -257,9 +246,9 @@ impl HardwareStatusMonitor {
         let mut cpu_devices = vec![];
 
         for cpu_device in system.cpus() {
-            info!(target: LOG_TARGET, "CPU brand: {:?}", cpu_device.brand());
-            info!(target: LOG_TARGET, "CPU vendor: {:?}", cpu_device.vendor_id());
-            info!(target: LOG_TARGET, "CPU model: {:?}", cpu_device.name());
+            debug!(target: LOG_TARGET, "CPU brand: {:?}", cpu_device.brand());
+            debug!(target: LOG_TARGET, "CPU vendor: {:?}", cpu_device.vendor_id());
+            debug!(target: LOG_TARGET, "CPU model: {:?}", cpu_device.name());
 
             let vendor = HardwareVendor::Intel;
             let device_reader = self.select_reader_for_cpu_device(vendor.clone()).await;
@@ -289,37 +278,25 @@ impl HardwareStatusMonitor {
         Ok(cpu_devices)
     }
 
-    pub async fn initialize(&self) -> Result<(), Error> {
+    pub async fn initialize(
+        &self,
+    ) -> Result<(Vec<GpuDeviceProperties>, Vec<CpuDeviceProperties>), Error> {
         let gpu_devices = self.initialize_gpu_devices().await?;
         let cpu_devices = self.initialize_cpu_devices().await?;
 
         let mut gpu_devices_lock = self.gpu_devices.write().await;
         let mut cpu_devices_lock = self.cpu_devices.write().await;
 
-        *gpu_devices_lock = gpu_devices;
-        *cpu_devices_lock = cpu_devices;
+        *gpu_devices_lock = gpu_devices.clone();
+        *cpu_devices_lock = cpu_devices.clone();
 
-        Ok(())
+        Ok((gpu_devices, cpu_devices))
     }
 
     #[allow(dead_code)]
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDeviceProperties>, Error> {
         let gpu_devices = self.gpu_devices.read().await;
         Ok(gpu_devices.clone())
-    }
-
-    pub async fn get_gpu_devices_public_properties(
-        &self,
-    ) -> Result<Vec<PublicDeviceProperties>, Error> {
-        let gpu_devices = self.gpu_devices.read().await;
-
-        let mut platform_devices = Vec::new();
-
-        for device in gpu_devices.iter() {
-            platform_devices.push(device.public_properties.clone());
-        }
-
-        Ok(platform_devices)
     }
 
     #[allow(dead_code)]

@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const Wrapper = styled(m.div)`
@@ -8,8 +8,8 @@ export const Wrapper = styled(m.div)`
     z-index: 1;
 
     border-radius: 10px;
-    background: #fff;
-    box-shadow: 0px 4px 45px 0px rgba(0, 0, 0, 0.08);
+    background: ${({ theme }) => theme.palette.base};
+    box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
 
     display: flex;
     flex-direction: column;
@@ -22,7 +22,7 @@ export const Wrapper = styled(m.div)`
 `;
 
 export const Title = styled('div')`
-    color: #000;
+    color: ${({ theme }) => theme.palette.contrast};
     font-size: 14px;
     font-style: normal;
     font-weight: 500;
@@ -30,7 +30,7 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-style: normal;
     font-weight: 500;
@@ -38,7 +38,7 @@ export const Text = styled('div')`
 `;
 
 export const TextButton = styled('button')`
-    color: #000;
+    color: ${({ theme }) => theme.palette.contrast};
     font-size: 12px;
     font-style: normal;
     font-weight: 500;

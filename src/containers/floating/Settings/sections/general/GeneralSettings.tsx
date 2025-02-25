@@ -8,6 +8,7 @@ import { ResetSettingsButton } from './ResetSettingsButton.tsx';
 import StartApplicationOnBootSettings from './StartApplicationOnBootSettings.tsx';
 import AutoUpdate from './AutoUpdate.tsx';
 import PreReleaseSettings from './PreReleaseSettings.tsx';
+import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
 
 export const GeneralSettings = () => {
     return (
@@ -18,6 +19,7 @@ export const GeneralSettings = () => {
             <AirdropPermissionSettings />
             <LanguageSettings />
             <ThemeSettings />
+            <VisualMode />
             <LogsSettings />
             <SettingsGroupWrapper $advanced>
                 <AppDataSettings />

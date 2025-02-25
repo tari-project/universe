@@ -1,6 +1,6 @@
 {
     "identifier": "default",
-    "windows": ["main"],
+    "windows": ["main", "splashscreen"],
     "permissions": [
         "core:path:default",
         "core:event:default",
@@ -16,6 +16,7 @@
         "shell:allow-open",
         "sentry:default",
         "process:allow-restart",
-        "process:default"
+        "process:default",
+        "clipboard-manager:allow-write-text"
     ]
 }

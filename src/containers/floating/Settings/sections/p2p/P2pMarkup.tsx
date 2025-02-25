@@ -23,14 +23,14 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
     const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
-    const miningAllowed = useAppStateStore((s) => !s.isSettingUp);
+    const miningAllowed = useAppStateStore((s) => s.setupComplete);
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const isDisabled = !miningAllowed;
 
     const handleP2poolEnabled = useCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
-            setDisabledStats(true);
             await setP2poolEnabled(event.target.checked);
+            setDisabledStats(!event.target.checked);
             setDialogToShow('restart');
         },
         [setDialogToShow, setDisabledStats, setP2poolEnabled]

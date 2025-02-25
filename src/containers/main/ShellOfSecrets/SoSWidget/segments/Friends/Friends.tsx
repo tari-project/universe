@@ -1,3 +1,4 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import {
     Wrapper,
     FriendsWrapper,
@@ -16,7 +17,7 @@ import friendImage2 from '../../images/friend2.png';
 import friendImage3 from '../../images/friend3.png';
 
 import { useState } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import AnimatedArrows from './AnimatedArrows/AnimatedArrows';
 import { useTranslation } from 'react-i18next';
 
@@ -27,7 +28,7 @@ export default function Friends() {
     const shareLink = 'https://universe.tari.com';
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(shareLink).then(() => {
+        writeText(shareLink).then(() => {
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
         });

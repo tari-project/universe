@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 export const EarningsContainer = styled.div`
     display: flex;
@@ -11,7 +11,7 @@ export const EarningsContainer = styled.div`
 export const RecapText = styled.div`
     display: flex;
     font-family: DrukWide, sans-serif;
-    font-weight: 700;
+    font-weight: 800;
     font-size: 22px;
     text-transform: uppercase;
     text-align: center;
@@ -31,6 +31,8 @@ export const WinText = styled.div`
     text-transform: uppercase;
     display: flex;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
+
     font-size: 14px;
     letter-spacing: -0.1px;
     white-space: pre;

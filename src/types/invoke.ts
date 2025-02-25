@@ -2,9 +2,7 @@ import {
     AppConfig,
     ApplicationsVersions,
     ExternalDependency,
-    MinerMetrics,
     P2poolStatsResult,
-    TariWalletDetails,
     TorConfig,
     TransactionInfo,
     MaxConsumptionLevels,
@@ -14,6 +12,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
+import { AirdropTokens } from '@app/store/useAirdropStore';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -27,14 +26,14 @@ declare module '@tauri-apps/api/core' {
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
-    function invoke(param: 'get_paper_wallet_details'): Promise<PaperWalletDetails>;
+    function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
     function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
-    function invoke(param: 'setup_application'): Promise<boolean>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
     function invoke(param: 'stop_mining'): Promise<void>;
     function invoke(param: 'set_allow_telemetry', payload: { allow_telemetry: boolean }): Promise<void>;
+    function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
     function invoke(
@@ -54,8 +53,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
     function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
-    function invoke(param: 'get_tari_wallet_details'): Promise<TariWalletDetails>;
-    function invoke(param: 'get_miner_metrics'): Promise<MinerMetrics>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(
         param: 'set_excluded_gpu_devices',
@@ -65,7 +62,10 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
-    function invoke(param: 'get_transaction_history'): Promise<TransactionInfo[]>;
+    function invoke(
+        param: 'get_coinbase_transactions',
+        payload: { continuation: boolean; limit?: number }
+    ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
@@ -75,6 +75,11 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_pre_release', payload: { preRelease: boolean }): Promise<void>;
     function invoke(param: 'proceed_with_update'): Promise<void>;
     function invoke(param: 'check_for_updates'): Promise<string | undefined>;
+    function invoke(
+        param: 'set_airdrop_tokens',
+        airdropTokens: Pick<AirdropTokens, 'refreshToken' | 'token'>
+    ): Promise<void>;
+    function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',

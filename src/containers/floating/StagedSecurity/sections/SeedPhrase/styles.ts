@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
@@ -135,7 +135,7 @@ export const Checkbox = styled('div')<{ $checked: boolean }>`
     ${({ $checked }) =>
         $checked &&
         css`
-            background: #fff;
+            background: ${({ theme }) => theme.palette.base};
             opacity: 1;
         `}
 `;

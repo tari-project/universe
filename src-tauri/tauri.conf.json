@@ -1,5 +1,5 @@
 {
-    "version": "0.8.11",
+    "version": "0.9.809",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -11,7 +11,7 @@
     },
     "bundle": {
         "active": true,
-        "targets": ["deb", "rpm", "appimage", "msi", "dmg"],
+        "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
         },
@@ -31,12 +31,30 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true
+        "createUpdaterArtifacts": "v1Compatible"
     },
     "app": {
         "security": {
-            "capabilities": ["desktop-capability", "default", "migrated"],
-            "csp": null
+            "capabilities": [
+                "desktop-capability",
+                "default",
+                "migrated"
+            ],
+            "dangerousDisableAssetCspModification": [
+                "style-src"
+            ],
+            "csp": {
+                "default-src": "'self' asset: tauri: URL: blob: data: https:",
+                "script-src": "'wasm-unsafe-eval'",
+                "style-src": "'self' 'unsafe-inline'",
+                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm"
+            },
+            "pattern": {
+                "use": "isolation",
+                "options": {
+                    "dir": "../dist-isolation"
+                }
+            }
         },
         "trayIcon": {
             "id": "universe-tray-id",
@@ -48,14 +66,6 @@
         "windows": [
             {
                 "title": "Tari Universe (Alpha) | Testnet",
-                "width": 1380,
-                "height": 780,
-                "label": "splashscreen",
-                "url": "/splash.html",
-                "center": true
-            },
-            {
-                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1380,
                 "height": 780,
@@ -64,18 +74,30 @@
                 "resizable": true,
                 "fullscreen": false,
                 "transparent": false,
-                "visible": false,
-                "center": true
+                "visible": true,
+                "center": true,
+                "useHttpsScheme": true
             }
         ]
     },
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
+            "endpoints": [
+                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
+            ],
             "windows": {
                 "installMode": "passive"
             }
+        },
+        "cli": {
+            "args": [
+                {
+                    "name": "import-backup",
+                    "description": "Imports a minotari node backup file",
+                    "takesValue": true
+                }
+            ]
         }
     }
 }

@@ -36,7 +36,6 @@ use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
 const LOG_TARGET: &str = "tari::universe::updates_manager";
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,
@@ -58,15 +57,6 @@ impl DownloadProgressPayload {
 pub struct AskForUpdatePayload {
     pub event_type: String,
     pub version: String,
-}
-
-impl AskForUpdatePayload {
-    pub fn new(version: String) -> Self {
-        Self {
-            event_type: "ask_for_update".to_string(),
-            version,
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -152,7 +142,7 @@ impl UpdatesManager {
         let is_pre_release = self.config.read().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
-        let update = app
+        let builder = app
             .updater_builder()
             .version_comparator(move |current, update| {
                 if enable_downgrade {
@@ -161,14 +151,28 @@ impl UpdatesManager {
                 } else {
                     update.version > current
                 }
-            })
-            .endpoints(vec![updates_url])
-            .expect("Failed to set update URL")
-            .build()
-            .expect("Failed to build updater")
-            .check()
-            .await
-            .expect("Failed to check for updates");
+            });
+        let builder = match builder.endpoints(vec![updates_url]) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to set update URL: {}", e);
+                return Ok(None);
+            }
+        };
+        let updater = match builder.build() {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to build updater: {}", e);
+                return Ok(None);
+            }
+        };
+        let update = match updater.check().await {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to check for updates: {}", e);
+                return Ok(None);
+            }
+        };
 
         Ok(update)
     }
@@ -211,11 +215,11 @@ impl UpdatesManager {
                     }
                 },
                 || {
-                    app.restart();
+                    info!(target: LOG_TARGET, "Latest version download finished");
                 },
             )
             .await?;
 
-        Ok(())
+        app.restart();
     }
 }

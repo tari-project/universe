@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
 export const SLIDER_WIDTH = 570;
@@ -6,7 +6,7 @@ export const SLIDER_THUMB_WIDTH = 30;
 
 export const RangeInputHolder = styled.div<{ $disabled?: boolean }>`
     position: relative;
-    background: #ddd;
+    background-color: ${({ theme }) => theme.palette.background.accent};
     height: 9px;
     border-radius: 5px;
     width: ${SLIDER_WIDTH}px;
@@ -49,7 +49,7 @@ export const RangeInput = styled.input<{ $thumbLeft?: number }>`
         z-index: 5;
         border-radius: 50%;
         border: 2px solid #813bf5;
-        background-color: #fff;
+        background-color: ${({ theme }) => theme.palette.background.main};
         cursor: pointer;
         position: absolute;
         left: calc(${({ $thumbLeft = 0 }) => `${$thumbLeft}% - ${SLIDER_THUMB_WIDTH / 2}px`});

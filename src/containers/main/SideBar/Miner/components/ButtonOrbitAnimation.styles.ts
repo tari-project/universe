@@ -1,12 +1,12 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import { m } from 'motion/react';
+import { convertHexToRGBA } from '@app/utils';
 
-export const OrbitWrapper = styled(m.div)`
+export const OrbitWrapper = styled.div`
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-
     width: 300px;
     height: 300px;
     max-width: 300px;
@@ -18,8 +18,8 @@ export const OrbitWrapper = styled(m.div)`
 export const Orbit = styled(m.div)`
     border-radius: 100%;
     border-width: 1px;
-    border-color: rgba(255, 255, 255, 0.13);
-    color: rgba(255, 255, 255, 0.09);
+    border-color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.2)};
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
     position: absolute;
     width: 100%;
     height: 100%;

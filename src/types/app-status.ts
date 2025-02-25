@@ -36,7 +36,6 @@ export interface AppConfig {
     monero_address: string;
     p2pool_enabled: boolean;
     paper_wallet_enabled: boolean;
-    reset_earnings: boolean;
     sharing_enabled: boolean;
     should_always_use_system_language: boolean;
     should_auto_launch: boolean;
@@ -75,27 +74,7 @@ export interface CriticalProblem {
     title: string;
     description: string;
 }
-
-export interface CpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: CpuMinerStatus;
-}
-
-export interface GpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: GpuMinerStatus;
-}
-
-export interface MinerMetrics {
-    sha_network_hash_rate: number;
-    randomx_network_hash_rate: number;
-    cpu: CpuMinerMetrics;
-    gpu: GpuMinerMetrics;
-    base_node: BaseNodeStatus;
-}
-
-export interface TariWalletDetails {
-    wallet_balance: WalletBalance;
+export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
 }
@@ -113,6 +92,7 @@ export interface TransactionInfo {
     timestamp: number;
     message: string;
     payment_id: string;
+    mined_in_block_height?: number;
 }
 
 export interface P2poolStatsResult {
@@ -236,15 +216,15 @@ export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
     is_synced: boolean;
-    is_connected: boolean;
-    connected_peers: string[];
+    sha_network_hashrate: number;
+    randomx_network_hashrate: number;
 }
 
 export interface WalletBalance {
-    available_balance?: number;
-    timelocked_balance?: number;
-    pending_incoming_balance?: number;
-    pending_outgoing_balance?: number;
+    available_balance: number;
+    timelocked_balance: number;
+    pending_incoming_balance: number;
+    pending_outgoing_balance: number;
 }
 
 export interface ApplicationsVersions {

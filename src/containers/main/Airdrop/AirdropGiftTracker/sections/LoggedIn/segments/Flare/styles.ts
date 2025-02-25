@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const Wrapper = styled(m.div)`
@@ -20,8 +20,8 @@ export const Wrapper = styled(m.div)`
 export const Number = styled(m.div)`
     text-align: center;
     font-family: Druk, sans-serif;
-    font-size: 68px;
     font-weight: 700;
+    font-size: 68px;
     line-height: 1.1;
     position: relative;
     z-index: 2;

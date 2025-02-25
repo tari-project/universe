@@ -1,7 +1,6 @@
 import { createWithEqualityFn as create } from 'zustand/traditional';
-import { persist } from 'zustand/middleware';
 import { invoke } from '@tauri-apps/api/core';
-import { useMiningStore } from './useMiningStore';
+import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
@@ -25,7 +24,6 @@ function parseJwt(token: string): TokenResponse {
 }
 
 //////////////////////////////////////////
-//
 
 export interface BonusTier {
     id: string;
@@ -125,8 +123,7 @@ interface MiningPoint {
 }
 
 interface AirdropState {
-    authUuid: string;
-    syncedWithBackend: boolean;
+    authUuid?: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -136,17 +133,15 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    seenPermissions: boolean;
 }
 
 interface AirdropStore extends AirdropState {
     setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
     setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
     setAuthUuid: (authUuid: string) => void;
-    setAirdropTokens: (airdropToken?: AirdropTokens) => Promise<void>;
+
     setUserDetails: (userDetails?: UserDetails) => void;
     setUserPoints: (userPoints: UserPoints) => void;
-    fetchBackendInMemoryConfig: (config?: BackendInMemoryConfig) => Promise<BackendInMemoryConfig | undefined>;
     setReferralCount: (referralCount: ReferralCount) => void;
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
@@ -154,85 +149,150 @@ interface AirdropStore extends AirdropState {
     logout: () => Promise<void>;
 }
 
-const initialState: AirdropState = {
-    authUuid: '',
-    seenPermissions: false,
-    syncedWithBackend: false,
-};
-
 const clearState: Partial<AirdropState> = {
     authUuid: '',
     airdropTokens: undefined,
     miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
+    referralQuestPoints: undefined,
+    bonusTiers: undefined,
+    flareAnimationType: undefined,
 };
 
-export const useAirdropStore = create<AirdropStore>()(
-    persist(
-        (set) => ({
-            ...initialState,
-            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
-            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
-            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
-            setUserDetails: (userDetails) => set({ userDetails }),
-            setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: async (airdropTokens) => {
-                if (airdropTokens) {
-                    try {
-                        await invoke('set_airdrop_access_token', { token: airdropTokens.token });
-                    } catch (error) {
-                        console.error('Error getting airdrop tokens:', error);
-                    }
-                    set({
-                        syncedWithBackend: true,
-                        airdropTokens: {
-                            ...airdropTokens,
-                            expiresAt: parseJwt(airdropTokens.token).exp,
-                        },
-                    });
-                } else {
-                    // User not connected
-                    set({ syncedWithBackend: true });
-                }
-            },
-            setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints }),
-            setUserGems: (userGems: number) =>
-                set((state) => {
-                    const userPointsFormatted = {
-                        ...state.userPoints,
-                        base: { ...state.userPoints?.base, gems: userGems },
-                    } as UserPoints;
+export const useAirdropStore = create<AirdropStore>()((set) => ({
+    setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
+    setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
+    setBonusTiers: (bonusTiers) => set({ bonusTiers }),
+    setUserDetails: (userDetails) => set({ userDetails }),
+    setAuthUuid: (authUuid) => set({ authUuid }),
+    setReferralCount: (referralCount) => set({ referralCount }),
+    setUserPoints: (userPoints) => set({ userPoints, referralCount: userPoints?.referralCount }),
+    setUserGems: (userGems: number) =>
+        set((state) => {
+            const userPointsFormatted = {
+                ...state.userPoints,
+                base: { ...state.userPoints?.base, gems: userGems },
+            } as UserPoints;
 
-                    return {
-                        userPoints: userPointsFormatted,
-                    };
-                }),
-            fetchBackendInMemoryConfig: async () => {
-                let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
-                try {
-                    backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-                    set({ backendInMemoryConfig });
-                } catch (e) {
-                    console.error('get_app_in_memory_config error:', e);
-                }
-                return backendInMemoryConfig;
-            },
-            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-
-            logout: async () => {
-                set(clearState);
-                await useMiningStore.getState().restartMining();
-            },
+            return {
+                userPoints: userPointsFormatted,
+            };
         }),
-        {
-            name: 'airdrop-store',
-            partialize: (s) => ({
-                airdropTokens: s.airdropTokens,
-                miningRewardPoints: s.miningRewardPoints,
-                referralQuestPoints: s.referralQuestPoints,
-            }),
+    setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+    logout: async () => {
+        await setAirdropTokens(undefined);
+    },
+}));
+
+export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
+    const currentState = useAirdropStore.getState();
+    if (airdropTokens) {
+        useAirdropStore.setState({
+            airdropTokens: {
+                ...currentState,
+                ...airdropTokens,
+                expiresAt: parseJwt(airdropTokens.token).exp,
+            },
+        });
+
+        await invoke('set_airdrop_tokens', {
+            airdropTokens: {
+                token: airdropTokens.token,
+                refresh_token: airdropTokens.refreshToken,
+            },
+        });
+    } else {
+        // User not connected
+        const clearedState = { ...currentState, ...clearState, syncedWithBackend: true, airdropTokens: undefined };
+        useAirdropStore.setState(clearedState);
+        try {
+            await invoke('set_airdrop_tokens', { airdropTokens: undefined });
+        } catch (e) {
+            console.error('Error clearing airdrop access token:', e);
         }
-    )
-);
+    }
+};
+
+export const getExistingTokens = async () => {
+    const existingTokensStore = localStorage.getItem('airdrop-store');
+    let existingTokens: AirdropTokens | undefined = undefined;
+    if (existingTokensStore) {
+        try {
+            const parsedStore = JSON.parse(existingTokensStore);
+            if (parsedStore.state && parsedStore.state.airdropTokens) {
+                existingTokens = parsedStore.state.airdropTokens;
+                if (!existingTokens?.token || !existingTokens?.refreshToken) {
+                    return undefined;
+                }
+
+                const currentState = useAirdropStore.getState();
+
+                useAirdropStore.setState({
+                    ...currentState,
+                    airdropTokens: {
+                        ...existingTokens,
+                        expiresAt: parseJwt(existingTokens.token).exp,
+                    },
+                });
+
+                await invoke('set_airdrop_tokens', {
+                    airdropTokens: { token: existingTokens.token, refresh_token: existingTokens.refreshToken },
+                });
+
+                // Remove old tokens
+                localStorage.removeItem('airdrop-store');
+                console.info('Previous tokens set local store cleared');
+            }
+        } catch (e) {
+            console.error('Failed to parse existing tokens:', e);
+        }
+    } else {
+        console.info('No existing tokens found');
+    }
+};
+
+export const fetchBackendInMemoryConfig = async () => {
+    let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+
+    try {
+        backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
+        const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
+        const newState: AirdropState = {
+            backendInMemoryConfig,
+        };
+
+        if (airdropTokens?.token) {
+            newState.airdropTokens = {
+                ...airdropTokens,
+                expiresAt: parseJwt(airdropTokens.token).exp,
+                refreshToken: airdropTokens.refresh_token,
+            };
+        }
+
+        useAirdropStore.setState(newState);
+    } catch (e) {
+        throw `get_app_in_memory_config error: ${e}`;
+    }
+
+    if (!backendInMemoryConfig?.airdropUrl) {
+        console.error('Error getting BE in memory config');
+    }
+
+    return backendInMemoryConfig;
+};
+
+export const airdropSetup = async () => {
+    try {
+        console.info('Fetching backend in memory config');
+        const beConfig = await fetchBackendInMemoryConfig();
+        console.info('Getting existing tokens');
+        await getExistingTokens();
+        if (beConfig?.airdropUrl) {
+            console.info('Refreshing airdrop tokens');
+            await handleRefreshAirdropTokens(beConfig.airdropUrl);
+        }
+    } catch (error) {
+        console.error('Error in airdropSetup: ', error);
+    }
+};

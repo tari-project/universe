@@ -1,9 +1,8 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalReset = createGlobalStyle`
-
     *:focus {
-        outline: none
+        outline: none;
     }
 
     button {
@@ -23,7 +22,7 @@ export const GlobalReset = createGlobalStyle`
             outline-offset: 2px;
         }
     }
-    
+
     fieldset,
     textarea,
     dialog,
@@ -47,7 +46,6 @@ export const GlobalReset = createGlobalStyle`
             outline-offset: 2px;
         }
     }
-
 `;
 
 export const GlobalStyle = createGlobalStyle`
@@ -67,8 +65,10 @@ export const GlobalStyle = createGlobalStyle`
         width: 100%;
         box-sizing: border-box;
         position: relative;
-        color: ${({ theme }) => theme.palette.text.primary};
-        transition: color .2s ease, background-color .2s ease,  background .2s ease;
+        transition:
+                color 0.2s ease,
+                background-color 0.2s ease,
+                background 0.2s ease;
 
         ::-webkit-scrollbar {
             display: none;
@@ -79,6 +79,8 @@ export const GlobalStyle = createGlobalStyle`
         letter-spacing: -0.02px;
         font-weight: 400;
 
+        color: ${({ theme }) => theme.palette.text.primary};
+        
         * {
             box-sizing: border-box;
 
@@ -91,19 +93,22 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
-    html {
-        background: #fff;// for now
-        //background:  ${({ theme }) => theme.palette.base};
-    }
     
+    html {
+        background: ${({ theme }) => theme.palette.base};
+    }
     #canvas {
         z-index: 0;
+        top: 0;
+        left: 0;
         pointer-events: auto;
         width: 100vw;
         background: none;
     }
 
     #root {
+        z-index: 1;
         pointer-events: none;
     }
+
 `;
