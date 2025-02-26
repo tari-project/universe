@@ -6,7 +6,7 @@ import { removeToast, ToastType } from '../useToastStore';
 import { Wrapper, CloseButton, ToastContent, ProgressCircle, Title, Text } from './styles';
 import { useMotionValue } from 'motion/react';
 
-export interface Props {
+interface ToastProps {
     id?: number | string;
     index?: number;
     title: string;
@@ -16,7 +16,7 @@ export interface Props {
     type?: ToastType;
 }
 
-export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = false, type = 'default' }: Props) => {
+export const Toast = ({ id, index, title, text, timeout = 4500, isHovered = false, type = 'default' }: ToastProps) => {
     const [show, setShow] = useState(false);
     const [positionVariant, setPositionVariant] = useState('hidden');
     const progress = useMotionValue(0);

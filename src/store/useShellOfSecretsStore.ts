@@ -14,7 +14,7 @@ export interface ReferralsResponse {
 
 type WsConnectionStateString = 'up' | 'off' | 'error';
 
-export interface WsConnectionEvent {
+interface WsConnectionEvent {
     state: WsConnectionStateString;
     error?: string;
 }

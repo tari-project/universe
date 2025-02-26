@@ -2,8 +2,8 @@ import { create } from './create';
 import { backgroundType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 
-export const DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
-type DialogTypeTuple = typeof DIALOG_TYPES;
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 
 export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;

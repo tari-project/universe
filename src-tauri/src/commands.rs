@@ -208,6 +208,14 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
             .emit("app_ready", setup_complete_value)
             .expect("Could not emit event 'app_ready'");
 
+        if let Err(e) = state
+            .updates_manager
+            .init_periodic_updates(app.clone())
+            .await
+        {
+            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
+        }
+
         let has_missing = missing_dependencies.is_some();
         let external_dependencies = missing_dependencies.clone();
         if has_missing {

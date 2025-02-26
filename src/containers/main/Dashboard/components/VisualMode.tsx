@@ -14,7 +14,7 @@ import {
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { setVisualMode } from '@app/store';
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 
