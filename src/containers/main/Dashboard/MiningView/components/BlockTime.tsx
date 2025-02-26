@@ -4,12 +4,15 @@ import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisuali
 import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
     const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
+    const visualMode = useAppConfigStore((s) => s.visual_mode);
     const isMining = isCPUMining || isGPUMining;
 
     const { daysString, hoursString, minutes, seconds } = displayBlockTime || {};
@@ -22,7 +25,7 @@ function BlockTime() {
     ) : null;
 
     return displayBlockTime && isMining && isConnectedToTari ? (
-        <BlockTimeContainer>
+        <BlockTimeContainer $visualModeOn={visualMode}>
             <TimerTypography>
                 {daysMarkup}
                 {hourMarkup}

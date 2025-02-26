@@ -11,6 +11,20 @@ export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     padding: 20px;
     height: 100%;
 
+    &:after {
+        content: '';
+        position: absolute;
+        background: ${({ theme }) =>
+            `radial-gradient(140% 90% at 35% 20%, transparent 93%,  ${theme.palette.background.main} 98%)`};
+        right: 0;
+        bottom: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+
+        display: ${({ $visualModeOff }) => ($visualModeOff ? 'none' : 'flex')};
+    }
+
     ${({ $visualModeOff, theme }) =>
         $visualModeOff &&
         css`
