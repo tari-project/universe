@@ -1,3 +1,21 @@
+# 🌑 TARI UNIVERSE v0.9.809: The Dawn of Dork Mode  
+
+_February 26, 2025_
+
+## 👋 Hello Everyone,  
+The wait is over—**Dark (Dork!) Mode** is here! 🎉 Welcome our Prince and Princesses of Darkness. Our fellow Darth Vaders, Cruella De Vils, and Voldemorts. Dark mode is for you. Welcome home 💜🌚
+
+✨ You can enable **Dark Mode** in **⚙️ Settings**.  
+
+## 🔜 Coming Soon
+🔵 Wallet unread wins count fix
+🔄 Fixing restart issues – Sometimes, the app doesn’t restart properly after an auto-update
+🐞 More deadlock fixes – Addressing sync freezes on startup
+💻 Laptop sleep mode recovery – UX handling here needs review
+🚀 A surprise…
+
+---
+
 # TARI UNIVERSE v0.9.807: Hotfix Released! 
 
 _February 18, 2025_
