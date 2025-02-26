@@ -99,7 +99,7 @@ export const setMiningNetwork = async () => {
     } catch (e) {
         console.error('Could not get network: ', e);
         setError(e as string);
-        useMiningStore.setState({ excludedGpuDevices: undefined });
+        useMiningStore.setState({ network: undefined });
     }
 };
 export const startMining = async () => {
