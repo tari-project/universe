@@ -64,23 +64,6 @@ export const pauseMining = async () => {
         useMiningStore.setState({ miningInitiated: true });
     }
 };
-export const restartMining = async () => {
-    const state = useMiningMetricsStore.getState();
-    if (state.cpu_mining_status.is_mining || state.gpu_mining_status.is_mining) {
-        console.info('Restarting mining...');
-        try {
-            await pauseMining();
-        } catch (e) {
-            console.error('Failed to pause(restart) mining: ', e);
-        }
-
-        try {
-            await startMining();
-        } catch (e) {
-            console.error('Failed to start(restart) mining: ', e);
-        }
-    }
-};
 export const setCustomLevelsDialogOpen = (customLevelsDialogOpen: boolean) =>
     useMiningStore.setState({ customLevelsDialogOpen });
 export const setExcludedGpuDevices = async (excludedGpuDevices: number[]) => {
