@@ -38,10 +38,10 @@ type BlockchainVisualisationStoreState = State & Actions;
 
 const getSuccessTier = (earnings: number) => {
     const humanValue = earnings / 1_000_000;
-    if (humanValue < 100) {
+    if (humanValue < 26) {
         return 'success';
     }
-    if (humanValue <= 1000) {
+    if (humanValue <= 804) {
         return 'success2';
     }
     return 'success3';
