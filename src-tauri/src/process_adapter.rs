@@ -36,7 +36,7 @@ use tokio::task::JoinHandle;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
-use crate::task_tracker::TasksTracker;
+use crate::tasks_tracker::TasksTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 

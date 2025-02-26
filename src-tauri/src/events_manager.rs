@@ -27,7 +27,7 @@ use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
-    hardware::hardware_status_monitor::GpuDeviceProperties, task_tracker::TasksTracker,
+    hardware::hardware_status_monitor::GpuDeviceProperties, tasks_tracker::TasksTracker,
     wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 

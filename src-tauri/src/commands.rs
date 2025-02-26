@@ -35,7 +35,7 @@ use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
-use crate::task_tracker::TasksTracker;
+use crate::tasks_tracker::TasksTracker;
 use crate::tor_adapter::TorConfig;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
