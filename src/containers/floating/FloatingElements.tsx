@@ -13,7 +13,7 @@ import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
-import { KeyringAccessDialog } from './KeyringAccess/KeyringAccessDialog.tsx';
+import KeyringAccessDialog from './KeyringAccess/KeyringAccessDialog.tsx';
 import { memo } from 'react';
 
 const environment = import.meta.env.MODE;

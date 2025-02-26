@@ -5,8 +5,9 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Trans, useTranslation } from 'react-i18next';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
+import { memo } from 'react';
 
-export const KeyringAccessDialog = () => {
+const KeyringAccessDialog = memo(function KeyringAccessDialog() {
     const { t } = useTranslation(['wallet', 'common']);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const setDialogToShow = useUIStore((s) => s.setDialogToShow);
@@ -45,4 +46,6 @@ export const KeyringAccessDialog = () => {
             </DialogContent>
         </Dialog>
     );
-};
+});
+
+export default KeyringAccessDialog;
