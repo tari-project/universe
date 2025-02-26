@@ -7,7 +7,8 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function ConnectionStatus() {
     const { t } = useTranslation('settings');
-    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.base_node?.is_connected);
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
+
     return (
         <Stack direction="row" justifyContent="right" alignItems="center">
             <ConnectionIcon $isConnected={isConnectedToTariNetwork} size={20} />

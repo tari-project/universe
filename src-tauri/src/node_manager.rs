@@ -55,6 +55,8 @@ pub enum NodeManagerError {
     NodeNotStarted,
 }
 
+pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
+
 pub struct NodeManager {
     watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
 }
@@ -86,7 +88,7 @@ impl NodeManager {
             ProcessWatcher::new(adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
-        process_watcher.expected_startup_time = Duration::from_secs(120);
+        process_watcher.expected_startup_time = Duration::from_secs(30);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -112,7 +114,7 @@ impl NodeManager {
 
             process_watcher.adapter.use_tor = use_tor;
             process_watcher.adapter.tor_control_port = tor_control_port;
-            process_watcher.stop_on_exit_codes = vec![114];
+            process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
             process_watcher
                 .start(
                     app_shutdown,
@@ -253,16 +255,13 @@ impl NodeManager {
             is_synced,
             block_height: local_tip,
             ..
-        } = status_monitor
-            .get_network_hash_rate_and_block_reward()
-            .await
-            .map_err(|e| {
-                if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
-                    NodeManagerError::NodeNotStarted
-                } else {
-                    NodeManagerError::UnknownError(e.into())
-                }
-            })?;
+        } = status_monitor.get_network_state().await.map_err(|e| {
+            if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+                NodeManagerError::NodeNotStarted
+            } else {
+                NodeManagerError::UnknownError(e.into())
+            }
+        })?;
         if !is_synced {
             info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);

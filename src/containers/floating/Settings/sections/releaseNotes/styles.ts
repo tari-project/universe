@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     display: flex;
@@ -41,12 +41,12 @@ export const Text = styled('div')`
     line-height: 116.667%;
 `;
 
-export const MarkdownWrapper = styled('div')`
+export const MarkdownWrapper = styled('div')<{ $showScrollBars?: boolean }>`
     position: relative;
     overflow: hidden;
     overflow-y: auto;
     height: calc(70vh - 210px);
-    padding: 0px 20px 60px 0;
+    padding: 0 0 60px 0;
 
     @media (min-width: 1200px) {
         height: calc(80vh - 210px);
@@ -70,12 +70,14 @@ export const MarkdownWrapper = styled('div')`
         font-size: 14px;
         font-weight: 600;
         line-height: 110%;
+        margin: 0;
         margin-bottom: 15px;
     }
 
     ul {
         padding: 0;
         padding-left: 24px;
+        margin-bottom: 15px;
 
         li {
             color: ${({ theme }) => theme.palette.text.secondary};
@@ -90,15 +92,37 @@ export const MarkdownWrapper = styled('div')`
         border-top: 1px solid rgba(0, 0, 0, 0.05);
         margin: 25px 0;
     }
-`;
 
-export const LoadingText = styled('div')`
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-size: 12px;
-    font-weight: 500;
-    line-height: 116.667%;
+    p {
+        color: ${({ theme }) => theme.palette.text.secondary};
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 141.667%;
+        margin: 0;
+        margin-bottom: 15px;
+    }
 
-    padding: 20px 0;
+    ${({ $showScrollBars }) =>
+        $showScrollBars &&
+        css`
+            &::-webkit-scrollbar {
+                display: block;
+                scrollbar-width: auto;
+            }
+        `}
+
+    ${({ $showScrollBars }) =>
+        $showScrollBars &&
+        css`
+            &::-webkit-scrollbar {
+                display: block !important;
+            }
+            & {
+                scrollbar-width: auto;
+                scrollbar-color: rgba(0, 0, 0, 0.2) rgba(0, 0, 0, 0.1);
+                padding-right: 10px;
+            }
+        `}
 `;
 
 export const UpgradeButton = styled('button')`

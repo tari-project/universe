@@ -1,5 +1,4 @@
 {
-  "airdropGame": "Testnet Rewards",
   "bonus-gems-earned": "Bonus gems earned",
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
@@ -12,7 +11,7 @@
   "doLater": "I'll do this later",
   "giftReferralCode": "Earn {{gems}} gems for each friend you invite to Tari Universe. Once they connect their account, you’ll be awarded your gems.",
   "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
-  "inviteFirends": "Invite Friends",
+  "inviteFriends": "Invite Friends",
   "inviteFriendsText": "Copy link and share it",
   "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
   "keep-mining-to-earn-rewards": "Keep mining to earn more rewards!",
@@ -32,8 +31,11 @@
   },
   "referral": "Invite a friend",
   "topTooltipText": "Get a Tari Airdrop by collecting gems. The more gems you earn, the larger your airdrop.",
-  "topTooltipTitle": "Testnet Rewards",
+  "topTooltipTitle": "Mine & Invite Friends to Earn Gems",
   "unclaimedGems": "Unclaimed Gems",
   "you-reached-your-giftinh-goal": "You reached your gifting goal!",
-  "your-friend-accepted-gift": "One of your friends accepted your gift!"
+  "your-friend-accepted-gift": "One of your friends accepted your gift!",
+  "joinAirdrop": "Join Airdrop",
+  "loggedInTitle": "Airdrop Rewards",
+  "loggedOutTitle": "Mine & Invite Friends to Earn Gems"
 }

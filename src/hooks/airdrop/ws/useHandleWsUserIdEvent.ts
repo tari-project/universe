@@ -8,11 +8,15 @@ export const useHandleWsUserIdEvent = () => {
     const referrals = useShellOfSecretsStore((state) => state.referrals);
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
     const setUserGems = useAirdropStore((state) => state.setUserGems);
+    const setFlare = useAirdropStore((state) => state.setFlareAnimationType);
     const { fetchCrewMemberDetails } = useGetSosReferrals();
 
     return (event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
         switch (eventParsed.name) {
+            case WebsocketEventNames.REFERRAL_INSTALL_REWARD:
+                setFlare('FriendAccepted');
+                break;
             case WebsocketEventNames.COMPLETED_QUEST:
                 if (eventParsed.data.userPoints?.gems) {
                     setUserGems(eventParsed.data.userPoints?.gems);

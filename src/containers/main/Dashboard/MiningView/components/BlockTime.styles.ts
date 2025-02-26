@@ -1,13 +1,13 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { m } from 'framer-motion';
 
-export const BlockTimeContainer = styled(m.div)`
+export const BlockTimeContainer = styled.div`
     display: flex;
     flex-direction: column;
     font-weight: 500;
     position: relative;
     align-items: flex-end;
+    padding-right: 10px;
 `;
 
 export const TitleTypography = styled(Typography)`

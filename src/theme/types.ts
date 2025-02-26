@@ -1,11 +1,11 @@
 import { Colours } from '@app/theme/palettes/colors.ts';
 import { ColoursAlpha } from '@app/theme/palettes/colorsAlpha.ts';
 
-export const THEME_TYPES = ['light', 'dark'] as const;
-type ThemeTuple = typeof THEME_TYPES;
+const _THEME_TYPES = ['light', 'dark'] as const;
+type ThemeTuple = typeof _THEME_TYPES;
 export type Theme = ThemeTuple[number];
 
-export const COLOUR_TYPES = [
+const _COLOUR_TYPES = [
     'main',
     'dark',
     'light',
@@ -18,11 +18,11 @@ export const COLOUR_TYPES = [
     'accent',
     'default',
 ] as const;
-type ColourTuple = typeof COLOUR_TYPES;
+type ColourTuple = typeof _COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
 
-export type Colour = Partial<Record<ColourKey, string>>;
-export type Gradients = Partial<Record<ColourKey, string>>;
+type Colour = Partial<Record<ColourKey, string>>;
+type Gradients = Partial<Record<ColourKey, string>>;
 
 export interface ThemePalette {
     mode: Theme;
@@ -32,7 +32,7 @@ export interface ThemePalette {
     gradients: Gradients;
 }
 
-export interface Palette {
+interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;

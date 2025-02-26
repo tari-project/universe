@@ -93,5 +93,3 @@ export const colorsAlpha = {
 };
 
 export type ColoursAlpha = typeof colorsAlpha;
-export type ThemeColourAlphaGroup = keyof ColoursAlpha;
-// green 150: '#15D811',

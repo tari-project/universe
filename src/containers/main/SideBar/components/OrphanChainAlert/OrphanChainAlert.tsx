@@ -1,6 +1,6 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import {
@@ -10,14 +10,14 @@ import {
     TooltipTop,
     AlertIconWrapper,
 } from './OrphanChainAlert.styles.ts';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { List } from '@app/components/elements/List.tsx';
 
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
 
-export const OrphanChainAlert = () => {
+const OrphanChainAlert = memo(function OrphanChainAlert() {
     const { t } = useTranslation(['settings', 'mining-view'], { useSuspense: false });
     const adminShow = useUIStore((s) => s.adminShow);
     const [isOrphanChain, setIsOrphanChain] = useState(false);
@@ -74,6 +74,6 @@ export const OrphanChainAlert = () => {
     );
 
     return isOrphanChain || adminShow === 'orphanChainWarning' ? alertMarkup : null;
-};
+});
 
 export default OrphanChainAlert;

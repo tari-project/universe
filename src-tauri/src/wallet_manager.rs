@@ -26,7 +26,7 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
-use crate::wallet_adapter::{WalletAdapter, WalletBalance};
+use crate::wallet_adapter::{WalletAdapter, WalletState};
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -61,13 +61,13 @@ impl Clone for WalletManager {
 impl WalletManager {
     pub fn new(
         node_manager: NodeManager,
-        wallet_watch_tx: watch::Sender<Option<WalletBalance>>,
+        wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
-        let adapter = WalletAdapter::new(use_tor, wallet_watch_tx);
+        let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {

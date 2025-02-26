@@ -4,17 +4,16 @@ import { Divider } from '@app/components/elements/Divider';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useAppStateStore } from '@app/store/appStateStore';
-import { useUIStore } from '@app/store/useUIStore';
+import { setShowExternalDependenciesDialog, useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
 
-export const ExternalDependenciesDialog = () => {
+const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
-    const setShowExternalDependenciesDialog = useUIStore((s) => s.setShowExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
     const [isRestarting, setIsRestarting] = useState(false);
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
@@ -43,9 +42,8 @@ export const ExternalDependenciesDialog = () => {
                     </Stack>
 
                     {Object.values(externalDependencies).map((missingDependency, index, array) => (
-                        <>
+                        <Stack key={`dependency:${index}:${missingDependency.display_name}`}>
                             <ExternalDependencyCard
-                                key={missingDependency.display_name}
                                 missingDependency={missingDependency}
                                 freeInstallationSlot={() => setInstallationSlot(null)}
                                 isInInstallationSlot={installationSlot === index}
@@ -53,7 +51,7 @@ export const ExternalDependenciesDialog = () => {
                                 occupyInstallationSlot={() => setInstallationSlot(index)}
                             />
                             {index === array.length - 1 ? null : <Divider />}
-                        </>
+                        </Stack>
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
                         <SquaredButton
@@ -79,4 +77,5 @@ export const ExternalDependenciesDialog = () => {
             </DialogContent>
         </Dialog>
     );
-};
+});
+export default ExternalDependenciesDialog;

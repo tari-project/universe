@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { useTranslation } from 'react-i18next';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
@@ -22,16 +22,13 @@ import WalletBalanceMarkup from './WalletBalanceMarkup.tsx';
 
 export default function Wallet() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-
-    const balance = useWalletStore((s) => s.balance);
-    const transactions = useWalletStore((s) => s.coinbase_transactions);
-    const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
+    const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const paperWalletEnabled = useAppConfigStore((s) => s.paper_wallet_enabled);
     const fetchCoinbaseTransactions = useWalletStore((s) => s.fetchCoinbaseTransactions);
 
-    const recapCount = useBlockchainVisualisationStore((s) => s.recapCount);
-    const setRecapCount = useBlockchainVisualisationStore((s) => s.setRecapCount);
+    const rewardCount = useBlockchainVisualisationStore((s) => s.rewardCount);
+    const setRewardCount = useBlockchainVisualisationStore((s) => s.setRewardCount);
 
     const [showHistory, setShowHistory] = useState(false);
 
@@ -39,20 +36,21 @@ export default function Wallet() {
         if (!showHistory) {
             await fetchCoinbaseTransactions(false, 20);
         }
-        if (transactions.length || is_reward_history_loading) {
-            // Question(A): Not sure what this was for
-            setRecapCount(undefined);
-        }
 
-        setShowHistory((c) => !c);
-    }, [showHistory, transactions.length, is_reward_history_loading, fetchCoinbaseTransactions, setRecapCount]);
+        setShowHistory((c) => {
+            if (!c) {
+                setRewardCount(undefined);
+            }
+
+            return !c;
+        });
+    }, [fetchCoinbaseTransactions, setRewardCount, showHistory]);
 
     const handleSyncButtonClick = () => {
         setShowPaperWalletModal(true);
     };
 
-    const showCount = Boolean(recapCount && recapCount > 0 && !showHistory);
-
+    const showCount = Boolean(rewardCount && rewardCount > 0 && !showHistory);
     return (
         <>
             <WalletContainer>
@@ -66,11 +64,12 @@ export default function Wallet() {
                             text={t('paper-wallet-tooltip-message')}
                         />
                     )}
-                    {balance ? (
+                    {/* TODO: User might have spent his rewards */}
+                    {calculated_balance ? (
                         <CornerButton onClick={handleShowClick} $hasReward={showCount}>
                             {showCount && (
                                 <CornerButtonBadge>
-                                    <span>{recapCount}</span>
+                                    <span>{rewardCount}</span>
                                 </CornerButtonBadge>
                             )}
                             {!showHistory ? t('rewards') : t('hide-history')}

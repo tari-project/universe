@@ -1,13 +1,12 @@
 /* eslint-disable i18next/no-literal-string */
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { useUIStore } from '@app/store/useUIStore';
+import { setShowExternalDependenciesDialog, useUIStore } from '@app/store/useUIStore';
 import { useAppStateStore } from '@app/store/appStateStore';
 
 export function DialogsGroup() {
     const { setCriticalError, criticalError } = useAppStateStore();
     const { setCriticalProblem, criticalProblem } = useAppStateStore();
-    const { setDialogToShow, dialogToShow, showExternalDependenciesDialog, setShowExternalDependenciesDialog } =
-        useUIStore();
+    const { setDialogToShow, dialogToShow, showExternalDependenciesDialog } = useUIStore();
 
     return (
         <>
@@ -45,6 +44,12 @@ export function DialogsGroup() {
                     $isActive={showExternalDependenciesDialog}
                 >
                     External Dependencies
+                </Button>
+                <Button
+                    onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
+                    $isActive={dialogToShow === 'releaseNotes'}
+                >
+                    Release Notes
                 </Button>
                 <Button
                     onClick={() =>

@@ -35,9 +35,11 @@ use minotari_node_grpc_client::grpc::{
     BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, Peer, SyncState,
 };
 use minotari_node_grpc_client::BaseNodeGrpcClient;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Write as _;
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -51,6 +53,28 @@ use crate::utils::windows_setup_utils::add_firewall_rule;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
+#[derive(Serialize, Deserialize, Default)]
+struct MinotariNodeMigrationInfo {
+    version: u32,
+}
+
+impl MinotariNodeMigrationInfo {
+    pub fn save(&self, path: &Path) -> Result<(), anyhow::Error> {
+        let json_string = serde_json::to_string(self)?;
+        fs::write(path, json_string)?;
+        Ok(())
+    }
+
+    pub fn load_or_create(path: &Path) -> Result<Self, anyhow::Error> {
+        if !fs::exists(path)? {
+            return Ok(MinotariNodeMigrationInfo::default());
+        }
+        let contents = fs::read_to_string(path)?;
+
+        Ok(serde_json::from_str(contents.as_str())?)
+    }
+}
+
 pub(crate) struct MinotariNodeAdapter {
     pub(crate) use_tor: bool,
     pub(crate) grpc_port: u16,
@@ -58,7 +82,7 @@ pub(crate) struct MinotariNodeAdapter {
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
-    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 impl MinotariNodeAdapter {
@@ -72,7 +96,7 @@ impl MinotariNodeAdapter {
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
-            latest_status_broadcast: status_broadcast,
+            status_broadcast,
         }
     }
 }
@@ -93,7 +117,24 @@ impl ProcessAdapter for MinotariNodeAdapter {
 
         info!(target: LOG_TARGET, "Starting minotari node");
         let working_dir: PathBuf = data_dir.join("node");
-        std::fs::create_dir_all(&working_dir)?;
+        let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
+        fs::create_dir_all(&network_dir)?;
+        let migration_file = network_dir.join("migrations.json");
+        let mut migration_info = MinotariNodeMigrationInfo::load_or_create(&migration_file)?;
+
+        if migration_info.version < 1 {
+            // Delete the peer info db.
+            let peer_db_dir = network_dir.join("peer_db");
+
+            info!(target: LOG_TARGET, "Node migration v1: removing peer db at {:?}", peer_db_dir);
+
+            if peer_db_dir.exists() {
+                fs::remove_dir_all(peer_db_dir)?;
+            }
+            info!(target: LOG_TARGET, "Node Migration v1 complete");
+            migration_info.version = 1;
+        }
+        migration_info.save(&migration_file)?;
 
         let config_dir = log_dir
             .clone()
@@ -212,7 +253,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
-                latest_status_broadcast: self.latest_status_broadcast.clone(),
+                status_broadcast: self.status_broadcast.clone(),
             },
         ))
     }
@@ -234,7 +275,7 @@ pub enum MinotariNodeStatusMonitorError {
     NodeNotStarted,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
     pub randomx_network_hashrate: u64,
@@ -262,17 +303,17 @@ pub struct MinotariNodeStatusMonitor {
     grpc_port: u16,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
-    latest_status_broadcast: watch::Sender<BaseNodeStatus>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         let duration = std::time::Duration::from_secs(1);
-        match timeout(duration, self.get_network_hash_rate_and_block_reward()).await {
+        match timeout(duration, self.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    let _res = self.latest_status_broadcast.send(status.clone());
+                    let _res = self.status_broadcast.send(status.clone());
                     HealthStatus::Healthy
                 }
                 Err(e) => {
@@ -297,7 +338,7 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 }
 
 impl MinotariNodeStatusMonitor {
-    pub async fn get_network_hash_rate_and_block_reward(
+    pub async fn get_network_state(
         &self,
     ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
         let mut client =

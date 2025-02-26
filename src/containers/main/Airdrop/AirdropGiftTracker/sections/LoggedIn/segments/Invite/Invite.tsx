@@ -3,7 +3,7 @@ import { Wrapper, InviteButton, Image, TextWrapper, Title, Text, GemPill, Copied
 import gemImage from '../../../../images/gem.png';
 import { REFERRAL_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, m } from 'framer-motion';
+import { AnimatePresence, m } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import LinkIcon from './LinkIcon';
 
@@ -50,7 +50,7 @@ export default function Invite() {
                 <LinkIcon />
 
                 <TextWrapper>
-                    <Title>{t('inviteFirends')}</Title>
+                    <Title>{t('inviteFriends')}</Title>
                     <Text>{t('inviteFriendsText')}</Text>
                 </TextWrapper>
 

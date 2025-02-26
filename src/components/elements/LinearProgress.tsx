@@ -1,17 +1,15 @@
 import { convertHexToRGBA } from '@app/utils/convertHex';
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
 
 const Wrapper = styled.div<{ $variant?: 'primary' | 'small' | 'tiny' }>`
     width: 100%;
     background: ${({ theme, $variant }) =>
         $variant !== 'primary' ? convertHexToRGBA(theme.palette.contrast, 0.1) : theme.palette.base};
-
     border-radius: 50px;
     overflow: hidden;
     align-items: center;
     display: flex;
-
     ${({ $variant }) => {
         switch ($variant) {
             case 'tiny': {
@@ -37,15 +35,18 @@ const Wrapper = styled.div<{ $variant?: 'primary' | 'small' | 'tiny' }>`
     }};
 `;
 
-const Bar = styled(m.div)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
+const BarSVG = styled.svg`
+    width: 100%;
+    height: 100%;
     border-radius: 50px;
-    background: ${({ theme }) => theme.palette.contrast};
-    height: ${({ $variant }) => ($variant ? '5px' : '10px')};
-    will-change: width;
+`;
+const BarLine = styled(m.line)<{ $variant?: 'primary' | 'small' | 'tiny' }>`
+    stroke-width: ${({ $variant }) => ($variant === 'primary' ? '5px' : '10px')};
+    stroke: ${({ theme }) => theme.palette.contrast};
 `;
 
 export function LinearProgress({
-    value = 10,
+    value = 0,
     variant = 'primary',
     duration,
     onAnimationComplete,
@@ -57,12 +58,20 @@ export function LinearProgress({
 }) {
     return (
         <Wrapper $variant={variant}>
-            <Bar
-                initial={{ width: 0 }}
-                animate={{ width: `${value}%`, transition: { duration: duration || 0.5, ease: 'linear' } }}
-                $variant={variant}
-                onAnimationComplete={onAnimationComplete}
-            />
+            <BarSVG strokeLinecap="round">
+                <BarLine
+                    x1="0%"
+                    y1="50%"
+                    y2="50%"
+                    fill="transparent"
+                    strokeLinecap="round"
+                    $variant={variant}
+                    initial={{ x2: '0%' }}
+                    animate={{ x2: `${value}%` }}
+                    transition={{ duration: duration || 0.5, ease: 'linear' }}
+                    onAnimationComplete={onAnimationComplete}
+                />
+            </BarSVG>
         </Wrapper>
     );
 }

@@ -3,20 +3,22 @@ import { FloatingTree } from '@floating-ui/react';
 import SettingsModal from './Settings/SettingsModal.tsx';
 import StagedSecurity from './StagedSecurity/StagedSecurity.tsx';
 import AutoUpdateDialog from './AutoUpdateDialog/AutoUpdateDialog.tsx';
-import { ExternalDependenciesDialog } from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
+import ExternalDependenciesDialog from './ExternalDependenciesDialog/ExternalDependenciesDialog.tsx';
 import CriticalErrorDialog from './CriticalErrorDialog/CriticalErrorDialog.tsx';
 import PaperWalletModal from './PaperWalletModal/PaperWalletModal.tsx';
 import ShareRewardModal from './ShareRewardModal/ShareRewardModal';
 import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
-import { ToastStack } from '@app/components/ToastStack/ToastStack.tsx';
-import { CriticalProblemDialog } from './CriticalProblemDialog/CriticalProblemDialog.tsx';
+import ToastStack from '@app/components/ToastStack/ToastStack.tsx';
+import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
+import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
 import { KeyringAccessDialog } from './KeyringAccess/KeyringAccessDialog.tsx';
+import { memo } from 'react';
 
 const environment = import.meta.env.MODE;
 
-export default function FloatingElements() {
+const FloatingElements = memo(function FloatingElements() {
     return (
         <FloatingTree>
             <SettingsModal />
@@ -31,7 +33,10 @@ export default function FloatingElements() {
             <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
+            <ReleaseNotesDialog />
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );
-}
+});
+
+export default FloatingElements;

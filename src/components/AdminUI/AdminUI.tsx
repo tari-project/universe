@@ -1,15 +1,15 @@
 /* eslint-disable i18next/no-literal-string */
 import { MenuWrapper, MenuContent, ToggleButton } from './styles';
 import { useFloating, offset, shift, flip, useClick, useInteractions, useDismiss } from '@floating-ui/react';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { ThemeGroup } from './groups/ThemeGroup';
 import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { ToastsGroup } from './groups/ToastsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
-export default function AdminUI() {
+const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
 
     const { refs, floatingStyles, context } = useFloating({
@@ -47,4 +47,6 @@ export default function AdminUI() {
             </AnimatePresence>
         </>
     );
-}
+});
+
+export default AdminUI;

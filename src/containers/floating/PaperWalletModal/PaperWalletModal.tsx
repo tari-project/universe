@@ -1,15 +1,17 @@
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { AnimatePresence } from 'motion/react';
+import { memo, useEffect, useState } from 'react';
 import ConnectSection from './sections/ConnectSection/ConnectSection';
 import QRCodeSection from './sections/QRCodeSection/QRCodeSection';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 
 export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
 
-export default function PaperWalletModal() {
-    const showModal = usePaperWalletStore((s) => s.showModal);
-    const setShowModal = usePaperWalletStore((s) => s.setShowModal);
+const PaperWalletModal = memo(function PaperWalletModal() {
+    const { showModal, setShowModal } = usePaperWalletStore((s) => ({
+        showModal: s.showModal,
+        setShowModal: s.setShowModal,
+    }));
 
     const [section, setSection] = useState<PaperWalletModalSectionType>('Connect');
     const [boxWidth, setBoxWidth] = useState(618);
@@ -37,4 +39,6 @@ export default function PaperWalletModal() {
             )}
         </AnimatePresence>
     );
-}
+});
+
+export default PaperWalletModal;

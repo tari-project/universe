@@ -6,6 +6,7 @@ import { useAppConfigStore } from './useAppConfigStore';
 
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { startMining } from '@app/store/miningStoreActions.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 interface State {
     error?: string;
@@ -20,6 +21,8 @@ interface State {
     missingExternalDependencies?: ExternalDependency[];
     issueReference?: string;
     applications_versions?: ApplicationsVersions;
+    releaseNotes: string;
+    isAppUpdateAvailable: boolean;
 }
 interface Actions {
     setCriticalError: (value: string | undefined) => void;
@@ -27,11 +30,12 @@ interface Actions {
     setCriticalProblem: (value?: Partial<CriticalProblem>) => void;
     setIsSettingsOpen: (value: boolean) => void;
     fetchExternalDependencies: () => Promise<void>;
-    loadExternalDependencies: (missingExternalDependencies: ExternalDependency[]) => void;
     fetchApplicationsVersions: () => Promise<void>;
     fetchApplicationsVersionsWithRetry: () => Promise<void>;
     updateApplicationsVersions: () => Promise<void>;
     setIssueReference: (value: string) => void;
+    setReleaseNotes: (value: string) => void;
+    setIsAppUpdateAvailable: (value: boolean) => void;
 }
 type AppState = State & Actions;
 
@@ -43,7 +47,10 @@ const initialstate: State = {
     setupComplete: false,
     externalDependencies: [],
     missingExternalDependencies: [],
+    releaseNotes: '',
+    isAppUpdateAvailable: false,
 };
+
 export const useAppStateStore = create<AppState>()((set, getState) => ({
     ...initialstate,
     setCriticalError: (criticalError) => set({ criticalError }),
@@ -98,19 +105,35 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
             console.error('Error loading missing external dependencies', error);
         }
     },
-    loadExternalDependencies: (externalDependencies: ExternalDependency[]) => set({ externalDependencies }),
     setIssueReference: (issueReference) => set({ issueReference }),
+    setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
+    setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
 }));
 
-export const setSetupDetails = (setupTitle: string, setupTitleParams: Record<string, string>, setupProgress: number) =>
-    useAppStateStore.setState({ setupTitle, setupTitleParams, setupProgress });
+export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
+export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
+export const setSetupParams = (setupTitleParams: Record<string, string>) =>
+    useAppStateStore.setState((current) => {
+        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
+        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
+    });
 
 export const setSetupComplete = async () => {
-    setAnimationState('showVisual');
+    const visualMode = useAppConfigStore.getState().visual_mode;
+    if (visualMode) {
+        const canvas = document.getElementById('canvas');
+        if (canvas) {
+            canvas.style.opacity = '1';
+            setAnimationState('showVisual');
+        }
+    }
     // Proceed with auto mining when enabled
     const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
+        startMining();
     }
     useAppStateStore.setState({ setupComplete: true });
 };
+
+export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
+    useAppStateStore.setState({ externalDependencies });

@@ -23,11 +23,11 @@ export const useWebsocket = () => {
     const airdropToken = useAirdropStore((state) => state.airdropTokens?.token);
     const userId = useAirdropStore((state) => state.userDetails?.user?.id);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
-    const cpu = useMiningMetricsStore((state) => state.cpu);
-    const gpu = useMiningMetricsStore((state) => state.gpu);
+    const cpuMiningStatus = useMiningMetricsStore((state) => state.cpu_mining_status);
+    const gpuMiningStatus = useMiningMetricsStore((state) => state.gpu_mining_status);
     const network = useMiningStore((state) => state.network);
     const appId = useAppConfigStore((state) => state.anon_id);
-    const base_node = useMiningMetricsStore((state) => state.base_node);
+    const isConnectedToNetwork = useMiningMetricsStore((state) => state.isNodeConnected);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const [connectedSocket, setConnectedSocket] = useState(false);
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
@@ -35,8 +35,8 @@ export const useWebsocket = () => {
     const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
 
     const isMining = useMemo(() => {
-        return (cpu?.mining.is_mining || gpu?.mining.is_mining) && base_node?.is_connected;
-    }, [base_node?.is_connected, cpu?.mining.is_mining, gpu?.mining.is_mining]);
+        return (cpuMiningStatus?.is_mining || gpuMiningStatus?.is_mining) && isConnectedToNetwork;
+    }, [isConnectedToNetwork, cpuMiningStatus?.is_mining, gpuMiningStatus?.is_mining]);
 
     const handleEmitMiningStatus = useCallback(
         async (isMining: boolean) => {

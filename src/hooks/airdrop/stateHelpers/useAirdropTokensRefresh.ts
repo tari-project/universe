@@ -1,7 +1,7 @@
 import { AirdropTokens, setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect } from 'react';
 
-export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
+async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
     const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
         method: 'POST',
         headers: {
@@ -12,7 +12,8 @@ export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: A
         }),
     });
     if (!response.ok) {
-        throw new Error('Failed to refresh token');
+        console.error('Fetching airdrop tokens was not successful');
+        return undefined;
     }
 
     const data: AirdropTokens = await response.json();
@@ -22,6 +23,9 @@ export async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: A
 export async function handleRefreshAirdropTokens(airdropApiUrl: string) {
     const airdropTokens = useAirdropStore.getState().airdropTokens;
     let tokens: AirdropTokens | undefined = airdropTokens;
+    if (!tokens) {
+        return;
+    }
     // 5 hours from now
     const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
     const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
@@ -34,7 +38,6 @@ export async function handleRefreshAirdropTokens(airdropApiUrl: string) {
             console.error('Error refreshing airdrop tokens:', error);
         }
     }
-
     await setAirdropTokens(tokens);
 }
 export function useAirdropTokensRefresh() {

@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::credential_manager::{Credential, KEYRING_ACCESSED, USING_FALLBACK};
+use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
 
@@ -32,7 +33,6 @@ use log::{debug, info, warn};
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
-use tari_common::configuration::Network;
 use tokio::fs;
 
 const LOG_TARGET: &str = "tari::universe::app_config";
@@ -76,8 +76,6 @@ pub struct AppConfigFromFile {
     use_tor: bool,
     #[serde(default = "default_true")]
     paper_wallet_enabled: bool,
-    #[serde(default = "default_false")]
-    reset_earnings: bool,
     eco_mode_cpu_threads: Option<u32>,
     ludicrous_mode_cpu_threads: Option<u32>,
     #[serde(default = "default_vec_string")]
@@ -114,6 +112,10 @@ pub struct AppConfigFromFile {
     p2pool_stats_server_port: Option<u16>,
     #[serde(default = "default_false")]
     pre_release: bool,
+    #[serde(default = "default_changelog_version")]
+    last_changelog_version: String,
+    #[serde(default)]
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl Default for AppConfigFromFile {
@@ -149,7 +151,6 @@ impl Default for AppConfigFromFile {
             keyring_accessed: false,
             keyring_fallback: false,
             auto_update: true,
-            reset_earnings: false,
             custom_power_levels_enabled: true,
             sharing_enabled: true,
             visual_mode: true,
@@ -157,6 +158,8 @@ impl Default for AppConfigFromFile {
             show_experimental_settings: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
+            airdrop_tokens: None,
         }
     }
 }
@@ -166,6 +169,12 @@ pub enum DisplayMode {
     System,
     Dark,
     Light,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AirdropTokens {
+    pub token: String,
+    pub refresh_token: String,
 }
 
 impl DisplayMode {
@@ -250,7 +259,6 @@ pub(crate) struct AppConfig {
     application_language: String,
     paper_wallet_enabled: bool,
     use_tor: bool,
-    reset_earnings: bool,
     eco_mode_cpu_threads: Option<u32>,
     ludicrous_mode_cpu_threads: Option<u32>,
     eco_mode_cpu_options: Vec<String>,
@@ -270,6 +278,8 @@ pub(crate) struct AppConfig {
     show_experimental_settings: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
+    last_changelog_version: String,
+    airdrop_tokens: Option<AirdropTokens>,
 }
 
 impl AppConfig {
@@ -297,7 +307,6 @@ impl AppConfig {
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: vec![],
             paper_wallet_enabled: true,
-            reset_earnings: false,
             eco_mode_cpu_options: Vec::new(),
             ludicrous_mode_cpu_options: Vec::new(),
             custom_mode_cpu_options: Vec::new(),
@@ -315,6 +324,8 @@ impl AppConfig {
             keyring_fallback: false,
             p2pool_stats_server_port: default_p2pool_stats_server_port(),
             pre_release: false,
+            last_changelog_version: default_changelog_version(),
+            airdrop_tokens: None,
         }
     }
 
@@ -348,12 +359,8 @@ impl AppConfig {
                 debug!("Loaded config from file {:?}", config);
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
-                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
-                    self.display_mode =
-                        DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
-                } else {
-                    self.display_mode = DisplayMode::Light;
-                }
+                self.display_mode =
+                    DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
@@ -379,19 +386,15 @@ impl AppConfig {
                 self.custom_max_cpu_usage = config.custom_max_cpu_usage;
                 self.custom_max_gpu_usage = config.custom_max_gpu_usage.unwrap_or(vec![]);
                 self.auto_update = config.auto_update;
-                self.reset_earnings = config.reset_earnings;
                 self.custom_power_levels_enabled = config.custom_power_levels_enabled;
-                if Network::get_current_or_user_setting_or_default() == Network::Esmeralda {
-                    self.reset_earnings = config.reset_earnings;
-                } else {
-                    self.reset_earnings = false;
-                }
                 self.sharing_enabled = config.sharing_enabled;
                 self.visual_mode = config.visual_mode;
                 self.window_settings = config.window_settings;
                 self.show_experimental_settings = config.show_experimental_settings;
                 self.p2pool_stats_server_port = config.p2pool_stats_server_port;
                 self.pre_release = config.pre_release;
+                self.last_changelog_version = config.last_changelog_version;
+                self.airdrop_tokens = config.airdrop_tokens;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -476,6 +479,10 @@ impl AppConfig {
         &self.anon_id
     }
 
+    pub fn last_changelog_version(&self) -> &str {
+        &self.last_changelog_version
+    }
+
     pub async fn set_mode(
         &mut self,
         mode: String,
@@ -514,6 +521,19 @@ impl AppConfig {
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
         self.custom_max_gpu_usage.clone()
+    }
+
+    pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
+        self.airdrop_tokens.clone()
+    }
+
+    pub async fn set_airdrop_tokens(
+        &mut self,
+        airdrop_tokens: Option<AirdropTokens>,
+    ) -> Result<(), anyhow::Error> {
+        self.airdrop_tokens = airdrop_tokens;
+        self.update_config_file().await?;
+        Ok(())
     }
 
     pub async fn set_max_gpu_usage(
@@ -749,6 +769,15 @@ impl AppConfig {
         Ok(())
     }
 
+    pub async fn set_last_changelog_version(
+        &mut self,
+        version: String,
+    ) -> Result<(), anyhow::Error> {
+        self.last_changelog_version = version;
+        self.update_config_file().await?;
+        Ok(())
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -779,7 +808,6 @@ impl AppConfig {
             custom_max_cpu_usage: self.custom_max_cpu_usage,
             custom_max_gpu_usage: Some(self.custom_max_gpu_usage.clone()),
             use_tor: self.use_tor,
-            reset_earnings: self.reset_earnings,
             eco_mode_cpu_options: self.eco_mode_cpu_options.clone(),
             ludicrous_mode_cpu_options: self.ludicrous_mode_cpu_options.clone(),
             custom_mode_cpu_options: self.custom_mode_cpu_options.clone(),
@@ -797,6 +825,8 @@ impl AppConfig {
             show_experimental_settings: self.show_experimental_settings,
             p2pool_stats_server_port: self.p2pool_stats_server_port,
             pre_release: self.pre_release,
+            last_changelog_version: self.last_changelog_version.clone(),
+            airdrop_tokens: self.airdrop_tokens.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -891,4 +921,8 @@ fn default_window_settings() -> Option<WindowSettings> {
 
 fn default_p2pool_stats_server_port() -> Option<u16> {
     None
+}
+
+fn default_changelog_version() -> String {
+    Version::new(0, 0, 0).to_string()
 }
