@@ -13,7 +13,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 

@@ -1,9 +1,27 @@
-# TARI UNIVERSE v0.9.806: Hotfix Released! 
+# 🌑 TARI UNIVERSE v0.9.809: The Dawn of Dork Mode  
+
+_February 26, 2025_
+
+## 👋 Hello Everyone,  
+The wait is over—**Dark (Dork!) Mode** is here! 🎉 Welcome our Prince and Princesses of Darkness. Our fellow Darth Vaders, Cruella De Vils, and Voldemorts. Dark mode is for you. Welcome home 💜🌚
+
+✨ You can enable **Dark Mode** in **⚙️ Settings**.  
+
+## 🔜 Coming Soon
+🔵 Wallet unread wins count fix
+🔄 Fixing restart issues – Sometimes, the app doesn’t restart properly after an auto-update
+🐞 More deadlock fixes – Addressing sync freezes on startup
+💻 Laptop sleep mode recovery – UX handling here needs review
+🚀 A surprise…
+
+---
+
+# TARI UNIVERSE v0.9.807: Hotfix Released! 
 
 _February 18, 2025_
 
 ## Hi Everyone,  
-Contributors have been working 24/7 to solve the network fork challenge, and we think we’ve finally nailed it. Introducing Tari Universe v0.9.806, the fork slayer. Please let us know if you continue to see the yellow fork message. Thank you! 🚀
+This fork challenge has proven to be a beast! Our valiant contributors will never give up! Introducing Tari Universe v0.9.807, revenge of the fork slayer. Please let us know if you continue to see the yellow fork message (we sure hope not!). Thank you fam! 💎
 
 ---
 

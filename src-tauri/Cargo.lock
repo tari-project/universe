@@ -5302,6 +5302,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 
 [[package]]
+name = "planif"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7502ee5af341c06aa00593d655d09e4b7126f0e886b80745c218d6dc674e8b21"
+dependencies = [
+ "windows 0.48.0",
+]
+
+[[package]]
 name = "plist"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7233,7 +7242,7 @@ dependencies = [
 
 [[package]]
 name = "tari-universe"
-version = "0.9.808"
+version = "0.9.809"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7267,6 +7276,7 @@ dependencies = [
  "open",
  "openssl",
  "phraze",
+ "planif",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -7306,6 +7316,7 @@ dependencies = [
  "tokio-util 0.7.13",
  "tonic",
  "urlencoding",
+ "whoami",
  "winreg 0.52.0",
  "xz2",
  "zip",
@@ -9032,6 +9043,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
+name = "wasite"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b8dad83b4f25e74f184f64c43b150b91efe7647395b42289f38e50566d82855b"
+
+[[package]]
 name = "wasm-bindgen"
 version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9251,6 +9268,17 @@ dependencies = [
  "home",
  "once_cell",
  "rustix",
+]
+
+[[package]]
+name = "whoami"
+version = "1.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "372d5b87f58ec45c384ba03563b03544dc5fadc3983e434b286913f5b4a9bb6d"
+dependencies = [
+ "redox_syscall 0.5.8",
+ "wasite",
+ "web-sys",
 ]
 
 [[package]]
