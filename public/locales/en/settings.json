@@ -51,6 +51,7 @@
   "importing-wallet-copy": "Tari Universe will restart automatically once your wallet has been imported",
   "invalid-seed-words": "Enter 24 words separated by spaces",
   "invalid-stats-server-port": "Invalid stats server port",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "Invite Code",
   "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Last block added to chain time",
