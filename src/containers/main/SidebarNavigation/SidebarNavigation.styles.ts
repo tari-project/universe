@@ -1,6 +1,7 @@
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { sidebarWidth } from '@app/theme/styles.ts';
-import * as m from 'motion/react-m';
+import { convertHexToRGBA } from '@app/utils';
 
 export const SidebarWrapper = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.default};
@@ -11,7 +12,6 @@ export const SidebarWrapper = styled(m.div)`
     position: relative;
     height: 100%;
     overflow: hidden;
-    padding: 16px 10px;
     pointer-events: all;
 `;
 
@@ -21,5 +21,15 @@ export const MinimizedWrapper = styled.div`
     height: 100%;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 0;
+    padding: 30px 0;
+`;
+
+export const SidebarCover = styled(m.div)`
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: ${({ theme }) => convertHexToRGBA(theme.colors.grey[theme.mode === 'dark' ? 950 : 900], 0.3)};
+    cursor: pointer;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
 `;

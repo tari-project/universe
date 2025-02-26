@@ -6,7 +6,8 @@ export const SidebarGrid = styled.div`
     height: 100%;
     place-items: center stretch;
     align-content: space-between;
-    grid-template-columns: auto;
+    padding: 16px 10px;
+    grid-template-columns: 1fr;
     grid-template-rows: auto [row2-end row4-start] auto;
     grid-template-areas:
         'top top top'
@@ -22,8 +23,17 @@ export const GridAreaTop = styled.div`
 `;
 
 export const GridAreaBottom = styled.div`
-    grid-area: bottom;
     display: flex;
+    grid-area: bottom;
     flex-direction: column;
-    gap: 8px;
+    position: relative;
+    gap: 6px;
+`;
+
+export const WalletSpacer = styled.div`
+    max-height: 508px;
+    min-height: 188px;
+    @media (max-height: 670px) {
+        min-height: 150px;
+    }
 `;

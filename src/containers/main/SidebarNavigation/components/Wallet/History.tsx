@@ -12,7 +12,7 @@ const container = {
     hidden: { opacity: 0, height: 0 },
     visible: {
         opacity: 1,
-        height: 326,
+        height: 306,
     },
 };
 

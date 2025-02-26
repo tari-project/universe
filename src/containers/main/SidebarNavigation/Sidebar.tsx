@@ -8,7 +8,7 @@ import Wallet from './components/Wallet/Wallet.tsx';
 import Heading from './components/Heading.tsx';
 import Miner from './components/Miner/Miner.tsx';
 
-import { GridAreaBottom, GridAreaTop, SidebarGrid } from './Sidebar.styles.ts';
+import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './Sidebar.styles.ts';
 
 const Sidebar = memo(function Sidebar() {
     return (
@@ -22,6 +22,7 @@ const Sidebar = memo(function Sidebar() {
             </GridAreaTop>
             <GridAreaBottom>
                 <AirdropGiftTracker />
+                <WalletSpacer />
                 <Wallet />
             </GridAreaBottom>
         </SidebarGrid>

@@ -3,7 +3,7 @@ import { IoSettingsOutline } from 'react-icons/io5';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
-export default function OpenSettingsButton() {
+export default function OpenSettingsButton({ iconSize = 16 }: { iconSize?: number }) {
     const setIsSettingsOpen = useAppStateStore((s) => s.setIsSettingsOpen);
     function handleClick(e) {
         e.stopPropagation();
@@ -11,7 +11,7 @@ export default function OpenSettingsButton() {
     }
     return (
         <IconButton onClick={handleClick}>
-            <IoSettingsOutline size={16} />
+            <IoSettingsOutline size={iconSize} />
         </IconButton>
     );
 }
