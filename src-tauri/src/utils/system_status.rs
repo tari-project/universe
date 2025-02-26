@@ -55,8 +55,7 @@ impl SystemStatus {
         power_monitor
     }
 
-    pub fn recive_power_event(&self, power_monitor: &PowerMonitor) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Reciving power event");
+    pub fn receive_power_event(&self, power_monitor: &PowerMonitor) -> Result<(), Error> {
         if let Ok(event) = power_monitor.event_receiver().try_recv() {
             info!(target: LOG_TARGET, "Power event: {:?}", event);
             match event {

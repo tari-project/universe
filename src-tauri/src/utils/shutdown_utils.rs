@@ -180,7 +180,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     stage_progress += 1;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
-
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let mut tor_control_port = None;
