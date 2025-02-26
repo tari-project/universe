@@ -518,8 +518,6 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    println!("XXXXXXXXXXXXXXXXXX {:?}", extra_data.clone());
-
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
