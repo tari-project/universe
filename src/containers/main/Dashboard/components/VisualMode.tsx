@@ -15,7 +15,7 @@ import {
 
 import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
 }));
 

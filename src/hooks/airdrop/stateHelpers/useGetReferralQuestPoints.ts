@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useAirdropRequest } from '../utils/useHandleRequest';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
-export enum QuestNames {
+enum QuestNames {
     MinerReceivedGift = 'miner-received-gift',
     MinerQuestReferral = 'quest-download-referral',
 }

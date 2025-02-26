@@ -6,7 +6,17 @@ import eslintPlugin from '@nabla/vite-plugin-eslint';
 
 const plugins: UserConfig['plugins'] = [
     react({
-        babel: { plugins: ['styled-components'] },
+        babel: {
+            plugins: [
+                [
+                    'babel-plugin-styled-components',
+                    {
+                        displayName: true,
+                        fileName: false,
+                    },
+                ],
+            ],
+        },
     }),
     tsconfigPaths(),
     eslintPlugin({ eslintOptions: { cache: false } }),
