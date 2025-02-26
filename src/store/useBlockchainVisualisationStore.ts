@@ -95,8 +95,8 @@ export async function playBlockWinAudio(successTier: number) {
 
 const playAudio = async (eleId: string, track: string) => {
     try {
-        const { audio_enabled, isAudioFeatureEnabled } = useAppConfigStore.getState();
-        if (!audio_enabled || !isAudioFeatureEnabled) {
+        const { audio_enabled } = useAppConfigStore.getState();
+        if (!audio_enabled) {
             return;
         }
 

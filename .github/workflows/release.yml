@@ -233,7 +233,7 @@ jobs:
           prerelease: true
           includeDebug: false
           includeRelease: true
-          args: ${{ matrix.args }} --features "audio ${{ env.TS_FEATURES }}"
+          args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Debug Step - artifactPaths
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}

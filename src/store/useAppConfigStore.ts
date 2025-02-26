@@ -39,11 +39,7 @@ interface Actions {
     setAudioEnabled: (audioEnabled: boolean) => Promise<void>;
 }
 
-interface EnabledFeatures {
-    isAudioFeatureEnabled?: boolean;
-}
-
-type AppConfigStoreState = State & Actions & EnabledFeatures;
+type AppConfigStoreState = State & Actions;
 
 const initialState: State = {
     config_version: 0,
@@ -76,7 +72,6 @@ const initialState: State = {
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
-    isAudioFeatureEnabled: false,
 
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
@@ -318,11 +313,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         });
     },
 }));
-
-export const fetchAudioFeatureEnabled = async () => {
-    const featureEnabled = await invoke('is_audio_feature_enabled');
-    useAppConfigStore.setState({ isAudioFeatureEnabled: featureEnabled });
-};
 
 export const fetchAppConfig = async () => {
     try {
