@@ -31,7 +31,7 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::{app_config::AppConfig, TASKS_TRACKER};
+use crate::{app_config::AppConfig, task_tracker::TasksTracker};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 
@@ -80,7 +80,7 @@ impl UpdatesManager {
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = self_clone.app_shutdown.clone();
-        TASKS_TRACKER.spawn(async move {
+        TasksTracker::current().spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {

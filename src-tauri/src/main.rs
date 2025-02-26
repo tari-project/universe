@@ -37,10 +37,10 @@ use serde_json::json;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
+use task_tracker::TasksTracker;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
-use tokio_util::task::TaskTracker;
 use updates_manager::UpdatesManager;
 use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use wallet_adapter::WalletState;
@@ -49,7 +49,7 @@ use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
 use std::sync::atomic::AtomicBool;
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
@@ -89,7 +89,6 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::stop_all_processes;
 
 mod airdrop;
 mod app_config;
@@ -129,6 +128,7 @@ mod process_watcher;
 mod progress_tracker;
 mod release_notes;
 mod systemtray_manager;
+mod task_tracker;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
@@ -168,12 +168,10 @@ struct CriticalProblemEvent {
     description: Option<String>,
 }
 
-static TASKS_TRACKER: LazyLock<TaskTracker> = LazyLock::new(TaskTracker::new);
-
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    TASKS_TRACKER.spawn(async move {
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let _ = &app_state
@@ -196,7 +194,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    TASKS_TRACKER.spawn(async move {
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -282,7 +280,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TASKS_TRACKER.spawn(async move {
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
@@ -872,7 +870,7 @@ async fn setup_inner(
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     let mut shutdown_signal = state.shutdown.to_signal();
-    TASKS_TRACKER.spawn(async move {
+    TasksTracker::current().spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
@@ -1355,12 +1353,12 @@ fn main() {
         }
         tauri::RunEvent::ExitRequested { api: _, .. } => {
             info!(target: LOG_TARGET, "App shutdown request caught");
-            block_on(stop_all_processes(app_handle.clone()));
+            block_on(TasksTracker::stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            block_on(stop_all_processes(app_handle.clone()));
+            block_on(TasksTracker::stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {

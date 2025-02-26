@@ -28,6 +28,5 @@ pub mod macos_utils;
 pub mod math_utils;
 pub mod platform_utils;
 
-pub mod shutdown_utils;
 #[cfg(windows)]
 pub mod windows_setup_utils;

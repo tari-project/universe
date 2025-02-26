@@ -27,8 +27,8 @@ use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
-    hardware::hardware_status_monitor::GpuDeviceProperties, wallet_adapter::WalletState,
-    BaseNodeStatus, GpuMinerStatus, UniverseAppState,
+    hardware::hardware_status_monitor::GpuDeviceProperties, task_tracker::TasksTracker,
+    wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -57,7 +57,7 @@ impl EventsManager {
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
         let events_service = self.events_service.clone();
         let app = app.clone();
-        tokio::spawn(async move {
+        TasksTracker::current().spawn(async move {
             match events_service
                 .wait_for_wallet_scan(block_height, 1200)
                 .await
@@ -78,7 +78,7 @@ impl EventsManager {
     pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
         let events_service = self.events_service.clone();
-        tokio::spawn(async move {
+        TasksTracker::current().spawn(async move {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {

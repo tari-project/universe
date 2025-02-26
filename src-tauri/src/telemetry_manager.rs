@@ -29,7 +29,8 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
-use crate::{airdrop, UniverseAppState, TASKS_TRACKER};
+use crate::TasksTracker;
+use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -296,7 +297,7 @@ impl TelemetryManager {
         let mut app_shutdown = state.shutdown.to_signal();
         let mut interval = time::interval(timeout);
 
-        TASKS_TRACKER.spawn(async move {
+        TasksTracker::current().spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {

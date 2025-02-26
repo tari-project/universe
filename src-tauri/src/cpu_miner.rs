@@ -25,10 +25,11 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::task_tracker::TasksTracker;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{BaseNodeStatus, CpuMinerConfig, TASKS_TRACKER};
+use crate::{BaseNodeStatus, CpuMinerConfig};
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -254,7 +255,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        TASKS_TRACKER.spawn(async move {
+        TasksTracker::current().spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {

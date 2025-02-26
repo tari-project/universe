@@ -36,6 +36,7 @@ use tokio::task::JoinHandle;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
+use crate::task_tracker::TasksTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -148,7 +149,7 @@ impl ProcessInstance {
             return Ok(());
         };
 
-        self.handle = Some(tokio::spawn(async move {
+        self.handle = Some(TasksTracker::current().spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
             info!(target: LOG_TARGET, "Launching {} node", spec.name);
