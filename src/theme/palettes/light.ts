@@ -72,7 +72,7 @@ const lightPalette: ThemePalette = {
             dark: c.warning[800],
             light: c.warning[50],
             contrast: c.warning[300],
-            wisp: colorsAlpha.warningDarkAlpha[5],
+            wisp: colorsAlpha.warningDarkAlpha[10],
         },
         error: {
             main: c.error[400],

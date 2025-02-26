@@ -6,7 +6,7 @@ import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 
 const Wrapper = styled.div`
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
-    background-color: ${({ theme }) => theme.palette.warning.light};
+    background-color: ${({ theme }) => theme.palette.warning.wisp};
     color: ${({ theme }) => theme.palette.warning.dark};
     padding: 8px 14px;
     display: flex;
