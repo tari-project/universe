@@ -93,6 +93,7 @@ impl BinaryResolver {
             match Network::get_current_or_user_setting_or_default() {
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
                 _ => panic!("Unsupported network"),
             };
 
@@ -194,6 +195,36 @@ impl BinaryResolver {
             ),
         );
 
+        binary_manager.insert(
+            Binaries::TariValidatorNode,
+            BinaryManager::new(
+                Binaries::TariValidatorNode.name().to_string(),
+                Some("tari_validator_node".to_string()),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-dan".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                true,
+            ),
+        );
+
+        binary_manager.insert(
+            Binaries::TariIndexer,
+            BinaryManager::new(
+                Binaries::TariIndexer.name().to_string(),
+                Some("tari_indexer".to_string()),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari-dan".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
+                None,
+                true,
+            ),
+        );
+
         Self {
             managers: binary_manager,
         }
@@ -211,7 +242,7 @@ impl BinaryResolver {
 
         let version = manager
             .get_used_version()
-            .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
+            .ok_or_else(|| anyhow!("No latest version found for binary {}", binary.name()))?;
 
         let base_dir = manager.get_base_dir().map_err(|error| {
             anyhow!(
@@ -301,7 +332,12 @@ impl BinaryResolver {
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Init binary: no version selected for {}",
+                    binary.name()
+                ))
+            }
         }
 
         Ok(())
@@ -351,7 +387,12 @@ impl BinaryResolver {
 
         match highest_version {
             Some(version) => manager.set_used_version(version),
-            None => return Err(anyhow!("No version selected for binary {}", binary.name())),
+            None => {
+                return Err(anyhow!(
+                    "Update binary: no version selected for {}",
+                    binary.name()
+                ))
+            }
         }
 
         Ok(())

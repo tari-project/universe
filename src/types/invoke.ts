@@ -13,6 +13,14 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { AirdropTokens } from '@app/store/useAirdropStore';
+import {
+    DevTapplet,
+    InstalledTapplet,
+    InstalledTappletWithAssets,
+    ActiveTapplet,
+    RegisteredTapplet,
+    RegisteredTappletWithAssets,
+} from './ootle/tapplet';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -96,4 +104,32 @@ declare module '@tauri-apps/api/core' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
+
+    /**
+     * Tati Ootle
+     */
+    function invoke(param: 'read_installed_tapp_db'): Promise<InstalledTappletWithAssets[]>;
+    function invoke(param: 'read_tapp_registry_db'): Promise<RegisteredTapplet[]>;
+    function invoke(param: 'insert_installed_tapp_db', payload: { tappletId: string }): Promise<InstalledTapplet>;
+    function invoke(
+        param: 'update_tapp',
+        payload: { tappletId: string; installedTappletId: string }
+    ): Promise<InstalledTappletWithAssets[]>;
+    function invoke(param: 'get_assets_server_addr'): Promise<string>;
+    function invoke(param: 'add_dev_tapplet', payload: { endpoint: string }): Promise<DevTapplet>;
+    function invoke(param: 'read_dev_tapplets'): Promise<DevTapplet[]>;
+    function invoke(param: 'delete_dev_tapplet', payload: { devTappletId: number }): Promise<number>;
+    function invoke(param: 'delete_installed_tapplet', payload: { tappletId: number }): Promise<number>;
+    function invoke(
+        param: 'update_installed_tapplet',
+        payload: { tappletId: number; installedTappletId: number }
+    ): Promise<InstalledTappletWithAssets[]>;
+    function invoke(
+        param: 'download_and_extract_tapp',
+        payload: { tappletId: string }
+    ): Promise<RegisteredTappletWithAssets>;
+    function invoke(param: 'launch_tapplet', payload: { installedTappletId: number }): Promise<ActiveTapplet>;
+    function invoke(param: 'set_ootle_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'set_ootle_node_enabled', payload: { enabled: boolean }): Promise<void>;
+    function invoke(param: 'upload_wasm_file', payload: { file: string }): Promise<void>;
 }

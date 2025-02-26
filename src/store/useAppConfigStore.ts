@@ -36,6 +36,8 @@ interface Actions {
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
+    setOotleEnabled: (enabled: boolean) => void;
+    setOotleLocalNode: (enabled: boolean) => void;
 }
 
 type AppConfigStoreState = State & Actions;
@@ -66,6 +68,8 @@ const initialState: State = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
+    ootle_enabled: false,
+    ootle_local_node: false,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
@@ -301,6 +305,25 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             console.error('Could not set pre release', e);
             appStateStore.setError('Could not change pre release');
             set({ pre_release: !preRelease });
+        });
+    },
+    setOotleEnabled: (enabled) => {
+        set({ ootle_enabled: enabled });
+        invoke('set_ootle_enabled', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set ootle local node enabled', e);
+            appStateStore.setError('Could not change ootle local node enabled');
+            set({ ootle_local_node: !enabled });
+        });
+    },
+    setOotleLocalNode: async (enabled) => {
+        console.info('setlocalootle', enabled);
+        set({ ootle_local_node: enabled });
+        invoke('set_ootle_node_enabled', { enabled }).catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set ootle local node enabled', e);
+            appStateStore.setError('Could not change ootle local node enabled');
+            set({ ootle_local_node: !enabled });
         });
     },
 }));

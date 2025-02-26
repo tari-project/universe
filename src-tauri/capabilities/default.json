@@ -17,6 +17,8 @@
         "sentry:default",
         "process:allow-restart",
         "process:default",
-        "clipboard-manager:allow-write-text"
+        "clipboard-manager:allow-write-text",
+        "dialog:allow-open",
+        "dialog:allow-confirm"
     ]
 }

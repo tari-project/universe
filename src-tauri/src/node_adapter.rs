@@ -93,7 +93,7 @@ impl MinotariNodeAdapter {
             grpc_port: port,
             tcp_listener_port,
             use_pruned_mode: false,
-            required_initial_peers: 3,
+            required_initial_peers: 1, //TODO should be 3 - its just for testing
             use_tor: false,
             tor_control_port: None,
             status_broadcast,
@@ -108,7 +108,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
-        _config_dir: PathBuf,
+        config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
@@ -136,18 +136,18 @@ impl ProcessAdapter for MinotariNodeAdapter {
         }
         migration_info.save(&migration_file)?;
 
-        let config_dir = log_dir
+        let log_config_dir = log_dir
             .clone()
             .join("base_node")
             .join("configs")
             .join("log4rs_config_base_node.yml");
         setup_logging(
-            &config_dir.clone(),
+            &log_config_dir.clone(),
             &log_dir,
             include_str!("../log4rs/base_node_sample.yml"),
         )?;
         let working_dir_string = convert_to_string(working_dir)?;
-        let config_dir_string = convert_to_string(config_dir)?;
+        let config_dir_string = convert_to_string(log_config_dir)?;
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -184,6 +184,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         // args.push("localnet".to_string());
         // }
         if self.use_tor {
+            info!(target: LOG_TARGET, "🔥 MINOTARI TOR GRPC {:?} from conf dir {:?}", &self.grpc_port, &config_dir);
             // args.push("-p".to_string());
             // args.push(
             //     "base_node.p2p.transport.tor.listener_address_override=/ip4/127.0.0.1/tcp/18189"
@@ -212,6 +213,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 ));
             }
         } else {
+            info!(target: LOG_TARGET, "🔥 MINOTARI NO-TOR GRPC {:?} from conf dir {:?}", &self.grpc_port, &config_dir);
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
@@ -231,6 +233,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
                 key = network.as_key_str(),
             ));
+            info!(target: LOG_TARGET, "🔥 MINOTARI NODE NET KEY {:?}", &network.as_key_str());
         }
 
         #[cfg(target_os = "windows")]

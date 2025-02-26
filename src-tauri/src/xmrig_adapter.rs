@@ -22,7 +22,7 @@
 
 use anyhow::Error;
 use async_trait::async_trait;
-use log::warn;
+use log::{info, warn};
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
@@ -36,6 +36,8 @@ use crate::xmrig::http_api::models::Summary;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
+
+#[derive(Debug)]
 
 pub enum XmrigNodeConnection {
     LocalMmproxy { host_name: String, port: u16 },
@@ -74,6 +76,7 @@ impl XmrigAdapter {
     pub fn new(summary_broadcast: watch::Sender<Option<Summary>>) -> Self {
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_token = "pass".to_string();
+        info!(target: LOG_TARGET, "👨‍🔧 --- XMRIG NEW http port {}", &http_api_port);
         Self {
             node_connection: None,
             monero_address: None,
@@ -144,7 +147,7 @@ impl ProcessAdapter for XmrigAdapter {
         for extra_option in &self.extra_options {
             args.push(extra_option.clone());
         }
-
+        info!(target: LOG_TARGET, "👨‍🔧 --- XMRIG spawn inner url client {}", format!("http://127.0.0.1:{}", self.http_api_port));
         Ok((
             ProcessInstance {
                 shutdown: xmrig_shutdown,
