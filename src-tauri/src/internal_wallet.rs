@@ -139,7 +139,12 @@ impl InternalWallet {
             Some(p) => p.clone(),
             None => return Err(anyhow!("No config path found")),
         };
-        let passphrase = CredentialManager::default_with_dir(path)
+
+        let path_parent = path
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+
+        let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
             .get_credentials()?
             .tari_seed_passphrase;
 

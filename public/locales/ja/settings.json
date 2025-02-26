@@ -52,6 +52,7 @@
   "importing-wallet-copy": "ウォレットがインポートされると、Tari Universe は自動的に再起動します",
   "invalid-seed-words": "スペースで区切って24の単語を入力してください",
   "invalid-stats-server-port": "無効な統計サーバーポート",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
