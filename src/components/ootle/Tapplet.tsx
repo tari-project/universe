@@ -1,4 +1,5 @@
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
+import { useUIStore } from '@app/store/useUIStore';
 import { TappletProvider } from '@app/types/ootle/TappletProvider';
 import { useCallback, useEffect, useRef } from 'react';
 
@@ -10,6 +11,8 @@ interface TappletProps {
 export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
     const runTransaction = useTappletProviderStore((s) => s.runTransaction);
+    const addTransaction = useTappletProviderStore((s) => s.addTransaction);
+    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     function sendWindowSize() {
         if (tappletRef.current) {
@@ -34,6 +37,13 @@ export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
             }
         } else if (event.data.type === 'provider-call') {
             console.info('🤝 [TU Tapplet][handle msg] event data:', event.data);
+            console.info('🤝 [TU Tapplet][handle msg] TX ADDED');
+            if (event.data.methodName === 'submitTransaction') {
+                addTransaction(event);
+                setDialogToShow('txSimulation');
+                // runTappletTxSimulation(event);
+                return;
+            }
             runTappletTx(event);
         }
     }
@@ -44,6 +54,16 @@ export const Tapplet: React.FC<TappletProps> = ({ source, provider }) => {
         },
         [runTransaction]
     );
+
+    // const runTappletTxSimulation = useCallback(
+    //     async (event: MessageEvent) => {
+    //         console.warn('SIIIIMULATION run TX');
+    //         const { balanceUpdates, txSimulation } = await runSimulation(event.data.id);
+    //         console.warn('SIIIIMULATION RES TX', txSimulation);
+    //         console.warn('SIIIIMULATION RES BALANCES', balanceUpdates);
+    //     },
+    //     [runSimulation]
+    // );
 
     useEffect(() => {
         window.addEventListener('resize', sendWindowSize);

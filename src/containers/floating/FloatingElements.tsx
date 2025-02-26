@@ -13,6 +13,7 @@ import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
+import TappletTransactionDialog from './TappletTransactionDialog/TappletTransactionDialog.tsx';
 import { memo } from 'react';
 
 const environment = import.meta.env.MODE;
@@ -32,6 +33,7 @@ const FloatingElements = memo(function FloatingElements() {
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
+            <TappletTransactionDialog />
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );
