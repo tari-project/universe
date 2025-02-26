@@ -51,6 +51,7 @@
   "importing-wallet-copy": "Tari Universe будет автоматически перезапущен, когда Ваш кошелек будет импортирован",
   "invalid-seed-words": "Введите 24 слова, разделенные пробелами",
   "invalid-stats-server-port": "Неверный порт сервера статистики",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, что Вы подключены к форку, а не к основной цепочке. Любые выигранные Вами блоки могут быть аннулированы.",
   "last-block-added-time": "Время добавления последнего блока в цепь",

@@ -51,6 +51,7 @@
   "importing-wallet-copy": "지갑이 가져오면 Tari Universe가 자동으로 재시작됩니다",
   "invalid-seed-words": "공백으로 구분된 24개의 단어를 입력하세요",
   "invalid-stats-server-port": "잘못된 통계 서버 포트",
+  "invalid-stats-server-port-empty": "Stats server port cannot be empty",
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
