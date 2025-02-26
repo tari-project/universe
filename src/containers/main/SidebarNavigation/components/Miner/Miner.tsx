@@ -1,24 +1,19 @@
-import ModeSelect from '@app/containers/main/SideBar/Miner/components/ModeSelect';
 import { useTheme } from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+
+import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+import { useMiningStatesSync } from '@app/hooks';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-
+import ModeSelect from './components/ModeSelect.tsx';
 import Tile from './components/Tile.tsx';
+import { ExpandableTile } from './components/ExpandableTile.tsx';
+import { ExpandableTileItem, ExpandedContentTile } from './components/ExpandableTile.styles.ts';
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
-
-import { useMiningStatesSync } from '@app/hooks';
-
-import { ExpandableTile } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.tsx';
-import {
-    ExpandableTileItem,
-    ExpandedContentTile,
-} from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
-import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Miner() {
     useMiningStatesSync();

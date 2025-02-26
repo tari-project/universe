@@ -32,21 +32,26 @@ export default function Wallet() {
 
     const [showHistory, setShowHistory] = useState(false);
 
-    const handleShowClick = useCallback(async () => {
-        if (!showHistory) {
-            await fetchCoinbaseTransactions(false, 20);
-        }
-
-        setShowHistory((c) => {
-            if (!c) {
-                setRewardCount(undefined);
+    const handleShowClick = useCallback(
+        async (e) => {
+            e.stopPropagation();
+            if (!showHistory) {
+                await fetchCoinbaseTransactions(false, 20);
             }
 
-            return !c;
-        });
-    }, [fetchCoinbaseTransactions, setRewardCount, showHistory]);
+            setShowHistory((c) => {
+                if (!c) {
+                    setRewardCount(undefined);
+                }
 
-    const handleSyncButtonClick = () => {
+                return !c;
+            });
+        },
+        [fetchCoinbaseTransactions, setRewardCount, showHistory]
+    );
+
+    const handleSyncButtonClick = (e) => {
+        e.stopPropagation();
         setShowPaperWalletModal(true);
     };
 

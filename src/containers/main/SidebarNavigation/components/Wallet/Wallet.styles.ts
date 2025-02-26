@@ -14,15 +14,12 @@ export const WalletContainer = styled(m.div)`
     background-position: top left;
     padding: 10px;
     border-radius: 20px;
-    position: absolute;
-    bottom: 12px;
-    left: 10px;
     width: 328px;
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
     max-height: 508px;
     min-height: 178px;
     z-index: 2;
-
+    position: relative;
     justify-content: space-between;
 
     @media (max-height: 670px) {
@@ -92,7 +89,7 @@ export const HistoryContainer = styled(m.div)`
 `;
 
 export const HistoryPadding = styled('div')`
-    height: 310;
+    height: 310px;
     overflow: auto;
     width: 100%;
     padding: 0 5px 60px 5px;
@@ -161,6 +158,5 @@ export const SidebarCover = styled(m.div)`
     inset: 0;
     z-index: 1;
     background: rgba(0, 0, 0, 0.3);
-
     cursor: pointer;
 `;

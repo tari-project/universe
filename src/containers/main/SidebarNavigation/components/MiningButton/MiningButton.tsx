@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-
-import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
-import ButtonOrbitAnimation from '../../Miner/components/ButtonOrbitAnimation.tsx';
-import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
-import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/miningStoreActions.ts';
+
+import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
+import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
+import ButtonOrbitAnimation from '../Miner/components/ButtonOrbitAnimation.tsx';
+
+import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -23,6 +24,7 @@ export default function MiningButton() {
     const isAppSettingUp = useAppStateStore((s) => !s.setupComplete);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
+
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isMining = isCPUMining || isGPUMining;
