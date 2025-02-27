@@ -21,6 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::Result;
+use nix::sys::wait::{waitpid, WaitStatus};
+use tokio::task;
 
 pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
     #[cfg(target_os = "windows")]
@@ -46,7 +48,20 @@ pub async fn kill_process(pid: i32) -> Result<(), anyhow::Error> {
 
         let pid = Pid::from_raw(pid);
 
-        let _ = signal::kill(pid, Signal::SIGTERM);
+        signal::kill(pid, Signal::SIGTERM)?;
+        task::spawn_blocking(move || loop {
+            match waitpid(pid, None) {
+                Ok(WaitStatus::Exited(_, status)) => return Some(status),
+                Ok(WaitStatus::Signaled(_, _, _)) => {
+                    return None;
+                }
+                Ok(_) => std::thread::sleep(std::time::Duration::from_millis(100)),
+                Err(_) => return None,
+            }
+        })
+        .await?;
+
+        std::thread::sleep(std::time::Duration::from_millis(100));
     }
     Ok(())
 }
