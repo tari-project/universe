@@ -17,6 +17,7 @@ export const SidebarWrapper = styled(m.div)`
     flex-direction: column;
     border-radius: 20px;
     height: 100%;
+    position: relative;
     overflow: hidden;
 `;
 

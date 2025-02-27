@@ -1,4 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
+import { ViewType } from '@app/store/types.ts';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {
@@ -48,7 +49,7 @@ export const GlobalReset = createGlobalStyle`
     }
 `;
 
-export const GlobalStyle = createGlobalStyle`
+export const GlobalStyle = createGlobalStyle<{ $view?: ViewType }>`
     html,
     main,
     body,
@@ -95,7 +96,7 @@ export const GlobalStyle = createGlobalStyle`
 
     
     html {
-        background: ${({ theme }) => theme.palette.base};
+        background: ${({ theme }) => theme.palette.background.main};
     }
     #canvas {
         z-index: 0;
@@ -104,6 +105,9 @@ export const GlobalStyle = createGlobalStyle`
         pointer-events: auto;
         width: 100vw;
         background: none;
+        transition: visibility .1s ease;
+
+        visibility: ${({ $view }) => ($view === 'wallet' ? 'hidden' : 'visible')};
     }
 
     #root {

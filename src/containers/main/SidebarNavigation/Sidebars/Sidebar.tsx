@@ -10,7 +10,9 @@ import Miner from '../components/Miner/Miner.tsx';
 
 import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './Sidebar.styles.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
-import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
+import { SidebarCover, SidebarWrapper } from '../SidebarNavigation.styles.ts';
+import { setShowWalletHistory, useUIStore } from '@app/store/useUIStore.ts';
+import { AnimatePresence } from 'motion/react';
 
 const variants = {
     open: { opacity: 1, left: 0, transition: { duration: 0.3, ease: 'easeIn' } },
@@ -18,6 +20,12 @@ const variants = {
 };
 
 const Sidebar = memo(function Sidebar() {
+    const showSidebarCover = useUIStore((s) => s.showSidebarCover);
+
+    function handleCoverClick() {
+        setShowWalletHistory(false);
+    }
+
     return (
         <SidebarWrapper style={{ width: SB_WIDTH }} variants={variants} initial="closed" exit="closed" animate="open">
             <SidebarGrid>
@@ -34,6 +42,16 @@ const Sidebar = memo(function Sidebar() {
                     <Wallet />
                 </GridAreaBottom>
             </SidebarGrid>
+            <AnimatePresence>
+                {showSidebarCover ? (
+                    <SidebarCover
+                        onClick={handleCoverClick}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                    />
+                ) : null}
+            </AnimatePresence>
         </SidebarWrapper>
     );
 });
