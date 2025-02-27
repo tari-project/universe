@@ -24,7 +24,6 @@ import { ThemePalette } from '@app/theme/types.ts';
 import { colors as c } from './colors.ts';
 import { colorsAlpha, colorsAlpha as alpha } from './colorsAlpha.ts';
 import { darkGradients } from '@app/theme/gradients.ts';
-import { convertHexToRGBA } from '@app/utils';
 
 const darkPalette: ThemePalette = {
     mode: 'dark',
