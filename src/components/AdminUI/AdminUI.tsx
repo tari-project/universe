@@ -2,7 +2,6 @@
 import { MenuWrapper, MenuContent, ToggleButton } from './styles';
 import { useFloating, offset, shift, flip, useClick, useInteractions, useDismiss } from '@floating-ui/react';
 import { memo, useState } from 'react';
-import { ThemeGroup } from './groups/ThemeGroup';
 import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { ToastsGroup } from './groups/ToastsGroup';
@@ -36,7 +35,6 @@ const AdminUI = memo(function AdminUI() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                         >
-                            <ThemeGroup />
                             <DialogsGroup />
                             <GreenModalsGroup />
                             <ToastsGroup />

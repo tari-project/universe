@@ -19,6 +19,7 @@
         "@lottiefiles/dotlottie-react": "^0.13.0",
         "@tauri-apps/api": "^2.2.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.0",
+        "@tauri-apps/plugin-fs": "^2.2.0",
         "@tauri-apps/plugin-os": "^2.2.0",
         "@tauri-apps/plugin-shell": "^2.2.0",
         "emoji-regex": "^10.4.0",

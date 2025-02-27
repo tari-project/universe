@@ -7,6 +7,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@app/visuals.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
+import { useAppConfigStore } from './useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -37,10 +38,10 @@ type BlockchainVisualisationStoreState = State & Actions;
 
 const getSuccessTier = (earnings: number) => {
     const humanValue = earnings / 1_000_000;
-    if (humanValue < 100) {
+    if (humanValue < 26) {
         return 'success';
     }
-    if (humanValue <= 1000) {
+    if (humanValue <= 804) {
         return 'success2';
     }
     return 'success3';
@@ -56,16 +57,84 @@ export const useBlockchainVisualisationStore = create<BlockchainVisualisationSto
     setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
 
+function selectAudioAssetOnSuccessTier(tier: number) {
+    switch (tier) {
+        case 1:
+            return 'assets/Success_Level_01.wav';
+        case 2:
+            return 'assets/Success_Level_02.wav';
+        case 3:
+            return 'assets/Success_Level_03.wav';
+        default:
+            throw new Error('Invalid tier');
+    }
+}
+
+function getAudioElementId(tier: number) {
+    switch (tier) {
+        case 1:
+            return 'success1-player';
+        case 2:
+            return 'success2-player';
+        case 3:
+            return 'success3-player';
+        default:
+            throw new Error('Invalid tier');
+    }
+}
+
+export async function playNotificationAudio() {
+    playAudio('notification-player', 'assets/Notification.wav');
+}
+
+export async function playBlockWinAudio(successTier: number) {
+    const asset = selectAudioAssetOnSuccessTier(successTier);
+    const player = getAudioElementId(successTier);
+    playAudio(player, asset);
+}
+
+const playAudio = async (eleId: string, track: string) => {
+    try {
+        const { audio_enabled } = useAppConfigStore.getState();
+        if (!audio_enabled) {
+            return;
+        }
+
+        const blockWinAudioElement = document.getElementById(eleId) as HTMLAudioElement;
+        if (!blockWinAudioElement) {
+            throw new Error(`Audio element with id ${eleId} not found`);
+        }
+
+        const blobUrl = URL.createObjectURL(await fetch(track).then((res) => res.blob()));
+        if (blockWinAudioElement) {
+            blockWinAudioElement.setAttribute('src', blobUrl); // Required to make it work on an AppImage bundle
+        }
+
+        if (blockWinAudioElement.currentTime !== 0) return;
+        blockWinAudioElement.onended = () => {
+            blockWinAudioElement.currentTime = 0;
+            URL.revokeObjectURL(blobUrl);
+        };
+        blockWinAudioElement.play();
+    } catch (err) {
+        console.error(`Failed to play block win sound: ${err}`);
+    }
+};
+
+export const initAnimationAudio = () => {
+    window.glApp.initAudio(playNotificationAudio, (tier: number) => playBlockWinAudio(tier));
+};
+
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
     const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
     const earnings = coinbase_transaction.amount;
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
+    const successTier = getSuccessTier(earnings);
 
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
-        const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
         useBlockchainVisualisationStore.setState({ earnings });
@@ -87,6 +156,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }));
     }
 };
+
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);

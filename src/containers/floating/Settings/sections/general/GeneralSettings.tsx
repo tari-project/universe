@@ -9,6 +9,7 @@ import StartApplicationOnBootSettings from './StartApplicationOnBootSettings.tsx
 import AutoUpdate from './AutoUpdate.tsx';
 import PreReleaseSettings from './PreReleaseSettings.tsx';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
+import AudioSettings from './AudioSettings.tsx';
 
 export const GeneralSettings = () => {
     return (
@@ -20,6 +21,7 @@ export const GeneralSettings = () => {
             <LanguageSettings />
             <ThemeSettings />
             <VisualMode />
+            <AudioSettings />
             <LogsSettings />
             <SettingsGroupWrapper $advanced>
                 <AppDataSettings />

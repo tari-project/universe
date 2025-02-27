@@ -8,6 +8,7 @@ import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.
 import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
+import { initAnimationAudio } from '@app/store/useBlockchainVisualisationStore.ts';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
@@ -18,8 +19,9 @@ export default function AppEffects() {
         async function initialize() {
             await fetchAppConfig();
             await setMiningNetwork();
+            initAnimationAudio();
         }
-        void initialize();
+        void initialize().catch((e) => console.error('Failed to initialize UI config: ', e));
     }, []);
 
     useDetectMode();
