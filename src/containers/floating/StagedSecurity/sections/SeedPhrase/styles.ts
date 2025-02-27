@@ -135,7 +135,7 @@ export const Checkbox = styled('div')<{ $checked: boolean }>`
     ${({ $checked }) =>
         $checked &&
         css`
-            background: #fff;
+            background: ${({ theme }) => theme.palette.base};
             opacity: 1;
         `}
 `;

@@ -50,7 +50,7 @@ export default function Invite() {
                 <LinkIcon />
 
                 <TextWrapper>
-                    <Title>{t('inviteFirends')}</Title>
+                    <Title>{t('inviteFriends')}</Title>
                     <Text>{t('inviteFriendsText')}</Text>
                 </TextWrapper>
 

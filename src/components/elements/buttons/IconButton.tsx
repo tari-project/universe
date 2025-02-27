@@ -2,7 +2,7 @@ import { ButtonHTMLAttributes } from 'react';
 import styled, { css } from 'styled-components';
 import { ButtonSize } from './button.types.ts';
 
-export interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     size?: ButtonSize;
 }
 interface StyleProps {
@@ -12,6 +12,7 @@ const BaseIconButton = styled.button<StyleProps>`
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
     height: 34px;
     width: 34px;
     border-radius: 100%;
@@ -22,6 +23,7 @@ const BaseIconButton = styled.button<StyleProps>`
     }
     &:disabled {
         opacity: 0.3;
+        pointer-events: none;
     }
 
     ${({ $size }) =>
