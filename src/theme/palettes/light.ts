@@ -38,6 +38,8 @@ const lightPalette: ThemePalette = {
             shadow: colorsAlpha.tariPurpleAlpha[10],
             wisp: colorsAlpha.tariPurpleAlpha[5],
             contrast: '#FFFFFF',
+            accent: c.grey[700],
+            disabled: colorsAlpha.darkAlpha[5],
         },
         secondary: {
             main: c.grey[150],

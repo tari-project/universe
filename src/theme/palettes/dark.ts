@@ -22,8 +22,9 @@
 
 import { ThemePalette } from '@app/theme/types.ts';
 import { colors as c } from './colors.ts';
-import { colorsAlpha as alpha } from './colorsAlpha.ts';
+import { colorsAlpha, colorsAlpha as alpha } from './colorsAlpha.ts';
 import { darkGradients } from '@app/theme/gradients.ts';
+import { convertHexToRGBA } from '@app/utils';
 
 const darkPalette: ThemePalette = {
     mode: 'dark',
@@ -36,8 +37,10 @@ const darkPalette: ThemePalette = {
             dark: c.tariPurple[950],
             light: c.tariPurple[400],
             shadow: alpha.tariPurpleAlpha[20],
-            wisp: alpha.tariPurpleAlpha[10],
+            wisp: alpha.tariPurpleAlpha[20],
             contrast: '#FFFFFF',
+            disabled: colorsAlpha.lightAlpha[10],
+            accent: c.grey[300],
         },
         secondary: {
             main: c.green[600],

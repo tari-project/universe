@@ -9,23 +9,32 @@ import Heading from '../components/Heading.tsx';
 import Miner from '../components/Miner/Miner.tsx';
 
 import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './Sidebar.styles.ts';
+import { SB_WIDTH } from '@app/theme/styles.ts';
+import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
+
+const variants = {
+    open: { opacity: 1, left: 0, transition: { duration: 0.3, ease: 'easeIn' } },
+    closed: { opacity: 0.5, left: -50, transition: { duration: 0.05, ease: 'easeOut' } },
+};
 
 const Sidebar = memo(function Sidebar() {
     return (
-        <SidebarGrid>
-            <GridAreaTop>
-                <Heading />
-                <MiningButton />
-                <LostConnectionAlert />
-                <OrphanChainAlert />
-                <Miner />
-            </GridAreaTop>
-            <GridAreaBottom>
-                <AirdropGiftTracker />
-                <WalletSpacer />
-                <Wallet />
-            </GridAreaBottom>
-        </SidebarGrid>
+        <SidebarWrapper style={{ width: SB_WIDTH }} variants={variants} initial="closed" exit="closed" animate="open">
+            <SidebarGrid>
+                <GridAreaTop>
+                    <Heading />
+                    <MiningButton />
+                    <LostConnectionAlert />
+                    <OrphanChainAlert />
+                    <Miner />
+                </GridAreaTop>
+                <GridAreaBottom>
+                    <AirdropGiftTracker />
+                    <WalletSpacer />
+                    <Wallet />
+                </GridAreaBottom>
+            </SidebarGrid>
+        </SidebarWrapper>
     );
 });
 

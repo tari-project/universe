@@ -2,12 +2,12 @@ import styled, { css } from 'styled-components';
 import clouds from '@app/assets/backgrounds/clouds.png';
 
 export const SB_MINI_WIDTH = 78;
-export const SB_WIDTH = 358;
+export const SB_WIDTH = 348;
 export const SB_SPACING = 20;
 
 export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     display: grid;
-    grid-template-columns: ${`${SB_WIDTH + SB_SPACING}px`} auto;
+    grid-template-columns: ${`${SB_WIDTH + SB_MINI_WIDTH + SB_SPACING}px`} auto;
     position: relative;
     gap: 20px;
     padding: 20px;

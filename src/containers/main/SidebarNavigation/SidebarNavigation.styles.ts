@@ -1,17 +1,23 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { SB_WIDTH } from '@app/theme/styles.ts';
 import { convertHexToRGBA } from '@app/utils';
+import { SB_SPACING } from '@app/theme/styles.ts';
+
+export const SidebarNavigationWrapper = styled(m.div)`
+    height: 100%;
+    position: relative;
+    display: flex;
+    gap: ${SB_SPACING}px;
+`;
 
 export const SidebarWrapper = styled(m.div)`
+    pointer-events: all;
     background: ${({ theme }) => theme.palette.background.default};
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     flex-direction: column;
     border-radius: 20px;
-    position: relative;
     height: 100%;
     overflow: hidden;
-    pointer-events: all;
 `;
 
 export const SidebarCover = styled(m.div)`

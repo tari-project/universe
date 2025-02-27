@@ -203,8 +203,6 @@
             <canvas id="canvas" style="opacity: 0"></canvas>
             <script type="module" src="src/main.tsx"></script>
             <script>
-                import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.js';
-
                 let time;
                 let lastRender;
                 let targetFPS = 40;
@@ -250,7 +248,9 @@
                 }
 
                 function onResize() {
-                    const sidebarOffset = SB_WIDTH + SB_SPACING; // sidebar + padding
+                    const SB_MINI_WIDTH = 78;
+                    const SB_SPACING = 20;
+                    const sidebarOffset = SB_MINI_WIDTH + SB_SPACING; // sidebar + padding
                     glApp.properties.cameraOffsetX = sidebarOffset / window.innerWidth;
                     glApp.setSize(window.innerWidth, window.innerHeight);
                 }
