@@ -6,12 +6,13 @@ export const SB_WIDTH = 348;
 export const SB_SPACING = 20;
 
 export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
-    display: grid;
-    grid-template-columns: ${`${SB_WIDTH + SB_MINI_WIDTH + SB_SPACING}px`} auto;
+    display: flex;
+    justify-content: space-between;
     position: relative;
     gap: 20px;
     padding: 20px;
-    height: 100%;
+    height: 100vh;
+    width: 100vw;
 
     &:after {
         content: '';
