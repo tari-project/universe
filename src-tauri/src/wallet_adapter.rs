@@ -139,6 +139,7 @@ impl ProcessAdapter for WalletAdapter {
                     .as_ref()
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
+            // "get-balance".to_string()
         ];
 
         let peer_data_folder = working_dir
@@ -168,6 +169,10 @@ impl ProcessAdapter for WalletAdapter {
                 "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
                 key = network.as_key_str(),
             ));
+            // args.push(format!(
+                // "send-minotari 10 32Cqo4dDjLhCGd2MnorEf3wGAyAe5rvRgFFE34xsDCzSXXruHtfwztThYxDEJmcrTb7BDPJEfEWcv7jVvQi3VzsB5dd"
+                // "get-balance"
+            // ));
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {

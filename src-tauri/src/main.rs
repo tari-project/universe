@@ -936,12 +936,6 @@ struct UniverseAppState {
     events_manager: Arc<EventsManager>,
 }
 
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-    args: Vec<String>,
-    cwd: String,
-}
-
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 struct FEPayload {
     token: Option<String>,
