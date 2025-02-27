@@ -4,7 +4,7 @@ import { Theme } from '@app/theme/types.ts';
 import { setAnimationProperties } from '@app/visuals.ts';
 import { useAppConfigStore } from './useAppConfigStore.ts';
 
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'keyring'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 type DialogType = DialogTypeTuple[number];
 

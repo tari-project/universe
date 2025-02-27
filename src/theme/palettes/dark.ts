@@ -34,7 +34,7 @@ const darkPalette: ThemePalette = {
         primary: {
             main: c.tariPurple[900],
             dark: c.tariPurple[950],
-            light: c.tariPurple[400],
+            light: c.tariPurple[300],
             shadow: alpha.tariPurpleAlpha[20],
             wisp: alpha.tariPurpleAlpha[10],
             contrast: '#FFFFFF',
@@ -69,10 +69,10 @@ const darkPalette: ThemePalette = {
         },
         warning: {
             main: c.orange[500],
-            dark: c.orange[700],
+            dark: c.orange[600],
             light: c.orange[400],
             contrast: c.orange[100],
-            wisp: alpha.warningDarkAlpha[5],
+            wisp: alpha.warningDarkAlpha[10],
         },
         error: {
             main: c.error[400],

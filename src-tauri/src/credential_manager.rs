@@ -60,6 +60,7 @@ const KEYCHAIN_USERNAME_LEGACY: &str = "internal_wallet";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 
 pub static KEYRING_ACCESSED: AtomicBool = AtomicBool::new(false);
+pub static USING_FALLBACK: AtomicBool = AtomicBool::new(false);
 
 pub struct CredentialManager {
     service_name: String,
@@ -130,7 +131,11 @@ impl CredentialManager {
     }
 
     fn use_fallback(&self) -> bool {
-        self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists()
+        let use_fallback =
+            self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists();
+        USING_FALLBACK.store(use_fallback, Ordering::SeqCst);
+
+        use_fallback
     }
 
     fn set_fallback_mode(&self) -> bool {

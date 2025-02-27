@@ -6,7 +6,7 @@ import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
-import { setUITheme } from '@app/store/useUIStore.ts';
+import { setUITheme, useUIStore } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
 
@@ -307,6 +307,14 @@ export const fetchAppConfig = async () => {
     try {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
+
+        const noKeychain = appConfig.keyring_fallback || !appConfig.keyring_accessed;
+
+        if (noKeychain) {
+            const setDialogToShow = useUIStore.getState().setDialogToShow;
+            setDialogToShow('keyring');
+        }
+
         const configTheme = appConfig.display_mode?.toLowerCase();
         const canvasElement = document.getElementById('canvas');
         if (canvasElement && !appConfig.visual_mode) {
