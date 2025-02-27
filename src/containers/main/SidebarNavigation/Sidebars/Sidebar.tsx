@@ -1,12 +1,12 @@
 import { memo } from 'react';
 
 import AirdropGiftTracker from '@app/containers/main/Airdrop/AirdropGiftTracker/AirdropGiftTracker.tsx';
-import OrphanChainAlert from './components/OrphanChainAlert/OrphanChainAlert.tsx';
-import LostConnectionAlert from './components/LostConnectionAlert.tsx';
-import MiningButton from './components/MiningButton/MiningButton.tsx';
-import Wallet from './components/Wallet/Wallet.tsx';
-import Heading from './components/Heading.tsx';
-import Miner from './components/Miner/Miner.tsx';
+import OrphanChainAlert from '../components/OrphanChainAlert/OrphanChainAlert.tsx';
+import LostConnectionAlert from '../components/LostConnectionAlert.tsx';
+import MiningButton from '../components/MiningButton/MiningButton.tsx';
+import Wallet from '../components/Wallet/Wallet.tsx';
+import Heading from '../components/Heading.tsx';
+import Miner from '../components/Miner/Miner.tsx';
 
 import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './Sidebar.styles.ts';
 
