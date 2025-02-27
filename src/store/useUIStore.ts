@@ -1,5 +1,5 @@
 import { create } from './create';
-import { backgroundType, viewType } from './types.ts';
+import { ViewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 import { setAnimationProperties } from '@app/visuals.ts';
 import { useAppConfigStore } from './useAppConfigStore.ts';
@@ -10,8 +10,7 @@ type DialogType = DialogTypeTuple[number];
 
 interface State {
     theme: Theme;
-    background: backgroundType;
-    view: viewType;
+    view: ViewType;
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
@@ -23,7 +22,6 @@ interface State {
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
-    setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
@@ -38,8 +36,7 @@ const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-s
 const initialState: State = {
     isWebglNotSupported: false,
     theme: initialDarkMode ? 'dark' : 'light',
-    background: 'onboarding',
-    view: 'setup',
+    view: 'mining',
     sidebarOpen: false,
     dialogToShow: null,
     showExperimental: false,
@@ -50,7 +47,6 @@ const initialState: State = {
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
