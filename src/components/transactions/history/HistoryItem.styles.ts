@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
+import { convertHexToRGBA } from '@app/utils';
 
 export const PaddingWrapper = styled.div`
     padding: 3px 0;
@@ -17,8 +18,8 @@ export const Wrapper = styled(m.div)`
     overflow: hidden;
     position: relative;
 
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
+    box-shadow: 0 2px 7px 0 ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
 
     flex-shrink: 0;
     flex-grow: 0;
@@ -102,7 +103,7 @@ export const HoverWrapper = styled(m.div)`
     inset: 0;
     z-index: 4;
     transition: background-color 2s ease;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
     height: 100%;
 `;
 
@@ -113,7 +114,7 @@ export const ReplayButton = styled.button`
     width: 31px;
     height: 31px;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.15)};
     background-color: ${({ theme }) => theme.colors.grey[600]};
     color: ${({ theme }) => theme.palette.text.contrast};
     box-sizing: border-box;
@@ -159,9 +160,9 @@ export const FlexButton = styled.button`
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0);
+    box-shadow: inset 0 0 0 2px ${({ theme }) => convertHexToRGBA(theme.palette.base, 0)};
     &:hover {
-        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+        box-shadow: inset 0 0 0 2px ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.4)};
     }
 `;
 

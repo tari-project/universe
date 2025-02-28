@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
-import { SectionTitle } from './WalletPageElements.styles.ts';
+import { SectionTitle } from '../WalletPageElements.styles.ts';
 import { BalanceWrapper } from './Balance.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 

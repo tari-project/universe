@@ -1,10 +1,9 @@
+import { memo, useCallback } from 'react';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
-import InfiniteScroll from 'react-infinite-scroll-component';
-
 import HistoryItem from './HistoryItem';
-import { memo, useCallback } from 'react';
-import { ListWrapper } from '@app/components/transactions/TxHistory.styles.ts';
+import { ListWrapper } from './TxHistory.styles.ts';
 
 const TXHistory = () => {
     const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);

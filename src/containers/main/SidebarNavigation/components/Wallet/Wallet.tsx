@@ -8,7 +8,6 @@ import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
-import History from '@app/components/transactions/History.tsx';
 
 import { CornerButton, CornerButtonBadge, ScrollMask, WalletContainer, WalletCornerButtons } from './Wallet.styles.ts';
 import WalletBalanceMarkup from './WalletBalanceMarkup.tsx';
@@ -73,7 +72,6 @@ export default function Wallet() {
             <AnimatePresence mode="wait">
                 {showHistory ? (
                     <>
-                        <History />
                         <ScrollMask initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} />
                     </>
                 ) : null}

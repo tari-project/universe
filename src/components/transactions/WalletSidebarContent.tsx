@@ -1,15 +1,10 @@
 import { TabItem, Tabs } from '@app/components/Tabs/Tabs.tsx';
 
-import { Send } from '@app/components/transactions/Send.tsx';
-import { Receive } from '@app/components/transactions/Receive.tsx';
-import TXHistory from '@app/components/transactions/TxHistory.tsx';
+import { Send } from './tx-types/Send.tsx';
+import { Receive } from './tx-types/Receive.tsx';
+import TXHistory from './history/TxHistory.tsx';
 
 const tabItems: TabItem[] = [
-    {
-        id: 'history',
-        content: <TXHistory />,
-        title: 'History',
-    },
     {
         id: 'send',
         title: 'Send',
@@ -19,6 +14,11 @@ const tabItems: TabItem[] = [
         id: 'receive',
         title: 'Receive',
         content: <Receive />,
+    },
+    {
+        id: 'history',
+        content: <TXHistory />,
+        title: 'History',
     },
 ];
 
