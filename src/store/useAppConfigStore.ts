@@ -256,18 +256,23 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setTheme: async (themeArg) => {
         const display_mode = themeArg?.toLowerCase() as displayMode;
         const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const prevTheme = useAppConfigStore.getState().display_mode;
+        const prevTheme = useAppConfigStore.getState().display_mode?.toLowerCase() as displayMode;
         const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
 
         setUITheme(uiTheme);
 
         set({ display_mode });
-        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set theme', e);
-            appStateStore.setError('Could not change theme');
-            set({ display_mode: prevTheme });
-        });
+
+        const shouldUpdateConfigTheme = display_mode !== prevTheme;
+        if (shouldUpdateConfigTheme) {
+            invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set theme', e);
+                appStateStore.setError('Could not change theme');
+                set({ display_mode: prevTheme });
+                if (prevTheme) setUITheme(prevTheme === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : prevTheme);
+            });
+        }
     },
     setShowExperimentalSettings: async (showExperimentalSettings) => {
         set({ show_experimental_settings: showExperimentalSettings });
