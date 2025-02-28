@@ -49,7 +49,7 @@ export const GlobalReset = createGlobalStyle`
     }
 `;
 
-export const GlobalStyle = createGlobalStyle<{ $view?: ViewType }>`
+export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html,
     main,
     body,
@@ -98,7 +98,7 @@ export const GlobalStyle = createGlobalStyle<{ $view?: ViewType }>`
     html {
         background: ${({ theme }) => theme.palette.background.main};
     }
-    #canvas {
+    #tower-canvas {
         z-index: 0;
         top: 0;
         left: 0;
@@ -106,8 +106,7 @@ export const GlobalStyle = createGlobalStyle<{ $view?: ViewType }>`
         width: 100vw;
         background: none;
         transition: visibility .1s ease;
-
-        visibility: ${({ $view }) => ($view === 'wallet' ? 'hidden' : 'visible')};
+        visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
 
     #root {

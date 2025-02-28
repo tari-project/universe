@@ -57,7 +57,6 @@
             crossorigin
         />
 
-        <script type="module" crossorigin src="/assets/glApp.js"></script>
         <title>Tari Universe | Testnet</title>
         <style>
             /* Poppins Font Faces */
@@ -190,80 +189,14 @@
                 padding: 0;
                 margin: 0;
             }
-
-            #canvas {
+            #tower-canvas {
                 position: absolute;
                 pointer-events: auto;
             }
         </style>
     </head>
     <body>
-        <main id="main">
-            <div id="root"></div>
-            <canvas id="canvas" style="opacity: 0"></canvas>
-            <script type="module" src="src/main.tsx"></script>
-            <script>
-                let time;
-                let lastRender;
-                let targetFPS = 40;
-                let frameInterval = 1 / targetFPS;
-
-                function preload() {
-                    glApp.preload(
-                        {
-                            canvas: document.getElementById('canvas'),
-                            orbitTarget: document.getElementById('canvas'),
-                            ASSETS_PATH: '/assets/',
-                        },
-                        () => {
-                            init();
-                        }
-                    );
-                }
-
-                function init() {
-                    glApp.init();
-                    time = performance.now() / 1000;
-                    lastRender = time;
-                    window.addEventListener('resize', onResize);
-
-                    onResize();
-                    animate();
-                }
-
-                function animate() {
-                    let newTime = performance.now() / 1000;
-                    let dt = newTime - time;
-                    if (newTime - lastRender >= frameInterval) {
-                        lastRender = newTime;
-                        update(dt);
-                        time = newTime;
-                    }
-
-                    requestAnimationFrame(animate);
-                }
-
-                function update(dt) {
-                    glApp.render(dt);
-                }
-
-                function onResize() {
-                    const SB_MINI_WIDTH = 78;
-                    const SB_SPACING = 20;
-                    const sidebarOffset = SB_MINI_WIDTH + SB_SPACING; // sidebar + padding
-                    glApp.properties.cameraOffsetX = sidebarOffset / window.innerWidth;
-                    glApp.setSize(window.innerWidth, window.innerHeight);
-                }
-
-                document.addEventListener('DOMContentLoaded', () => {
-                    if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
-                        console.error('WebGL not supported!');
-                        return;
-                    }
-
-                    preload();
-                });
-            </script>
-        </main>
+        <div id="root"></div>
+        <script type="module" src="src/main.tsx"></script>
     </body>
 </html>

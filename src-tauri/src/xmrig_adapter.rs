@@ -51,6 +51,8 @@ impl XmrigNodeConnection {
                     format!("--url={}:{}", host_name, port),
                     // "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
+                    // We are using a local daemon, so retry as soon as possible
+                    "--retry-pause=1".to_string(),
                 ]
             }
             XmrigNodeConnection::Benchmark => {
