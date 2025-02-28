@@ -21,6 +21,7 @@ const _COLOUR_TYPES = [
 type ColourTuple = typeof _COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
 
+type StandardColour = Record<ColourKey, string>;
 type Colour = Partial<Record<ColourKey, string>>;
 type Gradients = Partial<Record<ColourKey, string>>;
 
@@ -36,7 +37,7 @@ interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;
-    primary: Colour;
+    primary: Omit<StandardColour, 'primary' | 'secondary' | 'default'>;
     secondary: Colour;
     success: Colour;
     warning: Colour;

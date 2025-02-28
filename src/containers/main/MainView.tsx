@@ -1,14 +1,14 @@
-import { DashboardContainer } from '@app/theme/styles.ts';
-import { Dashboard } from '@app/containers/main/Dashboard';
-import SideBar from '@app/containers/main/SideBar/SideBar.tsx';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { Dashboard } from '@app/containers/main/Dashboard';
+import SidebarNavigation from '@app/containers/main/SidebarNavigation/SidebarNavigation.tsx';
+import { DashboardContainer } from '@app/theme/styles.ts';
 
 export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
 
     return (
         <DashboardContainer $visualModeOff={!visualMode}>
-            <SideBar />
+            <SidebarNavigation />
             <Dashboard />
         </DashboardContainer>
     );

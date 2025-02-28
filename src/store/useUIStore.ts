@@ -1,5 +1,5 @@
 import { create } from './create';
-import { backgroundType, viewType } from './types.ts';
+import { ViewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './useAppConfigStore.ts';
@@ -15,18 +15,18 @@ type DialogType = DialogTypeTuple[number];
 
 interface State {
     theme: Theme;
-    background: backgroundType;
-    view: viewType;
+    view: ViewType;
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
     isWebglNotSupported: boolean;
+    showSidebarCover: boolean;
+    showWalletHistory: boolean;
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
-    setBackground: (background: State['background']) => void;
     setView: (view: State['view']) => void;
     setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
@@ -41,17 +41,17 @@ const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-s
 const initialState: State = {
     isWebglNotSupported: false,
     theme: initialDarkMode ? 'dark' : 'light',
-    background: 'onboarding',
-    view: 'setup',
+    view: 'mining',
     sidebarOpen: false,
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    showSidebarCover: false,
+    showWalletHistory: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setBackground: (background) => set({ background }),
     setView: (view) => set({ view }),
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
@@ -67,6 +67,8 @@ export const useUIStore = create<UIStoreState>()((set) => ({
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
 
+export const setShowWalletHistory = (showWalletHistory: boolean) =>
+    useUIStore.setState({ showWalletHistory, showSidebarCover: showWalletHistory });
 export const setUITheme = (theme: Theme) => {
     setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
     useUIStore.setState({ theme });

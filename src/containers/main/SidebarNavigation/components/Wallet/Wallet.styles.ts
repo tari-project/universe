@@ -14,15 +14,13 @@ export const WalletContainer = styled(m.div)`
     background-position: top left;
     padding: 10px;
     border-radius: 20px;
-    position: absolute;
-    bottom: 12px;
-    left: 10px;
     width: 328px;
     box-shadow: 4px 4px 10px 0 rgba(0, 0, 0, 0.3);
     max-height: 508px;
     min-height: 178px;
     z-index: 2;
-
+    bottom: 0;
+    position: absolute;
     justify-content: space-between;
 
     @media (max-height: 670px) {
@@ -77,26 +75,11 @@ export const ScrollMask = styled(m.div)`
     width: 100%;
     z-index: 1;
     opacity: 0.7;
+    overflow: hidden;
     border-bottom-left-radius: 20px;
     border-bottom-right-radius: 20px;
 `;
 
-export const HistoryContainer = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    width: 100%;
-    position: relative;
-
-    color: ${({ theme }) => theme.palette.base};
-`;
-
-export const HistoryPadding = styled('div')`
-    height: 310;
-    overflow: auto;
-    width: 100%;
-    padding: 0 5px 60px 5px;
-`;
 
 export const WalletCornerButtons = styled('div')`
     position: absolute;
@@ -155,12 +138,4 @@ export const CornerButtonBadge = styled.div`
         height: 11px;
         padding: 0 3px;
     }
-`;
-export const SidebarCover = styled(m.div)`
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: rgba(0, 0, 0, 0.3);
-
-    cursor: pointer;
 `;

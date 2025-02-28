@@ -1,11 +1,10 @@
 import styled from 'styled-components';
 
-export const MiningViewContainer = styled.div`
+export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    width: 100%;
+    overflow-y: auto;
     height: 100%;
+    width: 100%;
     position: relative;
-    overflow: hidden;
 `;

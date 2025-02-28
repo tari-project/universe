@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import * as m from 'motion/react-m';
+import { convertHexToRGBA } from '@app/utils';
 
 export const PaddingWrapper = styled.div`
     padding: 3px 0;
@@ -17,12 +18,11 @@ export const Wrapper = styled(m.div)`
     overflow: hidden;
     position: relative;
 
-    background: rgba(255, 255, 255, 0.07);
-    box-shadow: 0 4px 65px 0 rgba(90, 90, 90, 0.2);
+    background: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
+    box-shadow: 0 2px 7px 0 ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
 
     flex-shrink: 0;
     flex-grow: 0;
-    max-height: 269px;
 
     &:hover {
         .hover-target {
@@ -68,7 +68,7 @@ export const InfoWrapper = styled.div`
     line-height: 1.3;
     letter-spacing: -0.26px;
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.text.primary};
     }
     p {
         font-weight: 600;
@@ -84,13 +84,14 @@ export const EarningsWrapper = styled.div`
     font-weight: 600;
     font-size: 16px;
     transition: opacity 0.2s ease-in;
+
     ${Wrapper}:hover & {
         opacity: 0.2;
     }
 `;
 
 export const ListLabel = styled.div`
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 11px;
     font-style: normal;
     font-weight: 500;
@@ -102,7 +103,7 @@ export const HoverWrapper = styled(m.div)`
     inset: 0;
     z-index: 4;
     transition: background-color 2s ease;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
     height: 100%;
 `;
 
@@ -113,9 +114,9 @@ export const ReplayButton = styled.button`
     width: 31px;
     height: 31px;
     justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.15)};
     background-color: ${({ theme }) => theme.colors.grey[600]};
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.contrast};
     box-sizing: border-box;
     transition: opacity 0.2s ease;
 
@@ -154,14 +155,14 @@ export const FlexButton = styled.button`
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
     position: relative;
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
     cursor: pointer;
-    box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0);
+    box-shadow: inset 0 0 0 2px ${({ theme }) => convertHexToRGBA(theme.palette.base, 0)};
     &:hover {
-        box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
+        box-shadow: inset 0 0 0 2px ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.4)};
     }
 `;
 
@@ -176,7 +177,7 @@ export const GemPill = styled.div`
     gap: 4px;
 
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.text.contrast};
         display: flex;
         font-size: 10px;
         font-weight: 600;
