@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { TabItem } from './Tabs.tsx';
 
 const Wrapper = styled.div`
     display: grid;
@@ -19,16 +20,16 @@ const NavButton = styled.button<{ $isActive?: boolean }>`
     }
 `;
 interface TabNavProps {
-    items: string[];
+    items: TabItem[];
     currentIndex: number;
     onClick: (index: number) => void;
 }
 function TabNav({ items, currentIndex, onClick }: TabNavProps) {
     return (
         <Wrapper>
-            {items.map((item, i) => (
-                <NavButton $isActive={currentIndex === i} key={`item:${i}-${item}`} onClick={() => onClick(i)}>
-                    {item}
+            {items.map(({ id, title }, i) => (
+                <NavButton $isActive={currentIndex === i} key={`item:${i}-${id}`} onClick={() => onClick(i)}>
+                    {title}
                 </NavButton>
             ))}
         </Wrapper>

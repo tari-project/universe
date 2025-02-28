@@ -1,9 +1,10 @@
 import * as m from 'motion/react-m';
-import { useMotionValue } from 'motion/react';
 import styled from 'styled-components';
+import { ReactNode, useRef } from 'react';
+import { TabItem } from '@app/components/Tabs/Tabs.tsx';
 
 const Track = styled(m.div)`
-    width: 200px;
+    width: 100%;
     display: flex;
 `;
 
@@ -15,46 +16,40 @@ const ItemWrapper = styled(m.div)`
     align-items: center;
     justify-content: space-between;
     background-color: #0d0d0d;
-    cursor: grab;
 `;
 
 const SPRING_OPTIONS = { type: 'spring', stiffness: 300, damping: 30 };
 
 interface TabItemProps {
-    item: string;
+    children: ReactNode;
 }
-function TabItem({ item }: TabItemProps) {
+function Item({ children }: TabItemProps) {
     return (
         <ItemWrapper
             style={{
-                width: 200,
+                width: '100%',
                 height: '100%',
             }}
             transition={SPRING_OPTIONS}
         >
-            <div className="carousel-item-content">
-                <div className="carousel-item-title">{item}</div>
-            </div>
+            {children}
         </ItemWrapper>
     );
 }
 
-function TabContent({ items, currentIndex }: { items: string[]; currentIndex: number }) {
-    const trackItemOffset = 200;
-    const x = useMotionValue(0);
+interface TabContentProps {
+    items: TabItem[];
+    currentIndex: number;
+}
+
+function TabContent({ items, currentIndex }: TabContentProps) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const trackItemOffset = containerRef.current?.offsetWidth || 300;
+
     return (
-        <Track
-            style={{
-                width: 200,
-                perspective: 1000,
-                perspectiveOrigin: `${currentIndex * trackItemOffset + 200 / 2}px 50%`,
-                x: x.get(),
-            }}
-            animate={{ x: -(currentIndex * trackItemOffset) }}
-            transition={SPRING_OPTIONS}
-        >
-            {items.map((item, index) => {
-                return <TabItem key={index} item={item} />;
+        <Track ref={containerRef} animate={{ x: -(currentIndex * trackItemOffset) }} transition={SPRING_OPTIONS}>
+            {items.map(({ id, title, content }) => {
+                return <Item key={`item-content-${id}-${title}`}>{content}</Item>;
             })}
         </Track>
     );

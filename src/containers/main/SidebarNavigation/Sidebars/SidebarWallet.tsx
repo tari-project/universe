@@ -2,14 +2,25 @@ import { memo } from 'react';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import { SidebarGrid } from './SidebarWallet.styles.ts';
-import { Tabs } from '@app/components/Tabs/Tabs.tsx';
+import { TabItem, Tabs } from '@app/components/Tabs/Tabs.tsx';
 
 const variants = {
     open: { opacity: 1, right: 0, transition: { duration: 0.3, ease: 'easeIn' } },
     closed: { opacity: 0.5, right: -50, transition: { duration: 0.05, ease: 'easeOut' } },
 };
 
-const tabItems = ['send', 'receive', 'blaaa'];
+const tabItems: TabItem[] = [
+    {
+        id: 'send',
+        title: 'Send',
+        content: <p>{`meow`}</p>,
+    },
+    {
+        id: 'receive',
+        title: 'Receiew',
+        content: <div>{`mmmeeeeemememeow`}</div>,
+    },
+];
 const SidebarWallet = memo(function SidebarWallet() {
     return (
         <SidebarWrapper
@@ -20,7 +31,7 @@ const SidebarWallet = memo(function SidebarWallet() {
             animate="open"
         >
             <SidebarGrid>
-                <Tabs items={tabItems} />
+                <Tabs tabItems={tabItems} />
             </SidebarGrid>
         </SidebarWrapper>
     );

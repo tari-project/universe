@@ -1,12 +1,11 @@
 import { TabNav } from '@app/components/Tabs/TabNav.tsx';
 import { TabContent } from '@app/components/Tabs/TabContent.tsx';
 import styled from 'styled-components';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 
 const TabsWrapper = styled.div`
-    width: 200px;
-    height: 200px;
-    background: rgba(255, 192, 203, 0.31);
+    width: 100%;
+    height: 100%;
     align-items: center;
     display: flex;
     overflow: hidden;
@@ -17,17 +16,26 @@ const Wrapper = styled.div`
     align-items: center;
     flex-direction: column;
     position: relative;
-    border-radius: 24px;
+    padding: 1rem;
 `;
 
-export function Tabs({ items }: { items: string[] }) {
+export interface TabItem {
+    id: string;
+    title: string;
+    content: ReactNode;
+}
+
+interface TabsProps {
+    tabItems: TabItem[];
+}
+export function Tabs({ tabItems }: TabsProps) {
     const [currentIndex, setCurrentIndex] = useState<number>(0);
 
     return (
         <Wrapper>
-            <TabNav items={items} currentIndex={currentIndex} onClick={setCurrentIndex} />
+            <TabNav items={tabItems} currentIndex={currentIndex} onClick={setCurrentIndex} />
             <TabsWrapper>
-                <TabContent items={items} currentIndex={currentIndex} />
+                <TabContent items={tabItems} currentIndex={currentIndex} />
             </TabsWrapper>
         </Wrapper>
     );
