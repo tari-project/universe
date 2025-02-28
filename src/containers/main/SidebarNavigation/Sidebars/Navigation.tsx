@@ -65,7 +65,7 @@ const Navigation = memo(function Navigation() {
         if (miningActive) {
             setView('wallet');
         } else {
-            setSidebarOpen(!sidebarOpen);
+            handleActiveSidebar();
         }
     }
 

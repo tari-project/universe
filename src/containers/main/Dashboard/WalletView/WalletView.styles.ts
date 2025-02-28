@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const WalletViewContainer = styled.div`
     display: flex;
     flex-direction: column;
-    width: 100%;
+    width: 60%;
     position: relative;
     pointer-events: all;
     height: 100%;

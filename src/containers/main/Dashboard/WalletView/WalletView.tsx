@@ -6,6 +6,8 @@ const WalletView = memo(function WalletView() {
     return (
         <WalletViewContainer>
             <Balance />
+
+            <div style={{ textAlign: 'center', fontSize: 140 }}>{`👻`}</div>
         </WalletViewContainer>
     );
 });

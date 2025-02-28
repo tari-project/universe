@@ -21,7 +21,7 @@ const IconWrapper = styled.div`
 const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     display: flex;
     padding: ${({ $hasIcon }) => ($hasIcon ? `10px 20px 10px 40px` : `10px 20px`)};
-    background: ${({ theme }) => theme.palette.background.accent};
+    background: ${({ theme }) => theme.palette.background.paper};
     border-radius: 25px;
     width: 100%;
     box-sizing: border-box;
