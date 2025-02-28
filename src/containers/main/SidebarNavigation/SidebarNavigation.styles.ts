@@ -13,6 +13,8 @@ export const SidebarNavigationWrapper = styled(m.div)`
     display: flex;
     flex-shrink: 0;
     gap: ${SB_SPACING}px;
+    pointer-events: all;
+    z-index: 10;
 `;
 
 export const SidebarGrid = styled.div`
@@ -32,8 +34,13 @@ export const SidebarWrapper = styled(m.div)`
     flex-direction: column;
     border-radius: 20px;
     height: 100%;
+
     position: relative;
     overflow: hidden;
+
+    & * {
+        pointer-events: all;
+    }
 `;
 
 export const SidebarCover = styled(m.div)`
