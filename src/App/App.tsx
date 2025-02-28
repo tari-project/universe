@@ -62,6 +62,9 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 });
 
 export default function App() {
+    const isAppReady = useIsAppReady();
+    const isShuttingDown = useShuttingDown();
+
     const { t } = useTranslation('common', { useSuspense: false });
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
@@ -72,7 +75,7 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle />
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection />

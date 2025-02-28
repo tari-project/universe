@@ -1,5 +1,4 @@
 import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
-
 import { create } from './create';
 
 interface AppState {

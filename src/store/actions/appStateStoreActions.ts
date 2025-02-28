@@ -3,7 +3,7 @@ import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { startMining } from './miningStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
-import { setAnimationState } from '@app/visuals.ts';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 
@@ -56,16 +56,18 @@ export const setIsSettingsOpen = (value: boolean) => useAppStateStore.setState({
 export const setIssueReference = (issueReference: string) => useAppStateStore.setState({ issueReference });
 export const setReleaseNotes = (releaseNotes: string) => useAppStateStore.setState({ releaseNotes });
 export const setSetupComplete = async () => {
-    const visualMode = useAppConfigStore.getState().visual_mode;
-    if (visualMode) {
-        const canvas = document.getElementById('canvas');
-        if (canvas) {
-            canvas.style.opacity = '1';
+    // Proceed with auto mining when enabled
+    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
+    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+    const visual_mode = useAppConfigStore.getState().visual_mode;
+    if (visual_mode) {
+        try {
             setAnimationState('showVisual');
+        } catch (error) {
+            console.error('Failed to set animation state:', error);
         }
     }
-    // Proceed with auto mining when enabled
-    const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }

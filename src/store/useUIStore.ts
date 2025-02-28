@@ -6,6 +6,11 @@ const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicro
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 
+const sideBarWidth = 348;
+const sideBarPaddingBuffer = 20;
+export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
+export const TOWER_CANVAS_ID = 'tower-canvas';
+
 export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 
 interface UIStoreState {

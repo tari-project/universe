@@ -1,8 +1,11 @@
 import { create } from './create';
 import { AppConfig } from '../types/app-status.ts';
 
-type AppConfigStoreState = Partial<AppConfig>;
+type AppConfigStoreState = Partial<AppConfig> & {
+    visualModeToggleLoading: boolean;
+};
 const initialState: AppConfigStoreState = {
+    visualModeToggleLoading: false,
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',

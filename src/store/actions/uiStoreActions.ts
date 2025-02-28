@@ -1,5 +1,5 @@
 import { AdminShow, DialogType, useUIStore } from '@app/store/useUIStore.ts';
-import { setAnimationProperties } from '@app/visuals.ts';
+import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
