@@ -55,6 +55,7 @@ const lightPalette: ThemePalette = {
             accent: 'rgba(0,0,0,0.7)',
             disabled: c.grey[400],
             contrast: '#FFFFFF',
+            shadow: colorsAlpha.greyscaleAlpha[80],
         },
         background: {
             default: c.grey[50],

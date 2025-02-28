@@ -1,6 +1,7 @@
 import styled from 'styled-components';
-import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+import { SectionTitle } from './WalletPageElements.styles.ts';
 
 const Wrapper = styled.div`
     display: flex;
@@ -9,10 +10,11 @@ const Wrapper = styled.div`
 `;
 
 export function Balance() {
+    const { formattedLongBalance } = useTariBalance();
     return (
         <Wrapper>
-            <Typography>{`My Tari`}</Typography>
-            <WalletBalanceMarkup />
+            <SectionTitle>{`My Tari`}</SectionTitle>
+            {formattedLongBalance}
         </Wrapper>
     );
 }

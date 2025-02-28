@@ -55,6 +55,7 @@ const darkPalette: ThemePalette = {
             secondary: c.grey[400],
             disabled: 'rgba(255,255,255,0.4)',
             contrast: '#000000',
+            shadow: colorsAlpha.greyscaleAlpha[30],
         },
         background: {
             default: c.grey[900],

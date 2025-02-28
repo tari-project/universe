@@ -1,13 +1,11 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import CharSpinner from '@app/components/CharSpinner/CharSpinner.tsx';
-import { formatNumber, FormatPreset } from '@app/utils/formatters.ts';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-
-import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 import {
     BalanceVisibilityButton,
@@ -16,54 +14,30 @@ import {
     WalletBalanceWrapper,
 } from './Wallet.styles.ts';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 
 export default function WalletBalanceMarkup() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
-    const calculated_balance = useWalletStore((s) => s.calculated_balance);
-    const [showBalance, setShowBalance] = useState(true);
-    const [showLongBalance, setShowLongBalance] = useState(false);
-    const [animateNumbers, setShowAnimateNumbers] = useState(true);
-
-    const formatted = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
-    const formattedLong = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
+    const {
+        balanceDisplayValue,
+        formattedLongBalance,
+        isWalletScanning,
+        showBalance,
+        showLongBalance,
+        shouldAnimateBalance,
+        toggleBalanceVisibility,
+        toggleBalanceFormat,
+    } = useTariBalance();
 
     const sizingLong = useCallback(() => {
         const baseSize = 50;
         const step = 1.75;
         const maxLength = 20;
-        const length = Math.min(formattedLong.length, maxLength);
+        const length = Math.min(formattedLongBalance.length, maxLength);
         if (length <= 9) return baseSize;
         return baseSize - (length - 6) * step;
-    }, [formattedLong.length]);
-
-    const toggleBalanceVisibility = () => setShowBalance((prev) => !prev);
-    const isWalletScanning = !Number.isFinite(calculated_balance);
-    const displayValue = isWalletScanning ? '-' : showBalance ? formatted : '*****';
-
-    const handleMouseOver = useCallback(() => {
-        if (isWalletScanning) return;
-
-        setShowAnimateNumbers(false);
-        setShowLongBalance(true);
-    }, [isWalletScanning]);
-
-    const handleMouseOut = useCallback(() => {
-        if (isWalletScanning) return;
-
-        setShowAnimateNumbers(false);
-        setShowLongBalance(false);
-    }, [isWalletScanning]);
-
-    useEffect(() => {
-        if (!animateNumbers) {
-            const timer = setTimeout(() => {
-                setShowAnimateNumbers(true);
-            }, 300);
-
-            return () => clearTimeout(timer);
-        }
-    }, [animateNumbers]);
+    }, [formattedLongBalance.length]);
 
     return (
         <WalletBalanceContainer>
@@ -79,7 +53,10 @@ export default function WalletBalanceMarkup() {
                     )}
                 </BalanceVisibilityButton>
             </Stack>
-            <WalletBalanceWrapper onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}>
+            <WalletBalanceWrapper
+                onMouseOver={() => toggleBalanceFormat({ isMouseOver: true })}
+                onMouseOut={() => toggleBalanceFormat({ isMouseOver: false })}
+            >
                 {!isWalletScanning ? (
                     <AnimatePresence mode="popLayout">
                         {!showLongBalance || !showBalance || isWalletScanning ? (
@@ -90,10 +67,10 @@ export default function WalletBalanceMarkup() {
                                 key="compressed-number"
                             >
                                 <CharSpinner
-                                    value={displayValue}
+                                    value={balanceDisplayValue}
                                     variant="simple"
                                     fontSize={50}
-                                    animateNumbers={animateNumbers}
+                                    animateNumbers={shouldAnimateBalance}
                                 />
                             </WalletBalance>
                         ) : (
@@ -104,10 +81,10 @@ export default function WalletBalanceMarkup() {
                                 key="full-number"
                             >
                                 <CharSpinner
-                                    value={formattedLong}
+                                    value={formattedLongBalance}
                                     variant="simple"
                                     fontSize={sizingLong()}
-                                    animateNumbers={animateNumbers}
+                                    animateNumbers={shouldAnimateBalance}
                                 />
                             </WalletBalance>
                         )}
