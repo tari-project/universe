@@ -115,7 +115,9 @@ impl AutoLauncher {
                     auto_launcher.enable()?;
                     // To startup application as admin on windows, we need to create a task scheduler
                     #[cfg(target_os = "windows")]
-                    self.toggle_windows_admin_auto_launcher(true).await?;
+                    let _unused = self.toggle_windows_admin_auto_launcher(true).await.inspect_err(|e| {
+                        warn!(target: LOG_TARGET, "Failed to enable admin auto-launcher: {}", e)
+                    });
                 }
                 _ => {
                     auto_launcher.enable()?;
@@ -126,7 +128,9 @@ impl AutoLauncher {
             match PlatformUtils::detect_current_os() {
                 CurrentOperatingSystem::Windows => {
                     #[cfg(target_os = "windows")]
-                    self.toggle_windows_admin_auto_launcher(false).await?;
+                    let _unused = self.toggle_windows_admin_auto_launcher(false).await.inspect_err(|e| {
+                        warn!(target: LOG_TARGET, "Failed to disable admin auto-launcher: {}", e)
+                    });
                     auto_launcher.disable()?;
                 }
                 _ => {
