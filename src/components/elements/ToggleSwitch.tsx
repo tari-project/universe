@@ -10,6 +10,7 @@ const Wrapper = styled.label<{ $disabled?: boolean }>`
     ${({ $disabled }) =>
         $disabled &&
         css`
+            cursor: auto;
             pointer-events: none;
             opacity: 0.8;
         `}

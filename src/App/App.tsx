@@ -62,6 +62,8 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 });
 
 export default function App() {
+    const isAppReady = useIsAppReady();
+    const isShuttingDown = useShuttingDown();
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
 
@@ -75,7 +77,7 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle />
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection />
