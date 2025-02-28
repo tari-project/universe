@@ -102,7 +102,6 @@ impl TorAdapter {
     }
 
     pub fn get_tor_config(&self) -> TorConfig {
-        println!("get_tor_config: {:?}", self.config.clone());
         self.config.clone()
     }
 
