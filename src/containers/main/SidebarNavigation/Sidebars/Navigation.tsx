@@ -6,7 +6,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { WalletOutlineSVG } from '@app/assets/icons/wallet-outline.tsx';
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
-import { HoverIconWrapper, MiningIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
+import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -14,35 +14,9 @@ interface NavButtonProps {
     onClick?: () => void;
 }
 function NavButton({ children, isActive, onClick }: NavButtonProps) {
-    return (
-        <StyledIconButton variant="secondary" active={isActive} onClick={onClick}>
-            {children}
-        </StyledIconButton>
-    );
-}
-
-const transition = { rotate: { type: 'spring' }, opacity: { delay: 0.05 } };
-const Navigation = memo(function Navigation() {
-    const { setSidebarOpen, sidebarOpen, setView, view } = useUIStore((s) => ({
-        setSidebarOpen: s.setSidebarOpen,
-        sidebarOpen: s.sidebarOpen,
-        setView: s.setView,
-        view: s.view,
-    }));
-
-    const miningActive = view === 'mining';
-
-    function handleMiningClick() {
-        if (!miningActive) {
-            setView('mining');
-        } else {
-            setSidebarOpen(!sidebarOpen);
-            const offset = ((sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING) / window.innerWidth;
-            setAnimationProperties([{ property: 'cameraOffsetX', value: offset }]);
-        }
-    }
+    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const rotate = sidebarOpen ? '180deg' : '0deg';
-    const minerActiveIcon = miningActive ? (
+    const activeIcon = isActive ? (
         <>
             <HoverIconWrapper
                 whileHover={{ opacity: 1 }}
@@ -56,16 +30,48 @@ const Navigation = memo(function Navigation() {
             </HoverIconWrapper>
         </>
     ) : null;
+    return (
+        <StyledIconButton variant="secondary" active={isActive} onClick={onClick}>
+            {activeIcon}
+            <NavIconWrapper>{children}</NavIconWrapper>
+        </StyledIconButton>
+    );
+}
 
-    function handleWalletClick() {
-        setView('wallet');
+const transition = { rotate: { type: 'spring' }, opacity: { delay: 0.05 } };
+const Navigation = memo(function Navigation() {
+    const { setSidebarOpen, sidebarOpen, setView, view } = useUIStore((s) => ({
+        setSidebarOpen: s.setSidebarOpen,
+        sidebarOpen: s.sidebarOpen,
+        setView: s.setView,
+        view: s.view,
+    }));
+    const miningActive = view === 'mining';
+
+    function handleActiveSidebar() {
+        setSidebarOpen(!sidebarOpen);
+        const offset = ((sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING) / window.innerWidth;
+        setAnimationProperties([{ property: 'cameraOffsetX', value: offset }]);
     }
+
+    function handleMiningClick() {
+        if (!miningActive) {
+            setView('mining');
+        } else {
+            handleActiveSidebar();
+        }
+    }
+    function handleWalletClick() {
+        if (miningActive) {
+            setView('wallet');
+        } else {
+            setSidebarOpen(!sidebarOpen);
+        }
+    }
+
     const miningSection = (
         <NavButton onClick={handleMiningClick} isActive={miningActive}>
-            {minerActiveIcon}
-            <MiningIconWrapper>
-                <CubeOutlineSVG />
-            </MiningIconWrapper>
+            <CubeOutlineSVG />
         </NavButton>
     );
     const walletSection = (

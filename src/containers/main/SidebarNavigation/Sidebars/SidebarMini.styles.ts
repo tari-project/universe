@@ -11,7 +11,7 @@ export const MinimizedWrapper = styled.div`
     padding: 30px 0;
 `;
 
-export const MiningIconWrapper = styled.div`
+export const NavIconWrapper = styled.div`
     display: flex;
     flex-direction: column;
     transition: 0.2s ease;
@@ -28,7 +28,7 @@ export const HoverIconWrapper = styled(m.div)`
     z-index: 2;
 
     &:hover + {
-        & ${MiningIconWrapper} {
+        & ${NavIconWrapper} {
             opacity: 0;
         }
     }

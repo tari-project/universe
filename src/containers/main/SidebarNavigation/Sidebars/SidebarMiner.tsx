@@ -8,7 +8,7 @@ import Wallet from '../components/Wallet/Wallet.tsx';
 import Heading from '../components/Heading.tsx';
 import Miner from '../components/Miner/Miner.tsx';
 
-import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './Sidebar.styles.ts';
+import { GridAreaBottom, GridAreaTop, SidebarGrid, WalletSpacer } from './SidebarMiner.styles.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { SidebarCover, SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import { setShowWalletHistory, useUIStore } from '@app/store/useUIStore.ts';
@@ -19,7 +19,7 @@ const variants = {
     closed: { opacity: 0.5, left: -50, transition: { duration: 0.05, ease: 'easeOut' } },
 };
 
-const Sidebar = memo(function Sidebar() {
+const SidebarMiner = memo(function Sidebar() {
     const showSidebarCover = useUIStore((s) => s.showSidebarCover);
 
     function handleCoverClick() {
@@ -27,7 +27,13 @@ const Sidebar = memo(function Sidebar() {
     }
 
     return (
-        <SidebarWrapper style={{ width: SB_WIDTH }} variants={variants} initial="closed" exit="closed" animate="open">
+        <SidebarWrapper
+            style={{ width: SB_WIDTH, gridArea: 'miner' }}
+            variants={variants}
+            initial="closed"
+            exit="closed"
+            animate="open"
+        >
             <SidebarGrid>
                 <GridAreaTop>
                     <Heading />
@@ -56,4 +62,4 @@ const Sidebar = memo(function Sidebar() {
     );
 });
 
-export default Sidebar;
+export default SidebarMiner;

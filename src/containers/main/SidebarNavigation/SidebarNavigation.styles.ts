@@ -5,11 +5,26 @@ import { SB_SPACING } from '@app/theme/styles.ts';
 
 export const SidebarNavigationWrapper = styled(m.div)`
     height: 100%;
-    position: relative;
+    width: 100%;
+    top: 0;
+    left: 0;
+    padding: 20px;
+    position: absolute;
     display: flex;
+    flex-shrink: 0;
     gap: ${SB_SPACING}px;
 `;
 
+export const SidebarGrid = styled.div`
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: min-content auto min-content;
+    justify-items: stretch;
+    grid-template-areas: 'miner . wallet';
+`;
 export const SidebarWrapper = styled(m.div)`
     pointer-events: all;
     background: ${({ theme }) => theme.palette.background.default};
