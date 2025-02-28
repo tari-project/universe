@@ -228,11 +228,16 @@ export const setTheme = async (themeArg: displayMode) => {
     const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
     setUITheme(uiTheme);
     useAppConfigStore.setState({ display_mode });
-    invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-        console.error('Could not set theme', e);
-        setError('Could not change theme');
-        useAppConfigStore.setState({ display_mode: prevTheme });
-    });
+    const shouldUpdateConfigTheme = display_mode !== prevTheme;
+
+    if (shouldUpdateConfigTheme) {
+        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+            console.error('Could not set theme', e);
+            setError('Could not change theme');
+            useAppConfigStore.setState({ display_mode: prevTheme });
+            if (prevTheme) setUITheme(prevTheme === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : prevTheme);
+        });
+    }
 };
 export const setUseTor = async (useTor: boolean) => {
     useAppConfigStore.setState({ use_tor: useTor });
