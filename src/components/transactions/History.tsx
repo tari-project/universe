@@ -4,9 +4,11 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import InfiniteScroll from 'react-infinite-scroll-component';
 
 import { ListLabel } from './HistoryItem.styles';
-import { HistoryContainer, HistoryPadding } from './Wallet.styles';
+
 import HistoryItem from './HistoryItem';
 import { memo, useCallback } from 'react';
+import styled from 'styled-components';
+import * as m from 'motion/react-m';
 
 const container = {
     hidden: { opacity: 0, height: 0 },
@@ -15,6 +17,22 @@ const container = {
         height: 306,
     },
 };
+
+export const HistoryContainer = styled(m.div)`
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    width: 100%;
+    position: relative;
+    color: ${({ theme }) => theme.palette.base};
+`;
+
+export const HistoryPadding = styled('div')`
+    height: 310px;
+    overflow: auto;
+    width: 100%;
+    padding: 0 5px 60px 5px;
+`;
 
 const History = () => {
     const { t } = useTranslation('sidebar', { useSuspense: false });

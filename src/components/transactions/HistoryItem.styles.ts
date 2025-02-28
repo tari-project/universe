@@ -22,7 +22,6 @@ export const Wrapper = styled(m.div)`
 
     flex-shrink: 0;
     flex-grow: 0;
-    max-height: 269px;
 
     &:hover {
         .hover-target {
@@ -68,7 +67,7 @@ export const InfoWrapper = styled.div`
     line-height: 1.3;
     letter-spacing: -0.26px;
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.text.primary};
     }
     p {
         font-weight: 600;
@@ -84,13 +83,14 @@ export const EarningsWrapper = styled.div`
     font-weight: 600;
     font-size: 16px;
     transition: opacity 0.2s ease-in;
+
     ${Wrapper}:hover & {
         opacity: 0.2;
     }
 `;
 
 export const ListLabel = styled.div`
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 11px;
     font-style: normal;
     font-weight: 500;
@@ -115,7 +115,7 @@ export const ReplayButton = styled.button`
     justify-content: center;
     border: 1px solid rgba(255, 255, 255, 0.15);
     background-color: ${({ theme }) => theme.colors.grey[600]};
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.contrast};
     box-sizing: border-box;
     transition: opacity 0.2s ease;
 
@@ -154,7 +154,7 @@ export const FlexButton = styled.button`
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
     position: relative;
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
@@ -176,7 +176,7 @@ export const GemPill = styled.div`
     gap: 4px;
 
     span {
-        color: #fff;
+        color: ${({ theme }) => theme.palette.text.contrast};
         display: flex;
         font-size: 10px;
         font-weight: 600;

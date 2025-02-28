@@ -80,21 +80,6 @@ export const ScrollMask = styled(m.div)`
     border-bottom-right-radius: 20px;
 `;
 
-export const HistoryContainer = styled(m.div)`
-    display: flex;
-    flex-direction: column;
-    overflow-y: auto;
-    width: 100%;
-    position: relative;
-    color: ${({ theme }) => theme.palette.base};
-`;
-
-export const HistoryPadding = styled('div')`
-    height: 310px;
-    overflow: auto;
-    width: 100%;
-    padding: 0 5px 60px 5px;
-`;
 
 export const WalletCornerButtons = styled('div')`
     position: absolute;

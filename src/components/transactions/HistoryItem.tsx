@@ -20,7 +20,7 @@ import { TariSvg } from '@app/assets/icons/tari.tsx';
 import { useTranslation } from 'react-i18next';
 import { useMemo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import gemImage from '../../../Airdrop/AirdropGiftTracker/images/gem.png';
+import gemImage from '@app/containers/main/Airdrop/AirdropGiftTracker/images/gem.png';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
@@ -128,7 +128,10 @@ export default function HistoryItem({ item }: HistoryItemProps) {
                     <Typography variant="h5" style={{ color: theme.palette.success.main }}>
                         {`+ `}
                     </Typography>
-                    <Typography variant="h5" style={{ color: '#fff' }}>{`${earningsFormatted} tXTM`}</Typography>
+                    <Typography
+                        variant="h5"
+                        style={{ color: theme.palette.text.primary }}
+                    >{`${earningsFormatted} tXTM`}</Typography>
                 </EarningsWrapper>
             </Wrapper>
         </PaddingWrapper>

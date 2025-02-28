@@ -5,6 +5,7 @@ import { TabItem } from '@app/components/Tabs/Tabs.tsx';
 
 const Track = styled(m.div)`
     width: 100%;
+    height: 100%;
     display: flex;
 `;
 
@@ -15,7 +16,6 @@ const ItemWrapper = styled(m.div)`
     flex-direction: column;
     align-items: center;
     justify-content: space-between;
-    background-color: #0d0d0d;
 `;
 
 const SPRING_OPTIONS = { type: 'spring', stiffness: 300, damping: 30 };

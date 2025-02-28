@@ -8,7 +8,7 @@ import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
-import History from './History.tsx';
+import History from '@app/components/transactions/History.tsx';
 
 import { CornerButton, CornerButtonBadge, ScrollMask, WalletContainer, WalletCornerButtons } from './Wallet.styles.ts';
 import WalletBalanceMarkup from './WalletBalanceMarkup.tsx';
