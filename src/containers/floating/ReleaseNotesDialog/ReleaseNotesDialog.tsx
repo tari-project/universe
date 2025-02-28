@@ -4,15 +4,16 @@ import { memo, useCallback } from 'react';
 import { ReleaseNotes } from '../Settings/sections';
 import { Button, ButtonWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
+import { setDialogToShow } from '@app/store';
 
 const ReleaseNotesDialog = memo(function ReleaseNotesDialog() {
     const open = useUIStore((s) => s.dialogToShow === 'releaseNotes');
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+
     const { t } = useTranslation('components', { useSuspense: false });
 
     const handleClose = useCallback(async () => {
         setDialogToShow(null);
-    }, [setDialogToShow]);
+    }, []);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>

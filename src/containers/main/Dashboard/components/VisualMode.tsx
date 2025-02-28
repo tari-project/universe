@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { setVisualMode, useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
@@ -12,6 +12,7 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
+import { setVisualMode } from '@app/store';
 
 import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 

@@ -1,4 +1,4 @@
-import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
+import { getSOSTimeRemaining } from '@app/store/useShellOfSecretsStore';
 import {
     Wrapper,
     VerticalText,
@@ -10,21 +10,19 @@ import {
     Label,
 } from './styles';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 
-export default function Timer() {
+const Timer = memo(function Timer() {
     const { t } = useTranslation('sos', { useSuspense: false });
-    const getTimeRemaining = useShellOfSecretsStore((s) => s.getTimeRemaining);
     const [reminingTime, setRemainingTime] = useState({ days: 0, hours: 0, totalRemainingMs: 0 });
 
     useEffect(() => {
         const intervalId = setInterval(() => {
-            setRemainingTime(getTimeRemaining());
+            setRemainingTime(getSOSTimeRemaining());
         }, 5000);
         return () => {
             clearInterval(intervalId);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -48,4 +46,6 @@ export default function Timer() {
             </TimerColumn>
         </Wrapper>
     );
-}
+});
+
+export default Timer;

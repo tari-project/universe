@@ -13,19 +13,19 @@ import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { useTheme } from 'styled-components';
 import { CircularProgress } from '../elements/CircularProgress';
+import { setDialogToShow } from '@app/store';
 
 export default function RestartDialog() {
-    const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
-    const [isRestarting, setIsRestarting] = useState(false);
     const { t } = useTranslation('settings', { useSuspense: false });
+    const [isRestarting, setIsRestarting] = useState(false);
+    const dialogToShow = useUIStore((s) => s.dialogToShow);
 
     const showRestartModal = dialogToShow === 'restart';
     const theme = useTheme();
 
     const setShowRestartModal = useCallback(() => {
         setDialogToShow(showRestartModal ? null : 'restart');
-    }, [setDialogToShow, showRestartModal]);
+    }, [showRestartModal]);
 
     const handleRestart = useCallback(async () => {
         try {

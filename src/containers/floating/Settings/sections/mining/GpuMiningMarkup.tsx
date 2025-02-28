@@ -12,10 +12,10 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { setGpuMiningEnabled } from '@app/store';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const setGpuMiningEnabled = useAppConfigStore((s) => s.setGpuMiningEnabled);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
@@ -29,7 +29,7 @@ const GpuMiningMarkup = () => {
 
     const handleGpuMiningEnabled = useCallback(async () => {
         await setGpuMiningEnabled(!isGpuMiningEnabled);
-    }, [isGpuMiningEnabled, setGpuMiningEnabled]);
+    }, [isGpuMiningEnabled]);
 
     return (
         <SettingsGroupWrapper>

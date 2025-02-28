@@ -10,15 +10,15 @@ import { invoke } from '@tauri-apps/api/core';
 import { memo, useCallback, useState } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
-import { useUIStore } from '@app/store/useUIStore.ts';
+
 import { useCopyToClipboard } from '@app/hooks';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { setDialogToShow } from '@app/store';
 
 const CriticalErrorDialog = memo(function CriticalErrorDialog() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const [logsReference, setLogsReference] = useState('');
     const criticalError = useAppStateStore((s) => s.criticalError);

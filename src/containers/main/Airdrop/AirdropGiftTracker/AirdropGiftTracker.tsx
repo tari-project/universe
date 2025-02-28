@@ -14,7 +14,7 @@ export default function AirdropGiftTracker() {
     useWebsocket();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { airdropTokens } = useAirdropStore();
+    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const isLoggedIn = !!airdropTokens;
 
     return (
