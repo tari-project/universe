@@ -380,9 +380,10 @@ async fn setup_inner(
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
-    AutoLauncher::current()
+    let _unused = AutoLauncher::current()
         .initialize_auto_launcher(is_auto_launcher_enabled)
-        .await?;
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e));
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));

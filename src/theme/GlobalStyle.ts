@@ -48,7 +48,7 @@ export const GlobalReset = createGlobalStyle`
     }
 `;
 
-export const GlobalStyle = createGlobalStyle`
+export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html,
     main,
     body,
@@ -97,13 +97,14 @@ export const GlobalStyle = createGlobalStyle`
     html {
         background: ${({ theme }) => theme.palette.base};
     }
-    #canvas {
+    #tower-canvas {
         z-index: 0;
         top: 0;
         left: 0;
         pointer-events: auto;
         width: 100vw;
         background: none;
+        visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
 
     #root {
