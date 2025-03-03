@@ -466,6 +466,11 @@ async fn get_telemetry_data(
         "total_memory".to_string(),
         system.total_memory().to_string(),
     );
+    let memory_utilization = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
+    extra_data.insert(
+        "memory_utilization".to_string(),
+        memory_utilization.round().to_string(),
+    );
     extra_data.insert("free_memory".to_string(), system.free_memory().to_string());
     if let Some(core_count) = system.physical_core_count() {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
