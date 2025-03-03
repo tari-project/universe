@@ -1,5 +1,15 @@
 {
+  "airdropGame": "Airdrop Game",
   "bonus-gems-earned": "Bonus gems earned",
+  "notificationPreferences": "Marketing Preferences",
+  "preferences": {
+    "status": "Status",
+    "statusDescription": "Stay informed about your mining activity with updates on status changes, like when mining starts or stops",
+    "updates": "Updates",
+    "updatesDescription": "Receive regular updates on your stats, earnings, hash rate, and other key details",
+    "rewards": "Rewards",
+    "rewardsDescription": "Get notified about new achievements, rewards, streaks, and bonuses when you hit milestones"
+  },
   "claimGems": "Claim Gems",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Enter invite code",

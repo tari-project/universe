@@ -1,6 +1,15 @@
 {
   "airdropGame": "Airdrop Oyunu",
   "bonus-gems-earned": "Bonus taşlar kazanıldı",
+  "notificationPreferences": "Bildirim tercihleri",
+  "preferences": {
+    "status": "Durum",
+    "statusDescription": "Madencilik başladığında veya durduğunda gibi durum değişiklikleri hakkında güncellemelerle madencilik etkinliğinizi takip edin",
+    "updates": "Güncellemeler",
+    "updatesDescription": "İstatistikleriniz, kazançlarınız, hash oranı ve diğer önemli ayrıntılar hakkında düzenli güncellemeler alın",
+    "rewards": "Ödüller",
+    "rewardsDescription": "Kilometre taşlarına ulaştığınızda yeni başarılar, ödüller, seriler ve bonuslar hakkında bildirim alın"
+  },
   "claimGems": "Taşları Talep Et",
   "claimModalFieldLabel": "İsteğe Bağlı",
   "claimModalFieldPlaceholder": "Referans kodunu girin",

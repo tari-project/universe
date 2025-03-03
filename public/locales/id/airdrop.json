@@ -1,6 +1,15 @@
 {
   "airdropGame": "Permainan Airdrop",
   "bonus-gems-earned": "Permata bonus diperoleh",
+  "notificationPreferences": "Preferensi Pemberitahuan",
+  "preferences": {
+    "status": "Status",
+    "statusDescription": "Tetap terinformasi tentang aktivitas penambangan Anda dengan pembaruan perubahan status, seperti saat penambangan mulai atau berhenti",
+    "updates": "Pembaruan",
+    "updatesDescription": "Terima pembaruan rutin tentang statistik Anda, pendapatan, hashrate, dan detail penting lainnya",
+    "rewards": "Hadiah",
+    "rewardsDescription": "Dapatkan notifikasi tentang pencapaian baru, hadiah, rentetan, dan bonus saat Anda mencapai tonggak penting"
+  },
   "claimGems": "Klaim Permata",
   "claimModalFieldLabel": "Opsional",
   "claimModalFieldPlaceholder": "Masukkan kode referensi",

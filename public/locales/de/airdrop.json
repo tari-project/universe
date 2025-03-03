@@ -1,6 +1,15 @@
 {
   "airdropGame": "Testnet Belohnungen",
   "bonus-gems-earned": "Bonus-Edelsteine verdient",
+  "notificationPreferences": "Marketing-Einstellungen",
+  "preferences": {
+    "status": "Status",
+    "statusDescription": "Bleiben Sie über Ihre Mining-Aktivitäten informiert mit Updates zu Statusänderungen, z. B. wenn das Mining startet oder stoppt",
+    "updates": "Updates",
+    "updatesDescription": "Erhalten Sie regelmäßige Updates zu Ihren Statistiken, Einnahmen, Hashrate und anderen wichtigen Details",
+    "rewards": "Belohnungen",
+    "rewardsDescription": "Lassen Sie sich über neue Erfolge, Belohnungen, Serien und Boni benachrichtigen, wenn Sie Meilensteine erreichen"
+  },
   "claimGems": "Edelsteine beanspruchen",
   "claimModalFieldLabel": "Optional",
   "claimModalFieldPlaceholder": "Gib den Einladungscode ein",

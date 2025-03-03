@@ -1,6 +1,15 @@
 {
   "airdropGame": "Gra Airdrop",
   "bonus-gems-earned": "Zdobyto bonusowe klejnoty",
+  "notificationPreferences": "Preferencje powiadomień",
+  "preferences": {
+    "status": "Status",
+    "statusDescription": "Bądź na bieżąco z aktywnością wydobywczą dzięki aktualizacjom zmian statusu, np. rozpoczęcia lub zatrzymania wydobycia",
+    "updates": "Aktualizacje",
+    "updatesDescription": "Otrzymuj regularne aktualizacje dotyczące statystyk, zarobków, hashrate i innych istotnych szczegółów",
+    "rewards": "Nagrody",
+    "rewardsDescription": "Otrzymuj powiadomienia o nowych osiągnięciach, nagrodach, seriach i bonusach, gdy osiągniesz kamienie milowe"
+  },
   "claimGems": "Odbierz klejnoty",
   "claimModalFieldLabel": "Opcjonalne",
   "claimModalFieldPlaceholder": "Wpisz kod polecający",

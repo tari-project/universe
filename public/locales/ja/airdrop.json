@@ -1,5 +1,14 @@
 {
   "airdropGame": "エアドロップゲーム",
+  "notificationPreferences": "通知設定",
+  "preferences": {
+    "status": "ステータス",
+    "statusDescription": "マイニング開始や停止などのステータス変更の更新で、マイニング活動を常に把握してください",
+    "updates": "アップデート",
+    "updatesDescription": "統計データ、収益、ハッシュレート、その他の重要な詳細について定期的なアップデートを受け取ります",
+    "rewards": "報酬",
+    "rewardsDescription": "マイルストーンに到達した際に、新しい実績、報酬、連続記録、ボーナスの通知を受け取ります"
+  },
   "bonus-gems-earned": "ボーナスジェムを獲得しました",
   "claimGems": "ジェムを請求",
   "claimModalFieldLabel": "任意",

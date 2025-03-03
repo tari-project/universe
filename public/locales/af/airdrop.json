@@ -1,6 +1,15 @@
 {
   "airdropGame": "Airdrop Speletjie",
   "bonus-gems-earned": "Bonus edelstene verdien",
+  "notificationPreferences": "Kennisgewingvoorkeure",
+  "preferences": {
+   "status": "Status",
+   "statusDescription": "Bly op hoogte van jou mynaktiwiteit met opdaterings oor statusveranderinge, soos wanneer myn begin of stop",
+   "updates": "Opdaterings",
+   "updatesDescription": "Ontvang gereelde opdaterings oor jou statistieke, verdienste, hashrate en ander belangrike besonderhede",
+   "rewards": "Belonings",
+   "rewardsDescription": "Kry kennisgewings oor nuwe prestasies, belonings, strepe en bonuses wanneer jy mylpale bereik"
+  },
   "claimGems": "Eis Edelstene",
   "claimModalFieldLabel": "Opsioneel",
   "claimModalFieldPlaceholder": "Voer verwysingskode in",
