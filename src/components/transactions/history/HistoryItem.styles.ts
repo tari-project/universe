@@ -19,15 +19,13 @@ export const Wrapper = styled(m.div)`
     position: relative;
 
     background: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.1)};
-    box-shadow: 0 2px 7px 0 ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+    box-shadow: 0 -5px 10px -2px ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.05)};
 
     flex-shrink: 0;
     flex-grow: 0;
 
     &:hover {
-        .hover-target {
-            opacity: 0.2;
-        }
+        //opacity: 0.2;
     }
 `;
 
@@ -88,14 +86,6 @@ export const EarningsWrapper = styled.div`
     ${Wrapper}:hover & {
         opacity: 0.2;
     }
-`;
-
-export const ListLabel = styled.div`
-    color: ${({ theme }) => theme.palette.text.primary};
-    font-size: 11px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: normal;
 `;
 
 export const HoverWrapper = styled(m.div)`

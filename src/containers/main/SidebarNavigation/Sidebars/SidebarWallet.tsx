@@ -3,7 +3,7 @@ import { SB_WIDTH } from '@app/theme/styles.ts';
 import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import { SidebarGrid } from './SidebarWallet.styles.ts';
 
-import { WalletSidebarContent } from '@app/components/transactions/WalletSidebarContent.tsx';
+import { WalletSidebarContent } from '@app/components/transactions';
 
 const variants = {
     open: { opacity: 1, right: 0, transition: { duration: 0.3, ease: 'easeIn' } },

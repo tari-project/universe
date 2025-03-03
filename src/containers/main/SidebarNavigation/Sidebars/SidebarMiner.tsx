@@ -28,7 +28,6 @@ const SidebarMiner = memo(function Sidebar() {
         >
             <SidebarGrid>
                 <GridAreaTop>
-                    <Heading />
                     <MiningButton />
                     <LostConnectionAlert />
                     <OrphanChainAlert />

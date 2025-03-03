@@ -1,6 +1,6 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
-import { convertHexToRGBA } from '@app/utils';
+
 import { SB_SPACING } from '@app/theme/styles.ts';
 
 export const SidebarNavigationWrapper = styled(m.div)`
@@ -41,14 +41,4 @@ export const SidebarWrapper = styled(m.div)`
     & * {
         pointer-events: all;
     }
-`;
-
-export const SidebarCover = styled(m.div)`
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: ${({ theme }) => convertHexToRGBA(theme.colors.grey[theme.mode === 'dark' ? 950 : 900], 0.3)};
-    cursor: pointer;
-    border-bottom-left-radius: 20px;
-    border-bottom-right-radius: 20px;
 `;

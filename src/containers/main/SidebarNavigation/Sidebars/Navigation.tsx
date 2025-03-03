@@ -1,6 +1,6 @@
 import { memo, ReactNode } from 'react';
 import { IoChevronForwardOutline } from 'react-icons/io5';
-import { setAnimationProperties } from '@app/visuals.ts';
+import { setAnimationProperties } from '@tari-project/tari-tower';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { WalletOutlineSVG } from '@app/assets/icons/wallet-outline.tsx';

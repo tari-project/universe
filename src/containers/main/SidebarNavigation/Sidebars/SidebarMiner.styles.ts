@@ -29,11 +29,3 @@ export const GridAreaBottom = styled.div`
     position: relative;
     gap: 6px;
 `;
-
-export const WalletSpacer = styled.div`
-    max-height: 508px;
-    min-height: 188px;
-    @media (max-height: 670px) {
-        min-height: 150px;
-    }
-`;

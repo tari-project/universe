@@ -2,10 +2,13 @@ import { memo, useCallback, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { initialFetchTx, useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
-import HistoryItem from './HistoryItem';
-import { ListWrapper } from './TxHistory.styles.ts';
+import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
+import { ListItem } from './ListItem.tsx';
 
-const TXHistory = () => {
+interface HistoryListProps {
+    winsOnly?: boolean;
+}
+const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
     const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
     const transactions = useWalletStore((s) => s.coinbase_transactions);
     const fetchCoinbaseTransactions = useWalletStore((s) => s.fetchCoinbaseTransactions);
@@ -29,12 +32,14 @@ const TXHistory = () => {
                 loader={<CircularProgress />}
                 scrollableTarget="list"
             >
-                {transactions.map((tx) => (
-                    <HistoryItem key={tx.tx_id} item={tx} />
-                ))}
+                <ListItemWrapper>
+                    {transactions.map((tx, index) => (
+                        <ListItem key={tx.tx_id} item={tx} index={index} showReplay={winsOnly} />
+                    ))}
+                </ListItemWrapper>
             </InfiniteScroll>
         </ListWrapper>
     );
 };
 
-export default memo(TXHistory);
+export default memo(HistoryList);
