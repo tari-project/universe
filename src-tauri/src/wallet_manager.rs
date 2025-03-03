@@ -140,24 +140,6 @@ impl WalletManager {
             })
     }
 
-    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .stop()
-            .await
-            .map_err(WalletManagerError::UnknownError)
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
-
     #[deprecated(
         note = "Do not use. Use internal wallet instead. This address is the address of the view key wallet and not the internal wallet."
     )]
