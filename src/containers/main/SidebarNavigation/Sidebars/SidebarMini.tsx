@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { SB_MINI_WIDTH } from '@app/theme/styles.ts';
+
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import { LogoWrapper, MinimizedWrapper } from './SidebarMini.styles.ts';
@@ -8,7 +8,7 @@ import Navigation from './Navigation.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     return (
-        <SidebarWrapper style={{ width: SB_MINI_WIDTH }}>
+        <SidebarWrapper $isMiniBar>
             <MinimizedWrapper>
                 <LogoWrapper>
                     <TariOutlineSVG />

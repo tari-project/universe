@@ -25,7 +25,7 @@ const WalletView = memo(function WalletView() {
                     </Button>
                 }
             />
-            <div style={{ textAlign: 'center', fontSize: 140 }}>{`👻`}</div>
+            <div style={{ textAlign: 'center', fontSize: 100 }}>{`👻`}</div>
         </WalletViewContainer>
     );
 });
