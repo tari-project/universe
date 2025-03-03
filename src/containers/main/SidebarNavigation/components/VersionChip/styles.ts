@@ -8,7 +8,7 @@ export const Wrapper = styled('div')`
 
     height: 21px;
     padding: 0 10px 0 8px;
-
+    width: max-content;
     border-radius: 20px;
     background: ${({ theme }) => theme.palette.component.main};
 

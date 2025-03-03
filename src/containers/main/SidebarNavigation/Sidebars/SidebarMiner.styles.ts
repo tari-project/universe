@@ -19,6 +19,7 @@ export const GridAreaTop = styled.div`
     grid-area: top;
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 8px;
 `;
 
