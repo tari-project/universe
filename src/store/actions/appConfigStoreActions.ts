@@ -27,11 +27,10 @@ export const fetchAppConfig = async () => {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
         const configTheme = appConfig.display_mode?.toLowerCase();
-        const canvasElement = document.getElementById('canvas');
         if (configTheme) {
             await setTheme(configTheme as displayMode);
         }
-        if (canvasElement && !appConfig.visual_mode) {
+        if (appConfig.visual_mode) {
             try {
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
             } catch (e) {
