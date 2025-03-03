@@ -41,7 +41,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
+use utils::locks_utils::try_write_with_retry;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
@@ -223,28 +223,8 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
-                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 6).await {
-                        Ok(gm) => gm,
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
-                            continue;
-                        }
-                    };
-
-                    if let Ok(gpu_status) = gpu_miner
-                        .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
-                        .await
-                    {
-                        let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
-                    } else {
-                        let err_msg = "Error getting gpu miner status";
-                        error!(target: LOG_TARGET, "{}", err_msg);
-                        sentry::capture_message(err_msg, sentry::Level::Error);
-                    };
+                    let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
                 },
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
@@ -973,6 +953,7 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let wallet_manager = WalletManager::new(
@@ -997,7 +978,6 @@ fn main() {
     let app_in_memory_config =
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
-    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -1006,8 +986,14 @@ fn main() {
         )
         .into(),
     );
-    let gpu_miner: Arc<RwLock<GpuMiner>> =
-        Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
+        GpuMiner::new(
+            gpu_status_tx,
+            base_node_watch_rx.clone(),
+            &mut stats_collector,
+        )
+        .into(),
+    );
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
