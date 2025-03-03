@@ -20,15 +20,11 @@ import { setExcludedGpuDevices } from '@app/store';
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const miningAllowed = useAppStateStore((s) => s.setupComplete);
-    const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
-    const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
 
-    const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
-    const isMiningInProgress = isCPUMining || isGPUMining;
-    const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
     const excludedDevices = useMiningStore((s) => s.excludedGpuDevices);
+    const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
 
     const handleSetExcludedDevice = useCallback(
         async (device: number) => {
@@ -69,8 +65,8 @@ const GpuDevices = memo(function GpuDevices() {
                                     </Typography>
                                     <ToggleSwitch
                                         key={device.name}
-                                        checked={!excludedDevices.includes(i) && isGpuMiningEnabled}
-                                        disabled={isDisabled}
+                                        checked={!excludedDevices.includes(i)}
+                                        disabled={isExcludingGpuDevices || !miningAllowed || !isGpuMiningEnabled}
                                         onChange={() => handleSetExcludedDevice(i)}
                                     />
                                 </Stack>

@@ -67,12 +67,17 @@ export const pauseMining = async () => {
 export const setCustomLevelsDialogOpen = (customLevelsDialogOpen: boolean) =>
     useMiningStore.setState({ customLevelsDialogOpen });
 export const setExcludedGpuDevices = async (excludedGpuDevices: number[]) => {
-    const hardware = useMiningMetricsStore.getState().gpu_devices;
-    const totalGpuDevices = hardware.length;
-    console.error('Excluded GPU devices: ', excludedGpuDevices);
-    console.error('Hardware: ', hardware);
+    useMiningStore.setState({ isExcludingGpuDevices: true });
+    const metricsState = useMiningMetricsStore.getState();
+
+    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
+        console.info('Pausing mining...');
+        await pauseMining();
+    }
+
     try {
         await invoke('set_excluded_gpu_devices', { excludedGpuDevices });
+        const totalGpuDevices = useMiningMetricsStore.getState().gpu_devices?.length || 0;
         if (excludedGpuDevices.length === totalGpuDevices) {
             await setGpuMiningEnabled(false);
         }
@@ -82,6 +87,12 @@ export const setExcludedGpuDevices = async (excludedGpuDevices: number[]) => {
         setError(e as string);
         useMiningStore.setState({ excludedGpuDevices: undefined });
     }
+
+    if (useMiningStore.getState().miningInitiated) {
+        console.info('Restarting mining...');
+        await startMining();
+    }
+    useMiningStore.setState({ isExcludingGpuDevices: false });
 };
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {

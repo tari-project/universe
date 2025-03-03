@@ -6,6 +6,7 @@ interface MiningStoreState {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    isExcludingGpuDevices: boolean;
     excludedGpuDevices: number[];
     counter: number;
     customLevelsDialogOpen: boolean;
@@ -20,6 +21,7 @@ const initialState: MiningStoreState = {
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
+    isExcludingGpuDevices: false,
     miningControlsEnabled: true,
     network: 'unknown',
     excludedGpuDevices: [],

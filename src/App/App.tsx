@@ -17,9 +17,13 @@ import Setup from '../containers/phase/Setup/Setup';
 
 import { AppContentContainer } from './App.styles.ts';
 
-const CurrentAppSection = memo(function CurrentAppSection() {
-    const isAppReady = useIsAppReady();
-    const isShuttingDown = useShuttingDown();
+const CurrentAppSection = memo(function CurrentAppSection({
+    isAppReady,
+    isShuttingDown,
+}: {
+    isAppReady?: boolean;
+    isShuttingDown?: boolean;
+}) {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
     const currentSection = useMemo(() => {
@@ -78,7 +82,7 @@ export default function App() {
             <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
-                <CurrentAppSection />
+                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
             </LazyMotion>
         </ThemeProvider>
     );
