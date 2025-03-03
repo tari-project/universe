@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.809",
+    "version": "0.9.811",
     "type": "module",
     "scripts": {
         "dev": "vite dev --mode development",
@@ -17,6 +17,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.4",
         "@lottiefiles/dotlottie-react": "^0.13.0",
+        "@tari-project/tari-tower": "^0.0.16",
         "@tauri-apps/api": "^2.2.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.0",
         "@tauri-apps/plugin-os": "^2.2.0",
