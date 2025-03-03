@@ -29,3 +29,13 @@ export const GridAreaBottom = styled.div`
     position: relative;
     gap: 6px;
 `;
+
+export const RewardWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    height: min(400px, 30vh);
+    border-radius: 10px;
+    gap: 10px;
+    padding: 10px 0 0 0;
+    overflow: hidden;
+`;

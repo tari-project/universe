@@ -22,8 +22,6 @@ interface State {
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType | null;
     isWebglNotSupported: boolean;
-    showSidebarCover: boolean;
-    showWalletHistory: boolean;
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
@@ -46,8 +44,6 @@ const initialState: State = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
-    showSidebarCover: false,
-    showWalletHistory: false,
 };
 
 export const useUIStore = create<UIStoreState>()((set) => ({
@@ -67,8 +63,6 @@ export const useUIStore = create<UIStoreState>()((set) => ({
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
 
-export const setShowWalletHistory = (showWalletHistory: boolean) =>
-    useUIStore.setState({ showWalletHistory, showSidebarCover: showWalletHistory });
 export const setUITheme = (theme: Theme) => {
     setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
     useUIStore.setState({ theme });

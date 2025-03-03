@@ -1,5 +1,4 @@
 import { createGlobalStyle } from 'styled-components';
-import { ViewType } from '@app/store/types.ts';
 
 export const GlobalReset = createGlobalStyle`
     *:focus {

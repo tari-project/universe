@@ -31,7 +31,7 @@ export default function WalletBalanceMarkup() {
     } = useTariBalance();
 
     const sizingLong = useCallback(() => {
-        const baseSize = 50;
+        const baseSize = 40;
         const step = 1.75;
         const maxLength = 20;
         const length = Math.min(formattedLongBalance.length, maxLength);
@@ -69,7 +69,7 @@ export default function WalletBalanceMarkup() {
                                 <CharSpinner
                                     value={balanceDisplayValue}
                                     variant="simple"
-                                    fontSize={50}
+                                    fontSize={40}
                                     animateNumbers={shouldAnimateBalance}
                                 />
                             </WalletBalance>
