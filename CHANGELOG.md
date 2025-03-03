@@ -1,3 +1,21 @@
+# 🌑 TARI UNIVERSE v0.9.811: The Tide’s Forge Episode 1
+
+_March 3, 2025_
+
+## Hi Everyone,  
+With mainnet coming in April, Tari contributors continue to work on bugs and improve the overall Tari Universe experience. Introducing the Tide’s Forge series of TU releases. These releases are focused on continued optimization, reliability, and performance improvements across the board. Thank you for your feedback and being a part of the Tari community. Tari exists for one reason: you 💜🐢
+
+## WHAT'S NEW  
+🔵 Unread pill count fix – No more incorrect badge counts!  
+💰 mmproxy fix – We believe this resolves XTM estimated earnings issues.  
+🔄 Updater improvements – Ensures the *"new version"* dialog appears for units that don’t auto-update. 
+📱 Aurora QR code sync fix – Seamless syncing to phone on macOS.  
+♻️ Restart reliability – Fixes cases where the app wouldn’t restart properly after an auto-update.  
+🐞 More deadlock fixes – Addresses sync freezes on startup.  
+🤝 p2pool fix – Resolves issues with absent peers.  
+
+---
+
 # 🌑 TARI UNIVERSE v0.9.809: The Dawn of Dork Mode  
 
 _February 26, 2025_
