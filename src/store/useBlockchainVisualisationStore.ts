@@ -4,7 +4,7 @@ import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
-import { setAnimationState } from '@app/visuals.ts';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
 const appWindow = getCurrentWindow();

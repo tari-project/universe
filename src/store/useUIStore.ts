@@ -1,8 +1,13 @@
 import { create } from './create';
 import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
-import { setAnimationProperties } from '@app/visuals.ts';
-import { useAppConfigStore } from './useAppConfigStore.ts';
+import { setAnimationProperties } from '@tari-project/tari-tower';
+import { setVisualMode } from './useAppConfigStore.ts';
+
+const sideBarWidth = 348;
+const sideBarPaddingBuffer = 20;
+export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
+export const TOWER_CANVAS_ID = 'tower-canvas';
 
 const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'keyring'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
@@ -53,7 +58,7 @@ export const useUIStore = create<UIStoreState>()((set) => ({
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
     setIsWebglNotSupported: (isWebglNotSupported) => {
-        useAppConfigStore.getState().setVisualMode(false);
+        setVisualMode(false);
         set({ isWebglNotSupported });
     },
     setAdminShow: (adminShow) => set({ adminShow }),
