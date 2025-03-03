@@ -24,7 +24,7 @@ export const useHandleWsUserIdEvent = () => {
                 break;
             case WebsocketEventNames.COMPLETED_QUEST:
                 if (eventParsed.data.userPoints?.gems) {
-                    setUserGems(eventParsed.data.userPoints?.gems);
+                    setUserGems(eventParsed.data.userPoints.gems);
                 }
                 break;
             case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
