@@ -16,6 +16,10 @@ import { AirdropTokens } from '@app/store/useAirdropStore';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
+        param: 'send_one_sided_to_stealth_address',
+        payload: { amount: string; destination: string }
+    ): Promise<void>;
+    function invoke(
         param: 'set_should_always_use_system_language',
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;

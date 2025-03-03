@@ -1794,3 +1794,21 @@ pub async fn proceed_with_update(
     }
     Ok(())
 }
+
+#[tauri::command]
+pub async fn send_one_sided_to_stealth_address(
+    state: tauri::State<'_, UniverseAppState>,
+    amount: String,
+    destination: String
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination)
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}

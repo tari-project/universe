@@ -34,6 +34,8 @@ use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use serde_json::json;
+use spend_wallet_manager::SpendWalletManager;
+use tokio::fs::OpenOptions;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
@@ -127,6 +129,8 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod release_notes;
+mod spend_wallet_adapter;
+mod spend_wallet_manager;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -691,6 +695,28 @@ async fn setup_inner(
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
+
+    // let binary_version_path = BinaryResolver::current()
+    //     .read()
+    //     .await
+    //     .resolve_path_to_binary_files(Binaries::Wallet)?;
+    // match OpenOptions::new()
+    //     .create_new(true)
+    //     .write(true)
+    //     .open(binary_version_path.clone()).await
+    // {
+    //     Ok(_) => {
+    //         println!("Lock acquired. Running executable...");
+    //         // Run your executable here
+    //         // ...
+    //         // Remove the lock file when exiting
+    //         std::fs::remove_file(binary_version_path)?;
+    //     },
+    //     Err(err) => {
+    //         eprintln!("Error creating lock file: {}", err);
+    //     }
+    // }
+
     state
         .wallet_manager
         .ensure_started(
@@ -832,6 +858,17 @@ async fn setup_inner(
     mm_proxy_manager.wait_ready().await?;
     drop(config);
 
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .init(
+            state.shutdown.to_signal().clone(),
+            data_dir,
+            config_dir,
+            log_dir,
+        )
+        .await?;
+    drop(spend_wallet_manager);
+
     *state.is_setup_finished.write().await = true;
     let _unused = telemetry_service
         .send(
@@ -924,6 +961,7 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
+    spend_wallet_manager: Arc<RwLock<SpendWalletManager>>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -980,6 +1018,7 @@ fn main() {
         &mut stats_collector,
     );
     let wallet_manager2 = wallet_manager.clone();
+    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
@@ -1049,6 +1088,7 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
+        spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
         p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
@@ -1306,7 +1346,8 @@ fn main() {
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::send_one_sided_to_stealth_address,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
