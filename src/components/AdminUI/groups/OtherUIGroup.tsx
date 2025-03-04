@@ -7,7 +7,8 @@ import { setAdminShow, setFlareAnimationType } from '@app/store';
 
 export function OtherUIGroup() {
     const adminShow = useUIStore((s) => s.adminShow);
-    const { showWidget, setShowWidget } = useShellOfSecretsStore();
+    const showWidget = useShellOfSecretsStore((s) => s.showWidget);
+    const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
 
     return (
         <>

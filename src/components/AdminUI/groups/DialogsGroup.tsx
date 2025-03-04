@@ -11,14 +11,10 @@ import {
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export function DialogsGroup() {
-    const { criticalError, criticalProblem } = useAppStateStore((s) => ({
-        criticalError: s.criticalError,
-        criticalProblem: s.criticalProblem,
-    }));
-    const { dialogToShow, showExternalDependenciesDialog } = useUIStore((s) => ({
-        dialogToShow: s.dialogToShow,
-        showExternalDependenciesDialog: s.showExternalDependenciesDialog,
-    }));
+    const criticalError = useAppStateStore((s) => s.criticalError);
+    const criticalProblem = useAppStateStore((s) => s.criticalProblem);
+    const dialogToShow = useUIStore((s) => s.dialogToShow);
+    const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
 
     return (
         <>

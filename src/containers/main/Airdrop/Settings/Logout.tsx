@@ -14,8 +14,9 @@ import { handleAirdropLogout } from '@app/store';
 
 export default function AirdropLogout() {
     const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
+    const authUuid = useAirdropStore((s) => s.authUuid);
+    const userDetails = useAirdropStore((s) => s.userDetails);
 
-    const { authUuid, userDetails } = useAirdropStore();
     if (!userDetails && !authUuid) return null;
     return (
         <SettingsGroupWrapper>
