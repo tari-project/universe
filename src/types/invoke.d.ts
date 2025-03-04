@@ -70,6 +70,10 @@ declare module '@tauri-apps/api/core' {
         param: 'get_coinbase_transactions',
         payload: { continuation: boolean; limit?: number }
     ): Promise<TransactionInfo[]>;
+    function invoke(
+        param: 'get_transactions_history',
+        payload: { continuation: boolean; limit?: number }
+    ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;
     function invoke(param: 'set_tor_config', payload: { config: TorConfig }): Promise<TorConfig>;
