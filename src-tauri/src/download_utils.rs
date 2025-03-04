@@ -25,7 +25,7 @@ use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
-use log::info;
+use log::{info, warn};
 use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -54,7 +54,7 @@ pub async fn download_file_with_retries(
                     return Err(err);
                 }
                 retries += 1;
-                eprintln!("Error downloading file: {}. Try {:?}/3", err, retries);
+                warn!(target: LOG_TARGET, "Error downloading file: {}. Try {:?}/3", err, retries);
                 progress_tracker
                     .send_last_action(format!(
                         "Failed at retry: {} to download binary from url: {} to destination: {}",
