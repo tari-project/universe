@@ -1,6 +1,15 @@
 {
   "airdropGame": "Récompenses Testnet",
   "bonus-gems-earned": "Gemmes bonus gagnées",
+  "marketinPreferences": "Préférences de notification",
+  "preferences": {
+    "status": "Statut",
+    "statusDescription": "Restez informé de votre activité de minage avec des mises à jour sur les changements de statut, comme le démarrage ou l'arrêt du minage",
+    "updates": "Mises à jour",
+    "updatesDescription": "Recevez des mises à jour régulières sur vos statistiques, gains, taux de hachage et autres détails importants",
+    "rewards": "Récompenses",
+    "rewardsDescription": "Soyez notifié des nouveaux exploits, récompenses, séries et bonus lorsque vous atteignez des jalons"
+  },
   "claimGems": "Réclamer des gemmes",
   "claimModalFieldLabel": "Facultatif",
   "claimModalFieldPlaceholder": "Entre le code d'invitation",

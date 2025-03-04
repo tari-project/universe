@@ -1,6 +1,15 @@
 {
   "airdropGame": "空投游戏",
   "bonus-gems-earned": "获得的奖励宝石",
+  "notificationPreferences": "通知偏好设置",
+  "preferences": {
+    "status": "状态",
+    "statusDescription": "通过状态变更更新（如挖矿开始或停止）随时了解您的挖矿活动",
+    "updates": "更新",
+    "updatesDescription": "定期接收关于您的统计数据、收益、算力和其他关键详情的更新",
+    "rewards": "奖励",
+    "rewardsDescription": "在您达成里程碑时，接收新成就、奖励、连胜和奖金的通知"
+  },
   "claimGems": "领取宝石",
   "claimModalFieldLabel": "可选",
   "claimModalFieldPlaceholder": "输入推荐码",

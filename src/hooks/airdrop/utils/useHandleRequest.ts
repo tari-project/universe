@@ -1,10 +1,10 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 
-interface RequestProps {
+interface RequestProps extends Omit<RequestInit, 'body'> {
     path: string;
     method: 'GET' | 'POST';
-    body?: Record<string, unknown>;
     onError?: (e: unknown) => void;
+    body?: Record<string, unknown>;
 }
 
 export const useAirdropRequest = () => {
@@ -12,7 +12,8 @@ export const useAirdropRequest = () => {
     const airdropTokenExpiration = useAirdropStore((state) => state.airdropTokens?.expiresAt);
     const baseUrl = useAirdropStore((state) => state.backendInMemoryConfig?.airdropApiUrl);
 
-    return async <T>({ body, method, path, onError }: RequestProps) => {
+    return async <T>(requestProps: RequestProps) => {
+        const { path, method, body, onError, ...rest } = requestProps;
         const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
         if (!baseUrl || !airdropToken || isTokenExpired) return;
 
@@ -25,6 +26,7 @@ export const useAirdropRequest = () => {
                 Authorization: `Bearer ${airdropToken}`,
             },
             body: JSON.stringify(body),
+            ...rest,
         });
 
         try {

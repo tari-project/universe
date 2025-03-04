@@ -1,6 +1,15 @@
 {
   "airdropGame": "에어드롭 게임",
   "bonus-gems-earned": "보너스 젬 획득",
+  "notificationPreferences": "알림 환경 설정",
+  "preferences": {
+    "status": "상태",
+    "statusDescription": "마이닝 시작 또는 중지와 같은 상태 변경 업데이트로 마이닝 활동을 파악하세요",
+    "updates": "업데이트",
+    "updatesDescription": "통계, 수익, 해시레이트 및 기타 중요한 세부 사항에 대한 정기적인 업데이트를 받으세요",
+    "rewards": "보상",
+    "rewardsDescription": "마일스톤에 도달하면 새로운 업적, 보상, 연속 기록, 보너스에 대한 알림을 받으세요"
+  },
   "claimGems": "보석 받기",
   "claimModalFieldLabel": "선택 사항",
   "claimModalFieldPlaceholder": "추천 코드 입력",
