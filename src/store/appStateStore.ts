@@ -1,5 +1,5 @@
 import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
-import { setAnimationState } from '@app/visuals';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
 import { useAppConfigStore } from './useAppConfigStore';
@@ -124,18 +124,20 @@ export const setSetupParams = (setupTitleParams: Record<string, string>) =>
     });
 
 export const setSetupComplete = async () => {
-    const visualMode = useAppConfigStore.getState().visual_mode;
-    if (visualMode) {
-        const canvas = document.getElementById('canvas');
-        if (canvas) {
-            canvas.style.opacity = '1';
+    // Proceed with auto mining when enabled
+    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
+    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+    const visual_mode = useAppConfigStore.getState().visual_mode;
+    if (visual_mode) {
+        try {
             setAnimationState('showVisual');
+        } catch (error) {
+            console.error('Failed to set animation state:', error);
         }
     }
-    // Proceed with auto mining when enabled
-    const { mine_on_app_start, cpu_mining_enabled, gpu_mining_enabled } = useAppConfigStore.getState();
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        startMining();
+        await startMining();
     }
     useAppStateStore.setState({ setupComplete: true });
 };

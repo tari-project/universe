@@ -89,12 +89,13 @@ jobs:
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
-          yq eval ".identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
+          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" --output-format=json -i tauri.conf.json
+          yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
-            -i tauri.conf.json
+            --output-format=json -i tauri.conf.json
           cat tauri.conf.json
           sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
 
@@ -115,12 +116,12 @@ jobs:
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" -i tauri.conf.json
-          yq eval ".identifier = \"com.tari.universe\"" -i tauri.conf.json
+          yq eval ".productName = \"Tari Universe\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"Tari Universe\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" --output-format=json -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
-            -i tauri.conf.json
+            --output-format=json -i tauri.conf.json
 
       - uses: actions/setup-node@v4
         with:
@@ -192,14 +193,13 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
-          echo "{}" | \
-            jq '.bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
-              ./tauri.windows.conf.json
+          echo '{}' > ./tauri.windows.conf.json
+          yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
-          cargo install trusted-signing-cli@0.3.0 --locked
+          cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
         run: |
@@ -235,7 +235,7 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
-      - name: Debug Step - artifactPaths
+      - name: Locate artifacts path
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         continue-on-error: true
         env:
@@ -250,3 +250,10 @@ jobs:
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+
+      - name: Windows debug symbols - Upload asset
+        if: startsWith(runner.os,'Windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe.pdb
+          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb"

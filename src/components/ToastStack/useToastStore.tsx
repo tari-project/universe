@@ -45,7 +45,3 @@ export const useToastStore = create<ToastStore>()(
 export function addToast(toast: Toast) {
     return useToastStore.getState().addToast(toast);
 }
-
-export function removeToast(id: number | string) {
-    return useToastStore.getState().removeToast(id);
-}

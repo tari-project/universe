@@ -1,4 +1,3 @@
-import * as Sentry from '@sentry/react';
 import { memo, useMemo } from 'react';
 import { AppContentContainer } from '@app/App/App.styles';
 import { useShuttingDown } from '@app/hooks';
@@ -18,9 +17,13 @@ import ThemeProvider from '../theme/ThemeProvider.tsx';
 import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
 import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
 
-const CurrentAppSection = memo(function CurrentAppSection() {
-    const isAppReady = useIsAppReady();
-    const isShuttingDown = useShuttingDown();
+const CurrentAppSection = memo(function CurrentAppSection({
+    isAppReady,
+    isShuttingDown,
+}: {
+    isAppReady?: boolean;
+    isShuttingDown?: boolean;
+}) {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
     const currentSection = useMemo(() => {
@@ -63,23 +66,25 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 });
 
 export default function App() {
+    const isAppReady = useIsAppReady();
+    const isShuttingDown = useShuttingDown();
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
 
     const { t } = useTranslation('common', { useSuspense: false });
 
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
-        Sentry.captureMessage('WebGL not supported by the browser', { extra: { userAgent: navigator.userAgent } });
+        console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
         setIsWebglNotSupported(true);
         setError(t('webgl-not-supported'));
     }
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle />
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
-                <CurrentAppSection />
+                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
             </LazyMotion>
         </ThemeProvider>
     );

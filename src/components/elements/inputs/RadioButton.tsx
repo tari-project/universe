@@ -17,7 +17,7 @@ export default function RadioButton({ label, variant = 'neutral', ...props }: Ra
                 <CheckSvg />
             </CheckWrapper>
             {label ? (
-                <StyledLabel $variant={variant} $disabled={props.disabled} htmlFor={props.id}>
+                <StyledLabel $variant={variant} $disabled={props.disabled}>
                     <Typography variant="h6">{label}</Typography>
                 </StyledLabel>
             ) : null}
