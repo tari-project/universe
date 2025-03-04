@@ -98,7 +98,13 @@
     "upgrade-available": "⚠️ Mise à jour disponible"
   },
   "report-issue": "Signaler un problème",
+  "reset": "Reset",
+  "reset-config-explainer": "This option removes all configuration, settings, databases, logs, peers, etc., but will keep the wallet database so you <strong>retain your existing wallet address and balance</strong>.",
+  "reset-config-explainer-wallet": "This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, <strong>including your existing wallet address and balance</strong>.",
+  "reset-config-title": "Reset all configuration settings, but leave wallet intact",
+  "reset-config-title-wallet": "Reset all configuration settings, and generate a new wallet",
   "reset-permanently": "Êtes-vous sûr de vouloir réinitialiser tous les paramètres de manière permanente ?",
+  "reset-restart": "Tari Universe will restart automatically once the reset is complete",
   "reset-settings": "Réinitialiser les paramètres",
   "reset-wallet": "Réinitialiser le portefeuille",
   "restart-later": "Redémarrer plus tard",
