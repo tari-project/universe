@@ -15,9 +15,14 @@ export const useHandleWsUserIdEvent = () => {
             case WebsocketEventNames.REFERRAL_INSTALL_REWARD:
                 setFlareAnimationType('FriendAccepted');
                 break;
+            case WebsocketEventNames.USER_SCORE_UPDATE:
+                if (eventParsed.data.userPoints?.gems) {
+                    setUserGems(eventParsed.data.userPoints.gems);
+                }
+                break;
             case WebsocketEventNames.COMPLETED_QUEST:
                 if (eventParsed.data.userPoints?.gems) {
-                    setUserGems(eventParsed.data.userPoints?.gems);
+                    setUserGems(eventParsed.data.userPoints.gems);
                 }
                 break;
             case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
