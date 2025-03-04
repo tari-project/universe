@@ -98,7 +98,13 @@
     "upgrade-available": "⚠️ 업그레이드 가능"
   },
   "report-issue": "문제 보고",
+  "reset": "Reset",
+  "reset-config-explainer": "This option removes all configuration, settings, databases, logs, peers, etc., but will keep the wallet database so you <strong>retain your existing wallet address and balance</strong>.",
+  "reset-config-explainer-wallet": "This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, <strong>including your existing wallet address and balance</strong>.",
+  "reset-config-title": "Reset all configuration settings, but leave wallet intact",
+  "reset-config-title-wallet": "Reset all configuration settings, and generate a new wallet",
   "reset-permanently": "모든 설정을 영구적으로 초기화하시겠습니까?",
+  "reset-restart": "Tari Universe will restart automatically once the reset is complete",
   "reset-settings": "설정 초기화",
   "reset-wallet": "지갑 초기화",
   "restart-later": "나중에 재시작",
