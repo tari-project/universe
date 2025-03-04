@@ -13,14 +13,12 @@ import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import HistoryList from '@app/components/transactions/history/HistoryList.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
-import VersionChip from '@app/containers/main/SidebarNavigation/components/VersionChip/VersionChip.tsx';
 
 const SidebarMiner = memo(function Sidebar() {
     return (
         <SidebarWrapper key="sidebar_miner">
             <SidebarGrid>
                 <GridAreaTop>
-                    <VersionChip />
                     <MiningButton />
                     <LostConnectionAlert />
                     <OrphanChainAlert />

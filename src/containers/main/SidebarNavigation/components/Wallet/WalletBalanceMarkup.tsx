@@ -42,15 +42,11 @@ export default function WalletBalanceMarkup() {
     return (
         <WalletBalanceContainer>
             <Stack direction="row" alignItems="center">
-                <Typography variant="span" style={{ fontSize: '15px' }}>
+                <Typography variant="span" style={{ fontSize: '11px' }}>
                     {t('wallet-balance')}
                 </Typography>
                 <BalanceVisibilityButton onClick={toggleBalanceVisibility}>
-                    {showBalance ? (
-                        <IoEyeOffOutline size={14} color="white" />
-                    ) : (
-                        <IoEyeOutline size={14} color="white" />
-                    )}
+                    {showBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
                 </BalanceVisibilityButton>
             </Stack>
             <WalletBalanceWrapper

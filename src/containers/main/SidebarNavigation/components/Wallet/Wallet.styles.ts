@@ -6,14 +6,13 @@ import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 export const WalletBalance = styled(m.div)`
     display: flex;
     justify-content: flex-start;
-    color: #fff;
+    color: ${({ theme }) => theme.palette.text.primary};
     width: 100%;
 `;
 
 export const WalletBalanceWrapper = styled.div`
     width: 100%;
     height: 51px;
-
     display: flex;
     align-items: center;
 `;
@@ -26,12 +25,15 @@ export const WalletBalanceContainer = styled(m.div)`
     align-items: flex-start;
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
-    padding: 10px 5px 5px;
+    padding: 0 5px 5px;
 `;
 
 export const BalanceVisibilityButton = styled(IconButton)`
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2) !important;
+    background: ${({ theme }) => theme.palette.background.paper};
     height: 22px;
     width: 22px;
+    svg {
+        fill: ${({ theme }) => theme.palette.text.primary};
+    }
 `;
