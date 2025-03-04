@@ -1,8 +1,9 @@
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { setAnimationState } from '@app/visuals';
 import { useEffect } from 'react';
+import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -10,24 +11,47 @@ export const useUiMiningStateMachine = () => {
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
+    const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isMining = cpuIsMining || gpuIsMining;
 
-    const statusIndex = window?.glApp?.stateManager?.statusIndex;
+    const indexTrigger = animationStatus;
 
     useEffect(() => {
-        const status = window?.glApp?.stateManager?.status;
-        const notStarted = !status || status == 'not-started' || status == 'stop';
+        let isLatestEffect = true;
+        if (!visualMode || visualModeToggleLoading) return;
+        const notStarted = !animationStatus || animationStatus == 'not-started';
         if (isMining && notStarted) {
-            setAnimationState('start');
+            // Debounce animation state changes
+            const timer = setTimeout(() => {
+                if (isLatestEffect) {
+                    setAnimationState('start');
+                }
+            }, 300);
+            return () => {
+                clearTimeout(timer);
+                isLatestEffect = false;
+            };
         }
-    }, [statusIndex, isMining]);
+    }, [indexTrigger, isMining, visualMode, visualModeToggleLoading]);
 
     useEffect(() => {
-        const notStopped = window?.glApp?.stateManager?.status !== 'not-started';
+        let isLatestEffect = true;
+        if (!visualMode || visualModeToggleLoading) return;
+        const notStopped = animationStatus !== 'not-started';
         const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
         const shouldStop = !isMining && notStopped && !preventStop;
         if (shouldStop) {
-            setAnimationState('stop');
+            // Debounce animation state changes
+            const timer = setTimeout(() => {
+                if (isLatestEffect) {
+                    setAnimationState('stop');
+                }
+            }, 300);
+            return () => {
+                clearTimeout(timer);
+                isLatestEffect = false;
+            };
         }
-    }, [statusIndex, setupComplete, isMiningInitiated, isMining, isChangingMode]);
+    }, [indexTrigger, setupComplete, isMiningInitiated, isMining, isChangingMode, visualMode, visualModeToggleLoading]);
 };

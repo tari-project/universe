@@ -17,9 +17,13 @@ import ThemeProvider from '../theme/ThemeProvider.tsx';
 import { useIsAppReady } from '@app/hooks/app/isAppReady.ts';
 import Splashscreen from '@app/containers/phase/Splashscreen/Splashscreen.tsx';
 
-const CurrentAppSection = memo(function CurrentAppSection() {
-    const isAppReady = useIsAppReady();
-    const isShuttingDown = useShuttingDown();
+const CurrentAppSection = memo(function CurrentAppSection({
+    isAppReady,
+    isShuttingDown,
+}: {
+    isAppReady?: boolean;
+    isShuttingDown?: boolean;
+}) {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
     const currentSection = useMemo(() => {
@@ -62,6 +66,8 @@ const CurrentAppSection = memo(function CurrentAppSection() {
 });
 
 export default function App() {
+    const isAppReady = useIsAppReady();
+    const isShuttingDown = useShuttingDown();
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
 
@@ -75,10 +81,10 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle />
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
-                <CurrentAppSection />
+                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
             </LazyMotion>
         </ThemeProvider>
     );
