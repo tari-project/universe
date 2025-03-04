@@ -101,6 +101,8 @@
   "reset": "Reset",
   "reset-config-explainer": "This option removes all configuration, settings, databases, logs, peers, etc., but will keep the wallet database so you <strong>retain your existing wallet address and balance</strong>.",
   "reset-config-explainer-wallet": "This option will remove all configuration, settings, databases, logs, peer connections, etc. for everything in Universe, <strong>including your existing wallet address and balance</strong>.",
+  "reset-config-title": "Reset all configuration settings, but leave wallet intact",
+  "reset-config-title-wallet": "Reset all configuration settings, and generate a new wallet",
   "reset-permanently": "क्या आप वाकई सभी सेटिंग्स को स्थायी रूप से रीसेट करना चाहते हैं?",
   "reset-restart": "Tari Universe will restart automatically once the reset is complete",
   "reset-settings": "सेटिंग्स रीसेट करें",

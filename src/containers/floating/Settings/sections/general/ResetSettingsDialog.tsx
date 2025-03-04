@@ -62,8 +62,8 @@ export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSetti
     }
 
     const options = [
-        { id: 'config_only', label: 'Reset all configuration settings' },
-        { id: 'config_and_wallet', label: 'Reset all configuration settings, and generate a new wallet' },
+        { id: 'config_only', label: t('reset-config-title') },
+        { id: 'config_and_wallet', label: t('reset-config-title-wallet') },
     ];
 
     return (
