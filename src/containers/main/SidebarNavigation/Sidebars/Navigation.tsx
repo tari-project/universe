@@ -50,8 +50,11 @@ const Navigation = memo(function Navigation() {
 
     function handleActiveSidebar() {
         setSidebarOpen(!sidebarOpen);
-        const offset = ((sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING) / window.innerWidth;
-        setAnimationProperties([{ property: 'cameraOffsetX', value: offset }]);
+        const offset = (sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
+        setAnimationProperties([
+            { property: 'offsetX', value: offset },
+            { property: 'cameraOffsetX', value: offset / window.innerWidth },
+        ]);
     }
 
     function handleMiningClick() {

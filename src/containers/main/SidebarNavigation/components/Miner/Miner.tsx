@@ -6,7 +6,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
-import { useMiningStatesSync } from '@app/hooks';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 import ModeSelect from './components/ModeSelect.tsx';
@@ -16,7 +16,6 @@ import { ExpandableTileItem, ExpandedContentTile } from './components/Expandable
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
 
 export default function Miner() {
-    useMiningStatesSync();
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
