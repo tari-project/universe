@@ -95,32 +95,35 @@ impl SpendWalletAdapter {
     }
 
     #[allow(clippy::too_many_lines)]
-    pub async fn send_one_sided_to_stealth_address(&mut self, amount: String, destination: String) -> Result<(), Error> {
+    pub async fn send_one_sided_to_stealth_address(
+        &mut self,
+        amount: String,
+        destination: String,
+    ) -> Result<(), Error> {
         // let inner_shutdown = Shutdown::new();
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
-        let recovery_args: Vec<String> = vec![
-            "--seed-words".to_string(),
-            seed_words.to_string(),
-        ];
-        let sync_args: Vec<String> = vec![
-            "sync".to_string()
-        ];
+        let recovery_args: Vec<String> = vec!["--seed-words".to_string(), seed_words.to_string()];
+        let sync_args: Vec<String> = vec!["sync".to_string()];
         let send_one_sided_to_stealth_address_args: Vec<String> = vec![
             "send-one-sided-to-stealth-address".to_string(),
             amount.to_string(),
-            destination.to_string()
+            destination.to_string(),
         ];
 
         //////////////////////////////////////////////////////////////////
-        let executions_args = vec![recovery_args, sync_args, send_one_sided_to_stealth_address_args];
+        let executions_args = vec![
+            recovery_args,
+            sync_args,
+            send_one_sided_to_stealth_address_args,
+        ];
 
         for (i, command) in executions_args.into_iter().enumerate() {
             match self.execute_command(command).await {
                 Ok(status) => {
-                    info!(target: LOG_TARGET, "xxxxxxx {}. Command executed successfully with status: {:?}", i + 2, status);
-                },
+                    info!(target: LOG_TARGET, "Send #{}. Command executed successfully with status: {:?}", i + 2, status);
+                }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "xxxxxxxx {}. Failed to execute command: {:?}", i + 2, e);
+                    error!(target: LOG_TARGET, "Send #{}. Failed to execute command: {:?}", i + 2, e);
                     return Err(e);
                 }
             }

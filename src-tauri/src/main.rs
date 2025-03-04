@@ -35,12 +35,12 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use serde_json::json;
 use spend_wallet_manager::SpendWalletManager;
-use tokio::fs::OpenOptions;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
+use tokio::fs::OpenOptions;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
@@ -935,7 +935,8 @@ struct UniverseAppState {
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
-    is_getting_transaction_history: Arc<AtomicBool>,
+    is_getting_transactions_history: Arc<AtomicBool>,
+    is_getting_coinbase_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
@@ -1064,7 +1065,8 @@ fn main() {
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
         missing_dependencies: Arc::new(RwLock::new(None)),
-        is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
+        is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
+        is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
@@ -1297,6 +1299,7 @@ fn main() {
             commands::get_seed_words,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
+            commands::get_transactions_history,
             commands::get_coinbase_transactions,
             commands::import_seed_words,
             commands::log_web_message,
