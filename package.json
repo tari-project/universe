@@ -1,10 +1,10 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.812",
+    "version": "0.9.813",
     "type": "module",
     "scripts": {
-        "dev": "vite dev --mode development",
+        "dev": "vite dev",
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
