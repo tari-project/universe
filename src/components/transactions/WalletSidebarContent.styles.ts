@@ -7,6 +7,6 @@ export const TabContentWrapper = styled.div`
     flex-direction: column;
     flex-shrink: 0;
     align-items: center;
-    gap: 20px;
+    gap: 8px;
     padding: 10px;
 `;
