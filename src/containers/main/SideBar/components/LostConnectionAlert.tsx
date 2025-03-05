@@ -14,7 +14,8 @@ const LostConnectionAlert = () => {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     // const isConnectedToTari = useMiningStore((s) => s.base_node?.is_connected);
     // Hotfix for now
-    const isConnectedToTari = true;
+    const isBadnwidthTooLow = useAppStateStore((s) => s.networkStatus?.is_too_low);
+    const isConnectedToTari = isBadnwidthTooLow;
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
     return !isConnectedToTari && !isSettingUp ? (

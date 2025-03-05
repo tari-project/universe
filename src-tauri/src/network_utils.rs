@@ -22,7 +22,9 @@
 
 use serde::Deserialize;
 use std::fmt::Write as _;
+use sysinfo::Networks;
 use tari_common::configuration::Network;
+use tauri::{AppHandle, Emitter};
 
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {

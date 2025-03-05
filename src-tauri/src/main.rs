@@ -42,6 +42,7 @@ use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
+use utils::network_status::NetworkStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
@@ -323,6 +324,10 @@ async fn setup_inner(
         .updates_manager
         .init_periodic_updates(app.clone())
         .await?;
+
+    NetworkStatus::current()
+        .start_listener_for_network_speeds(app.clone())
+        .await;
 
     let data_dir = app
         .path()
