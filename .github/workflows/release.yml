@@ -105,6 +105,7 @@ jobs:
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
         env:
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
+          # Added
           BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
         shell: bash
         run: |
@@ -259,4 +260,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tari_universe.pdb
-          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
+          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb="
