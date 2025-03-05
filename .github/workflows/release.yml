@@ -9,6 +9,7 @@ on:
       - 'release'
       - 'beta'
       - 'build-*'
+      - fix/use-lowercase-for-linux
   schedule:
     - cron: '05 00 * * *'
   workflow_dispatch:
