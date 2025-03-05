@@ -22,7 +22,7 @@
 
 import { ThemePalette } from '@app/theme/types.ts';
 import { colors as c } from './colors.ts';
-import { colorsAlpha as alpha } from './colorsAlpha.ts';
+import { colorsAlpha, colorsAlpha as alpha } from './colorsAlpha.ts';
 import { darkGradients } from '@app/theme/gradients.ts';
 
 const darkPalette: ThemePalette = {
@@ -36,8 +36,10 @@ const darkPalette: ThemePalette = {
             dark: c.tariPurple[950],
             light: c.tariPurple[400],
             shadow: alpha.tariPurpleAlpha[20],
-            wisp: alpha.tariPurpleAlpha[10],
+            wisp: alpha.tariPurpleAlpha[20],
             contrast: '#FFFFFF',
+            disabled: colorsAlpha.lightAlpha[10],
+            accent: c.grey[300],
         },
         secondary: {
             main: c.green[600],
@@ -53,6 +55,7 @@ const darkPalette: ThemePalette = {
             secondary: c.grey[400],
             disabled: 'rgba(255,255,255,0.4)',
             contrast: '#000000',
+            shadow: colorsAlpha.greyscaleAlpha[30],
         },
         background: {
             default: c.grey[900],

@@ -95,7 +95,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
 
     
     html {
-        background: ${({ theme }) => theme.palette.base};
+        background: ${({ theme }) => theme.palette.background.main};
     }
     #tower-canvas {
         z-index: 0;
@@ -104,6 +104,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         pointer-events: auto;
         width: 100vw;
         background: none;
+        transition: visibility .1s ease;
         visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
 

@@ -83,3 +83,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
         }
     },
 }));
+
+export const initialFetchTx = () => {
+    useWalletStore.getState().fetchCoinbaseTransactions(false, 20);
+};
