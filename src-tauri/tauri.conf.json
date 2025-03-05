@@ -67,8 +67,8 @@
             {
                 "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
-                "width": 1380,
-                "height": 780,
+                "width": 1300,
+                "height": 731,
                 "minWidth": 1144,
                 "minHeight": 660,
                 "resizable": true,
