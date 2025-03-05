@@ -84,10 +84,6 @@ impl NetworkStatus {
             || upload_speed < MINIMAL_NETWORK_UPLOAD_SPEED
     }
 
-    pub fn get_networks(&self) -> &Networks {
-        &self.networks
-    }
-
     pub async fn cancel_listener(&self) {
         let cancelation_token = self.cancelation_token.lock().await;
         cancelation_token.cancel();
