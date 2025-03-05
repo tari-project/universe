@@ -261,4 +261,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tari_universe.pdb
-          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb="
+          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb"
