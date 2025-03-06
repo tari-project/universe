@@ -7,6 +7,7 @@ import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/miningStoreActions.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
@@ -28,8 +29,11 @@ export default function MiningButton() {
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const isMining = isCPUMining || isGPUMining;
+    const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
+    const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
+    const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
-    const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled;
+    const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled;
     const isAppLoading = isAppSettingUp || isMiningLoading;
 
     const miningButtonStateText = useMemo(() => {
