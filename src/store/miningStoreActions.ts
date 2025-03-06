@@ -93,7 +93,6 @@ const setMiningNetwork = async () => {
         const appStateStore = useAppStateStore.getState();
         console.error('Could not get network: ', e);
         appStateStore.setError(e as string);
-        useMiningStore.setState({ excludedGpuDevices: undefined });
     }
 };
 
