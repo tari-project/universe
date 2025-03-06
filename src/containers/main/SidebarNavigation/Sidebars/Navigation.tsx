@@ -1,4 +1,4 @@
-import { memo, ReactNode } from 'react';
+import { memo, ReactNode, useEffect } from 'react';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 
@@ -48,11 +48,6 @@ const Navigation = memo(function Navigation() {
     function handleActiveSidebar(sidebarType: SidebarType) {
         if (currentSidebar === sidebarType) {
             setSidebarOpen(!sidebarOpen);
-            const offset = (sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
-            setAnimationProperties([
-                { property: 'offsetX', value: offset },
-                { property: 'cameraOffsetX', value: offset / window.innerWidth },
-            ]);
         } else {
             setCurrentSidebar(sidebarType);
             if (!sidebarOpen) {
@@ -60,6 +55,13 @@ const Navigation = memo(function Navigation() {
             }
         }
     }
+    useEffect(() => {
+        const offset = (!sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
+        setAnimationProperties([
+            { property: 'offsetX', value: offset },
+            { property: 'cameraOffsetX', value: offset / window.innerWidth },
+        ]);
+    }, [sidebarOpen]);
 
     const miningSection = (
         <NavButton onClick={() => handleActiveSidebar('mining')} isActive={miningActive}>
