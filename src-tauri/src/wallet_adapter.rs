@@ -59,6 +59,8 @@ pub struct WalletAdapter {
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     state_broadcast: watch::Sender<Option<WalletState>>,
+    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
+    coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
 impl WalletAdapter {
@@ -74,7 +76,133 @@ impl WalletAdapter {
             tcp_listener_port,
             grpc_port,
             state_broadcast,
+            completed_transactions_stream: Mutex::new(None),
+            coinbase_transactions_stream: Mutex::new(None),
         }
+    }
+
+    pub async fn get_transactions_history(
+        &self,
+        continuation: bool,
+        limit: Option<u32>,
+    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
+        // TODO: Implement starting point instead of continuation
+        let mut stream =
+            if continuation && self.completed_transactions_stream.lock().await.is_some() {
+                self.completed_transactions_stream
+                    .lock()
+                    .await
+                    .take()
+                    .expect("completed_transactions_stream not found")
+            } else {
+                let mut client = WalletClient::connect(self.wallet_grpc_address())
+                    .await
+                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+                let res = client
+                    .get_completed_transactions(GetCompletedTransactionsRequest {})
+                    .await
+                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+                res.into_inner()
+            };
+
+        let mut transactions: Vec<TransactionInfo> = Vec::new();
+
+        while let Some(message) = stream
+            .message()
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
+        {
+            let tx = message.transaction.ok_or_else(|| {
+                WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
+            })?;
+            transactions.push(TransactionInfo {
+                tx_id: tx.tx_id,
+                source_address: tx.source_address.to_hex(),
+                dest_address: tx.dest_address.to_hex(),
+                status: tx.status,
+                amount: MicroMinotari(tx.amount),
+                fee: tx.fee,
+                timestamp: tx.timestamp,
+                payment_id: tx.payment_id.to_hex(),
+                mined_in_block_height: tx.mined_in_block_height,
+            });
+            if let Some(limit) = limit {
+                if transactions.len() >= limit as usize {
+                    break;
+                }
+            }
+        }
+
+        self.completed_transactions_stream
+            .lock()
+            .await
+            .replace(stream);
+        Ok(transactions)
+    }
+
+    pub async fn get_coinbase_transactions(
+        &self,
+        continuation: bool,
+        limit: Option<u32>,
+    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
+        // TODO: Implement starting point instead of continuation
+        let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
+        {
+            self.coinbase_transactions_stream
+                .lock()
+                .await
+                .take()
+                .expect("coinbase_transactions_stream not found")
+        } else {
+            let mut client = WalletClient::connect(self.wallet_grpc_address())
+                .await
+                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+            let res = client
+                .get_completed_transactions(GetCompletedTransactionsRequest {})
+                .await
+                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+            res.into_inner()
+        };
+
+        let mut transactions: Vec<TransactionInfo> = Vec::new();
+
+        while let Some(message) = stream
+            .message()
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
+        {
+            let tx = message.transaction.expect("Transaction not found");
+            if tx.status != 12 && tx.status != 13 {
+                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
+                continue;
+            }
+            transactions.push(TransactionInfo {
+                tx_id: tx.tx_id,
+                source_address: tx.source_address.to_hex(),
+                dest_address: tx.dest_address.to_hex(),
+                status: tx.status,
+                amount: MicroMinotari(tx.amount),
+                fee: tx.fee,
+                timestamp: tx.timestamp,
+                payment_id: tx.payment_id.to_hex(),
+                mined_in_block_height: tx.mined_in_block_height,
+            });
+            if let Some(limit) = limit {
+                if transactions.len() >= limit as usize {
+                    break;
+                }
+            }
+        }
+
+        self.coinbase_transactions_stream
+            .lock()
+            .await
+            .replace(stream);
+        Ok(transactions)
+    }
+
+    pub fn wallet_grpc_address(&self) -> String {
+        format!("http://127.0.0.1:{}", self.grpc_port)
     }
 }
 
@@ -196,7 +324,6 @@ impl ProcessAdapter for WalletAdapter {
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
                 state_broadcast: self.state_broadcast.clone(),
-                completed_transactions_stream: Mutex::new(None),
             },
         ))
     }
@@ -210,20 +337,9 @@ impl ProcessAdapter for WalletAdapter {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum WalletStatusMonitorError {
-    #[error("Wallet not started")]
-    WalletNotStarted,
-    #[error("Tari address conversion error: {0}")]
-    TariAddress(#[from] TariAddressError),
-    #[error("Unknown error: {0}")]
-    UnknownError(#[from] anyhow::Error),
-}
-
 pub struct WalletStatusMonitor {
     grpc_port: u16,
     state_broadcast: watch::Sender<Option<WalletState>>,
-    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
 impl Clone for WalletStatusMonitor {
@@ -231,7 +347,6 @@ impl Clone for WalletStatusMonitor {
         Self {
             grpc_port: self.grpc_port,
             state_broadcast: self.state_broadcast.clone(),
-            completed_transactions_stream: Mutex::new(None),
         }
     }
 }
@@ -250,6 +365,60 @@ impl StatusMonitor for WalletStatusMonitor {
             }
         }
     }
+}
+
+impl WalletStatusMonitor {
+    fn wallet_grpc_address(&self) -> String {
+        format!("http://127.0.0.1:{}", self.grpc_port)
+    }
+
+    pub async fn get_status(&self) -> Result<WalletState, WalletStatusMonitorError> {
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        let res = client
+            .get_state(GetStateRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        let status = res.into_inner();
+
+        Ok(WalletState {
+            scanned_height: status.scanned_height,
+            balance: WalletBalance::from(status.balance),
+            network: NetworkStatus::from(status.network),
+        })
+    }
+
+    #[deprecated(
+        note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
+    )]
+    #[allow(dead_code)]
+    pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
+        panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
+        // let mut client = WalletClient::connect(self.wallet_grpc_address())
+        //     .await
+        //     .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+        // let res = client
+        //     .get_address(Empty {})
+        //     .await
+        //     .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+        // let res = res.into_inner();
+
+        // match TariAddress::from_bytes(res.address.as_slice()) {
+        //     Ok(address) => Ok(address),
+        //     Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
+        // }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum WalletStatusMonitorError {
+    #[error("Wallet not started")]
+    WalletNotStarted,
+    #[error("Tari address conversion error: {0}")]
+    TariAddress(#[from] TariAddressError),
+    #[error("Unknown error: {0}")]
+    UnknownError(#[from] anyhow::Error),
 }
 
 #[allow(dead_code)]
@@ -331,111 +500,4 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
-}
-
-// TODO: We should get rid of methods from here
-// TODO: Store client connection??
-impl WalletStatusMonitor {
-    fn wallet_grpc_address(&self) -> String {
-        format!("http://127.0.0.1:{}", self.grpc_port)
-    }
-
-    pub async fn get_status(&self) -> Result<WalletState, WalletStatusMonitorError> {
-        let mut client = WalletClient::connect(self.wallet_grpc_address())
-            .await
-            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        let res = client
-            .get_state(GetStateRequest {})
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        let status = res.into_inner();
-
-        Ok(WalletState {
-            scanned_height: status.scanned_height,
-            balance: WalletBalance::from(status.balance),
-            network: NetworkStatus::from(status.network),
-        })
-    }
-
-    pub async fn get_coinbase_transactions(
-        &self,
-        continuation: bool,
-        limit: Option<u32>,
-    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream =
-            if continuation && self.completed_transactions_stream.lock().await.is_some() {
-                self.completed_transactions_stream
-                    .lock()
-                    .await
-                    .take()
-                    .expect("completed_transactions_stream not found")
-            } else {
-                let mut client = WalletClient::connect(self.wallet_grpc_address())
-                    .await
-                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-                let res = client
-                    .get_completed_transactions(GetCompletedTransactionsRequest {})
-                    .await
-                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-                res.into_inner()
-            };
-
-        let mut transactions: Vec<TransactionInfo> = Vec::new();
-
-        while let Some(message) = stream
-            .message()
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
-        {
-            let tx = message.transaction.expect("Transaction not found");
-            if tx.status != 12 && tx.status != 13 {
-                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
-                continue;
-            }
-            transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
-                source_address: tx.source_address.to_hex(),
-                dest_address: tx.dest_address.to_hex(),
-                status: tx.status,
-                amount: MicroMinotari(tx.amount),
-                fee: tx.fee,
-                timestamp: tx.timestamp,
-                payment_id: tx.payment_id.to_hex(),
-                mined_in_block_height: tx.mined_in_block_height,
-            });
-            if let Some(limit) = limit {
-                if transactions.len() >= limit as usize {
-                    break;
-                }
-            }
-        }
-
-        self.completed_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
-        Ok(transactions)
-    }
-
-    #[deprecated(
-        note = "Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address"
-    )]
-    #[allow(dead_code)]
-    pub async fn get_wallet_address(&self) -> Result<TariAddress, WalletStatusMonitorError> {
-        panic!("Do not use. The view only wallet currently returns an interactive address that is not usable. Remove when grpc has been updated to return correct offline address");
-        // let mut client = WalletClient::connect(self.wallet_grpc_address())
-        //     .await
-        //     .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-        // let res = client
-        //     .get_address(Empty {})
-        //     .await
-        //     .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-        // let res = res.into_inner();
-
-        // match TariAddress::from_bytes(res.address.as_slice()) {
-        //     Ok(address) => Ok(address),
-        //     Err(err) => Err(WalletStatusMonitorError::TariAddress(err)),
-        // }
-    }
 }

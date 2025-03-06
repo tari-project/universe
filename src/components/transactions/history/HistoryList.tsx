@@ -1,6 +1,6 @@
 import { memo, useCallback, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { initialFetchTx, useWalletStore } from '@app/store/useWalletStore';
+import { initialFetchTxs, useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { ListItem } from './ListItem.tsx';
@@ -9,19 +9,19 @@ interface HistoryListProps {
     winsOnly?: boolean;
 }
 const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
-    const is_reward_history_loading = useWalletStore((s) => s.is_reward_history_loading);
-    const transactions = useWalletStore((s) => s.coinbase_transactions);
-    const fetchCoinbaseTransactions = useWalletStore((s) => s.fetchCoinbaseTransactions);
-    const hasMore = useWalletStore((s) => s.has_more_coinbase_transactions);
+    const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
+    const transactions = useWalletStore((s) => s.transactions);
+    const fetchTransactionsHistory = useWalletStore((s) => s.fetchTransactionsHistory);
+    const hasMore = useWalletStore((s) => s.has_more_transactions);
 
     useEffect(() => {
-        initialFetchTx();
+        initialFetchTxs();
     }, []);
     const handleNext = useCallback(() => {
-        if (!is_reward_history_loading) {
-            fetchCoinbaseTransactions(true, 20);
+        if (!is_transactions_history_loading) {
+            fetchTransactionsHistory(true, 20);
         }
-    }, [fetchCoinbaseTransactions, is_reward_history_loading]);
+    }, [fetchTransactionsHistory, is_transactions_history_loading]);
 
     return (
         <ListWrapper id="list">
