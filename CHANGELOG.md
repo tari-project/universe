@@ -1,3 +1,22 @@
+# 🌑 TARI UNIVERSE v0.9.813: The Tide’s Forge Episode 2
+
+_March 6, 2025_
+
+## Hey Tari Fam,
+The journey to mainnet continues with another round of performance enhancements and fixes. This release brings several GPU-related improvements, more responsive mining behavior, and refinements to system settings. Thank you all for being Tari OGs—Tari exists because of you! 💜🐢
+
+## WHAT'S NEW  
+🎨 Visual Mode Update – Full canvas mode has been removed.
+⏳ Faster Miner Recovery – Lowered XMRig retry time from 5s to 1s for quicker reconnections.
+🎮 GPU Stability Enhancements – Refactored GPU-related deadlock handling.
+🔄 GPU Device Fix – Resolved issues with toggling GPU mining on/off.
+🔔 Windows UAC Update – The UAC dialog (security prompt when updating)  now displays a clearer Tari Universe name.
+♻️ Better App Restarts – Improved reliability of restarts across all scenarios.
+⚙️ Settings Reset Dialog – Enhanced confirmation dialog before resetting settings.
+🌗 Dark Mode Behavior – Now defaults to the system setting.
+
+---
+
 # 🌑 TARI UNIVERSE v0.9.811: The Tide’s Forge Episode 1
 
 _March 3, 2025_
