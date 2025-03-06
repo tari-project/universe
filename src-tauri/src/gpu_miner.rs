@@ -291,44 +291,6 @@ impl GpuMiner {
         Ok(available_engines)
     }
 
-    pub async fn get_available_gpu_engines(
-        &self,
-        config_dir: PathBuf,
-    ) -> Result<Vec<EngineType>, anyhow::Error> {
-        let mut available_engines: Vec<EngineType> = vec![];
-        let engine_statuses_directory = config_dir.join("gpuminer").join("engine_statuses");
-
-        for entry in read_dir(engine_statuses_directory)? {
-            info!(target: LOG_TARGET, "Reading engine status file");
-            info!(target: LOG_TARGET, "Engine status file: {:?}", entry);
-            let entry = entry?;
-            let path = entry.path();
-            // let file_name = path.file_name().unwrap().to_str().unwrap();
-            let file_name = path
-                .file_name()
-                .ok_or_else(|| anyhow::anyhow!("Failed to get file name"))?
-                .to_str()
-                .ok_or_else(|| anyhow::anyhow!("Failed conversion to string"))?;
-
-            let sanitized_file_name = file_name.split("_").collect::<Vec<&str>>()[0];
-            let engine_type = EngineType::from_string(sanitized_file_name);
-
-            info!(target: LOG_TARGET, "File name: {:?}", file_name);
-            info!(target: LOG_TARGET, "Sanitized file name: {:?}", sanitized_file_name);
-
-            match engine_type {
-                Ok(engine) => {
-                    available_engines.push(engine);
-                }
-                Err(_) => {
-                    info!(target: LOG_TARGET, "Invalid engine type: {:?}", sanitized_file_name);
-                }
-            }
-        }
-
-        Ok(available_engines)
-    }
-
     async fn initialize_status_updates(&self, mut app_shutdown: ShutdownSignal) {
         let mut gpu_raw_status_rx = self.gpu_raw_status_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();

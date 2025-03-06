@@ -21,11 +21,13 @@ const GpuDevices = () => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const miningAllowed = useAppStateStore((s) => s.setupComplete);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
+    const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
+    const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const toggleDeviceExclusion = useMiningStore((s) => s.toggleDeviceExclusion);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
-    const isDisabled = isMiningInProgress || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
+    const isDisabled = isExcludingGpuDevices || isGPUMining || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
     const handleSetExcludedDevice = useCallback(
         async (device: GpuDevice) => {
             toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
