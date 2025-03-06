@@ -3,7 +3,7 @@ import { TxInput, TxInputProps } from '@app/components/transactions/components/T
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { StyledForm } from '@app/components/transactions/tx-types/tx.styles.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -15,31 +15,36 @@ const fields: TxInputProps[] = [
     { name: 'tx_amount', placeholder: 'Amount', icon: <TariOutlineSVG /> },
 ];
 
+interface SendInputs {
+    tx_message: string;
+    tx_address: string;
+    tx_amount: string;
+}
+
+type InputName = keyof SendInputs;
+
 export function Send() {
     const {
-        control,
+        register,
         handleSubmit,
         setValue,
         formState: { isSubmitting },
-    } = useForm<TxInputProps>({
+    } = useForm<SendInputs>({
         shouldUseNativeValidation: true,
+        defaultValues: { tx_message: 'string', tx_address: 'string', tx_amount: 'string' },
     });
 
     const fieldMarkup = fields.map(({ name, placeholder, ...rest }) => {
+        const fieldName = name as InputName;
+
         return (
-            <Controller
+            <TxInput
                 key={name}
-                name="name"
-                control={control}
-                render={({ field }) => (
-                    <TxInput
-                        id={name}
-                        name={name}
-                        onChange={(e) => setValue(field.name, e.target.value)}
-                        placeholder={placeholder}
-                        {...rest}
-                    />
-                )}
+                {...register(fieldName)}
+                name={name}
+                onChange={(e) => setValue(fieldName, e.target.value)}
+                placeholder={placeholder}
+                {...rest}
             />
         );
     });
@@ -48,6 +53,7 @@ export function Send() {
         await invoke('send_one_sided_to_stealth_address', {
             amount: data.tx_amount,
             destination: data.tx_address,
+            payment_id: data.tx_message,
         });
     }, []);
 
