@@ -5,7 +5,7 @@ import { AppConfig, GpuThreads } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { toggleDeviceExclusion, useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
 import { sidebarTowerOffset, TOWER_CANVAS_ID, setUITheme } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
@@ -173,7 +173,7 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             }
             if (enabled && gpu_devices.every((device) => device.settings.is_excluded)) {
                 for (const device of gpu_devices) {
-                    miningState.toggleDeviceExclusion(device.device_index, false);
+                    await toggleDeviceExclusion(device.device_index, false);
                 }
             }
         } catch (e) {
