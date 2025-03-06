@@ -14,7 +14,6 @@ export const Wrapper = styled.div`
 
     position: relative;
     height: auto;
-
     @media (max-height: 670px) {
         padding: 15px 20px 15px 20px;
     }

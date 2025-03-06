@@ -31,6 +31,10 @@ export const GridAreaBottom = styled.div`
     gap: 4px;
 `;
 
+export const HistoryWrapper = styled.div`
+    overflow: hidden;
+    border-radius: 10px;
+`;
 export const RewardWrapper = styled.div`
     display: flex;
     flex-direction: column;
@@ -38,5 +42,4 @@ export const RewardWrapper = styled.div`
     border-radius: 10px;
     gap: 10px;
     padding: 4px 0 0 0;
-    overflow: hidden;
 `;

@@ -20,8 +20,8 @@ export const WalletBalanceWrapper = styled.div`
 export const WalletBalanceContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
-    position: relative;
     justify-content: flex-end;
+    position: relative;
     align-items: flex-start;
     width: 100%;
     color: ${({ theme }) => theme.palette.text.secondary};
@@ -37,3 +37,4 @@ export const BalanceVisibilityButton = styled(IconButton)`
         fill: ${({ theme }) => theme.palette.text.primary};
     }
 `;
+

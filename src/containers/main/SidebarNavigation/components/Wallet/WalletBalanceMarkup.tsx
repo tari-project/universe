@@ -15,10 +15,17 @@ import {
 } from './Wallet.styles.ts';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+import SyncTooltip from '@app/containers/main/SidebarNavigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 
 export default function WalletBalanceMarkup() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-
+    const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
+    const handleSyncButtonClick = (e) => {
+        e.stopPropagation();
+        setShowPaperWalletModal(true);
+    };
     const {
         balanceDisplayValue,
         formattedLongBalance,
@@ -41,13 +48,24 @@ export default function WalletBalanceMarkup() {
 
     return (
         <WalletBalanceContainer>
-            <Stack direction="row" alignItems="center">
-                <Typography variant="span" style={{ fontSize: '11px' }}>
-                    {t('wallet-balance')}
-                </Typography>
-                <BalanceVisibilityButton onClick={toggleBalanceVisibility}>
-                    {showBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
-                </BalanceVisibilityButton>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" style={{ width: '100%' }}>
+                <Stack direction="row" alignItems="center">
+                    <Typography variant="span" style={{ fontSize: '11px' }}>
+                        {t('wallet-balance')}
+                    </Typography>
+                    <BalanceVisibilityButton onClick={toggleBalanceVisibility}>
+                        {showBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
+                    </BalanceVisibilityButton>
+                </Stack>
+                <SyncTooltip
+                    title={t('paper-wallet-tooltip-title')}
+                    text={t('paper-wallet-tooltip-message')}
+                    trigger={
+                        <Button size="xs" onClick={handleSyncButtonClick}>
+                            {t('paper-wallet-button')}
+                        </Button>
+                    }
+                />
             </Stack>
             <WalletBalanceWrapper
                 onMouseOver={() => toggleBalanceFormat({ isMouseOver: true })}
