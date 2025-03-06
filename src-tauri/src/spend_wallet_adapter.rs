@@ -29,7 +29,6 @@ use anyhow::Error;
 use log::{error, info};
 use std::path::PathBuf;
 use tari_common::configuration::Network;
-use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;

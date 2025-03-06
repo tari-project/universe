@@ -3,7 +3,7 @@ import { TxInput, TxInputProps } from '@app/components/transactions/components/T
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { StyledForm } from '@app/components/transactions/tx-types/tx.styles.ts';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
@@ -25,7 +25,7 @@ type InputName = keyof SendInputs;
 
 export function Send() {
     const {
-        register,
+        control,
         handleSubmit,
         setValue,
         formState: { isSubmitting },
@@ -38,22 +38,30 @@ export function Send() {
         const fieldName = name as InputName;
 
         return (
-            <TxInput
-                key={name}
-                {...register(fieldName)}
-                name={name}
-                onChange={(e) => setValue(fieldName, e.target.value)}
-                placeholder={placeholder}
-                {...rest}
+            <Controller
+                key={fieldName}
+                name={fieldName}
+                control={control}
+                render={({ field }) => (
+                    <TxInput
+                        id={name}
+                        name={name}
+                        onChange={(e) => setValue(field.name, e.target.value)}
+                        placeholder={placeholder}
+                        {...rest}
+                    />
+                )}
             />
         );
     });
-
+    // f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g
     const handleSend = useCallback(async (data) => {
+        console.debug('data', data);
+        console.debug(`data.tx_message= `, data.tx_message);
         await invoke('send_one_sided_to_stealth_address', {
             amount: data.tx_amount,
             destination: data.tx_address,
-            payment_id: data.tx_message,
+            paymentId: data.tx_message,
         });
     }, []);
 
