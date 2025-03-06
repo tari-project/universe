@@ -68,7 +68,6 @@ const CurrentAppSection = memo(function CurrentAppSection({
 export default function App() {
     const isAppReady = useIsAppReady();
     const isShuttingDown = useShuttingDown();
-    const view = useUIStore((s) => s.view);
     const setError = useAppStateStore((s) => s.setError);
     const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
 
@@ -82,7 +81,7 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown || view === 'wallet'} />
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />

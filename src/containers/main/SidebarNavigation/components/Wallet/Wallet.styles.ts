@@ -37,4 +37,3 @@ export const BalanceVisibilityButton = styled(IconButton)`
         fill: ${({ theme }) => theme.palette.text.primary};
     }
 `;
-
