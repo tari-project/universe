@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100vh;
     overflow-y: auto;
     width: 100%;
     position: relative;

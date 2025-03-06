@@ -3,7 +3,7 @@ import { TabItem } from './Tabs.tsx';
 
 const Wrapper = styled.div`
     display: grid;
-    padding: min(calc(1rem + 2vmin), 30px);
+    padding: 20px;
     justify-content: stretch;
     place-items: center;
     grid-auto-flow: column;

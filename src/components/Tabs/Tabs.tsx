@@ -5,10 +5,9 @@ import { ReactNode, useState } from 'react';
 
 const TabsWrapper = styled.div`
     width: 100%;
-    height: 100%;
     align-items: center;
     display: flex;
-    overflow: hidden;
+    overflow-x: hidden;
 `;
 const Wrapper = styled.div`
     width: 100%;
@@ -16,7 +15,6 @@ const Wrapper = styled.div`
     align-items: center;
     flex-direction: column;
     position: relative;
-    padding: 1rem;
 `;
 
 export interface TabItem {
