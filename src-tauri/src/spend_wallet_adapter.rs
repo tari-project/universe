@@ -99,14 +99,18 @@ impl SpendWalletAdapter {
         &mut self,
         amount: String,
         destination: String,
+        payment_id: Option<String>,
     ) -> Result<(), Error> {
         // let inner_shutdown = Shutdown::new();
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let recovery_args: Vec<String> = vec!["--seed-words".to_string(), seed_words.to_string()];
         let sync_args: Vec<String> = vec!["sync".to_string()];
+        let payment_id_option = format!("-p {}", payment_id.unwrap_or("<No message>".to_string()));
+
         let send_one_sided_to_stealth_address_args: Vec<String> = vec![
             "send-one-sided-to-stealth-address".to_string(),
             amount.to_string(),
+            payment_id_option,
             destination.to_string(),
         ];
 

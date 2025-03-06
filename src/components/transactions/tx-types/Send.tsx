@@ -15,21 +15,32 @@ const fields: TxInputProps[] = [
     { name: 'tx_amount', placeholder: 'Amount', icon: <TariOutlineSVG /> },
 ];
 
+interface SendInputs {
+    tx_message: string;
+    tx_address: string;
+    tx_amount: string;
+}
+
+type InputName = keyof SendInputs;
+
 export function Send() {
     const {
         control,
         handleSubmit,
         setValue,
         formState: { isSubmitting },
-    } = useForm<TxInputProps>({
+    } = useForm<SendInputs>({
         shouldUseNativeValidation: true,
+        defaultValues: { tx_message: 'string', tx_address: 'string', tx_amount: 'string' },
     });
 
     const fieldMarkup = fields.map(({ name, placeholder, ...rest }) => {
+        const fieldName = name as InputName;
+
         return (
             <Controller
-                key={name}
-                name="name"
+                key={fieldName}
+                name={fieldName}
                 control={control}
                 render={({ field }) => (
                     <TxInput
@@ -48,6 +59,7 @@ export function Send() {
         await invoke('send_one_sided_to_stealth_address', {
             amount: data.tx_amount,
             destination: data.tx_address,
+            paymentId: data.tx_message,
         });
     }, []);
 

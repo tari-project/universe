@@ -72,6 +72,7 @@ impl SpendWalletManager {
         &mut self,
         amount: String,
         destination: String,
+        payment_id: Option<String>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
@@ -80,7 +81,7 @@ impl SpendWalletManager {
         self.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         self.adapter.base_node_address = Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
         self.adapter
-            .send_one_sided_to_stealth_address(amount, destination)
+            .send_one_sided_to_stealth_address(amount, destination, payment_id)
             .await
     }
 }
