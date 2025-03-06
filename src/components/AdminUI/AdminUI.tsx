@@ -8,6 +8,7 @@ import { GreenModalsGroup } from './groups/GreenModalsGroup';
 import { ToastsGroup } from './groups/ToastsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
+import { TransferGroup } from './groups/TransferGroup';
 
 const AdminUI = memo(function AdminUI() {
     const [isOpen, setIsOpen] = useState(false);
@@ -36,6 +37,7 @@ const AdminUI = memo(function AdminUI() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 10 }}
                         >
+                            <TransferGroup />
                             <ThemeGroup />
                             <DialogsGroup />
                             <GreenModalsGroup />
