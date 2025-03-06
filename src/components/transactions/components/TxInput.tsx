@@ -9,34 +9,34 @@ const Wrapper = styled.div`
 
 const IconWrapper = styled.div`
     display: flex;
-    svg {
-        position: absolute;
-        transform: translateY(-50%);
-        top: 50%;
-        width: 18px;
-        left: 10px;
-    }
+    align-items: center;
+    width: 18px;
+    height: 18px;
+    position: absolute;
+    transform: translateY(-50%);
+    top: 50%;
+    left: 20px;
 `;
 
 const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     display: flex;
-    padding: ${({ $hasIcon }) => ($hasIcon ? `10px 20px 10px 40px` : `10px 20px`)};
+    padding: ${({ $hasIcon }) => ($hasIcon ? `10px 20px 10px 44px` : `10px 20px`)};
     background: ${({ theme }) => theme.palette.background.paper};
     border-radius: 25px;
     width: 100%;
     box-sizing: border-box;
 `;
 
-interface TxInputProps extends InputHTMLAttributes<HTMLInputElement> {
+type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
+export interface TxInputProps extends TxInputBase {
+    name: string;
     icon?: ReactNode;
 }
-function TxInput(props: TxInputProps) {
+export function TxInput({ name, icon, ...props }: TxInputProps) {
     return (
-        <Wrapper>
-            <IconWrapper>{props.icon}</IconWrapper>
-            <StyledInput $hasIcon={!!props.icon} {...props} />
+        <Wrapper key={name}>
+            {icon ? <IconWrapper>{icon}</IconWrapper> : null}
+            <StyledInput id={name} name={name} $hasIcon={!!icon} {...props} />
         </Wrapper>
     );
 }
-
-export { TxInput };
