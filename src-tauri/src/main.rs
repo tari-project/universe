@@ -41,6 +41,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
 use wallet_adapter::WalletState;
 
@@ -293,6 +294,8 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+    FrontendReadyChannel::current().wait_for_ready().await?;
+
     app.emit(
         "setup_message",
         SetupStatusEvent {
