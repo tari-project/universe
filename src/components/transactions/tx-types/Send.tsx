@@ -54,10 +54,8 @@ export function Send() {
             />
         );
     });
-    // f25eNHz2YnBVKHaqNuacGyDFB321RwwCnTr4vb2SjQCgDZVXyNNthc7zftQKRDu6evLjvSUD8W5akpPMdhS4HQ9kF3g
+
     const handleSend = useCallback(async (data) => {
-        console.debug('data', data);
-        console.debug(`data.tx_message= `, data.tx_message);
         await invoke('send_one_sided_to_stealth_address', {
             amount: data.tx_amount,
             destination: data.tx_address,
