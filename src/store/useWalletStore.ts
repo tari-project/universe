@@ -66,7 +66,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
                     ? 'sent'
                     : !tx.mined_in_block_height || tx.mined_in_block_height === 0
                       ? 'received'
-                      : 'mined') as TxType,
+                      : 'mined') as TxType, // will move to list component
             }));
             const transactions = continuation ? [...getState().transactions, ...txWithType] : txWithType;
             const has_more_transactions = txWithType.length > 0 && (!limit || txWithType.length === limit);
