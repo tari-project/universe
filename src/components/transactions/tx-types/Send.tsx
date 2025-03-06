@@ -4,6 +4,7 @@ import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Controller, useForm } from 'react-hook-form';
+import { StyledForm } from '@app/components/transactions/tx-types/tx.styles.ts';
 
 const fields: TxInputProps[] = [
     { name: 'tx_message', placeholder: 'Payment message' },
@@ -12,7 +13,11 @@ const fields: TxInputProps[] = [
 ];
 
 export function Send() {
-    const { control } = useForm<TxInputProps>({
+    const {
+        control,
+        handleSubmit,
+        formState: { isDirty },
+    } = useForm<TxInputProps>({
         shouldUseNativeValidation: true,
     });
 
@@ -28,12 +33,20 @@ export function Send() {
             />
         );
     });
+
+    console.debug(isDirty);
     return (
         <TabContentWrapper>
-            {fieldMarkup}
-            <Stack alignItems="flex-end" justifyContent="flex-end" direction="row" style={{ width: `100%` }}>
-                <Button size="xs" variant="outlined">{`Max`}</Button>
-            </Stack>
+            <StyledForm onSubmit={handleSubmit(() => console.debug('bla'))}>
+                {fieldMarkup}
+                <Stack alignItems="flex-end" justifyContent="flex-end" direction="row" style={{ width: `100%` }}>
+                    <Button size="xs" variant="outlined" type="button">{`Max`}</Button>
+                </Stack>
+
+                <Button disabled={!isDirty} type="submit">
+                    {`send`}
+                </Button>
+            </StyledForm>
         </TabContentWrapper>
     );
 }
