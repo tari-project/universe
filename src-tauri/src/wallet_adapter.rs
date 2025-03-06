@@ -35,6 +35,7 @@ use minotari_node_grpc_client::grpc::{
     GetStateRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
+use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
@@ -125,7 +126,7 @@ impl WalletAdapter {
                 direction: tx.direction,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: tx.payment_id.to_hex(),
+                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -188,7 +189,7 @@ impl WalletAdapter {
                 direction: tx.direction,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: tx.payment_id.to_hex(),
+                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
