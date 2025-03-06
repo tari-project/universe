@@ -1,15 +1,16 @@
 import styled, { css } from 'styled-components';
 import clouds from '@app/assets/backgrounds/clouds.png';
 
-export const sidebarWidth = '348px'; // if this is updated please update the value in init-visuals.js
+export const SB_MINI_WIDTH = 78;
+export const SB_WIDTH = 348;
+export const SB_SPACING = 20;
 
 export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
-    display: grid;
-    grid-template-columns: ${sidebarWidth} auto;
+    display: flex;
     position: relative;
-    gap: 20px;
     padding: 20px;
-    height: 100%;
+    height: 100vh;
+    width: 100%;
 
     &:after {
         content: '';
