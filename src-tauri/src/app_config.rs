@@ -285,7 +285,7 @@ impl AppConfig {
             config_file: None,
             created_at: None,
             mode: MiningMode::Eco,
-            display_mode: DisplayMode::Light,
+            display_mode: DisplayMode::System,
             mine_on_app_start: true,
             p2pool_enabled: true,
             last_binaries_update_timestamp: default_system_time(),
@@ -355,7 +355,7 @@ impl AppConfig {
                 self.config_version = config.version;
                 self.mode = MiningMode::from_str(&config.mode).unwrap_or(MiningMode::Eco);
                 self.display_mode =
-                    DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::Light);
+                    DisplayMode::from_str(&config.display_mode).unwrap_or(DisplayMode::System);
                 self.mine_on_app_start = config.mine_on_app_start;
                 self.p2pool_enabled = config.p2pool_enabled;
                 self.last_binaries_update_timestamp = config.last_binaries_update_timestamp;
@@ -842,7 +842,7 @@ fn default_mode() -> String {
 }
 
 fn default_display_mode() -> String {
-    "light".to_string()
+    "system".to_string()
 }
 
 fn default_false() -> bool {
