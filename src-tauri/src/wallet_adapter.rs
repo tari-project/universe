@@ -35,11 +35,11 @@ use minotari_node_grpc_client::grpc::{
     GetStateRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
-use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
