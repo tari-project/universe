@@ -31,8 +31,8 @@ static INSTANCE: LazyLock<FrontendReadyChannel> = LazyLock::new(FrontendReadyCha
 
 #[derive(Debug)]
 pub struct FrontendReadyChannel {
-    pub sender: Sender<bool>,
-    pub receiver: Mutex<Receiver<bool>>,
+    sender: Sender<bool>,
+    receiver: Mutex<Receiver<bool>>,
 }
 
 impl FrontendReadyChannel {
@@ -45,7 +45,7 @@ impl FrontendReadyChannel {
     }
 
     pub fn set_ready(&self) {
-        self.sender.send(true).unwrap();
+        self.sender.send(true).expect("Failed to send ready signal");
     }
 
     pub async fn wait_for_ready(&self) -> Result<(), tokio::sync::watch::error::RecvError> {
