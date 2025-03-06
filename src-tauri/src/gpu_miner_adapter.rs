@@ -61,14 +61,14 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
     pub(crate) gpu_devices: HashMap<String, GpuDevice>,
-    pub(crate) latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+    pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
     pub fn new(
         gpu_devices: HashMap<String, GpuDevice>,
-        latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+        gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     ) -> Self {
         Self {
             tari_address: TariAddress::default(),
@@ -83,7 +83,7 @@ impl GpuMinerAdapter {
             node_source: None,
             coinbase_extra: "tari-universe".to_string(),
             gpu_devices,
-            latest_status_broadcast,
+            gpu_raw_status_broadcast,
             curent_selected_engine: EngineType::OpenCL,
         }
     }
@@ -235,7 +235,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             GpuMinerStatusMonitor {
                 http_api_port,
                 start_time: Instant::now(),
-                latest_status_broadcast: self.latest_status_broadcast.clone(),
+                gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),
             },
         ))
     }
@@ -253,14 +253,14 @@ impl ProcessAdapter for GpuMinerAdapter {
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
     start_time: Instant,
-    latest_status_broadcast: watch::Sender<GpuMinerStatus>,
+    gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         if let Ok(status) = self.status().await {
-            let _result = self.latest_status_broadcast.send(status.clone());
+            let _result = self.gpu_raw_status_broadcast.send(Some(status.clone()));
             // GPU returns 0 for first 10 seconds until it has an average
             if status.hash_rate > 0.0 || self.start_time.elapsed().as_secs() < 11 {
                 HealthStatus::Healthy
@@ -268,6 +268,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
                 HealthStatus::Warning
             }
         } else {
+            let _result = self.gpu_raw_status_broadcast.send(None);
             HealthStatus::Unhealthy
         }
     }

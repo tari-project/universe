@@ -86,7 +86,7 @@ jobs:
       - name: cargo machete
         working-directory: ./src-tauri
         run: |
-          cargo install cargo-machete
+          cargo install --version 0.7.0 cargo-machete
           cargo machete
 
   tauri-test-build:
@@ -110,13 +110,6 @@ jobs:
           sudo apt-get install --no-install-recommends --assume-yes \
             opencl-headers \
             ocl-icd-opencl-dev
-
-      - name: Install Dependencies - Linux/GStreamer (for audio playback)
-        run: |
-          sudo apt-get install --no-install-recommends --assume-yes \
-            libunwind-dev libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
-            gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-x gstreamer1.0-alsa gstreamer1.0-gl gstreamer1.0-gtk3 \
-            gstreamer1.0-qt5 gstreamer1.0-pulseaudio gstreamer1.0-fdkaac patchelf
 
       - uses: actions/setup-node@v4
         with:

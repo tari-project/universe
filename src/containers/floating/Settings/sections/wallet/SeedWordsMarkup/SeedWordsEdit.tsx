@@ -14,20 +14,20 @@ import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
-export interface SeedWordsEditProps {
+interface SeedWordsEditProps {
     toggleEdit: () => Promise<void>;
     seedWords: string[];
     seedWordsFetching: boolean;
 }
 
-export const WrapperForm = styled.form(() => ({
+const WrapperForm = styled.form(() => ({
     display: 'flex',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: '10px',
 }));
 
-export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
+const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
     backgroundColor: theme.palette.background.default,
     width: '100%',
     borderRadius: '10px',
@@ -37,16 +37,16 @@ export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasEr
     lineHeight: theme.typography.h6.lineHeight,
 }));
 
-export const IconContainer = styled.div(({ theme }) => ({
+const IconContainer = styled.div(({ theme }) => ({
     color: theme.palette.text.primary,
 }));
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
     height: '14px',
 }));
 
-export const GreyTypography = styled(Typography)(({ theme }) => ({
+const GreyTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.text.secondary,
     height: '14px',
 }));

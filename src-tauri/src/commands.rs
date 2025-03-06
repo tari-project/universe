@@ -37,7 +37,6 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
-use crate::utils::locks_utils::{try_read_with_retry, try_write_with_retry};
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -111,6 +110,27 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
+}
+
+impl Default for CpuMinerStatus {
+    fn default() -> Self {
+        Self {
+            is_mining: false,
+            hash_rate: 0.0,
+            estimated_earnings: 0,
+            connection: CpuMinerConnectionStatus {
+                is_connected: false,
+            },
+        }
+    }
+}
+
+impl Default for CpuMinerConnectionStatus {
+    fn default() -> Self {
+        Self {
+            is_connected: false,
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -188,6 +208,14 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
         app_handle
             .emit("app_ready", setup_complete_value)
             .expect("Could not emit event 'app_ready'");
+
+        if let Err(e) = state
+            .updates_manager
+            .init_periodic_updates(app.clone())
+            .await
+        {
+            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
+        }
 
         let has_missing = missing_dependencies.is_some();
         let external_dependencies = missing_dependencies.clone();
@@ -491,6 +519,12 @@ pub async fn set_p2pool_stats_server_port(
     port: Option<u16>,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_p2pool_stats_server_port".to_string(), json!(port))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -716,6 +750,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[reset_settings] Resetting settings, reset_wallet: {:?}", reset_wallet);
     stop_all_processes(app.clone(), true).await?;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
@@ -763,7 +798,6 @@ pub async fn reset_settings<'r>(
                 if path.is_dir() {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if folder_block_list.contains(&file_name) {
-                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory", path);
                             continue;
                         }
                     }
@@ -784,15 +818,12 @@ pub async fn reset_settings<'r>(
                         .unwrap_or(false);
 
                     if !reset_wallet && contains_wallet_config {
-                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and reset_wallet is false", path);
                         continue;
                     }
                     if reset_wallet && contains_wallet_config && !is_network_dir {
-                        debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} directory because it contains wallet_config.json and does not matches network name", path);
                         continue;
                     }
 
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} directory", path);
                     remove_dir_all(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} directory: {:?}", path, e);
                         format!("Could not remove directory: {}", e)
@@ -800,12 +831,10 @@ pub async fn reset_settings<'r>(
                 } else {
                     if let Some(file_name) = path.file_name().and_then(|name| name.to_str()) {
                         if files_block_list.contains(&file_name) {
-                            debug!(target: LOG_TARGET, "[reset_settings] Skipping {:?} file", path);
                             continue;
                         }
                     }
 
-                    debug!(target: LOG_TARGET, "[reset_settings] Removing {:?} file", path);
                     remove_file(path.clone()).map_err(|e| {
                         error!(target: LOG_TARGET, "[reset_settings] Could not remove {:?} file: {:?}", path, e);
                         format!("Could not remove file: {}", e)
@@ -881,6 +910,7 @@ pub async fn set_allow_telemetry(
     state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_allow_telemetry] called with flag: {:?}", allow_telemetry);
     state
         .config
         .write()
@@ -914,11 +944,20 @@ pub async fn set_application_language(
     state: tauri::State<'_, UniverseAppState>,
     application_language: String,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_application_language] called with language: {}", application_language);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_application_language".to_string(),
+            json!(application_language.clone()),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
         .await
-        .set_application_language(application_language.clone())
+        .set_application_language(application_language)
         .await
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -930,6 +969,15 @@ pub async fn set_auto_update(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_auto_update".to_string(),
+            json!({ "auto_update": auto_update }),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -951,6 +999,12 @@ pub async fn set_cpu_mining_enabled<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_cpu_mining_enabled".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_cpu_mining_enabled(enabled)
@@ -997,6 +1051,12 @@ pub async fn set_display_mode(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_display_mode".to_string(), json!(display_mode))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1018,6 +1078,7 @@ pub async fn toggle_device_exclusion(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_excluded_gpu_devices] called with devices: {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
     let config_dir = app
         .path()
@@ -1037,6 +1098,12 @@ pub async fn set_gpu_mining_enabled(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_gpu_mining_enabled".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_gpu_mining_enabled(enabled)
@@ -1059,7 +1126,15 @@ pub async fn set_mine_on_app_start(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-
+    info!(target: LOG_TARGET, "[set_mine_on_app_start] called with flag: {:?}", mine_on_app_start);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_mine_on_app_start".to_string(),
+            json!(mine_on_app_start),
+        )
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1084,7 +1159,7 @@ pub async fn set_mode(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "set_mode called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+    info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
 
     state
         .config
@@ -1125,6 +1200,7 @@ pub async fn set_monerod_config(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
     state
         .config
         .write()
@@ -1146,6 +1222,12 @@ pub async fn set_p2pool_enabled(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1226,6 +1308,15 @@ pub async fn set_should_auto_launch(
     should_auto_launch: bool,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
+    info!(target: LOG_TARGET, "[set_should_auto_launch] called with flag: {:?}", should_auto_launch);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send(
+            "set_should_auto_launch".to_string(),
+            json!(should_auto_launch),
+        )
+        .await;
+    drop(telemetry_service);
     match state
         .config
         .write()
@@ -1259,6 +1350,7 @@ pub async fn set_tor_config(
     _app: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_tor_config] called with config: {:?}", config);
     let tor_config = state
         .tor_manager
         .set_tor_config(config)
@@ -1278,6 +1370,12 @@ pub async fn set_use_tor(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_use_tor".to_string(), json!(use_tor))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1310,6 +1408,12 @@ pub async fn set_visual_mode<'r>(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_visual_mode".to_string(), json!(enabled))
+        .await;
+    drop(telemetry_service);
     let mut config = state.config.write().await;
     config
         .set_visual_mode(enabled)
@@ -1352,22 +1456,7 @@ pub async fn set_airdrop_tokens<'r>(
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
         let currently_mining = {
-            let node_status = state.node_status_watch_rx.borrow().clone();
-            let cpu_miner = state.cpu_miner.read().await;
-            let cpu_mining_status = match cpu_miner
-                .status(
-                    node_status.randomx_network_hashrate,
-                    node_status.block_reward,
-                )
-                .await
-                .map_err(|e| e.to_string())
-            {
-                Ok(cpu) => cpu,
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error getting cpu miner status: {:?}", e);
-                    return Err(e);
-                }
-            };
+            let cpu_mining_status = state.cpu_miner_status_watch_rx.borrow().clone();
             let gpu_mining_status = state.gpu_latest_status.borrow().clone();
             cpu_mining_status.is_mining || gpu_mining_status.is_mining
         };
@@ -1389,38 +1478,6 @@ pub async fn set_airdrop_tokens<'r>(
     Ok(())
 }
 
-#[tauri::command]
-pub async fn get_audio_enabled(state: tauri::State<'_, UniverseAppState>) -> Result<bool, String> {
-    let enabled = state.config.read().await.audio_enabled();
-    Ok(enabled)
-}
-
-#[tauri::command]
-pub async fn set_audio_enabled(
-    audio_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    state
-        .config
-        .write()
-        .await
-        .set_audio_enabled(audio_enabled)
-        .await
-        .map_err(|e| e.to_string())?;
-    let telemetry_service = state.telemetry_service.read().await;
-    telemetry_service
-        .send("audio-enabled".to_string(), json!(audio_enabled))
-        .await
-        .inspect_err(|e| {
-            error!(
-                "error at sending telemetry data for get_audio_enabled {:?}",
-                e
-            )
-        })
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
-
 #[allow(clippy::too_many_lines)]
 #[tauri::command]
 pub async fn start_mining<'r>(
@@ -1430,16 +1487,7 @@ pub async fn start_mining<'r>(
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
 
-    let config = match try_read_with_retry(&state.config, 10).await {
-        Ok(config) => config,
-        Err(e) => {
-            let err_msg = format!("Failed to acquire config read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
-
+    let config = state.config.read().await;
     let cpu_mining_enabled = config.cpu_mining_enabled();
     let gpu_mining_enabled = config.gpu_mining_enabled();
     let mode = config.mode();
@@ -1449,32 +1497,6 @@ pub async fn start_mining<'r>(
     let monero_address = config.monero_address().to_string();
     drop(config);
 
-    let cpu_miner_running = {
-        let cpu_miner = match try_read_with_retry(&state.cpu_miner, 10).await {
-            Ok(cm) => cm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
-        cpu_miner.is_running().await
-    };
-
-    let gpu_miner_running = {
-        let gpu_miner = match try_read_with_retry(&state.gpu_miner, 10).await {
-            Ok(gm) => gm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
-        gpu_miner.is_running().await
-    };
-
     let mut telemetry_id = state
         .telemetry_manager
         .read()
@@ -1482,16 +1504,9 @@ pub async fn start_mining<'r>(
         .get_unique_string()
         .await;
 
-    let cpu_miner_config = match try_read_with_retry(&state.cpu_miner_config, 10).await {
-        Ok(config) => config,
-        Err(e) => {
-            let err_msg = format!("Failed to acquire cpu_miner_config read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
-    let tari_address = cpu_miner_config.tari_address.clone();
+    let cpu_miner = state.cpu_miner.read().await;
+    let cpu_miner_running = cpu_miner.is_running().await;
+    drop(cpu_miner);
 
     if cpu_mining_enabled && !cpu_miner_running {
         let mm_proxy_port = state
@@ -1501,16 +1516,8 @@ pub async fn start_mining<'r>(
             .map_err(|e| e.to_string())?;
 
         {
-            let mut cpu_miner = match try_write_with_retry(&state.cpu_miner, 10).await {
-                Ok(cm) => cm,
-                Err(e) => {
-                    let err_msg = format!("Failed to acquire cpu_miner write lock: {}", e);
-                    error!(target: LOG_TARGET, "{}", err_msg);
-                    sentry::capture_message(&err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
-                }
-            };
-
+            let cpu_miner_config = state.cpu_miner_config.read().await;
+            let mut cpu_miner = state.cpu_miner.write().await;
             let res = cpu_miner
                 .start(
                     state.shutdown.to_signal(),
@@ -1528,6 +1535,7 @@ pub async fn start_mining<'r>(
                     custom_cpu_usage,
                 )
                 .await;
+            drop(cpu_miner_config);
 
             if let Err(e) = res {
                 let err_msg = format!("Could not start CPU mining: {}", e);
@@ -1546,15 +1554,10 @@ pub async fn start_mining<'r>(
         }
     }
 
-    let gpu_available = match try_read_with_retry(&state.gpu_miner, 10).await {
-        Ok(gm) => gm.is_gpu_mining_available(),
-        Err(e) => {
-            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-            error!(target: LOG_TARGET, "{}", err_msg);
-            sentry::capture_message(&err_msg, sentry::Level::Error);
-            return Err(e.to_string());
-        }
-    };
+    let gpu_miner = state.gpu_miner.read().await;
+    let gpu_miner_running = gpu_miner.is_running().await;
+    let gpu_available = gpu_miner.is_gpu_mining_available();
+    drop(gpu_miner);
 
     info!(target: LOG_TARGET, "GPU availability {:?} gpu_mining_enabled {}", gpu_available.clone(), gpu_mining_enabled);
 
@@ -1582,16 +1585,11 @@ pub async fn start_mining<'r>(
 
         info!(target: LOG_TARGET, "3. Starting gpu miner");
 
-        let mut gpu_miner = match try_write_with_retry(&state.gpu_miner, 10).await {
-            Ok(gm) => gm,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire gpu_miner write lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return Err(e.to_string());
-            }
-        };
+        let cpu_miner_config = state.cpu_miner_config.read().await;
+        let tari_address = cpu_miner_config.tari_address.clone();
+        drop(cpu_miner_config);
 
+        let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
                 state.shutdown.to_signal(),
@@ -1615,19 +1613,6 @@ pub async fn start_mining<'r>(
             let err_msg = format!("Could not start GPU mining: {}", e);
             error!(target: LOG_TARGET, "{}", err_msg);
             sentry::capture_message(&err_msg, sentry::Level::Error);
-
-            let gpu_miner = match try_write_with_retry(&state.gpu_miner, 10).await {
-                Ok(gm) => gm,
-                Err(lock_err) => {
-                    let lock_err_msg = format!(
-                        "Failed to acquire gpu_miner write lock for cleanup: {}",
-                        lock_err
-                    );
-                    error!(target: LOG_TARGET, "{}", lock_err_msg);
-                    sentry::capture_message(&lock_err_msg, sentry::Level::Error);
-                    return Err(e.to_string());
-                }
-            };
 
             if let Err(stop_err) = gpu_miner.stop().await {
                 error!(target: LOG_TARGET, "Could not stop GPU miner: {}", stop_err);
@@ -1731,6 +1716,12 @@ pub async fn set_pre_release(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
+    let telemetry_service = state.telemetry_service.read().await;
+    let _res = telemetry_service
+        .send("set_pre_release".to_string(), json!(pre_release))
+        .await;
+    drop(telemetry_service);
     state
         .config
         .write()
@@ -1738,8 +1729,6 @@ pub async fn set_pre_release(
         .set_pre_release(pre_release)
         .await
         .map_err(|e| e.to_string())?;
-
-    info!(target: LOG_TARGET, "Pre-release set to {}, try_update called", pre_release);
 
     state
         .updates_manager

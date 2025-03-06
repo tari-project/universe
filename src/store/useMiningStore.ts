@@ -12,6 +12,7 @@ interface State {
     miningInitiated: boolean;
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
+    isExcludingGpuDevices: boolean;
     counter: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
@@ -38,6 +39,7 @@ const initialState: State = {
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
+    isExcludingGpuDevices: false,
     miningControlsEnabled: true,
     availableEngines: [],
     engine: undefined,
@@ -90,8 +92,15 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
 
     toggleDeviceExclusion: async (deviceIndex, excluded) => {
         try {
+            const metricsState = useMiningMetricsStore.getState();
+            if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
+                console.info('Pausing mining...');
+                await pauseMining();
+            }
+
             await invoke('toggle_device_exclusion', { deviceIndex, excluded });
-            const devices = useMiningMetricsStore.getState().gpu_devices;
+            const devices = metricsState.gpu_devices;
+
             const updatedDevices = devices.map((device) => {
                 if (device.device_index === deviceIndex) {
                     return { ...device, settings: { ...device.settings, is_excluded: excluded } };
@@ -122,6 +131,12 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
             appStateStore.setError(e as string);
             set({ engine: current_engine || undefined });
         }
+
+        if (useMiningStore.getState().miningInitiated) {
+            console.info('Restarting mining...');
+            await startMining();
+        }
+        set({ isExcludingGpuDevices: false });
     },
     setAvailableEngines: (availableEngines: string[], currentEngine: string) =>
         set({ availableEngines, engine: currentEngine }),

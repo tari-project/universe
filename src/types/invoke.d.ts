@@ -97,6 +97,4 @@ declare module '@tauri-apps/api/core' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
-    function invoke(param: 'get_audio_enabled'): Promise<boolean>;
-    function invoke(param: 'set_audio_enabled', payload: { enabled: boolean }): Promise<void>;
 }

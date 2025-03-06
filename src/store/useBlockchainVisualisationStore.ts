@@ -4,10 +4,9 @@ import { create } from './create';
 import { useMiningStore } from './useMiningStore.ts';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
-import { setAnimationState } from '@app/visuals.ts';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
-import { useAppConfigStore } from './useAppConfigStore.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -21,9 +20,9 @@ interface State {
     earnings?: number;
     recapData?: Recap;
     recapCount?: number;
+    rewardCount?: number;
     recapIds: TransactionInfo['tx_id'][];
     replayItem?: TransactionInfo;
-    isPlayingAudio: boolean;
 }
 
 interface Actions {
@@ -31,7 +30,7 @@ interface Actions {
     setDisplayBlockTime: (displayBlockTime: BlockTimeData) => void;
     setDebugBlockTime: (displayBlockTime: BlockTimeData) => void;
     setRecapCount: (recapCount?: number) => void;
-    setIsPlayingAudio: (isPlayingAudio: boolean) => void;
+    setRewardCount: (rewardCount?: number) => void;
 }
 
 type BlockchainVisualisationStoreState = State & Actions;
@@ -49,39 +48,13 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-    isPlayingAudio: false,
 
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
     setRecapCount: (recapCount) => set({ recapCount }),
-    setIsPlayingAudio: (isPlayingAudio) => set({ isPlayingAudio }),
+    setRewardCount: (rewardCount) => set({ rewardCount }),
 }));
-
-async function playBlockWinAudio() {
-    try {
-        const audioEnabled = useAppConfigStore.getState().audio_enabled;
-        const isPlayingAudio = useBlockchainVisualisationStore.getState().isPlayingAudio;
-        if (!audioEnabled || isPlayingAudio) {
-            return;
-        }
-
-        const asset = 'assets/block_win.mp3';
-        const blobUrl = URL.createObjectURL(await fetch(asset).then((res) => res.blob()));
-        const audioElement = new Audio(blobUrl);
-        if (!audioElement) {
-            console.error('Audio element not found');
-            return;
-        }
-
-        audioElement.currentTime = 0;
-        audioElement.onplay = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(true);
-        audioElement.onended = () => useBlockchainVisualisationStore.getState().setIsPlayingAudio(false);
-        audioElement.play();
-    } catch (err) {
-        console.error(`Failed to play block win sound: ${err}`);
-    }
-}
 
 const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletBalance, canAnimate: boolean) => {
     const blockHeight = Number(coinbase_transaction?.mined_in_block_height);
@@ -89,6 +62,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
     console.info(`Block #${blockHeight} mined! Earnings: ${earnings}`);
 
+    useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         useMiningStore.getState().setMiningControlsEnabled(false);
         const successTier = getSuccessTier(earnings);
@@ -112,7 +86,6 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             earnings: undefined,
         }));
     }
-    playBlockWinAudio();
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
@@ -146,7 +119,6 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
     const successTier = getSuccessTier(earnings);
     useBlockchainVisualisationStore.setState({ replayItem: txItem });
     setAnimationState(successTier, true);
-    playBlockWinAudio();
     setTimeout(() => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);

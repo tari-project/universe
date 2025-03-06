@@ -1,3 +1,4 @@
+let loadingTimeout: NodeJS.Timeout | undefined;
 import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
 import { AppConfig, GpuThreads } from '../types/app-status.ts';
@@ -6,11 +7,15 @@ import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import { sidebarTowerOffset, TOWER_CANVAS_ID, setUITheme } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { pauseMining, startMining, stopMining } from '@app/store/miningStoreActions.ts';
 
-type State = Partial<AppConfig>;
+import { loadTowerAnimation } from '@tari-project/tari-tower';
+
+type State = Partial<AppConfig> & {
+    visualModeToggleLoading: boolean;
+};
 interface SetModeProps {
     mode: modeType;
     customGpuLevels?: GpuThreads[];
@@ -32,16 +37,15 @@ interface Actions {
     setAutoUpdate: (autoUpdate: boolean) => Promise<void>;
     setMonerodConfig: (use_monero_fail: boolean, monero_nodes: string[]) => Promise<void>;
     setTheme: (theme: displayMode) => Promise<void>;
-    setVisualMode: (enabled: boolean) => void;
     setShowExperimentalSettings: (showExperimentalSettings: boolean) => Promise<void>;
     setP2poolStatsServerPort: (port: number | null) => Promise<void>;
     setPreRelease: (preRelease: boolean) => Promise<void>;
-    setAudioEnabled: (audioEnabled: boolean) => Promise<void>;
 }
 
 type AppConfigStoreState = State & Actions;
 
 const initialState: State = {
+    visualModeToggleLoading: false,
     config_version: 0,
     config_file: undefined,
     mode: 'Eco',
@@ -67,12 +71,10 @@ const initialState: State = {
     show_experimental_settings: false,
     p2pool_stats_server_port: null,
     pre_release: false,
-    audio_enabled: true,
 };
 
 export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     ...initialState,
-
     setShouldAutoLaunch: async (shouldAutoLaunch) => {
         set({ should_auto_launch: shouldAutoLaunch });
         invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
@@ -255,29 +257,23 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
     setTheme: async (themeArg) => {
         const display_mode = themeArg?.toLowerCase() as displayMode;
         const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-        const prevTheme = useAppConfigStore.getState().display_mode;
-        const setUITheme = useUIStore.getState().setTheme;
+        const prevTheme = useAppConfigStore.getState().display_mode?.toLowerCase() as displayMode;
         const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
 
         setUITheme(uiTheme);
 
         set({ display_mode });
-        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set theme', e);
-            appStateStore.setError('Could not change theme');
-            set({ display_mode: prevTheme });
-        });
-    },
-    setVisualMode: (enabled) => {
-        set({ visual_mode: enabled });
-        invoke('set_visual_mode', { enabled }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set visual mode', e);
-            appStateStore.setError('Could not change visual mode');
-            set({ visual_mode: !enabled });
-        });
+
+        const shouldUpdateConfigTheme = display_mode !== prevTheme;
+        if (shouldUpdateConfigTheme) {
+            invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
+                const appStateStore = useAppStateStore.getState();
+                console.error('Could not set theme', e);
+                appStateStore.setError('Could not change theme');
+                set({ display_mode: prevTheme });
+                if (prevTheme) setUITheme(prevTheme === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : prevTheme);
+            });
+        }
     },
     setShowExperimentalSettings: async (showExperimentalSettings) => {
         set({ show_experimental_settings: showExperimentalSettings });
@@ -306,15 +302,6 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             set({ pre_release: !preRelease });
         });
     },
-    setAudioEnabled: async (audioEnabled) => {
-        set({ audio_enabled: audioEnabled });
-        invoke('set_audio_enabled', { audioEnabled }).catch((e) => {
-            const appStateStore = useAppStateStore.getState();
-            console.error('Could not set audio enabled', e);
-            appStateStore.setError('Could not change audio enabled');
-            set({ audio_enabled: !audioEnabled });
-        });
-    },
 }));
 
 export const fetchAppConfig = async () => {
@@ -322,17 +309,38 @@ export const fetchAppConfig = async () => {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
         const configTheme = appConfig.display_mode?.toLowerCase();
-        const canvasElement = document.getElementById('canvas');
-        if (canvasElement && !appConfig.visual_mode) {
-            canvasElement.style.display = 'none';
-        }
-
+        const canvasElement = document.getElementById(TOWER_CANVAS_ID);
         if (configTheme) {
             await useAppConfigStore.getState().setTheme(configTheme as displayMode);
         }
-
-        return appConfig;
+        if (appConfig.visual_mode && !canvasElement) {
+            try {
+                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
+            } catch (e) {
+                console.error('Error at loadTowerAnimation:', e);
+                useAppConfigStore.setState({ visual_mode: false });
+            }
+        }
     } catch (e) {
         console.error('Could not get app config: ', e);
     }
+};
+
+export const setVisualMode = (enabled: boolean) => {
+    useAppConfigStore.setState({ visual_mode: enabled, visualModeToggleLoading: true });
+    invoke('set_visual_mode', { enabled })
+        .catch((e) => {
+            const appStateStore = useAppStateStore.getState();
+            console.error('Could not set visual mode', e);
+            appStateStore.setError('Could not change visual mode');
+            useAppConfigStore.setState({ visual_mode: !enabled });
+        })
+        .finally(() => {
+            if (loadingTimeout) {
+                clearTimeout(loadingTimeout);
+            }
+            loadingTimeout = setTimeout(() => {
+                useAppConfigStore.setState({ visualModeToggleLoading: false });
+            }, 3500);
+        });
 };

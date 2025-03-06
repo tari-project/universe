@@ -24,29 +24,30 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use auto_launcher::AutoLauncher;
+use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use serde_json::json;
-use std::fs::{remove_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
+use utils::locks_utils::try_write_with_retry;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -141,6 +142,7 @@ mod xmrig;
 mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
+const RESTART_EXIT_CODE: i32 = i32::MAX;
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 #[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
@@ -172,17 +174,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
-            Ok(em) => em,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return;
-            }
-        };
 
-        events_manager
+        let _ = &app_state
+            .events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
             .await;
     });
@@ -190,21 +184,15 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let events_manager = match try_read_with_retry(&app_state.events_manager, 3).await {
-            Ok(em) => em,
-            Err(e) => {
-                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                return;
-            }
-        };
+
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+        let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
 
         let current_block_height = node_status_watch_rx.borrow().block_height;
-        events_manager
+        let _ = &app_state
+            .events_manager
             .wait_for_initial_wallet_scan(&move_app, current_block_height)
             .await;
 
@@ -216,65 +204,41 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            match try_read_with_retry(&app_state.events_manager, 3).await {
-                                Ok(em) => {
-                                    em.handle_new_block_height(&move_app, latest_updated_block_height).await;
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                    error!(target: LOG_TARGET, "{}", err_msg);
-                                    sentry::capture_message(&err_msg, sentry::Level::Error);
-                                    continue;
-                                }
-                            }
+                            let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
                     } else {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
-                            Ok(em) => {
-                                em.handle_base_node_update(&move_app, node_status.clone()).await;
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                            }
-                        }
+                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status.clone()).await;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
-                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 3).await {
-                        Ok(gm) => gm,
+                    let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
+                },
+                _ = cpu_miner_status_watch_rx.changed() => {
+                    let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
+                    let _ = &app_state.events_manager.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+
+                    // Update systemtray data
+                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                    let systray_data = SystemTrayData {
+                        cpu_hashrate: cpu_status.hash_rate,
+                        gpu_hashrate: gpu_status.hash_rate,
+                        estimated_earning: (cpu_status.estimated_earnings
+                            + gpu_status.estimated_earnings) as f64,
+                    };
+
+                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                        Ok(mut sm) => {
+                            sm.update_tray(systray_data);
+                        },
                         Err(e) => {
-                            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
+                            let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
                             error!(target: LOG_TARGET, "{}", err_msg);
                             sentry::capture_message(&err_msg, sentry::Level::Error);
-                            continue;
                         }
-                    };
-
-                    if let Ok(gpu_status) = gpu_miner
-                        .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
-                        .await
-                    {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
-                            Ok(em) => {
-                                em.handle_gpu_mining_update(&move_app, gpu_status).await;
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                            }
-                        }
-                    } else {
-                        let err_msg = "Error getting gpu miner status";
-                        error!(target: LOG_TARGET, "{}", err_msg);
-                        sentry::capture_message(err_msg, sentry::Level::Error);
-                    };
-                },
+                    }
+                }
                 _ = shutdown_signal.wait() => {
                     break;
                 },
@@ -285,83 +249,17 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     let move_app = app.clone();
     tauri::async_runtime::spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
             select! {
                 _ = interval.tick() => {
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
-
-                    // CPU status
-                    let cpu_miner = match try_read_with_retry(&app_state.cpu_miner, 3).await {
-                        Ok(cm) => cm,
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire cpu_miner read lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
-                            continue;
-                        }
-                    };
-
-                    if let Ok(cpu_status) = cpu_miner
-                        .status(node_status.randomx_network_hashrate, node_status.block_reward)
-                        .await
-                    {
-                        match try_read_with_retry(&app_state.events_manager, 3).await {
-                            Ok(em) => {
-                                em.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                                continue;
-                            }
-                        }
-
-                        // Update systemtray data
-                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                        let systray_data = SystemTrayData {
-                            cpu_hashrate: cpu_status.hash_rate,
-                            gpu_hashrate: gpu_status.hash_rate,
-                            estimated_earning: (cpu_status.estimated_earnings
-                                + gpu_status.estimated_earnings) as f64,
-                        };
-
-                        match try_write_with_retry(&app_state.systemtray_manager, 3).await {
-                            Ok(mut sm) => {
-                                sm.update_tray(systray_data);
-                            },
-                            Err(e) => {
-                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
-                                error!(target: LOG_TARGET, "{}", err_msg);
-                                sentry::capture_message(&err_msg, sentry::Level::Error);
-                            }
-                        }
-                    } else {
-                        let err_msg = "Error getting cpu miner status";
-                        error!(target: LOG_TARGET, "{}", err_msg);
-                        sentry::capture_message(err_msg, sentry::Level::Error);
-                    };
-
-                    // Connected peers
                     if let Ok(connected_peers) = app_state
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            match try_read_with_retry(&app_state.events_manager, 3).await {
-                                Ok(em) => {
-                                    em.handle_connected_peers_update(&move_app, connected_peers).await;
-                                },
-                                Err(e) => {
-                                    let err_msg = format!("Failed to acquire events_manager read lock: {}", e);
-                                    error!(target: LOG_TARGET, "{}", err_msg);
-                                    sentry::capture_message(&err_msg, sentry::Level::Error);
-                                }
-                            }
+                            let _ = &app_state.events_manager.handle_connected_peers_update(&move_app, connected_peers).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -456,9 +354,10 @@ async fn setup_inner(
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
-    AutoLauncher::current()
+    let _unused = AutoLauncher::current()
         .initialize_auto_launcher(is_auto_launcher_enabled)
-        .await?;
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e));
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));
@@ -987,6 +886,7 @@ struct UniverseAppState {
     node_status_watch_rx: Arc<watch::Receiver<BaseNodeStatus>>,
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
+    cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -1011,13 +911,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
-    events_manager: Arc<RwLock<EventsManager>>,
-}
-
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-    args: Vec<String>,
-    cwd: String,
+    events_manager: Arc<EventsManager>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1051,6 +945,9 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
+    let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
+        watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let wallet_manager = WalletManager::new(
         node_manager.clone(),
         wallet_state_watch_tx,
@@ -1073,10 +970,22 @@ fn main() {
     let app_in_memory_config =
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
-    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
-    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(CpuMiner::new(&mut stats_collector).into());
-    let gpu_miner: Arc<RwLock<GpuMiner>> =
-        Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
+    let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
+        CpuMiner::new(
+            &mut stats_collector,
+            cpu_miner_status_watch_tx,
+            base_node_watch_rx.clone(),
+        )
+        .into(),
+    );
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
+        GpuMiner::new(
+            gpu_status_tx,
+            base_node_watch_rx.clone(),
+            &mut stats_collector,
+        )
+        .into(),
+    );
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
@@ -1084,7 +993,7 @@ fn main() {
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
-        cpu_miner.clone(),
+        cpu_miner_status_watch_rx.clone(),
         app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
@@ -1103,6 +1012,7 @@ fn main() {
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
+        cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
@@ -1126,7 +1036,7 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
-        events_manager: Arc::new(RwLock::new(EventsManager::new(wallet_state_watch_rx))),
+        events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
     };
     let app_state_clone = app_state.clone();
     let app = tauri::Builder::default()
@@ -1138,10 +1048,15 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
-            app.emit("single-instance", Payload { args: argv, cwd })
-                .unwrap_or_else(
-                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
-                );
+            match app.get_webview_window("main") {
+                Some(w) => {
+                    let _unused = w.show().map_err(|err| error!(target: LOG_TARGET, "Couldn't show the main window {:?}", err));
+                    let _unused = w.set_focus();
+                },
+                None => {
+                    error!(target: LOG_TARGET, "Could not find main window");
+                }
+            };
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
@@ -1227,6 +1142,28 @@ fn main() {
                     error!(target: LOG_TARGET, "Could not remove tcp_tor_toggled file: {}", e);
                     e.to_string()
                 })?;
+            }
+
+            // TODO: Remove this in a few versions
+            // It exists for people who ran 0.9.803 and ended up on a fork
+            // Everyone needs a clean node db for 0.9.804, so lets wipe the db once, write this file
+            // and not require people to clear the db multiple times. Once we know nobody is on
+            // a version 0.9.803 or before
+            let feb_17_fork_reset = config_path.join("20250217-node-db-clean");
+            if !feb_17_fork_reset.exists() {
+                let network = Network::default().as_key_str();
+
+                let node_data_db = config_path.join("node").join(network).join("data");
+
+                // They may not exist. This could be first run.
+                if node_data_db.exists() {
+                    if let Err(e) = remove_dir_all(node_data_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                create_dir_all(&config_path).map_err(|e| e.to_string())?;
+                File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
 
             let cpu_config2 = cpu_config.clone();
@@ -1354,8 +1291,6 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::get_audio_enabled,
-            commands::set_audio_enabled,
             commands::frontend_ready
         ])
         .build(tauri::generate_context!())
@@ -1369,6 +1304,10 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
+
+    let is_restart_requested = Arc::new(AtomicBool::new(false));
+    let is_restart_requested_clone = is_restart_requested.clone();
+
     app.run(move |app_handle, event| match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
@@ -1380,21 +1319,30 @@ fn main() {
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
-        tauri::RunEvent::ExitRequested { api: _, .. } => {
-            info!(target: LOG_TARGET, "App shutdown request caught");
+        tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+            info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
+            if let Some(exit_code) = code {
+                if exit_code == RESTART_EXIT_CODE {
+                    // RunEvent does not hold the exit code so we store it separately
+                    is_restart_requested.store(true, Ordering::SeqCst);
+                }
+            }
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
             let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            if is_restart_requested_clone.load(Ordering::SeqCst) {
+                app_handle.cleanup_before_exit();
+                let env = app_handle.env();
+                tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
+            }
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        _ => {
-            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
-        }
+        _ => {}
     });
 }

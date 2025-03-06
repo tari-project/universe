@@ -1,7 +1,7 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, GpuDevice } from '@app/types/app-status';
 import { create } from './create';
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
-import { setAnimationState } from '@app/visuals';
+import { setAnimationState } from '@tari-project/tari-tower';
 import { useMiningStore } from './useMiningStore';
 import { useAppConfigStore } from './useAppConfigStore';
 
@@ -76,7 +76,7 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
         const isNodeConnected = connected_peers?.length > 0;
         set({ connected_peers, isNodeConnected });
 
-        const { miningInitiated } = useMiningStore.getState();
+        const miningInitiated = useMiningStore.getState().miningInitiated;
         if (miningInitiated) {
             if (!isNodeConnected && wasNodeConnected) {
                 // Lost connection
