@@ -12,7 +12,7 @@ import { CircularProgress } from '@app/components/elements/CircularProgress.tsx'
 const fields: TxInputProps[] = [
     { name: 'tx_message', placeholder: 'Payment message' },
     { name: 'tx_address', placeholder: 'Wallet address' },
-    { name: 'tx_amount', placeholder: 'Amount', type: 'number', icon: <TariOutlineSVG /> },
+    { name: 'tx_amount', placeholder: 'Amount', icon: <TariOutlineSVG /> },
 ];
 
 export function Send() {
@@ -33,8 +33,8 @@ export function Send() {
                 control={control}
                 render={({ field }) => (
                     <TxInput
-                        id={field.name}
-                        name={field.name}
+                        id={name}
+                        name={name}
                         onChange={(e) => setValue(field.name, e.target.value)}
                         placeholder={placeholder}
                         {...rest}

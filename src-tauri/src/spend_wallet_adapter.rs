@@ -84,7 +84,7 @@ impl SpendWalletAdapter {
         self.log_dir = Some(log_dir);
         self.wallet_binary = Some(wallet_binary);
 
-        std::fs::create_dir_all(&self.get_working_dir())?;
+        std::fs::create_dir_all(self.get_working_dir())?;
         setup_logging(
             &self.get_log_config_file(),
             &self.get_log_dir(),

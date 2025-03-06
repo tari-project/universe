@@ -40,7 +40,6 @@ use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
-use tokio::fs::OpenOptions;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
