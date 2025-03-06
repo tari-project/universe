@@ -34,7 +34,6 @@ use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use serde_json::json;
-use spend_wallet_manager::SpendWalletManager;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
@@ -87,6 +86,7 @@ use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
+use crate::spend_wallet_manager::SpendWalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;

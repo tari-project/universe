@@ -116,10 +116,10 @@ impl SpendWalletAdapter {
         for (i, command_args) in executions_args.into_iter().enumerate() {
             match self.execute_command(command_args.clone()).await {
                 Ok(status) => {
-                    info!(target: LOG_TARGET, "#{} Command({:?}) executed successfully with status: {:?} ", i + 1, command_args, status);
+                    info!(target: LOG_TARGET, "#{} Command({:?}) executed successfully with status: {:?} ", i + 1, command_args.join(" "), status);
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "#{} Command({:?}) Failed to execute: {:?}", i + 1, command_args, e);
+                    error!(target: LOG_TARGET, "#{} Command({:?}) Failed to execute: {:?}", i + 1, command_args.join(" "), e);
                     return Err(e);
                 }
             }
@@ -158,7 +158,11 @@ impl SpendWalletAdapter {
         });
         //////////////////////////////////////////////////////////
         let status = child.wait().await?;
-        Ok(status)
+        if status.success() {
+            Ok(status)
+        } else {
+            Err(anyhow::anyhow!("Command failed with status: {:?}", status))
+        }
     }
 
     async fn erase_related_data(&self) -> Result<(), Error> {
@@ -225,7 +229,7 @@ impl SpendWalletAdapter {
         destination: String,
         payment_id: Option<String>,
     ) -> Vec<String> {
-        let mut args = vec!["send-one-sided-to-stealth-address".to_string()];
+        let mut args: Vec<String> = vec!["send-one-sided-to-stealth-address".to_string()];
         if let Some(id) = payment_id {
             args.push("--payment-id".to_string());
             args.push(id);

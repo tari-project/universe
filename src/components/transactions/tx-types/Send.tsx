@@ -55,12 +55,17 @@ export function Send() {
         );
     });
 
-    const handleSend = useCallback(async (data) => {
-        await invoke('send_one_sided_to_stealth_address', {
-            amount: data.tx_amount,
-            destination: data.tx_address,
-            paymentId: data.tx_message,
-        });
+    const handleSend = useCallback(async (data: SendInputs) => {
+        try {
+            await invoke('send_one_sided_to_stealth_address', {
+                amount: data.tx_amount,
+                destination: data.tx_address,
+                paymentId: data.tx_message,
+            });
+        } catch (error) {
+            console.error('Error sending transaction:', error);
+            alert('Error sending transaction');
+        }
     }, []);
 
     return (
