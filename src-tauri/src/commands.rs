@@ -1078,7 +1078,6 @@ pub async fn toggle_device_exclusion(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_excluded_gpu_devices] called with devices: {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
     let config_dir = app
         .path()
