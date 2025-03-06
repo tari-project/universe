@@ -7,7 +7,6 @@ import { TorMarkup } from './TorMarkup';
 import MonerodMarkup from './MonerodMarkup';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import P2poolMarkup from './P2poolMarkup.tsx';
-import GpuEngine from './GpuEngine.tsx';
 
 export const ExperimentalSettings = () => {
     const showExperimental = useAppConfigStore((s) => s.show_experimental_settings);
@@ -22,7 +21,6 @@ export const ExperimentalSettings = () => {
                         <DebugSettings />
                         <AppVersions />
                         <TorMarkup />
-                        <GpuEngine />
                         <MonerodMarkup />
                         {isP2poolEnabled && <P2poolMarkup />}
                     </>

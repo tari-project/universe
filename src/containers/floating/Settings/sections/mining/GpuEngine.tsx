@@ -36,7 +36,7 @@ export default function GpuEngine() {
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
-                <Typography variant="h6">{t('change-gpu-engine', { ns: 'settings' })}</Typography>
+                <Typography variant="h6">{t('gpu-engine', { ns: 'settings' })}</Typography>
             </SettingsGroupTitle>
             {availableEngines.length > 0 ? (
                 <SettingsGroupContent>
