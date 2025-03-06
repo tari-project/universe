@@ -7,17 +7,15 @@ import SidebarMini from './Sidebars/SidebarMini.tsx';
 import SidebarWallet from './Sidebars/SidebarWallet.tsx';
 
 const SidebarNavigation = memo(function SidebarNavigation() {
-    const { sidebarOpen, view } = useUIStore((s) => ({
-        sidebarOpen: s.sidebarOpen,
-        view: s.view,
-    }));
+    const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+    const currentSidebar = useUIStore((s) => s.currentSidebar);
 
     return (
         <SidebarNavigationWrapper>
             <SidebarMini />
             <SidebarGrid>
-                <AnimatePresence>{sidebarOpen && view === 'mining' && <SidebarMiner />}</AnimatePresence>
-                <AnimatePresence>{sidebarOpen && view === 'wallet' && <SidebarWallet />}</AnimatePresence>
+                <AnimatePresence>{sidebarOpen && currentSidebar === 'mining' && <SidebarMiner />}</AnimatePresence>
+                <AnimatePresence>{sidebarOpen && currentSidebar === 'wallet' && <SidebarWallet />}</AnimatePresence>
             </SidebarGrid>
         </SidebarNavigationWrapper>
     );
