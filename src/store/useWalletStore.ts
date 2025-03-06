@@ -1,5 +1,5 @@
 import { create } from './create';
-import { WalletAddress, TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { WalletAddress, TransactionInfo, WalletBalance, TxType } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
 
@@ -60,8 +60,16 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             useWalletStore.setState({ is_transactions_history_loading: true });
 
             const fetchedTxs = await invoke('get_transactions_history', { continuation, limit });
-            const transactions = continuation ? [...getState().transactions, ...fetchedTxs] : fetchedTxs;
-            const has_more_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
+            const txWithType = fetchedTxs.map((tx) => ({
+                ...tx,
+                txType: (tx.direction === 2
+                    ? 'sent'
+                    : !tx.mined_in_block_height || tx.mined_in_block_height === 0
+                      ? 'received'
+                      : 'mined') as TxType,
+            }));
+            const transactions = continuation ? [...getState().transactions, ...txWithType] : txWithType;
+            const has_more_transactions = txWithType.length > 0 && (!limit || txWithType.length === limit);
             set({
                 has_more_transactions,
                 transactions,

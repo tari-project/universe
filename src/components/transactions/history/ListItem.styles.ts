@@ -56,6 +56,14 @@ export const ValueWrapper = styled.div`
     gap: 3px;
     font-weight: 500;
     justify-content: flex-end;
+    align-items: baseline;
+`;
+
+export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
+    display: flex;
+    font-size: 11px;
+    font-weight: 500;
+    color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
 export const ValueChangeWrapper = styled.div<{ $isPositiveValue?: boolean }>`
