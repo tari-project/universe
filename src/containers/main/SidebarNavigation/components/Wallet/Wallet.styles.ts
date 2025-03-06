@@ -12,7 +12,7 @@ export const WalletBalance = styled(m.div)`
 
 export const WalletBalanceWrapper = styled.div`
     width: 100%;
-    height: 51px;
+    height: 52px;
     display: flex;
     align-items: center;
 `;
@@ -20,10 +20,11 @@ export const WalletBalanceWrapper = styled.div`
 export const WalletBalanceContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
-    position: relative;
     justify-content: flex-end;
+    position: relative;
     align-items: flex-start;
     width: 100%;
+    flex-shrink: 0;
     color: ${({ theme }) => theme.palette.text.secondary};
     padding: 0 5px 5px;
 `;

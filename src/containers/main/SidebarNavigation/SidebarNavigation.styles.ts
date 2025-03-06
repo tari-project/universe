@@ -39,7 +39,6 @@ export const SidebarWrapper = styled(m.div).attrs({
     height: 100%;
     flex-shrink: 0;
     position: relative;
-    overflow: hidden;
     width: ${({ $isMiniBar }) => ($isMiniBar ? SB_MINI_WIDTH : SB_WIDTH)}px;
 
     & * {

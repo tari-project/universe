@@ -1,4 +1,4 @@
-import { TransactionInfo } from '@app/types/app-status.ts';
+import { TransactionInfo, TxType } from '@app/types/app-status.ts';
 import {
     ContentWrapper,
     ItemWrapper,
@@ -12,13 +12,14 @@ import {
     FlexButton,
     GemImage,
     GemPill,
+    CurrencyText,
 } from './ListItem.styles.ts';
 import { useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { formatNumber, FormatPreset } from '@app/utils';
+import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 
@@ -34,6 +35,7 @@ interface HistoryListItemProps {
 
 interface BaseItemProps {
     title: string;
+    type: TxType;
     time: string;
     value: string;
     chip?: string;
@@ -75,12 +77,13 @@ function ItemHover({ item }: { item: TransactionInfo }) {
     );
 }
 
-function BaseItem({ title, time, value, chip }: BaseItemProps) {
+function BaseItem({ title, time, value, type, chip }: BaseItemProps) {
     // TODO: check formatter - need to handle negative values
-    const isPositiveValue = value.slice(0, 1) !== '-';
+    const isPositiveValue = type !== 'sent';
+    const displayTitle = truncateMiddle(title, 12);
     return (
         <ContentWrapper>
-            <TitleWrapper>{title}</TitleWrapper>
+            <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
             <TimeWrapper variant="p">{time}</TimeWrapper>
             <ValueWrapper>
                 {chip && <TimeWrapper variant="p">{chip}</TimeWrapper>}
@@ -88,12 +91,13 @@ function BaseItem({ title, time, value, chip }: BaseItemProps) {
                     {isPositiveValue ? `+` : `-`}
                 </ValueChangeWrapper>
                 {value}
+                <CurrencyText>{`tXTM`}</CurrencyText>
             </ValueWrapper>
         </ContentWrapper>
     );
 }
 export function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
-    const { t } = useTranslation('sidebar', { useSuspense: false });
+    const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
 
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
@@ -103,7 +107,8 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
 
     const [hovering, setHovering] = useState(false);
 
-    const itemTitle = `${t('block')} #${item.mined_in_block_height}`;
+    const itemTitle =
+        item.txType === 'mined' ? `${t('block')} #${item.mined_in_block_height}` : t(`common:${item.txType}`);
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
 
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
@@ -114,7 +119,9 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
         minute: 'numeric',
     });
 
-    const baseItem = <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} />;
+    const baseItem = (
+        <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={item.txType ?? 'unknown'} />
+    );
     const itemHover = showReplay ? <ItemHover item={item} /> : null;
 
     return (

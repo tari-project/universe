@@ -1,12 +1,13 @@
-import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, PublicDeviceParameters } from '@app/types/app-status';
+import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, GpuDevice } from '@app/types/app-status';
 import { create } from './create';
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { useMiningStore } from './useMiningStore';
+import { useAppConfigStore } from './useAppConfigStore';
 
 interface Actions {
     handleBaseNodeStatusUpdate: (baseNodeStatus: BaseNodeStatus) => void;
-    setGpuDevices: (gpuDevices: PublicDeviceParameters[]) => void;
+    setGpuDevices: (gpuDevices: GpuDevice[]) => void;
     setCpuMiningStatus: (cpuMiningStatus: CpuMinerStatus) => void;
     setGpuMiningStatus: (gpuMiningStatus: GpuMinerStatus) => void;
     handleConnectedPeersUpdate: (connectedPeers: string[]) => void;
@@ -17,8 +18,7 @@ interface MiningMetricsStoreState {
     isNodeConnected: boolean;
     base_node_status: BaseNodeStatus;
     connected_peers: string[];
-    cpu_devices: PublicDeviceParameters[];
-    gpu_devices: PublicDeviceParameters[];
+    gpu_devices: GpuDevice[];
     gpu_mining_status: GpuMinerStatus;
     cpu_mining_status: CpuMinerStatus;
 }
@@ -35,7 +35,6 @@ const initialState: MiningMetricsStoreState = {
         randomx_network_hashrate: 0,
     },
     connected_peers: [],
-    cpu_devices: [],
     gpu_devices: [],
     gpu_mining_status: {
         is_mining: false,
@@ -54,7 +53,17 @@ const initialState: MiningMetricsStoreState = {
 export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState) => ({
     ...initialState,
     setGpuDevices: (gpu_devices) => {
-        set({ gpu_devices });
+        set((state) => ({ ...state, gpu_devices }));
+
+        if (gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
+            const appConfigStore = useAppConfigStore.getState();
+            appConfigStore.setGpuMiningEnabled(true);
+        }
+
+        if (gpu_devices.every((gpu) => gpu.settings.is_excluded)) {
+            const appConfigStore = useAppConfigStore.getState();
+            appConfigStore.setGpuMiningEnabled(false);
+        }
     },
     setGpuMiningStatus: (gpu_mining_status) => {
         set({ gpu_mining_status });

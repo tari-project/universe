@@ -7,7 +7,7 @@ import MiningButton from '../components/MiningButton/MiningButton.tsx';
 
 import Miner from '../components/Miner/Miner.tsx';
 
-import { GridAreaBottom, GridAreaTop, RewardWrapper, SidebarGrid } from './SidebarMiner.styles.ts';
+import { GridAreaBottom, GridAreaTop, HistoryWrapper, RewardWrapper, SidebarGrid } from './SidebarMiner.styles.ts';
 
 import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import HistoryList from '@app/components/transactions/history/HistoryList.tsx';
@@ -29,7 +29,9 @@ const SidebarMiner = memo(function Sidebar() {
                     <RewardWrapper>
                         <WalletBalanceMarkup />
                         <Typography variant="p">{`My rewards`}</Typography>
-                        <HistoryList winsOnly />
+                        <HistoryWrapper>
+                            <HistoryList winsOnly />
+                        </HistoryWrapper>
                     </RewardWrapper>
                 </GridAreaBottom>
             </SidebarGrid>
