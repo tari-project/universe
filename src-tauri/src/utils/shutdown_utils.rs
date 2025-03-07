@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{utils::network_status::NetworkStatus, UniverseAppState, APPLICATION_FOLDER_ID};
 use log::info;
 use tauri::Manager;
 
@@ -37,6 +37,8 @@ pub async fn stop_all_processes(
     if should_shutdown && !state.shutdown.is_triggered() {
         info!(target: LOG_TARGET, "Entering shutdown sequence");
         state.shutdown.clone().trigger();
+
+        NetworkStatus::current().cancel_listener().await;
     }
 
     let base_path = app_handle

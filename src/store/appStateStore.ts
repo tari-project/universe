@@ -1,4 +1,4 @@
-import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
+import { ApplicationsVersions, CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { create } from './create';
 import { invoke } from '@tauri-apps/api/core';
@@ -23,6 +23,7 @@ interface State {
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
+    networkStatus?: NetworkStatus;
 }
 interface Actions {
     setCriticalError: (value: string | undefined) => void;
@@ -36,6 +37,7 @@ interface Actions {
     setIssueReference: (value: string) => void;
     setReleaseNotes: (value: string) => void;
     setIsAppUpdateAvailable: (value: boolean) => void;
+    setNetworkStatus: (value: NetworkStatus) => void;
 }
 type AppState = State & Actions;
 
@@ -108,6 +110,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     setIssueReference: (issueReference) => set({ issueReference }),
     setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
     setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
+    setNetworkStatus: (networkStatus) => set({ networkStatus }),
 }));
 
 export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
