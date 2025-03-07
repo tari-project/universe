@@ -1244,12 +1244,12 @@ pub async fn set_p2pool_enabled(
                 if p2pool_enabled {
                     origin_config.set_to_use_p2pool(p2pool_grpc_port);
                 } else {
-                    let base_node_grpc_port = state
+                    let base_node_grpc_address = state
                         .node_manager
-                        .get_grpc_port()
+                        .get_grpc_address()
                         .await
                         .map_err(|error| error.to_string())?;
-                    origin_config.set_to_use_base_node(base_node_grpc_port);
+                    origin_config.set_to_use_base_node(base_node_grpc_address.to_string());
                 }
                 state
                     .mm_proxy_manager
@@ -1562,13 +1562,15 @@ pub async fn start_mining<'r>(
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
         } else {
-            let grpc_port = state
+            let grpc_address = state
                 .node_manager
-                .get_grpc_port()
+                .get_grpc_address()
                 .await
                 .map_err(|e| e.to_string())?;
 
-            GpuNodeSource::BaseNode { port: grpc_port }
+            GpuNodeSource::BaseNode {
+                grpc_address: grpc_address.to_string(),
+            }
         };
 
         info!(target: LOG_TARGET, "2 Starting gpu miner");

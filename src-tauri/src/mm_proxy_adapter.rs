@@ -42,7 +42,7 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
-    pub base_node_grpc_port: u16,
+    pub base_node_grpc_address_multiaddr: String,
     pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
@@ -51,8 +51,8 @@ pub(crate) struct MergeMiningProxyConfig {
 }
 
 impl MergeMiningProxyConfig {
-    pub fn set_to_use_base_node(&mut self, port: u16) {
-        self.base_node_grpc_port = port;
+    pub fn set_to_use_base_node(&mut self, grpc_address_multiaddr: String) {
+        self.base_node_grpc_address_multiaddr = grpc_address_multiaddr;
     }
 
     pub fn set_to_use_p2pool(&mut self, port: u16) {
@@ -73,6 +73,7 @@ impl MergeMiningProxyAdapter {
 
 impl ProcessAdapter for MergeMiningProxyAdapter {
     type StatusMonitor = MergeMiningProxyStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -116,8 +117,8 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
-                "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
-                config.base_node_grpc_port
+                "merge_mining_proxy.base_node_grpc_address={}",
+                config.base_node_grpc_address_multiaddr
             ),
             "-p".to_string(),
             format!(

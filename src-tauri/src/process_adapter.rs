@@ -41,6 +41,7 @@ const LOG_TARGET: &str = "tari::universe::process_adapter";
 
 pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
+    type ProcessInstance: ProcessInstanceTrait;
 
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
@@ -49,7 +50,7 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
     fn spawn(
@@ -58,7 +59,7 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.spawn_inner(base_folder, config_folder, log_folder, binary_version_path)
     }
 
@@ -114,6 +115,15 @@ pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
     async fn check_health(&self) -> HealthStatus;
 }
 
+// TODO: Rename to ProcessInstance
+#[async_trait]
+pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
+    fn ping(&self) -> bool;
+    async fn start(&mut self) -> Result<(), anyhow::Error>;
+    async fn stop(&mut self) -> Result<i32, anyhow::Error>;
+    fn is_shutdown_triggered(&self) -> bool;
+}
+
 #[derive(Clone)]
 pub(crate) struct ProcessStartupSpec {
     pub file_path: PathBuf,
@@ -130,15 +140,16 @@ pub(crate) struct ProcessInstance {
     pub startup_spec: ProcessStartupSpec,
 }
 
-impl ProcessInstance {
-    pub fn ping(&self) -> bool {
+#[async_trait]
+impl ProcessInstanceTrait for ProcessInstance {
+    fn ping(&self) -> bool {
         self.handle
             .as_ref()
             .map(|m| !m.is_finished())
             .unwrap_or_else(|| false)
     }
 
-    pub async fn start(&mut self) -> Result<(), anyhow::Error> {
+    async fn start(&mut self) -> Result<(), anyhow::Error> {
         if self.handle.is_some() {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
@@ -203,12 +214,16 @@ impl ProcessInstance {
         Ok(())
     }
 
-    pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+    async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         handle
             .ok_or_else(|| anyhow!("Handle is not present"))?
             .await?
+    }
+
+    fn is_shutdown_triggered(&self) -> bool {
+        self.shutdown.is_triggered()
     }
 }
 

@@ -193,6 +193,7 @@ impl TorAdapter {
 
 impl ProcessAdapter for TorAdapter {
     type StatusMonitor = TorStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(

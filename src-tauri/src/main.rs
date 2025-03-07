@@ -127,6 +127,7 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod release_notes;
+mod remote_node_adapter;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -362,6 +363,7 @@ async fn setup_inner(
     let app_config = state.config.read().await;
     let use_tor = app_config.use_tor();
     let p2pool_enabled = app_config.p2pool_enabled();
+    let base_node_grpc_address = app_config.remote_base_node_address();
     drop(app_config);
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
@@ -631,6 +633,7 @@ async fn setup_inner(
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
+                base_node_grpc_address.clone(),
             )
             .await
         {
@@ -764,9 +767,9 @@ async fn setup_inner(
             .update("starting-p2pool".to_string(), None, 0)
             .await;
 
-        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let base_node_address = state.node_manager.get_grpc_address().await?;
         let p2pool_config = P2poolConfig::builder()
-            .with_base_node(base_node_grpc)
+            .with_base_node(base_node_address.to_string())
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
             .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
             .build()?;
@@ -797,13 +800,14 @@ async fn setup_inner(
         .update("starting-mmproxy".to_string(), None, 0)
         .await;
 
-    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+    let base_node_grpc_address_multiaddr =
+        state.node_manager.get_base_node_grpc_as_multiaddr().await?;
 
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
         .start(StartConfig {
-            base_node_grpc_port,
+            base_node_grpc_address_multiaddr,
             p2pool_port,
             app_shutdown: state.shutdown.to_signal().clone(),
             base_path: data_dir.clone(),

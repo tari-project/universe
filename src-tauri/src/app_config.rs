@@ -114,6 +114,8 @@ pub struct AppConfigFromFile {
     last_changelog_version: String,
     #[serde(default)]
     airdrop_tokens: Option<AirdropTokens>,
+    #[serde(default)]
+    remote_base_node_address: Option<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -157,6 +159,7 @@ impl Default for AppConfigFromFile {
             pre_release: false,
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
+            remote_base_node_address: None,
         }
     }
 }
@@ -276,6 +279,7 @@ pub(crate) struct AppConfig {
     pre_release: bool,
     last_changelog_version: String,
     airdrop_tokens: Option<AirdropTokens>,
+    remote_base_node_address: Option<String>,
 }
 
 impl AppConfig {
@@ -321,6 +325,7 @@ impl AppConfig {
             pre_release: false,
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
+            remote_base_node_address: None,
         }
     }
 
@@ -390,6 +395,7 @@ impl AppConfig {
                 self.pre_release = config.pre_release;
                 self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
+                self.remote_base_node_address = config.remote_base_node_address;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -768,6 +774,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn remote_base_node_address(&self) -> Option<String> {
+        self.remote_base_node_address.clone()
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -816,6 +826,7 @@ impl AppConfig {
             pre_release: self.pre_release,
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
+            remote_base_node_address: self.remote_base_node_address.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

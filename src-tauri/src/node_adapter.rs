@@ -103,6 +103,7 @@ impl MinotariNodeAdapter {
 
 impl ProcessAdapter for MinotariNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -250,7 +251,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 },
             },
             MinotariNodeStatusMonitor {
-                grpc_port: self.grpc_port,
+                grpc_address: format!("http://127.0.0.1:{}", self.grpc_port),
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
                 status_broadcast: self.status_broadcast.clone(),
@@ -300,10 +301,26 @@ impl Default for BaseNodeStatus {
 
 #[derive(Clone)]
 pub struct MinotariNodeStatusMonitor {
-    grpc_port: u16,
+    grpc_address: String,
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
     status_broadcast: watch::Sender<BaseNodeStatus>,
+}
+
+impl MinotariNodeStatusMonitor {
+    pub fn new(
+        grpc_address: String,
+        required_sync_peers: u32,
+        shutdown_signal: ShutdownSignal,
+        status_broadcast: watch::Sender<BaseNodeStatus>,
+    ) -> Self {
+        Self {
+            grpc_address,
+            required_sync_peers,
+            shutdown_signal,
+            status_broadcast,
+        }
+    }
 }
 
 #[async_trait]
@@ -341,10 +358,9 @@ impl MinotariNodeStatusMonitor {
     pub async fn get_network_state(
         &self,
     ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
-        let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
-                .await
-                .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+            .await
+            .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         let res = client
             .get_network_state(GetNetworkStateRequest {})
@@ -374,8 +390,7 @@ impl MinotariNodeStatusMonitor {
         &self,
         heights: Vec<u64>,
     ) -> Result<Vec<(u64, String)>, Error> {
-        let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
 
         let mut res = client
             .get_blocks(GetBlocksRequest { heights })
@@ -401,8 +416,7 @@ impl MinotariNodeStatusMonitor {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
-        let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
 
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
@@ -418,10 +432,9 @@ impl MinotariNodeStatusMonitor {
         &self,
         progress_tracker: ProgressTracker,
     ) -> Result<(), MinotariNodeStatusMonitorError> {
-        let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port))
-                .await
-                .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+            .await
+            .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
 
         loop {
             if self.shutdown_signal.is_triggered() {
@@ -543,8 +556,7 @@ impl MinotariNodeStatusMonitor {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
-        let mut client =
-            BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
         let connected_peers = client.list_connected_peers(Empty {}).await?;
         Ok(connected_peers.into_inner().connected_peers)
     }
