@@ -114,6 +114,13 @@ interface ReferralQuestPoints {
     pointsForClaimingReferral: number;
 }
 
+interface XSpaceEvent {
+    start: Date;
+    end: Date;
+    displayName: string;
+    id: string;
+}
+
 //////////////////////////////////////////
 
 interface MiningPoint {
@@ -132,6 +139,7 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    latestXSpaceEvent?: XSpaceEvent;
 }
 
 interface AirdropStore extends AirdropState {
@@ -145,6 +153,7 @@ interface AirdropStore extends AirdropState {
     setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
     setBonusTiers: (bonusTiers: BonusTier[]) => void;
     setUserGems: (userGems: number) => void;
+    setLatestXSpaceEvent: (latestXSpaceEvent: XSpaceEvent) => void;
     logout: () => Promise<void>;
 }
 
@@ -157,6 +166,12 @@ const clearState: Partial<AirdropState> = {
     referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    latestXSpaceEvent: {
+        id: 'id',
+        start: new Date(),
+        end: new Date(),
+        displayName: 'No new events ',
+    },
 };
 
 export const useAirdropStore = create<AirdropStore>()((set) => ({
@@ -179,6 +194,7 @@ export const useAirdropStore = create<AirdropStore>()((set) => ({
             };
         }),
     setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
+    setLatestXSpaceEvent: (latestXSpaceEvent) => set({ latestXSpaceEvent }),
     logout: async () => {
         await setAirdropTokens(undefined);
     },
