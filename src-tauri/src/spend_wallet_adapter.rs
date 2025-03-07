@@ -20,18 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::internal_wallet::InternalWallet;
 use crate::port_allocator::PortAllocator;
-use crate::process_utils::launch_child_process;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
-use log::{error, info};
+use log::info;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
-use tari_shutdown::ShutdownSignal;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::hex::Hex;
+use tonic::async_trait;
 
 // TODO: Ensure we actually need this
 // #[cfg(target_os = "windows")]
@@ -94,7 +95,6 @@ impl SpendWalletAdapter {
         Ok(())
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn send_one_sided_to_stealth_address(
         &mut self,
         amount: String,
@@ -104,64 +104,35 @@ impl SpendWalletAdapter {
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let recovery_args = self.get_recovery_args(seed_words);
         let sync_args = self.get_sync_args();
-        let send_one_sided_to_stealth_address_args =
+        let send_args =
             self.get_send_one_sided_to_stealth_address_args(amount, destination, payment_id);
-        let executions_args = vec![
-            recovery_args,
-            sync_args,
-            send_one_sided_to_stealth_address_args,
-        ];
+        let executions_args = vec![recovery_args, sync_args, send_args];
 
         for (i, command_args) in executions_args.into_iter().enumerate() {
-            match self.execute_command(command_args.clone()).await {
-                Ok(status) => {
-                    info!(target: LOG_TARGET, "#{} Command({:?}) executed successfully with status: {:?} ", i + 1, command_args.join(" "), status);
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET, "#{} Command({:?}) Failed to execute: {:?}", i + 1, command_args.join(" "), e);
-                    return Err(e);
-                }
+            let (mut instance, _monitor) = self.spawn(
+                self.get_data_dir(),
+                self.get_config_dir(),
+                self.get_log_dir(),
+                self.get_wallet_binary(),
+            )?;
+
+            // Extend the args for the specific command
+            instance.startup_spec.args.extend(command_args.clone());
+
+            instance.start().await?;
+            let exit_code = instance.wait().await?;
+
+            if exit_code != 0 {
+                return Err(anyhow::anyhow!(
+                    "Command #{} failed with exit code: {}",
+                    i,
+                    exit_code
+                ));
             }
         }
 
         self.erase_related_data().await?;
-
         Ok(())
-    }
-
-    async fn execute_command(&self, args: Vec<String>) -> Result<std::process::ExitStatus, Error> {
-        let shared_args = self.get_shared_args()?;
-        let joined_args = [shared_args.clone(), args].concat();
-        let mut child = launch_child_process(
-            &self.get_wallet_binary(),
-            &self.get_data_dir(),
-            None,
-            &joined_args,
-        )?;
-
-        ////////////////////////////////////////////////////////// Use for debugging
-        // let stdout = child.stdout.take().unwrap();
-        // let stderr = child.stderr.take().unwrap();
-        // use tokio::io::{AsyncBufReadExt, BufReader};
-        // let mut stdout_reader = BufReader::new(stdout).lines();
-        // let mut stderr_reader = BufReader::new(stderr).lines();
-        // tokio::spawn(async move {
-        //     while let Some(line) = stdout_reader.next_line().await.unwrap_or(None) {
-        //         println!("[command stdout] {}", line);
-        //     }
-        // });
-        // tokio::spawn(async move {
-        //     while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
-        //         println!("[command stderr] {}", line);
-        //     }
-        // });
-        //////////////////////////////////////////////////////////
-        let status = child.wait().await?;
-        if status.success() {
-            Ok(status)
-        } else {
-            Err(anyhow::anyhow!("Command failed with status: {:?}", status))
-        }
     }
 
     async fn erase_related_data(&self) -> Result<(), Error> {
@@ -271,5 +242,52 @@ impl SpendWalletAdapter {
             .join("spend_wallet")
             .join("configs")
             .join("log4rs_config_spend_wallet.yml")
+    }
+}
+
+#[derive(Clone)]
+pub struct DummyStatusMonitor;
+
+#[async_trait]
+impl StatusMonitor for DummyStatusMonitor {
+    // Question: What actually should be here?
+    async fn check_health(&self) -> HealthStatus {
+        HealthStatus::Healthy
+    }
+}
+
+impl ProcessAdapter for SpendWalletAdapter {
+    type StatusMonitor = DummyStatusMonitor;
+
+    fn spawn_inner(
+        &self,
+        base_folder: PathBuf,
+        _config_folder: PathBuf,
+        _log_folder: PathBuf,
+        binary_version_path: PathBuf,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+        let shared_args = self.get_shared_args()?;
+        let instance = ProcessInstance {
+            shutdown: Shutdown::new(),
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs: None,
+                args: shared_args,
+                pid_file_name: self.pid_file_name().to_string(),
+                data_dir: base_folder,
+                name: self.name().to_string(),
+            },
+        };
+
+        Ok((instance, DummyStatusMonitor))
+    }
+
+    fn name(&self) -> &str {
+        "spend_wallet"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "spend_wallet.pid"
     }
 }

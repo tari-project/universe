@@ -210,6 +210,18 @@ impl ProcessInstance {
             .ok_or_else(|| anyhow!("Handle is not present"))?
             .await?
     }
+
+    pub async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+        let handle = self.handle.take();
+
+        match handle {
+            Some(handle) => {
+                let result = handle.await?;
+                result
+            }
+            None => Err(anyhow!("No process handle available"))
+        }
+    }
 }
 
 impl Drop for ProcessInstance {
