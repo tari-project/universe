@@ -8,7 +8,7 @@ export const ItemWrapper = styled(m.div)`
     width: 100%;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.07);
-    height: 48px;
+    flex-direction: column;
     overflow: hidden;
     position: relative;
     box-shadow: 0 2px 5px 0 ${({ theme }) => theme.palette.contrastAlpha};
@@ -150,4 +150,30 @@ export const GemPill = styled.div`
 
 export const GemImage = styled.img`
     width: 11px;
+`;
+
+export const InfoWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 2px 10px;
+`;
+export const InfoItemWrapper = styled.div`
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 3px;
+    font-size: 11px;
+    width: 100%;
+    overflow: hidden;
+    align-items: baseline;
+
+    strong {
+        font-weight: bold;
+    }
+    span {
+        overflow: hidden;
+        font-size: 10px;
+        word-wrap: break-word;
+    }
 `;

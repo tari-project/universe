@@ -13,7 +13,7 @@ export const DashboardContentContainer = styled(m.div)`
 export const VersionWrapper = styled.div`
     position: fixed;
     top: 20px;
-    right: 20px;
+    right: 35px;
 `;
 export const ProgressWrapper = styled.div`
     margin: 20px 0;
