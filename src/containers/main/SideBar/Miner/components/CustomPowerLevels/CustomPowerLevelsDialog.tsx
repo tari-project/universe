@@ -154,7 +154,7 @@ export function CustomPowerLevelsDialog({
                         name={`${FormFields.GPUS}.${index}.gpu_name`}
                         render={({ field: _field }) => (
                             <RangeInputComponent
-                                label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpsu_name}`}
+                                label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
                                 maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
                                 value={gpu.max_gpu_threads}
                                 step={2}

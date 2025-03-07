@@ -8,7 +8,6 @@ import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
-import { useAppStateStore } from '@app/store';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -96,7 +95,6 @@ export const setEngine = async (engine) => {
         useMiningStore.setState({ engine });
         await restartMining();
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Could not set engine: ', e);
         setError(e as string);
         useMiningStore.setState({ engine: current_engine || undefined });

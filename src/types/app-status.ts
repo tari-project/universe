@@ -167,18 +167,6 @@ interface P2poolBlockStats {
     rejected: number;
     submitted: number;
 }
-enum HardwareVendor {
-    Nvidia = 'Nvidia',
-    Amd = 'Amd',
-    Intel = 'Intel',
-    Apple = 'Apple',
-    Unknown = 'Unknown',
-}
-
-interface DeviceStatus {
-    is_available: boolean;
-    is_reader_implemented: boolean;
-}
 
 interface GpuStatus {
     recommended_grid_size: number;
