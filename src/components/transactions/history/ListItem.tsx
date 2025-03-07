@@ -93,7 +93,7 @@ function ItemHover({ item }: { item: TransactionInfo }) {
 function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // TODO: check formatter - need to handle negative values
     const isPositiveValue = type !== 'sent';
-    const displayTitle = truncateMiddle(title, 12);
+    const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
             <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
@@ -125,7 +125,11 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     const [expanded, setExpanded] = useState(false);
 
     const itemTitle =
-        item.txType === 'mined' ? `${t('block')} #${item.mined_in_block_height}` : t(`common:${item.txType}`);
+        item.txType === 'mined'
+            ? `${t('block')} #${item.mined_in_block_height}`
+            : !item.payment_id || item.payment_id?.includes('<No message>')
+              ? t(`common:${item.txType}`)
+              : item.payment_id;
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
