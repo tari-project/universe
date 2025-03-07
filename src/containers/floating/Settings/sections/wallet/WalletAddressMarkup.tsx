@@ -10,10 +10,12 @@ import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
 import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
+import { QRCodeSVG } from 'qrcode.react';
 import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
+import { useMiningStore } from '@app/store/useMiningStore';
 
 const Dot = styled.div`
     width: 4px;
@@ -72,7 +74,7 @@ const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
-
+    const network = useMiningStore((state) => state.network);
     if (!walletAddress) return null;
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
@@ -103,7 +105,7 @@ const WalletAddressMarkup = () => {
             return '';
         }
     }
-
+    console.log('XXXXXXXXXXXXXX', { network });
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
@@ -135,6 +137,13 @@ const WalletAddressMarkup = () => {
                     </IconButton>
                     <CopyToClipboard text={walletAddressEmoji} />
                 </Stack>
+            </Stack>
+            <Stack direction="row" justifyContent="center" alignItems="center" style={{ margin: '8px 0' }}>
+                <QRCodeSVG
+                    value={`tari://${network}/transactions/send?tariAddress=${walletAddress}`}
+                    size={308}
+                    level="H"
+                />
             </Stack>
         </SettingsGroupWrapper>
     );
