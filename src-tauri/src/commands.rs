@@ -37,6 +37,7 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
+use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -194,6 +195,8 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
+    FrontendReadyChannel::current().set_ready();
+
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
