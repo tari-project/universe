@@ -23,6 +23,7 @@
 use std::{sync::LazyLock, time::Duration};
 
 use log::error;
+use log::info;
 use sysinfo::Networks;
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -36,7 +37,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::UniverseAppState;
 
-// const LOG_TARGET: &str = "tari::universe::network_status";
+const LOG_TARGET: &str = "tari::universe::network_status";
 const LISTENER_INTERVAL_DURATION: Duration = Duration::from_secs(10);
 const MINIMAL_NETWORK_DOWNLOAD_SPEED: u64 = 100000;
 const MINIMAL_NETWORK_UPLOAD_SPEED: u64 = 100000;
@@ -45,7 +46,7 @@ static INSTANCE: LazyLock<NetworkStatus> = LazyLock::new(NetworkStatus::new);
 
 #[derive(Debug)]
 pub struct NetworkStatus {
-    cancelation_token: Mutex<CancellationToken>,
+    cancelation_token: CancellationToken,
     networks: Mutex<Networks>,
     sender: Sender<(u64, u64)>,
     receiver: Receiver<(u64, u64)>,
@@ -56,7 +57,7 @@ impl NetworkStatus {
         let (sender, receiver) = tokio::sync::watch::channel((0, 0));
         Self {
             networks: Mutex::new(Networks::new_with_refreshed_list()),
-            cancelation_token: Mutex::new(CancellationToken::new()),
+            cancelation_token: CancellationToken::new(),
             sender,
             receiver,
         }
@@ -103,8 +104,9 @@ impl NetworkStatus {
     }
 
     pub async fn cancel_listener(&self) {
-        let cancelation_token = self.cancelation_token.lock().await;
-        cancelation_token.cancel();
+        info!(target: LOG_TARGET, "Canceling network speed listener");
+        self.cancelation_token.cancel();
+        info!(target: LOG_TARGET, "Network speed listener canceled");
     }
 
     pub fn get_network_speeds_receiver(&self) -> Receiver<(u64, u64)> {
@@ -112,9 +114,9 @@ impl NetworkStatus {
     }
 
     pub async fn start_listener_for_network_speeds(&self, app_handle: AppHandle) {
+        let cancelation_token = self.cancelation_token.clone();
         tokio::spawn(async move {
             let network_status = NetworkStatus::current();
-            let cancelation_token = network_status.cancelation_token.lock().await;
             let mut interval = interval(LISTENER_INTERVAL_DURATION);
 
             let mut previous_download_speed: u64 = 0;
@@ -124,6 +126,7 @@ impl NetworkStatus {
                 interval.tick().await;
 
                 if cancelation_token.is_cancelled() {
+                    info!(target: LOG_TARGET, "Network speed listener canceled");
                     break;
                 }
 
