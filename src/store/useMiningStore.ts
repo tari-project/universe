@@ -7,11 +7,12 @@ interface MiningStoreState {
     miningControlsEnabled: boolean;
     isChangingMode: boolean;
     isExcludingGpuDevices: boolean;
-    excludedGpuDevices: number[];
     counter: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
     network: string;
+    engine?: string;
+    availableEngines: string[];
 }
 
 const initialState: MiningStoreState = {
@@ -23,8 +24,9 @@ const initialState: MiningStoreState = {
     isChangingMode: false,
     isExcludingGpuDevices: false,
     miningControlsEnabled: true,
+    availableEngines: [],
+    engine: undefined,
     network: 'unknown',
-    excludedGpuDevices: [],
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

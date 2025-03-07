@@ -109,6 +109,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -177,19 +178,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let _ = &app_state
             .events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
-            .await;
-        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
-            Ok(devices) => devices,
-            Err(e) => {
-                let err_msg = format!("Failed to get GPU devices: {:?}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                vec![]
-            }
-        };
-        let _ = &app_state
-            .events_manager
-            .handle_gpu_devices_update(&move_app, gpu_devices)
             .await;
     });
 
@@ -589,7 +577,11 @@ async fn setup_inner(
         .gpu_miner
         .write()
         .await
-        .detect(config_dir.clone())
+        .detect(
+            app.clone(),
+            config_dir.clone(),
+            state.config.read().await.gpu_engine(),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
@@ -1271,7 +1263,6 @@ fn main() {
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
             commands::set_display_mode,
-            commands::set_excluded_gpu_devices,
             commands::set_gpu_mining_enabled,
             commands::set_mine_on_app_start,
             commands::set_mode,
@@ -1294,10 +1285,12 @@ fn main() {
             commands::set_pre_release,
             commands::check_for_updates,
             commands::try_update,
+            commands::toggle_device_exclusion,
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
+            commands::set_selected_engine,
             commands::frontend_ready
         ])
         .build(tauri::generate_context!())
