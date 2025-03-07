@@ -5,7 +5,7 @@ import { AppConfig, GpuThreads } from '../types/app-status.ts';
 import { useAppStateStore } from './appStateStore.ts';
 import { displayMode, modeType } from './types.ts';
 import { Language } from '@app/i18initializer.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { toggleDeviceExclusion, useMiningStore } from '@app/store/useMiningStore.ts';
 import { changeLanguage } from 'i18next';
 import { sidebarTowerOffset, TOWER_CANVAS_ID, setUITheme } from '@app/store/useUIStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
@@ -159,9 +159,8 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
         set({ gpu_mining_enabled: enabled });
         const miningState = useMiningStore.getState();
         const metricsState = useMiningMetricsStore.getState();
-        const totalGpuDevices = metricsState.gpu_devices.length;
-        const excludedDevices = miningState.excludedGpuDevices.length;
-        if (metricsState.cpu_mining_status.is_mining || metricsState.cpu_mining_status.is_mining) {
+        const gpu_devices = metricsState.gpu_devices;
+        if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
             await pauseMining();
         }
 
@@ -172,8 +171,10 @@ export const useAppConfigStore = create<AppConfigStoreState>()((set) => ({
             } else {
                 void stopMining();
             }
-            if (enabled && excludedDevices === totalGpuDevices) {
-                miningState.setExcludedGpuDevice([]);
+            if (enabled && gpu_devices.every((device) => device.settings.is_excluded)) {
+                for (const device of gpu_devices) {
+                    await toggleDeviceExclusion(device.device_index, false);
+                }
             }
         } catch (e) {
             const appStateStore = useAppStateStore.getState();

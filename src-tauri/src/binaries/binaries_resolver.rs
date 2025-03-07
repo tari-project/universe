@@ -85,9 +85,9 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
-        let gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+        let gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
 
-        let gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
 
         let (tari_prerelease_prefix, gpuminer_specific_nanme) =
             match Network::get_current_or_user_setting_or_default() {

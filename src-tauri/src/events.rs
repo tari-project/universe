@@ -23,6 +23,8 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::gpu_status_file::GpuDevice;
+
 #[derive(Debug, Serialize, Clone)]
 pub struct SetupStatusEvent {
     pub event_type: String,
@@ -44,4 +46,15 @@ pub struct ResumingAllProcessesPayload {
     pub stage_progress: u32,
     pub stage_total: u32,
     pub is_resuming: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DetectedAvailableGpuEngines {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct DetectedDevices {
+    pub devices: Vec<GpuDevice>,
 }

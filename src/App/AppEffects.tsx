@@ -9,6 +9,7 @@ import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
 import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
 import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
 import { useListenForAppResuming } from '@app/hooks/app/useListenForAppResuming.ts';
+import { useListenForGpuEngines } from '@app/hooks/app/useListenForGpuEngines.ts';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
@@ -31,6 +32,7 @@ export default function AppEffects() {
     useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
     useListenForAppResuming();
+    useListenForGpuEngines();
 
     return null;
 }
