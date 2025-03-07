@@ -82,6 +82,16 @@ export interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
+
+interface XSpaceEvent {
+    start: Date;
+    end: Date;
+    displayName: string;
+    id: string;
+}
+
+//////////////////////////////////////////
+
 interface MiningPoint {
     blockHeight: string;
     reward: number;
@@ -99,6 +109,7 @@ export interface AirdropStoreState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    latestXSpaceEvent?: XSpaceEvent;
 }
 
 const initialState: AirdropStoreState = {
@@ -110,6 +121,12 @@ const initialState: AirdropStoreState = {
     referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    latestXSpaceEvent: {
+        id: 'id',
+        start: new Date(),
+        end: new Date(),
+        displayName: 'No new events ',
+    },
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
