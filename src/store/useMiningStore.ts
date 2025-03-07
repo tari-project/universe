@@ -90,6 +90,7 @@ export const useMiningStore = create<MiningStoreState>()((set) => ({
         }),
     setEngine: async (engine) => {
         const current_engine = useMiningStore.getState().engine;
+        console.debug(current_engine);
         try {
             await invoke('set_selected_engine', { selectedEngine: engine });
             set({ engine });
