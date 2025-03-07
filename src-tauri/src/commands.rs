@@ -1882,6 +1882,7 @@ pub async fn send_one_sided_to_stealth_address(
     payment_id: Option<String>,
 ) -> Result<(), String> {
     let timer = Instant::now();
+    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
     let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
     spend_wallet_manager
         .send_one_sided_to_stealth_address(amount, destination, payment_id)

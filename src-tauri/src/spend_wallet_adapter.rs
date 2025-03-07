@@ -101,61 +101,28 @@ impl SpendWalletAdapter {
         destination: String,
         payment_id: Option<String>,
     ) -> Result<(), Error> {
-        // let inner_shutdown = Shutdown::new();
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
-        let recovery_args: Vec<String> = vec!["--seed-words".to_string(), seed_words.to_string()];
-        let sync_args: Vec<String> = vec!["sync".to_string()];
-        let payment_id_option = format!("-p {}", payment_id.unwrap_or("<No message>".to_string()));
-
-        let send_one_sided_to_stealth_address_args: Vec<String> = vec![
-            "send-one-sided-to-stealth-address".to_string(),
-            amount.to_string(),
-            payment_id_option,
-            destination.to_string(),
-        ];
-
-        //////////////////////////////////////////////////////////////////
+        let recovery_args = self.get_recovery_args(seed_words);
+        let sync_args = self.get_sync_args();
+        let send_one_sided_to_stealth_address_args =
+            self.get_send_one_sided_to_stealth_address_args(amount, destination, payment_id);
         let executions_args = vec![
             recovery_args,
             sync_args,
             send_one_sided_to_stealth_address_args,
         ];
 
-        for (i, command) in executions_args.into_iter().enumerate() {
-            match self.execute_command(command).await {
+        for (i, command_args) in executions_args.into_iter().enumerate() {
+            match self.execute_command(command_args.clone()).await {
                 Ok(status) => {
-                    info!(target: LOG_TARGET, "Send #{}. Command executed successfully with status: {:?}", i + 2, status);
+                    info!(target: LOG_TARGET, "#{} Command({:?}) executed successfully with status: {:?} ", i + 1, command_args.join(" "), status);
                 }
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Send #{}. Failed to execute command: {:?}", i + 2, e);
+                    error!(target: LOG_TARGET, "#{} Command({:?}) Failed to execute: {:?}", i + 1, command_args.join(" "), e);
                     return Err(e);
                 }
             }
         }
-        ////////////////////////////////////////////////////////////////
-        // let mut recovery_instance = ProcessInstance {
-        //     shutdown: inner_shutdown,
-        //     handle: None,
-        //     startup_spec: ProcessStartupSpec {
-        //         file_path: self.get_wallet_binary(),
-        //         envs: None,
-        //         args: [shared_args.clone(), recovery_args].concat(),
-        //         data_dir: self.get_data_dir(),
-        //         pid_file_name: self.pid_file_name().to_string(),
-        //         name: "spend_wallet_recovery".to_string(),
-        //     },
-        // };
-
-        // let recovery_handle = tokio::spawn(async move {
-        //     if let Err(e) = recovery_instance.start().await {
-        //         error!(target: LOG_TARGET, "Failed to start recovery instance: {}", e);
-        //     } else {
-        //         info!(target: LOG_TARGET, "Recovery instance started successfully");
-        //     }
-        // });
-
-        // recovery_handle.await?;
-        ////////////////////////////////////////////////////////////////
 
         self.erase_related_data().await?;
 
@@ -165,7 +132,6 @@ impl SpendWalletAdapter {
     async fn execute_command(&self, args: Vec<String>) -> Result<std::process::ExitStatus, Error> {
         let shared_args = self.get_shared_args()?;
         let joined_args = [shared_args.clone(), args].concat();
-        info!(target: LOG_TARGET, "JAZDAAAA SPOEND_WALLET args: {:?}", joined_args.clone());
         let mut child = launch_child_process(
             &self.get_wallet_binary(),
             &self.get_data_dir(),
@@ -181,17 +147,21 @@ impl SpendWalletAdapter {
         // let mut stderr_reader = BufReader::new(stderr).lines();
         // tokio::spawn(async move {
         //     while let Some(line) = stdout_reader.next_line().await.unwrap_or(None) {
-        //         println!("xxxxxxxxxxxxxxxx [stdout] {}", line);
+        //         println!("[command stdout] {}", line);
         //     }
         // });
         // tokio::spawn(async move {
         //     while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
-        //         println!("xxxxxxxxxxxxxxxxxxxxx[stderr] {}", line);
+        //         println!("[command stderr] {}", line);
         //     }
         // });
         //////////////////////////////////////////////////////////
         let status = child.wait().await?;
-        Ok(status)
+        if status.success() {
+            Ok(status)
+        } else {
+            Err(anyhow::anyhow!("Command failed with status: {:?}", status))
+        }
     }
 
     async fn erase_related_data(&self) -> Result<(), Error> {
@@ -211,11 +181,6 @@ impl SpendWalletAdapter {
                 "--log-config={}",
                 convert_to_string(self.get_log_config_file())?
             ),
-            // "--grpc-enabled".to_string(),
-            // "--grpc-address".to_string(),
-            // format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
-            // "-p".to_string(),
-            // "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
             "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
@@ -249,15 +214,35 @@ impl SpendWalletAdapter {
         Ok(shared_args)
     }
 
+    fn get_recovery_args(&self, seed_words: String) -> Vec<String> {
+        vec!["--seed-words".to_string(), seed_words]
+    }
+
+    fn get_sync_args(&self) -> Vec<String> {
+        vec!["sync".to_string()]
+    }
+
+    fn get_send_one_sided_to_stealth_address_args(
+        &self,
+        amount: String,
+        destination: String,
+        payment_id: Option<String>,
+    ) -> Vec<String> {
+        let mut args: Vec<String> = vec!["send-one-sided-to-stealth-address".to_string()];
+        if let Some(id) = payment_id {
+            args.push("--payment-id".to_string());
+            args.push(id);
+        }
+        args.push(amount);
+        args.push(destination);
+        args
+    }
+
     async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
         let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         let seed_words = internal_wallet.decrypt_seed_words()?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
-
-    // fn pid_file_name(&self) -> &str {
-    //     "spend_wallet_pid"
-    // }
 
     fn get_config_dir(&self) -> PathBuf {
         self.config_dir.clone().expect("Config dir not defined")

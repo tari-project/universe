@@ -39,6 +39,7 @@ use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
@@ -123,9 +124,10 @@ impl WalletAdapter {
                 amount: MicroMinotari(tx.amount),
                 is_cancelled: tx.is_cancelled,
                 direction: tx.direction,
+                excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: tx.payment_id.to_hex(),
+                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -186,9 +188,10 @@ impl WalletAdapter {
                 amount: MicroMinotari(tx.amount),
                 is_cancelled: tx.is_cancelled,
                 direction: tx.direction,
+                excess_sig: tx.excess_sig,
                 fee: tx.fee,
                 timestamp: tx.timestamp,
-                payment_id: tx.payment_id.to_hex(),
+                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
             if let Some(limit) = limit {
@@ -502,7 +505,7 @@ pub struct TransactionInfo {
     pub amount: MicroMinotari,
     pub is_cancelled: bool,
     pub direction: i32,
-    // pub excess_sig: Vec<String>,
+    pub excess_sig: Vec<u8>,
     pub fee: u64,
     pub timestamp: u64,
     pub payment_id: String,
