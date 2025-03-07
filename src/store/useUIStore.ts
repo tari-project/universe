@@ -9,7 +9,7 @@ const sideBarPaddingBuffer = 20;
 export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
 export const TOWER_CANVAS_ID = 'tower-canvas';
 
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'keyring'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 type DialogType = DialogTypeTuple[number];
 
