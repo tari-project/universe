@@ -25,7 +25,13 @@ use std::{sync::LazyLock, time::Duration};
 use log::error;
 use sysinfo::Networks;
 use tauri::{AppHandle, Manager};
-use tokio::{sync::Mutex, time::interval};
+use tokio::{
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+    time::interval,
+};
 use tokio_util::sync::CancellationToken;
 
 use crate::UniverseAppState;
@@ -40,14 +46,19 @@ static INSTANCE: LazyLock<NetworkStatus> = LazyLock::new(NetworkStatus::new);
 #[derive(Debug)]
 pub struct NetworkStatus {
     cancelation_token: Mutex<CancellationToken>,
-    networks: Networks,
+    networks: Mutex<Networks>,
+    sender: Sender<(u64, u64)>,
+    receiver: Receiver<(u64, u64)>,
 }
 
 impl NetworkStatus {
     pub fn new() -> Self {
+        let (sender, receiver) = tokio::sync::watch::channel((0, 0));
         Self {
-            networks: Networks::new_with_refreshed_list(),
+            networks: Mutex::new(Networks::new_with_refreshed_list()),
             cancelation_token: Mutex::new(CancellationToken::new()),
+            sender,
+            receiver,
         }
     }
 
@@ -55,9 +66,10 @@ impl NetworkStatus {
         &INSTANCE
     }
 
-    fn get_download_speed(&self) -> Result<u64, anyhow::Error> {
-        let networks_total_download: Vec<u64> = self
-            .networks
+    async fn get_download_speed(&self) -> Result<u64, anyhow::Error> {
+        let mut networks_lock = self.networks.lock().await;
+        networks_lock.refresh();
+        let networks_total_download: Vec<u64> = networks_lock
             .iter()
             .map(|(_, network)| network.total_received())
             .collect();
@@ -67,9 +79,10 @@ impl NetworkStatus {
         Ok(download_speed)
     }
 
-    fn get_upload_speed(&self) -> Result<u64, anyhow::Error> {
-        let networks_total_upload: Vec<u64> = self
-            .networks
+    async fn get_upload_speed(&self) -> Result<u64, anyhow::Error> {
+        let mut networks_lock = self.networks.lock().await;
+        networks_lock.refresh();
+        let networks_total_upload: Vec<u64> = networks_lock
             .iter()
             .map(|(_, network)| network.total_transmitted())
             .collect();
@@ -84,9 +97,18 @@ impl NetworkStatus {
             || upload_speed < MINIMAL_NETWORK_UPLOAD_SPEED
     }
 
+    pub fn format_to_mb(bytes: u64) -> f64 {
+        let raw_mb = bytes as f64 / 1024.0 / 1024.0;
+        (raw_mb * 100.0).round() / 100.0
+    }
+
     pub async fn cancel_listener(&self) {
         let cancelation_token = self.cancelation_token.lock().await;
         cancelation_token.cancel();
+    }
+
+    pub fn get_network_speeds_receiver(&self) -> Receiver<(u64, u64)> {
+        self.receiver.clone()
     }
 
     pub async fn start_listener_for_network_speeds(&self, app_handle: AppHandle) {
@@ -107,6 +129,7 @@ impl NetworkStatus {
 
                 let download_speed = network_status
                     .get_download_speed()
+                    .await
                     .inspect_err(|e| {
                         error!("Failed to detect download speed: {:?}", e);
                     })
@@ -114,6 +137,7 @@ impl NetworkStatus {
 
                 let upload_speed = network_status
                     .get_upload_speed()
+                    .await
                     .inspect_err(|e| {
                         error!("Failed to detect upload speed: {:?}", e);
                     })
@@ -124,6 +148,13 @@ impl NetworkStatus {
 
                 let is_band_width_too_low =
                     network_status.is_band_width_too_low(download_speed, upload_speed);
+
+                let _unused = NetworkStatus::current()
+                    .sender
+                    .send((download_speed, upload_speed))
+                    .inspect_err(|e| {
+                        error!("Failed to send network speeds: {:?}", e);
+                    });
 
                 app_handle
                     .state::<UniverseAppState>()

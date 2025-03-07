@@ -6,7 +6,6 @@ import {
     CpuMinerStatus,
     GpuMinerStatus,
     NetworkStatus,
-    PublicDeviceParameters,
     TransactionInfo,
     WalletBalance,
 } from '@app/types/app-status';
