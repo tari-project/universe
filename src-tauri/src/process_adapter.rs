@@ -215,10 +215,7 @@ impl ProcessInstance {
         let handle = self.handle.take();
 
         match handle {
-            Some(handle) => {
-                let result = handle.await?;
-                result
-            }
+            Some(handle) => handle.await?,
             None => Err(anyhow!("No process handle available")),
         }
     }

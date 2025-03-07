@@ -309,6 +309,7 @@ impl ExecutionCommand {
         self
     }
 
+    #[allow(dead_code)]
     fn with_extra_envs(mut self, extra_envs: HashMap<String, String>) -> Self {
         self.extra_envs.extend(extra_envs);
         self
