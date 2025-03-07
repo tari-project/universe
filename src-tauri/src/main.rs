@@ -294,8 +294,6 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    FrontendReadyChannel::current().wait_for_ready().await?;
-
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -309,6 +307,7 @@ async fn setup_inner(
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
+        FrontendReadyChannel::current().wait_for_ready().await?;
         app.emit(
             "critical_problem",
             CriticalProblemEvent {
