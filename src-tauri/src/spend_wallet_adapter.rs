@@ -20,18 +20,20 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::internal_wallet::InternalWallet;
 use crate::port_allocator::PortAllocator;
-use crate::process_utils::launch_child_process;
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
-use log::{error, info};
+use log::info;
+use std::collections::HashMap;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
-use tari_shutdown::ShutdownSignal;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::hex::Hex;
+use tonic::async_trait;
 
 // TODO: Ensure we actually need this
 // #[cfg(target_os = "windows")]
@@ -94,7 +96,6 @@ impl SpendWalletAdapter {
         Ok(())
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn send_one_sided_to_stealth_address(
         &mut self,
         amount: String,
@@ -102,66 +103,54 @@ impl SpendWalletAdapter {
         payment_id: Option<String>,
     ) -> Result<(), Error> {
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
-        let recovery_args = self.get_recovery_args(seed_words);
-        let sync_args = self.get_sync_args();
-        let send_one_sided_to_stealth_address_args =
-            self.get_send_one_sided_to_stealth_address_args(amount, destination, payment_id);
-        let executions_args = vec![
-            recovery_args,
-            sync_args,
-            send_one_sided_to_stealth_address_args,
+        let commands = vec![
+            ExecutionCommand::new("recovery")
+                .with_extra_args(vec!["--seed-words".to_string(), seed_words]),
+            // Use when https://github.com/tari-project/tari/pull/6855 merged
+            // .with_extra_args(vec!["--recovery".to_string()])
+            // .with_extra_envs(HashMap::from([
+            //     ("MINOTARI_WALLET_SEED_WORDS".to_string(), seed_words.clone())
+            // ])),
+            ExecutionCommand::new("sync").with_extra_args(vec!["sync".to_string()]),
+            ExecutionCommand::new("send-one-sided").with_extra_args({
+                let mut args = vec!["send-one-sided-to-stealth-address".to_string()];
+                if let Some(id) = payment_id {
+                    args.extend(vec!["--payment-id".to_string(), id]);
+                }
+                args.extend(vec![amount, destination]);
+                args
+            }),
         ];
 
-        for (i, command_args) in executions_args.into_iter().enumerate() {
-            match self.execute_command(command_args.clone()).await {
-                Ok(status) => {
-                    info!(target: LOG_TARGET, "#{} Command({:?}) executed successfully with status: {:?} ", i + 1, command_args.join(" "), status);
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET, "#{} Command({:?}) Failed to execute: {:?}", i + 1, command_args.join(" "), e);
-                    return Err(e);
-                }
+        for command in commands {
+            let (mut instance, _monitor) = self.spawn(
+                self.get_data_dir(),
+                self.get_config_dir(),
+                self.get_log_dir(),
+                self.get_wallet_binary(),
+            )?;
+
+            instance.startup_spec.args.extend(command.extra_args);
+            instance
+                .startup_spec
+                .envs
+                .get_or_insert_with(HashMap::new)
+                .extend(command.extra_envs);
+
+            instance.start().await?;
+            let exit_code = instance.wait().await?;
+
+            if exit_code != 0 {
+                return Err(anyhow::anyhow!(
+                    "Command '{}' failed with exit code: {}",
+                    command.name,
+                    exit_code
+                ));
             }
         }
 
         self.erase_related_data().await?;
-
         Ok(())
-    }
-
-    async fn execute_command(&self, args: Vec<String>) -> Result<std::process::ExitStatus, Error> {
-        let shared_args = self.get_shared_args()?;
-        let joined_args = [shared_args.clone(), args].concat();
-        let mut child = launch_child_process(
-            &self.get_wallet_binary(),
-            &self.get_data_dir(),
-            None,
-            &joined_args,
-        )?;
-
-        ////////////////////////////////////////////////////////// Use for debugging
-        // let stdout = child.stdout.take().unwrap();
-        // let stderr = child.stderr.take().unwrap();
-        // use tokio::io::{AsyncBufReadExt, BufReader};
-        // let mut stdout_reader = BufReader::new(stdout).lines();
-        // let mut stderr_reader = BufReader::new(stderr).lines();
-        // tokio::spawn(async move {
-        //     while let Some(line) = stdout_reader.next_line().await.unwrap_or(None) {
-        //         println!("[command stdout] {}", line);
-        //     }
-        // });
-        // tokio::spawn(async move {
-        //     while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
-        //         println!("[command stderr] {}", line);
-        //     }
-        // });
-        //////////////////////////////////////////////////////////
-        let status = child.wait().await?;
-        if status.success() {
-            Ok(status)
-        } else {
-            Err(anyhow::anyhow!("Command failed with status: {:?}", status))
-        }
     }
 
     async fn erase_related_data(&self) -> Result<(), Error> {
@@ -173,8 +162,6 @@ impl SpendWalletAdapter {
         let shared_args = vec![
             "-b".to_string(),
             convert_to_string(self.get_working_dir())?,
-            "--password".to_string(),
-            "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(), // TODO: Maybe use a random password per machine
             "--non-interactive-mode".to_string(),
             "--auto-exit".to_string(),
             format!(
@@ -214,30 +201,6 @@ impl SpendWalletAdapter {
         Ok(shared_args)
     }
 
-    fn get_recovery_args(&self, seed_words: String) -> Vec<String> {
-        vec!["--seed-words".to_string(), seed_words]
-    }
-
-    fn get_sync_args(&self) -> Vec<String> {
-        vec!["sync".to_string()]
-    }
-
-    fn get_send_one_sided_to_stealth_address_args(
-        &self,
-        amount: String,
-        destination: String,
-        payment_id: Option<String>,
-    ) -> Vec<String> {
-        let mut args: Vec<String> = vec!["send-one-sided-to-stealth-address".to_string()];
-        if let Some(id) = payment_id {
-            args.push("--payment-id".to_string());
-            args.push(id);
-        }
-        args.push(amount);
-        args.push(destination);
-        args
-    }
-
     async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
         let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         let seed_words = internal_wallet.decrypt_seed_words()?;
@@ -271,5 +234,84 @@ impl SpendWalletAdapter {
             .join("spend_wallet")
             .join("configs")
             .join("log4rs_config_spend_wallet.yml")
+    }
+}
+
+#[derive(Clone)]
+pub struct DummyStatusMonitor;
+
+#[async_trait]
+impl StatusMonitor for DummyStatusMonitor {
+    // Question: What actually should be here?
+    async fn check_health(&self) -> HealthStatus {
+        HealthStatus::Healthy
+    }
+}
+
+impl ProcessAdapter for SpendWalletAdapter {
+    type StatusMonitor = DummyStatusMonitor;
+
+    fn spawn_inner(
+        &self,
+        base_folder: PathBuf,
+        _config_folder: PathBuf,
+        _log_folder: PathBuf,
+        binary_version_path: PathBuf,
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+        let shared_args = self.get_shared_args()?;
+        let envs = HashMap::from([(
+            "MINOTARI_WALLET_PASSWORD".to_string(),
+            "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(),
+        )]);
+        let instance = ProcessInstance {
+            shutdown: Shutdown::new(),
+            handle: None,
+            startup_spec: ProcessStartupSpec {
+                file_path: binary_version_path,
+                envs: Some(envs),
+                args: shared_args,
+                pid_file_name: self.pid_file_name().to_string(),
+                data_dir: base_folder,
+                name: self.name().to_string(),
+            },
+        };
+
+        Ok((instance, DummyStatusMonitor))
+    }
+
+    fn name(&self) -> &str {
+        "spend_wallet"
+    }
+
+    fn pid_file_name(&self) -> &str {
+        "spend_wallet.pid"
+    }
+}
+
+#[derive(Debug)]
+struct ExecutionCommand {
+    name: String,
+    extra_args: Vec<String>,
+    extra_envs: HashMap<String, String>,
+}
+
+impl ExecutionCommand {
+    fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            extra_args: Vec::new(),
+            extra_envs: HashMap::new(),
+        }
+    }
+
+    fn with_extra_args(mut self, extra_args: Vec<String>) -> Self {
+        self.extra_args.extend(extra_args);
+        self
+    }
+
+    #[allow(dead_code)]
+    fn with_extra_envs(mut self, extra_envs: HashMap<String, String>) -> Self {
+        self.extra_envs.extend(extra_envs);
+        self
     }
 }
