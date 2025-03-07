@@ -5,7 +5,7 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { Select } from '@app/components/elements/inputs/Select';
 import { useCallback, useMemo } from 'react';
 import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 
 const Wrapper = styled(m.div)`
     width: 100%;

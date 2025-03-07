@@ -5,7 +5,7 @@ const config: KnipConfig = {
     rules: {
         files: 'error',
         dependencies: 'warn',
-        unlisted: 'warn',
+        unlisted: 'error',
         exports: 'warn',
         types: 'warn',
         duplicates: 'error',
