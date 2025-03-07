@@ -105,7 +105,7 @@ const WalletAddressMarkup = () => {
             return '';
         }
     }
-    console.log('XXXXXXXXXXXXXX', { network });
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
