@@ -58,11 +58,11 @@ export {
     getMaxAvailableThreads,
     pauseMining,
     setCustomLevelsDialogOpen,
-    setExcludedGpuDevices,
     setMiningControlsEnabled,
     setMiningNetwork,
     startMining,
     stopMining,
+    toggleDeviceExclusion,
 } from './miningStoreActions.ts';
 export {
     setShowExternalDependenciesDialog,

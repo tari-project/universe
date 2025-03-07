@@ -1,6 +1,5 @@
 import { memo, useCallback } from 'react';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { toggleDeviceExclusion, useMiningStore } from '@app/store/useMiningStore.ts';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -16,6 +15,8 @@ import { Stack } from '@app/components/elements/Stack';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { GpuDevice } from '@app/types/app-status.ts';
+import { toggleDeviceExclusion } from '@app/store/actions/miningStoreActions.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });

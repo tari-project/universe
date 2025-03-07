@@ -9,7 +9,7 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import { pauseMining, startMining, stopMining, setExcludedGpuDevices } from './miningStoreActions';
+import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
@@ -91,14 +91,16 @@ export const setAutoUpdate = async (autoUpdate: boolean) => {
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
     useAppConfigStore.setState({ cpu_mining_enabled: enabled });
-    const miningState = useMiningStore.getState();
-    const metricsState = useMiningMetricsStore.getState();
-    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
+    const miningInitiated = useMiningStore.getState().miningInitiated;
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    if (cpuMining || gpuMining) {
         await pauseMining();
     }
     invoke('set_cpu_mining_enabled', { enabled })
         .then(async () => {
-            if (miningState.miningInitiated && (enabled || metricsState.gpu_mining_status.is_mining)) {
+            if (miningInitiated && (enabled || gpuMining)) {
                 await startMining();
             } else {
                 await stopMining();
@@ -108,11 +110,7 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
             useAppConfigStore.setState({ cpu_mining_enabled: !enabled });
-            if (
-                miningState.miningInitiated &&
-                !metricsState.cpu_mining_status.is_mining &&
-                !metricsState.gpu_mining_status.is_mining
-            ) {
+            if (miningInitiated && !cpuMining && !gpuMining) {
                 void stopMining();
             }
         });
@@ -127,32 +125,30 @@ export const setCustomStatsServerPort = async (port: number | null) => {
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
     useAppConfigStore.setState({ gpu_mining_enabled: enabled });
-    const miningState = useMiningStore.getState();
-    const metricsState = useMiningMetricsStore.getState();
-    const totalGpuDevices = metricsState.gpu_devices.length;
-    const excludedDevices = miningState.excludedGpuDevices.length;
-    if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
+    const miningInitiated = useMiningStore.getState().miningInitiated;
+    const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
+    const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+    const gpuDevices = useMiningMetricsStore.getState().gpu_devices;
+    if (cpuMining || gpuMining) {
         await pauseMining();
     }
     try {
         await invoke('set_gpu_mining_enabled', { enabled });
-        if (miningState.miningInitiated && (metricsState.cpu_mining_status.is_mining || enabled)) {
+        if (miningInitiated && (cpuMining || enabled)) {
             await startMining();
         } else {
             void stopMining();
         }
-        if (enabled && excludedDevices === totalGpuDevices) {
-            await setExcludedGpuDevices([]);
+        if (enabled && gpuDevices.every((device) => device.settings.is_excluded)) {
+            for (const device of gpuDevices) {
+                await toggleDeviceExclusion(device.device_index, false);
+            }
         }
     } catch (e) {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
         useAppConfigStore.setState({ gpu_mining_enabled: !enabled });
-        if (
-            miningState.miningInitiated &&
-            !metricsState.cpu_mining_status.is_mining &&
-            !metricsState.gpu_mining_status.is_mining
-        ) {
+        if (miningInitiated && !cpuMining && !gpuMining) {
             void stopMining();
         }
     }

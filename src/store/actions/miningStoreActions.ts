@@ -65,8 +65,43 @@ export const pauseMining = async () => {
         useMiningStore.setState({ miningInitiated: true });
     }
 };
+export const restartMining = async () => {
+    const isMining =
+        useMiningMetricsStore.getState().cpu_mining_status.is_mining ||
+        useMiningMetricsStore.getState().gpu_mining_status.is_mining;
+
+    if (isMining) {
+        console.info('Restarting mining...');
+        try {
+            await pauseMining();
+        } catch (e) {
+            console.error('Failed to pause(restart) mining: ', e);
+        }
+
+        try {
+            await startMining();
+        } catch (e) {
+            console.error('Failed to start(restart) mining: ', e);
+        }
+    }
+};
+export const setAvailableEngines = (availableEngines: string[], currentEngine: string) =>
+    useMiningStore.setState({ availableEngines, engine: currentEngine });
 export const setCustomLevelsDialogOpen = (customLevelsDialogOpen: boolean) =>
     useMiningStore.setState({ customLevelsDialogOpen });
+export const setEngine = async (engine) => {
+    const current_engine = useMiningStore.getState().engine;
+    try {
+        await invoke('set_selected_engine', { selectedEngine: engine });
+        useMiningStore.setState({ engine });
+        await restartMining();
+    } catch (e) {
+        const appStateStore = useAppStateStore.getState();
+        console.error('Could not set engine: ', e);
+        setError(e as string);
+        useMiningStore.setState({ engine: current_engine || undefined });
+    }
+};
 
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
@@ -131,8 +166,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         });
         const isAllExcluded = updatedDevices.every((device) => device.settings.is_excluded);
         if (isAllExcluded) {
-            const appConfigStore = useAppConfigStore.getState();
-            appConfigStore.setGpuMiningEnabled(false);
+            setGpuMiningEnabled(false);
         }
         useMiningMetricsStore.getState().setGpuDevices(updatedDevices);
         if (useMiningStore.getState().miningInitiated) {
@@ -141,8 +175,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         }
         useMiningStore.setState({ isExcludingGpuDevices: false });
     } catch (e) {
-        const appStateStore = useAppStateStore.getState();
         console.error('Could not set excluded gpu device: ', e);
-        appStateStore.setError(e as string);
+        setError(e as string);
     }
 };
