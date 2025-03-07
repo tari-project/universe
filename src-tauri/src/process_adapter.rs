@@ -219,7 +219,7 @@ impl ProcessInstance {
                 let result = handle.await?;
                 result
             }
-            None => Err(anyhow!("No process handle available"))
+            None => Err(anyhow!("No process handle available")),
         }
     }
 }
