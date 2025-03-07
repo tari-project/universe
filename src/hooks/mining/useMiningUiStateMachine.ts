@@ -10,6 +10,7 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
+    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
@@ -21,7 +22,7 @@ export const useUiMiningStateMachine = () => {
         let isLatestEffect = true;
         if (!visualMode || visualModeToggleLoading) return;
         const notStarted = !animationStatus || animationStatus == 'not-started';
-        if (isMining && notStarted) {
+        if (isMining && notStarted && !isResuming) {
             // Debounce animation state changes
             const timer = setTimeout(() => {
                 if (isLatestEffect) {
@@ -33,7 +34,7 @@ export const useUiMiningStateMachine = () => {
                 isLatestEffect = false;
             };
         }
-    }, [indexTrigger, isMining, visualMode, visualModeToggleLoading]);
+    }, [indexTrigger, isMining, isResuming, visualMode, visualModeToggleLoading]);
 
     useEffect(() => {
         let isLatestEffect = true;
