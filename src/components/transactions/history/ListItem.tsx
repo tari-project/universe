@@ -13,6 +13,8 @@ import {
     GemImage,
     GemPill,
     CurrencyText,
+    InfoWrapper,
+    InfoItemWrapper,
 } from './ListItem.styles.ts';
 import { useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
@@ -39,8 +41,19 @@ interface BaseItemProps {
     time: string;
     value: string;
     chip?: string;
+    onClick?: () => void;
 }
 
+function ItemExpand({ item }: { item: TransactionInfo }) {
+    const items = Object.keys(item).map((field) => (
+        <InfoItemWrapper key={field}>
+            <strong>{`${field}:`}</strong>
+            <span>{item[field]?.toString()}</span>
+        </InfoItemWrapper>
+    ));
+
+    return <InfoWrapper>{items}</InfoWrapper>;
+}
 function ItemHover({ item }: { item: TransactionInfo }) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
@@ -77,12 +90,12 @@ function ItemHover({ item }: { item: TransactionInfo }) {
     );
 }
 
-function BaseItem({ title, time, value, type, chip }: BaseItemProps) {
+function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // TODO: check formatter - need to handle negative values
     const isPositiveValue = type !== 'sent';
-    const displayTitle = truncateMiddle(title, 12);
+    const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
-        <ContentWrapper>
+        <ContentWrapper onClick={onClick}>
             <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
             <TimeWrapper variant="p">{time}</TimeWrapper>
             <ValueWrapper>
@@ -98,6 +111,7 @@ function BaseItem({ title, time, value, type, chip }: BaseItemProps) {
 }
 export function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
     const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
+    const clickRef = useRef(0);
 
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
@@ -105,12 +119,18 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { amount: 0.5, once: false });
 
+    const isMined = item.txType === 'mined';
+
     const [hovering, setHovering] = useState(false);
+    const [expanded, setExpanded] = useState(false);
 
     const itemTitle =
-        item.txType === 'mined' ? `${t('block')} #${item.mined_in_block_height}` : t(`common:${item.txType}`);
+        item.txType === 'mined'
+            ? `${t('block')} #${item.mined_in_block_height}`
+            : !item.payment_id || item.payment_id?.includes('<No message>')
+              ? t(`common:${item.txType}`)
+              : item.payment_id;
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
-
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',
@@ -119,10 +139,31 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
         minute: 'numeric',
     });
 
+    function handleTxClick() {
+        if (import.meta.env.MODE !== 'development' || showReplay) return;
+
+        if (!expanded) {
+            clickRef.current += 1;
+            if (clickRef.current === 3) {
+                setExpanded(true);
+                clickRef.current = 0;
+            }
+        } else {
+            setExpanded(false);
+        }
+    }
+
     const baseItem = (
-        <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={item.txType ?? 'unknown'} />
+        <BaseItem
+            title={itemTitle}
+            time={itemTime}
+            value={earningsFormatted}
+            type={item.txType ?? 'unknown'}
+            onClick={handleTxClick}
+        />
     );
-    const itemHover = showReplay ? <ItemHover item={item} /> : null;
+    const itemHover = showReplay && isMined ? <ItemHover item={item} /> : null;
+    const itemExpand = !isMined ? <ItemExpand item={item} /> : null;
 
     return (
         <ItemWrapper
@@ -131,11 +172,13 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
             initial={{ scale: 0.7, opacity: 0 }}
             animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
             transition={{ duration: 0.2 }}
+            style={{ height: !isMined && expanded ? 'auto' : 48 }}
             onMouseEnter={() => setHovering(true)}
             onMouseLeave={() => setHovering(false)}
         >
             <AnimatePresence>{hovering && itemHover}</AnimatePresence>
             {baseItem}
+            <AnimatePresence>{expanded && itemExpand}</AnimatePresence>
         </ItemWrapper>
     );
 }
