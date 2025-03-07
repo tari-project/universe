@@ -1,14 +1,7 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore';
-import {
-    BaseNodeStatus,
-    CpuMinerStatus,
-    GpuMinerStatus,
-    PublicDeviceParameters,
-    TransactionInfo,
-    WalletBalance,
-} from '@app/types/app-status';
+import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, TransactionInfo, WalletBalance } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 
@@ -29,10 +22,6 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'WalletBalanceUpdate';
           payload: WalletBalance;
-      }
-    | {
-          event_type: 'GpuDevicesUpdate';
-          payload: PublicDeviceParameters[];
       }
     | {
           event_type: 'CpuMiningUpdate';
@@ -58,7 +47,6 @@ type BackendStateUpdateEvent =
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
     const setWalletBalance = useWalletStore((s) => s.setWalletBalance);
-    const setGpuDevices = useMiningMetricsStore((s) => s.setGpuDevices);
     const setGpuMiningStatus = useMiningMetricsStore((s) => s.setGpuMiningStatus);
     const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
     const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
@@ -75,9 +63,6 @@ const useTauriEventsListener = () => {
                     break;
                 case 'BaseNodeUpdate':
                     handleBaseNodeStatusUpdate(event.payload);
-                    break;
-                case 'GpuDevicesUpdate':
-                    setGpuDevices(event.payload);
                     break;
                 case 'GpuMiningUpdate':
                     setGpuMiningStatus(event.payload);
@@ -104,7 +89,6 @@ const useTauriEventsListener = () => {
         handleBaseNodeStatusUpdate,
         handleConnectedPeersUpdate,
         setCpuMiningStatus,
-        setGpuDevices,
         setGpuMiningStatus,
         setWalletAddress,
         setWalletBalance,
