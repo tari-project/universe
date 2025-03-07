@@ -106,7 +106,6 @@ impl SpendWalletAdapter {
         let sync_args = self.get_sync_args();
         let send_one_sided_to_stealth_address_args =
             self.get_send_one_sided_to_stealth_address_args(amount, destination, payment_id);
-
         let executions_args = vec![
             recovery_args,
             sync_args,
@@ -141,21 +140,21 @@ impl SpendWalletAdapter {
         )?;
 
         ////////////////////////////////////////////////////////// Use for debugging
-        let stdout = child.stdout.take().unwrap();
-        let stderr = child.stderr.take().unwrap();
-        use tokio::io::{AsyncBufReadExt, BufReader};
-        let mut stdout_reader = BufReader::new(stdout).lines();
-        let mut stderr_reader = BufReader::new(stderr).lines();
-        tokio::spawn(async move {
-            while let Some(line) = stdout_reader.next_line().await.unwrap_or(None) {
-                println!("[command stdout] {}", line);
-            }
-        });
-        tokio::spawn(async move {
-            while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
-                println!("[command stderr] {}", line);
-            }
-        });
+        // let stdout = child.stdout.take().unwrap();
+        // let stderr = child.stderr.take().unwrap();
+        // use tokio::io::{AsyncBufReadExt, BufReader};
+        // let mut stdout_reader = BufReader::new(stdout).lines();
+        // let mut stderr_reader = BufReader::new(stderr).lines();
+        // tokio::spawn(async move {
+        //     while let Some(line) = stdout_reader.next_line().await.unwrap_or(None) {
+        //         println!("[command stdout] {}", line);
+        //     }
+        // });
+        // tokio::spawn(async move {
+        //     while let Some(line) = stderr_reader.next_line().await.unwrap_or(None) {
+        //         println!("[command stderr] {}", line);
+        //     }
+        // });
         //////////////////////////////////////////////////////////
         let status = child.wait().await?;
         if status.success() {

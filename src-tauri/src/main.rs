@@ -84,9 +84,9 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::{NodeManager, STOP_ON_ERROR_CODES};
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
-use crate::spend_wallet_manager::SpendWalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
 use utils::shutdown_utils::stop_all_processes;
