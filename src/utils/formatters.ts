@@ -55,7 +55,7 @@ const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maxi
 
 const formatTXTMCompact = (value: number) =>
     formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
-        minimumFractionDigits: 2,
+        // minimumFractionDigits: 2, TODO: check if this is okay for all locales? rms trailing zeros
         maximumFractionDigits: 2,
         notation: 'compact',
         style: 'decimal',

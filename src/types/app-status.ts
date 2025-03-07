@@ -79,6 +79,8 @@ export interface WalletAddress {
     tari_address_emoji: string;
 }
 
+export type TxType = 'mined' | 'sent' | 'received' | 'unknown';
+
 export interface TransactionInfo {
     tx_id: number;
     source_address: string;
@@ -93,6 +95,7 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
+    txType?: TxType;
 }
 
 export interface P2poolStatsResult {
@@ -162,18 +165,6 @@ interface P2poolBlockStats {
     accepted: number;
     rejected: number;
     submitted: number;
-}
-enum HardwareVendor {
-    Nvidia = 'Nvidia',
-    Amd = 'Amd',
-    Intel = 'Intel',
-    Apple = 'Apple',
-    Unknown = 'Unknown',
-}
-
-interface DeviceStatus {
-    is_available: boolean;
-    is_reader_implemented: boolean;
 }
 
 interface GpuStatus {

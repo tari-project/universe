@@ -1,8 +1,8 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { ThemeColourGroup } from '@app/theme/palettes/colors.ts';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info' | 'grey';
+export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
 
 export type IconPosition = 'end' | 'start' | 'hug';
@@ -28,6 +28,7 @@ export interface ExtendedButtonProps extends ButtonHTMLAttributes<HTMLButtonElem
     variant?: ButtonVariant;
     size?: ButtonSize;
     colorIntensity?: number;
+    active?: boolean;
 }
 
 export interface ExtendedButtonStyleProps {
@@ -35,4 +36,5 @@ export interface ExtendedButtonStyleProps {
     $variant?: ExtendedButtonProps['variant'];
     $size?: ExtendedButtonProps['size'];
     $colorIntensity?: ExtendedButtonProps['colorIntensity'];
+    $active?: boolean;
 }

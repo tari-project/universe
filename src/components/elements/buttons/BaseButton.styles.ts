@@ -33,16 +33,9 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         switch ($variant) {
             case 'outlined':
                 return css`
-                    color: ${convertHexToRGBA(
-                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
-                        0.9
-                    )};
-                    border: 1px solid
-                        ${convertHexToRGBA($color === 'transparent' ? '#fff' : $color || theme.palette.contrast, 0.2)};
-                    background-color: ${convertHexToRGBA(
-                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
-                        0.1
-                    )};
+                    color: ${theme.palette.text.primary};
+                    background-color: ${theme.palette.text.contrast};
+                    border: 1px solid ${theme.palette.primary.accent};
                 `;
             case 'gradient':
                 return css`

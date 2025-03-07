@@ -1,22 +1,23 @@
 import { create } from './create';
-import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './useAppConfigStore.ts';
+import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 
-const sideBarWidth = 348;
-const sideBarPaddingBuffer = 20;
-export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
+export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
 export const TOWER_CANVAS_ID = 'tower-canvas';
 
 const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 type DialogType = DialogTypeTuple[number];
 
+const _SIDEBAR_TYPES = ['mining', 'wallet'] as const;
+type SidebarTypeTuple = typeof _SIDEBAR_TYPES;
+export type SidebarType = SidebarTypeTuple[number];
+
 interface State {
     theme: Theme;
-    background: backgroundType;
-    view: viewType;
+    currentSidebar: SidebarType;
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
@@ -26,9 +27,6 @@ interface State {
     adminShow?: 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
 }
 interface Actions {
-    setBackground: (background: State['background']) => void;
-    setView: (view: State['view']) => void;
-    setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
     setShowExperimental: (showExperimental: boolean) => void;
     setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
     setLatestVersion: (latestVersion: string) => void;
@@ -41,9 +39,8 @@ const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-s
 const initialState: State = {
     isWebglNotSupported: false,
     theme: initialDarkMode ? 'dark' : 'light',
-    background: 'onboarding',
-    view: 'setup',
     sidebarOpen: false,
+    currentSidebar: 'mining',
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
@@ -51,9 +48,6 @@ const initialState: State = {
 
 export const useUIStore = create<UIStoreState>()((set) => ({
     ...initialState,
-    setBackground: (background) => set({ background }),
-    setView: (view) => set({ view }),
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     setShowExperimental: (showExperimental) => set({ showExperimental }),
     setDialogToShow: (dialogToShow) => set({ dialogToShow }),
     setLatestVersion: (latestVersion) => set({ latestVersion }),
@@ -96,3 +90,6 @@ export const animationDarkBg = [
     { property: 'particlesOpacity', value: 0.95 },
     { property: 'particlesSize', value: 0.015 },
 ];
+
+export const setCurrentSidebar = (currentSidebar: SidebarType) => useUIStore.setState({ currentSidebar });
+export const setSidebarOpen = (sidebarOpen: boolean) => useUIStore.setState({ sidebarOpen });
