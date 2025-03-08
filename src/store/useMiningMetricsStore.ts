@@ -3,7 +3,8 @@ import { create } from './create';
 import { useBlockchainVisualisationStore } from './useBlockchainVisualisationStore';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { useMiningStore } from './useMiningStore';
-import { useAppConfigStore } from './useAppConfigStore';
+
+import { setGpuMiningEnabled } from '@app/store/actions';
 
 interface Actions {
     handleBaseNodeStatusUpdate: (baseNodeStatus: BaseNodeStatus) => void;
@@ -56,13 +57,11 @@ export const useMiningMetricsStore = create<MiningMetricsStore>()((set, getState
         set((state) => ({ ...state, gpu_devices }));
 
         if (gpu_devices.some((gpu) => gpu.settings.is_available && !gpu.settings.is_excluded)) {
-            const appConfigStore = useAppConfigStore.getState();
-            appConfigStore.setGpuMiningEnabled(true);
+            setGpuMiningEnabled(true);
         }
 
         if (gpu_devices.every((gpu) => gpu.settings.is_excluded)) {
-            const appConfigStore = useAppConfigStore.getState();
-            appConfigStore.setGpuMiningEnabled(false);
+            setGpuMiningEnabled(false);
         }
     },
     setGpuMiningStatus: (gpu_mining_status) => {

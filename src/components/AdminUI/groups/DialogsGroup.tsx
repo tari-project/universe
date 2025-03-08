@@ -1,12 +1,20 @@
 /* eslint-disable i18next/no-literal-string */
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { setShowExternalDependenciesDialog, useUIStore } from '@app/store/useUIStore';
+
 import { useAppStateStore } from '@app/store/appStateStore';
+import {
+    setCriticalError,
+    setCriticalProblem,
+    setDialogToShow,
+    setShowExternalDependenciesDialog,
+} from '@app/store/actions';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
 export function DialogsGroup() {
-    const { setCriticalError, criticalError } = useAppStateStore();
-    const { setCriticalProblem, criticalProblem } = useAppStateStore();
-    const { setDialogToShow, dialogToShow, showExternalDependenciesDialog } = useUIStore();
+    const criticalError = useAppStateStore((s) => s.criticalError);
+    const criticalProblem = useAppStateStore((s) => s.criticalProblem);
+    const dialogToShow = useUIStore((s) => s.dialogToShow);
+    const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
 
     return (
         <>

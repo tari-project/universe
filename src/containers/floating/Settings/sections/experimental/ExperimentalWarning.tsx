@@ -4,6 +4,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { setShowExperimentalSettings } from '@app/store';
 
 const ExperimentalContainer = styled.div`
     padding: 15px;
@@ -18,13 +19,15 @@ const ExperimentalContainer = styled.div`
 export default function ExperimentalWarning() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const showExperimental = useAppConfigStore((s) => s.show_experimental_settings);
-    const setShowExperimental = useAppConfigStore((s) => s.setShowExperimentalSettings);
 
     return (
         <ExperimentalContainer>
             <Stack direction="row" alignItems="center" justifyContent="space-between">
                 <Typography variant="h6">{t('experimental-title', { ns: 'settings' })}</Typography>
-                <ToggleSwitch checked={showExperimental} onChange={() => setShowExperimental(!showExperimental)} />
+                <ToggleSwitch
+                    checked={showExperimental}
+                    onChange={() => setShowExperimentalSettings(!showExperimental)}
+                />
             </Stack>
             <Typography variant="p">{t('experimental-warning', { ns: 'settings' })}</Typography>
         </ExperimentalContainer>

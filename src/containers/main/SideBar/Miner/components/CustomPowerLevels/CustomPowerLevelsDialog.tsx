@@ -18,7 +18,7 @@ import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { changeMiningMode } from '@app/store/miningStoreActions.ts';
+import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -155,7 +155,7 @@ export function CustomPowerLevelsDialog({
                         render={({ field: _field }) => (
                             <RangeInputComponent
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
-                                maxLevel={maxAvailableThreads?.max_gpus_threads?.[index].max_gpu_threads}
+                                maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
                                 value={gpu.max_gpu_threads}
                                 step={2}
                                 desc={'custom-power-levels.choose-gpu-power-level'}

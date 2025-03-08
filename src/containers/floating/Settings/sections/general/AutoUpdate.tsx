@@ -9,11 +9,11 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useTranslation } from 'react-i18next';
+import { setAutoUpdate } from '@app/store';
 
 const AutoUpdate = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const autoUpdate = useAppConfigStore((s) => s.auto_update);
-    const setAutoUpdate = useAppConfigStore((s) => s.setAutoUpdate);
 
     return (
         <SettingsGroupWrapper>

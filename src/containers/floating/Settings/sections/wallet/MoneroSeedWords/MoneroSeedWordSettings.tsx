@@ -13,12 +13,12 @@ import { useTranslation } from 'react-i18next';
 
 import { SeedWords } from '../components/SeedWords.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
+import { setError } from '@app/store';
 
 export default function MoneroSeedWordSettings() {
-    const { copyToClipboard, isCopied } = useCopyToClipboard();
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setError = useAppStateStore((s) => s.setError);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
@@ -44,7 +44,7 @@ export default function MoneroSeedWordSettings() {
         } finally {
             setIsFetching(false);
         }
-    }, [setError]);
+    }, []);
 
     const handleCopyClick = useCallback(async () => {
         // TODO: dedupe from OG seed words again

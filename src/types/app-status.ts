@@ -47,6 +47,10 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    airdrop_tokens?: {
+        token: string;
+        refreshToken: string;
+    };
 }
 
 export enum ExternalDependencyStatus {
@@ -162,18 +166,6 @@ interface P2poolBlockStats {
     accepted: number;
     rejected: number;
     submitted: number;
-}
-enum HardwareVendor {
-    Nvidia = 'Nvidia',
-    Amd = 'Amd',
-    Intel = 'Intel',
-    Apple = 'Apple',
-    Unknown = 'Unknown',
-}
-
-interface DeviceStatus {
-    is_available: boolean;
-    is_reader_implemented: boolean;
 }
 
 interface GpuStatus {

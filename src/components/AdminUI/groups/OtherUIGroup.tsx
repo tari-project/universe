@@ -2,13 +2,14 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { useShellOfSecretsStore } from '../../../store/useShellOfSecretsStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+
+import { setAdminShow, setFlareAnimationType } from '@app/store';
 
 export function OtherUIGroup() {
-    const setAdminShow = useUIStore((s) => s.setAdminShow); // prevent messing up the actual setup progress value
     const adminShow = useUIStore((s) => s.adminShow);
-    const { showWidget, setShowWidget } = useShellOfSecretsStore();
-    const setFlare = useAirdropStore((s) => s.setFlareAnimationType);
+    const showWidget = useShellOfSecretsStore((s) => s.showWidget);
+    const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
+
     return (
         <>
             <CategoryLabel>Other UI</CategoryLabel>
@@ -29,9 +30,9 @@ export function OtherUIGroup() {
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}
             <ButtonGroup>
-                <Button onClick={() => setFlare('FriendAccepted')}>FriendAccepted</Button>
-                <Button onClick={() => setFlare('GoalComplete')}>GoalComplete</Button>
-                <Button onClick={() => setFlare('BonusGems')}>BonusGems</Button>
+                <Button onClick={() => setFlareAnimationType('FriendAccepted')}>FriendAccepted</Button>
+                <Button onClick={() => setFlareAnimationType('GoalComplete')}>GoalComplete</Button>
+                <Button onClick={() => setFlareAnimationType('BonusGems')}>BonusGems</Button>
             </ButtonGroup>
         </>
     );

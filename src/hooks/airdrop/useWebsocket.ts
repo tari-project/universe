@@ -10,8 +10,6 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { MINING_EVENT_INTERVAL_MS, useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
-let socket: ReturnType<typeof io> | null;
-
 const MINING_EVENT_NAME = 'mining-status';
 
 interface SignData {
@@ -33,6 +31,8 @@ export const useWebsocket = () => {
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const applicationsVersions = useAppStateStore((state) => state.applications_versions);
     const registerWsConnectionEvent = useShellOfSecretsStore((state) => state.registerWsConnectionEvent);
+
+    const [socket, setSocket] = useState<ReturnType<typeof io> | null>(null);
 
     const isMining = useMemo(() => {
         return (cpuMiningStatus?.is_mining || gpuMiningStatus?.is_mining) && isConnectedToNetwork;
@@ -72,7 +72,7 @@ export const useWebsocket = () => {
                 console.error(e);
             }
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // TODO: fix deps when we refactor + remove disabling of rule in eslint.config
         [connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
     );
 
@@ -90,7 +90,7 @@ export const useWebsocket = () => {
     const init = () => {
         try {
             if (!socket && baseUrl) {
-                socket = io(baseUrl, {
+                const _socket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
                     auth: {
@@ -100,6 +100,7 @@ export const useWebsocket = () => {
                         version: applicationsVersions?.tari_universe,
                     },
                 });
+                setSocket(_socket);
             }
 
             if (!socket) return;
@@ -151,7 +152,7 @@ export const useWebsocket = () => {
                     state: 'off',
                 });
                 socket.disconnect();
-                socket = null;
+                setSocket(null);
             }
         } catch (e) {
             registerWsConnectionEvent({
@@ -173,8 +174,6 @@ export const useWebsocket = () => {
         } catch (e) {
             console.error(e);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // TODO: fix deps when we refactor + remove disabling of rule in eslint.config
     }, [airdropToken, userId, baseUrl]);
-
-    return { init, disconnect, socket };
 };

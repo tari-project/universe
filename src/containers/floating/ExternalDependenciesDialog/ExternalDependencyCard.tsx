@@ -4,13 +4,13 @@ import { Typography } from '@app/components/elements/Typography';
 import { getChipStylingForStatus, mapStatusToText } from './ExternalDependenciesDialog.utils';
 import { ExternalDependency, ExternalDependencyStatus } from '@app/types/app-status';
 import { IoArrowDownCircleOutline } from 'react-icons/io5';
-import { useAppStateStore } from '@app/store/appStateStore';
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
+import { fetchExternalDependencies, setError } from '@app/store';
 
 export const ExternalDependencyCard = ({
     missingDependency,
@@ -26,8 +26,7 @@ export const ExternalDependencyCard = ({
     freeInstallationSlot: () => void;
 }) => {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
-    const fetchExternalDependencies = useAppStateStore((s) => s.fetchExternalDependencies);
-    const setError = useAppStateStore((s) => s.setError);
+
     const { display_description, display_name, manufacturer, status, version } = missingDependency;
 
     const handleDownload = useCallback(async () => {
@@ -46,7 +45,7 @@ export const ExternalDependencyCard = ({
         }
 
         freeInstallationSlot();
-    }, [fetchExternalDependencies, freeInstallationSlot, missingDependency, occupyInstallationSlot, setError]);
+    }, [freeInstallationSlot, missingDependency, occupyInstallationSlot]);
 
     return (
         <Stack direction="row" alignItems="flex-start" gap={16} style={{ width: '100%' }}>
