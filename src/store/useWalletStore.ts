@@ -1,5 +1,5 @@
 import { create } from './create';
-import { WalletAddress, TransactionInfo, WalletBalance, TxType } from '../types/app-status.ts';
+import { WalletAddress, TransactionInfo, WalletBalance, TxType, TransactionStatus } from '../types/app-status.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
 
@@ -21,10 +21,14 @@ interface Actions {
     setWalletAddress: (wallet_address: WalletAddress) => void;
     setWalletBalance: (wallet_balance: WalletBalance) => void;
     importSeedWords: (seedWords: string[]) => Promise<void>;
-    fetchCoinbaseTransactions: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
+    fetchCoinbaseTransactions: (lastTxId?: number, limit?: number) => Promise<TransactionInfo[]>;
     refreshCoinbaseTransactions: () => Promise<TransactionInfo[]>;
-    fetchTransactionsHistory: (continuation: boolean, limit?: number) => Promise<TransactionInfo[]>;
-    refreshTransactionsHistory: () => Promise<TransactionInfo[]>;
+    fetchTransactions: (p?: {
+        lastTxId?: number;
+        statusFilters?: TransactionStatus[];
+        limit?: number;
+    }) => Promise<TransactionInfo[]>;
+    refreshTransactions: () => Promise<TransactionInfo[]>;
 }
 
 type WalletStoreState = State & Actions;
@@ -51,7 +55,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
         set({ balance, calculated_balance });
     },
-    fetchTransactionsHistory: async (continuation, limit) => {
+    fetchTransactions: async ({ lastTxId, statusFilters, limit } = {}) => {
         if (useWalletStore.getState().is_transactions_history_loading) {
             return [];
         }
@@ -59,17 +63,24 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
         try {
             useWalletStore.setState({ is_transactions_history_loading: true });
 
-            const fetchedTxs = await invoke('get_transactions_history', { continuation, limit });
-            const txWithType = fetchedTxs.map((tx) => ({
+            const fetchedTxs = await invoke('get_transactions', {
+                lastTxId,
+                statusFilters,
+                limit,
+            });
+
+            const txWithType = fetchedTxs.map((tx: TransactionInfo) => ({
                 ...tx,
                 txType: (tx.direction === 2
                     ? 'sent'
                     : !tx.mined_in_block_height || tx.mined_in_block_height === 0
                       ? 'received'
-                      : 'mined') as TxType, // will move to list component
+                      : 'mined') as TxType,
             }));
-            const transactions = continuation ? [...getState().transactions, ...txWithType] : txWithType;
+
+            const transactions = lastTxId ? [...getState().transactions, ...txWithType] : txWithType;
             const has_more_transactions = txWithType.length > 0 && (!limit || txWithType.length === limit);
+
             set({
                 has_more_transactions,
                 transactions,
@@ -84,11 +95,11 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
             useWalletStore.setState({ is_transactions_history_loading: false });
         }
     },
-    refreshTransactionsHistory: async () => {
+    refreshTransactions: async () => {
         const limit = getState().transactions.length;
-        return getState().fetchTransactionsHistory(false, Math.max(limit, 20));
+        return getState().fetchTransactions({ limit: Math.max(limit, 20) });
     },
-    fetchCoinbaseTransactions: async (continuation, limit) => {
+    fetchCoinbaseTransactions: async (lastTxId, limit) => {
         if (useWalletStore.getState().is_reward_history_loading) {
             return [];
         }
@@ -96,11 +107,15 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
         try {
             useWalletStore.setState({ is_reward_history_loading: true });
 
-            const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
-            const coinbase_transactions = continuation
-                ? [...getState().coinbase_transactions, ...fetchedTxs]
-                : fetchedTxs;
+            const fetchedTxs = await invoke('get_transactions', {
+                lastTxId,
+                statusFilters: [TransactionStatus.COINBASE_UNCONFIRMED, TransactionStatus.COINBASE_CONFIRMED],
+                limit,
+            });
+
+            const coinbase_transactions = lastTxId ? [...getState().coinbase_transactions, ...fetchedTxs] : fetchedTxs;
             const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
+
             set({
                 has_more_coinbase_transactions,
                 coinbase_transactions,
@@ -117,7 +132,7 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
     },
     refreshCoinbaseTransactions: async () => {
         const limit = getState().coinbase_transactions.length;
-        return getState().fetchCoinbaseTransactions(false, Math.max(limit, 20));
+        return getState().fetchCoinbaseTransactions(undefined, limit);
     },
     importSeedWords: async (seedWords: string[]) => {
         try {
@@ -130,5 +145,5 @@ export const useWalletStore = create<WalletStoreState>()((set, getState) => ({
 }));
 
 export const initialFetchTxs = () => {
-    useWalletStore.getState().fetchTransactionsHistory(false, 20);
+    useWalletStore.getState().fetchTransactions({ limit: 20 });
 };

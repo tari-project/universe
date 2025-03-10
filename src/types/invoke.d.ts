@@ -8,6 +8,7 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
+    TransactionStatus,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -64,12 +65,8 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
     function invoke(param: 'set_use_tor', payload: { useTor: boolean }): Promise<void>;
     function invoke(
-        param: 'get_coinbase_transactions',
-        payload: { continuation: boolean; limit?: number }
-    ): Promise<TransactionInfo[]>;
-    function invoke(
-        param: 'get_transactions_history',
-        payload: { continuation: boolean; limit?: number }
+        param: 'get_transactions',
+        payload: { lastTxId?: number; statusFilters?: TransactionStatus[]; limit?: number }
     ): Promise<TransactionInfo[]>;
     function invoke(param: 'import_seed_words', payload: { seedWords: string[] }): Promise<void>;
     function invoke(param: 'get_tor_config'): Promise<TorConfig>;

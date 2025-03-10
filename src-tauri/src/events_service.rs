@@ -81,11 +81,12 @@ impl EventsService {
         current_block_height: u64,
     ) -> Option<TransactionInfo> {
         match wallet_manager
-            .get_coinbase_transactions(false, Some(10))
+            .get_transactions(None, Some(vec![12, 13]), Some(10))
             .await
         {
             Ok(txs) => txs
                 .into_iter()
+                // Find the transaction that was mined at the specified block height
                 .find(|tx| tx.mined_in_block_height == current_block_height),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to get latest coinbase transaction: {:?}", e);

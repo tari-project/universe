@@ -11,17 +11,17 @@ interface HistoryListProps {
 const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const transactions = useWalletStore((s) => s.transactions);
-    const fetchTransactionsHistory = useWalletStore((s) => s.fetchTransactionsHistory);
+    const fetchTransactions = useWalletStore((s) => s.fetchTransactions);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
 
     useEffect(() => {
         initialFetchTxs();
     }, []);
     const handleNext = useCallback(() => {
-        if (!is_transactions_history_loading) {
-            fetchTransactionsHistory(true, 20);
+        if (!is_transactions_history_loading && transactions.length) {
+            fetchTransactions({ lastTxId: transactions[transactions.length - 1].tx_id, limit: 20 });
         }
-    }, [fetchTransactionsHistory, is_transactions_history_loading]);
+    }, [fetchTransactions, is_transactions_history_loading, transactions]);
 
     return (
         <ListWrapper id="list">

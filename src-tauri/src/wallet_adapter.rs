@@ -60,8 +60,6 @@ pub struct WalletAdapter {
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     state_broadcast: watch::Sender<Option<WalletState>>,
-    completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
-    coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
 impl WalletAdapter {
@@ -77,36 +75,27 @@ impl WalletAdapter {
             tcp_listener_port,
             grpc_port,
             state_broadcast,
-            completed_transactions_stream: Mutex::new(None),
-            coinbase_transactions_stream: Mutex::new(None),
         }
     }
 
-    pub async fn get_transactions_history(
+    pub async fn get_transactions(
         &self,
-        continuation: bool,
+        last_tx_id: Option<u64>,
+        status_filters: Option<Vec<i32>>,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream =
-            if continuation && self.completed_transactions_stream.lock().await.is_some() {
-                self.completed_transactions_stream
-                    .lock()
-                    .await
-                    .take()
-                    .expect("completed_transactions_stream not found")
-            } else {
-                let mut client = WalletClient::connect(self.wallet_grpc_address())
-                    .await
-                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-                let res = client
-                    .get_completed_transactions(GetCompletedTransactionsRequest {})
-                    .await
-                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-                res.into_inner()
-            };
+        let mut client = WalletClient::connect(self.wallet_grpc_address())
+            .await
+            .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
 
+        let res = client
+            .get_completed_transactions(GetCompletedTransactionsRequest {})
+            .await
+            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+
+        let mut stream = res.into_inner();
         let mut transactions: Vec<TransactionInfo> = Vec::new();
+        let mut should_collect = last_tx_id.is_none();
 
         while let Some(message) = stream
             .message()
@@ -116,70 +105,24 @@ impl WalletAdapter {
             let tx = message.transaction.ok_or_else(|| {
                 WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
             })?;
-            transactions.push(TransactionInfo {
-                tx_id: tx.tx_id,
-                source_address: tx.source_address.to_hex(),
-                dest_address: tx.dest_address.to_hex(),
-                status: tx.status,
-                amount: MicroMinotari(tx.amount),
-                is_cancelled: tx.is_cancelled,
-                direction: tx.direction,
-                excess_sig: tx.excess_sig,
-                fee: tx.fee,
-                timestamp: tx.timestamp,
-                payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
-                mined_in_block_height: tx.mined_in_block_height,
-            });
-            if let Some(limit) = limit {
-                if transactions.len() >= limit as usize {
-                    break;
+
+            // If we have a last_tx_id, skip transactions until we find it
+            if !should_collect {
+                if let Some(last_id) = last_tx_id {
+                    if tx.tx_id == last_id {
+                        should_collect = true;
+                    }
                 }
-            }
-        }
-
-        self.completed_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
-        Ok(transactions)
-    }
-
-    pub async fn get_coinbase_transactions(
-        &self,
-        continuation: bool,
-        limit: Option<u32>,
-    ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
-        // TODO: Implement starting point instead of continuation
-        let mut stream = if continuation && self.coinbase_transactions_stream.lock().await.is_some()
-        {
-            self.coinbase_transactions_stream
-                .lock()
-                .await
-                .take()
-                .expect("coinbase_transactions_stream not found")
-        } else {
-            let mut client = WalletClient::connect(self.wallet_grpc_address())
-                .await
-                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-            let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest {})
-                .await
-                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-            res.into_inner()
-        };
-
-        let mut transactions: Vec<TransactionInfo> = Vec::new();
-
-        while let Some(message) = stream
-            .message()
-            .await
-            .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?
-        {
-            let tx = message.transaction.expect("Transaction not found");
-            if tx.status != 12 && tx.status != 13 {
-                // Consider only COINBASE_UNCONFIRMED and COINBASE_UNCONFIRMED
                 continue;
             }
+
+            // Apply status filter only if Some with non-empty vector
+            if let Some(filters) = &status_filters {
+                if !filters.is_empty() && !filters.contains(&tx.status) {
+                    continue;
+                }
+            }
+
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
@@ -194,6 +137,7 @@ impl WalletAdapter {
                 payment_id: PaymentId::from_bytes(&tx.payment_id).user_data_as_string(),
                 mined_in_block_height: tx.mined_in_block_height,
             });
+
             if let Some(limit) = limit {
                 if transactions.len() >= limit as usize {
                     break;
@@ -201,10 +145,6 @@ impl WalletAdapter {
             }
         }
 
-        self.coinbase_transactions_stream
-            .lock()
-            .await
-            .replace(stream);
         Ok(transactions)
     }
 

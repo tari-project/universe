@@ -653,71 +653,38 @@ pub async fn get_airdrop_tokens(
 }
 
 #[tauri::command]
-pub async fn get_transactions_history(
+pub async fn get_transactions(
     state: tauri::State<'_, UniverseAppState>,
-    continuation: bool,
+    last_tx_id: Option<u64>,
+    status_filters: Option<Vec<i32>>,
     limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
-    if state.is_getting_transactions_history.load(Ordering::SeqCst) {
-        warn!(target: LOG_TARGET, "Already getting transfers history");
-        return Err("Already getting transfers history".to_string());
+    if state.is_getting_transactions.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transactions");
+        return Err("Already getting transactions".to_string());
     }
     state
-        .is_getting_transactions_history
+        .is_getting_transactions
         .store(true, Ordering::SeqCst);
+
     let transactions = state
         .wallet_manager
-        .get_transactions_history(continuation, limit)
+        .get_transactions(last_tx_id, status_filters, limit)
         .await
         .unwrap_or_else(|e| {
             if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+                warn!(target: LOG_TARGET, "Error getting transactions: {}", e);
             }
             vec![]
         });
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_transactions_history took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
     }
 
     state
-        .is_getting_transactions_history
-        .store(false, Ordering::SeqCst);
-    Ok(transactions)
-}
-
-#[tauri::command]
-pub async fn get_coinbase_transactions(
-    state: tauri::State<'_, UniverseAppState>,
-    continuation: bool,
-    limit: Option<u32>,
-) -> Result<Vec<TransactionInfo>, String> {
-    let timer = Instant::now();
-    if state.is_getting_coinbase_history.load(Ordering::SeqCst) {
-        warn!(target: LOG_TARGET, "Already getting coinbase history");
-        return Err("Already getting coinbase history".to_string());
-    }
-    state
-        .is_getting_coinbase_history
-        .store(true, Ordering::SeqCst);
-    let transactions = state
-        .wallet_manager
-        .get_coinbase_transactions(continuation, limit)
-        .await
-        .unwrap_or_else(|e| {
-            if !matches!(e, WalletManagerError::WalletNotStarted) {
-                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
-            }
-            vec![]
-        });
-
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "get_coinbase_transactions took too long: {:?}", timer.elapsed());
-    }
-
-    state
-        .is_getting_coinbase_history
+        .is_getting_transactions
         .store(false, Ordering::SeqCst);
     Ok(transactions)
 }
