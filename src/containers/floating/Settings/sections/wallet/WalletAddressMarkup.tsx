@@ -10,7 +10,7 @@ import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
 import emojiRegex from 'emoji-regex';
 import { styled } from 'styled-components';
 import { BsArrowsExpandVertical, BsArrowsCollapseVertical } from 'react-icons/bs';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'react-qr-code';
 import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
@@ -139,7 +139,7 @@ const WalletAddressMarkup = () => {
                 </Stack>
             </Stack>
             <Stack direction="row" justifyContent="center" alignItems="center" style={{ margin: '8px 0' }}>
-                <QRCodeSVG
+                <QRCode
                     value={`tari://${network}/transactions/send?tariAddress=${walletAddress}`}
                     size={308}
                     level="H"
