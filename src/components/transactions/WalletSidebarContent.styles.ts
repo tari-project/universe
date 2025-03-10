@@ -13,7 +13,7 @@ export const TabContentWrapper = styled.div`
     max-width: 100%;
     flex-direction: column;
     padding: 0 20px;
-    align-items: center;
+    align-items: stretch;
     gap: 8px;
 `;
 export const HistoryListWrapper = styled.div`
