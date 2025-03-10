@@ -415,15 +415,25 @@ async fn setup_inner(
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
-        binary_resolver
+
+        match binary_resolver
             .initialize_binary_timeout(
                 Binaries::Tor,
                 progress.clone(),
                 should_check_for_update,
                 rx.clone(),
             )
-            .await?;
-        sleep(Duration::from_secs(1));
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "Tor has been initialized");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Could not initialize tor: {:?}", e);
+                let _unused = state.config.write().await.set_use_tor(false).await;
+                app.restart();
+            }
+        }
     }
 
     let _unused = telemetry_service
