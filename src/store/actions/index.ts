@@ -82,3 +82,11 @@ export {
     setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';
+export {
+    setGpuDevices,
+    setGpuMiningStatus,
+    setCpuMiningStatus,
+    handleConnectedPeersUpdate,
+    handleBaseNodeStatusUpdate,
+    handleMiningModeChange,
+} from './miningMetricsStoreActions.ts';
