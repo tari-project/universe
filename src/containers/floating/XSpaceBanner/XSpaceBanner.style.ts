@@ -1,20 +1,17 @@
 import styled from 'styled-components';
 
-export const FloatingWrapper = styled.div`
+export const BannerContent = styled.div`
     position: fixed;
     top: 20px;
     right: 30px;
     z-index: 99999;
-`;
-
-export const BannerContent = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
     color: white;
-    padding: 0.5rem 1rem;
+    padding: 0.3rem 0.3rem;
     border-radius: 9999px;
-    max-width: 24rem;
+    max-width: 30rem;
     background-color: #000;
     color: #fff;
 `;
@@ -29,10 +26,12 @@ export const IconContainer = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color: #000;
+    background-color: white;
     border-radius: 9999px;
     padding: 0.5rem;
     font-size: 0.875rem;
+    width: 1 rem;
+    height: 1 rem;
 `;
 
 export const Title = styled.span`
@@ -52,7 +51,7 @@ export const LiveBadgeWrapper = styled.div`
     padding: 4px 12px;
     border-radius: 9999px;
     font-size: 0.875rem;
-    gap: 0.5rem;
+    gap: 12px;
 `;
 
 export const LiveBadgeText = styled.div`
@@ -67,10 +66,12 @@ export const LiveBadgePoint = styled.div`
     height: 0.725rem;
 `;
 
-export const ScheduleBadge = styled.div`
-    background-color: #374151;
-    color: white;
+export const TimeBadge = styled.div`
+    background-color: white;
+    color: black;
+    font-weight: 1000;
     padding: 4px 12px;
     border-radius: 9999px;
     font-size: 0.875rem;
+    gap: 12px;
 `;
