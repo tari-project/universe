@@ -9,6 +9,8 @@ import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisuali
 import { useAppStateStore } from '@app/store/appStateStore';
 import { MINING_EVENT_INTERVAL_MS, useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { GLOBAL_EVENT_NAME } from '@app/types/ws';
+import { useHandleWsGlobalEvent } from './ws/useHandleWsGlobalEvent';
 
 const MINING_EVENT_NAME = 'mining-status';
 
@@ -27,6 +29,8 @@ export const useWebsocket = () => {
     const appId = useAppConfigStore((state) => state.anon_id);
     const isConnectedToNetwork = useMiningMetricsStore((state) => state.isNodeConnected);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
+    const handleWsGlobalEvent = useHandleWsGlobalEvent();
+
     const [connectedSocket, setConnectedSocket] = useState(false);
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const applicationsVersions = useAppStateStore((state) => state.applications_versions);
@@ -114,6 +118,7 @@ export const useWebsocket = () => {
                 setConnectedSocket(true);
                 socket.emit('auth', airdropToken);
                 socket.on(userId as string, handleWsUserIdEvent);
+                socket.on(GLOBAL_EVENT_NAME, handleWsGlobalEvent);
             });
 
             socket.on('connect_error', (_e) => {
