@@ -1,9 +1,17 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore';
-import { BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, TransactionInfo, WalletBalance } from '@app/types/app-status';
+import {
+    AppConfig,
+    BaseNodeStatus,
+    CpuMinerStatus,
+    GpuMinerStatus,
+    TransactionInfo,
+    WalletBalance,
+} from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -42,6 +50,10 @@ type BackendStateUpdateEvent =
               coinbase_transaction?: TransactionInfo;
               balance: WalletBalance;
           };
+      }
+    | {
+          event_type: 'AppConfigLoaded';
+          payload: AppConfig;
       };
 
 const useTauriEventsListener = () => {
@@ -75,6 +87,10 @@ const useTauriEventsListener = () => {
                     break;
                 case 'NewBlockHeight':
                     handleNewBlock(event.payload);
+                    break;
+                case 'AppConfigLoaded':
+                    console.log('AppConfigLoaded', event.payload);
+                    handleAppConfigLoaded(event.payload);
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));

@@ -27,6 +27,7 @@ use crate::app_in_memory_config::{
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::events_manager::EventsManager;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
@@ -195,11 +196,13 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
-    FrontendReadyChannel::current().set_ready();
-
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
+        state
+            .events_manager
+            .handle_app_config_loaded(&app_handle)
+            .await;
         let setup_complete_clone = state.is_setup_finished.read().await;
         let missing_dependencies = state.missing_dependencies.read().await;
         let setup_complete_value = *setup_complete_clone;
@@ -227,6 +230,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
                 .emit("missing-applications", external_dependencies)
                 .expect("Could not emit event 'missing-applications");
         }
+        FrontendReadyChannel::current().set_ready();
     });
 }
 
@@ -284,15 +288,6 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
-}
-
-#[tauri::command]
-pub async fn get_app_config(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<AppConfig, String> {
-    Ok(state.config.read().await.clone())
 }
 
 #[tauri::command]
@@ -859,17 +854,6 @@ pub async fn reset_settings<'r>(
 
     Ok(())
 }
-
-#[tauri::command]
-pub async fn resolve_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let mut config = state.config.write().await;
-    let _unused = config.propose_system_language().await;
-
-    Ok(config.application_language().to_string())
-}
-
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
