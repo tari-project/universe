@@ -430,8 +430,15 @@ async fn setup_inner(
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Could not initialize tor: {:?}", e);
-                let _unused = state.config.write().await.set_use_tor(false).await;
-                app.restart();
+                let _unused = state
+                    .config
+                    .write()
+                    .await
+                    .set_use_tor(false)
+                    .await
+                    .is_ok_and(|_| {
+                        app.restart();
+                    });
             }
         }
     }
