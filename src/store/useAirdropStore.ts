@@ -109,7 +109,7 @@ export interface AirdropStoreState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    latestXSpaceEvent?: XSpaceEvent;
+    latestXSpaceEvent?: XSpaceEvent | null;
 }
 
 const initialState: AirdropStoreState = {
@@ -121,12 +121,7 @@ const initialState: AirdropStoreState = {
     referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
-    latestXSpaceEvent: {
-        id: 'id',
-        start: new Date(),
-        end: new Date(),
-        displayName: 'No new events ',
-    },
+    latestXSpaceEvent: null,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
