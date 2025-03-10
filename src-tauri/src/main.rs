@@ -290,6 +290,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+    // Wait for frontend_ready method call finish to does not cause any deadlocks
     FrontendReadyChannel::current().wait_for_ready().await?;
     app.emit(
         "setup_message",
