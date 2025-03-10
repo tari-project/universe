@@ -2,6 +2,7 @@
   "dont-worry": "Moenie bekommerd wees nie, volgende keer sal dit nie so lank vat nie",
   "installing-latest-version": "Installeer {{version}} weergawe van Tari Universe",
   "new-tari-version-available": "'n Nuwe weergawe van Tari Universe is beskikbaar",
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode.",
   "no": "Nee",
   "setting-up": "Stel Tari waarheidsmasjien op...",
   "this-might-take-a-few-minutes": "Hierdie mag 'n paar minute neem",
