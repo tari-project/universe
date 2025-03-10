@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { TabItem } from './Tabs.tsx';
+import { type TabNavProps } from './types';
 
 const Wrapper = styled.div`
     display: grid;
@@ -10,7 +10,9 @@ const Wrapper = styled.div`
     width: 100%;
 `;
 
-const NavButton = styled.button<{ $isActive?: boolean }>`
+const NavButton = styled.button.attrs({
+    role: 'tab',
+})<{ $isActive?: boolean }>`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: ${({ $isActive }) => ($isActive ? 1 : 0.7)};
@@ -19,19 +21,24 @@ const NavButton = styled.button<{ $isActive?: boolean }>`
         opacity: 0.85;
     }
 `;
-interface TabNavProps {
-    items: TabItem[];
-    currentIndex: number;
-    onClick: (index: number) => void;
-}
+
 function TabNav({ items, currentIndex, onClick }: TabNavProps) {
     return (
         <Wrapper>
-            {items.map(({ id, title }, i) => (
-                <NavButton $isActive={currentIndex === i} key={`item:${i}-${id}`} onClick={() => onClick(i)}>
-                    {title}
-                </NavButton>
-            ))}
+            {items.map(({ id, title }, i) => {
+                const isActive = currentIndex === i;
+                return (
+                    <NavButton
+                        key={`item:${i}-${id}`}
+                        onClick={() => onClick(i)}
+                        $isActive={isActive}
+                        aria-selected={isActive}
+                        id={`tab-${id}`}
+                    >
+                        {title}
+                    </NavButton>
+                );
+            })}
         </Wrapper>
     );
 }

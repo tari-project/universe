@@ -1,7 +1,8 @@
+import { useState } from 'react';
+import styled from 'styled-components';
 import { TabNav } from '@app/components/Tabs/TabNav.tsx';
 import { TabContent } from '@app/components/Tabs/TabContent.tsx';
-import styled from 'styled-components';
-import { ReactNode, useState } from 'react';
+import { type TabsProps } from './types';
 
 const TabsWrapper = styled.div`
     width: 100%;
@@ -17,18 +18,8 @@ const Wrapper = styled.div`
     position: relative;
 `;
 
-export interface TabItem {
-    id: string;
-    title: string;
-    content: ReactNode;
-}
-
-interface TabsProps {
-    tabItems: TabItem[];
-}
 export function Tabs({ tabItems }: TabsProps) {
     const [currentIndex, setCurrentIndex] = useState<number>(0);
-
     return (
         <Wrapper>
             <TabNav items={tabItems} currentIndex={currentIndex} onClick={setCurrentIndex} />

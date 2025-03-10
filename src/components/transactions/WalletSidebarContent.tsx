@@ -1,4 +1,5 @@
-import { TabItem, Tabs } from '@app/components/Tabs/Tabs.tsx';
+import { Tabs } from '@app/components/Tabs/Tabs.tsx';
+import { TabItem } from '@app/components/Tabs/types.ts';
 
 import { Send } from './tx-types/Send.tsx';
 import { Receive } from './tx-types/Receive.tsx';
