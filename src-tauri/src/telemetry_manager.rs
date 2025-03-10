@@ -430,7 +430,7 @@ async fn get_telemetry_data(
     );
     extra_data.insert(
         "config_tor_enabled".to_string(),
-        config_guard.use_tor().to_string(),
+        config_guard.use_tor().await.to_string(),
     );
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {

@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::binaries::{Binaries, BinaryResolver};
 use crate::credential_manager::{Credential, KEYRING_ACCESSED};
 use crate::gpu_miner::EngineType;
 use semver::Version;
@@ -719,8 +720,14 @@ impl AppConfig {
         }
     }
 
-    pub fn use_tor(&self) -> bool {
-        self.use_tor
+    pub async fn use_tor(&self) -> bool {
+        let is_tor_files_exisits = BinaryResolver::current()
+            .read()
+            .await
+            .resolve_path_to_binary_files(Binaries::Tor)
+            .is_ok();
+
+        self.use_tor && is_tor_files_exisits
     }
 
     pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {

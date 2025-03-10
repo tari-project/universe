@@ -350,7 +350,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
 
-    let use_tor = app_config.use_tor();
+    let use_tor = app_config.use_tor().await;
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
 
@@ -430,8 +430,15 @@ async fn setup_inner(
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Could not initialize tor: {:?}", e);
-                let _unused = state.config.write().await.set_use_tor(false).await;
-                app.restart();
+                let _unused = state
+                    .config
+                    .write()
+                    .await
+                    .set_use_tor(false)
+                    .await
+                    .is_ok_and(|_| {
+                        app.restart();
+                    });
             }
         }
     }
