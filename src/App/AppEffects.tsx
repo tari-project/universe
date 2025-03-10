@@ -8,7 +8,7 @@ import { fetchAppConfig } from '../store/actions/appConfigStoreActions.ts';
 import { useListenForGpuEngines } from '../hooks/app/useListenForGpuEngines.ts';
 import { useListenForAppResuming } from '../hooks/app/useListenForAppResuming.ts';
 import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '../hooks';
-
+import { airdropSetup } from '@app/store';
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
 
@@ -18,6 +18,7 @@ export default function AppEffects() {
         async function initialize() {
             await fetchAppConfig();
             await setMiningNetwork();
+            await airdropSetup();
         }
         void initialize();
     }, []);

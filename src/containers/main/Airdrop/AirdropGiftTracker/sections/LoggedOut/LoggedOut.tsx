@@ -13,11 +13,7 @@ export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const [linkOpened, setLinkOpened] = useState(false);
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
-    const { referralQuestPoints, airdropUrl } = useAirdropStore((s) => ({
-        referralQuestPoints: s.referralQuestPoints,
-        authUuid: s.authUuid,
-        airdropUrl: s.backendInMemoryConfig?.airdropUrl,
-    }));
+    const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropUrl);
 
     useFetchAirdropToken({ canListen: linkOpened });
 
@@ -38,7 +34,7 @@ export default function LoggedOut() {
         [airdropUrl, allowTelemetry]
     );
 
-    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
+    const gemsValue = GIFT_GEMS.toLocaleString();
 
     return (
         <Wrapper>

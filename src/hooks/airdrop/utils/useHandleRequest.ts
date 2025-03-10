@@ -1,4 +1,5 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
+import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 
 interface RequestProps {
     path: string;
@@ -15,7 +16,11 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
 
-    if (!headers && (!baseUrl || !airdropToken || isTokenExpired)) return;
+    if (isTokenExpired) {
+        await handleRefreshAirdropTokens();
+    }
+
+    if (!headers && !headers && (!baseUrl || !airdropToken)) return;
 
     const fullUrl = `${baseUrl}${path}`;
     try {

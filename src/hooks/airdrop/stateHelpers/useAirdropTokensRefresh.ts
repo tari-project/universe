@@ -1,27 +1,28 @@
 import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
-import { useEffect } from 'react';
 import { setAirdropTokens } from '@app/store';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
-async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
-    const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            refreshToken: airdropTokens.refreshToken,
-        }),
-    });
-    if (!response.ok) {
-        console.error('Fetching airdrop tokens was not successful');
-        return undefined;
+async function fetchAirdropTokens(airdropTokens: AirdropTokens) {
+    try {
+        const refreshedToken = await handleAirdropRequest<AirdropTokens>({
+            path: '/auth/local/refresh',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            method: 'POST',
+            body: { refreshToken: airdropTokens.refreshToken },
+        });
+
+        if (refreshedToken) {
+            return refreshedToken;
+        } else {
+            console.error('Error refreshing airdrop tokens.');
+        }
+    } catch (e) {
+        console.error('Error refreshing airdrop tokens:', e);
     }
-
-    const data: AirdropTokens = await response.json();
-    return data;
 }
-
-export async function handleRefreshAirdropTokens(airdropApiUrl: string) {
+export async function handleRefreshAirdropTokens() {
     const airdropTokens = useAirdropStore.getState().airdropTokens;
     let tokens: AirdropTokens | undefined = airdropTokens;
     if (!tokens) {
@@ -30,25 +31,14 @@ export async function handleRefreshAirdropTokens(airdropApiUrl: string) {
     // 5 hours from now
     const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
     const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
-
     const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
     if (airdropTokens && tokenHasExpired) {
         try {
-            tokens = await fetchAirdropTokens(airdropApiUrl, airdropTokens);
+            tokens = await fetchAirdropTokens(airdropTokens);
         } catch (error) {
             console.error('Error refreshing airdrop tokens:', error);
         }
     }
+
     await setAirdropTokens(tokens);
-}
-export function useAirdropTokensRefresh() {
-    const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
-    useEffect(() => {
-        if (!backendInMemoryConfig?.airdropApiUrl) return;
-        const interval = setInterval(
-            () => handleRefreshAirdropTokens(backendInMemoryConfig?.airdropApiUrl),
-            1000 * 60 * 60
-        );
-        return () => clearInterval(interval);
-    }, [backendInMemoryConfig?.airdropApiUrl]);
 }
