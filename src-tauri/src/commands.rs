@@ -30,8 +30,9 @@ use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
+use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
-use crate::hardware::hardware_status_monitor::PublicDeviceProperties;
+use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
@@ -91,7 +92,7 @@ pub struct CpuMinerMetrics {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
-    hardware: Vec<PublicDeviceProperties>,
+    hardware: Vec<GpuStatus>,
     mining: GpuMinerStatus,
 }
 
@@ -852,6 +853,8 @@ pub async fn reset_settings<'r>(
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -985,6 +988,7 @@ pub async fn set_auto_update(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
         .map_err(|e| e.to_string())?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
     }
@@ -1070,18 +1074,22 @@ pub async fn set_display_mode(
 
     Ok(())
 }
-
 #[tauri::command]
-pub async fn set_excluded_gpu_devices(
-    excluded_gpu_devices: Vec<u8>,
+pub async fn toggle_device_exclusion(
+    device_index: u32,
+    excluded: bool,
+    app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_excluded_gpu_devices] called with devices: {:?}", excluded_gpu_devices);
     let mut gpu_miner = state.gpu_miner.write().await;
+    let config_dir = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
     gpu_miner
-        .set_excluded_device(excluded_gpu_devices)
+        .toggle_device_exclusion(config_dir, device_index, excluded)
         .await
-        .inspect_err(|e| error!("error at set_excluded_gpu_devices {:?}", e))
+        .inspect_err(|e| error!("error at toggle_device_exclusion {:?}", e))
         .map_err(|e| e.to_string())?;
     Ok(())
 }
@@ -1792,5 +1800,44 @@ pub async fn proceed_with_update(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_selected_engine(
+    selected_engine: &str,
+    state: tauri::State<'_, UniverseAppState>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    info!(target: LOG_TARGET, "set_selected_engine called with engine: {:?}", selected_engine);
+    let timer = Instant::now();
+
+    info!(target: LOG_TARGET, "Setting selected engine");
+    let engine_type = EngineType::from_string(selected_engine).map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "Selected engine set to {:?}", engine_type);
+    let config = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    state
+        .gpu_miner
+        .write()
+        .await
+        .set_selected_engine(engine_type, config, app)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    state
+        .config
+        .write()
+        .await
+        .set_gpu_engine(selected_engine)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+    }
+
     Ok(())
 }
