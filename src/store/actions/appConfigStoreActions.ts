@@ -237,24 +237,22 @@ export const setShowExperimentalSettings = async (showExperimentalSettings: bool
 };
 export const setTheme = async (themeArg: displayMode) => {
     const display_mode = themeArg?.toLowerCase() as displayMode;
-    const prevTheme = useAppConfigStore.getState().display_mode;
-
-    setUITheme(themeArg);
-    useAppConfigStore.setState({ display_mode });
-
-    const shouldUpdateConfigTheme = display_mode !== prevTheme;
-
-    if (shouldUpdateConfigTheme) {
-        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-            console.error('Could not set theme', e);
-            setError('Could not change theme');
-            if (prevTheme) {
-                useAppConfigStore.setState({ display_mode: prevTheme });
-                setUITheme(prevTheme);
-            }
-        });
-    }
+    const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
+    const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
+    setUITheme(uiTheme);
 };
+
+export const setDisplayMode = async (displayMode: displayMode) => {
+    const previousDisplayMode = useAppConfigStore.getState().display_mode;
+    useAppConfigStore.setState({ display_mode: displayMode });
+
+    invoke('set_display_mode', { displayMode: displayMode as displayMode }).catch((e) => {
+        console.error('Could not set theme', e);
+        setError('Could not change theme');
+        useAppConfigStore.setState({ display_mode: previousDisplayMode });
+    });
+};
+
 export const setUseTor = async (useTor: boolean) => {
     useAppConfigStore.setState({ use_tor: useTor });
     invoke('set_use_tor', { useTor }).catch((e) => {
