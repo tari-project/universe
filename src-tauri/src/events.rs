@@ -41,6 +41,14 @@ pub struct ReleaseNotesHandlerEvent {
 }
 
 #[derive(Debug, Serialize, Clone)]
+pub struct ResumingAllProcessesPayload {
+    pub title: String,
+    pub stage_progress: u32,
+    pub stage_total: u32,
+    pub is_resuming: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
 pub struct DetectedAvailableGpuEngines {
     pub engines: Vec<String>,
     pub selected_engine: String,

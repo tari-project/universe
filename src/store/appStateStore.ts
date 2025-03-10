@@ -1,3 +1,4 @@
+import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
 import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
 import { create } from './create';
 
@@ -16,6 +17,7 @@ interface AppState {
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
+    appResumePayload?: ResumingAllProcessesPayload;
 }
 
 const initialstate: AppState = {
@@ -28,6 +30,7 @@ const initialstate: AppState = {
     missingExternalDependencies: [],
     releaseNotes: '',
     isAppUpdateAvailable: false,
+    appResumePayload: undefined,
 };
 
 export const useAppStateStore = create<AppState>()(() => ({

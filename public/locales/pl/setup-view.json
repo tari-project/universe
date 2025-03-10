@@ -2,6 +2,7 @@
   "dont-worry": "Nie martw się, następnym razem nie zajmie to tak długo",
   "installing-latest-version": "Instalowanie wersji {{version}} Tari Universe",
   "new-tari-version-available": "Nowa wersja Tari Universe jest dostępna!",
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode.",
   "no": "Nie",
   "setting-up": "Konfiguracja Tari truth machine...",
   "this-might-take-a-few-minutes": "To może zająć kilka minut",

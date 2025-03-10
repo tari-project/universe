@@ -6,6 +6,7 @@ import { useAppStateStore } from '../appStateStore.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
+import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -42,6 +43,8 @@ export const fetchExternalDependencies = async () => {
 };
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
+export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
+    useAppStateStore.setState({ appResumePayload });
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
