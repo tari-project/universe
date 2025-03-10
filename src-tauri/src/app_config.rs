@@ -721,13 +721,13 @@ impl AppConfig {
     }
 
     pub async fn use_tor(&self) -> bool {
-        let is_tor_files_exisits = BinaryResolver::current()
+        let is_tor_files_exists = BinaryResolver::current()
             .read()
             .await
             .resolve_path_to_binary_files(Binaries::Tor)
             .is_ok();
 
-        self.use_tor && is_tor_files_exisits
+        self.use_tor && is_tor_files_exists
     }
 
     pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
