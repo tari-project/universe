@@ -3,7 +3,7 @@ import InfiniteScroll from 'react-infinite-scroll-component';
 import { initialFetchTxs, useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
-import { ListItem } from './ListItem.tsx';
+import { HistoryListItem } from './ListItem.tsx';
 
 interface HistoryListProps {
     winsOnly?: boolean;
@@ -34,7 +34,7 @@ const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
             >
                 <ListItemWrapper>
                     {transactions.map((tx, index) => (
-                        <ListItem key={tx.tx_id} item={tx} index={index} showReplay={winsOnly} />
+                        <HistoryListItem key={tx.tx_id} item={tx} index={index} showReplay={winsOnly} />
                     ))}
                 </ListItemWrapper>
             </InfiniteScroll>

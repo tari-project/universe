@@ -1,4 +1,11 @@
-import { TransactionInfo, TxType } from '@app/types/app-status.ts';
+import { memo, useRef, useState } from 'react';
+import { AnimatePresence, useInView } from 'motion/react';
+import { useTranslation } from 'react-i18next';
+import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
+import { BaseItemProps, HistoryListItemProps, TransationType } from '../types.ts';
+import ItemExpand from './ExpandedItem';
+import ItemHover from './HoveredItem';
 import {
     ContentWrapper,
     ItemWrapper,
@@ -6,92 +13,13 @@ import {
     TitleWrapper,
     ValueChangeWrapper,
     ValueWrapper,
-    HoverWrapper,
-    ReplayButton,
-    ButtonWrapper,
-    FlexButton,
-    GemImage,
-    GemPill,
     CurrencyText,
-    InfoWrapper,
-    InfoItemWrapper,
 } from './ListItem.styles.ts';
-import { useRef, useState } from 'react';
-import { AnimatePresence, useInView } from 'motion/react';
-import { useTranslation } from 'react-i18next';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
-import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
-import { ReplaySVG } from '@app/assets/icons/replay.tsx';
-
-import gemImage from '@app/containers/main/Airdrop/AirdropGiftTracker/images/gem.png';
-import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
-
-interface HistoryListItemProps {
-    item: TransactionInfo;
-    showReplay?: boolean;
-    index: number;
-}
-
-interface BaseItemProps {
-    title: string;
-    type: TxType;
-    time: string;
-    value: string;
-    chip?: string;
-    onClick?: () => void;
-}
-
-function ItemExpand({ item }: { item: TransactionInfo }) {
-    const items = Object.keys(item).map((field) => (
-        <InfoItemWrapper key={field}>
-            <strong>{`${field}:`}</strong>
-            <span>{item[field]?.toString()}</span>
-        </InfoItemWrapper>
-    ));
-
-    return <InfoWrapper>{items}</InfoWrapper>;
-}
-function ItemHover({ item }: { item: TransactionInfo }) {
-    const { t } = useTranslation('sidebar', { useSuspense: false });
-    const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
-    const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
-    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
-    const { setShowModal, setItemData } = useShareRewardStore((s) => s);
-
-    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
-
-    const handleShareClick = () => {
-        setShowModal(true);
-        setItemData(item);
-    };
-    const isLoggedIn = !!airdropTokens;
-    const showShareButton = sharingEnabled && isLoggedIn;
-    return (
-        <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ButtonWrapper initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}>
-                {showShareButton && (
-                    <FlexButton onClick={handleShareClick}>
-                        {t('share.history-item-button')}
-                        <GemPill>
-                            <span>{gemsValue}</span>
-                            <GemImage src={gemImage} alt="" />
-                        </GemPill>
-                    </FlexButton>
-                )}
-
-                <ReplayButton onClick={() => handleWinReplay(item)}>
-                    <ReplaySVG />
-                </ReplayButton>
-            </ButtonWrapper>
-        </HoverWrapper>
-    );
-}
-
-function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
-    // TODO: check formatter - need to handle negative values
+const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
+    // note re. isPositiveValue:
+    // amounts in the tx response are always positive numbers but
+    // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
     const isPositiveValue = type !== 'sent';
     const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
@@ -108,8 +36,9 @@ function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
             </ValueWrapper>
         </ContentWrapper>
     );
-}
-export function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
+});
+
+const HistoryListItem = memo(function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
     const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
     const clickRef = useRef(0);
 
@@ -119,17 +48,24 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { amount: 0.5, once: false });
 
-    const isMined = item.txType === 'mined';
+    const itemType = (
+        item.direction === 2
+            ? 'sent'
+            : !item.mined_in_block_height || item.mined_in_block_height === 0
+              ? 'received'
+              : 'mined'
+    ) as TransationType;
+
+    const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
-    const itemTitle =
-        item.txType === 'mined'
-            ? `${t('block')} #${item.mined_in_block_height}`
-            : !item.payment_id || item.payment_id?.includes('<No message>')
-              ? t(`common:${item.txType}`)
-              : item.payment_id;
+    const itemTitle = isMined
+        ? `${t('block')} #${item.mined_in_block_height}`
+        : !item.payment_id || item.payment_id?.includes('<No message>')
+          ? t(`common:${itemType}`)
+          : item.payment_id;
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
@@ -154,13 +90,7 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     }
 
     const baseItem = (
-        <BaseItem
-            title={itemTitle}
-            time={itemTime}
-            value={earningsFormatted}
-            type={item.txType ?? 'unknown'}
-            onClick={handleTxClick}
-        />
+        <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={itemType} onClick={handleTxClick} />
     );
     const itemHover = showReplay && isMined ? <ItemHover item={item} /> : null;
     const itemExpand = !isMined ? <ItemExpand item={item} /> : null;
@@ -181,4 +111,6 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
             <AnimatePresence>{expanded && itemExpand}</AnimatePresence>
         </ItemWrapper>
     );
-}
+});
+
+export { HistoryListItem };

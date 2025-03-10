@@ -1,8 +1,8 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { ReactNode } from 'react';
-import { TabItem } from '@app/components/Tabs/Tabs.tsx';
 import { SB_WIDTH } from '@app/theme/styles.ts';
+import { TabItem } from './types.ts';
 
 const GUTTER = 10;
 const SB_CONTENT_WIDTH = SB_WIDTH;
