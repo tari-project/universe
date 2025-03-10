@@ -1,7 +1,7 @@
 import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
-import { setFlareAnimationType, setUserGems } from '@app/store';
+import { setFlareAnimationType, setUserGems, useAirdropStore } from '@app/store';
 
 export const useHandleWsUserIdEvent = () => {
     const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
@@ -50,6 +50,9 @@ export const useHandleWsUserIdEvent = () => {
                 break;
             case WebsocketEventNames.MINING_STATUS_USER_UPDATE:
                 setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
+                break;
+            case WebsocketEventNames.X_SPACE_EVENT:
+                useAirdropStore.setState({ latestXSpaceEvent: eventParsed.data });
                 break;
             default:
                 // eslint-disable-next-line no-console
