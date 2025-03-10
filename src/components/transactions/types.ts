@@ -1,4 +1,6 @@
-import { TransactionInfo, TxType } from '@app/types/app-status.ts';
+import { TransactionInfo } from '@app/types/app-status.ts';
+
+export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
 export interface HistoryListItemProps {
     item: TransactionInfo;
@@ -8,7 +10,7 @@ export interface HistoryListItemProps {
 
 export interface BaseItemProps {
     title: string;
-    type: TxType;
+    type: TransationType;
     time: string;
     value: string;
     chip?: string;

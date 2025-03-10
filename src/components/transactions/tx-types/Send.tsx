@@ -31,7 +31,7 @@ export function Send() {
         formState: { isSubmitting },
     } = useForm<SendInputs>({
         shouldUseNativeValidation: true,
-        defaultValues: { tx_message: 'string', tx_address: 'string', tx_amount: 'string' },
+        defaultValues: { tx_message: '', tx_address: '', tx_amount: '' },
     });
 
     const fieldMarkup = fields.map(({ name, placeholder, ...rest }) => {

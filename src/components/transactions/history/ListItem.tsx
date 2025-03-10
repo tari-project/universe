@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
+import { memo, useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
-import { BaseItemProps, HistoryListItemProps } from '../types.ts';
+import { BaseItemProps, HistoryListItemProps, TransationType } from '../types.ts';
 import ItemExpand from './ExpandedItem';
 import ItemHover from './HoveredItem';
 import {
@@ -16,7 +16,7 @@ import {
     CurrencyText,
 } from './ListItem.styles.ts';
 
-function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
+const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
@@ -36,8 +36,9 @@ function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
             </ValueWrapper>
         </ContentWrapper>
     );
-}
-export function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
+});
+
+const HistoryListItem = memo(function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
     const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
     const clickRef = useRef(0);
 
@@ -47,17 +48,24 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { amount: 0.5, once: false });
 
-    const isMined = item.txType === 'mined';
+    const itemType = (
+        item.direction === 2
+            ? 'sent'
+            : !item.mined_in_block_height || item.mined_in_block_height === 0
+              ? 'received'
+              : 'mined'
+    ) as TransationType;
+
+    const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
-    const itemTitle =
-        item.txType === 'mined'
-            ? `${t('block')} #${item.mined_in_block_height}`
-            : !item.payment_id || item.payment_id?.includes('<No message>')
-              ? t(`common:${item.txType}`)
-              : item.payment_id;
+    const itemTitle = isMined
+        ? `${t('block')} #${item.mined_in_block_height}`
+        : !item.payment_id || item.payment_id?.includes('<No message>')
+          ? t(`common:${itemType}`)
+          : item.payment_id;
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
@@ -82,13 +90,7 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
     }
 
     const baseItem = (
-        <BaseItem
-            title={itemTitle}
-            time={itemTime}
-            value={earningsFormatted}
-            type={item.txType ?? 'unknown'}
-            onClick={handleTxClick}
-        />
+        <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={itemType} onClick={handleTxClick} />
     );
     const itemHover = showReplay && isMined ? <ItemHover item={item} /> : null;
     const itemExpand = !isMined ? <ItemExpand item={item} /> : null;
@@ -109,4 +111,6 @@ export function ListItem({ item, index, showReplay = false }: HistoryListItemPro
             <AnimatePresence>{expanded && itemExpand}</AnimatePresence>
         </ItemWrapper>
     );
-}
+});
+
+export { HistoryListItem };
