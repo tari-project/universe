@@ -1,19 +1,10 @@
 import { invoke } from '@tauri-apps/api/core';
 import { create } from './create';
-import { P2poolConnections, P2poolStats, P2poolStatsResult } from '../types/app-status.ts';
+import { P2poolConnections, P2poolStatsResult } from '../types/app-status.ts';
 
-type State = Partial<P2poolStatsResult> & Partial<P2poolConnections>;
+type P2poolStatsStoreState = Partial<P2poolStatsResult> & Partial<P2poolConnections>;
 
-interface Actions {
-    randomx_stats?: P2poolStats;
-    sha3x_stats?: P2poolStats;
-    fetchP2poolStats: () => Promise<void>;
-    fetchP2poolConnections: () => Promise<void>;
-}
-
-type P2poolStatsStoreState = State & Actions;
-
-const initialState: State = {
+const initialState: P2poolStatsStoreState = {
     connection_info: {
         listener_addresses: [],
         connected_peers: 0,
@@ -33,22 +24,23 @@ const initialState: State = {
     peers: [],
 };
 
-export const useP2poolStatsStore = create<P2poolStatsStoreState>()((set) => ({
+export const useP2poolStatsStore = create<P2poolStatsStoreState>()(() => ({
     ...initialState,
-    fetchP2poolStats: async () => {
-        try {
-            const stats = await invoke('get_p2pool_stats');
-            set(stats);
-        } catch (e) {
-            console.error('Could not get p2p stats: ', e);
-        }
-    },
-    fetchP2poolConnections: async () => {
-        try {
-            const connections = await invoke('get_p2pool_connections');
-            set(connections);
-        } catch (e) {
-            console.error('Could not get p2p connections: ', e);
-        }
-    },
 }));
+
+export const fetchP2poolStats = async () => {
+    try {
+        const stats = await invoke('get_p2pool_stats');
+        useP2poolStatsStore.setState({ ...stats });
+    } catch (e) {
+        console.error('Could not get p2p stats: ', e);
+    }
+};
+export const fetchP2poolConnections = async () => {
+    try {
+        const connections = await invoke('get_p2pool_connections');
+        useP2poolStatsStore.setState({ peers: connections.peers });
+    } catch (e) {
+        console.error('Could not get p2p connections: ', e);
+    }
+};

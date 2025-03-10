@@ -1,5 +1,6 @@
-import { AirdropTokens, setAirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
+import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { useEffect } from 'react';
+import { setAirdropTokens } from '@app/store';
 
 async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
     const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {

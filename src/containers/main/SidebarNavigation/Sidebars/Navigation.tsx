@@ -2,7 +2,8 @@ import { memo, ReactNode, useEffect } from 'react';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 
-import { setCurrentSidebar, setSidebarOpen, SidebarType, useUIStore } from '@app/store/useUIStore.ts';
+import { SidebarType, useUIStore } from '@app/store/useUIStore.ts';
+import { setCurrentSidebar, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 import { WalletOutlineSVG } from '@app/assets/icons/wallet-outline.tsx';
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';

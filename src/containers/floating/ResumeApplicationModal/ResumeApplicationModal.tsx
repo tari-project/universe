@@ -5,12 +5,12 @@ import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore';
-import { startMining, stopMining } from '@app/store/miningStoreActions';
+import { startMining, stopMining, setMiningControlsEnabled } from '@app/store/actions/miningStoreActions';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const { t } = useTranslation('components');
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
-    const setMiningControlsEnabled = useMiningStore((s) => s.setMiningControlsEnabled);
+
     const appResumePayload = useAppStateStore((state) => state.appResumePayload);
     const showModal = appResumePayload?.is_resuming;
     const wasMiningInitiatedRef = useRef(isMiningInitiated);
