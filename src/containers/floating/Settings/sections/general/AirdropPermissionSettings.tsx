@@ -10,15 +10,15 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { setAllowTelemetry } from '@app/store/actions/appConfigStoreActions.ts';
 
 export default function AirdropPermissionSettings() {
-    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
-    const setAllowTelemetry = useAppConfigStore((s) => s.setAllowTelemetry);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
+    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
 
     const handleChange = useCallback(async () => {
         await setAllowTelemetry(!allowTelemetry);
-    }, [allowTelemetry, setAllowTelemetry]);
+    }, [allowTelemetry]);
 
     return (
         <SettingsGroupWrapper>

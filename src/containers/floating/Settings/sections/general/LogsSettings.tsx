@@ -3,8 +3,6 @@ import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { Trans, useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
-import { useUIStore } from '@app/store/useUIStore.ts';
-
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { SendLogsDialog } from '@app/components/dialogs/SendLogsDialog.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -20,13 +18,12 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { setDialogToShow, setIssueReference } from '@app/store';
 
 export default function LogsSettings() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const issueReference = useAppStateStore((s) => s.issueReference);
-    const setIssueReference = useAppStateStore((s) => s.setIssueReference);
 
     const openLogsDirectory = () => {
         invoke('open_log_dir')
@@ -68,7 +65,7 @@ export default function LogsSettings() {
                     <Button onClick={openLogsDirectory}>{t('open-logs-directory', { ns: 'settings' })}</Button>
                     <Button onClick={() => setDialogToShow('logs')}>{t('send-logs', { ns: 'settings' })}</Button>
                 </SettingsGroupAction>
-                <SendLogsDialog onSetReference={setIssueReference} />
+                <SendLogsDialog onSetReference={(reference) => setIssueReference(reference)} />
             </SettingsGroup>
         </SettingsGroupWrapper>
     );
