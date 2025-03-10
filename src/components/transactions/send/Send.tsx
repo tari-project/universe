@@ -1,13 +1,13 @@
+import { invoke } from '@tauri-apps/api/core';
 import { TabContentWrapper } from '@app/components/transactions/WalletSidebarContent.styles.ts';
 import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Controller, useForm } from 'react-hook-form';
-import { StyledForm } from '@app/components/transactions/tx-types/tx.styles.ts';
 import { useCallback } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { StyledForm } from './Send.styles';
 
 const fields: TxInputProps[] = [
     { name: 'tx_message', placeholder: 'Payment message' },

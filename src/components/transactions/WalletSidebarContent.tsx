@@ -1,8 +1,8 @@
 import { Tabs } from '@app/components/Tabs/Tabs.tsx';
 import { TabItem } from '@app/components/Tabs/types.ts';
 
-import { Send } from './tx-types/Send.tsx';
-import { Receive } from './tx-types/Receive.tsx';
+import { Send } from './send/Send.tsx';
+import { Receive } from './receive/Receive.tsx';
 import HistoryList from './history/HistoryList.tsx';
 import {
     ContentWrapper,

@@ -1,5 +1,5 @@
-import { TabContentWrapper } from '@app/components/transactions/WalletSidebarContent.styles.ts';
 import WalletAddressMarkup from '@app/containers/floating/Settings/sections/wallet/WalletAddressMarkup.tsx';
+import { TabContentWrapper } from '../WalletSidebarContent.styles.ts';
 
 export function Receive() {
     return (
