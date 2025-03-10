@@ -11,11 +11,11 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import ConfirmationDialog from '@app/components/dialogs/ConfirmationDialog';
+import { setPreRelease } from '@app/store';
 
 export default function PreReleaseSettings() {
-    const isPreRelease = useAppConfigStore((s) => s.pre_release);
-    const setPreRelease = useAppConfigStore((s) => s.setPreRelease);
     const { t } = useTranslation('settings', { useSuspense: false });
+    const isPreRelease = useAppConfigStore((s) => s.pre_release);
     const [isDialogOpen, setDialogOpen] = useState(false);
 
     const closeDialog = useCallback(() => {
@@ -27,9 +27,10 @@ export default function PreReleaseSettings() {
     }, [setDialogOpen]);
 
     const applyChange = useCallback(() => {
-        closeDialog();
-        setPreRelease(!isPreRelease);
-    }, [closeDialog, isPreRelease, setPreRelease]);
+        setPreRelease(!isPreRelease).then(() => {
+            closeDialog();
+        });
+    }, [closeDialog, isPreRelease]);
 
     return (
         <SettingsGroupWrapper>
