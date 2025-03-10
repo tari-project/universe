@@ -31,10 +31,9 @@ use async_trait::async_trait;
 use log::{info, warn};
 use minotari_node_grpc_client::grpc::wallet_client::WalletClient;
 use minotari_node_grpc_client::grpc::{
-    GetBalanceResponse, GetCompletedTransactionsRequest, GetCompletedTransactionsResponse,
-    GetStateRequest, NetworkStatusResponse,
+    GetBalanceResponse, GetCompletedTransactionsRequest, GetStateRequest, NetworkStatusResponse,
 };
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
@@ -43,8 +42,7 @@ use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tari_utilities::hex::Hex;
-use tokio::sync::{watch, Mutex};
-use tonic::Streaming;
+use tokio::sync::watch;
 
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -81,7 +79,7 @@ impl WalletAdapter {
     pub async fn get_transactions(
         &self,
         last_tx_id: Option<u64>,
-        status_filters: Option<Vec<i32>>,
+        status_filters: Option<Vec<TransactionStatus>>,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         let mut client = WalletClient::connect(self.wallet_grpc_address())
@@ -118,7 +116,7 @@ impl WalletAdapter {
 
             // Apply status filter only if Some with non-empty vector
             if let Some(filters) = &status_filters {
-                if !filters.is_empty() && !filters.contains(&tx.status) {
+                if !filters.is_empty() && !filters.contains(&TransactionStatus::from(tx.status)) {
                     continue;
                 }
             }
@@ -127,7 +125,7 @@ impl WalletAdapter {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),
                 dest_address: tx.dest_address.to_hex(),
-                status: tx.status,
+                status: TransactionStatus::from(tx.status),
                 amount: MicroMinotari(tx.amount),
                 is_cancelled: tx.is_cancelled,
                 direction: tx.direction,
@@ -441,7 +439,7 @@ pub struct TransactionInfo {
     pub tx_id: u64,
     pub source_address: String,
     pub dest_address: String,
-    pub status: i32,
+    pub status: TransactionStatus,
     pub amount: MicroMinotari,
     pub is_cancelled: bool,
     pub direction: i32,
@@ -450,4 +448,61 @@ pub struct TransactionInfo {
     pub timestamp: u64,
     pub payment_id: String,
     pub mined_in_block_height: u64,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub enum TransactionStatus {
+    // This transaction has been completed between the parties but has not been broadcast to the base layer network.
+    Completed = 0,
+    // This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
+    Broadcast = 1,
+    // This transaction has been mined and included in a block.
+    MinedUnconfirmed = 2,
+    // This transaction was generated as part of importing a spendable UTXO
+    Imported = 3,
+    // This transaction is still being negotiated by the parties
+    Pending = 4,
+    // This is a created Coinbase Transaction
+    Coinbase = 5,
+    // This transaction is mined and confirmed at the current base node's height
+    MinedConfirmed = 6,
+    // The transaction was rejected by the mempool
+    Rejected = 7,
+    // This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
+    OneSidedUnconfirmed = 8,
+    // All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
+    OneSidedConfirmed = 9,
+    // This transaction is still being queued for sending
+    Queued = 10,
+    // The transaction was not found by the wallet its in transaction database
+    NotFound = 11,
+    // This is Coinbase transaction that is detected from chain
+    CoinbaseUnconfirmed = 12,
+    // This is Coinbase transaction that is detected from chain
+    CoinbaseConfirmed = 13,
+    // This is Coinbase transaction that is not currently detected as mined
+    CoinbaseNotInBlockChain = 14,
+}
+
+impl From<i32> for TransactionStatus {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => TransactionStatus::Completed,
+            1 => TransactionStatus::Broadcast,
+            2 => TransactionStatus::MinedUnconfirmed,
+            3 => TransactionStatus::Imported,
+            4 => TransactionStatus::Pending,
+            5 => TransactionStatus::Coinbase,
+            6 => TransactionStatus::MinedConfirmed,
+            7 => TransactionStatus::Rejected,
+            8 => TransactionStatus::OneSidedUnconfirmed,
+            9 => TransactionStatus::OneSidedConfirmed,
+            10 => TransactionStatus::Queued,
+            11 => TransactionStatus::NotFound,
+            12 => TransactionStatus::CoinbaseUnconfirmed,
+            13 => TransactionStatus::CoinbaseConfirmed,
+            14 => TransactionStatus::CoinbaseNotInBlockChain,
+            _ => TransactionStatus::NotFound,
+        }
+    }
 }

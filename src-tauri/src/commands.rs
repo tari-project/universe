@@ -38,7 +38,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::shutdown_utils::stop_all_processes;
-use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::{TransactionInfo, TransactionStatus};
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
@@ -656,7 +656,7 @@ pub async fn get_airdrop_tokens(
 pub async fn get_transactions(
     state: tauri::State<'_, UniverseAppState>,
     last_tx_id: Option<u64>,
-    status_filters: Option<Vec<i32>>,
+    status_filters: Option<Vec<TransactionStatus>>,
     limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
@@ -664,9 +664,7 @@ pub async fn get_transactions(
         warn!(target: LOG_TARGET, "Already getting transactions");
         return Err("Already getting transactions".to_string());
     }
-    state
-        .is_getting_transactions
-        .store(true, Ordering::SeqCst);
+    state.is_getting_transactions.store(true, Ordering::SeqCst);
 
     let transactions = state
         .wallet_manager
@@ -683,9 +681,7 @@ pub async fn get_transactions(
         warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
     }
 
-    state
-        .is_getting_transactions
-        .store(false, Ordering::SeqCst);
+    state.is_getting_transactions.store(false, Ordering::SeqCst);
     Ok(transactions)
 }
 

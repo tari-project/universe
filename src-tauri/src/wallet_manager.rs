@@ -25,6 +25,7 @@ use crate::node_manager::NodeManagerError;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::TransactionStatus;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use futures_util::future::FusedFuture;
@@ -125,7 +126,7 @@ impl WalletManager {
     pub async fn get_transactions(
         &self,
         last_tx_id: Option<u64>,
-        status_filters: Option<Vec<i32>>,
+        status_filters: Option<Vec<TransactionStatus>>,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;

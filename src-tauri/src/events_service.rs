@@ -24,7 +24,7 @@ use log::{error, warn};
 use std::sync::Arc;
 
 use crate::{
-    wallet_adapter::{TransactionInfo, WalletState},
+    wallet_adapter::{TransactionInfo, TransactionStatus, WalletState},
     wallet_manager::WalletManager,
 };
 use tokio::sync::watch::Receiver;
@@ -81,7 +81,14 @@ impl EventsService {
         current_block_height: u64,
     ) -> Option<TransactionInfo> {
         match wallet_manager
-            .get_transactions(None, Some(vec![12, 13]), Some(10))
+            .get_transactions(
+                None,
+                Some(vec![
+                    TransactionStatus::CoinbaseUnconfirmed,
+                    TransactionStatus::CoinbaseUnconfirmed,
+                ]),
+                Some(10),
+            )
             .await
         {
             Ok(txs) => txs
