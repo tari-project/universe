@@ -12,7 +12,7 @@ import {
 import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
-import { GpuThreads } from '@app/types/app-status.ts';
+import { AppConfig, GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { loadTowerAnimation } from '@tari-project/tari-tower';
 
@@ -22,10 +22,10 @@ interface SetModeProps {
     customCpuLevels?: number;
 }
 
-export const fetchAppConfig = async () => {
+export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
     try {
-        const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
+        changeLanguage(appConfig.application_language);
         const configTheme = appConfig.display_mode?.toLowerCase();
         if (configTheme) {
             setUITheme(configTheme as displayMode);

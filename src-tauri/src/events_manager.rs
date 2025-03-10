@@ -146,6 +146,18 @@ impl EventsManager {
         EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
 
+    pub async fn handle_app_config_loaded(&self, app: &AppHandle) {
+        let app_state: tauri::State<'_, UniverseAppState> = app.state::<UniverseAppState>();
+        let _unused = app_state
+            .config
+            .write()
+            .await
+            .propose_system_language()
+            .await;
+        let app_config = app_state.config.read().await.clone();
+        EventsEmitter::emit_app_config_loaded(app, app_config).await;
+    }
+
     pub async fn handle_network_status_update(
         &self,
         app: &AppHandle,

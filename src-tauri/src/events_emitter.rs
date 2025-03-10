@@ -29,7 +29,7 @@ use crate::{
     commands::CpuMinerStatus,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     wallet_adapter::{TransactionInfo, WalletBalance},
-    BaseNodeStatus, GpuMinerStatus,
+    AppConfig, BaseNodeStatus, GpuMinerStatus,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
@@ -46,6 +46,7 @@ pub enum EventType {
     ConnectedPeersUpdate,
     NewBlockHeight,
     NetworkStatus,
+    AppConfigLoaded,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -97,6 +98,16 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
         }
     }
+    pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
+        let event = Event {
+            event_type: EventType::AppConfigLoaded,
+            payload: app_config,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit AppConfigLoaded event: {:?}", e);
+        }
+    }
+
     pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
         let event = Event {
             event_type: EventType::WalletAddressUpdate,

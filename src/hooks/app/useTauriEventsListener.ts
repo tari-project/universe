@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 
 import {
+    AppConfig,
     BaseNodeStatus,
     CpuMinerStatus,
     GpuMinerStatus,
@@ -20,6 +21,7 @@ import {
     setWalletAddress,
     setWalletBalance,
 } from '@app/store';
+import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -60,6 +62,10 @@ type BackendStateUpdateEvent =
           };
       }
     | {
+          event_type: 'AppConfigLoaded';
+          payload: AppConfig;
+      }
+    | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
       };
@@ -88,6 +94,10 @@ const useTauriEventsListener = () => {
                     break;
                 case 'NewBlockHeight':
                     handleNewBlock(event.payload);
+                    break;
+                case 'AppConfigLoaded':
+                    console.log('AppConfigLoaded', event.payload);
+                    handleAppConfigLoaded(event.payload);
                     break;
                 case `NetworkStatus`:
                     setNetworkStatus(event.payload);
