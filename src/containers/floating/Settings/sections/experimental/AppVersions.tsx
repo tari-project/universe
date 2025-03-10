@@ -9,13 +9,12 @@ import { Environment, useEnvironment } from '@app/hooks';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { TextButton } from '@app/components/elements/buttons/TextButton.tsx';
+import { fetchApplicationsVersions, updateApplicationsVersions } from '@app/store/actions/appStateStoreActions.ts';
 
 export default function AppVersions() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const currentEnvironment = useEnvironment();
     const applicationsVersions = useAppStateStore((state) => state.applications_versions);
-    const fetchApplicationsVersions = useAppStateStore((state) => state.fetchApplicationsVersions);
-    const updateApplicationsVersions = useAppStateStore((state) => state.updateApplicationsVersions);
 
     return applicationsVersions ? (
         <SettingsGroupWrapper>
@@ -23,11 +22,11 @@ export default function AppVersions() {
                 <Typography variant="h6">{t('versions', { ns: 'common' })}</Typography>
                 <Stack direction="row" alignItems="center" justifyContent="space-between">
                     {currentEnvironment === Environment.Development && (
-                        <TextButton size="small" onClick={updateApplicationsVersions}>
+                        <TextButton size="small" onClick={() => updateApplicationsVersions()}>
                             {t('update-versions', { ns: 'settings' })}
                         </TextButton>
                     )}
-                    <TextButton size="small" onClick={fetchApplicationsVersions}>
+                    <TextButton size="small" onClick={() => fetchApplicationsVersions()}>
                         {t('refresh-versions', { ns: 'settings' })}
                     </TextButton>
                 </Stack>

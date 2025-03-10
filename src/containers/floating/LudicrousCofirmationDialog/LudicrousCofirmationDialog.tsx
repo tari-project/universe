@@ -4,7 +4,7 @@ import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { ButtonWrapper, CountdownNumber, KeepButton, RevertButton, Text, TextWrapper, Title, Wrapper } from './styles';
 import { useTranslation } from 'react-i18next';
-import { changeMiningMode } from '@app/store/miningStoreActions.ts';
+import { setDialogToShow, changeMiningMode } from '@app/store/actions';
 
 const Countdown = memo(function Countdown({ onComplete }: { onComplete: () => void }) {
     const [count, setCount] = useState(30);
@@ -24,16 +24,15 @@ const Countdown = memo(function Countdown({ onComplete }: { onComplete: () => vo
 const LudicrousCofirmationDialog = memo(function LudicrousCofirmationDialog() {
     const { t } = useTranslation('components', { useSuspense: false });
     const open = useUIStore((s) => s.dialogToShow === 'ludicrousConfirmation');
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const handleClose = useCallback(() => {
         setDialogToShow(null);
-    }, [setDialogToShow]);
+    }, []);
 
     const handleChange = useCallback(async () => {
         await changeMiningMode({ mode: 'Ludicrous' });
         setDialogToShow(null);
-    }, [setDialogToShow]);
+    }, []);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>

@@ -23,11 +23,10 @@ const InfoText = styled(Typography)`
 `;
 const SetupProgress = memo(function SetupProgress() {
     const { t } = useTranslation('setup-view');
-    const { setupTitle, setupTitleParams, setupProgress } = useAppStateStore((s) => ({
-        setupTitle: s.setupTitle,
-        setupTitleParams: s.setupTitleParams,
-        setupProgress: s.setupProgress,
-    }));
+
+    const setupTitle = useAppStateStore((s) => s.setupTitle);
+    const setupTitleParams = useAppStateStore((s) => s.setupTitleParams);
+    const setupProgress = useAppStateStore((s) => s.setupProgress);
 
     const progressPercentage = useMemo(() => Math.floor(setupProgress * 100), [setupProgress]);
     const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
