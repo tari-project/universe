@@ -18,7 +18,7 @@ export default function useSocketEvents() {
     }, []);
 
     useEffect(() => {
-        if (!socket) return;
+        if (!socket || !airdropToken) return;
         function onConnectError(error: Error) {
             console.error('Error connecting to websocket:', error);
         }
@@ -32,7 +32,7 @@ export default function useSocketEvents() {
             socket?.off('disconnect', onDisconnect);
             socket?.off('connect_error', onConnectError);
         };
-    }, []);
+    }, [airdropToken]);
 
     useEffect(() => {
         if (!socket || !userId) return;

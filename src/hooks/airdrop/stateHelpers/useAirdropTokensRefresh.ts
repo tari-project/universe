@@ -1,17 +1,29 @@
 import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
 import { setAirdropTokens } from '@app/store';
-import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
-async function fetchAirdropTokens(airdropTokens: AirdropTokens) {
+async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
+    const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
+
+    if (!airdropApiUrl) {
+        console.error('Error refreshing airdrop tokens. No API URL');
+        return;
+    }
     try {
-        const refreshedToken = await handleAirdropRequest<AirdropTokens>({
-            path: '/auth/local/refresh',
+        const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            method: 'POST',
-            body: { refreshToken: airdropTokens.refreshToken },
+            body: JSON.stringify({
+                refreshToken: airdropTokens.refreshToken,
+            }),
         });
+        if (!response.ok) {
+            console.error('Fetching airdrop tokens was not successful');
+            return undefined;
+        }
+
+        const refreshedToken: AirdropTokens = await response.json();
 
         if (refreshedToken) {
             return refreshedToken;
@@ -34,7 +46,7 @@ export async function handleRefreshAirdropTokens() {
     const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
     if (airdropTokens && tokenHasExpired) {
         try {
-            tokens = await fetchAirdropTokens(airdropTokens);
+            tokens = await refreshAirdropTokens(airdropTokens);
         } catch (error) {
             console.error('Error refreshing airdrop tokens:', error);
         }

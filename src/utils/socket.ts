@@ -19,7 +19,6 @@ export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
 const version = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
 
 const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
-    if (socket) return;
     const appId = useAppConfigStore.getState().anon_id;
     const miningNetwork = useMiningStore.getState().network;
     const wsOptions = {
@@ -35,10 +34,11 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
 
     socket = io(airdropApiUrl, wsOptions);
     console.info('Socket initialised');
+    socket.connect();
 };
 
 function removeSocket() {
-    if (!socket) return;
+    socket?.disconnect();
     socket = null;
     console.info('Socket removed');
 }
