@@ -5,26 +5,17 @@ import {
     IconContainer,
     TextSection,
     LiveBadgePoint,
-    ScheduleBadge,
+    TimeBadge,
     Title,
     LiveBadgeText,
     LiveBadgeWrapper,
-    FloatingWrapper,
 } from './XSpaceBanner.style';
 import { useMemo } from 'react';
+import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
 
 const XSpaceEventBanner = () => {
     // Truncate title if it's too long
-    let latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
-
-    console.log({ latestXSpaceEvent });
-
-    latestXSpaceEvent = {
-        id: 'id',
-        start: new Date(),
-        end: new Date(),
-        displayName: 'No new eventsdsfffffffffffffffffffffffffffffffffffffffffffffsdfsdf',
-    };
+    const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
 
     const isLive = useMemo(() => {
         const currentDate = new Date();
@@ -49,16 +40,17 @@ const XSpaceEventBanner = () => {
         if (!latestXSpaceEvent || isLive) {
             return '';
         }
-        return latestXSpaceEvent.start
+        const dateFormatted = new Date(latestXSpaceEvent.start)
             .toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 hour: 'numeric',
                 hour12: true,
-                timeZoneName: 'shortGeneric',
+                timeZoneName: 'short',
             })
-            .replace(' at ', ' @ ')
+            .replace(', ', ' @')
             .toUpperCase();
+        return dateFormatted;
     }, [latestXSpaceEvent, isLive]);
 
     if (!latestXSpaceEvent) {
@@ -71,19 +63,18 @@ const XSpaceEventBanner = () => {
             <LiveBadgeText>LIVE</LiveBadgeText>
         </LiveBadgeWrapper>
     );
-    const displayDate = displayedDate ? <ScheduleBadge>{displayedDate}</ScheduleBadge> : null;
+    const displayDate = displayedDate ? <TimeBadge>{displayedDate}</TimeBadge> : null;
 
-    const someIcon = 'hey';
     return (
-        <FloatingWrapper>
-            <BannerContent>
-                <TextSection>
-                    <IconContainer>{someIcon}</IconContainer>
-                    <Title>{displayedText}</Title>
-                </TextSection>
-                {isLive ? liveBadge : displayDate}
-            </BannerContent>
-        </FloatingWrapper>
+        <BannerContent>
+            <TextSection>
+                <IconContainer>
+                    <XSpaceSvg></XSpaceSvg>
+                </IconContainer>
+                <Title>{displayedText}</Title>
+            </TextSection>
+            {isLive ? liveBadge : displayDate}
+        </BannerContent>
     );
 };
 
