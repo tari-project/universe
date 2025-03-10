@@ -7,6 +7,7 @@ import { useAppConfigStore } from './useAppConfigStore';
 import { addToast } from '@app/components/ToastStack/useToastStore';
 import { startMining } from '@app/store/miningStoreActions.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming';
 
 interface State {
     error?: string;
@@ -23,6 +24,7 @@ interface State {
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
+    appResumePayload?: ResumingAllProcessesPayload;
 }
 interface Actions {
     setCriticalError: (value: string | undefined) => void;
@@ -36,6 +38,7 @@ interface Actions {
     setIssueReference: (value: string) => void;
     setReleaseNotes: (value: string) => void;
     setIsAppUpdateAvailable: (value: boolean) => void;
+    setAppResumePayload: (value: ResumingAllProcessesPayload) => void;
 }
 type AppState = State & Actions;
 
@@ -49,6 +52,7 @@ const initialstate: State = {
     missingExternalDependencies: [],
     releaseNotes: '',
     isAppUpdateAvailable: false,
+    appResumePayload: undefined,
 };
 
 export const useAppStateStore = create<AppState>()((set, getState) => ({
@@ -108,6 +112,7 @@ export const useAppStateStore = create<AppState>()((set, getState) => ({
     setIssueReference: (issueReference) => set({ issueReference }),
     setReleaseNotes: (releaseNotes) => set({ releaseNotes }),
     setIsAppUpdateAvailable: (isAppUpdateAvailable) => set({ isAppUpdateAvailable }),
+    setAppResumePayload: (appResumePayload) => set({ appResumePayload }),
 }));
 
 export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });

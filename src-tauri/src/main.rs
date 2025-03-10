@@ -42,6 +42,7 @@ use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
+use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
@@ -89,7 +90,7 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::stop_all_processes;
+use utils::shutdown_utils::{resume_all_processes, stop_all_processes};
 
 mod airdrop;
 mod app_config;
@@ -351,9 +352,11 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
+
     let use_tor = app_config.use_tor();
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
+
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
@@ -909,6 +912,31 @@ async fn setup_inner(
         }
     });
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+        let mut last_state = *receiver.borrow();
+        loop {
+            if receiver.changed().await.is_ok() {
+                let current_state = *receiver.borrow();
+
+                if last_state && !current_state {
+                    info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                    let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                }
+
+                if !last_state && current_state {
+                    info!(target: LOG_TARGET, "System entered sleep mode");
+                    let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+                }
+
+                last_state = current_state;
+            } else {
+                error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+            }
+        }
+    });
+
     let _unused = ReleaseNotes::current()
         .handle_release_notes_event_emit(state.clone(), app)
         .await;
@@ -1348,10 +1376,18 @@ fn main() {
         app.package_info().version
     );
 
+    let power_monitor = SystemStatus::current().start_listener();
+
     let is_restart_requested = Arc::new(AtomicBool::new(false));
     let is_restart_requested_clone = is_restart_requested.clone();
 
-    app.run(move |app_handle, event| match event {
+    app.run(move |app_handle, event| {
+        // We can only receive system events from the event loop so this needs to be here
+        let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
+            error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
+        });
+
+        match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
@@ -1387,5 +1423,6 @@ fn main() {
             // no need to handle
         }
         _ => {}
+    };
     });
 }
