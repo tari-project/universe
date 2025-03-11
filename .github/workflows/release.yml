@@ -32,24 +32,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage,updater'
-            extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage,updater'
-            best_effort: true
-          - platform: 'ubuntu-22.04'
-            args: '--bundles rpm'
-            extra: '-x64-rpm'
-            best_effort: true
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles rpm'
-            extra: '-rpm'
-            best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage,updater'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage,updater'
+          #   best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
           - platform: 'windows-latest'
-            args: '--bundles msi,updater'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+            args: '--bundles msi'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -298,4 +298,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tari_universe.pdb
-          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb"
+          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
