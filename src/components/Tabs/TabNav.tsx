@@ -4,7 +4,6 @@ import { type TabNavProps } from './types';
 const Wrapper = styled.div`
     display: grid;
     padding: 20px;
-    justify-content: stretch;
     place-items: center;
     grid-auto-flow: column;
     width: 100%;

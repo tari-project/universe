@@ -71,7 +71,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         }
     }}
 
-    ${({ $size }) => {
+    ${({ $size, $fluid }) => {
         switch ($size) {
             case 'xs':
                 return css`
@@ -86,13 +86,13 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'large':
                 return css`
                     height: 50px;
-                    width: 190px;
+                    width: ${$fluid ? '100%' : '190px'};
                 `;
             case 'medium':
             default:
                 return css`
                     height: 40px;
-                    width: min-content;
+                    width: ${$fluid ? '100%' : 'min-content'};
                 `;
         }
     }}

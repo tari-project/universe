@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
 import ShowIcon from '../../icons/ShowIcon';
 import HideIcon from '../../icons/HideIcon';
 import { useTranslation } from 'react-i18next';
-import QRCode from 'react-qr-code';
+import { QRCodeSVG } from 'qrcode.react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 
 interface Props {
@@ -57,7 +57,7 @@ export default function QRCodeSection({ onDoneClick }: Props) {
         <Wrapper>
             <CodeWrapper>
                 <QRCodeWrapper>
-                    <QRCode
+                    <QRCodeSVG
                         size={200}
                         style={{ height: 'auto', maxWidth: '100%', width: '100%' }}
                         value={qrCodeValue}

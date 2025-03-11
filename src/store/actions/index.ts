@@ -71,3 +71,21 @@ export {
     setIsWebglNotSupported,
     setAdminShow,
 } from './uiStoreActions.ts';
+
+export {
+    fetchCoinbaseTransactions,
+    fetchTransactionsHistory,
+    importSeedWords,
+    initialFetchTxs,
+    refreshCoinbaseTransactions,
+    setWalletAddress,
+    setWalletBalance,
+} from './walletStoreActions';
+export {
+    setGpuDevices,
+    setGpuMiningStatus,
+    setCpuMiningStatus,
+    handleConnectedPeersUpdate,
+    handleBaseNodeStatusUpdate,
+    handleMiningModeChange,
+} from './miningMetricsStoreActions.ts';

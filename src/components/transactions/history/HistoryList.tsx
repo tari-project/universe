@@ -1,9 +1,10 @@
 import { memo, useCallback, useEffect } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
-import { initialFetchTxs, useWalletStore } from '@app/store/useWalletStore';
+import { useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
 import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { HistoryListItem } from './ListItem.tsx';
+import { initialFetchTxs, fetchTransactionsHistory } from '@app/store';
 
 interface HistoryListProps {
     winsOnly?: boolean;
@@ -11,17 +12,17 @@ interface HistoryListProps {
 const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const transactions = useWalletStore((s) => s.transactions);
-    const fetchTransactionsHistory = useWalletStore((s) => s.fetchTransactionsHistory);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
 
     useEffect(() => {
         initialFetchTxs();
     }, []);
-    const handleNext = useCallback(() => {
+
+    const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
-            fetchTransactionsHistory(true, 20);
+            await fetchTransactionsHistory({ continuation: true, limit: 20 });
         }
-    }, [fetchTransactionsHistory, is_transactions_history_loading]);
+    }, [is_transactions_history_loading]);
 
     return (
         <ListWrapper id="list">
