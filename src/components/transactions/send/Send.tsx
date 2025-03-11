@@ -1,5 +1,5 @@
 import { Controller, useForm } from 'react-hook-form';
-import { useCallback } from 'react';
+import { ChangeEvent, useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
@@ -18,11 +18,15 @@ interface SendInputs {
 
 export function Send() {
     const defaultValues = { tx_message: '', address: '', amount: '' };
-    const { control, handleSubmit, setValue, reset, formState } = useForm<SendInputs>({
+    const { control, handleSubmit, setValue, reset, formState, clearErrors } = useForm<SendInputs>({
         defaultValues,
-        shouldUseNativeValidation: true,
         mode: 'all',
     });
+
+    function handleChange(e: ChangeEvent<HTMLInputElement>, name: keyof SendInputs) {
+        setValue(name, e.target.value);
+        clearErrors(name);
+    }
 
     const renderField = ({ name, placeholder, icon, label, required = false }: TxInputProps) => (
         <Controller
@@ -40,7 +44,7 @@ export function Send() {
                         id={name}
                         name={name}
                         {...rest}
-                        onChange={(e) => setValue(name, e.target.value)}
+                        onChange={(e) => handleChange(e, name)}
                         placeholder={placeholder}
                         label={label}
                         icon={icon}
