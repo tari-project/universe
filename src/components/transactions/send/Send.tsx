@@ -1,26 +1,19 @@
-import { invoke } from '@tauri-apps/api/core';
-import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
-import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import { useCallback } from 'react';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { FormFieldsWrapper, StyledForm } from './Send.styles';
+import { invoke } from '@tauri-apps/api/core';
+import { TxInput } from '@app/components/transactions/components/TxInput.tsx';
+import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-const fields: TxInputProps[] = [
-    { name: 'tx_message', placeholder: 'Enter message', label: 'Payment ID' },
-    { name: 'tx_address', placeholder: 'Enter address', label: 'Tari Wallet Address' },
-    { name: 'tx_amount', placeholder: '100', label: 'Amount', icon: <TariOutlineSVG /> },
-];
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { DividerIcon, FormFieldsWrapper, SendDivider, StyledForm } from './Send.styles';
+import { FaArrowDown } from 'react-icons/fa6';
 
 interface SendInputs {
     tx_message: string;
     tx_address: string;
     tx_amount: string;
 }
-
-type InputName = keyof SendInputs;
 
 export function Send() {
     const {
@@ -33,26 +26,65 @@ export function Send() {
         defaultValues: { tx_message: '', tx_address: '', tx_amount: '' },
     });
 
-    const fieldMarkup = fields.map(({ name, placeholder, ...rest }) => {
-        const fieldName = name as InputName;
+    const paymentIdField = (
+        <Controller
+            name="tx_message"
+            control={control}
+            render={({ field }) => (
+                <TxInput
+                    id="tx_message"
+                    name="tx_message"
+                    onChange={(e) => setValue(field.name, e.target.value)}
+                    placeholder={`Enter message`}
+                    label={`Payment ID`}
+                />
+            )}
+        />
+    );
+    const addressField = (
+        <Controller
+            name="tx_address"
+            control={control}
+            render={({ field }) => (
+                <TxInput
+                    id="tx_address"
+                    name="tx_address"
+                    onChange={(e) => setValue(field.name, e.target.value)}
+                    placeholder={`Enter `}
+                    label={`Tari Wallet Address`}
+                />
+            )}
+        />
+    );
+    const amountField = (
+        <Controller
+            name="tx_amount"
+            control={control}
+            render={({ field }) => (
+                <TxInput
+                    id="tx_amount"
+                    name="tx_amount"
+                    onChange={(e) => setValue(field.name, e.target.value)}
+                    placeholder={`100`}
+                    label={`Amount`}
+                    icon={<TariOutlineSVG />}
+                />
+            )}
+        />
+    );
 
-        return (
-            <Controller
-                key={fieldName}
-                name={fieldName}
-                control={control}
-                render={({ field }) => (
-                    <TxInput
-                        id={name}
-                        name={name}
-                        onChange={(e) => setValue(field.name, e.target.value)}
-                        placeholder={placeholder}
-                        {...rest}
-                    />
-                )}
-            />
-        );
-    });
+    const fieldMarkup = (
+        <FormFieldsWrapper>
+            {paymentIdField}
+            {addressField}
+            <SendDivider>
+                <DividerIcon>
+                    <FaArrowDown size={28} />
+                </DividerIcon>
+            </SendDivider>
+            {amountField}
+        </FormFieldsWrapper>
+    );
 
     const handleSend = useCallback(async (data: SendInputs) => {
         try {
@@ -69,14 +101,8 @@ export function Send() {
 
     return (
         <StyledForm onSubmit={handleSubmit(handleSend)}>
-            <FormFieldsWrapper>
-                {fieldMarkup}
-                <Stack alignItems="flex-end" justifyContent="flex-end" direction="row" style={{ width: `100%` }}>
-                    <Button size="xs" variant="outlined" type="button">{`Max`}</Button>
-                </Stack>
-                {isSubmitting && <CircularProgress />}
-            </FormFieldsWrapper>
-
+            {fieldMarkup}
+            {isSubmitting && <CircularProgress />}
             <Button disabled={isSubmitting} type="submit" fluid>
                 {`Send Tari`}
             </Button>
