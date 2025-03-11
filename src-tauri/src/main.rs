@@ -41,6 +41,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
@@ -295,6 +296,7 @@ async fn setup_inner(
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
+        FrontendReadyChannel::current().wait_for_ready().await?;
         app.emit(
             "critical_problem",
             CriticalProblemEvent {
