@@ -17,72 +17,66 @@ interface SendInputs {
     address: string;
     amount: string;
 }
+type InputName = keyof SendInputs;
 
 export function Send() {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const defaultValues = { tx_message: '', address: '', amount: '' };
 
-    const {
-        control,
-        handleSubmit,
-        setValue,
-        reset,
-        formState: { isSubmitting, isValid, errors, isDirty, isSubmitSuccessful },
-        clearErrors,
-        setError,
-    } = useForm<SendInputs>({
+    const { control, handleSubmit, reset, formState, clearErrors, setError, setValue } = useForm<SendInputs>({
         defaultValues,
+        mode: 'all',
     });
 
+    const { isSubmitted, isSubmitting, isValid, errors, isSubmitSuccessful } = formState;
+
     useEffect(() => {
-        if (isSubmitSuccessful && !isDirty) {
-            if (!errors.root) {
+        if (isSubmitted) {
+            if (isSubmitSuccessful && !errors.root) {
                 setShowConfirmation(true);
             }
-            const confirmTimeout = setTimeout(() => {
+            const submitTimeout = setTimeout(() => {
                 setShowConfirmation(false);
                 reset(defaultValues);
-            }, 2000);
+            }, 3000);
 
             return () => {
-                clearTimeout(confirmTimeout);
+                clearTimeout(submitTimeout);
             };
         }
+    }, [isSubmitted, isSubmitSuccessful, errors]);
+
+    const renderField = useCallback(({ name, placeholder, icon, label, required = false }: TxInputProps) => {
+        function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+            setValue(name, e.target.value);
+            clearErrors(name);
+        }
+        return (
+            <Controller
+                control={control}
+                name={name as InputName}
+                rules={{
+                    required: {
+                        value: required,
+                        message: `${name} is required`,
+                    },
+                }}
+                render={({ field: { ref: _ref, name, ...rest }, fieldState }) => {
+                    return (
+                        <TxInput
+                            {...rest}
+                            name={name}
+                            onChange={(e) => handleChange(e, name)}
+                            placeholder={placeholder}
+                            label={label}
+                            icon={icon}
+                            errorMessage={fieldState.error?.message}
+                        />
+                    );
+                }}
+            />
+        );
     }, []);
-
-    function handleChange(e: ChangeEvent<HTMLInputElement>, name: keyof SendInputs) {
-        setValue(name, e.target.value);
-        clearErrors(name);
-    }
-
-    const renderField = ({ name, placeholder, icon, label, required = false }: TxInputProps) => (
-        <Controller
-            name={name as keyof SendInputs}
-            control={control}
-            rules={{
-                required: {
-                    value: required,
-                    message: `${name} is required`,
-                },
-            }}
-            render={({ field: { ref, name, ...rest }, fieldState }) => {
-                console.debug(name, fieldState);
-                return (
-                    <TxInput
-                        ref={ref}
-                        id={name}
-                        name={name}
-                        {...rest}
-                        onChange={(e) => handleChange(e, name)}
-                        placeholder={placeholder}
-                        label={label}
-                        icon={icon}
-                        errorMessage={fieldState.error?.message}
-                    />
-                );
-            }}
-        />
-    );
 
     const paymentIdField = renderField({ name: 'tx_message', placeholder: `Enter message`, label: `Payment ID` });
     const addressField = renderField({
