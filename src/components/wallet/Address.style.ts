@@ -1,16 +1,17 @@
 import styled from 'styled-components';
 
-export const AddressWrapper = styled.div`
+export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 20px;
+    padding: 10px 0;
 `;
 
 export const QRContainer = styled.div`
     display: flex;
     width: 100%;
     border-radius: 10px;
-    padding: 10px;
+    padding: 4px;
     background: ${({ theme }) => theme.palette.contrast};
     overflow: hidden;
     align-items: center;
@@ -20,6 +21,11 @@ export const AddressContainer = styled.div`
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    word-wrap: break-word;
-    max-width: 200px;
+    gap: 8px;
+`;
+
+export const AddressWrapper = styled.div`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 `;
