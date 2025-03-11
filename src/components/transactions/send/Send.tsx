@@ -1,5 +1,5 @@
 import { Controller, useForm } from 'react-hook-form';
-import { ChangeEvent, useCallback } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
@@ -8,7 +8,9 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { DividerIcon, FormFieldsWrapper, SendDivider, StyledForm } from './Send.styles';
 import { FaArrowDown } from 'react-icons/fa6';
-import { setError } from '@app/store';
+import { setError as setStoreError } from '@app/store';
+import { Confirmation } from './Confirmation.tsx';
+import { AnimatePresence } from 'motion/react';
 
 interface SendInputs {
     tx_message: string;
@@ -17,11 +19,36 @@ interface SendInputs {
 }
 
 export function Send() {
+    const [showConfirmation, setShowConfirmation] = useState(false);
     const defaultValues = { tx_message: '', address: '', amount: '' };
-    const { control, handleSubmit, setValue, reset, formState, clearErrors } = useForm<SendInputs>({
+
+    const {
+        control,
+        handleSubmit,
+        setValue,
+        reset,
+        formState: { isSubmitting, isValid, errors, isDirty, isSubmitSuccessful },
+        clearErrors,
+        setError,
+    } = useForm<SendInputs>({
         defaultValues,
-        mode: 'all',
     });
+
+    useEffect(() => {
+        if (isSubmitSuccessful && !isDirty) {
+            if (!errors.root) {
+                setShowConfirmation(true);
+            }
+            const confirmTimeout = setTimeout(() => {
+                setShowConfirmation(false);
+                reset(defaultValues);
+            }, 2000);
+
+            return () => {
+                clearTimeout(confirmTimeout);
+            };
+        }
+    }, []);
 
     function handleChange(e: ChangeEvent<HTMLInputElement>, name: keyof SendInputs) {
         setValue(name, e.target.value);
@@ -38,9 +65,11 @@ export function Send() {
                     message: `${name} is required`,
                 },
             }}
-            render={({ field: { name, ...rest }, fieldState }) => {
+            render={({ field: { ref, name, ...rest }, fieldState }) => {
+                console.debug(name, fieldState);
                 return (
                     <TxInput
+                        ref={ref}
                         id={name}
                         name={name}
                         {...rest}
@@ -91,21 +120,23 @@ export function Send() {
                 paymentId: data.tx_message,
             });
         } catch (error) {
-            setError(`Error sending transaction: ${error}`);
-        } finally {
-            reset(defaultValues, {
-                keepErrors: true,
+            setStoreError(`Error sending transaction: ${error}`);
+            setError(`root.invoke_error`, {
+                message: `Error sending transaction: ${error}`,
             });
         }
     }, []);
 
     return (
-        <StyledForm onSubmit={handleSubmit(handleSend)}>
-            {fieldMarkup}
-            {formState.isSubmitting && <CircularProgress />}
-            <Button disabled={formState.isSubmitting || !formState.isValid} type="submit" fluid>
-                {`Send Tari`}
-            </Button>
-        </StyledForm>
+        <>
+            <StyledForm onSubmit={handleSubmit(handleSend)}>
+                {fieldMarkup}
+                {isSubmitting && <CircularProgress />}
+                <Button disabled={isSubmitting || !isValid} type="submit" fluid>
+                    {`Send Tari`}
+                </Button>
+            </StyledForm>
+            <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
+        </>
     );
 }
