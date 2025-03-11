@@ -78,7 +78,6 @@ export {
     importSeedWords,
     initialFetchTxs,
     refreshCoinbaseTransactions,
-    refreshTransactionsHistory,
     setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';

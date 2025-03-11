@@ -76,10 +76,7 @@ export const refreshCoinbaseTransactions = async () => {
     const limit = useWalletStore.getState().coinbase_transactions.length;
     return fetchCoinbaseTransactions({ continuation: false, limit: Math.max(limit, 20) });
 };
-export const refreshTransactionsHistory = async () => {
-    const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
-};
+
 export const setWalletAddress = (addresses: WalletAddress) => {
     useWalletStore.setState({
         tari_address_base58: addresses.tari_address_base58,
