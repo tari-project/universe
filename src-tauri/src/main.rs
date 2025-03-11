@@ -290,8 +290,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    // Wait for frontend_ready method call finish to does not cause any deadlocks
-    FrontendReadyChannel::current().wait_for_ready().await?;
+    state.events_manager.handle_app_config_loaded(&app).await;
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -305,6 +304,7 @@ async fn setup_inner(
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
+        FrontendReadyChannel::current().set_ready();
         app.emit(
             "critical_problem",
             CriticalProblemEvent {
@@ -347,6 +347,9 @@ async fn setup_inner(
 
         if is_missing {
             *state.missing_dependencies.write().await = Some(external_dependencies);
+            app_handle
+                .emit("missing-applications", external_dependencies)
+                .expect("Could not emit event 'missing-applications");
             return Ok(());
         }
     }

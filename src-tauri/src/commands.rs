@@ -197,40 +197,14 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
     let app_handle = app.clone();
+    FrontendReadyChannel::current().set_ready();
     TasksTracker::current().spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        state
+        let app_state = app_handle.state::<UniverseAppState>();
+        sleep(Duration::from_secs(3));
+        app_state
             .events_manager
-            .handle_app_config_loaded(&app_handle)
+            .handle_close_splash_screen(&app_handle)
             .await;
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        if let Err(e) = state
-            .updates_manager
-            .init_periodic_updates(app.clone())
-            .await
-        {
-            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
-        }
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
-        FrontendReadyChannel::current().set_ready();
     });
 }
 

@@ -22,6 +22,7 @@ import {
     setWalletBalance,
 } from '@app/store';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -66,10 +67,13 @@ type BackendStateUpdateEvent =
           payload: AppConfig;
       }
     | {
+          event_type: 'CloseSplashscreen';
+          payload: any;
+      }
+    | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
       };
-
 const useTauriEventsListener = () => {
     useEffect(() => {
         const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
@@ -98,6 +102,10 @@ const useTauriEventsListener = () => {
                 case 'AppConfigLoaded':
                     console.log('AppConfigLoaded', event.payload);
                     handleAppConfigLoaded(event.payload);
+                    break;
+                case 'CloseSplashscreen':
+                    console.log('CloseSplashscreen', event.payload);
+                    handleCloseSplashscreen();
                     break;
                 case `NetworkStatus`:
                     setNetworkStatus(event.payload);

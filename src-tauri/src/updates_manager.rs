@@ -32,7 +32,10 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AppConfig, tasks_tracker::TasksTracker, utils::system_status::SystemStatus,
+    
+    app_config::AppConfig,
+    tasks_tracker::TasksTracker, utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
+,
 };
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
@@ -92,6 +95,7 @@ impl UpdatesManager {
     }
 
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+        FrontendReadyChannel::current().set_ready();
         let app_clone = app.clone();
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));

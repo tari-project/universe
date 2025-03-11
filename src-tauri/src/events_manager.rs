@@ -27,8 +27,9 @@ use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
-    hardware::hardware_status_monitor::GpuDeviceProperties, tasks_tracker::TasksTracker,
-    wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus, UniverseAppState,
+    hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
+    utils::app_flow_utils::FrontendReadyChannel, wallet_adapter::WalletState, BaseNodeStatus,
+    GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -156,6 +157,10 @@ impl EventsManager {
             .await;
         let app_config = app_state.config.read().await.clone();
         EventsEmitter::emit_app_config_loaded(app, app_config).await;
+    }
+
+    pub async fn handle_close_splash_screen(&self, app: &AppHandle) {
+        EventsEmitter::emit_close_splashscreen(app).await;
     }
 
     pub async fn handle_network_status_update(
