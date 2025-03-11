@@ -9,12 +9,17 @@ export const Wrapper = styled.div`
 `;
 export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     display: flex;
-    padding: ${({ $hasIcon }) => ($hasIcon ? `10px 0 10px 28px` : `10px 0`)};
+    padding: ${({ $hasIcon }) => ($hasIcon ? `6px 0 6px 40px` : `6px 0 6px`)};
     width: 100%;
+    font-size: 1.4rem;
     opacity: 0.9;
     &:focus {
         outline: none;
         opacity: 1;
+    }
+    &::placeholder {
+        color: ${({ theme }) => theme.palette.text.shadow};
+        font-size: 1.4rem;
     }
 `;
 export const ContentWrapper = styled.div<{ $hasError?: boolean }>`
@@ -27,12 +32,11 @@ export const ContentWrapper = styled.div<{ $hasError?: boolean }>`
 export const IconWrapper = styled.div`
     display: flex;
     align-items: center;
-    width: 18px;
-    height: 18px;
+    width: 26px;
+    height: 26px;
     position: absolute;
     transform: translateY(-50%);
     top: 50%;
-    left: 4px;
 `;
 
 export const ErrorMessage = styled.div`
