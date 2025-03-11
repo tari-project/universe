@@ -1,16 +1,33 @@
 {
-  "floor": "Poziom",
-  "current-block-time": "Aktualny czas bloku",
-  "your-reward-is": "Twoja nagroda wynosi",
   "connection-to-node-lost": "Połączenie z węzłem kopania zostało utracone. Poczekaj, aż wznowi połącznie lub uruchom go ponownie.",
+  "cpu-power": "Moc CPU",
+  "current-block-time": "Aktualny czas bloku",
+  "day": "day",
+  "estimated-day": "Est tXTM/dzień",
+  "estimated-earnings": "Szacowane zarobki",
+  "floor": "Poziom",
+  "gpu-power": "Moc GPU",
   "mining-button-text": {
-    "starting-mining": "Uruchamianie kopania",
-    "start-mining": "Uruchom kopanie",
-    "pause-mining": "Wstrzymaj kopanie",
-    "changing-mode": "Zmiana trybu",
     "cancel-mining": "Anuluj kopanie",
-    "waiting-for-idle": "Oczekiwanie na bezczynność",
+    "changing-mode": "Zmiana trybu",
+    "pause-mining": "Wstrzymaj kopanie",
+    "start-mining": "Uruchom kopanie",
     "started-auto-mining": "Automatyczne kopanie uruchomione",
-    "stop-mining": "Zatrzymaj kopanie"
-  }
+    "starting-mining": "Uruchamianie kopania",
+    "stop-mining": "Zatrzymaj kopanie",
+    "waiting-for-idle": "Oczekiwanie na bezczynność"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Rzeczy do wypróbowania:",
+    "step_1": "Sprawdź swoje połączenie internetowe",
+    "step_2": "Poczekaj 30 minut",
+    "step_3": "Uruchom ponownie aplikację",
+    "step_4": "Spróbuj użyć mostu Tor (w Ustawieniach)",
+    "step_5": "Spróbuj wyłączyć Tor (w Ustawieniach)",
+    "step_6": "Spróbuj zresetować aplikację (w Ustawieniach)"
+  },
+  "you-earn-rewards-separately": "Zarabiasz nagrody za kopanie CPU i GPU osobno",
+  "you-won-block": "Byłeś zwycięzcą <span>bloku #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Wygrałeś {{ blocks }}</span> podczas swojej nieobecności",
+  "your-reward-is": "Twoja nagroda wynosi"
 }

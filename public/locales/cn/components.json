@@ -1,11 +1,33 @@
 {
   "field-error-message": {
+    "integers-only": "只允许整数",
     "invalid": "字段无效",
-    "required": "必填字段",
-    "password-too-short": "密码必须至少包含 8 个字符",
-    "invalid-url": "必须是有效的链接",
-    "invalid-email": "输入有效的电子邮件地址",
     "invalid-date": "日期无效",
-    "integers-only": "只允许整数"
+    "invalid-email": "输入有效的电子邮件地址",
+    "invalid-url": "必须是有效的链接",
+    "password-too-short": "密码必须至少包含 8 个字符",
+    "required": "必填字段"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
+  },
+  "resume-app-modal": {
+    "title": "Resuming Tari Universe",
+    "resuming-all-processes": "Resuming all processes...",
+    "resuming-tor": "Resuming Tor...",
+    "resuming-node": "Resuming Node...",
+    "resuming-wallet": "Resuming Wallet...",
+    "syncing-node": "Syncing Node...",
+    "resuming-p2pool": "Resuming P2Pool...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
+    "finishing-resume": "Finishing Resume..."
   }
 }

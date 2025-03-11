@@ -1,5 +1,5 @@
+import { Trans } from 'react-i18next';
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
-import { LayoutGroup } from 'framer-motion';
 
 const transition = {
     type: 'spring',
@@ -15,6 +15,7 @@ interface CharSpinnerProps {
     fontSize: number;
     variant?: CharSpinnerVariant;
     XTMAlignment?: 'baseline' | 'center';
+    animateNumbers?: boolean;
 }
 
 const sizing = {
@@ -33,6 +34,7 @@ export default function CharSpinner({
     variant = 'large',
     fontSize,
     XTMAlignment = 'baseline',
+    animateNumbers = true,
 }: CharSpinnerProps) {
     const letterHeight = Math.ceil(fontSize * 1.01);
     const charArray = value.split('').map((c) => c);
@@ -47,7 +49,7 @@ export default function CharSpinner({
                     $decimal={isDec}
                     key={`dec-${i}`}
                     layout-id={`dec-${i}`}
-                    initial={{ y: letterHeight }}
+                    initial={animateNumbers ? { y: letterHeight } : false}
                     animate={{ y: 0 }}
                     transition={transition}
                     $letterHeight={letterHeight}
@@ -78,7 +80,7 @@ export default function CharSpinner({
         return (
             <Characters
                 key={`char-${i}-${char}`}
-                initial={{ y: 0 }}
+                initial={animateNumbers ? { y: 0 } : false}
                 animate={{ y: `-${y}px` }}
                 $letterWidth={letterWidth}
                 transition={transition}
@@ -97,14 +99,15 @@ export default function CharSpinner({
 
     return (
         <Wrapper $alignment={XTMAlignment} $variant={variant}>
-            <LayoutGroup id="char-spinner">
-                <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
-                    <CharacterWrapper style={{ height: letterHeight * 10 }}>
-                        <LayoutGroup id="characters">{charMarkup}</LayoutGroup>
-                    </CharacterWrapper>
-                </SpinnerWrapper>
-                {value === '-' ? null : <XTMWrapper>tXTM</XTMWrapper>}
-            </LayoutGroup>
+            <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
+                <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
+            </SpinnerWrapper>
+            {/* // eslint-disable-next-line i18next/no-literal-string */}
+            {value === '-' ? null : (
+                <XTMWrapper>
+                    <Trans>tXTM</Trans>
+                </XTMWrapper>
+            )}
         </Wrapper>
     );
 }

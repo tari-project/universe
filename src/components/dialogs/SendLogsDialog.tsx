@@ -1,20 +1,21 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { Button } from '@app/components/elements/Button.tsx';
+
 import { Stack } from '@app/components/elements/Stack.tsx';
 
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { setDialogToShow } from '@app/store';
 
-export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference) => void }) {
+export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference: string) => void }) {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const dialogToShow = useUIStore((s) => s.dialogToShow);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
 
     const showLogsDialog = dialogToShow === 'logs';
 
@@ -28,7 +29,7 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
         } else {
             setDialogToShow('logs');
         }
-    }, [setDialogToShow, showLogsDialog]);
+    }, [showLogsDialog]);
 
     const sendLogs = useCallback(() => {
         setLoading(true);
@@ -44,43 +45,47 @@ export function SendLogsDialog({ onSetReference }: { onSetReference?: (reference
                 onSetReference?.(r);
             })
             .catch((error) => {
+                console.error('Error sending feedback: ', error);
                 setError(error.toString());
             })
             .finally(() => {
                 setLoading(false);
             });
-    }, [feedback, onSetReference, setDialogToShow, t]);
+    }, [feedback, onSetReference, t]);
 
     return (
         <Dialog open={showLogsDialog} onOpenChange={setShowLogsDialog}>
             <DialogContent>
-                <Stack direction="column" alignItems="center" justifyContent="space-between">
+                <Stack direction="column" alignItems="center" justifyContent="space-between" gap={20}>
                     <Typography variant="h3">{t('send-logs', { ns: 'settings' })}</Typography>
                     <TextArea
                         onChange={(e) => setFeedback(e.target.value)}
                         placeholder={t('your-feedback', { ns: 'settings' })}
+                        minWidth="500px"
+                        minHeight="200px"
                         value={feedback}
                     />
                     <Typography variant={'p'} color={'red'}>
                         {error}
                     </Typography>
-                    <Stack direction="row">
-                        {loading ? (
-                            <CircularProgress />
-                        ) : (
-                            <>
-                                <Button disabled={loading} onClick={setShowLogsDialog} color="warning">
-                                    {t('cancel')}
-                                </Button>
-                                <Button
-                                    disabled={loading || !feedback?.length || feedback?.trim() === ''}
-                                    onClick={sendLogs}
-                                >
-                                    {t('submit')}
-                                </Button>
-                            </>
-                        )}
-                    </Stack>
+                </Stack>
+                <Stack direction="row">
+                    {loading ? (
+                        <CircularProgress />
+                    ) : (
+                        <Stack direction="row" gap={10}>
+                            <SquaredButton disabled={loading} onClick={setShowLogsDialog} color="grey">
+                                {t('cancel')}
+                            </SquaredButton>
+                            <SquaredButton
+                                disabled={loading || !feedback?.length || feedback?.trim() === ''}
+                                onClick={sendLogs}
+                                color="success"
+                            >
+                                {t('submit')}
+                            </SquaredButton>
+                        </Stack>
+                    )}
                 </Stack>
             </DialogContent>
         </Dialog>

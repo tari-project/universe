@@ -1,12 +1,28 @@
 {
   "auto-miner": "स्वचालित माइनर",
   "auto-miner-description": "स्वचालित माइनर आपके माइनर को चालू करेगा जब आपकी मशीन निष्क्रिय होगी",
-  "next-milestone": "अगला मील का पत्थर",
-  "wallet-balance": "वॉलेट शेष",
-  "setup-scheduler": "शेड्यूलर सेटअप करें",
+  "block": "ब्लॉक",
+  "hide-history": "इतिहास छिपाएं",
+  "history-hide-button": "इतिहास छिपाएं",
+  "history-show-button": "इतिहास",
+  "lost-connection": "Tari नेटवर्क से कनेक्शन खो गया। पुनः कनेक्ट हो रहा है..",
   "mining-schedules": "माइनिंग अनुसूचियाँ",
   "mining-schedules-description": "अपनी माइनिंग गतिविधि का समय निर्धारित करें",
-  "lost-connection": "Tari नेटवर्क से कनेक्शन खो गया। पुनः कनेक्ट हो रहा है..",
-  "block": "ब्लॉक",
-  "recent-wins": "हाल की जीत"
+  "next-milestone": "अगला मील का पत्थर",
+  "paper-wallet-button": "फोन के साथ सिंक करें",
+  "paper-wallet-tooltip-message": "अपने यूनिवर्स वॉलेट को तारी ऑरोरा से सिंक करके कहीं भी अपने XTM को ट्रैक करें।",
+  "paper-wallet-tooltip-title": "फोन के साथ सिंक करें",
+  "recent-wins": "हाल की जीत",
+  "rewards": "पुरस्कार",
+  "setup-scheduler": "शेड्यूलर सेटअप करें",
+  "share": {
+    "button-text": "फ्लेक्स और आमंत्रित करें",
+    "copied": "लिंक कॉपी हो गया!",
+    "history-item-button": "फ्लेक्स और आमंत्रित करें",
+    "reward": "मेरा इनाम",
+    "title": "मैंने अभी तारी माइन किया",
+    "winner-pill": "ब्लॉक का विजेता"
+  },
+  "show-history": "इतिहास दिखाएं",
+  "wallet-balance": "वॉलेट शेष"
 }

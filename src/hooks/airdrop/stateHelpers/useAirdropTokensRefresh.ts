@@ -1,53 +1,54 @@
-import { useAirdropStore } from '@app/store/useAirdropStore';
-import { useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/tauri';
+import { AirdropTokens, useAirdropStore } from '@app/store/useAirdropStore';
+import { useEffect } from 'react';
+import { setAirdropTokens } from '@app/store';
 
-export function useHandleAirdropTokensRefresh() {
-    const { airdropTokens, setAirdropTokens } = useAirdropStore();
-
-    return useCallback(
-        (airdropApiUrl: string) => {
-            // 5 hours from now
-            const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
-            const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
-
-            const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
-            if (airdropTokens && tokenHasExpired) {
-                fetch(`${airdropApiUrl}/auth/local/refresh`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        refreshToken: airdropTokens.refreshToken,
-                    }),
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        setAirdropTokens(data);
-                    });
-            }
+async function fetchAirdropTokens(airdropApiUrl: string, airdropTokens: AirdropTokens) {
+    const response = await fetch(`${airdropApiUrl}/auth/local/refresh`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         },
-        [airdropTokens, setAirdropTokens]
-    );
+        body: JSON.stringify({
+            refreshToken: airdropTokens.refreshToken,
+        }),
+    });
+    if (!response.ok) {
+        console.error('Fetching airdrop tokens was not successful');
+        return undefined;
+    }
+
+    const data: AirdropTokens = await response.json();
+    return data;
+}
+
+export async function handleRefreshAirdropTokens(airdropApiUrl: string) {
+    const airdropTokens = useAirdropStore.getState().airdropTokens;
+    let tokens: AirdropTokens | undefined = airdropTokens;
+    if (!tokens) {
+        return;
+    }
+    // 5 hours from now
+    const expirationLimit = new Date(new Date().getTime() + 1000 * 60 * 60 * 5);
+    const tokenExpirationTime = airdropTokens?.expiresAt && new Date(airdropTokens?.expiresAt * 1000);
+
+    const tokenHasExpired = tokenExpirationTime && tokenExpirationTime < expirationLimit;
+    if (airdropTokens && tokenHasExpired) {
+        try {
+            tokens = await fetchAirdropTokens(airdropApiUrl, airdropTokens);
+        } catch (error) {
+            console.error('Error refreshing airdrop tokens:', error);
+        }
+    }
+    await setAirdropTokens(tokens);
 }
 export function useAirdropTokensRefresh() {
-    const { airdropTokens, backendInMemoryConfig } = useAirdropStore();
-
-    // Handle refreshing the access token
-    const handleRefresh = useHandleAirdropTokensRefresh();
-
+    const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
-        const interval = setInterval(() => handleRefresh(backendInMemoryConfig?.airdropApiUrl), 1000 * 60 * 60);
+        const interval = setInterval(
+            () => handleRefreshAirdropTokens(backendInMemoryConfig?.airdropApiUrl),
+            1000 * 60 * 60
+        );
         return () => clearInterval(interval);
-    }, [handleRefresh, backendInMemoryConfig?.airdropApiUrl]);
-
-    // Handle setting the access token
-    useEffect(() => {
-        if (!airdropTokens) return;
-        invoke('set_airdrop_access_token', { token: airdropTokens?.token }).catch((error) => {
-            console.error('Error getting airdrop tokens', error);
-        });
-    }, [airdropTokens]);
+    }, [backendInMemoryConfig?.airdropApiUrl]);
 }

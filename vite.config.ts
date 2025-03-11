@@ -1,10 +1,37 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import eslintPlugin from '@nabla/vite-plugin-eslint';
-import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig, UserConfig } from 'vite';
 import * as path from 'node:path';
+import react from '@vitejs/plugin-react';
+import tsconfigPaths from 'vite-tsconfig-paths';
+import eslintPlugin from '@nabla/vite-plugin-eslint';
 
-export default defineConfig({
+const plugins: UserConfig['plugins'] = [
+    react({
+        babel: {
+            plugins: [
+                [
+                    'babel-plugin-styled-components',
+                    {
+                        displayName: true,
+                        fileName: false,
+                    },
+                ],
+            ],
+        },
+    }),
+    tsconfigPaths(),
+    eslintPlugin({ eslintOptions: { cache: false } }),
+];
+const baseOptions: UserConfig = {
+    plugins,
+    resolve: {
+        alias: {
+            '@app': path.resolve(__dirname, './src'),
+        },
+    },
+    logLevel: 'error',
+};
+
+const devOptions: UserConfig = {
     clearScreen: false,
     server: {
         port: 1420,
@@ -13,17 +40,17 @@ export default defineConfig({
             ignored: ['**/src-tauri/**'],
         },
     },
-    plugins: [
-        react({
-            babel: { plugins: ['styled-components'] },
-        }),
-        tsconfigPaths(),
-        eslintPlugin({ eslintOptions: { cache: false } }),
-    ],
-    resolve: {
-        alias: {
-            '@app': path.resolve(__dirname, './src'),
+};
+
+export default defineConfig(({ command }) => {
+    if (command === 'serve') {
+        return { ...devOptions, ...baseOptions };
+    }
+    return {
+        ...baseOptions,
+        plugins,
+        build: {
+            sourcemap: true,
         },
-    },
-    logLevel: 'error',
+    };
 });

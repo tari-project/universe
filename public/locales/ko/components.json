@@ -1,11 +1,33 @@
 {
   "field-error-message": {
+    "integers-only": "정수만 허용됨",
     "invalid": "잘못된 필드",
-    "required": "필수 필드",
-    "password-too-short": "비밀번호는 최소 8자 이상이어야 합니다",
-    "invalid-url": "유효한 URL 주소여야 합니다",
-    "invalid-email": "유효한 이메일 주소를 입력하세요",
     "invalid-date": "잘못된 날짜",
-    "integers-only": "정수만 허용됨"
+    "invalid-email": "유효한 이메일 주소를 입력하세요",
+    "invalid-url": "유효한 URL 주소여야 합니다",
+    "password-too-short": "비밀번호는 최소 8자 이상이어야 합니다",
+    "required": "필수 필드"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
+  },
+  "resume-app-modal": {
+    "title": "Resuming Tari Universe",
+    "resuming-all-processes": "Resuming all processes...",
+    "resuming-tor": "Resuming Tor...",
+    "resuming-node": "Resuming Node...",
+    "resuming-wallet": "Resuming Wallet...",
+    "syncing-node": "Syncing Node...",
+    "resuming-p2pool": "Resuming P2Pool...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
+    "finishing-resume": "Finishing Resume..."
   }
 }

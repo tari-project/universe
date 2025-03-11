@@ -1,34 +1,39 @@
 {
   "airdropGame": "Игра Airdrop",
-  "loginButton": "Войдите, чтобы получить гемы",
-  "logout": "Выйти",
-  "referral": "Пригласить друга",
-  "unclaimedGems": "Неполученные гемы",
-  "inviteFirends": "Пригласить друзей",
-  "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
-  "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
+  "bonus-gems-earned": "Получены бонусные камни",
   "claimGems": "Получить гемы",
-  "doLater": "Я сделаю это позже",
-  "linkCopied": "Ссылка скопирована!",
-  "giftReferralCodeHeader": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
-  "claimReferralCode": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
-  "claimReferralGifts": "Получите ваш реферальный код и заработайте {{gems}} гемов. Как только вы подключите свой аккаунт, вы получите свои гемы.",
-  "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого вы пригласите в Tari Universe. Как только они подключат свой аккаунт, вы получите свои гемы.",
-  "permissionNoGems": {
-    "title": "Сделайте Tari Universe лучше",
-    "text": "Tari Universe хочет использовать аналитику для улучшения вашего опыта."
-  },
-  "permission": {
-    "title": "Зарабатывайте гемы и улучшайте Tari Universe",
-    "text": "Tari Universe хочет использовать аналитику для улучшения вашего опыта и вознаграждать вас гемами за майнинг."
-  },
-  "claimModalTitle": "Зарабатывайте награды за майнинг в тестовой сети",
-  "claimModalText": "Зарабатывайте гемы, майня и приглашая друзей, чтобы увеличить свою награду за airdrop в тестовой сети! У вас есть реферальный код? Введите его ниже и получите дополнительные <strong>{{gems}}</strong> гемов для вас и вашего друга!",
   "claimModalFieldLabel": "Необязательно",
   "claimModalFieldPlaceholder": "Введите реферальный код",
-  "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней вы заработаете, тем больше будет ваш airdrop.",
-  "topTooltipTitle": "Награды Testnet",
   "claimModalFinePrint": "<strong>Обратите внимание:</strong> получение камней включает аналитику, чтобы мы могли улучшить Universe",
+  "claimModalText": "Зарабатывайте гемы, майня и приглашая друзей, чтобы увеличить свою награду за airdrop в тестовой сети! У Вас есть реферальный код? Введите его ниже и получите дополнительные <strong>{{gems}}</strong> гемов для вас и вашего друга!",
+  "claimModalTitle": "Зарабатывайте награды за майнинг в тестовой сети",
+  "claimReferralCode": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "claimReferralGifts": "Получите ваш реферальный код и заработайте {{gems}} гемов. Как только Вы подключите свой аккаунт, Вы получите свои гемы.",
+  "doLater": "Я сделаю это позже",
+  "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого Вы пригласите в Tari Universe. Как только они подключат свой аккаунт, Вы получите свои гемы.",
+  "giftReferralCodeHeader": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "inviteFriends": "Пригласить друзей",
   "inviteFriendsText": "Скопируйте ссылку и поделитесь ею",
-  "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>"
+  "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
+  "keep-mining-to-earn-rewards": "Продолжайте майнить, чтобы заработать больше наград!",
+  "linkCopied": "Ссылка скопирована!",
+  "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
+  "loginButton": "Войдите, чтобы получить гемы",
+  "logout": "Выйти",
+  "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
+  "permission": {
+    "setup": "Tari Universe хотел бы использовать аналитику для <strong>улучшения Вашего опыта.</strong>",
+    "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта и вознаграждать Вас гемами за майнинг.",
+    "title": "Зарабатывайте гемы и улучшайте Tari Universe"
+  },
+  "permissionNoGems": {
+    "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта.",
+    "title": "Сделайте Tari Universe лучше"
+  },
+  "referral": "Пригласить друга",
+  "topTooltipText": "Получите Tari Airdrop, собирая драгоценные камни. Чем больше камней Вы заработаете, тем больше будет Ваш airdrop.",
+  "topTooltipTitle": "Награды Testnet",
+  "unclaimedGems": "Неполученные гемы",
+  "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
 }

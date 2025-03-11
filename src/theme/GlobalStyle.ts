@@ -1,6 +1,10 @@
 import { createGlobalStyle } from 'styled-components';
 
 export const GlobalReset = createGlobalStyle`
+    *:focus {
+        outline: none;
+    }
+
     button {
         -webkit-appearance: none;
         border-radius: 0;
@@ -12,13 +16,19 @@ export const GlobalReset = createGlobalStyle`
         border: none;
         color: inherit;
         font: inherit;
-        &:focus {
-            outline: none;
+
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
+
+    fieldset,
     textarea,
+    dialog,
     input {
         all: unset;
+
         /* Chrome, Safari, Edge, Opera */
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
@@ -31,14 +41,14 @@ export const GlobalReset = createGlobalStyle`
             -moz-appearance: textfield;
         }
 
-        &:focus {
-            outline: none;
+        &:focus-visible {
+            outline: 3px solid #c9eb00;
+            outline-offset: 2px;
         }
     }
-
 `;
 
-export const GlobalStyle = createGlobalStyle`
+export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
     html,
     main,
     body,
@@ -46,6 +56,7 @@ export const GlobalStyle = createGlobalStyle`
         margin: 0;
         padding: 0;
         font-family: Poppins, sans-serif;
+        font-size: 16px;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         height: 100%;
@@ -54,6 +65,10 @@ export const GlobalStyle = createGlobalStyle`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        transition:
+                color 0.2s ease,
+                background-color 0.2s ease,
+                background 0.2s ease;
 
         ::-webkit-scrollbar {
             display: none;
@@ -64,6 +79,8 @@ export const GlobalStyle = createGlobalStyle`
         letter-spacing: -0.02px;
         font-weight: 400;
 
+        color: ${({ theme }) => theme.palette.text.primary};
+        
         * {
             box-sizing: border-box;
 
@@ -76,13 +93,22 @@ export const GlobalStyle = createGlobalStyle`
         }
     }
 
-    #canvas {
+    
+    html {
+        background: ${({ theme }) => theme.palette.base};
+    }
+    #tower-canvas {
         z-index: 0;
+        top: 0;
+        left: 0;
         pointer-events: auto;
         width: 100vw;
+        background: none;
+        visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
 
     #root {
+        z-index: 1;
         pointer-events: none;
     }
 

@@ -1,11 +1,33 @@
 {
   "field-error-message": {
+    "integers-only": "केवल पूर्णांक की अनुमति है",
     "invalid": "फ़ील्ड अमान्य",
-    "required": "फ़ील्ड आवश्यक",
-    "password-too-short": "पासवर्ड में कम से कम 8 वर्ण होने चाहिए",
-    "invalid-url": "एक मान्य URL पता होना चाहिए",
-    "invalid-email": "एक मान्य ईमेल पता दर्ज करें",
     "invalid-date": "तारीख अमान्य है",
-    "integers-only": "केवल पूर्णांक की अनुमति है"
+    "invalid-email": "एक मान्य ईमेल पता दर्ज करें",
+    "invalid-url": "एक मान्य URL पता होना चाहिए",
+    "password-too-short": "पासवर्ड में कम से कम 8 वर्ण होने चाहिए",
+    "required": "फ़ील्ड आवश्यक"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
+  },
+  "resume-app-modal": {
+    "title": "Resuming Tari Universe",
+    "resuming-all-processes": "Resuming all processes...",
+    "resuming-tor": "Resuming Tor...",
+    "resuming-node": "Resuming Node...",
+    "resuming-wallet": "Resuming Wallet...",
+    "syncing-node": "Syncing Node...",
+    "resuming-p2pool": "Resuming P2Pool...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
+    "finishing-resume": "Finishing Resume..."
   }
 }

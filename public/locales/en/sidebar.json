@@ -1,12 +1,28 @@
 {
-    "auto-miner": "Auto Miner",
-    "auto-miner-description": "Auto miner will turn on your miner when your machine is idle",
-    "next-milestone": "Next Milestone",
-    "wallet-balance": "Wallet Balance",
-    "setup-scheduler": "Setup Scheduler",
-    "mining-schedules": "Mining Schedules",
-    "mining-schedules-description": "Schedule your mining activity",
-    "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
-    "block": "Block",
-    "recent-wins": "Recent wins"
+  "auto-miner": "Auto Miner",
+  "auto-miner-description": "Auto miner will turn on your miner when your machine is idle",
+  "block": "Block",
+  "hide-history": "Hide history",
+  "history-hide-button": "Hide History",
+  "history-show-button": "History",
+  "lost-connection": "Lost connection to the Tari Network. Reconnecting..",
+  "mining-schedules": "Mining Schedules",
+  "mining-schedules-description": "Schedule your mining activity",
+  "next-milestone": "Next Milestone",
+  "paper-wallet-button": "Sync with Phone",
+  "paper-wallet-tooltip-message": "Track your XTM balance anywhere by syncing Universe with Tari Aurora.",
+  "paper-wallet-tooltip-title": "Sync with Phone",
+  "recent-wins": "Recent wins",
+  "rewards": "Rewards",
+  "setup-scheduler": "Setup Scheduler",
+  "share": {
+    "button-text": "FLEX & INVITE",
+    "copied": "Link Copied!",
+    "history-item-button": "Flex & Invite",
+    "reward": "my reward",
+    "title": "I just mined tari",
+    "winner-pill": "Winner of block"
+  },
+  "show-history": "Show history",
+  "wallet-balance": "Wallet Balance"
 }

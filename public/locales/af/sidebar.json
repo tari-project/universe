@@ -1,12 +1,28 @@
 {
   "auto-miner": "Outomatiese mynwerker",
   "auto-miner-description": "Outomatiese mynwerker sal aanskakel wanneer jou masjien onaktief is",
-  "next-milestone": "Volgende mylpaal",
-  "wallet-balance": "Beursie balans",
-  "setup-scheduler": "Stel skeduleerder op",
+  "block": "Blok",
+  "hide-history": "Versteek geskiedenis",
+  "history-hide-button": "Versteek Geskiedenis",
+  "history-show-button": "Geskiedenis",
+  "lost-connection": "Verbinding met die Tari Netwerk verloor. Herverbinding..",
   "mining-schedules": "Mynskedules",
   "mining-schedules-description": "Skeduleer jou myn-aktiwiteit",
-  "lost-connection": "Verbinding met die Tari Netwerk verloor. Herverbinding..",
-  "block": "Blok",
-  "recent-wins": "Onlangse oorwinnings"
+  "next-milestone": "Volgende mylpaal",
+  "paper-wallet-button": "Sinkroniseer met Foon",
+  "paper-wallet-tooltip-message": "Volg jou XTM oral deur jou Universe beursie met Tari Aurora te sinkroniseer.",
+  "paper-wallet-tooltip-title": "Sinkroniseer met Foon",
+  "recent-wins": "Onlangse oorwinnings",
+  "rewards": "Belonings",
+  "setup-scheduler": "Stel skeduleerder op",
+  "share": {
+    "button-text": "FLEX & NOOI",
+    "copied": "Skakel Gekopieer!",
+    "history-item-button": "Flex & Nooi",
+    "reward": "my beloning",
+    "title": "Ek het pas tari gemyn",
+    "winner-pill": "Wenner van blok"
+  },
+  "show-history": "Wys geskiedenis",
+  "wallet-balance": "Beursie balans"
 }

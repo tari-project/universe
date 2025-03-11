@@ -1,52 +1,40 @@
 import { create } from './create';
-import { backgroundType, viewType } from './types.ts';
+import { backgroundType } from './types.ts';
+import { Theme } from '@app/theme/types.ts';
 
-export const DIALOG_TYPES = ['logs', 'restart'] as const;
-type DialogTypeTuple = typeof DIALOG_TYPES;
-export type DialogType = DialogTypeTuple[number];
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+type DialogTypeTuple = typeof _DIALOG_TYPES;
+export type DialogType = DialogTypeTuple[number] | null;
 
-interface State {
-    showSplash: boolean;
+const sideBarWidth = 348;
+const sideBarPaddingBuffer = 20;
+export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
+export const TOWER_CANVAS_ID = 'tower-canvas';
+
+export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
+
+interface UIStoreState {
+    theme: Theme;
     background: backgroundType;
-    view: viewType;
-    visualMode: boolean;
+    latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
     showExternalDependenciesDialog: boolean;
-    dialogToShow?: DialogType | null;
+    dialogToShow?: DialogType;
+    isWebglNotSupported: boolean;
+    adminShow?: AdminShow;
 }
-interface Actions {
-    setShowSplash: (showSplash: boolean) => void;
-    setBackground: (background: State['background']) => void;
-    setView: (view: State['view']) => void;
-    toggleVisualMode: () => void;
-    setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setShowExperimental: (showExperimental: boolean) => void;
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
-    setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
-}
-
-type UIStoreState = State & Actions;
-
-const initialState: State = {
-    showSplash: true,
+const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const initialState: UIStoreState = {
+    isWebglNotSupported: false,
+    theme: initialDarkMode ? 'dark' : 'light',
     background: 'onboarding',
-    view: 'setup',
-    visualMode: true,
     sidebarOpen: false,
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
+export const useUIStore = create<UIStoreState>()(() => ({
     ...initialState,
-    setShowSplash: (showSplash) => set({ showSplash }),
-    setBackground: (background) => set({ background }),
-    setView: (view) => set({ view }),
-    toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setShowExperimental: (showExperimental) => set({ showExperimental }),
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
-    setDialogToShow: (dialogToShow) => set({ dialogToShow }),
 }));

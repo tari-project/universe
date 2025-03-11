@@ -1,16 +1,36 @@
 {
-  "floor": "Vloer",
-  "current-block-time": "Huidige bloktyd",
-  "your-reward-is": "Jou beloning is",
   "connection-to-node-lost": "Kontak met mynwerker verloor. Wag asseblief vir mynwerker om kontak te maak of begin weer.",
+  "cpu-hashrate": "CPU Hashrate",
+  "cpu-power": "CPU Krag",
+  "current-block-time": "Huidige bloktyd",
+  "day": "day",
+  "estimated-day": "Est tXTM/dag",
+  "estimated-earnings": "Geskatte verdienste",
+  "floor": "Vloer",
+  "gpu-hashrate": "GPU Hashrate",
+  "gpu-power": "GPU Krag",
+  "gpu-usage": "GPU Usage",
   "mining-button-text": {
-    "starting-mining": "Myn begin",
-    "start-mining": "Begin myn",
-    "pause-mining": "Onderbreek myn",
-    "changing-mode": "Verander modus",
     "cancel-mining": "Kanselleer myn",
-    "waiting-for-idle": "Wag tot onaktief",
+    "changing-mode": "Verander modus",
+    "pause-mining": "Onderbreek myn",
+    "start-mining": "Begin myn",
     "started-auto-mining": "Outomatiese myn het begin",
-    "stop-mining": "Stop Mynbou"
-  }
+    "starting-mining": "Myn begin",
+    "stop-mining": "Stop Mynbou",
+    "waiting-for-idle": "Wag tot onaktief"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Dinge om te probeer:",
+    "step_1": "Kontroleer jou internetverbinding",
+    "step_2": "Wag 30 minute",
+    "step_3": "Herbegin die toepassing",
+    "step_4": "Probeer \"n Tor-brug gebruik (in Instellings)",
+    "step_5": "Probeer Tor deaktiveer (in Instellings)",
+    "step_6": "Probeer \"n toepassingherstel (in Instellings)"
+  },
+  "you-earn-rewards-separately": "Jy verdien belonings vir die myn van CPU en GPU afsonderlik",
+  "you-won-block": "Jy was die wenner van <span>blok #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Jy het {{ blocks }} gewen</span> terwyl jy weg was",
+  "your-reward-is": "Jou beloning is"
 }

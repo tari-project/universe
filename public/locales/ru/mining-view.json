@@ -1,16 +1,33 @@
 {
-  "floor": "Минимум",
-  "current-block-time": "Текущее время блока",
-  "your-reward-is": "Ваше вознаграждение",
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
+  "cpu-power": "ЦП Мощность",
+  "current-block-time": "Текущее время блока",
+  "day": "день",
+  "estimated-day": "Est tXTM/день",
+  "estimated-earnings": "Ожидаемый доход",
+  "floor": "Минимум",
+  "gpu-power": "ГПУ Мощность",
   "mining-button-text": {
-    "starting-mining": "Запуск майнинга",
-    "start-mining": "Начать майнинг",
-    "pause-mining": "Пауза майнинга",
-    "changing-mode": "Изменение режима",
     "cancel-mining": "Отмена майнинга",
-    "waiting-for-idle": "Ожидание простоя",
+    "changing-mode": "Изменение режима",
+    "pause-mining": "Пауза майнинга",
+    "start-mining": "Начать майнинг",
     "started-auto-mining": "Авто-майнинг запущен",
-    "stop-mining": "Остановить майнинг"
-  }
+    "starting-mining": "Запуск майнинга",
+    "stop-mining": "Остановить майнинг",
+    "waiting-for-idle": "Ожидание простоя"
+  },
+  "orphan-chain-tooltip": {
+    "heading": "Что можно попробовать:",
+    "step_1": "Проверьте Ваше интернет-соединение",
+    "step_2": "Подождите 30 минут",
+    "step_3": "Перезапустите приложение",
+    "step_4": "Попробуйте использовать Tor Bridge (в Настройках)",
+    "step_5": "Попробуйте отключить Tor (в Настройках)",
+    "step_6": "Попробуйте сбросить настройки приложения (в Настройках)"
+  },
+  "you-earn-rewards-separately": "Вы получаете награды за майнинг на CPU и GPU отдельно",
+  "you-won-block": "Вы выиграли <span>блок #{{ blockHeight }}</span>",
+  "you-won-while-away": "<span>Вы выиграли {{ blocks }}</span>, пока Вас не было",
+  "your-reward-is": "Ваше вознаграждение"
 }

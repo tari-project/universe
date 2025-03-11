@@ -1,11 +1,33 @@
 {
   "field-error-message": {
+    "integers-only": "Hanya bilangan bulat yang diizinkan",
     "invalid": "Kolom tidak valid",
-    "required": "Kolom diperlukan",
-    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
-    "invalid-url": "Harus berupa alamat URL yang valid",
-    "invalid-email": "Masukkan alamat email yang valid",
     "invalid-date": "Tanggal tidak valid",
-    "integers-only": "Hanya bilangan bulat yang diizinkan"
+    "invalid-email": "Masukkan alamat email yang valid",
+    "invalid-url": "Harus berupa alamat URL yang valid",
+    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
+    "required": "Kolom diperlukan"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
+  },
+  "resume-app-modal": {
+    "title": "Resuming Tari Universe",
+    "resuming-all-processes": "Resuming all processes...",
+    "resuming-tor": "Resuming Tor...",
+    "resuming-node": "Resuming Node...",
+    "resuming-wallet": "Resuming Wallet...",
+    "syncing-node": "Syncing Node...",
+    "resuming-p2pool": "Resuming P2Pool...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
+    "finishing-resume": "Finishing Resume..."
   }
 }

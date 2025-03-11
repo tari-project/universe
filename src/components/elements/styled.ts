@@ -18,6 +18,6 @@ export const DynamicTypography = styled(({ variant = 'span', children, ...props 
     letter-spacing: ${({ theme, variant }) => theme.typography[variant].letterSpacing};
     font-weight: ${({ theme, variant }) => theme.typography[variant].fontWeight || 'inherit'};
     margin: 0;
-    font-variant-numeric: tabular-nums;
     color: inherit;
+    text-align: inherit;
 `;

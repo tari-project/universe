@@ -1,43 +1,12 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from './create';
 
 export const GIFT_GEMS = 5000;
 export const REFERRAL_GEMS = 5000;
-export const MAX_GEMS = 10000;
-
-// Helpers
-function parseJwt(token: string): TokenResponse {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-        window
-            .atob(base64)
-            .split('')
-            .map(function (c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            })
-            .join('')
-    );
-
-    return JSON.parse(jsonPayload);
-}
-
-//////////////////////////////////////////
-//
 
 export interface BonusTier {
     id: string;
     target: number;
     bonusGems: number;
-}
-
-interface TokenResponse {
-    exp: number;
-    iat: number;
-    id: string;
-    provider: string;
-    role: string;
-    scope: string;
 }
 
 export interface ReferralCount {
@@ -96,10 +65,11 @@ export interface UserDetails {
     user: User;
 }
 
-interface AirdropTokens {
+export interface AirdropTokens {
     token: string;
     refreshToken: string;
     expiresAt?: number;
+    installReward?: boolean;
 }
 
 export interface BackendInMemoryConfig {
@@ -107,23 +77,19 @@ export interface BackendInMemoryConfig {
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
 }
-
-type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
-
+export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 export interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
-
-//////////////////////////////////////////
-
 interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
+//////////////////////////////////////////
 
-interface AirdropState {
-    authUuid: string;
+export interface AirdropStoreState {
+    authUuid?: string;
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
@@ -133,62 +99,17 @@ interface AirdropState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
-    seenPermissions?: boolean;
 }
 
-interface AirdropStore extends AirdropState {
-    setReferralQuestPoints: (referralQuestPoints: ReferralQuestPoints) => void;
-    setMiningRewardPoints: (miningRewardPoints?: MiningPoint) => void;
-    setAuthUuid: (authUuid: string) => void;
-    setAirdropTokens: (airdropToken: AirdropTokens) => void;
-    setUserDetails: (userDetails?: UserDetails) => void;
-    setUserPoints: (userPoints: UserPoints) => void;
-    setBackendInMemoryConfig: (config?: BackendInMemoryConfig) => void;
-    setReferralCount: (referralCount: ReferralCount) => void;
-    setFlareAnimationType: (flareAnimationType?: AnimationType) => void;
-    setBonusTiers: (bonusTiers: BonusTier[]) => void;
-    setSeenPermissions: (seenPermissions: boolean) => void;
-    logout: () => void;
-}
-
-const clearState: AirdropState = {
+const initialState: AirdropStoreState = {
     authUuid: '',
-    seenPermissions: false,
     airdropTokens: undefined,
+    miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
-    miningRewardPoints: undefined,
+    referralQuestPoints: undefined,
+    bonusTiers: undefined,
+    flareAnimationType: undefined,
 };
 
-const NOT_PERSISTED_KEYS = ['userPoints', 'backendInMemoryConfig', 'userDetails', 'authUuid', 'referralCount'];
-export const useAirdropStore = create<AirdropStore>()(
-    persist(
-        (set) => ({
-            authUuid: '',
-            seenPermissions: false,
-            setReferralQuestPoints: (referralQuestPoints) => set({ referralQuestPoints }),
-            setFlareAnimationType: (flareAnimationType) => set({ flareAnimationType }),
-            setBonusTiers: (bonusTiers) => set({ bonusTiers }),
-            logout: () => set(clearState),
-            setUserDetails: (userDetails) => set({ userDetails }),
-            setAuthUuid: (authUuid) => set({ authUuid }),
-            setAirdropTokens: (airdropTokens) =>
-                set({
-                    airdropTokens: {
-                        ...airdropTokens,
-                        expiresAt: parseJwt(airdropTokens.token).exp,
-                    },
-                }),
-            setReferralCount: (referralCount) => set({ referralCount }),
-            setUserPoints: (userPoints) => set({ userPoints }),
-            setBackendInMemoryConfig: (backendInMemoryConfig) => set({ backendInMemoryConfig }),
-            setMiningRewardPoints: (miningRewardPoints) => set({ miningRewardPoints, flareAnimationType: 'BonusGems' }),
-            setSeenPermissions: (seenPermissions) => set({ seenPermissions }),
-        }),
-        {
-            name: 'airdrop-store',
-            partialize: (state) =>
-                Object.fromEntries(Object.entries(state).filter(([key]) => !NOT_PERSISTED_KEYS.includes(key))),
-        }
-    )
-);
+export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

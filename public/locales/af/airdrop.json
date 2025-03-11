@@ -1,34 +1,39 @@
 {
   "airdropGame": "Airdrop Speletjie",
-  "loginButton": "Meld aan om edelstene te eis",
-  "logout": "Teken uit",
-  "referral": "Nooi \"n vriend",
-  "unclaimedGems": "Ongeëisde Edelstene",
-  "inviteFirends": "Nooi Vriende",
-  "invitedAmount": "U het <span>{{count}}</span> vriende genooi",
-  "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
+  "bonus-gems-earned": "Bonus edelstene verdien",
   "claimGems": "Eis Edelstene",
-  "doLater": "Ek sal dit later doen",
-  "linkCopied": "Skakel gekopieer!",
-  "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
-  "claimReferralCode": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
-  "claimReferralGifts": "Eis u verwysingskode en verdien {{gems}} edelstene. Sodra u u rekening koppel, sal u u edelstene ontvang.",
-  "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
-  "permissionNoGems": {
-    "title": "Maak Tari Heelal beter",
-    "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter."
-  },
-  "permission": {
-    "title": "Verdien Edelstene & maak Tari Heelal beter",
-    "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter en u met edelstene vir mynbou te beloon."
-  },
-  "claimModalTitle": "Verdien belonings vir Mynbou op Toetsnetwerk",
-  "claimModalText": "Verdien edelstene deur te myn en vriende te verwys om u airdrop-belonings tydens die toetsnetwerk te verhoog! Het u \"n verwysingskode? Voer dit hieronder in en verdien \"n bykomende <strong>{{gems}}</strong> edelstene vir u en u vriend!",
   "claimModalFieldLabel": "Opsioneel",
   "claimModalFieldPlaceholder": "Voer verwysingskode in",
+  "claimModalFinePrint": "<strong>Neem asseblief kennis:</strong> die eis van edelstene skakel analise aan sodat ons Universe kan verbeter",
+  "claimModalText": "Verdien edelstene deur te myn en vriende te verwys om u airdrop-belonings tydens die toetsnetwerk te verhoog! Het u \"n verwysingskode? Voer dit hieronder in en verdien \"n bykomende <strong>{{gems}}</strong> edelstene vir u en u vriend!",
+  "claimModalTitle": "Verdien belonings vir Mynbou op Toetsnetwerk",
+  "claimReferralCode": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
+  "claimReferralGifts": "Eis u verwysingskode en verdien {{gems}} edelstene. Sodra u u rekening koppel, sal u u edelstene ontvang.",
+  "doLater": "Ek sal dit later doen",
+  "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
+  "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
+  "inviteFriends": "Nooi Vriende",
+  "inviteFriendsText": "Kopieer skakel en deel dit",
+  "invitedAmount": "U het <span>{{count}}</span> vriende genooi",
+  "keep-mining-to-earn-rewards": "Hou aan myn om meer belonings te verdien!",
+  "linkCopied": "Skakel gekopieer!",
+  "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
+  "loginButton": "Meld aan om edelstene te eis",
+  "logout": "Teken uit",
+  "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
+  "permission": {
+    "setup": "Tari Universe wil graag analise gebruik om <strong>jou ervaring te verbeter.</strong>",
+    "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter en u met edelstene vir mynbou te beloon.",
+    "title": "Verdien Edelstene & maak Tari Heelal beter"
+  },
+  "permissionNoGems": {
+    "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter.",
+    "title": "Maak Tari Heelal beter"
+  },
+  "referral": "Nooi \"n vriend",
   "topTooltipText": "Kry \"n Tari Airdrop deur edelstene in te samel. Hoe meer edelstene jy verdien, hoe groter is jou airdrop.",
   "topTooltipTitle": "Testnet Belonings",
-  "claimModalFinePrint": "<strong>Neem asseblief kennis:</strong> die eis van edelstene skakel analise aan sodat ons Universe kan verbeter",
-  "inviteFriendsText": "Kopieer skakel en deel dit",
-  "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>"
+  "unclaimedGems": "Ongeëisde Edelstene",
+  "you-reached-your-giftinh-goal": "Jy het jou geskenkdoelwit bereik!",
+  "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!"
 }

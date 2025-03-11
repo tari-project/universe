@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { invoke } from '@tauri-apps/api';
+import { invoke } from '@tauri-apps/api/core';
 
 // Override console functions
 
@@ -24,19 +24,19 @@ const parseArgument = (a?: ParseArgs) => {
     }
 };
 
-const isDevelopment = import.meta.env.DEV || import.meta.env.MODE == 'development';
-
 const getOptions = (args, level) => {
     void invoke('log_web_message', {
-        level: isDevelopment ? `info` : level, // so it isn't logged to sentry if error
+        level,
         message: args.map(parseArgument),
     });
     return originalConsole[level](...args);
 };
 
-export const setupLogger = () => {
+const setupLogger = () => {
     // Override
     console.log = (...args) => getOptions(args, 'log');
     console.info = (...args) => getOptions(args, 'info');
     console.error = (...args) => getOptions(args, 'error');
 };
+
+export default setupLogger;

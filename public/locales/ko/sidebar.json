@@ -1,12 +1,28 @@
 {
   "auto-miner": "자동 마이너",
   "auto-miner-description": "자동 마이너는 기기가 유휴 상태일 때 마이너를 켭니다",
-  "next-milestone": "다음 이정표",
-  "wallet-balance": "지갑 잔액",
-  "setup-scheduler": "스케줄러 설정",
+  "block": "블록",
+  "hide-history": "기록 숨기기",
+  "history-hide-button": "기록 숨기기",
+  "history-show-button": "기록",
+  "lost-connection": "Tari 네트워크와의 연결이 끊어졌습니다. 다시 연결 중..",
   "mining-schedules": "채굴 일정",
   "mining-schedules-description": "채굴 활동을 예약하세요",
-  "lost-connection": "Tari 네트워크와의 연결이 끊어졌습니다. 다시 연결 중..",
-  "block": "블록",
-  "recent-wins": "최근 승리"
+  "next-milestone": "다음 이정표",
+  "paper-wallet-button": "휴대폰과 동기화",
+  "paper-wallet-tooltip-message": "Universe 지갑을 Tari Aurora에 동기화하여 어디서든 XTM을 추적하세요.",
+  "paper-wallet-tooltip-title": "휴대폰과 동기화",
+  "recent-wins": "최근 승리",
+  "rewards": "보상",
+  "setup-scheduler": "스케줄러 설정",
+  "share": {
+    "button-text": "자랑하고 초대하기",
+    "copied": "링크가 복사되었습니다!",
+    "history-item-button": "자랑하고 초대하기",
+    "reward": "내 보상",
+    "title": "방금 타리를 채굴했습니다",
+    "winner-pill": "블록 승자"
+  },
+  "show-history": "기록 보기",
+  "wallet-balance": "지갑 잔액"
 }

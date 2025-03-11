@@ -1,49 +1,35 @@
 import { useAirdropStore, UserPoints } from '@app/store/useAirdropStore';
+import { deepEqual } from '@app/utils/objectDeepEqual';
 import { listen } from '@tauri-apps/api/event';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { setUserPoints } from '@app/store';
 
 export const useAirdropUserPointsListener = () => {
-    const setUserPoints = useAirdropStore((state) => state.setUserPoints);
-    const referralCount = useAirdropStore((state) => state.referralCount);
-    const bonusTiers = useAirdropStore((state) => state.bonusTiers);
-    const setUserPointsReferralCount = useAirdropStore((state) => state.setReferralCount);
-    const setFlareAnimationType = useAirdropStore((state) => state.setFlareAnimationType);
+    const currentReferralData = useAirdropStore((state) => state?.referralCount);
+    const cachedUserPoints = useRef<UserPoints>();
+
+    const handleAirdropPoints = useCallback(
+        (pointsPayload: UserPoints) => {
+            const incomingReferralData = pointsPayload?.referralCount;
+            if (incomingReferralData?.count && incomingReferralData?.count !== currentReferralData?.count) {
+                setUserPoints(pointsPayload);
+            }
+        },
+
+        [currentReferralData?.count]
+    );
 
     useEffect(() => {
-        let unListen: () => void = () => {
-            //do nothing
-        };
-
-        listen('UserPoints', (event) => {
-            if (event.payload) {
-                const payload = event.payload as UserPoints;
-                setUserPoints(payload);
-                if (payload.referralCount) {
-                    if (referralCount?.count !== payload.referralCount.count) {
-                        if (referralCount?.count) {
-                            setFlareAnimationType('FriendAccepted');
-                            if (
-                                payload.referralCount.count &&
-                                bonusTiers?.find((t) => t.target === payload?.referralCount?.count)
-                            ) {
-                                setTimeout(() => {
-                                    setFlareAnimationType('GoalComplete');
-                                }, 2000);
-                            }
-                        }
-                        setUserPointsReferralCount(payload.referralCount);
-                    }
-                }
+        // TODO: remove this listener and BE emit per WS update conversation
+        const ul = listen('UserPoints', ({ payload }) => {
+            if (!payload) return;
+            const payloadChanged = !deepEqual(payload as UserPoints, cachedUserPoints.current);
+            if (payloadChanged) {
+                handleAirdropPoints(payload as UserPoints);
             }
-        })
-            .then((unListenFunction) => {
-                unListen = unListenFunction;
-            })
-            .catch(console.error);
-
+        });
         return () => {
-            unListen();
+            ul.then((unlisten) => unlisten());
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [bonusTiers, referralCount?.count]);
+    }, [handleAirdropPoints]);
 };

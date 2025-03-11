@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "Luisteraaradresse",
+  "miners": "Myners",
+  "network-info": "Netwerkinligting",
+  "p2pool-chain-tip": "P2Pool Kettingwenk",
+  "p2pool-connected": "P2Pool Verbind",
+  "p2pool-connection-info": "Verbinding",
+  "p2pool-connection-info-more": "Verbindingsbesonderhede",
+  "p2pool-peers": "P2pool eweknieë",
+  "p2pool-stats": "Poel mynbou statistieke",
+  "randomx-stats": "RandomX Statistieke",
+  "sha3-stats": "SHA3 Statistieke",
+  "tribe": "Stam"
+}
