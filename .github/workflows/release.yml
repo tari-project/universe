@@ -267,9 +267,10 @@ jobs:
       - name: Windows debug symbols - Upload to Sentry
         if: startsWith(runner.os,'Windows')
         env:
-          AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         continue-on-error: true
         shell: bash
         run: |
           npm install @sentry/cli
-          sentry-cli debug-files upload --org tari-labs --project tari-universe ${{ github.workspace }}/src-tauri/target/release
+          sentry-cli debug-files check ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
