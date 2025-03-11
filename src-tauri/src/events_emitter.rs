@@ -28,6 +28,7 @@ use tauri::{AppHandle, Emitter};
 use crate::{
     commands::CpuMinerStatus,
     hardware::hardware_status_monitor::PublicDeviceProperties,
+    utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
     AppConfig, BaseNodeStatus, GpuMinerStatus,
 };
@@ -46,6 +47,7 @@ pub enum EventType {
     ConnectedPeersUpdate,
     NewBlockHeight,
     AppConfigLoaded,
+    CloseSplashscreen,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -70,7 +72,19 @@ struct NewBlockHeightPayload {
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_close_splashscreen(app_handle: &AppHandle) {
+        FrontendReadyChannel::current().set_ready();
+        let event = Event {
+            event_type: EventType::CloseSplashscreen,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit CloseSplashscreen event: {:?}", e);
+        }
+    }
+
     pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::AppConfigLoaded,
             payload: app_config,
@@ -81,6 +95,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::WalletAddressUpdate,
             payload: WalletAddressUpdatePayload {
@@ -94,6 +109,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_wallet_balance_update(app_handle: &AppHandle, balance: WalletBalance) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
             payload: balance,
@@ -104,6 +120,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_base_node_update(app_handle: &AppHandle, status: BaseNodeStatus) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::BaseNodeUpdate,
             payload: status,
@@ -119,6 +136,7 @@ impl EventsEmitter {
         app_handle: &AppHandle,
         gpu_public_devices: Vec<PublicDeviceProperties>,
     ) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::GpuDevicesUpdate,
             payload: gpu_public_devices,
@@ -129,6 +147,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::CpuMiningUpdate,
             payload: status,
@@ -139,6 +158,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_gpu_mining_update(app_handle: &AppHandle, status: GpuMinerStatus) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::GpuMiningUpdate,
             payload: status,
@@ -149,6 +169,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_connected_peers_update(app_handle: &AppHandle, connected_peers: Vec<String>) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::ConnectedPeersUpdate,
             payload: connected_peers,
@@ -164,6 +185,7 @@ impl EventsEmitter {
         coinbase_transaction: Option<TransactionInfo>,
         balance: WalletBalance,
     ) {
+        FrontendReadyChannel::current().set_ready();
         let event = Event {
             event_type: EventType::NewBlockHeight,
             payload: NewBlockHeightPayload {

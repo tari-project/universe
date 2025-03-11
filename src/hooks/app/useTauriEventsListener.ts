@@ -12,6 +12,7 @@ import {
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -54,8 +55,11 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'AppConfigLoaded';
           payload: AppConfig;
+      }
+    | {
+          event_type: 'CloseSplashscreen';
+          payload: any;
       };
-
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
     const setWalletBalance = useWalletStore((s) => s.setWalletBalance);
@@ -91,6 +95,10 @@ const useTauriEventsListener = () => {
                 case 'AppConfigLoaded':
                     console.log('AppConfigLoaded', event.payload);
                     handleAppConfigLoaded(event.payload);
+                    break;
+                case 'CloseSplashscreen':
+                    console.log('CloseSplashscreen', event.payload);
+                    handleCloseSplashscreen();
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));

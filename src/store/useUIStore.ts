@@ -23,6 +23,7 @@ interface UIStoreState {
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
+    showSplashscreen: boolean;
 }
 const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 const initialState: UIStoreState = {
@@ -33,6 +34,7 @@ const initialState: UIStoreState = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    showSplashscreen: true,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

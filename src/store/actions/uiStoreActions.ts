@@ -17,6 +17,8 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
 
+export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
+
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },
