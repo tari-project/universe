@@ -20,16 +20,41 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod app_flow_utils;
-pub mod file_utils;
-pub mod formatting_utils;
-pub mod locks_utils;
-pub mod logging_utils;
-pub mod macos_utils;
-pub mod math_utils;
-pub mod platform_utils;
+use std::sync::LazyLock;
 
-pub mod shutdown_utils;
-pub mod system_status;
-#[cfg(windows)]
-pub mod windows_setup_utils;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
+};
+
+static INSTANCE: LazyLock<FrontendReadyChannel> = LazyLock::new(FrontendReadyChannel::new);
+
+#[derive(Debug)]
+pub struct FrontendReadyChannel {
+    sender: Sender<bool>,
+    receiver: Mutex<Receiver<bool>>,
+}
+
+impl FrontendReadyChannel {
+    pub fn new() -> Self {
+        let (sender, receiver) = tokio::sync::watch::channel(false);
+        Self {
+            sender,
+            receiver: Mutex::new(receiver),
+        }
+    }
+
+    pub fn set_ready(&self) {
+        self.sender.send(true).expect("Failed to send ready signal");
+    }
+
+    pub async fn wait_for_ready(&self) -> Result<(), tokio::sync::watch::error::RecvError> {
+        let mut receiver = self.receiver.lock().await;
+        receiver.wait_for(|value| *value).await?;
+        Ok(())
+    }
+
+    pub fn current() -> &'static FrontendReadyChannel {
+        &INSTANCE
+    }
+}
