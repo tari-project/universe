@@ -9,6 +9,7 @@ import {
     Title,
     LiveBadgeText,
     LiveBadgeWrapper,
+    TitleContainer,
 } from './XSpaceBanner.style';
 import { useMemo } from 'react';
 import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
@@ -23,17 +24,6 @@ const XSpaceEventBanner = () => {
             return latestXSpaceEvent.end >= currentDate && latestXSpaceEvent.start <= currentDate;
         }
         return false;
-    }, [latestXSpaceEvent]);
-
-    const displayedText = useMemo(() => {
-        if (!latestXSpaceEvent) {
-            return '';
-        }
-        const displayTitle =
-            latestXSpaceEvent.displayName.length > 40
-                ? `${latestXSpaceEvent.displayName.substring(0, 37)}...`
-                : latestXSpaceEvent.displayName;
-        return displayTitle;
     }, [latestXSpaceEvent]);
 
     const displayedDate = useMemo(() => {
@@ -71,7 +61,23 @@ const XSpaceEventBanner = () => {
                 <IconContainer>
                     <XSpaceSvg></XSpaceSvg>
                 </IconContainer>
-                <Title>{displayedText}</Title>
+                <TitleContainer>
+                    <Title
+                        animate={{
+                            x: ['0%', '-100%'],
+                        }}
+                        transition={{
+                            repeat: Infinity,
+                            repeatType: 'loop',
+                            duration: 10,
+                            delay: 2,
+                            velocity: 0.3,
+                            ease: 'linear',
+                        }}
+                    >
+                        {latestXSpaceEvent.displayName}
+                    </Title>
+                </TitleContainer>
             </TextSection>
             {isLive ? liveBadge : displayDate}
         </BannerContent>

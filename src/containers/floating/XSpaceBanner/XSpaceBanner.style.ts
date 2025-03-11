@@ -1,3 +1,4 @@
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 export const BannerContent = styled.div`
@@ -34,13 +35,19 @@ export const IconContainer = styled.div`
     height: 1 rem;
 `;
 
-export const Title = styled.span`
-    font-weight: 500;
-    white-space: nowrap;
+export const TitleContainer = styled(m.div)`
+    display: flex;
+    align-items: center;
     overflow: hidden;
     text-overflow: ellipsis;
+`;
+
+export const Title = styled(m.span)`
+    font-weight: 500;
+    white-space: nowrap;
     max-width: 200px;
     font-size: 0.875rem;
+    width: 100%;
 `;
 
 export const LiveBadgeWrapper = styled.div`
