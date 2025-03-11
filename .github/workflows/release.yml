@@ -191,11 +191,11 @@ jobs:
 
       - name: Add WiX Extensions ( 1 / 2 ) ( Windows )
         if: startsWith(runner.os,'Windows')
-        run: wix extension add WixToolset.Util.wixext
+        run: wix extension add WixToolset.Util.wixext/5.0.2
 
       - name: Add WiX Extensions ( 2 / 2 ) ( Windows )
         if: startsWith(runner.os,'Windows')
-        run: wix extension add WixToolset.BootstrapperApplications.wixext
+        run: wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
 
       - name: Install Dependencies - Windows/OpenCL
         if: startsWith(runner.os,'Windows')
