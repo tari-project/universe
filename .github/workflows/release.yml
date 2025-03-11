@@ -47,7 +47,7 @@ jobs:
           #   extra: '-rpm'
           #   best_effort: true
           - platform: 'windows-latest'
-            args: '--bundles msi'
+            args: '--bundles msi,updater'
           # - platform: 'macos-latest'
           #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
@@ -268,7 +268,6 @@ jobs:
         if: runner.os == 'Windows'
         uses: actions/upload-release-asset@v1
         env:
-          # TARI_UNIVERSE_INSTALLER_NAME: Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.exe
           TARI_UNIVERSE_INSTALLER_NAME: ${{ startsWith(github.ref, 'refs/heads/release') && 'Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.exe' || 'Tari Universe (Beta)_${{ steps.build.outputs.appVersion }}_x64_en-US.exe' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
