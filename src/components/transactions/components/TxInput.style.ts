@@ -17,10 +17,12 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
         opacity: 1;
     }
 `;
-export const ContentWrapper = styled.div`
+export const ContentWrapper = styled.div<{ $hasError?: boolean }>`
     display: flex;
     position: relative;
     width: 100%;
+    border-bottom: ${({ $hasError, theme }) =>
+        $hasError ? `1px solid ${theme.palette.error.main}` : '1px solid transparent'};
 `;
 export const IconWrapper = styled.div`
     display: flex;
@@ -31,4 +33,9 @@ export const IconWrapper = styled.div`
     transform: translateY(-50%);
     top: 50%;
     left: 4px;
+`;
+
+export const ErrorMessage = styled.div`
+    height: 0.8rem;
+    color: ${({ theme }) => theme.palette.error.main};
 `;
