@@ -29,6 +29,6 @@
   "version": "버전",
   "versions": "버전",
   "webgl-not-supported": "WebGL이 지원되지 않습니다. 시각 모드가 비활성화되었습니다.",
-  "close": "Close",
-  "update": "Update"
+  "close": "닫기",
+  "update": "업데이트"
 }

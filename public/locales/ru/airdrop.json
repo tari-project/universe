@@ -35,5 +35,8 @@
   "topTooltipTitle": "Награды Testnet",
   "unclaimedGems": "Неполученные гемы",
   "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
-  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!",
+  "joinAirdrop": "Присоединиться к Airdrop",
+  "loggedInTitle": "Награды Airdrop",
+  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы"
 }
