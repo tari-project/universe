@@ -1,106 +1,41 @@
-<Wix
-  xmlns="http://wixtoolset.org/schemas/v5/wxs"
-  xmlns:bal="http://wixtoolset.org/schemas/v5/wxs/bal"
-  xmlns:util="http://wixtoolset.org/schemas/v5/wxs/util" >
-
-  <Bundle
-    Name="Tari Universe (Alpha)"
-    Version="$(env.TARI_UNIVERSE_APP_VERSION)"
-    Manufacturer="Tari Labs, LLC"
-    UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" >
-
-    <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" />
-
-    <BootstrapperApplication>
-      <bal:WixStandardBootstrapperApplication
-        LicenseUrl="https://www.example.com/license"
-        Theme="hyperlinkLicense"
-        LogoFile="tari-win-bundler/resources/icon.png" />
-    </BootstrapperApplication>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+	<Bundle Name="Tari Universe" Version="0.9.816" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile=".\resources\icon.ico" DisableModify="yes" ParentName="Tari Universe" >
+		<OptionalUpdateRegistration Name="Tari Universe" />
+		
+		<Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" />
+		
+		<BootstrapperApplication>
+			<bal:WixStandardBootstrapperApplication LogoFile=".\resources\71x71.png" LogoSideFile=".\resources\71x71.png" LicenseUrl="" Theme="hyperlinkLicense" />
+		</BootstrapperApplication>
 
 
-    <!-- processor architecture -->
-    <util:RegistrySearch
-      Id="REG_ARCH" Root="HKLM"
-      Key="SYSTEM\CurrentControlSet\Control\Session Manager\Environment"
-      Value="PROCESSOR_ARCHITECTURE"
-      Result="value"
-      Variable="ARCH_NAME" />
+		<!-- processor architecture -->
+		<util:RegistrySearch Id="REG_ARCH" Root="HKLM" Key="SYSTEM\CurrentControlSet\Control\Session Manager\Environment" Value="PROCESSOR_ARCHITECTURE" Result="value" Variable="ARCH_NAME" />
 
-    <!-- Visual C++ 2015-2022 Redistributable (x86) runtime minimum msi package version -->
-    <util:ProductSearch
-      Id="VCRUNTIME_X86"
-      Result="version"
-      Variable="VCRUNTIME_X86_VER"
-      UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A"
-      Condition="VersionNT" />
+		<!-- Visual C++ 2015-2022 Redistributable (x86) runtime minimum msi package version -->
+		<util:ProductSearch Id="VCRUNTIME_X86" Result="version" Variable="VCRUNTIME_X86_VER" UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A" Condition="VersionNT" />
 
-    <!-- Visual C++ 2015-2022 Redistributable (x64) runtime minimum msi package version -->
-    <util:ProductSearch
-      Id="VCRUNTIME_X64"
-      Result="version"
-      Variable="VCRUNTIME_X64_VER"
-      UpgradeCode="36F68A90-239C-34DF-B58C-64B30153CE35"
-      Condition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)"
-      After="REG_ARCH" />
+		<!-- Visual C++ 2015-2022 Redistributable (x64) runtime minimum msi package version -->
+		<util:ProductSearch Id="VCRUNTIME_X64" Result="version" Variable="VCRUNTIME_X64_VER" UpgradeCode="36F68A90-239C-34DF-B58C-64B30153CE35" Condition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" After="REG_ARCH" />
 
-    <!-- Visual C++ 2015-2022 Redistributable runtime msi package version -->
-    <Variable
-      Name="VCRUNTIME_VER"
-      Type="version"
-      Value="14.40.33816.0" />
+		<!-- Visual C++ 2015-2022 Redistributable (Arm64) runtime msi package version -->
+		<util:ProductSearch Id="VCRUNTIME_ARM64" Result="version" Variable="VCRUNTIME_ARM64_VER" UpgradeCode="DC9BAE42-810B-423A-9E25-E4073F1C7B00" Condition="(ARCH_NAME = &quot;ARM64&quot;)" After="REG_ARCH" />
 
-    <Chain>
-      <!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33810 -->
-	  	<ExePackage
-        Id="VC_REDIST_X86"
-        DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816"
-        Cache="keep"
-        PerMachine="yes"
-        Permanent="yes"
-        Protocol="burn"
-        InstallCondition="VersionNT AND (ARCH_NAME = &quot;x86&quot;)"
-        DetectCondition="(VCRUNTIME_X86_VER &gt;= VCRUNTIME_VER) AND VersionNT"
-        InstallArguments="/install /quiet /norestart"
-        RepairArguments="/repair /quiet /norestart"
-        UninstallArguments="/uninstall /quiet /norestart" >
+		<!-- Visual C++ 2015-2022 Redistributable runtime msi package version -->
+		<Variable Name="VCRUNTIME_VER" Type="version" Value="14.40.33816.0" />
+		
+		<Chain>
+			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33810 -->
+			<ExePackage Id="VC_REDIST_X86" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT AND (ARCH_NAME = &quot;x86&quot;)" DetectCondition="(VCRUNTIME_X86_VER &gt;= VCRUNTIME_VER) AND VersionNT" SourceFile=".\executables\VC_redist.x86.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			
+			<!-- Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816 -->
+			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile=".\executables\VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
 
-	  		<ExePackagePayload 
-          Hash="8A0991B993D5206450228454B4F83251CC311CC2B0DD105494928E03BF2E865DE8CCF9676C8E7453164BB1805929A3A9616EA020524B77DBC0A6BBCA0D222DAF"
-	  			Name="VC_redist.x86.exe"
-	  			Size="14500000"
-	  			DownloadUrl="https://aka.ms/vs/17/release/vc_redist.x86.exe"
-	  			Compressed="no" />
-	  	</ExePackage>
+			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816 -->
+			<ExePackage Id="VC_REDIST_ARM64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (Arm64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="(ARCH_NAME = &quot;ARM64&quot;)" DetectCondition="(VCRUNTIME_ARM64_VER &gt;= VCRUNTIME_VER) AND (ARCH_NAME = &quot;ARM64&quot;)" SourceFile=".\executables\VC_redist.arm64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
 
-      <!-- Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816 -->
-	  	<ExePackage
-        Id="VC_REDIST_X64"
-        DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816"
-        Cache="keep"
-        PerMachine="yes"
-        Permanent="yes"
-        Protocol="burn"
-        InstallCondition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)"
-        DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)"
-        InstallArguments="/install /quiet /norestart"
-        RepairArguments="/repair /quiet /norestart"
-        UninstallArguments="/uninstall /quiet /norestart" >
-
-	  	  <ExePackagePayload
-	  	    Hash="4DB5078FDD9EB9CE00A1B6195A67C779A1D3C719DE0FBD4729ADBDAC2D8CA442CF4E0A31AA40D213F29617EC073F1A7E42570DCC2F931EB9534C45F1EC6DE253"
-	  	    Name="VC_redist.x64.exe"
-	  	    Size="14500000"
-	  	    DownloadUrl="https://aka.ms/vs/17/release/vc_redist.x64.exe"
-	  	    Compressed="no" />
-	  	</ExePackage>
-
-      <!-- Tari Universe x64 -->
-      <MsiPackage
-        SourceFile="src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)"
-        After="VC_REDIST_X64"
-        InstallCondition="VersionNT64"
-        Vital="yes" />
-    </Chain>
-  </Bundle>
+			<!-- Tari Universe x64 -->
+			<MsiPackage SourceFile=".\executables\clean.msi" After="VC_REDIST_X64" InstallCondition="VersionNT64"  Vital="yes" />		
+		</Chain>
+	</Bundle>
 </Wix>
