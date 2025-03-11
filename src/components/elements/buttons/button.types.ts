@@ -13,6 +13,7 @@ export interface CommonButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
     iconPosition?: IconPosition;
     size?: ButtonSize;
     color?: ButtonColor;
+    fluid?: boolean;
 }
 
 export interface ButtonStyleProps {
@@ -21,6 +22,7 @@ export interface ButtonStyleProps {
     $color?: CommonButtonProps['color'];
     $iconPosition?: CommonButtonProps['iconPosition'];
     $disableColour?: boolean;
+    $fluid?: boolean;
 }
 
 export interface ExtendedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

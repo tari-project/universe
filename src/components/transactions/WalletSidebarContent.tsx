@@ -4,12 +4,7 @@ import { TabItem } from '@app/components/Tabs/types.ts';
 import { Send } from './send/Send.tsx';
 import { Receive } from './receive/Receive.tsx';
 import HistoryList from './history/HistoryList.tsx';
-import {
-    ContentWrapper,
-    HistoryListWrapper,
-    TabContentWrapper,
-    WalletBalanceWrapper,
-} from './WalletSidebarContent.styles.ts';
+import { ContentWrapper, HistoryWrapper, TabWrapper, WalletBalanceWrapper } from './WalletSidebarContent.styles.ts';
 import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
 
 const tabItems: TabItem[] = [
@@ -26,11 +21,9 @@ const tabItems: TabItem[] = [
     {
         id: 'history',
         content: (
-            <TabContentWrapper>
-                <HistoryListWrapper>
-                    <HistoryList />
-                </HistoryListWrapper>
-            </TabContentWrapper>
+            <HistoryWrapper>
+                <HistoryList />
+            </HistoryWrapper>
         ),
         title: 'History',
     },
@@ -39,7 +32,9 @@ const tabItems: TabItem[] = [
 export function WalletSidebarContent() {
     return (
         <ContentWrapper>
-            <Tabs tabItems={tabItems} />
+            <TabWrapper>
+                <Tabs tabItems={tabItems} />
+            </TabWrapper>
             <WalletBalanceWrapper>
                 <WalletBalanceMarkup />
             </WalletBalanceWrapper>

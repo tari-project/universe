@@ -7,12 +7,12 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Controller, useForm } from 'react-hook-form';
 import { useCallback } from 'react';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { StyledForm } from './Send.styles';
+import { FormFieldsWrapper, StyledForm } from './Send.styles';
 
 const fields: TxInputProps[] = [
-    { name: 'tx_message', placeholder: 'Payment message' },
-    { name: 'tx_address', placeholder: 'Wallet address' },
-    { name: 'tx_amount', placeholder: 'Amount', icon: <TariOutlineSVG /> },
+    { name: 'tx_message', placeholder: 'Enter message', label: 'Payment ID' },
+    { name: 'tx_address', placeholder: 'Enter address', label: 'Tari Wallet Address' },
+    { name: 'tx_amount', placeholder: '100', label: 'Amount', icon: <TariOutlineSVG /> },
 ];
 
 interface SendInputs {
@@ -69,17 +69,18 @@ export function Send() {
     }, []);
 
     return (
-        <TabContentWrapper>
-            <StyledForm onSubmit={handleSubmit(handleSend)}>
+        <StyledForm onSubmit={handleSubmit(handleSend)}>
+            <FormFieldsWrapper>
                 {fieldMarkup}
                 <Stack alignItems="flex-end" justifyContent="flex-end" direction="row" style={{ width: `100%` }}>
                     <Button size="xs" variant="outlined" type="button">{`Max`}</Button>
                 </Stack>
                 {isSubmitting && <CircularProgress />}
-                <Button disabled={isSubmitting} type="submit">
-                    {`send`}
-                </Button>
-            </StyledForm>
-        </TabContentWrapper>
+            </FormFieldsWrapper>
+
+            <Button disabled={isSubmitting} type="submit" fluid>
+                {`Send Tari`}
+            </Button>
+        </StyledForm>
     );
 }
