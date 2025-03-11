@@ -298,3 +298,14 @@ jobs:
         with:
           name: tari_universe.pdb
           path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
+
+      - name: Windows debug symbols - Upload to Sentry
+        if: startsWith(runner.os,'Windows')
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        continue-on-error: true
+        shell: bash
+        run: |
+          npm install @sentry/cli@2.42.2
+          sentry-cli debug-files check ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
