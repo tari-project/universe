@@ -1,6 +1,0 @@
-C:\Users\barto\source\repos\tari-win-bundler\bin\Debug\tari_win_bundler.exe
-C:\Users\barto\source\repos\tari-win-bundler\bin\Debug\tari_win_bundler.wixpdb
-obj\Debug\Bundle.wixobj
-obj\Debug\tari-win-bundler.wixproj.BindContentsFileList.txt
-obj\Debug\tari-win-bundler.wixproj.BindOutputsFileList.txt
-obj\Debug\tari-win-bundler.wixproj.BindBuiltOutputsFileList.txt

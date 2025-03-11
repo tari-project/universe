@@ -1,2 +1,0 @@
-C:\Users\barto\source\repos\tari-win-bundler\bin\Debug\tari_win_bundler.exe
-C:\Users\barto\source\repos\tari-win-bundler\bin\Debug\tari_win_bundler.wixpdb

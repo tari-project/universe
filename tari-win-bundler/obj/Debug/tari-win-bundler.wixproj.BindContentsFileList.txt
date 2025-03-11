@@ -1,4 +1,0 @@
-C:\Users\barto\source\repos\tari-win-bundler\executables\VC_redist.x86.exe
-C:\Users\barto\source\repos\tari-win-bundler\executables\VC_redist.x64.exe
-C:\Users\barto\source\repos\tari-win-bundler\executables\VC_redist.arm64.exe
-C:\Users\barto\source\repos\tari-win-bundler\executables\Tari Universe (Alpha)_0.5.22_x64_en-US.msi
