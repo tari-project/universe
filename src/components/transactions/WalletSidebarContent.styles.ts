@@ -23,8 +23,7 @@ export const TabContentWrapper = styled.div`
 export const TabWrapper = styled.div`
     grid-area: tab-content;
     width: ${SB_WIDTH}px;
-    height: auto;
-    max-height: 100%;
+    height: 100%;
     overflow: hidden;
 `;
 export const WalletBalanceWrapper = styled.div`
@@ -37,5 +36,5 @@ export const WalletBalanceWrapper = styled.div`
 export const HistoryWrapper = styled.div`
     overflow: hidden;
     border-radius: 10px;
-    height: calc(100vh - 220px);
+    height: calc(100vh - 235px);
 `;

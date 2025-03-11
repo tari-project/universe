@@ -6,11 +6,16 @@ export const StyledForm = styled.form`
     align-items: stretch;
     justify-content: space-between;
     width: 100%;
-    gap: 6px;
+    height: 100%;
 `;
 
 export const FormFieldsWrapper = styled.div`
     display: flex;
     flex-direction: column;
+    gap: 8px;
     align-items: stretch;
+`;
+
+export const SendDivider = styled.div`
+    width: 100%;
 `;

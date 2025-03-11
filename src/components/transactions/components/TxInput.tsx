@@ -7,6 +7,18 @@ const Wrapper = styled.div`
     flex-direction: column;
     position: relative;
     width: 100%;
+    padding: 4px;
+`;
+
+const StyledInput = styled.input<{ $hasIcon?: boolean }>`
+    display: flex;
+    padding: ${({ $hasIcon }) => ($hasIcon ? `10px 0 10px 28px` : `10px 0`)};
+    width: 100%;
+    opacity: 0.9;
+    &:focus {
+        outline: none;
+        opacity: 1;
+    }
 `;
 
 const ContentWrapper = styled.div`
@@ -24,13 +36,6 @@ const IconWrapper = styled.div`
     transform: translateY(-50%);
     top: 50%;
     left: 4px;
-`;
-
-const StyledInput = styled.input<{ $hasIcon?: boolean }>`
-    display: flex;
-    padding: ${({ $hasIcon }) => ($hasIcon ? `10px 0 10px 28px` : `10px 0`)};
-    width: 100%;
-    box-sizing: border-box;
 `;
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;

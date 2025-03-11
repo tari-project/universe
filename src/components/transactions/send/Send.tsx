@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core';
-import { TabContentWrapper } from '@app/components/transactions/WalletSidebarContent.styles.ts';
 import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
