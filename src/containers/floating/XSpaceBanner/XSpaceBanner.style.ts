@@ -3,8 +3,8 @@ import styled from 'styled-components';
 
 export const BannerContent = styled.div`
     position: fixed;
-    top: 20px;
-    right: 30px;
+    top: 16px;
+    right: 32px;
     z-index: 99999;
     display: flex;
     align-items: center;
@@ -17,10 +17,12 @@ export const BannerContent = styled.div`
     color: #fff;
 `;
 
-export const TextSection = styled.div`
+export const FlexWrapper = styled.div`
     display: flex;
     align-items: center;
     gap: 12px;
+    row-gap: 12px;
+    column-gap: 12px;
 `;
 
 export const IconContainer = styled.div`
@@ -38,6 +40,8 @@ export const IconContainer = styled.div`
 export const TitleContainer = styled(m.div)`
     display: flex;
     align-items: center;
+    justify-content: space-evenly;
+    row-gap: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
 `;
@@ -46,6 +50,7 @@ export const Title = styled(m.span)`
     font-weight: 500;
     white-space: nowrap;
     max-width: 200px;
+    min-width: 100px;
     font-size: 0.875rem;
     width: 100%;
 `;
@@ -80,5 +85,4 @@ export const TimeBadge = styled.div`
     padding: 4px 12px;
     border-radius: 9999px;
     font-size: 0.875rem;
-    gap: 12px;
 `;
