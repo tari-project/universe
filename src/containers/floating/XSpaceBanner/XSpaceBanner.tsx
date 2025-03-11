@@ -3,7 +3,7 @@ import { useAirdropStore } from '@app/store/useAirdropStore';
 import {
     BannerContent,
     IconContainer,
-    TextSection,
+    FlexWrapper,
     LiveBadgePoint,
     TimeBadge,
     Title,
@@ -11,17 +11,31 @@ import {
     LiveBadgeWrapper,
     TitleContainer,
 } from './XSpaceBanner.style';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
 
 const XSpaceEventBanner = () => {
-    // Truncate title if it's too long
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
+    const [isTextTooLong, setIsTextTooLong] = useState(false);
+    const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
+    const titleRef = useRef(null);
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        if (titleRef.current && containerRef.current) {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const titleWidth = (titleRef.current as any).scrollWidth;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const containerWidth = (containerRef.current as any).clientWidth;
+            setIsTextTooLong(titleWidth > containerWidth);
+            setTransitionPixelWidth((titleRef.current as any).scrollWidth / 2);
+        }
+    }, [latestXSpaceEvent]); // Re-run the effect when the event changes
 
     const isLive = useMemo(() => {
         const currentDate = new Date();
         if (latestXSpaceEvent) {
-            return latestXSpaceEvent.end >= currentDate && latestXSpaceEvent.start <= currentDate;
+            return new Date(latestXSpaceEvent.end) >= currentDate && new Date(latestXSpaceEvent.start) <= currentDate;
         }
         return false;
     }, [latestXSpaceEvent]);
@@ -46,7 +60,6 @@ const XSpaceEventBanner = () => {
     if (!latestXSpaceEvent) {
         return undefined;
     }
-
     const liveBadge = (
         <LiveBadgeWrapper>
             <LiveBadgePoint />
@@ -54,32 +67,39 @@ const XSpaceEventBanner = () => {
         </LiveBadgeWrapper>
     );
     const displayDate = displayedDate ? <TimeBadge>{displayedDate}</TimeBadge> : null;
-
     return (
         <BannerContent>
-            <TextSection>
+            <FlexWrapper>
                 <IconContainer>
                     <XSpaceSvg></XSpaceSvg>
                 </IconContainer>
-                <TitleContainer>
+                <TitleContainer ref={containerRef}>
                     <Title
-                        animate={{
-                            x: ['0%', '-100%'],
-                        }}
-                        transition={{
-                            repeat: Infinity,
-                            repeatType: 'loop',
-                            duration: 10,
-                            delay: 2,
-                            velocity: 0.3,
-                            ease: 'linear',
-                        }}
+                        ref={titleRef}
+                        animate={
+                            isTextTooLong
+                                ? {
+                                      x: ['0px', `-${transitionPixelWidth}px`],
+                                  }
+                                : { x: '0%' }
+                        }
+                        transition={
+                            isTextTooLong
+                                ? {
+                                      repeat: Infinity,
+                                      repeatType: 'loop',
+                                      duration: 5,
+                                      delay: 2,
+                                      ease: 'linear',
+                                  }
+                                : {}
+                        }
                     >
-                        {latestXSpaceEvent.displayName}
+                        {`${latestXSpaceEvent.displayName} ${isTextTooLong ? latestXSpaceEvent.displayName : ''}`}
                     </Title>
                 </TitleContainer>
-            </TextSection>
-            {isLive ? liveBadge : displayDate}
+                {isLive ? liveBadge : displayDate}
+            </FlexWrapper>
         </BannerContent>
     );
 };
