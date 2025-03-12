@@ -35,5 +35,8 @@
   "topTooltipTitle": "テストネット報酬",
   "unclaimedGems": "未請求のジェム",
   "you-reached-your-giftinh-goal": "ギフト目標を達成しました！",
-  "your-friend-accepted-gift": "あなたの友達の一人があなたのギフトを受け取りました！"
+  "your-friend-accepted-gift": "あなたの友達の一人があなたのギフトを受け取りました！",
+  "joinAirdrop": "エアドロップに参加",
+  "loggedInTitle": "エアドロップ報酬",
+  "loggedOutTitle": "マインして友達を招待し、ジェムを獲得"
 }

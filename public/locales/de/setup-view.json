@@ -2,6 +2,7 @@
   "dont-worry": "Mach dir keine Sorgen, beim nächsten Mal dauert es nicht so lange",
   "installing-latest-version": "Installation der {{version}}-Version des Tari-Universums",
   "new-tari-version-available": "Eine neue Version von Tari Universe ist verfügbar!",
+  "could-not-auto-update": "Wir konnten Tari Universe nicht auf {{version}} aktualisieren, während die Maschine gesperrt oder im Ruhezustand war.",
   "no": "Nein",
   "setting-up": "Einrichten der Tari Wahrheitsmaschine...",
   "this-might-take-a-few-minutes": "Das könnte ein paar Minuten dauern",

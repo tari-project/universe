@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.816",
+    "version": "0.9.817",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -61,6 +61,7 @@
         "eslint-plugin-i18next": "^6.1.1",
         "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react": "^7.37.3",
+        "eslint-plugin-react-compiler": "^19.0.0-beta-30d8a17-20250209",
         "eslint-plugin-react-hooks": "^5.1.0",
         "knip": "^5.44.0",
         "prettier": "^3.5.2",

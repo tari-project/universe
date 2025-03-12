@@ -14,6 +14,7 @@ import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
 import { memo } from 'react';
+import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -32,6 +33,7 @@ const FloatingElements = memo(function FloatingElements() {
             <ToastStack />
             <CriticalProblemDialog />
             <ReleaseNotesDialog />
+            <ResumeApplicationModal />
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );

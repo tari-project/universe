@@ -6,6 +6,7 @@ import { Select } from '@app/components/elements/inputs/Select';
 import { useCallback, useMemo } from 'react';
 import { SettingsGroupContent, SettingsGroupTitle, SettingsGroupWrapper } from '../../components/SettingsGroup.styles';
 import * as m from 'motion/react-m';
+import { setEngine } from '@app/store/actions/miningStoreActions.ts';
 
 const Wrapper = styled(m.div)`
     width: 100%;
@@ -17,7 +18,6 @@ export default function GpuEngine() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const availableEngines = useMiningStore((state) => state.availableEngines);
     const selectedEngine = useMiningStore((state) => state.engine);
-    const setEngine = useMiningStore((state) => state.setEngine);
 
     const engineOptions = useMemo(() => {
         return availableEngines.map((engine) => ({
@@ -26,12 +26,9 @@ export default function GpuEngine() {
         }));
     }, [availableEngines]);
 
-    const handleEngineChange = useCallback(
-        async (value: string) => {
-            await setEngine(value);
-        },
-        [setEngine]
-    );
+    const handleEngineChange = useCallback(async (value: string) => {
+        await setEngine(value);
+    }, []);
 
     return (
         <SettingsGroupWrapper>
