@@ -13,8 +13,8 @@ import {
 } from './XSpaceBanner.style';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
-import { XSpaceEventType } from '@app/types/ws';
 import { open } from '@tauri-apps/plugin-shell';
+import { XSpaceEventType } from '@app/utils/XSpaceEventType';
 
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
