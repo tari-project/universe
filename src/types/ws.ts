@@ -1,3 +1,5 @@
+import { XSpaceEventType } from '@app/utils/XSpaceEventType';
+
 export const GLOBAL_EVENT_NAME = 'global-event';
 
 export enum WebsocketEventNames {
@@ -75,11 +77,6 @@ export interface UserScoreUpdate {
 interface XSpaceEventUpdate {
     name: WebsocketEventNames.X_SPACE_EVENT;
     data: XSpaceEvent | null;
-}
-
-export enum XSpaceEventType {
-    link = 'link',
-    event = 'event',
 }
 
 export interface XSpaceEvent {
