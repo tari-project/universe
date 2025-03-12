@@ -1,3 +1,13 @@
+# TARI UNIVERSE v0.9.817: The Path Less Traveled
+
+## 🚀 Hey Tari Fam,
+
+The Testnet has been reset! A quick reminder:
+1️⃣ You may still see a fork message for 30 minutes—just ignore it.
+2️⃣ Your tXTM balance has been reset to 0.
+
+---
+
 # 🌑 TARI UNIVERSE v0.9.813: The Tide’s Forge Episode 2
 
 _March 6, 2025_
