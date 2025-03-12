@@ -61,7 +61,7 @@ export function Send() {
             const labelT = t(`send.label`, { context: name });
             const placeholderT = t(`send.placeholder`, { context: name });
             function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-                setValue(name, e.target.value);
+                setValue(name, e.target.value, { shouldValidate: true });
                 clearErrors(name);
             }
             return (
@@ -136,26 +136,24 @@ export function Send() {
     );
 
     return (
-        <>
-            <StyledForm onSubmit={handleSubmit(handleSend)}>
-                {fieldMarkup}
-                <BottomWrapper>
-                    <ErrorMessageWrapper>
-                        <Typography variant="p">{errors.address?.message}</Typography>
-                        <Typography variant="p">{errors.amount?.message}</Typography>
-                    </ErrorMessageWrapper>
-                    <Button
-                        disabled={isSubmitting || !isValid}
-                        type="submit"
-                        fluid
-                        loader={<CircularProgress />}
-                        isLoading={isSubmitting}
-                    >
-                        {t('send.cta-send')}
-                    </Button>
-                </BottomWrapper>
-            </StyledForm>
+        <StyledForm onSubmit={handleSubmit(handleSend)}>
+            {fieldMarkup}
+            <BottomWrapper>
+                <ErrorMessageWrapper>
+                    <Typography variant="p">{errors.address?.message}</Typography>
+                    <Typography variant="p">{errors.amount?.message}</Typography>
+                </ErrorMessageWrapper>
+                <Button
+                    disabled={isSubmitting || !isValid}
+                    type="submit"
+                    fluid
+                    loader={<CircularProgress />}
+                    isLoading={isSubmitting}
+                >
+                    {t('send.cta-send')}
+                </Button>
+            </BottomWrapper>
             <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
-        </>
+        </StyledForm>
     );
 }
