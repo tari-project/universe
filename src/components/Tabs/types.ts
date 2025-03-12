@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 
 export interface TabItem {
     id: string;
-    title: string;
+    titleTransaltionKey: string;
     content: ReactNode;
 }
 

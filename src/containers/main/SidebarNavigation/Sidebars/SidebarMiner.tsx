@@ -13,8 +13,10 @@ import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import HistoryList from '@app/components/transactions/history/HistoryList.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
+import { useTranslation } from 'react-i18next';
 
 const SidebarMiner = memo(function Sidebar() {
+    const { t } = useTranslation('wallet');
     return (
         <SidebarWrapper key="sidebar_miner">
             <SidebarGrid>
@@ -28,7 +30,7 @@ const SidebarMiner = memo(function Sidebar() {
                     <AirdropGiftTracker />
                     <RewardWrapper>
                         <WalletBalanceMarkup />
-                        <Typography variant="p">{`My rewards`}</Typography>
+                        <Typography variant="p">{t('history.label-rewards')}</Typography>
                         <HistoryWrapper>
                             <HistoryList winsOnly />
                         </HistoryWrapper>

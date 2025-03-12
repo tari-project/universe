@@ -7,8 +7,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
+import { useTranslation } from 'react-i18next';
 
 function Address() {
+    const { t } = useTranslation('wallet');
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const network = useMiningStore((state) => state.network);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
@@ -21,7 +23,7 @@ function Address() {
     return (
         <Wrapper>
             <AddressContainer>
-                <Typography variant="p">{`My Address`}</Typography>
+                <Typography variant="p">{t('receive.label-address')}</Typography>
                 <AddressWrapper>
                     <Typography title={walletAddress} variant="h4">
                         {displayAddress}

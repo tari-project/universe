@@ -47,8 +47,8 @@ interface TabContentProps {
 function TabContent({ items, currentIndex }: TabContentProps) {
     return (
         <Track animate={{ x: -(currentIndex * (SB_CONTENT_WIDTH + SB_SPACING)) }} transition={SPRING_OPTIONS}>
-            {items.map(({ id, title, content }) => {
-                return <Item key={`item-content-${id}-${title}`}>{content}</Item>;
+            {items.map(({ id, content }) => {
+                return <Item key={`item-content-${id}}`}>{content}</Item>;
             })}
         </Track>
     );

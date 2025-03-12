@@ -2,6 +2,7 @@ import styled from 'styled-components';
 import * as m from 'motion/react-m';
 import { CheckHollowSVG } from '@app/assets/icons/check-hollow.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { useTranslation } from 'react-i18next';
 
 const Wrapper = styled(m.div)`
     width: 100%;
@@ -48,10 +49,11 @@ const variants = {
 };
 
 export function Confirmation() {
+    const { t } = useTranslation('wallet');
     return (
         <Wrapper variants={variants} initial="hidden" animate="visible">
             <ContentWrapper>
-                <Typography variant="p">{`Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.`}</Typography>
+                <Typography variant="p">{t('confirmation-message')}</Typography>
                 <CheckHollowSVG />
             </ContentWrapper>
         </Wrapper>

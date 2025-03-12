@@ -11,17 +11,19 @@ import { FaArrowDown } from 'react-icons/fa6';
 import { setError as setStoreError } from '@app/store';
 import { Confirmation } from './Confirmation.tsx';
 import { AnimatePresence } from 'motion/react';
+import { useTranslation } from 'react-i18next';
 
 interface SendInputs {
-    tx_message: string;
+    message: string;
     address: string;
     amount: string;
 }
 type InputName = keyof SendInputs;
 
+const defaultValues = { message: '', address: '', amount: '' };
 export function Send() {
+    const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const defaultValues = { tx_message: '', address: '', amount: '' };
 
     const { control, handleSubmit, reset, formState, clearErrors, setError, setValue } = useForm<SendInputs>({
         defaultValues,
@@ -44,51 +46,52 @@ export function Send() {
                 clearTimeout(submitTimeout);
             };
         }
-    }, [isSubmitted, isSubmitSuccessful, errors]);
+    }, [isSubmitted, isSubmitSuccessful, errors, reset]);
 
-    const renderField = useCallback(({ name, placeholder, icon, label, required = false }: TxInputProps) => {
-        function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-            setValue(name, e.target.value);
-            clearErrors(name);
-        }
-        return (
-            <Controller
-                control={control}
-                name={name as InputName}
-                rules={{
-                    required: {
-                        value: required,
-                        message: `${name} is required`,
-                    },
-                }}
-                render={({ field: { ref: _ref, name, ...rest }, fieldState }) => {
-                    return (
-                        <TxInput
-                            {...rest}
-                            name={name}
-                            onChange={(e) => handleChange(e, name)}
-                            placeholder={placeholder}
-                            label={label}
-                            icon={icon}
-                            errorMessage={fieldState.error?.message}
-                        />
-                    );
-                }}
-            />
-        );
-    }, []);
+    const renderField = useCallback(
+        ({ name, icon, required = false }: TxInputProps) => {
+            const labelT = t(`send.label`, { context: name });
+            const placeholderT = t(`send.placeholder`, { context: name });
+            function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+                setValue(name, e.target.value);
+                clearErrors(name);
+            }
+            return (
+                <Controller
+                    control={control}
+                    name={name as InputName}
+                    rules={{
+                        required: {
+                            value: required,
+                            message: t('send.required', { fieldName: name }),
+                        },
+                    }}
+                    render={({ field: { ref: _ref, name, ...rest }, fieldState }) => {
+                        return (
+                            <TxInput
+                                {...rest}
+                                name={name}
+                                onChange={(e) => handleChange(e, name)}
+                                placeholder={placeholderT}
+                                label={labelT}
+                                icon={icon}
+                                errorMessage={fieldState.error?.message}
+                            />
+                        );
+                    }}
+                />
+            );
+        },
+        [clearErrors, control, setValue, t]
+    );
 
-    const paymentIdField = renderField({ name: 'tx_message', placeholder: `Enter message`, label: `Payment ID` });
+    const paymentIdField = renderField({ name: 'message' });
     const addressField = renderField({
         name: 'address',
-        placeholder: `Enter address`,
-        label: `Tari Wallet Address`,
         required: true,
     });
     const amountField = renderField({
         name: 'amount',
-        placeholder: `100`,
-        label: `Amount`,
         required: true,
         icon: <TariOutlineSVG />,
     });
@@ -106,20 +109,23 @@ export function Send() {
         </FormFieldsWrapper>
     );
 
-    const handleSend = useCallback(async (data: SendInputs) => {
-        try {
-            await invoke('send_one_sided_to_stealth_address', {
-                amount: data.amount,
-                destination: data.address,
-                paymentId: data.tx_message,
-            });
-        } catch (error) {
-            setStoreError(`Error sending transaction: ${error}`);
-            setError(`root.invoke_error`, {
-                message: `Error sending transaction: ${error}`,
-            });
-        }
-    }, []);
+    const handleSend = useCallback(
+        async (data: SendInputs) => {
+            try {
+                await invoke('send_one_sided_to_stealth_address', {
+                    amount: data.amount,
+                    destination: data.address,
+                    paymentId: data.message,
+                });
+            } catch (error) {
+                setStoreError(`Error sending transaction: ${error}`);
+                setError(`root.invoke_error`, {
+                    message: `${t('send.error-message')} ${error}`,
+                });
+            }
+        },
+        [setError, t]
+    );
 
     return (
         <>
