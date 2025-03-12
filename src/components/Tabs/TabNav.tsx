@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { type TabNavProps } from './types';
+import { useTranslation } from 'react-i18next';
 
 const Wrapper = styled.div`
     display: grid;
@@ -22,9 +23,10 @@ const NavButton = styled.button.attrs({
 `;
 
 function TabNav({ items, currentIndex, onClick }: TabNavProps) {
+    const { t } = useTranslation();
     return (
         <Wrapper>
-            {items.map(({ id, title }, i) => {
+            {items.map(({ id, titleTransaltionKey }, i) => {
                 const isActive = currentIndex === i;
                 return (
                     <NavButton
@@ -34,7 +36,7 @@ function TabNav({ items, currentIndex, onClick }: TabNavProps) {
                         aria-selected={isActive}
                         id={`tab-${id}`}
                     >
-                        {title}
+                        {t(titleTransaltionKey)}
                     </NavButton>
                 );
             })}

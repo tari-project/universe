@@ -10,22 +10,22 @@ import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/componen
 const tabItems: TabItem[] = [
     {
         id: 'send',
-        title: 'Send',
+        titleTransaltionKey: 'wallet:tabs.send',
         content: <Send />,
     },
     {
         id: 'receive',
-        title: 'Receive',
+        titleTransaltionKey: 'wallet:tabs.receive',
         content: <Receive />,
     },
     {
         id: 'history',
+        titleTransaltionKey: 'wallet:tabs.history',
         content: (
             <HistoryWrapper>
                 <HistoryList />
             </HistoryWrapper>
         ),
-        title: 'History',
     },
 ];
 
