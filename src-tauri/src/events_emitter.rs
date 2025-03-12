@@ -68,8 +68,9 @@ struct NewBlockHeightPayload {
 }
 #[derive(Clone, Debug, Serialize)]
 struct NetworkStatus {
-    download_speed: u64,
-    upload_speed: u64,
+    download_speed: f64,
+    upload_speed: f64,
+    latency: f64,
     is_too_low: bool,
 }
 
@@ -78,8 +79,9 @@ pub(crate) struct EventsEmitter;
 impl EventsEmitter {
     pub async fn emit_network_status(
         app_handle: &AppHandle,
-        download_speed: u64,
-        upload_speed: u64,
+        download_speed: f64,
+        upload_speed: f64,
+        latency: f64,
         is_too_low: bool,
     ) {
         let event = Event {
@@ -87,6 +89,7 @@ impl EventsEmitter {
             payload: NetworkStatus {
                 download_speed,
                 upload_speed,
+                latency,
                 is_too_low,
             },
         };

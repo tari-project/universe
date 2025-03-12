@@ -293,6 +293,11 @@ async fn setup_inner(
     )
     .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
 
+    //Start measuring networks speed
+    NetworkStatus::current()
+        .start_listener_for_network_speeds(app.clone())
+        .await;
+
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
         app.emit(
@@ -312,10 +317,6 @@ async fn setup_inner(
         .updates_manager
         .init_periodic_updates(app.clone())
         .await?;
-
-    NetworkStatus::current()
-        .start_listener_for_network_speeds(app.clone())
-        .await;
 
     let data_dir = app
         .path()
@@ -402,6 +403,9 @@ async fn setup_inner(
         .duration_since(last_binaries_update_timestamp)
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
+
+    //Stop measuring network speed
+    NetworkStatus::current().cancel_listener();
 
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service

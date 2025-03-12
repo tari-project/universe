@@ -188,6 +188,7 @@ pub struct TelemetryData {
     pub current_os: String,
     pub download_speed: f64,
     pub upload_speed: f64,
+    pub latency: f64,
 }
 
 pub struct TelemetryManager {
@@ -521,12 +522,10 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    let (download_speed, upload_speed) = NetworkStatus::current()
+    let (download_speed, upload_speed, latency) = NetworkStatus::current()
         .get_network_speeds_receiver()
         .borrow()
         .clone();
-
-    info!(target: LOG_TARGET,"Download speed: {} MB/s, Upload speed: {} MB/s", NetworkStatus::format_to_mb(download_speed), NetworkStatus::format_to_mb(upload_speed));
 
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
@@ -549,8 +548,9 @@ async fn get_telemetry_data(
         gpu_tribe_id: None,
         extra_data,
         current_os: std::env::consts::OS.to_string(),
-        download_speed: NetworkStatus::format_to_mb(download_speed),
-        upload_speed: NetworkStatus::format_to_mb(upload_speed),
+        download_speed,
+        upload_speed,
+        latency,
     })
 }
 

@@ -253,5 +253,6 @@ export interface MaxConsumptionLevels {
 export interface NetworkStatus {
     download_speed: number;
     upload_speed: number;
+    latency: number;
     is_too_low: boolean;
 }

@@ -22,10 +22,15 @@
 
 use std::{sync::LazyLock, time::Duration};
 
+use cfspeedtest::speedtest::PayloadSize;
+use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
+use cfspeedtest::OutputFormat;
+use cfspeedtest::SpeedTestCLIOptions;
 use log::error;
 use log::info;
 use sysinfo::Networks;
 use tauri::{AppHandle, Manager};
+use tokio::task::spawn_blocking;
 use tokio::{
     sync::{
         watch::{Receiver, Sender},
@@ -38,9 +43,10 @@ use tokio_util::sync::CancellationToken;
 use crate::UniverseAppState;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
-const LISTENER_INTERVAL_DURATION: Duration = Duration::from_secs(10);
-const MINIMAL_NETWORK_DOWNLOAD_SPEED: u64 = 100000;
-const MINIMAL_NETWORK_UPLOAD_SPEED: u64 = 100000;
+const LISTENER_INTERVAL_DURATION: Duration = Duration::from_secs(1);
+// Mb values
+const MINIMAL_NETWORK_DOWNLOAD_SPEED: f64 = 1.5;
+const MINIMAL_NETWORK_UPLOAD_SPEED: f64 = 1.5;
 
 static INSTANCE: LazyLock<NetworkStatus> = LazyLock::new(NetworkStatus::new);
 
@@ -48,13 +54,13 @@ static INSTANCE: LazyLock<NetworkStatus> = LazyLock::new(NetworkStatus::new);
 pub struct NetworkStatus {
     cancelation_token: CancellationToken,
     networks: Mutex<Networks>,
-    sender: Sender<(u64, u64)>,
-    receiver: Receiver<(u64, u64)>,
+    sender: Sender<(f64, f64, f64)>,
+    receiver: Receiver<(f64, f64, f64)>,
 }
 
 impl NetworkStatus {
     pub fn new() -> Self {
-        let (sender, receiver) = tokio::sync::watch::channel((0, 0));
+        let (sender, receiver) = tokio::sync::watch::channel((0.0, 0.0, 0.0));
         Self {
             networks: Mutex::new(Networks::new_with_refreshed_list()),
             cancelation_token: CancellationToken::new(),
@@ -67,40 +73,9 @@ impl NetworkStatus {
         &INSTANCE
     }
 
-    async fn get_download_speed(&self) -> Result<u64, anyhow::Error> {
-        let mut networks_lock = self.networks.lock().await;
-        networks_lock.refresh();
-        let networks_total_download: Vec<u64> = networks_lock
-            .iter()
-            .map(|(_, network)| network.total_received())
-            .collect();
-
-        let download_speed = networks_total_download.iter().sum();
-
-        Ok(download_speed)
-    }
-
-    async fn get_upload_speed(&self) -> Result<u64, anyhow::Error> {
-        let mut networks_lock = self.networks.lock().await;
-        networks_lock.refresh();
-        let networks_total_upload: Vec<u64> = networks_lock
-            .iter()
-            .map(|(_, network)| network.total_transmitted())
-            .collect();
-
-        let upload_speed = networks_total_upload.iter().sum();
-
-        Ok(upload_speed)
-    }
-
-    fn is_band_width_too_low(&self, download_speed: u64, upload_speed: u64) -> bool {
+    fn is_band_width_too_low(&self, download_speed: f64, upload_speed: f64) -> bool {
         download_speed < MINIMAL_NETWORK_DOWNLOAD_SPEED
             || upload_speed < MINIMAL_NETWORK_UPLOAD_SPEED
-    }
-
-    pub fn format_to_mb(bytes: u64) -> f64 {
-        let raw_mb = bytes as f64 / 1024.0 / 1024.0;
-        (raw_mb * 100.0).round() / 100.0
     }
 
     pub async fn cancel_listener(&self) {
@@ -109,7 +84,7 @@ impl NetworkStatus {
         info!(target: LOG_TARGET, "Network speed listener canceled");
     }
 
-    pub fn get_network_speeds_receiver(&self) -> Receiver<(u64, u64)> {
+    pub fn get_network_speeds_receiver(&self) -> Receiver<(f64, f64, f64)> {
         self.receiver.clone()
     }
 
@@ -119,9 +94,6 @@ impl NetworkStatus {
             let network_status = NetworkStatus::current();
             let mut interval = interval(LISTENER_INTERVAL_DURATION);
 
-            let mut previous_download_speed: u64 = 0;
-            let mut previous_upload_speed: u64 = 0;
-
             loop {
                 interval.tick().await;
 
@@ -130,46 +102,88 @@ impl NetworkStatus {
                     break;
                 }
 
-                let download_speed = network_status
-                    .get_download_speed()
-                    .await
-                    .inspect_err(|e| {
-                        error!("Failed to detect download speed: {:?}", e);
-                    })
-                    .unwrap_or(previous_download_speed);
+                match network_status.perform_speed_test().await {
+                    Ok((download_speed, upload_speed, latency)) => {
+                        let is_band_width_too_low =
+                            network_status.is_band_width_too_low(download_speed, upload_speed);
 
-                let upload_speed = network_status
-                    .get_upload_speed()
-                    .await
-                    .inspect_err(|e| {
-                        error!("Failed to detect upload speed: {:?}", e);
-                    })
-                    .unwrap_or(previous_upload_speed);
+                        let _unused = NetworkStatus::current()
+                            .sender
+                            .send((download_speed, upload_speed, latency))
+                            .inspect_err(|e| {
+                                error!("Failed to send network speeds: {:?}", e);
+                            });
 
-                previous_download_speed = download_speed;
-                previous_upload_speed = upload_speed;
-
-                let is_band_width_too_low =
-                    network_status.is_band_width_too_low(download_speed, upload_speed);
-
-                let _unused = NetworkStatus::current()
-                    .sender
-                    .send((download_speed, upload_speed))
-                    .inspect_err(|e| {
-                        error!("Failed to send network speeds: {:?}", e);
-                    });
-
-                app_handle
-                    .state::<UniverseAppState>()
-                    .events_manager
-                    .handle_network_status_update(
-                        &app_handle,
-                        download_speed,
-                        upload_speed,
-                        is_band_width_too_low,
-                    )
-                    .await;
+                        app_handle
+                            .state::<UniverseAppState>()
+                            .events_manager
+                            .handle_network_status_update(
+                                &app_handle,
+                                download_speed,
+                                upload_speed,
+                                latency,
+                                is_band_width_too_low,
+                            )
+                            .await;
+                    }
+                    Err(e) => {
+                        error!("Failed to perform network speed test: {:?}", e);
+                        continue;
+                    }
+                }
             }
         });
+    }
+
+    pub async fn perform_speed_test(&self) -> Result<(f64, f64, f64), anyhow::Error> {
+        info!(target: LOG_TARGET, "Performing network speed test");
+
+        let mut download_speed = 0.0;
+        let mut upload_speed = 0.0;
+        let mut latency = 0.0;
+
+        info!(target: LOG_TARGET, "Performing download speed test");
+        match spawn_blocking(|| {
+            test_download(
+                &reqwest::blocking::Client::new(),
+                50_000_000,
+                OutputFormat::None,
+            )
+        })
+        .await
+        {
+            Ok(speed) => download_speed = speed,
+            Err(e) => error!("Failed to perform download speed test: {:?}", e),
+        };
+
+        info!(target: LOG_TARGET, "Performing upload speed test");
+        match spawn_blocking(|| {
+            test_upload(
+                &reqwest::blocking::Client::new(),
+                50_000_000,
+                OutputFormat::None,
+            )
+        })
+        .await
+        {
+            Ok(speed) => upload_speed = speed,
+            Err(e) => error!("Failed to perform upload speed test: {:?}", e),
+        };
+
+        info!(target: LOG_TARGET, "Performing latency test");
+        match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
+            Ok(lat) => latency = lat,
+            Err(e) => error!("Failed to perform latency test: {:?}", e),
+        }
+
+        info!(
+            target: LOG_TARGET,
+            "Network speed test results: download_speed: {:.2} MB/s, upload_speed: {:.2} MB/s, latency: {:.2} ms",
+            download_speed,
+            upload_speed,
+            latency
+        );
+
+        Ok((download_speed, upload_speed, latency))
     }
 }
