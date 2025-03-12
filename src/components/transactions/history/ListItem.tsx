@@ -40,11 +40,11 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
 
 const HistoryListItem = memo(function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
     const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
-    const clickRef = useRef(0);
 
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
 
+    const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { amount: 0.5, once: false });
 

@@ -26,6 +26,7 @@ const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
 
     return (
         <ListWrapper id="list">
+            {!is_transactions_history_loading && !transactions.length && `No tx`}
             <InfiniteScroll
                 dataLength={transactions?.length || 0}
                 next={handleNext}

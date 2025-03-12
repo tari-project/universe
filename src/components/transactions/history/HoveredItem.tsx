@@ -30,7 +30,7 @@ const ItemHover = memo(function ItemHover({ item }: { item: TransactionInfo }) {
         <HoverWrapper initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <ButtonWrapper initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}>
                 {showShareButton && (
-                    <FlexButton onClick={handleShareClick}>
+                    <FlexButton onClick={handleShareClick} aria-label={t('share.history-item-button')}>
                         {t('share.history-item-button')}
                         <GemPill>
                             <span>{gemsValue}</span>
