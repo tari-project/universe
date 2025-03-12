@@ -1,7 +1,7 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
-export const BannerContent = styled.div`
+export const BannerContent = styled(m.div)`
     position: fixed;
     top: 16px;
     right: 32px;
@@ -15,9 +15,15 @@ export const BannerContent = styled.div`
     max-width: 30rem;
     background-color: #000;
     color: #fff;
+    cursor: pointer;
+    pointer-events: all;
+    &:hover {
+        transform: scale(1.05);
+    }
+    transition: all 0.2s ease-in-out;
 `;
 
-export const FlexWrapper = styled.div`
+export const FlexWrapper = styled(m.div)`
     display: flex;
     align-items: center;
     gap: 12px;
@@ -25,7 +31,7 @@ export const FlexWrapper = styled.div`
     column-gap: 12px;
 `;
 
-export const IconContainer = styled.div`
+export const IconContainer = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -55,7 +61,7 @@ export const Title = styled(m.span)`
     width: 100%;
 `;
 
-export const LiveBadgeWrapper = styled.div`
+export const LiveBadgeWrapper = styled(m.div)`
     display: flex;
     justify-content: space-evenly;
     align-items: center;
@@ -66,19 +72,19 @@ export const LiveBadgeWrapper = styled.div`
     gap: 12px;
 `;
 
-export const LiveBadgeText = styled.div`
+export const LiveBadgeText = styled(m.div)`
     color: white;
     font-weight: 700;
 `;
 
-export const LiveBadgePoint = styled.div`
+export const LiveBadgePoint = styled(m.div)`
     background-color: white;
     border-radius: 9999px;
     width: 0.725rem;
     height: 0.725rem;
 `;
 
-export const TimeBadge = styled.div`
+export const TimeBadge = styled(m.div)`
     background-color: white;
     color: black;
     font-weight: 1000;
