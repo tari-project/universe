@@ -8,6 +8,7 @@
     "label-address": "My Address"
   },
   "send": {
+    "cta-send": "Send Tari",
     "error-message": "Error sending transaction: ",
     "field-address": "address",
     "field-amount": "amount",
@@ -18,7 +19,7 @@
     "placeholder-address": "Enter address",
     "placeholder-amount": "100",
     "placeholder-message": "Enter message",
-    "required": "{{fieldName}} is required"
+    "required": "The {{fieldName}} field is required"
   },
   "tabs": {
     "history": "history",

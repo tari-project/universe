@@ -1,17 +1,20 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
     width: 100%;
-    padding: 4px;
+    padding: 8px 0;
 `;
 export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     display: flex;
-    padding: ${({ $hasIcon }) => ($hasIcon ? `6px 0 6px 40px` : `6px 0 6px`)};
+    padding: ${({ $hasIcon }) => ($hasIcon ? `6px 0 6px 34px` : `6px 0 6px`)};
     width: 100%;
     font-size: 1.4rem;
+    letter-spacing: -1px;
+    font-weight: 500;
     opacity: 0.9;
     &:focus {
         outline: none;
@@ -27,7 +30,7 @@ export const ContentWrapper = styled.div<{ $hasError?: boolean }>`
     position: relative;
     width: 100%;
     border-bottom: ${({ $hasError, theme }) =>
-        $hasError ? `1px solid ${theme.palette.error.main}` : '1px solid transparent'};
+        $hasError ? `1px solid ${theme.palette.warning.dark}` : '1px solid transparent'};
 `;
 export const IconWrapper = styled.div`
     display: flex;
@@ -39,7 +42,7 @@ export const IconWrapper = styled.div`
     top: 50%;
 `;
 
-export const ErrorMessage = styled.div`
-    height: 0.8rem;
-    color: ${({ theme }) => theme.palette.error.main};
+export const Label = styled(Typography).attrs({ variant: 'p' })`
+    color: ${({ theme }) => theme.palette.text.accent};
+    font-weight: 500;
 `;

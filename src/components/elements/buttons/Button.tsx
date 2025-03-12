@@ -12,6 +12,8 @@ export const Button = ({
     iconPosition,
     disableColour = false,
     fluid = false,
+    isLoading = false,
+    loader,
     icon,
     ...buttonProps
 }: ButtonProps) => {
@@ -26,6 +28,11 @@ export const Button = ({
         >
             <ChildrenWrapper $iconPosition={iconPosition}>{children}</ChildrenWrapper>
             {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
+            {loader && isLoading && !icon ? (
+                <IconWrapper $position="end" $isLoader>
+                    {loader}
+                </IconWrapper>
+            ) : null}
         </StyledButton>
     );
 };
