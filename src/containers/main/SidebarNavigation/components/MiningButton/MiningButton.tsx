@@ -56,6 +56,7 @@ export default function MiningButton() {
             <StyledButton
                 size="large"
                 $hasStarted={isMining}
+                fluid
                 onClick={handleClick}
                 icon={!isAppLoading ? iconFinal : null}
                 disabled={isMiningButtonDisabled}

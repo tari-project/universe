@@ -11,7 +11,7 @@ interface HistoryListProps {
     winsOnly?: boolean;
 }
 const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
-    const { t } = useTranslation('wallet');
+    const { t } = useTranslation('wallet', { useSuspense: false });
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const transactions = useWalletStore((s) => s.transactions);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
