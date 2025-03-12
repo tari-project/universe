@@ -16,6 +16,7 @@ const NavButton = styled.button.attrs({
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: ${({ $isActive }) => ($isActive ? 1 : 0.7)};
+    text-transform: capitalize;
 
     &:hover {
         opacity: 0.85;

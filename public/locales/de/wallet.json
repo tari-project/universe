@@ -1,7 +1,14 @@
 {
   "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
   "empty-tx": "No transactions found",
+  "history": {
+    "label-rewards": "My rewards"
+  },
+  "receive": {
+    "label-address": "My Address"
+  },
   "send": {
+    "error-message": "Error sending transaction: ",
     "field-address": "address",
     "field-amount": "amount",
     "field-message": "message",
