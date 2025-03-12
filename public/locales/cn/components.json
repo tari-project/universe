@@ -9,25 +9,25 @@
     "required": "必填字段"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "取消",
+    "description": "疯狂模式可能会导致系统无响应。请确认您要在疯狂模式下开始挖矿，否则 Tari Universe 将在",
+    "keepChanges": "保留更改",
+    "seconds": "秒",
+    "title": "切换到疯狂模式？"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "知道了",
+    "title": "发布说明"
   },
   "resume-app-modal": {
-    "title": "Resuming Tari Universe",
-    "resuming-all-processes": "Resuming all processes...",
-    "resuming-tor": "Resuming Tor...",
-    "resuming-node": "Resuming Node...",
-    "resuming-wallet": "Resuming Wallet...",
-    "syncing-node": "Syncing Node...",
-    "resuming-p2pool": "Resuming P2Pool...",
-    "resuming-mm-proxy": "Resuming MM Proxy...",
-    "finishing-resume": "Finishing Resume..."
+    "title": "恢复 Tari Universe",
+    "resuming-all-processes": "恢复所有进程...",
+    "resuming-tor": "恢复 Tor...",
+    "resuming-node": "恢复节点...",
+    "resuming-wallet": "恢复钱包...",
+    "syncing-node": "同步节点...",
+    "resuming-p2pool": "恢复 P2Pool...",
+    "resuming-mm-proxy": "恢复 MM 代理...",
+    "finishing-resume": "完成恢复..."
   }
 }

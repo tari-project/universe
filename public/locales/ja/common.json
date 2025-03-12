@@ -31,6 +31,6 @@
   "version": "バージョン",
   "versions": "バージョン",
   "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。",
-  "close": "Close",
-  "update": "Update"
+  "close": "閉じる",
+  "update": "更新"
 }

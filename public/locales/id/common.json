@@ -31,6 +31,6 @@
   "version": "Versi",
   "versions": "Versi",
   "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
-  "close": "Close",
-  "update": "Update"
+  "close": "Tutup",
+  "update": "Perbarui"
 }
