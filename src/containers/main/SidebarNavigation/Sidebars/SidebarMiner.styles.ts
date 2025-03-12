@@ -38,7 +38,7 @@ export const HistoryWrapper = styled.div`
 export const RewardWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    height: min(400px, 35vh);
+    max-height: min(400px, 35vh);
     border-radius: 10px;
     gap: 10px;
     padding: 4px 0 0 0;
