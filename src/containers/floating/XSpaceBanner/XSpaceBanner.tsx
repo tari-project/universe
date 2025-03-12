@@ -45,7 +45,7 @@ const XSpaceEventBanner = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const containerWidth = (containerRef.current as any).clientWidth;
             setIsTextTooLong(titleWidth > containerWidth);
-            setTransitionPixelWidth((titleRef.current as any).scrollWidth / 3);
+            setTransitionPixelWidth(titleWidth / 2);
         }
     }, [latestXSpaceEvent]); // Re-run the effect when the event changes
 
@@ -122,7 +122,7 @@ const XSpaceEventBanner = () => {
                                 : {}
                         }
                     >
-                        {`${latestXSpaceEvent.text} ${isTextTooLong ? latestXSpaceEvent.text : ''} ${isTextTooLong ? latestXSpaceEvent.text : ''}`}
+                        {`${latestXSpaceEvent.text} ${isTextTooLong ? latestXSpaceEvent.text : ''}`}
                     </Title>
                 </TitleContainer>
                 {isLive ? liveBadge : displayDate}
