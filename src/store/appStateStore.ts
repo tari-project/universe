@@ -19,7 +19,6 @@ interface AppState {
     isAppUpdateAvailable: boolean;
     networkStatus?: NetworkStatus;
     appResumePayload?: ResumingAllProcessesPayload;
-    setNetworkStatus: (value: NetworkStatus) => void;
 }
 
 const initialstate: AppState = {

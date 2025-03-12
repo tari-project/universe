@@ -11,7 +11,7 @@ import {
 } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
-import { useAppStateStore } from '@app/store/appStateStore';
+import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -63,7 +63,6 @@ const useTauriEventsListener = () => {
     const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
     const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
     const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
-    const setNetworkStatus = useAppStateStore((s) => s.setNetworkStatus);
 
     useEffect(() => {
         const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
