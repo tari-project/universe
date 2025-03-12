@@ -21,7 +21,7 @@
   "sent": "Sent",
   "shutting-down": "Arrêt...",
   "submit": "Envoyer",
-  "tari-universe": "Tari Universe",
+  "tari-universe": "Univers Tari",
   "temperature": "Température",
   "testnet": "Testnet",
   "unknown": "Inconnu",
@@ -30,5 +30,7 @@
   "utilization": "Utilisation",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé."
+  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
+  "close": "Fermer",
+  "update": "Mettre à jour"
 }

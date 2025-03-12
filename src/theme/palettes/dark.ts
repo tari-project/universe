@@ -51,7 +51,7 @@ const darkPalette: ThemePalette = {
         text: {
             main: c.tariPurple[300],
             primary: '#FFFFFF',
-            accent: 'rgba(255,255,255,0.7)',
+            accent: 'rgba(255,255,255,0.6)',
             secondary: c.grey[400],
             disabled: 'rgba(255,255,255,0.4)',
             contrast: '#000000',

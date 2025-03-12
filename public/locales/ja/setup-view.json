@@ -2,6 +2,7 @@
   "dont-worry": "心配しないでください、次回はそれほど時間がかかりません",
   "installing-latest-version": "Tari Universeの{{version}}バージョンをインストール中",
   "new-tari-version-available": "Tari Universeの新しいバージョンが利用可能です！",
+  "could-not-auto-update": "マシンがロックされているかスリープモード中にTari Universeを{{version}}に自動更新できませんでした。",
   "no": "いいえ",
   "setting-up": "Tariトゥルースマシンを設定中...",
   "this-might-take-a-few-minutes": "数分かかる場合があります",

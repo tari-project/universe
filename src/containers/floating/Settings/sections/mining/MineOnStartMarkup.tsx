@@ -9,14 +9,11 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles';
+import { setMineOnAppStart } from '@app/store';
 
 export default function MineOnStartMarkup() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-
-    const { mineOnAppStart, setMineOnAppStart } = useAppConfigStore((s) => ({
-        mineOnAppStart: s.mine_on_app_start,
-        setMineOnAppStart: s.setMineOnAppStart,
-    }));
+    const mineOnAppStart = useAppConfigStore((s) => s.mine_on_app_start);
 
     return (
         <SettingsGroupWrapper>

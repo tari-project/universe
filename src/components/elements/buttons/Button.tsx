@@ -11,13 +11,28 @@ export const Button = ({
     size = 'medium',
     iconPosition,
     disableColour = false,
+    fluid = false,
+    isLoading = false,
+    loader,
     icon,
     ...buttonProps
 }: ButtonProps) => {
     return (
-        <StyledButton $variant={variant} $color={color} $size={size} $disableColour={disableColour} {...buttonProps}>
+        <StyledButton
+            $variant={variant}
+            $color={color}
+            $size={size}
+            $disableColour={disableColour}
+            $fluid={fluid}
+            {...buttonProps}
+        >
             <ChildrenWrapper $iconPosition={iconPosition}>{children}</ChildrenWrapper>
             {icon ? <IconWrapper $position={iconPosition}>{icon}</IconWrapper> : null}
+            {loader && isLoading && !icon ? (
+                <IconWrapper $position="end" $isLoader>
+                    {loader}
+                </IconWrapper>
+            ) : null}
         </StyledButton>
     );
 };

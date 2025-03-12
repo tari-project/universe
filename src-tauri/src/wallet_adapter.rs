@@ -184,8 +184,6 @@ impl ProcessAdapter for WalletAdapter {
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             formatted_working_dir,
-            "--password".to_string(),
-            "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(), // TODO: Maybe use a random password per machine
             "--view-private-key".to_string(),
             self.view_private_key.clone(),
             "--spend-key".to_string(),
@@ -253,13 +251,19 @@ impl ProcessAdapter for WalletAdapter {
             binary_version_path.clone(),
         )?;
 
+        let mut envs = std::collections::HashMap::new();
+        envs.insert(
+            "MINOTARI_WALLET_PASSWORD".to_string(),
+            "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(),
+        );
+
         Ok((
             ProcessInstance {
                 shutdown: inner_shutdown,
                 handle: None,
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
-                    envs: None,
+                    envs: Some(envs),
                     args,
                     data_dir,
                     pid_file_name: self.pid_file_name().to_string(),

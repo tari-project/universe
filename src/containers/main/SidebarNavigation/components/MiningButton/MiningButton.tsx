@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { startMining, stopMining } from '@app/store/miningStoreActions.ts';
+import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
@@ -56,6 +56,7 @@ export default function MiningButton() {
             <StyledButton
                 size="large"
                 $hasStarted={isMining}
+                fluid
                 onClick={handleClick}
                 icon={!isAppLoading ? iconFinal : null}
                 disabled={isMiningButtonDisabled}

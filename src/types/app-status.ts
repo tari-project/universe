@@ -47,6 +47,10 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    airdrop_tokens?: {
+        token: string;
+        refreshToken: string;
+    };
 }
 
 export enum ExternalDependencyStatus {
@@ -79,8 +83,6 @@ export interface WalletAddress {
     tari_address_emoji: string;
 }
 
-export type TxType = 'mined' | 'sent' | 'received' | 'unknown';
-
 export interface TransactionInfo {
     tx_id: number;
     source_address: string;
@@ -95,7 +97,6 @@ export interface TransactionInfo {
     message: string;
     payment_id: string;
     mined_in_block_height?: number;
-    txType?: TxType;
 }
 
 export interface P2poolStatsResult {

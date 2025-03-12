@@ -37,6 +37,7 @@ use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
+use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, TransactionStatus};
 use crate::wallet_manager::WalletManagerError;
@@ -194,6 +195,8 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
+    FrontendReadyChannel::current().set_ready();
+
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
@@ -851,6 +854,8 @@ pub async fn reset_settings<'r>(
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -984,6 +989,7 @@ pub async fn set_auto_update(
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
         .map_err(|e| e.to_string())?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
     }

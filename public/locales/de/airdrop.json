@@ -35,5 +35,8 @@
   "topTooltipTitle": "Testnet Belohnungen",
   "unclaimedGems": "Nicht beanspruchte Edelsteine",
   "you-reached-your-giftinh-goal": "Sie haben Ihr Geschenkziel erreicht!",
-  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!"
+  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!",
+  "joinAirdrop": "Am Airdrop teilnehmen",
+  "loggedInTitle": "Airdrop-Belohnungen",
+  "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen"
 }

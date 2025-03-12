@@ -10,9 +10,12 @@ export type IconPosition = 'end' | 'start' | 'hug';
 export interface CommonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: ButtonVariant;
     icon?: ReactNode;
+    loader?: ReactNode;
     iconPosition?: IconPosition;
     size?: ButtonSize;
     color?: ButtonColor;
+    fluid?: boolean;
+    isLoading?: boolean;
 }
 
 export interface ButtonStyleProps {
@@ -21,6 +24,7 @@ export interface ButtonStyleProps {
     $color?: CommonButtonProps['color'];
     $iconPosition?: CommonButtonProps['iconPosition'];
     $disableColour?: boolean;
+    $fluid?: boolean;
 }
 
 export interface ExtendedButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

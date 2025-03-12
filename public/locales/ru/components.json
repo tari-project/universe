@@ -9,14 +9,25 @@
     "required": "Поле обязательно"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "Отмена",
+    "description": "Режим Ludicrous может сделать вашу систему неотзывчивой. Пожалуйста, подтвердите, что вы хотите начать майнинг в режиме Ludicrous, или Tari Universe переключится обратно в режим Eco через",
+    "keepChanges": "Сохранить изменения",
+    "seconds": "секунд",
+    "title": "Переключиться в режим Ludicrous?"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "Понял",
+    "title": "Примечания к выпуску"
+  },
+  "resume-app-modal": {
+    "title": "Возобновление Tari Universe",
+    "resuming-all-processes": "Возобновление всех процессов...",
+    "resuming-tor": "Возобновление Tor...",
+    "resuming-node": "Возобновление узла...",
+    "resuming-wallet": "Возобновление кошелька...",
+    "syncing-node": "Синхронизация узла...",
+    "resuming-p2pool": "Возобновление P2Pool...",
+    "resuming-mm-proxy": "Возобновление MM Proxy...",
+    "finishing-resume": "Завершение возобновления..."
   }
 }
