@@ -262,7 +262,11 @@ jobs:
         env:
           TARI_UNIVERSE_INSTALLER_NAME: ${{ startsWith(github.ref, 'refs/heads/release') && 'Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' || 'Tari Universe (Beta) ${{ steps.build.outputs.appVersion }}_x64_en-US.msi' }}
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-        run: wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
+        run: |
+          echo "Building WiX installer"
+          echo "TARI_UNIVERSE_INSTALLER_NAME: ${{ env.TARI_UNIVERSE_INSTALLER_NAME }}"
+          echo "TARI_UNIVERSE_APP_VERSION: ${{ env.TARI_UNIVERSE_APP_VERSION }}"
+          wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
 
       - name: Add installer to release
         if: runner.os == 'Windows'
