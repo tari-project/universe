@@ -89,10 +89,19 @@ interface XSpaceEventUpdate {
     data: XSpaceEvent | null;
 }
 
+export enum XSpaceEventType {
+    link = 'link',
+    event = 'event',
+}
+
 export interface XSpaceEvent {
-    start: Date;
-    end: Date;
-    displayName: string;
+    text: string;
+    visibilityEnd: Date;
+    visibilityStart: Date;
+    goingLive?: Date | null;
+    link: string;
+    isVisible: boolean;
+    type: XSpaceEventType;
     id: string;
 }
 
