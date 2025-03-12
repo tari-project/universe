@@ -41,6 +41,7 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::app_flow_utils::FrontendReadyChannel;
 #[cfg(target_os = "macos")]
 use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
@@ -296,11 +297,9 @@ async fn setup_inner(
     )
     .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
 
-    NetworkStatus::run_speed_test_once_detached(&app);
-
+    FrontendReadyChannel::current().wait_for_ready().await?;
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        FrontendReadyChannel::current().wait_for_ready().await?;
         app.emit(
             "critical_problem",
             CriticalProblemEvent {
@@ -370,6 +369,7 @@ async fn setup_inner(
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));
+    progress.set_max(1).await;
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -407,17 +407,35 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    telemetry_service
+        .send(
+            "benchamrking-network".to_string(),
+            json!({
+                "service": "speedtest",
+                "percentage": 0,
+            }),
+        )
+        .await?;
+    progress.set_max(5).await;
+    progress
+        .update("benchamrking-network".to_string(), None, 0)
+        .await;
+
+    NetworkStatus::current()
+        .run_speed_test_with_timeout(&app)
+        .await;
+
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service
             .send(
                 "checking-latest-version-tor".to_string(),
                 json!({
                     "service": "tor_manager",
-                    "percentage": 0,
+                    "percentage": 5,
                 }),
             )
             .await?;
-        progress.set_max(5).await;
+        progress.set_max(10).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
@@ -437,11 +455,11 @@ async fn setup_inner(
             "checking-latest-version-node".to_string(),
             json!({
                 "service": "node_manager",
-                "percentage": 5,
+                "percentage": 10,
             }),
         )
         .await;
-    progress.set_max(10).await;
+    progress.set_max(15).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
         .await;
@@ -460,11 +478,11 @@ async fn setup_inner(
             "checking-latest-version-mmproxy".to_string(),
             json!({
                 "service": "mmproxy",
-                "percentage": 10,
+                "percentage": 15,
             }),
         )
         .await;
-    progress.set_max(15).await;
+    progress.set_max(20).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
         .await;
@@ -483,11 +501,11 @@ async fn setup_inner(
             "checking-latest-version-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage": 15,
+                "percentage": 20,
             }),
         )
         .await;
-    progress.set_max(20).await;
+    progress.set_max(25).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
         .await;
@@ -506,11 +524,11 @@ async fn setup_inner(
             "checking-latest-version-gpuminer".to_string(),
             json!({
                 "service": "gpuminer",
-                "percentage":20,
+                "percentage":25,
             }),
         )
         .await;
-    progress.set_max(25).await;
+    progress.set_max(30).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
         .await;
@@ -529,11 +547,11 @@ async fn setup_inner(
             "checking-latest-version-xmrig".to_string(),
             json!({
                 "service": "xmrig",
-                "percentage":25,
+                "percentage":30,
             }),
         )
         .await;
-    progress.set_max(30).await;
+    progress.set_max(35).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
@@ -552,11 +570,11 @@ async fn setup_inner(
             "checking-latest-version-sha-p2pool".to_string(),
             json!({
                 "service": "sha_p2pool",
-                "percentage":30,
+                "percentage":35,
             }),
         )
         .await;
-    progress.set_max(35).await;
+    progress.set_max(40).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -614,11 +632,11 @@ async fn setup_inner(
             "waiting-for-minotari-node-to-start".to_string(),
             json!({
                 "service": "minotari_node",
-                "percentage":35,
+                "percentage":37,
             }),
         )
         .await;
-    progress.set_max(37).await;
+    progress.set_max(38).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -646,11 +664,11 @@ async fn setup_inner(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
                                     "service": "minotari_node",
-                                    "percentage":37,
+                                    "percentage":38,
                                 }),
                             )
                             .await;
-                        progress.set_max(38).await;
+                        progress.set_max(40).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -671,11 +689,11 @@ async fn setup_inner(
             "waiting-for-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":35,
+                "percentage":40,
             }),
         )
         .await;
-    progress.set_max(40).await;
+    progress.set_max(45).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
@@ -694,11 +712,11 @@ async fn setup_inner(
             "wallet-started".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":40,
+                "percentage":45,
             }),
         )
         .await;
-    progress.set_max(45).await;
+    progress.set_max(50).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
@@ -708,7 +726,7 @@ async fn setup_inner(
             "preparing-for-initial-sync".to_string(),
             json!({
                 "service": "initial_sync",
-                "percentage":45,
+                "percentage":50,
             }),
         )
         .await;

@@ -30,6 +30,13 @@ const SetupProgress = memo(function SetupProgress() {
 
     const progressPercentage = useMemo(() => Math.floor(setupProgress * 100), [setupProgress]);
     const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
+
+    console.log('setupTitle', setupTitle);
+    console.log('setupTitleParams', setupTitleParams);
+    console.log('setupProgress', setupProgress);
+    console.log('progressPercentage', progressPercentage);
+    console.log('setUpText', setUpText);
+
     return (
         <Wrapper>
             <Percentage>{progressPercentage}%</Percentage>

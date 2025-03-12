@@ -27,6 +27,7 @@ use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
 use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use tokio::task::spawn_blocking;
 use tokio::{
     sync::watch::{Receiver, Sender},
@@ -38,9 +39,12 @@ use crate::UniverseAppState;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const LISTENER_INTERVAL_DURATION: Duration = Duration::from_secs(1);
+const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
 // Mb values
 const MINIMAL_NETWORK_DOWNLOAD_SPEED: f64 = 1.5;
 const MINIMAL_NETWORK_UPLOAD_SPEED: f64 = 1.5;
+
+const NETWORK_SPEED_PAYLOAD_TEST: (u64, u64) = (0, 0);
 
 static INSTANCE: LazyLock<NetworkStatus> = LazyLock::new(NetworkStatus::new);
 
@@ -154,7 +158,7 @@ impl NetworkStatus {
         match spawn_blocking(|| {
             test_download(
                 &reqwest::blocking::Client::new(),
-                50_000_000,
+                1_000_000_000,
                 OutputFormat::None,
             )
         })
@@ -167,7 +171,7 @@ impl NetworkStatus {
         match spawn_blocking(|| {
             test_upload(
                 &reqwest::blocking::Client::new(),
-                50_000_000,
+                1_000_000_000,
                 OutputFormat::None,
             )
         })
@@ -185,20 +189,33 @@ impl NetworkStatus {
         Ok((download_speed, upload_speed, latency))
     }
 
-    pub fn run_speed_test_once_detached(app_handle: &AppHandle) {
-        let app_handle = app_handle.clone();
-        tokio::spawn(async move {
-            let network_status = NetworkStatus::current();
-            match network_status.perform_speed_test().await {
-                Ok((download_speed, upload_speed, latency)) => {
-                    network_status
-                        .handle_test_results(&app_handle, download_speed, upload_speed, latency)
-                        .await;
-                }
-                Err(e) => {
-                    error!("Failed to perform network speed test: {:?}", e);
-                }
+    pub async fn run_speed_test_once(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
+        match self.perform_speed_test().await {
+            Ok((download_speed, upload_speed, latency)) => {
+                self.handle_test_results(&app_handle, download_speed, upload_speed, latency)
+                    .await;
+                Ok(())
             }
-        });
+            Err(e) => {
+                error!("Failed to perform network speed test: {:?}", e);
+                Err(e)
+            }
+        }
+    }
+
+    pub async fn run_speed_test_with_timeout(&self, app_handle: &AppHandle) {
+        match tokio::time::timeout(SPEED_TEST_TIMEOUT, self.run_speed_test_once(app_handle)).await {
+            Ok(Ok(_)) => info!(target: LOG_TARGET, "Network speed test completed"),
+            Ok(Err(error_message)) => {
+                let error_message =
+                    format!("Failed to perform network speed test: {:?}", error_message);
+                sentry::capture_message(&error_message, sentry::Level::Error);
+                error!("Failed to perform network speed test: {:?}", error_message);
+            }
+            Err(_) => {
+                sentry::capture_message("Network speed test timed out", sentry::Level::Error);
+                error!(target: LOG_TARGET, "Network speed test timed out");
+            }
+        }
     }
 }
