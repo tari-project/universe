@@ -1,3 +1,4 @@
+import { XSpaceEvent } from '@app/types/ws';
 import { create } from './create';
 
 export const GIFT_GEMS = 5000;
@@ -81,13 +82,6 @@ export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 export interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
-}
-
-interface XSpaceEvent {
-    start: Date;
-    end: Date;
-    displayName: string;
-    id: string;
 }
 
 //////////////////////////////////////////
