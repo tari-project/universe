@@ -72,18 +72,6 @@ export interface UserScoreUpdate {
     };
 }
 
-export interface UserScoreUpdate {
-    name: WebsocketEventNames.USER_SCORE_UPDATE;
-    data: {
-        userId: string;
-        userPoints?: {
-            gems: number;
-            shells: number;
-            hammers: number;
-        };
-    };
-}
-
 interface XSpaceEventUpdate {
     name: WebsocketEventNames.X_SPACE_EVENT;
     data: XSpaceEvent | null;
