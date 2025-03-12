@@ -1,21 +1,21 @@
+import { useAppStateStore } from '@app/store/appStateStore';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { XSpaceEvent } from '@app/types/ws';
 import { useEffect } from 'react';
 
 export function useXSpaceEventRefresh() {
-    const userDetails = useAirdropStore((state) => state.userDetails);
-    const setLatestXSpaceEvent = useAirdropStore((state) => state.setLatestXSpaceEvent);
+    const setupComplete = useAppStateStore((state) => state.setupComplete);
 
     const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
-        if (userDetails) return; //user logged in, data will arrive through websocket
+        if (!setupComplete) return; //user logged in, data will arrive through websocket
 
         fetchLatestXSpaceEvent(backendInMemoryConfig?.airdropApiUrl).then((data) => {
             if (data === undefined) {
                 return;
             }
-            setLatestXSpaceEvent(data);
+            useAirdropStore.setState({ latestXSpaceEvent: data });
         });
         const interval = setInterval(
             () => {
@@ -23,13 +23,13 @@ export function useXSpaceEventRefresh() {
                     if (data === undefined) {
                         return;
                     }
-                    setLatestXSpaceEvent(data);
+                    useAirdropStore.setState({ latestXSpaceEvent: data });
                 });
             },
             1000 * 60 * 60
         );
         return () => clearInterval(interval);
-    }, [backendInMemoryConfig?.airdropApiUrl, setLatestXSpaceEvent, userDetails]);
+    }, [backendInMemoryConfig?.airdropApiUrl, setupComplete]);
 }
 
 async function fetchLatestXSpaceEvent(airdropApiUrl: string) {
