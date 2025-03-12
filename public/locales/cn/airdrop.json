@@ -35,5 +35,8 @@
   "topTooltipTitle": "测试网奖励",
   "unclaimedGems": "未领取的宝石",
   "you-reached-your-giftinh-goal": "您达到了赠送目标！",
-  "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！"
+  "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！",
+  "joinAirdrop": "加入空投",
+  "loggedInTitle": "空投奖励",
+  "loggedOutTitle": "挖矿并邀请朋友赚取宝石"
 }
