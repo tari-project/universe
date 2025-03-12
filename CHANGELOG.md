@@ -1,5 +1,7 @@
 # TARI UNIVERSE v0.9.817: The Path Less Traveled
 
+_March 12, 2025_
+
 ## 🚀 Hey Tari Fam,
 
 The Testnet has been reset! A quick reminder:
