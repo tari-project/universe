@@ -11,7 +11,6 @@
         window.__TAURI_ISOLATION_HOOK__ = (payload) => {
             // TODO: Prevent command execution
             // TODO: Perhaps whitelist commands
-            console.log("Isolation hook called with payload:", payload);
             return payload;
         };
 

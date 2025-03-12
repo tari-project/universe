@@ -1,6 +1,6 @@
 import { InputHTMLAttributes, ReactNode } from 'react';
-import { Typography } from '@app/components/elements/Typography.tsx';
-import { Wrapper, IconWrapper, ContentWrapper, StyledInput, ErrorMessage } from './TxInput.style.ts';
+
+import { Wrapper, IconWrapper, ContentWrapper, StyledInput, Label } from './TxInput.style.ts';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
@@ -14,12 +14,11 @@ export function TxInput(props: TxInputProps) {
     const { name, icon, label, errorMessage, ...rest } = props;
     return (
         <Wrapper key={name}>
-            {label && <Typography variant="p">{label}</Typography>}
+            {label && <Label>{label}</Label>}
             <ContentWrapper $hasError={!!errorMessage?.length}>
                 {icon ? <IconWrapper>{icon}</IconWrapper> : null}
-                <StyledInput id={name} name={name} $hasIcon={!!icon} {...rest} />
+                <StyledInput id={name} name={name} $hasIcon={!!icon} {...rest} aria-errormessage={errorMessage} />
             </ContentWrapper>
-            <ErrorMessage>{errorMessage?.length && <Typography variant="p">{errorMessage}</Typography>}</ErrorMessage>
         </Wrapper>
     );
 }

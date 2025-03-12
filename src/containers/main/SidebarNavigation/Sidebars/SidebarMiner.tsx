@@ -16,7 +16,7 @@ import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/componen
 import { useTranslation } from 'react-i18next';
 
 const SidebarMiner = memo(function Sidebar() {
-    const { t } = useTranslation('wallet');
+    const { t } = useTranslation('wallet', { useSuspense: false });
     return (
         <SidebarWrapper key="sidebar_miner">
             <SidebarGrid>

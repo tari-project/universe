@@ -14,10 +14,11 @@ export const ContentWrapper = styled.div`
 export const TabContentWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    padding: 10px 20px 0;
+    flex-flow: column;
+    padding: 10px 20px;
     gap: 8px;
     width: 100%;
-    max-height: 100%;
+    height: 100%;
 `;
 
 export const TabWrapper = styled.div`

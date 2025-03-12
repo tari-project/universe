@@ -7,10 +7,11 @@ import { TabContentWrapper } from '@app/components/transactions/WalletSidebarCon
 
 const TabsWrapper = styled.div`
     width: 100%;
-    align-items: center;
     display: flex;
+    flex-grow: 1;
 `;
 const Wrapper = styled.div`
+    flex-grow: 1;
     width: 100%;
     display: flex;
     align-items: center;

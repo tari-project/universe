@@ -14,8 +14,12 @@ const SidebarNavigation = memo(function SidebarNavigation() {
         <SidebarNavigationWrapper>
             <SidebarMini />
             <SidebarGrid>
-                <AnimatePresence>{sidebarOpen && currentSidebar === 'mining' && <SidebarMiner />}</AnimatePresence>
-                <AnimatePresence>{sidebarOpen && currentSidebar === 'wallet' && <SidebarWallet />}</AnimatePresence>
+                <AnimatePresence mode="wait">
+                    {sidebarOpen && currentSidebar === 'mining' && <SidebarMiner />}
+                </AnimatePresence>
+                <AnimatePresence mode="wait">
+                    {sidebarOpen && currentSidebar === 'wallet' && <SidebarWallet />}
+                </AnimatePresence>
             </SidebarGrid>
         </SidebarNavigationWrapper>
     );
