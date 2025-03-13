@@ -304,7 +304,7 @@ async fn setup_inner(
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        FrontendReadyChannel::current().set_ready();
+        FrontendReadyChannel::current().wait_for_ready().await;
         app.emit(
             "critical_problem",
             CriticalProblemEvent {

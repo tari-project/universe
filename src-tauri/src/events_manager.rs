@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::error;
+use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
@@ -148,14 +148,18 @@ impl EventsManager {
     }
 
     pub async fn handle_app_config_loaded(&self, app: &AppHandle) {
+        info!(target: LOG_TARGET, "Loading app config");
         let app_state: tauri::State<'_, UniverseAppState> = app.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "Proposing system language");
         let _unused = app_state
             .config
             .write()
             .await
             .propose_system_language()
             .await;
+        info!(target: LOG_TARGET, "Reading app config");
         let app_config = app_state.config.read().await.clone();
+        info!(target: LOG_TARGET, "Emitting app config loaded event");
         EventsEmitter::emit_app_config_loaded(app, app_config).await;
     }
 

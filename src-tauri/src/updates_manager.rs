@@ -95,7 +95,7 @@ impl UpdatesManager {
     }
 
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
-        FrontendReadyChannel::current().set_ready();
+        FrontendReadyChannel::current().wait_for_ready().await;
         let app_clone = app.clone();
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
