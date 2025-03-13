@@ -28,5 +28,7 @@
   "utilization": "利用率",
   "version": "バージョン",
   "versions": "バージョン",
-  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。"
+  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。",
+  "close": "閉じる",
+  "update": "更新"
 }

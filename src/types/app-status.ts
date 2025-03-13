@@ -47,6 +47,10 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    airdrop_tokens?: {
+        token: string;
+        refreshToken: string;
+    };
 }
 
 export enum ExternalDependencyStatus {
@@ -163,29 +167,23 @@ interface P2poolBlockStats {
     rejected: number;
     submitted: number;
 }
-enum HardwareVendor {
-    Nvidia = 'Nvidia',
-    Amd = 'Amd',
-    Intel = 'Intel',
-    Apple = 'Apple',
-    Unknown = 'Unknown',
+
+interface GpuStatus {
+    recommended_grid_size: number;
+    recommended_block_size: number;
+    max_grid_size: number;
 }
 
-interface DeviceStatus {
+export interface GpuSettings {
+    is_excluded: boolean;
     is_available: boolean;
-    is_reader_implemented: boolean;
 }
 
-interface DeviceParameters {
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
-}
-export interface PublicDeviceParameters {
-    vendor: HardwareVendor;
-    name: string;
-    status: DeviceStatus;
-    parameters?: DeviceParameters;
+export interface GpuDevice {
+    device_name: string;
+    device_index: number;
+    status: GpuStatus;
+    settings: GpuSettings;
 }
 
 export interface CpuMinerStatus {
@@ -242,4 +240,11 @@ export interface GpuThreads {
 export interface MaxConsumptionLevels {
     max_cpu_threads: number;
     max_gpus_threads: GpuThreads[];
+}
+
+export interface NetworkStatus {
+    download_speed: number;
+    upload_speed: number;
+    latency: number;
+    is_too_low: boolean;
 }

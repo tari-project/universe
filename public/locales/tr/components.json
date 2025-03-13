@@ -9,14 +9,25 @@
     "required": "Alan gerekli"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "İptal",
+    "description": "Aşırı mod sisteminizi yanıtsız hale getirebilir. Lütfen Aşırı modda madenciliğe başlamak istediğinizi onaylayın, aksi takdirde Tari Universe Eco moduna geri dönecektir",
+    "keepChanges": "Değişiklikleri Sakla",
+    "seconds": "saniye",
+    "title": "Aşırı Moda Geçilsin mi?"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "Anladım",
+    "title": "Sürüm Notları"
+  },
+  "resume-app-modal": {
+    "title": "Tari Universe Devam Ediyor",
+    "resuming-all-processes": "Tüm işlemler devam ediyor...",
+    "resuming-tor": "Tor Devam Ediyor...",
+    "resuming-node": "Düğüm Devam Ediyor...",
+    "resuming-wallet": "Cüzdan Devam Ediyor...",
+    "syncing-node": "Düğüm Senkronize Ediliyor...",
+    "resuming-p2pool": "P2Pool Devam Ediyor...",
+    "resuming-mm-proxy": "MM Proxy Devam Ediyor...",
+    "finishing-resume": "Devam Etme Tamamlanıyor..."
   }
 }
