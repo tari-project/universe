@@ -23,10 +23,10 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::error;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::{watch::Sender, RwLock};
 
-use crate::events::SetupStatusEvent;
+use crate::{events_emitter::SetupStatusEvent, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
@@ -66,7 +66,8 @@ impl ProgressTracker {
         self.inner
             .read()
             .await
-            .update(title, title_params, progress);
+            .update(title, title_params, progress)
+            .await;
     }
 }
 
@@ -101,7 +102,7 @@ impl ProgressTrackerInner {
         }
     }
 
-    pub fn update(
+    pub async fn update(
         &self,
         title: String,
         title_params: Option<HashMap<String, String>>,
@@ -122,9 +123,11 @@ impl ProgressTrackerInner {
                 .ok();
         }
 
-        self.app_handle
-            .emit(
-                "setup_message",
+        let app_state = self.app_handle.state::<UniverseAppState>();
+        app_state
+            .events_manager
+            .handle_setup_status(
+                &self.app_handle,
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title,
@@ -132,9 +135,6 @@ impl ProgressTrackerInner {
                     progress: progress_percentage,
                 },
             )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            )
-            .ok();
+            .await;
     }
 }

@@ -4,7 +4,6 @@ import useTauriEventsListener from '../hooks/app/useTauriEventsListener.ts';
 import useListenForCriticalProblem from '../hooks/useListenForCriticalProblem.tsx';
 import { useListenForAppUpdated } from '../hooks/app/useListenForAppUpdated.ts';
 import { setMiningNetwork } from '../store/actions/miningStoreActions.ts';
-import { useListenForAppResuming } from '../hooks/app/useListenForAppResuming.ts';
 import { useDetectMode, useDisableRefresh, useListenForExternalDependencies, useSetUp } from '../hooks';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -34,7 +33,6 @@ export default function AppEffects() {
     useListenForCriticalProblem();
     useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
-    useListenForAppResuming();
 
     return null;
 }

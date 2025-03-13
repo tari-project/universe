@@ -71,7 +71,6 @@ use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
-use events::SetupStatusEvent;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use telemetry_manager::TelemetryManager;
