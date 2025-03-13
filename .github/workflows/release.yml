@@ -261,6 +261,7 @@ jobs:
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          TARI_UNIVERSE_INSTALLER_NAME: ''
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
