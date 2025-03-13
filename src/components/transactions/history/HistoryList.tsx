@@ -6,6 +6,7 @@ import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { HistoryListItem } from './ListItem.tsx';
 import { initialFetchTxs, fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 interface HistoryListProps {
     winsOnly?: boolean;
@@ -28,7 +29,9 @@ const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
 
     return (
         <ListWrapper id="list">
-            {!is_transactions_history_loading && !transactions?.length && t('empty-tx')}
+            {!is_transactions_history_loading && !transactions?.length && (
+                <Typography variant="h6">{t('empty-tx')}</Typography>
+            )}
             <InfiniteScroll
                 dataLength={transactions?.length || 0}
                 next={handleNext}

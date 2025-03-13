@@ -7,37 +7,44 @@ import MiningButton from '../components/MiningButton/MiningButton.tsx';
 
 import Miner from '../components/Miner/Miner.tsx';
 
-import { GridAreaBottom, GridAreaTop, HistoryWrapper, RewardWrapper, SidebarGrid } from './SidebarMiner.styles.ts';
+import {
+    GridAreaBottom,
+    GridAreaTop,
+    HistoryLabel,
+    HistoryWrapper,
+    RewardWrapper,
+    SidebarGrid,
+} from './SidebarMiner.styles.ts';
 
-import { SidebarWrapper } from '../SidebarNavigation.styles.ts';
 import HistoryList from '@app/components/transactions/history/HistoryList.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
 import { useTranslation } from 'react-i18next';
+import { useWalletStore } from '@app/store';
 
 const SidebarMiner = memo(function Sidebar() {
     const { t } = useTranslation('wallet', { useSuspense: false });
+    const transactions = useWalletStore((s) => s.transactions);
     return (
-        <SidebarWrapper key="sidebar_miner">
-            <SidebarGrid>
-                <GridAreaTop>
-                    <MiningButton />
-                    <LostConnectionAlert />
-                    <OrphanChainAlert />
-                    <Miner />
-                </GridAreaTop>
-                <GridAreaBottom>
-                    <AirdropGiftTracker />
-                    <RewardWrapper>
-                        <WalletBalanceMarkup />
-                        <Typography variant="p">{t('history.label-rewards')}</Typography>
+        <SidebarGrid>
+            <GridAreaTop>
+                <MiningButton />
+                <LostConnectionAlert />
+                <OrphanChainAlert />
+                <Miner />
+            </GridAreaTop>
+            <GridAreaBottom>
+                <AirdropGiftTracker />
+                <RewardWrapper>
+                    <WalletBalanceMarkup />
+                    {transactions?.length ? (
                         <HistoryWrapper>
+                            <HistoryLabel>{t('history.label-rewards')}</HistoryLabel>
                             <HistoryList winsOnly />
                         </HistoryWrapper>
-                    </RewardWrapper>
-                </GridAreaBottom>
-            </SidebarGrid>
-        </SidebarWrapper>
+                    ) : null}
+                </RewardWrapper>
+            </GridAreaBottom>
+        </SidebarGrid>
     );
 });
 

@@ -9,7 +9,7 @@ const Wrapper = styled(m.div)`
     height: 100%;
     border-radius: 20px;
     background: rgba(57, 136, 8, 0.85);
-    backdrop-filter: blur(1px);
+    backdrop-filter: blur(2px);
     align-items: center;
     justify-content: center;
     display: flex;
@@ -21,7 +21,7 @@ const Wrapper = styled(m.div)`
 const ContentWrapper = styled.div`
     mask: linear-gradient(transparent 10%, black, transparent 90%);
     background: transparent;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(34px);
     align-items: center;
     justify-content: center;
     display: flex;

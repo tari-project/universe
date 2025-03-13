@@ -1,11 +1,21 @@
-import { Controller, useForm } from 'react-hook-form';
 import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
-import { TxInput, TxInputProps } from '@app/components/transactions/components/TxInput.tsx';
-import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { useForm } from 'react-hook-form';
+import { FaArrowDown } from 'react-icons/fa6';
 
+import { setError as setStoreError } from '@app/store';
+
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
+
+import type { SendInputs, InputName } from './types.ts';
+import { Confirmation } from './Confirmation.tsx';
+import { FormField } from './FormField.tsx';
+
 import {
     BottomWrapper,
     DividerIcon,
@@ -13,20 +23,8 @@ import {
     FormFieldsWrapper,
     SendDivider,
     StyledForm,
+    Wrapper,
 } from './Send.styles';
-import { FaArrowDown } from 'react-icons/fa6';
-import { setError as setStoreError } from '@app/store';
-import { Confirmation } from './Confirmation.tsx';
-import { AnimatePresence } from 'motion/react';
-import { useTranslation } from 'react-i18next';
-import { Typography } from '@app/components/elements/Typography.tsx';
-
-interface SendInputs {
-    message: string;
-    address: string;
-    amount: string;
-}
-type InputName = keyof SendInputs;
 
 const defaultValues = { message: '', address: '', amount: '' };
 export function Send() {
@@ -55,54 +53,16 @@ export function Send() {
             };
         }
     }, [isSubmitted, isSubmitSuccessful, errors, reset]);
+    function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+        setValue(name, e.target.value, { shouldValidate: true });
+        clearErrors(name);
+    }
 
-    const renderField = useCallback(
-        ({ name, icon, required = false }: TxInputProps) => {
-            const labelT = t(`send.label`, { context: name });
-            const placeholderT = t(`send.placeholder`, { context: name });
-            function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-                setValue(name, e.target.value, { shouldValidate: true });
-                clearErrors(name);
-            }
-            return (
-                <Controller
-                    control={control}
-                    name={name as InputName}
-                    rules={{
-                        required: {
-                            value: required,
-                            message: t('send.required', { fieldName: name }),
-                        },
-                    }}
-                    render={({ field: { ref: _ref, name, ...rest }, fieldState }) => {
-                        return (
-                            <TxInput
-                                {...rest}
-                                name={name}
-                                onChange={(e) => handleChange(e, name)}
-                                placeholder={placeholderT}
-                                label={labelT}
-                                icon={icon}
-                                errorMessage={fieldState.error?.message}
-                            />
-                        );
-                    }}
-                />
-            );
-        },
-        [clearErrors, control, setValue, t]
-    );
+    const commonProps = { control, handleChange };
 
-    const paymentIdField = renderField({ name: 'message' });
-    const addressField = renderField({
-        name: 'address',
-        required: true,
-    });
-    const amountField = renderField({
-        name: 'amount',
-        required: true,
-        icon: <TariOutlineSVG />,
-    });
+    const paymentIdField = <FormField {...commonProps} name="message" />;
+    const addressField = <FormField {...commonProps} name="address" required />;
+    const amountField = <FormField {...commonProps} name="amount" required icon={<TariOutlineSVG />} />;
 
     const fieldMarkup = (
         <FormFieldsWrapper>
@@ -136,24 +96,26 @@ export function Send() {
     );
 
     return (
-        <StyledForm onSubmit={handleSubmit(handleSend)}>
-            {fieldMarkup}
-            <BottomWrapper>
-                <ErrorMessageWrapper>
-                    <Typography variant="p">{errors.address?.message}</Typography>
-                    <Typography variant="p">{errors.amount?.message}</Typography>
-                </ErrorMessageWrapper>
-                <Button
-                    disabled={isSubmitting || !isValid}
-                    type="submit"
-                    fluid
-                    loader={<CircularProgress />}
-                    isLoading={isSubmitting}
-                >
-                    {t('send.cta-send')}
-                </Button>
-            </BottomWrapper>
+        <Wrapper>
+            <StyledForm onSubmit={handleSubmit(handleSend)}>
+                {fieldMarkup}
+                <BottomWrapper>
+                    <ErrorMessageWrapper>
+                        <Typography variant="p">{errors.address?.message}</Typography>
+                        <Typography variant="p">{errors.amount?.message}</Typography>
+                    </ErrorMessageWrapper>
+                    <Button
+                        disabled={isSubmitting || !isValid}
+                        type="submit"
+                        fluid
+                        loader={<CircularProgress />}
+                        isLoading={isSubmitting}
+                    >
+                        {t('send.cta-send')}
+                    </Button>
+                </BottomWrapper>
+            </StyledForm>
             <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
-        </StyledForm>
+        </Wrapper>
     );
 }

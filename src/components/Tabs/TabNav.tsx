@@ -4,10 +4,10 @@ import { useTranslation } from 'react-i18next';
 
 const Wrapper = styled.div`
     display: grid;
-    padding: 20px;
     place-items: center;
     grid-auto-flow: column;
     width: 100%;
+    padding: 0 0 20px;
 `;
 
 const NavButton = styled.button.attrs({
@@ -17,7 +17,6 @@ const NavButton = styled.button.attrs({
     color: ${({ theme }) => theme.palette.text.primary};
     opacity: ${({ $isActive }) => ($isActive ? 1 : 0.7)};
     text-transform: capitalize;
-
     &:hover {
         opacity: 0.85;
     }

@@ -4,7 +4,6 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 20px;
-    padding: 0 10px;
 `;
 
 export const QRContainer = styled.div`

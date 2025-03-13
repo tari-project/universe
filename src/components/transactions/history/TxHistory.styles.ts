@@ -7,6 +7,11 @@ export const ListWrapper = styled.div`
     overflow-y: auto;
     width: 100%;
     position: relative;
+
+    h6 {
+        text-align: center;
+        border: 1px solid pink;
+    }
 `;
 
 export const ListItemWrapper = styled.div`
