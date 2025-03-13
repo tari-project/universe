@@ -23,9 +23,10 @@ export function useSetUp() {
     useEffect(() => {
         if (adminShow === 'setup') return;
         const unlistenPromise = listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
+            console.info('Received tauri event: ', { e, p });
             switch (p.event_type) {
                 case 'setup_status':
-                    if (p.progress > 0) {
+                    if (p.progress >= 0) {
                         setSetupTitle(p.title);
                         setSetupParams(p.title_params);
                         setSetupProgress(p.progress);
