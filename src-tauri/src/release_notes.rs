@@ -37,7 +37,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter, State};
 use tokio::sync::RwLock;
 
-use crate::{events::ReleaseNotesHandlerPayload, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{events::ShowReleaseNotesPayload, UniverseAppState, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn-universe.tari.com/tari-project/universe/CHANGELOG.md";
@@ -284,7 +284,7 @@ impl ReleaseNotes {
 
         app.emit(
             "release_notes_handler",
-            ReleaseNotesHandlerPayload {
+            ShowReleaseNotesPayload {
                 release_notes: release_notes.content,
                 is_app_update_available,
                 should_show_dialog: should_show_release_notes,

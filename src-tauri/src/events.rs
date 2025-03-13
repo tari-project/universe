@@ -44,6 +44,11 @@ pub enum EventType {
     DetectedAvailableGpuEngines,
     SetupStatus,
     ResumingAllProcesses,
+    ShowReleaseNotesPayload,
+    CriticalProblem,
+    MissingApplications,
+    StuckOnOrphanChain,
+    Updater,
     NetworkStatus,
 }
 
@@ -102,8 +107,14 @@ pub struct NewBlockHeightPayload {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ReleaseNotesHandlerPayload {
+pub struct ShowReleaseNotesPayload {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CriticalProblemPayload {
+    title: Option<String>,
+    description: Option<String>,
 }

@@ -170,13 +170,6 @@ struct CpuMinerConfig {
     ludicrous_mode_cpu_percentage: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Clone)]
-#[allow(dead_code)]
-struct CriticalProblemEvent {
-    title: Option<String>,
-    description: Option<String>,
-}
-
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
