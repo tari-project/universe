@@ -57,7 +57,7 @@ export default [
         },
     },
     {
-        files: ['src/hooks/airdrop/useWebsocket.ts'], // Need correct path here
+        files: ['src/hooks/airdrop/useWebsocket.ts'],
         rules: {
             'react-hooks/exhaustive-deps': 'off',
             'react-compiler/react-compiler': [
