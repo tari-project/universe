@@ -21,40 +21,10 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
-use std::collections::HashMap;
-
-use crate::gpu_status_file::GpuDevice;
-
-#[derive(Debug, Serialize, Clone)]
-pub struct SetupStatusEvent {
-    pub event_type: String,
-    pub title: String,
-    pub title_params: Option<HashMap<String, String>>,
-    pub progress: f64,
-}
 
 #[derive(Debug, Serialize, Clone)]
 pub struct ReleaseNotesHandlerEvent {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct ResumingAllProcessesPayload {
-    pub title: String,
-    pub stage_progress: u32,
-    pub stage_total: u32,
-    pub is_resuming: bool,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct DetectedAvailableGpuEngines {
-    pub engines: Vec<String>,
-    pub selected_engine: String,
-}
-
-#[derive(Debug, Serialize, Clone)]
-pub struct DetectedDevices {
-    pub devices: Vec<GpuDevice>,
 }

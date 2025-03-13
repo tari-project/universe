@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use log::{error, info};
 use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
@@ -27,6 +29,7 @@ use tauri::{AppHandle, Emitter};
 
 use crate::{
     commands::CpuMinerStatus,
+    gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
@@ -36,7 +39,7 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub enum EventType {
     WalletAddressUpdate,
     WalletBalanceUpdate,
@@ -49,6 +52,37 @@ pub enum EventType {
     NetworkStatus,
     AppConfigLoaded,
     CloseSplashscreen,
+    DetectedDevices,
+    DetectedAvailableGpuEngines,
+    SetupStatus,
+    ResumingAllProcesses,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct SetupStatusEvent {
+    pub event_type: String,
+    pub title: String,
+    pub title_params: Option<HashMap<String, String>>,
+    pub progress: f64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ResumingAllProcessesPayload {
+    pub title: String,
+    pub stage_progress: u32,
+    pub stage_total: u32,
+    pub is_resuming: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedAvailableGpuEnginesPayload {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedDevicesPayload {
+    pub devices: Vec<GpuDevice>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -80,8 +114,62 @@ struct NetworkStatus {
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_setup_status(app_handle: &AppHandle, payload: SetupStatusEvent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::SetupStatus,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit SetupStatus event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_resuming_all_processes(
+        app_handle: &AppHandle,
+        payload: ResumingAllProcessesPayload,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ResumingAllProcesses,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit ResumingAllProcesses event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_detected_devices(app_handle: &AppHandle, devices: Vec<GpuDevice>) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::DetectedDevices,
+            payload: DetectedDevicesPayload { devices },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit DetectedDevices event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_detected_available_gpu_engines(
+        app_handle: &AppHandle,
+        engines: Vec<String>,
+        selected_engine: String,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::DetectedAvailableGpuEngines,
+            payload: DetectedAvailableGpuEnginesPayload {
+                engines,
+                selected_engine,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit DetectedAvailableGpuEngines event: {:?}", e);
+        }
+    }
+
     pub async fn emit_close_splashscreen(app_handle: &AppHandle) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CloseSplashscreen,
             payload: (),
@@ -112,7 +200,7 @@ impl EventsEmitter {
         }
     }
     pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::AppConfigLoaded,
             payload: app_config,
@@ -124,7 +212,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletAddressUpdate,
             payload: WalletAddressUpdatePayload {
@@ -138,7 +226,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_wallet_balance_update(app_handle: &AppHandle, balance: WalletBalance) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletBalanceUpdate,
             payload: balance,
@@ -149,7 +237,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_base_node_update(app_handle: &AppHandle, status: BaseNodeStatus) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::BaseNodeUpdate,
             payload: status,
@@ -165,7 +253,7 @@ impl EventsEmitter {
         app_handle: &AppHandle,
         gpu_public_devices: Vec<PublicDeviceProperties>,
     ) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuDevicesUpdate,
             payload: gpu_public_devices,
@@ -176,7 +264,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_cpu_mining_update(app_handle: &AppHandle, status: CpuMinerStatus) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::CpuMiningUpdate,
             payload: status,
@@ -187,7 +275,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_gpu_mining_update(app_handle: &AppHandle, status: GpuMinerStatus) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::GpuMiningUpdate,
             payload: status,
@@ -198,7 +286,7 @@ impl EventsEmitter {
     }
 
     pub async fn emit_connected_peers_update(app_handle: &AppHandle, connected_peers: Vec<String>) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::ConnectedPeersUpdate,
             payload: connected_peers,
@@ -214,7 +302,7 @@ impl EventsEmitter {
         coinbase_transaction: Option<TransactionInfo>,
         balance: WalletBalance,
     ) {
-        FrontendReadyChannel::current().wait_for_ready().await;
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::NewBlockHeight,
             payload: NewBlockHeightPayload {

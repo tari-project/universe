@@ -26,10 +26,13 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
 
 use crate::{
-    commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
+    commands::CpuMinerStatus,
+    events_emitter::{EventsEmitter, ResumingAllProcessesPayload, SetupStatusEvent},
+    events_service::EventsService,
+    gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
-    utils::app_flow_utils::FrontendReadyChannel, wallet_adapter::WalletState, BaseNodeStatus,
-    GpuMinerStatus, UniverseAppState,
+    wallet_adapter::WalletState,
+    BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -165,6 +168,31 @@ impl EventsManager {
 
     pub async fn handle_close_splash_screen(&self, app: &AppHandle) {
         EventsEmitter::emit_close_splashscreen(app).await;
+    }
+
+    pub async fn handle_detected_devices(&self, app: &AppHandle, devices: Vec<GpuDevice>) {
+        EventsEmitter::emit_detected_devices(app, devices).await;
+    }
+
+    pub async fn handle_detected_available_gpu_engines(
+        &self,
+        app: &AppHandle,
+        engines: Vec<String>,
+        selected_engine: String,
+    ) {
+        EventsEmitter::emit_detected_available_gpu_engines(app, engines, selected_engine).await;
+    }
+
+    pub async fn handle_resuming_all_processes(
+        &self,
+        app: &AppHandle,
+        payload: ResumingAllProcessesPayload,
+    ) {
+        EventsEmitter::emit_resuming_all_processes(app, payload).await;
+    }
+
+    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusEvent) {
+        EventsEmitter::emit_setup_status(app, payload).await;
     }
 
     pub async fn handle_network_status_update(

@@ -25,6 +25,7 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
+use events_emitter::SetupStatusEvent;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -291,20 +292,21 @@ async fn setup_inner(
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
     state.events_manager.handle_app_config_loaded(&app).await;
-    app.emit(
-        "setup_message",
-        SetupStatusEvent {
-            event_type: "setup_status".to_string(),
-            title: "starting-up".to_string(),
-            title_params: None,
-            progress: 0.0,
-        },
-    )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
+    state
+        .events_manager
+        .handle_setup_status(
+            &app,
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title: "starting-up".to_string(),
+                title_params: None,
+                progress: 0.0,
+            },
+        )
+        .await;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        FrontendReadyChannel::current().wait_for_ready().await;
         app.emit(
             "critical_problem",
             CriticalProblemEvent {
@@ -892,21 +894,18 @@ async fn setup_inner(
 
     initialize_frontend_updates(&app).await?;
 
-    drop(
-        app.clone()
-            .emit(
-                "setup_message",
-                SetupStatusEvent {
-                    event_type: "setup_status".to_string(),
-                    title: "application-started".to_string(),
-                    title_params: None,
-                    progress: 1.0,
-                },
-            )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            ),
-    );
+    state
+        .events_manager
+        .handle_setup_status(
+            &app,
+            SetupStatusEvent {
+                event_type: "setup_status".to_string(),
+                title: "application-started".to_string(),
+                title_params: None,
+                progress: 1.0,
+            },
+        )
+        .await;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     let mut shutdown_signal = state.shutdown.to_signal();

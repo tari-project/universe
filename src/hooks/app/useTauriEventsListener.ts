@@ -5,6 +5,7 @@ import {
     AppConfig,
     BaseNodeStatus,
     CpuMinerStatus,
+    GpuDevice,
     GpuMinerStatus,
     NetworkStatus,
     TransactionInfo,
@@ -23,6 +24,7 @@ import {
 } from '@app/store';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
+import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -71,6 +73,19 @@ type BackendStateUpdateEvent =
           payload: any;
       }
     | {
+          event_type: 'DetectedDevices';
+          payload: {
+              devices: GpuDevice[];
+          };
+      }
+    | {
+          event_type: 'DetectedAvailableGpuEngines';
+          payload: {
+              engines: string[];
+              selected_engine: string;
+          };
+      }
+    | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
       };
@@ -105,8 +120,13 @@ const useTauriEventsListener = () => {
                     handleAppConfigLoaded(event.payload);
                     break;
                 case 'CloseSplashscreen':
-                    console.log('CloseSplashscreen', event.payload);
                     handleCloseSplashscreen();
+                    break;
+                case 'DetectedDevices':
+                    setGpuDevices(event.payload.devices);
+                    break;
+                case 'DetectedAvailableGpuEngines':
+                    setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                     break;
                 case `NetworkStatus`:
                     setNetworkStatus(event.payload);
