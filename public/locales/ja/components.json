@@ -9,14 +9,25 @@
     "required": "フィールドが必要です"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "キャンセル",
+    "description": "ルディクラスモードはシステムを応答不能にする可能性があります。ルディクラスモードでのマイニングを開始するか、Tari Universeがエコモードに戻ることを確認してください",
+    "keepChanges": "変更を保持",
+    "seconds": "秒",
+    "title": "ルディクラスモードに切り替えますか？"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "了解",
+    "title": "リリースノート"
+  },
+  "resume-app-modal": {
+    "title": "Tari Universeを再開しています",
+    "resuming-all-processes": "すべてのプロセスを再開しています...",
+    "resuming-tor": "Torを再開しています...",
+    "resuming-node": "ノードを再開しています...",
+    "resuming-wallet": "ウォレットを再開しています...",
+    "syncing-node": "ノードを同期しています...",
+    "resuming-p2pool": "P2Poolを再開しています...",
+    "resuming-mm-proxy": "MMプロキシを再開しています...",
+    "finishing-resume": "再開を完了しています..."
   }
 }

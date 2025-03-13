@@ -16,8 +16,8 @@
   "please-try-again-later": "请稍后再试。如果问题仍然存在，请联系我们。",
   "resources": "资源",
   "restart": "重启",
-  "seconds": "片刻",
-  "shutting-down": "停工..",
+  "seconds": "秒",
+  "shutting-down": "正在关闭",
   "submit": "提交",
   "tari-universe": "Tari 宇宙",
   "temperature": "温度",
@@ -28,5 +28,7 @@
   "utilization": "利用率",
   "version": "版本",
   "versions": "版本",
-  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。"
+  "webgl-not-supported": "不支持 WebGL。已禁用视觉模式。",
+  "close": "关闭",
+  "update": "更新"
 }

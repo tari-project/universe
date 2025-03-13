@@ -14,8 +14,6 @@ export function Ruler() {
     const topSegments = Array.from({ length: 16 }, (_, i) => i + 1);
     const rulerSegments = Array.from({ length: 14 }, (_, i) => i + 1);
 
-    let heightSegment = height;
-
     const topMarkSegments = topSegments.map((segment, i) => {
         const groupOpacity = segment * 0.05;
         return (
@@ -32,6 +30,7 @@ export function Ruler() {
     });
 
     const bottomMarkSegments = rulerSegments.map((segment, i) => {
+        let heightSegment = height;
         const diff = height && height > 50 ? 10 : 5;
         const renderNumber = heightSegment && heightSegment > diff;
 
