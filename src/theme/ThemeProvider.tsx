@@ -7,8 +7,10 @@ const themes = {
     light: lightTheme,
 };
 export default function ThemeProvider({ children }: { children: ReactNode }) {
-    const initialDarkMode = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    const storedTheme = useUIStore((s) => s.theme);
-    const theme = themes[storedTheme ?? (initialDarkMode ? 'dark' : 'light')] as DefaultTheme;
+    const preferredTheme = useUIStore((s) => s.preferredTheme);
+    const uiTheme = useUIStore((s) => s.theme);
+    // if for some reason it was not stored, or stored as 'system'
+    const themeName = !uiTheme || (uiTheme !== 'dark' && uiTheme !== 'light') ? preferredTheme : uiTheme;
+    const theme = themes[themeName] as DefaultTheme;
     return <SCThemeProvider theme={theme}>{children}</SCThemeProvider>;
 }
