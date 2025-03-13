@@ -20,9 +20,10 @@ export default function ThemeSelector() {
     const handleChange = useCallback(async (e) => {
         const themeName = e.target.id;
         if (e.target.checked) {
-            setDisplayMode(themeName).then(() => setUITheme(themeName));
+            await setDisplayMode(themeName).then(() => setUITheme(themeName));
         }
     }, []);
+
     return (
         <Wrapper>
             {themeOptions.map((themeOption) => {

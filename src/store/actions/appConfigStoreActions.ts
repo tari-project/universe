@@ -29,7 +29,7 @@ export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
         changeLanguage(appConfig.application_language);
         const configTheme = appConfig.display_mode?.toLowerCase();
         if (configTheme) {
-            await setTheme(configTheme as displayMode);
+            setUITheme(configTheme as displayMode);
         }
         if (appConfig.visual_mode) {
             try {

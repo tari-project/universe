@@ -6,9 +6,13 @@ import { Theme } from '@app/theme/types.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
-export const setUITheme = (theme: Theme) => {
-    setAnimationProperties(theme === 'light' ? animationLightBg : animationDarkBg);
-    useUIStore.setState({ theme });
+export const setUITheme = (theme: Theme | 'system') => {
+    const initialPreferred = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const uiTheme: Theme = theme === 'system' ? initialPreferred : theme;
+
+    setAnimationProperties(uiTheme === 'light' ? animationLightBg : animationDarkBg);
+
+    useUIStore.setState({ theme: uiTheme });
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
 export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {

@@ -122,6 +122,7 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
+
         let app_state = self.app_handle.state::<UniverseAppState>();
         app_state
             .events_manager

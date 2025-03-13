@@ -8,6 +8,7 @@ import {
     ExternalDependency,
     GpuMinerStatus,
     WalletBalance,
+    NetworkStatus,
 } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
@@ -33,6 +34,7 @@ import {
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from '@app/types/events-payloads';
+import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -104,6 +106,10 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'ShowReleaseNotes';
           payload: ShowReleaseNotesPayload;
+      }
+    | {
+          event_type: 'NetworkStatus';
+          payload: NetworkStatus;
       };
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
@@ -172,6 +178,9 @@ const useTauriEventsListener = () => {
                         break;
                     case 'ShowReleaseNotes':
                         handleShowRelesaeNotes(event.payload);
+                        break;
+                    case `NetworkStatus`:
+                        setNetworkStatus(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

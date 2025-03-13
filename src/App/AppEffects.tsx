@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import setupLogger from '../utils/shared-logger.ts';
 import useTauriEventsListener from '../hooks/app/useTauriEventsListener.ts';
 import { setMiningNetwork } from '../store/actions/miningStoreActions.ts';
-import { useDetectMode, useDisableRefresh } from '../hooks';
+import { useDetectMode, useDisableRefresh, useSetUp } from '../hooks';
 import { invoke } from '@tauri-apps/api/core';
 
 // This component is used to initialise the app and listen for any events that need to be listened to
@@ -24,6 +24,7 @@ export default function AppEffects() {
         void initialize();
     }, []);
 
+    useSetUp();
     useDetectMode();
     useDisableRefresh();
     useTauriEventsListener();

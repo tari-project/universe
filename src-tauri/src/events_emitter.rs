@@ -45,6 +45,26 @@ const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_network_status(
+        app_handle: &AppHandle,
+        download_speed: f64,
+        upload_speed: f64,
+        latency: f64,
+        is_too_low: bool,
+    ) {
+        let event = Event {
+            event_type: EventType::NetworkStatus,
+            payload: NetworkStatus {
+                download_speed,
+                upload_speed,
+                latency,
+                is_too_low,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
+        }
+    }
     pub async fn emit_stuck_on_orphan_chain(app_handle: &AppHandle, is_stuck: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
