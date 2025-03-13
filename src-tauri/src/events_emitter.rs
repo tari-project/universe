@@ -28,8 +28,8 @@ use crate::{
     commands::CpuMinerStatus,
     events::{
         CriticalProblemPayload, DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event,
-        EventType, NewBlockHeightPayload, ResumingAllProcessesPayload, SetupStatusPayload,
-        ShowReleaseNotesPayload, WalletAddressUpdatePayload,
+        EventType, NetworkStatus, NewBlockHeightPayload, ResumingAllProcessesPayload,
+        SetupStatusPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
     },
     external_dependencies::RequiredExternalDependency,
     gpu_status_file::GpuDevice,
