@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
   "title": {
     "application-started": "Aplikasi dimulai",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Memeriksa versi terbaru dari xtrgpuminer",
     "checking-latest-version-mmproxy": "Memeriksa versi terbaru dari mmproxy",
     "checking-latest-version-node": "Memeriksa versi terbaru dari node",

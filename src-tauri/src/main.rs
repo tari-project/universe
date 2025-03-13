@@ -409,7 +409,7 @@ async fn setup_inner(
 
     telemetry_service
         .send(
-            "benchamrking-network".to_string(),
+            "benchmarking-network".to_string(),
             json!({
                 "service": "speedtest",
                 "percentage": 0,
@@ -418,7 +418,7 @@ async fn setup_inner(
         .await?;
     progress.set_max(5).await;
     progress
-        .update("benchamrking-network".to_string(), None, 0)
+        .update("benchmarking-network".to_string(), None, 0)
         .await;
 
     NetworkStatus::current()

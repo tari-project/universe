@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "这可能需要几分钟",
   "title": {
     "application-started": "应用程序已启动",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "正在检查 xtrgpuminer 的最新版本",
     "checking-latest-version-mmproxy": "正在检查 mmproxy 的最新版本",
     "checking-latest-version-node": "正在检查节点的最新版本",

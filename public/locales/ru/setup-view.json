@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "Это может занять несколько минут",
   "title": {
     "application-started": "Приложения запущены",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Проверка последней версии xtrgpuminer",
     "checking-latest-version-mmproxy": "Проверка последней версии mmproxy",
     "checking-latest-version-node": "Проверка последней версии узла",

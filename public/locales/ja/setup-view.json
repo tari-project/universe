@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "数分かかる場合があります",
   "title": {
     "application-started": "アプリケーションが開始されました",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminerの最新バージョンを確認中",
     "checking-latest-version-mmproxy": "mmproxyの最新バージョンを確認中",
     "checking-latest-version-node": "ノードの最新バージョンを確認中",

@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "इसमें कुछ मिनट लग सकते हैं",
   "title": {
     "application-started": "एप्लिकेशन शुरू हो गए हैं",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminer के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-mmproxy": "mmproxy के नवीनतम संस्करण की जाँच कर रहा है",
     "checking-latest-version-node": "नोड के नवीनतम संस्करण की जाँच कर रहा है",

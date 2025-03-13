@@ -8,7 +8,7 @@
   "this-might-take-a-few-minutes": "몇 분 정도 걸릴 수 있습니다",
   "title": {
     "application-started": "애플리케이션 시작됨",
-    "benchamrking-network": "Network Benchmark",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminer의 최신 버전 확인 중",
     "checking-latest-version-mmproxy": "mmproxy의 최신 버전 확인 중",
     "checking-latest-version-node": "노드의 최신 버전 확인 중",
