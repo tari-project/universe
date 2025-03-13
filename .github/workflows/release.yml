@@ -70,7 +70,8 @@ jobs:
       - name: BETA Builds - Set environment variables
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: '(Beta)'
+          #BETA_STRING: '(Beta)'
+          BETA_STRING: '_Beta_'
           OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
@@ -213,11 +214,13 @@ jobs:
           npm --version
           npm install
 
-      - name: Install tauri-cli
+      - name: Install tauri-cli - work around (AppImage)
+        if: startsWith(runner.os,'Linux')
         working-directory: ./src-tauri
         run: |
           cargo install tauri-cli --version "2.1.0" --locked
           cargo tauri --version
+          sudo apt-get install --no-install-recommends --assume-yes appstream
 
       - name: Build Tauri Apps
         id: build
