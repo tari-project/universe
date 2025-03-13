@@ -1,20 +1,36 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore';
-import { AppConfig, BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, WalletBalance } from '@app/types/app-status';
+import {
+    AppConfig,
+    BaseNodeStatus,
+    CpuMinerStatus,
+    ExternalDependency,
+    GpuMinerStatus,
+    WalletBalance,
+} from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
-import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
+import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
-import { handleSetupStatus, setAppResumePayload } from '@app/store/actions/appStateStoreActions';
+import {
+    handleSetupStatus,
+    handleShowRelesaeNotes,
+    loadExternalDependencies,
+    setAppResumePayload,
+    setCriticalProblem,
+    setIsStuckOnOrphanChain,
+} from '@app/store/actions/appStateStoreActions';
 import {
     ConnectedPeersUpdatePayload,
+    CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     ResumingAllProcessesPayload,
     SetupStatusPayload,
+    ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from '@app/types/events-payloads';
 
@@ -72,6 +88,22 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'ResumingAllProcesses';
           payload: ResumingAllProcessesPayload;
+      }
+    | {
+          event_type: 'CriticalProblem';
+          payload: CriticalProblemPayload;
+      }
+    | {
+          event_type: 'MissingApplications';
+          payload: ExternalDependency[];
+      }
+    | {
+          event_type: 'StuckOnOrphanChain';
+          payload: boolean;
+      }
+    | {
+          event_type: 'ShowReleaseNotes';
+          payload: ShowReleaseNotesPayload;
       };
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
@@ -127,6 +159,19 @@ const useTauriEventsListener = () => {
                         break;
                     case 'ResumingAllProcesses':
                         setAppResumePayload(event.payload);
+                        break;
+                    case 'CriticalProblem':
+                        setCriticalProblem(event.payload);
+                        break;
+                    case 'MissingApplications':
+                        loadExternalDependencies(event.payload);
+                        setShowExternalDependenciesDialog(true);
+                        break;
+                    case 'StuckOnOrphanChain':
+                        setIsStuckOnOrphanChain(event.payload);
+                        break;
+                    case 'ShowReleaseNotes':
+                        handleShowRelesaeNotes(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));
