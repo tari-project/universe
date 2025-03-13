@@ -36,7 +36,6 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage,updater'
-            #args: '--bundles appimage --verbose'
             extra: '-x64'
           - platform: 'ubuntu-24.04-arm'
             args: '--bundles deb,appimage,updater'
