@@ -34,7 +34,7 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-22.04'
-            args: '--bundles deb,updater'
+            args: '--bundles appimage --verbose'
 #            args: '--bundles deb,appimage,updater'
             extra: '-x64'
           # - platform: 'ubuntu-24.04-arm'
@@ -212,6 +212,12 @@ jobs:
         run: |
           npm --version
           npm install
+
+      - name: Install tauri-cli
+        working-directory: ./src-tauri
+        run: |
+          cargo install tauri-cli --version "2.1.0" --locked
+          cargo tauri --version
 
       - name: Build Tauri Apps
         id: build
