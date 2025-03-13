@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 import { io } from 'socket.io-client';
 import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useCallback, useEffect, useMemo, useState } from 'react';

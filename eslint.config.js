@@ -54,11 +54,16 @@ export default [
             'react/jsx-uses-react': 'off',
             'react/react-in-jsx-scope': 'off',
             'i18next/no-literal-string': ['error', { markupOnly: true }],
-            // 'react-hooks/exhaustive-deps': 'off', // just for now until WS is sorted
+        },
+    },
+    {
+        files: ['src/hooks/airdrop/useWebsocket.ts'], // Need correct path here
+        rules: {
+            'react-hooks/exhaustive-deps': 'off',
             'react-compiler/react-compiler': [
                 'warn',
                 {
-                    'react-hooks/exhaustive-deps': 'off', // just for now until WS is sorted
+                    'react-hooks/exhaustive-deps': 'off',
                 },
             ],
         },
