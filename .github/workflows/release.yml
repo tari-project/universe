@@ -84,24 +84,22 @@ jobs:
           #set -xueo pipefail
           echo "TARI_NETWORK=esme" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
-
-          # Not needed?
-          #echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
-          #echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
-          #echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
-          #echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
-
+          # Make envs available to other steps
+          echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
+          echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          # GitHub Actions does not expand environment variables dynamically in envs
           if [ "$RUNNER_OS" == "Linux" ]; then
             echo "OS_BETA_STRING=-${BETA_STRING}" >> $GITHUB_ENV
-            echo "OS_BETA_STRING_BinName=$(echo "${BETA_STRING}" | sed 's/[^a-zA-Z0-9]/_/g') >> $GITHUB_ENV
+            BETA_STRING_SAFE=$(echo ${BETA_STRING} | sed 's/[^a-zA-Z0-9]/_/g')
+            echo "OS_BETA_STRING_BinName=-${BETA_STRING_SAFE}" >> $GITHUB_ENV
           else
             echo "OS_BETA_STRING=\ ${BETA_STRING}" >> $GITHUB_ENV
             echo "OS_BETA_STRING_BinName=\ ${BETA_STRING}" >> $GITHUB_ENV
           fi
-
           echo "OS_BETA_STRING is ${{ env.OS_BETA_STRING }}"
           echo "OS_BETA_STRING_BinName is ${{ env.OS_BETA_STRING_BinName }}"
-
           echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
