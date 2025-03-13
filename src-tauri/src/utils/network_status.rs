@@ -81,7 +81,7 @@ impl NetworkStatus {
         );
         let is_band_width_too_low = self.is_band_width_too_low(download_speed, upload_speed);
 
-        let _unused = NetworkStatus::current()
+        let _unused = self
             .sender
             .send((download_speed, upload_speed, latency))
             .inspect_err(|e| {
