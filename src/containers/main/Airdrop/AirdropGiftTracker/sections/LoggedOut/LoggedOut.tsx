@@ -14,6 +14,7 @@ export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const [linkOpened, setLinkOpened] = useState(false);
     const [copying, setCopying] = useState(false);
+    const [copyError, setCopyError] = useState(false);
     const { isCopied, copyToClipboard } = useCopyToClipboard();
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const { referralQuestPoints, airdropUrl } = useAirdropStore((s) => ({
@@ -24,7 +25,8 @@ export default function LoggedOut() {
 
     useFetchAirdropToken({ canListen: linkOpened });
 
-    const handleAuth = useCallback(
+    // Extracted common logic for preparing the airdrop link
+    const prepareAirdropLink = useCallback(
         async (code?: string) => {
             const token = uuidv4();
             if (!allowTelemetry) {
@@ -32,40 +34,73 @@ export default function LoggedOut() {
             }
             if (airdropUrl) {
                 setAuthUuid(token);
-                open(`${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`).then(() => {
+                return `${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`;
+            }
+            return null;
+        },
+        [airdropUrl, allowTelemetry]
+    );
+
+    const handleAuth = useCallback(
+        async (code?: string) => {
+            const url = await prepareAirdropLink(code);
+            if (url) {
+                open(url).then(() => {
                     setLinkOpened(true);
                 });
             }
         },
-        [airdropUrl, allowTelemetry]
+        [prepareAirdropLink]
     );
 
     const handleRightClick = useCallback(
         async (e, code?: string) => {
             e.preventDefault();
             setCopying(true);
+            setCopyError(false);
 
-            const token = uuidv4();
-            if (!allowTelemetry) {
-                await setAllowTelemetry(true);
-            }
+            try {
+                const url = await prepareAirdropLink(code);
+                if (url) {
+                    copyToClipboard(url);
+                } else {
+                    throw new Error('Failed to generate URL');
+                }
+            } catch (error) {
+                console.error('Failed to copy to clipboard:', error);
+                setCopyError(true);
 
-            if (airdropUrl) {
-                setAuthUuid(token);
-                const url = `${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`;
-                copyToClipboard(url);
+                // Auto-clear error state after 3 seconds
+                setTimeout(() => {
+                    setCopyError(false);
+                }, 3000);
+            } finally {
                 setCopying(false);
             }
         },
-        [airdropUrl, allowTelemetry, copyToClipboard]
+        [prepareAirdropLink, copyToClipboard]
     );
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 
+    // Determine button text based on state
+    const getButtonText = () => {
+        if (copying) return t('copying');
+        if (copyError) return t('copyFailed');
+        if (isCopied) return t('copied');
+        return t('joinAirdrop');
+    };
+
     return (
         <Wrapper>
-            <ClaimButton onClick={() => handleAuth()} onContextMenu={(e) => handleRightClick(e)}>
-                <Title>{copying ? t('copying') : isCopied ? t('copied') : t('joinAirdrop')}</Title>
+            <ClaimButton
+                onClick={() => handleAuth()}
+                onContextMenu={(e) => handleRightClick(e)}
+                title={t('rightClickToCopy')}
+                aria-label={t('joinAirdropButtonAriaLabel')}
+                $hasError={copyError}
+            >
+                <Title>{getButtonText()}</Title>
 
                 <GemPill>
                     {gemsValue}
