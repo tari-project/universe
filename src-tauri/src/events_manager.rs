@@ -27,7 +27,8 @@ use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus,
-    events_emitter::{EventsEmitter, ResumingAllProcessesPayload, SetupStatusEvent},
+    events::{ResumingAllProcessesPayload, SetupStatusPayload},
+    events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
@@ -191,7 +192,7 @@ impl EventsManager {
         EventsEmitter::emit_resuming_all_processes(app, payload).await;
     }
 
-    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusEvent) {
+    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusPayload) {
         EventsEmitter::emit_setup_status(app, payload).await;
     }
 

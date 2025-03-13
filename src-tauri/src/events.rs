@@ -21,9 +21,88 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Serialize;
+use std::collections::HashMap;
+
+use crate::{
+    gpu_status_file::GpuDevice,
+    wallet_adapter::{TransactionInfo, WalletBalance},
+};
+
+#[derive(Clone, Debug, Serialize)]
+pub enum EventType {
+    WalletAddressUpdate,
+    WalletBalanceUpdate,
+    BaseNodeUpdate,
+    GpuDevicesUpdate,
+    CpuMiningUpdate,
+    GpuMiningUpdate,
+    ConnectedPeersUpdate,
+    NewBlockHeight,
+    AppConfigLoaded,
+    CloseSplashscreen,
+    DetectedDevices,
+    DetectedAvailableGpuEngines,
+    SetupStatus,
+    ResumingAllProcesses,
+    NetworkStatus,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NetworkStatusPayload {
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
+    pub is_too_low: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct SetupStatusPayload {
+    pub event_type: String,
+    pub title: String,
+    pub title_params: Option<HashMap<String, String>>,
+    pub progress: f64,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct ResumingAllProcessesPayload {
+    pub title: String,
+    pub stage_progress: u32,
+    pub stage_total: u32,
+    pub is_resuming: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedAvailableGpuEnginesPayload {
+    pub engines: Vec<String>,
+    pub selected_engine: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedDevicesPayload {
+    pub devices: Vec<GpuDevice>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Event<T> {
+    pub event_type: EventType,
+    pub payload: T,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WalletAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NewBlockHeightPayload {
+    pub block_height: u64,
+    pub coinbase_transaction: Option<TransactionInfo>,
+    pub balance: WalletBalance,
+}
 
 #[derive(Debug, Serialize, Clone)]
-pub struct ReleaseNotesHandlerEvent {
+pub struct ReleaseNotesHandlerPayload {
     pub release_notes: String,
     pub is_app_update_available: bool,
     pub should_show_dialog: bool,

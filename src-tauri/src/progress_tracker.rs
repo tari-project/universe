@@ -23,7 +23,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::error;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
 use tokio::sync::{watch::Sender, RwLock};
 
 use crate::{events_emitter::SetupStatusEvent, UniverseAppState};

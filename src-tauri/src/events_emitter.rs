@@ -20,15 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-
 use log::{error, info};
-use serde::Serialize;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 
 use crate::{
     commands::CpuMinerStatus,
+    events::{
+        DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
+        NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
+        SetupStatusPayload, WalletAddressUpdatePayload,
+    },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
@@ -39,82 +41,10 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 
-#[derive(Clone, Debug, Serialize)]
-pub enum EventType {
-    WalletAddressUpdate,
-    WalletBalanceUpdate,
-    BaseNodeUpdate,
-    GpuDevicesUpdate,
-    CpuMiningUpdate,
-    GpuMiningUpdate,
-    ConnectedPeersUpdate,
-    NewBlockHeight,
-    NetworkStatus,
-    AppConfigLoaded,
-    CloseSplashscreen,
-    DetectedDevices,
-    DetectedAvailableGpuEngines,
-    SetupStatus,
-    ResumingAllProcesses,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct SetupStatusEvent {
-    pub event_type: String,
-    pub title: String,
-    pub title_params: Option<HashMap<String, String>>,
-    pub progress: f64,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ResumingAllProcessesPayload {
-    pub title: String,
-    pub stage_progress: u32,
-    pub stage_total: u32,
-    pub is_resuming: bool,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct DetectedAvailableGpuEnginesPayload {
-    pub engines: Vec<String>,
-    pub selected_engine: String,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct DetectedDevicesPayload {
-    pub devices: Vec<GpuDevice>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-struct Event<T> {
-    event_type: EventType,
-    payload: T,
-}
-
-#[derive(Clone, Debug, Serialize)]
-struct WalletAddressUpdatePayload {
-    tari_address_base58: String,
-    tari_address_emoji: String,
-}
-
-#[derive(Clone, Debug, Serialize)]
-struct NewBlockHeightPayload {
-    block_height: u64,
-    coinbase_transaction: Option<TransactionInfo>,
-    balance: WalletBalance,
-}
-#[derive(Clone, Debug, Serialize)]
-struct NetworkStatus {
-    download_speed: f64,
-    upload_speed: f64,
-    latency: f64,
-    is_too_low: bool,
-}
-
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
-    pub async fn emit_setup_status(app_handle: &AppHandle, payload: SetupStatusEvent) {
+    pub async fn emit_setup_status(app_handle: &AppHandle, payload: SetupStatusPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::SetupStatus,
@@ -188,7 +118,7 @@ impl EventsEmitter {
     ) {
         let event = Event {
             event_type: EventType::NetworkStatus,
-            payload: NetworkStatus {
+            payload: NetworkStatusPayload {
                 download_speed,
                 upload_speed,
                 latency,
