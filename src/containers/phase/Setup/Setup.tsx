@@ -7,7 +7,6 @@ import grain from '/assets/img/grain.png';
 import { memo } from 'react';
 
 const Setup = memo(function Setup() {
-    useSetUp();
     return (
         <SetupWrapper $bg={grain}>
             <HeroText />

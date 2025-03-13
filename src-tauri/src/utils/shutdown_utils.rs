@@ -27,7 +27,6 @@ use crate::{
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
     progress_tracker::ProgressTracker,
-    utils::network_status::NetworkStatus,
     StartConfig, UniverseAppState, APPLICATION_FOLDER_ID,
 };
 use anyhow::anyhow;
@@ -48,8 +47,6 @@ pub async fn stop_all_processes(
     if should_shutdown && !state.shutdown.is_triggered() {
         info!(target: LOG_TARGET, "Entering shutdown sequence");
         state.shutdown.clone().trigger();
-
-        NetworkStatus::current().cancel_listener().await;
     }
 
     let base_path = app_handle

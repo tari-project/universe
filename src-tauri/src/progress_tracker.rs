@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use log::{error, info};
+use log::error;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{watch::Sender, RwLock};
 
@@ -121,8 +121,6 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
-
-        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
 
         self.app_handle
             .emit(
