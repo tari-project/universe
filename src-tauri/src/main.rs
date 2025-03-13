@@ -50,7 +50,6 @@ use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
-use serde::Serialize;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -60,7 +59,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
 use tokio::sync::{Mutex, RwLock};
