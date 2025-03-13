@@ -266,7 +266,7 @@ jobs:
           export TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
           echo TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
           echo "TARI_UNIVERSE_APP_VERSION=${TARI_UNIVERSE_APP_VERSION}"
-          if [ $IS_BETA ]; then
+          if [ ${{ env.IS_BETA }} ]; then
             export BETA_DATE=${{ env.BETA_DATE }}
             echo BETA_DATE=${{ env.BETA_DATE }}
             echo "BETA_DATE=${BETA_DATE}"
