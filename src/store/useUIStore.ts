@@ -16,6 +16,7 @@ export type SidebarType = SidebarTypeTuple[number];
 
 interface UIStoreState {
     theme: Theme;
+    preferredTheme: Theme;
     currentSidebar: SidebarType;
     latestVersion?: string;
     sidebarOpen: boolean;
@@ -25,10 +26,12 @@ interface UIStoreState {
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
 }
-const initialDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+
 const initialState: UIStoreState = {
     isWebglNotSupported: false,
-    theme: initialDarkMode ? 'dark' : 'light',
+    theme: preferredTheme,
+    preferredTheme,
     sidebarOpen: false,
     currentSidebar: 'mining',
     dialogToShow: null,

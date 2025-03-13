@@ -22,6 +22,7 @@ export default function ThemeSelector() {
             await setTheme(themeName);
         }
     }, []);
+
     return (
         <Wrapper>
             {themeOptions.map((themeOption) => {
