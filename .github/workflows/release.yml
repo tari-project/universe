@@ -272,14 +272,15 @@ jobs:
           fi
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
-          wix build tari-win-bundler\Bundle.wxs \
+          wix extension list
+          wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
             -ext WixToolset.BootstrapperApplications.wixext \
             -includepath tari-win-bundler \
-            -includepath tari-win-bundler\resources \
-            -includepath tari-win-bundler\executables \
+            -includepath tari-win-bundler/resources \
+            -includepath tari-win-bundler/executables \
             -includepath wix \
-            -includepath src-tauri\target\release\bundle\msi
+            -includepath src-tauri/target/release/bundle/msi
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') }}
