@@ -200,6 +200,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
     FrontendReadyChannel::current().set_ready();
     TasksTracker::current().spawn(async move {
         let app_state = app_handle.state::<UniverseAppState>();
+        // Give the splash screen a few seconds to show before closing it
         sleep(Duration::from_secs(3));
         app_state
             .events_manager
