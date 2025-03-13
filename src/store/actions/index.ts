@@ -74,7 +74,7 @@ export {
 
 export {
     fetchCoinbaseTransactions,
-    fetchTransactionsHistory,
+    fetchTransactions,
     importSeedWords,
     initialFetchTxs,
     refreshCoinbaseTransactions,
