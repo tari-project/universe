@@ -138,6 +138,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            // Difficulty is checked in p2pool; no need to check it in the merge mining proxy as well.
+            "-p".to_string(),
+            "merge_mining_proxy.check_tari_difficulty_before_submit=false".to_string(),
             "-p".to_string(),
             format!(
                 "merge_mining_proxy.use_dynamic_fail_data={}",

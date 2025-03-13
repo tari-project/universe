@@ -2,6 +2,7 @@
   "dont-worry": "Не волнуйтесь, в следующий раз это займет меньше времени",
   "installing-latest-version": "Установка версии {{version}} Tari Universe",
   "new-tari-version-available": "Доступна новая версия Tari Universe!",
+  "could-not-auto-update": "Мы не смогли автоматически обновить Tari Universe до {{version}}, пока машина была заблокирована или в режиме сна.",
   "no": "Нет",
   "setting-up": "Настройка машины правды Tari...",
   "this-might-take-a-few-minutes": "Это может занять несколько минут",

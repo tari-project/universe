@@ -2,8 +2,8 @@ import BonusGems from './BonusGems/BonusGems';
 import FriendAccepted from './FriendAccepted/FriendAccepted';
 import GoalComplete from './GoalComplete/GoalComplete';
 import { Wrapper } from './styles';
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useEffect } from 'react';
+import { setFlareAnimationType } from '@app/store';
 
 interface Props {
     gems: number;
@@ -21,8 +21,6 @@ const durations = {
 };
 
 export default function Flare({ gems, animationType }: Props) {
-    const setFlareAnimationType = useAirdropStore((s) => s.setFlareAnimationType);
-
     useEffect(() => {
         if (!animationType) return;
         const duration = durations[animationType] || 0;
@@ -30,7 +28,6 @@ export default function Flare({ gems, animationType }: Props) {
         return () => {
             clearTimeout(animationTimeout);
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [animationType]);
 
     return (

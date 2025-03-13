@@ -2,6 +2,7 @@
   "dont-worry": "别担心，下次不会花这么长时间",
   "installing-latest-version": "正在安装 Tari 宇宙的 {{version}} 版本",
   "new-tari-version-available": "有新版本的 Tari Universe 可用！",
+  "could-not-auto-update": "当机器被锁定或处于睡眠模式时，我们无法自动更新 Tari Universe 到 {{version}}。",
   "no": "否",
   "setting-up": "正在设置 Tari ...",
   "this-might-take-a-few-minutes": "这可能需要几分钟",

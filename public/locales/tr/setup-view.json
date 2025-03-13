@@ -2,6 +2,7 @@
   "dont-worry": "Merak etmeyin, bir dahaki sefere bu kadar uzun sürmeyecek",
   "installing-latest-version": "Tari Universe\"in {{version}} sürümü yükleniyor",
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
+  "could-not-auto-update": "Makine kilitli veya uyku modundayken Tari Universe\"i {{version}} sürümüne otomatik olarak güncelleyemedik.",
   "no": "Hayır",
   "setting-up": "Tari doğruluk makinesi kuruluyor...",
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
