@@ -23,6 +23,7 @@ env:
   TS_FEATURES: release-ci
 
 jobs:
+
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -73,7 +74,9 @@ jobs:
           #BETA_STRING: '(Beta)'
           BETA_STRING: '_Beta_'
           #OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
-          OS_BETA_STRING: ${{ runner.os == 'Linux' && format('-{0}', env.BETA_STRING) || format(' {0}', env.BETA_STRING) }}
+          OS_BETA_STRING: ${{ runner.os == 'Linux' && '-_Beta_' || ' _Beta_' }}
+          #OS_BETA_STRING: ${{ runner.os == 'Linux' && format('-{0}', env.BETA_STRING) || format(' {0}', env.BETA_STRING) }}
+          #OS_BETA_STRING: ${{ runner.os == 'Linux' && format('-{0}', vars.BETA_STRING) || format(' {0}', vars.BETA_STRING) }}
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
