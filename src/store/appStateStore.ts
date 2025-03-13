@@ -1,5 +1,5 @@
 import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
-import { ApplicationsVersions, CriticalProblem, ExternalDependency } from '@app/types/app-status';
+import { ApplicationsVersions, CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status';
 import { create } from './create';
 
 interface AppState {
@@ -17,6 +17,7 @@ interface AppState {
     applications_versions?: ApplicationsVersions;
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
+    networkStatus?: NetworkStatus;
     appResumePayload?: ResumingAllProcessesPayload;
 }
 

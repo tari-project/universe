@@ -121,6 +121,7 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
+
         self.app_handle
             .emit(
                 "setup_message",
