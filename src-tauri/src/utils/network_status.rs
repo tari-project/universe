@@ -92,7 +92,7 @@ impl NetworkStatus {
             .state::<UniverseAppState>()
             .events_manager
             .handle_network_status_update(
-                &app_handle,
+                app_handle,
                 download_speed,
                 upload_speed,
                 latency,
@@ -147,7 +147,7 @@ impl NetworkStatus {
     pub async fn run_speed_test_once(&self, app_handle: &AppHandle) -> Result<(), anyhow::Error> {
         match self.perform_speed_test().await {
             Ok((download_speed, upload_speed, latency)) => {
-                self.handle_test_results(&app_handle, download_speed, upload_speed, latency)
+                self.handle_test_results(app_handle, download_speed, upload_speed, latency)
                     .await;
                 Ok(())
             }

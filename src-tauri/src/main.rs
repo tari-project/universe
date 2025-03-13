@@ -42,8 +42,6 @@ use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::app_flow_utils::FrontendReadyChannel;
-#[cfg(target_os = "macos")]
-use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
