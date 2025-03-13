@@ -1,36 +1,29 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useWalletStore } from '@app/store/useWalletStore';
-import {
-    AppConfig,
-    BaseNodeStatus,
-    CpuMinerStatus,
-    GpuDevice,
-    GpuMinerStatus,
-    TransactionInfo,
-    WalletBalance,
-} from '@app/types/app-status';
+import { AppConfig, BaseNodeStatus, CpuMinerStatus, GpuMinerStatus, WalletBalance } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
+import { handleSetupStatus, setAppResumePayload } from '@app/store/actions/appStateStoreActions';
 import {
-    fetchApplicationsVersionsWithRetry,
-    setAppResumePayload,
-    setSetupComplete,
-} from '@app/store/actions/appStateStoreActions';
-import { airdropSetup, setSetupParams, setSetupProgress, setSetupTitle } from '@app/store';
+    ConnectedPeersUpdatePayload,
+    DetectedAvailableGpuEngines,
+    DetectedDevicesPayload,
+    NewBlockHeightPayload,
+    ResumingAllProcessesPayload,
+    SetupStatusPayload,
+    WalletAddressUpdatePayload,
+} from '@app/types/events-payloads';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
 type BackendStateUpdateEvent =
     | {
           event_type: 'WalletAddressUpdate';
-          payload: {
-              tari_address_base58: string;
-              tari_address_emoji: string;
-          };
+          payload: WalletAddressUpdatePayload;
       }
     | {
           event_type: 'BaseNodeUpdate';
@@ -50,15 +43,11 @@ type BackendStateUpdateEvent =
       }
     | {
           event_type: 'ConnectedPeersUpdate';
-          payload: string[];
+          payload: ConnectedPeersUpdatePayload;
       }
     | {
           event_type: 'NewBlockHeight';
-          payload: {
-              block_height: number;
-              coinbase_transaction?: TransactionInfo;
-              balance: WalletBalance;
-          };
+          payload: NewBlockHeightPayload;
       }
     | {
           event_type: 'AppConfigLoaded';
@@ -66,38 +55,23 @@ type BackendStateUpdateEvent =
       }
     | {
           event_type: 'CloseSplashscreen';
-          payload: any;
+          payload: undefined;
       }
     | {
           event_type: 'DetectedDevices';
-          payload: {
-              devices: GpuDevice[];
-          };
+          payload: DetectedDevicesPayload;
       }
     | {
           event_type: 'DetectedAvailableGpuEngines';
-          payload: {
-              engines: string[];
-              selected_engine: string;
-          };
+          payload: DetectedAvailableGpuEngines;
       }
     | {
           event_type: 'SetupStatus';
-          payload: {
-              event_type: string;
-              title: string;
-              title_params?: Record<string, string>;
-              progress: number;
-          };
+          payload: SetupStatusPayload;
       }
     | {
           event_type: 'ResumingAllProcesses';
-          payload: {
-              title: string;
-              stage_progress: number;
-              stage_total: number;
-              is_resuming: boolean;
-          };
+          payload: ResumingAllProcessesPayload;
       };
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
@@ -149,16 +123,7 @@ const useTauriEventsListener = () => {
                         setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                         break;
                     case 'SetupStatus':
-                        if (event.payload.progress > 0) {
-                            setSetupTitle(event.payload.title);
-                            setSetupProgress(event.payload.progress);
-                            if (event.payload.title_params) setSetupParams(event.payload.title_params);
-                        }
-                        if (event.payload.progress >= 1) {
-                            await setSetupComplete();
-                            await fetchApplicationsVersionsWithRetry();
-                            await airdropSetup();
-                        }
+                        handleSetupStatus(event.payload);
                         break;
                     case 'ResumingAllProcesses':
                         setAppResumePayload(event.payload);

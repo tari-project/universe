@@ -6,8 +6,8 @@ import { useAppStateStore } from '../appStateStore.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
-
+import { ResumingAllProcessesPayload, SetupStatusPayload } from '@app/types/events-payloads.ts';
+import { airdropSetup } from '../index.ts';
 export const fetchApplicationsVersions = async () => {
     try {
         console.info('Fetching applications versions');
@@ -89,5 +89,18 @@ export const updateApplicationsVersions = async () => {
         await fetchApplicationsVersions();
     } catch (error) {
         console.error('Error updating applications versions', error);
+    }
+};
+
+export const handleSetupStatus = async (payload: SetupStatusPayload) => {
+    if (payload.progress > 0) {
+        setSetupTitle(payload.title);
+        setSetupProgress(payload.progress);
+        if (payload.title_params) setSetupParams(payload.title_params);
+    }
+    if (payload.progress >= 1) {
+        await setSetupComplete();
+        await fetchApplicationsVersionsWithRetry();
+        await airdropSetup();
     }
 };
