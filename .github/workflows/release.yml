@@ -23,6 +23,7 @@ env:
   TS_FEATURES: release-ci
 
 jobs:
+
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -35,6 +36,7 @@ jobs:
         include:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage,updater'
+            #args: '--bundles appimage --verbose'
             extra: '-x64'
           - platform: 'ubuntu-24.04-arm'
             args: '--bundles deb,appimage,updater'
@@ -70,7 +72,6 @@ jobs:
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
           BETA_STRING: '(Beta)'
-          OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
@@ -83,18 +84,30 @@ jobs:
           #set -xueo pipefail
           echo "TARI_NETWORK=esme" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          # Make envs available to other steps
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          # GitHub Actions does not expand environment variables dynamically in envs
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            OS_BETA_STRING=-${BETA_STRING}
+            BETA_STRING_SAFE=$(echo ${BETA_STRING} | sed 's/[^a-zA-Z0-9]/_/g')
+            OS_BETA_STRING_BinName=-${BETA_STRING_SAFE}
+          else
+            OS_BETA_STRING=\ ${BETA_STRING}
+            OS_BETA_STRING_BinName=\ ${BETA_STRING}
+          fi
+          echo "OS_BETA_STRING is ${OS_BETA_STRING}"
+          echo "OS_BETA_STRING_BinName is ${OS_BETA_STRING_BinName}"
           echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${{ env.OS_BETA_STRING }}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
-          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${{ env.OS_BETA_STRING }}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING_BinName}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" --output-format=json -i tauri.conf.json
           yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
@@ -157,6 +170,12 @@ jobs:
             libprotobuf-dev \
             protobuf-compiler
 
+      - name: Install Dependencies - Linux/AppImage
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            appstream
+
       - name: Install Dependencies - Linux/OpenCL
         if: startsWith(runner.os,'Linux')
         run: |
@@ -214,7 +233,7 @@ jobs:
 
       - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@dev
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
