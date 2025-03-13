@@ -1,9 +1,9 @@
-use tari_shutdown::Shutdown;
+use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::sync::watch;
 use tonic::async_trait;
 
 use crate::{
-    node_adapter::MinotariNodeStatusMonitor,
+    node_adapter::{MinotariNodeClient, MinotariNodeStatusMonitor},
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
     BaseNodeStatus,
 };
@@ -36,6 +36,17 @@ impl RemoteNodeAdapter {
     pub fn tcp_rpc_port(&self) -> u16 {
         self.tcp_rpc_port
     }
+
+    pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
+        if let Some(grpc_address) = self.grpc_address() {
+            Some(MinotariNodeClient::new(
+                format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                1,
+            ))
+        } else {
+            None
+        }
+    }
 }
 
 impl ProcessAdapter for RemoteNodeAdapter {
@@ -59,9 +70,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
                 shutdown: inner_shutdown,
             },
             MinotariNodeStatusMonitor::new(
-                format!("http://{}:{}", grpc_address.0, grpc_address.1),
-                1,
-                status_shutdown,
+                MinotariNodeClient::new(format!("http://{}:{}", grpc_address.0, grpc_address.1), 1),
                 self.status_broadcast.clone(),
             ),
         ))

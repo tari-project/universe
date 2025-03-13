@@ -29,10 +29,12 @@ use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{error, info, warn};
-use node_adapter::BaseNodeStatus;
+use node_adapter::{BaseNodeStatus, MinotariNodeAdapter};
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
+use remote_node_adapter::RemoteNodeAdapter;
+use remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use serde_json::json;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
@@ -67,7 +69,7 @@ use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
 use events::SetupStatusEvent;
-use node_manager::NodeManagerError;
+use node_manager::{NodeAdapter, NodeManagerError};
 use progress_tracker::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
@@ -128,6 +130,7 @@ mod process_watcher;
 mod progress_tracker;
 mod release_notes;
 mod remote_node_adapter;
+mod remote_until_synced_node_adapter;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -913,8 +916,8 @@ struct UniverseAppState {
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
-    node_manager: NodeManager,
-    wallet_manager: WalletManager,
+    node_manager: NodeManager<RemoteUntilSyncedNodeAdapter>,
+    wallet_manager: WalletManager<RemoteUntilSyncedNodeAdapter>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -954,7 +957,14 @@ fn main() {
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
+    let node_manager = NodeManager::new(
+        &mut stats_collector,
+        RemoteUntilSyncedNodeAdapter::new(
+            MinotariNodeAdapter::new(base_node_watch_tx.clone()),
+            RemoteNodeAdapter::new(base_node_watch_tx.clone()),
+        ),
+        shutdown.to_signal(),
+    );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());

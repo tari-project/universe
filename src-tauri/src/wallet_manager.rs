@@ -27,6 +27,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::NodeAdapter;
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -44,12 +45,12 @@ pub enum WalletManagerError {
     UnknownError(#[from] anyhow::Error),
 }
 
-pub struct WalletManager {
+pub struct WalletManager<T: NodeAdapter> {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
-    node_manager: NodeManager,
+    node_manager: NodeManager<T>,
 }
 
-impl Clone for WalletManager {
+impl<T: NodeAdapter> Clone for WalletManager<T> {
     fn clone(&self) -> Self {
         Self {
             watcher: self.watcher.clone(),
@@ -58,9 +59,9 @@ impl Clone for WalletManager {
     }
 }
 
-impl WalletManager {
+impl<T: NodeAdapter> WalletManager<T> {
     pub fn new(
-        node_manager: NodeManager,
+        node_manager: NodeManager<T>,
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
