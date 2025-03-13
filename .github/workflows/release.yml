@@ -284,15 +284,22 @@ jobs:
             -includepath src-tauri/target/release/bundle/msi
 
       - name: Add installer to release
-        if: ${{ startsWith(runner.os,'Windows') }}
+        if: ${{ startsWith(runner.os,'Windows') }} && ${{ steps.build.outputs.releaseUploadUrl != '' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
-          asset_path: .\tari-win-bundler\Bundle.exe
+          asset_path: ./tari-win-bundler/Bundle.exe
           asset_name: ${{ env.TARI_UNIVERSE_INSTALLER_NAME }}
           asset_content_type: application/vnd.microsoft.portable-executable
+
+      - name: BETA Builds - upload wix installer
+        if: ${{ startsWith(runner.os,'Windows') }} && ${{ steps.build.outputs.releaseUploadUrl == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/Bundle.exe
 
       - name: Locate artifacts path
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
