@@ -272,6 +272,7 @@ jobs:
           fi
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
+          export TAURI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
             -ext WixToolset.BootstrapperApplications.wixext \
@@ -280,8 +281,6 @@ jobs:
             -includepath tari-win-bundler/executables \
             -includepath wix \
             -includepath src-tauri/target/release/bundle/msi
-            -define TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
-            -define TARI_UNIVERSE_APP_VERSION=${{ env.TARI_UNIVERSE_APP_VERSION }}
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') }}
