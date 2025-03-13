@@ -9,25 +9,25 @@
     "required": "फ़ील्ड आवश्यक"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "रद्द करें",
+    "description": "लुडिक्रस मोड आपके सिस्टम को अनुत्तरदायी बना सकता है। कृपया पुष्टि करें कि आप लुडिक्रस मोड में माइनिंग शुरू करना चाहते हैं या तारी यूनिवर्स इको मोड में वापस स्विच कर देगा",
+    "keepChanges": "परिवर्तनों को बनाए रखें",
+    "seconds": "सेकंड",
+    "title": "लुडिक्रस मोड में स्विच करें?"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "समझ गया",
+    "title": "रिलीज़ नोट्स"
   },
   "resume-app-modal": {
-    "title": "Resuming Tari Universe",
-    "resuming-all-processes": "Resuming all processes...",
-    "resuming-tor": "Resuming Tor...",
-    "resuming-node": "Resuming Node...",
-    "resuming-wallet": "Resuming Wallet...",
-    "syncing-node": "Syncing Node...",
-    "resuming-p2pool": "Resuming P2Pool...",
-    "resuming-mm-proxy": "Resuming MM Proxy...",
-    "finishing-resume": "Finishing Resume..."
+    "title": "तारी यूनिवर्स को फिर से शुरू कर रहा है",
+    "resuming-all-processes": "सभी प्रक्रियाओं को फिर से शुरू कर रहा है...",
+    "resuming-tor": "टोर को फिर से शुरू कर रहा है...",
+    "resuming-node": "नोड को फिर से शुरू कर रहा है...",
+    "resuming-wallet": "वॉलेट को फिर से शुरू कर रहा है...",
+    "syncing-node": "नोड को सिंक कर रहा है...",
+    "resuming-p2pool": "पी2पूल को फिर से शुरू कर रहा है...",
+    "resuming-mm-proxy": "एमएम प्रॉक्सी को फिर से शुरू कर रहा है...",
+    "finishing-resume": "फिर से शुरू करना समाप्त कर रहा है..."
   }
 }

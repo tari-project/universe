@@ -35,5 +35,8 @@
   "topTooltipTitle": "테스트넷 보상",
   "unclaimedGems": "미수령 보석",
   "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
-  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!"
+  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!",
+  "joinAirdrop": "에어드롭 참여",
+  "loggedInTitle": "에어드롭 보상",
+  "loggedOutTitle": "채굴하고 친구를 초대하여 보석 획득"
 }

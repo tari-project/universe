@@ -29,6 +29,7 @@ use tokio::sync::{
 
 static INSTANCE: LazyLock<FrontendReadyChannel> = LazyLock::new(FrontendReadyChannel::new);
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct FrontendReadyChannel {
     sender: Sender<bool>,
@@ -48,6 +49,7 @@ impl FrontendReadyChannel {
         self.sender.send(true).expect("Failed to send ready signal");
     }
 
+    #[allow(dead_code)]
     pub async fn wait_for_ready(&self) -> Result<(), tokio::sync::watch::error::RecvError> {
         let mut receiver = self.receiver.lock().await;
         receiver.wait_for(|value| *value).await?;

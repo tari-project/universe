@@ -9,25 +9,25 @@
     "required": "Feld erforderlich"
   },
   "ludicrousConfirmationDialog": {
-    "cancel": "Cancel",
-    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
-    "keepChanges": "Keep Changes",
-    "seconds": "seconds",
-    "title": "Switch to Ludicrous Mode?"
+    "cancel": "Abbrechen",
+    "description": "Der Ludicrous-Modus kann Ihr System unempfänglich machen. Bitte bestätigen Sie, dass Sie im Ludicrous-Modus mit dem Mining beginnen möchten, oder Tari Universe wechselt in",
+    "keepChanges": "Änderungen beibehalten",
+    "seconds": "Sekunden",
+    "title": "Zum Ludicrous-Modus wechseln?"
   },
   "releaseNotesDialog": {
-    "close": "Got IT",
-    "title": "Release Notes"
+    "close": "Verstanden",
+    "title": "Versionshinweise"
   },
   "resume-app-modal": {
-    "title": "Resuming Tari Universe",
-    "resuming-all-processes": "Resuming all processes...",
-    "resuming-tor": "Resuming Tor...",
-    "resuming-node": "Resuming Node...",
-    "resuming-wallet": "Resuming Wallet...",
-    "syncing-node": "Syncing Node...",
-    "resuming-p2pool": "Resuming P2Pool...",
-    "resuming-mm-proxy": "Resuming MM Proxy...",
-    "finishing-resume": "Finishing Resume..."
+    "title": "Tari Universe wird fortgesetzt",
+    "resuming-all-processes": "Alle Prozesse werden fortgesetzt...",
+    "resuming-tor": "Tor wird fortgesetzt...",
+    "resuming-node": "Knoten wird fortgesetzt...",
+    "resuming-wallet": "Wallet wird fortgesetzt...",
+    "syncing-node": "Knoten wird synchronisiert...",
+    "resuming-p2pool": "P2Pool wird fortgesetzt...",
+    "resuming-mm-proxy": "MM-Proxy wird fortgesetzt...",
+    "finishing-resume": "Fortsetzung wird abgeschlossen..."
   }
 }

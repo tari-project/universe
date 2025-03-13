@@ -29,6 +29,6 @@
   "version": "Versiyon",
   "versions": "Versiyon",
   "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı.",
-  "close": "Close",
-  "update": "Update"
+  "close": "Kapat",
+  "update": "Güncelle"
 }

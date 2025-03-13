@@ -35,5 +35,8 @@
   "topTooltipTitle": "Récompenses du Testnet",
   "unclaimedGems": "Gemmes non réclamés",
   "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !",
-  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !"
+  "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
+  "joinAirdrop": "Rejoindre l\"Airdrop",
+  "loggedInTitle": "Récompenses Airdrop",
+  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes"
 }

@@ -217,7 +217,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
+        add_firewall_rule("glytex.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
@@ -241,11 +241,11 @@ impl ProcessAdapter for GpuMinerAdapter {
     }
 
     fn name(&self) -> &str {
-        "xtrgpuminer"
+        "glytex"
     }
 
     fn pid_file_name(&self) -> &str {
-        "xtrgpuminer_pid"
+        "glytex_pid"
     }
 }
 
