@@ -7,11 +7,14 @@ export const MinerContainer = styled.div`
     gap: 10px;
 `;
 
+export const TileContainer = styled.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+`;
+
 export const TileItem = styled.div`
     height: 61px;
-    width: 161px;
-    flex-shrink: 0;
-    flex-grow: 0;
     padding: 9px 15px;
 
     background-color: ${({ theme }) => theme.palette.background.paper};
@@ -54,13 +57,6 @@ export const Unit = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: 100%;
-`;
-
-export const TileContainer = styled.div`
-    display: flex;
-    flex-wrap: wrap;
-    flex-direction: row;
-    gap: 6px;
 `;
 
 export const ModeSelectWrapper = styled.div`

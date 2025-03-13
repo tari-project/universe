@@ -1,18 +1,27 @@
 import styled from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 
+export const Wrapper = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-flow: column;
+    width: 100%;
+    height: 100%;
+`;
 export const StyledForm = styled.form`
     display: flex;
     flex-direction: column;
     align-items: stretch;
     justify-content: space-between;
     width: 100%;
-    height: 100%;
+    flex-grow: 1;
 `;
 
 export const FormFieldsWrapper = styled.div`
     display: flex;
     flex-direction: column;
+    padding: 0 4px;
     align-items: stretch;
 `;
 

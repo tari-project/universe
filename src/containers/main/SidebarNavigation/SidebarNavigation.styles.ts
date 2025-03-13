@@ -21,8 +21,8 @@ export const SidebarGrid = styled.div`
 `;
 
 const variants = {
-    open: { opacity: 1, left: 0, transition: { duration: 0.3, ease: 'easeIn' } },
-    closed: { opacity: 0.5, left: -50, transition: { duration: 0.05, ease: 'easeOut' } },
+    open: { opacity: 1, left: 0, transition: { duration: 0.2, ease: 'linear' } },
+    closed: { opacity: 0, left: -50, transition: { duration: 0.05, ease: 'linear' } },
 };
 
 export const SidebarWrapper = styled(m.div).attrs({
@@ -38,6 +38,7 @@ export const SidebarWrapper = styled(m.div).attrs({
     border-radius: 20px;
     height: 100%;
     flex-shrink: 0;
+    padding: ${({ $isMiniBar }) => ($isMiniBar ? 0 : `20px`)};
     position: relative;
     width: ${({ $isMiniBar }) => ($isMiniBar ? SB_MINI_WIDTH : SB_WIDTH)}px;
 
