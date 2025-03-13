@@ -8,10 +8,13 @@ import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import gemImage from '../../images/gem.png';
 import useFetchAirdropToken from '@app/hooks/airdrop/stateHelpers/useFetchAirdropToken.ts';
 import { setAllowTelemetry, useAppConfigStore } from '@app/store';
+import { useCopyToClipboard } from '@app/hooks';
 
 export default function LoggedOut() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
     const [linkOpened, setLinkOpened] = useState(false);
+    const [copying, setCopying] = useState(false);
+    const { isCopied, copyToClipboard } = useCopyToClipboard();
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const { referralQuestPoints, airdropUrl } = useAirdropStore((s) => ({
         referralQuestPoints: s.referralQuestPoints,
@@ -34,16 +37,35 @@ export default function LoggedOut() {
                 });
             }
         },
-
         [airdropUrl, allowTelemetry]
+    );
+
+    const handleRightClick = useCallback(
+        async (e, code?: string) => {
+            e.preventDefault();
+            setCopying(true);
+
+            const token = uuidv4();
+            if (!allowTelemetry) {
+                await setAllowTelemetry(true);
+            }
+
+            if (airdropUrl) {
+                setAuthUuid(token);
+                const url = `${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`;
+                copyToClipboard(url);
+                setCopying(false);
+            }
+        },
+        [airdropUrl, allowTelemetry, copyToClipboard]
     );
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 
     return (
         <Wrapper>
-            <ClaimButton onClick={() => handleAuth()}>
-                <Title>{t('joinAirdrop')}</Title>
+            <ClaimButton onClick={() => handleAuth()} onContextMenu={(e) => handleRightClick(e)}>
+                <Title>{copying ? t('copying') : isCopied ? t('copied') : t('joinAirdrop')}</Title>
 
                 <GemPill>
                     {gemsValue}
