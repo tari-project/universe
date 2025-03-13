@@ -280,6 +280,8 @@ jobs:
             -includepath tari-win-bundler/executables \
             -includepath wix \
             -includepath src-tauri/target/release/bundle/msi
+            -define TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
+            -define TARI_UNIVERSE_APP_VERSION=${{ env.TARI_UNIVERSE_APP_VERSION }}
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') }}
