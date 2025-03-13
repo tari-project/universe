@@ -261,14 +261,20 @@ jobs:
         working-directory: ${{ github.workspace }}
         if: runner.os == 'Windows'
         env:
-          TARI_UNIVERSE_INSTALLER_NAME: ${{ startsWith(github.ref, 'refs/heads/release') && 'Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' || 'Tari Universe (Beta) - ${BETA_DATE}_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' }}
-          # TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Beta) - 0312_0.9.816_x64_en-US.msi
-          TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          IS_BETA: ${{ startsWith(github.ref, 'refs/heads/release') }}
         run: |
-          echo AppVersion: ${steps.build.outputs.appVersion}
-          echo AppVersion2: ${{ steps.build.outputs.appVersion }}
-          echo "BETA_DATE=${BETA_DATE}"
-          echo "BETA_DATE=${{ env.BETA_DATE }}"
+          export TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
+          echo TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
+          echo "TARI_UNIVERSE_APP_VERSION=${TARI_UNIVERSE_APP_VERSION}"
+          if [ $IS_BETA ]; then
+            export BETA_DATE=${{ env.BETA_DATE }}
+            echo BETA_DATE=${{ env.BETA_DATE }}
+            echo "BETA_DATE=${BETA_DATE}"
+            export TARI_UNIVERSE_INSTALLER_NAME="Tari Universe (Beta) - ${BETA_DATE}_${TARI_UNIVERSE_APP_VERSION}_x64_en-US.msi"
+          else
+            export TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${TARI_UNIVERSE_APP_VERSION}_x64_en-US.msi"
+          fi
+          echo TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
           wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
 
       - name: Add installer to release
