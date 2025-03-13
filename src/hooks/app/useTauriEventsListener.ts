@@ -15,6 +15,12 @@ import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
+import {
+    fetchApplicationsVersionsWithRetry,
+    setAppResumePayload,
+    setSetupComplete,
+} from '@app/store/actions/appStateStoreActions';
+import { airdropSetup, setSetupParams, setSetupProgress, setSetupTitle } from '@app/store';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -74,6 +80,24 @@ type BackendStateUpdateEvent =
               engines: string[];
               selected_engine: string;
           };
+      }
+    | {
+          event_type: 'SetupStatus';
+          payload: {
+              event_type: string;
+              title: string;
+              title_params?: Record<string, string>;
+              progress: number;
+          };
+      }
+    | {
+          event_type: 'ResumingAllProcesses';
+          payload: {
+              title: string;
+              stage_progress: number;
+              stage_total: number;
+              is_resuming: boolean;
+          };
       };
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
@@ -86,47 +110,65 @@ const useTauriEventsListener = () => {
 
     useEffect(() => {
         console.log('Listening for backend state updates');
-        const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-            console.log('Received event', event);
-            switch (event.event_type) {
-                case 'WalletAddressUpdate':
-                    setWalletAddress(event.payload);
-                    break;
-                case 'WalletBalanceUpdate':
-                    setWalletBalance(event.payload);
-                    break;
-                case 'BaseNodeUpdate':
-                    handleBaseNodeStatusUpdate(event.payload);
-                    break;
-                case 'GpuMiningUpdate':
-                    setGpuMiningStatus(event.payload);
-                    break;
-                case 'CpuMiningUpdate':
-                    setCpuMiningStatus(event.payload);
-                    break;
-                case 'ConnectedPeersUpdate':
-                    handleConnectedPeersUpdate(event.payload);
-                    break;
-                case 'NewBlockHeight':
-                    handleNewBlock(event.payload);
-                    break;
-                case 'AppConfigLoaded':
-                    handleAppConfigLoaded(event.payload);
-                    break;
-                case 'CloseSplashscreen':
-                    handleCloseSplashscreen();
-                    break;
-                case 'DetectedDevices':
-                    setGpuDevices(event.payload.devices);
-                    break;
-                case 'DetectedAvailableGpuEngines':
-                    setAvailableEngines(event.payload.engines, event.payload.selected_engine);
-                    break;
-                default:
-                    console.warn('Unknown event', JSON.stringify(event));
-                    break;
+        const unlisten = listen(
+            BACKEND_STATE_UPDATE,
+            async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                console.log('Received event', event);
+                switch (event.event_type) {
+                    case 'WalletAddressUpdate':
+                        setWalletAddress(event.payload);
+                        break;
+                    case 'WalletBalanceUpdate':
+                        setWalletBalance(event.payload);
+                        break;
+                    case 'BaseNodeUpdate':
+                        handleBaseNodeStatusUpdate(event.payload);
+                        break;
+                    case 'GpuMiningUpdate':
+                        setGpuMiningStatus(event.payload);
+                        break;
+                    case 'CpuMiningUpdate':
+                        setCpuMiningStatus(event.payload);
+                        break;
+                    case 'ConnectedPeersUpdate':
+                        handleConnectedPeersUpdate(event.payload);
+                        break;
+                    case 'NewBlockHeight':
+                        handleNewBlock(event.payload);
+                        break;
+                    case 'AppConfigLoaded':
+                        handleAppConfigLoaded(event.payload);
+                        break;
+                    case 'CloseSplashscreen':
+                        handleCloseSplashscreen();
+                        break;
+                    case 'DetectedDevices':
+                        setGpuDevices(event.payload.devices);
+                        break;
+                    case 'DetectedAvailableGpuEngines':
+                        setAvailableEngines(event.payload.engines, event.payload.selected_engine);
+                        break;
+                    case 'SetupStatus':
+                        if (event.payload.progress > 0) {
+                            setSetupTitle(event.payload.title);
+                            setSetupProgress(event.payload.progress);
+                            if (event.payload.title_params) setSetupParams(event.payload.title_params);
+                        }
+                        if (event.payload.progress >= 1) {
+                            await setSetupComplete();
+                            await fetchApplicationsVersionsWithRetry();
+                            await airdropSetup();
+                        }
+                        break;
+                    case 'ResumingAllProcesses':
+                        setAppResumePayload(event.payload);
+                        break;
+                    default:
+                        console.warn('Unknown event', JSON.stringify(event));
+                        break;
+                }
             }
-        });
+        );
 
         return () => {
             unlisten.then((f) => f());
