@@ -4,7 +4,7 @@ import { startMining } from './miningStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
-import { CriticalProblem, ExternalDependency } from '@app/types/app-status.ts';
+import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
 
@@ -91,3 +91,5 @@ export const updateApplicationsVersions = async () => {
         console.error('Error updating applications versions', error);
     }
 };
+
+export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
