@@ -60,7 +60,7 @@ impl NetworkStatus {
         &INSTANCE
     }
 
-    fn is_band_width_too_low(&self, download_speed: f64, upload_speed: f64) -> bool {
+    fn is_bandwidth_too_low(&self, download_speed: f64, upload_speed: f64) -> bool {
         download_speed < MINIMAL_NETWORK_DOWNLOAD_SPEED
             || upload_speed < MINIMAL_NETWORK_UPLOAD_SPEED
     }
@@ -79,7 +79,7 @@ impl NetworkStatus {
             upload_speed,
             latency
         );
-        let is_band_width_too_low = self.is_band_width_too_low(download_speed, upload_speed);
+        let is_bandwidth_too_low = self.is_bandwidth_too_low(download_speed, upload_speed);
 
         let _unused = self
             .sender
@@ -96,7 +96,7 @@ impl NetworkStatus {
                 download_speed,
                 upload_speed,
                 latency,
-                is_band_width_too_low,
+                is_bandwidth_too_low,
             )
             .await;
     }
