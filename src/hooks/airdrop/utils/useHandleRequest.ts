@@ -9,15 +9,38 @@ interface RequestProps {
     headers?: HeadersInit | undefined;
 }
 
+const MAX_RETRIES = 3;
+const RETRY_INTERVAL = 250;
+let retryCount = 0;
+
+async function retryHandler(errorMessage: string) {
+    retryCount++;
+    const delay = retryCount * RETRY_INTERVAL;
+    console.warn(`Attempt ${retryCount} failed with error: ${errorMessage}. Waiting ${delay}ms before retrying.`);
+    return await new Promise((resolve) => setTimeout(resolve, delay));
+}
+
 export async function handleAirdropRequest<T>({ body, method, path, onError, headers }: RequestProps) {
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
-
     if (isTokenExpired) {
-        await handleRefreshAirdropTokens();
+        if (retryCount >= MAX_RETRIES) {
+            throw Error('Failed to refresh tokens');
+        }
+        try {
+            const res = await handleRefreshAirdropTokens();
+            if (res) {
+                retryCount = 0;
+            } else {
+                await retryHandler('Refresh retry failed');
+            }
+        } catch (err) {
+            const e = err as Error;
+            await retryHandler(e.message ?? 'Caught error: Refresh retry failed');
+        }
     }
 
     if (!headers && !headers && (!baseUrl || !airdropToken)) return;
