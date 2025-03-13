@@ -33,6 +33,7 @@ import {
     setAppResumePayload,
     setCriticalProblem,
     setIsStuckOnOrphanChain,
+    setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
 import {
     ConnectedPeersUpdatePayload,
