@@ -261,18 +261,18 @@ jobs:
         working-directory: ${{ github.workspace }}
         if: runner.os == 'Windows'
         env:
-          IS_BETA: ${{ startsWith(github.ref, 'refs/heads/release') }}
+          IS_RELEASE: ${{ startsWith(github.ref, 'refs/heads/release') }}
         run: |
           export TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
           echo TARI_UNIVERSE_APP_VERSION=${{ steps.build.outputs.appVersion }}
           echo "TARI_UNIVERSE_APP_VERSION=${TARI_UNIVERSE_APP_VERSION}"
-          if (${{ env.IS_BETA }}); then
+          if ${{ env.IS_RELEASE }}; then
+            export TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${TARI_UNIVERSE_APP_VERSION}_x64_en-US.msi"
+          else
             export BETA_DATE=${{ env.BETA_DATE }}
             echo BETA_DATE=${{ env.BETA_DATE }}
             echo "BETA_DATE=${BETA_DATE}"
             export TARI_UNIVERSE_INSTALLER_NAME="Tari Universe (Beta) - ${BETA_DATE}_${TARI_UNIVERSE_APP_VERSION}_x64_en-US.msi"
-          else
-            export TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${TARI_UNIVERSE_APP_VERSION}_x64_en-US.msi"
           fi
           echo TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
           wix build tari-win-bundler\Bundle.wxs -ext WixToolset.Util.wixext -ext WixToolset.BootstrapperApplications.wixext -includepath tari-win-bundler -includepath tari-win-bundler\resources -includepath tari-win-bundler\executables -includepath wix -includepath src-tauri\target\release\bundle\msi
