@@ -72,7 +72,8 @@ jobs:
         env:
           #BETA_STRING: '(Beta)'
           BETA_STRING: '_Beta_'
-          OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
+          #OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
+          OS_BETA_STRING: ${{ runner.os == 'Linux' && format('-{0}', env.BETA_STRING) || format(' {0}', env.BETA_STRING) }}
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
@@ -218,7 +219,7 @@ jobs:
         if: startsWith(runner.os,'Linux')
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli --version "2.1.0" --locked
+          #cargo install tauri-cli --version "2.1.0" --locked
           cargo tauri --version
           sudo apt-get install --no-install-recommends --assume-yes appstream
 
