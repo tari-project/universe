@@ -632,11 +632,11 @@ async fn setup_inner(
             "waiting-for-minotari-node-to-start".to_string(),
             json!({
                 "service": "minotari_node",
-                "percentage":37,
+                "percentage":40,
             }),
         )
         .await;
-    progress.set_max(38).await;
+    progress.set_max(45).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -664,11 +664,11 @@ async fn setup_inner(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
                                     "service": "minotari_node",
-                                    "percentage":38,
+                                    "percentage":45,
                                 }),
                             )
                             .await;
-                        progress.set_max(40).await;
+                        progress.set_max(50).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -689,11 +689,11 @@ async fn setup_inner(
             "waiting-for-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":40,
+                "percentage":50,
             }),
         )
         .await;
-    progress.set_max(45).await;
+    progress.set_max(55).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
@@ -712,11 +712,11 @@ async fn setup_inner(
             "wallet-started".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":45,
+                "percentage":55,
             }),
         )
         .await;
-    progress.set_max(50).await;
+    progress.set_max(60).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
@@ -726,7 +726,7 @@ async fn setup_inner(
             "preparing-for-initial-sync".to_string(),
             json!({
                 "service": "initial_sync",
-                "percentage":50,
+                "percentage":60,
             }),
         )
         .await;
