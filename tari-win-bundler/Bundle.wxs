@@ -1,5 +1,5 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-	<Bundle Name="Tari Universe" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile="tari-win-bundler/resources/icon.ico" DisableModify="yes" ParentName="Tari Universe" >
+	<Bundle Name="Tari Universe" Version="!(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile="tari-win-bundler/resources/icon.ico" DisableModify="yes" ParentName="Tari Universe" >
 		<OptionalUpdateRegistration Name="Tari Universe" />
 		
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
@@ -35,7 +35,7 @@
 			<!-- <ExePackage Id="VC_REDIST_ARM64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (Arm64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="(ARCH_NAME = &quot;ARM64&quot;)" DetectCondition="(VCRUNTIME_ARM64_VER &gt;= VCRUNTIME_VER) AND (ARCH_NAME = &quot;ARM64&quot;)" SourceFile="tari-win-bundler/executables/VC_redist.arm64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" /> -->
 
 			<!-- Tari Universe x64 -->
-			<MsiPackage SourceFile="D:\a\universe\universe\src-tauri\target\release\bundle\msi\$(env.TARI_UNIVERSE_INSTALLER_NAME)" After="VC_REDIST_X64" InstallCondition="VersionNT64"  Vital="yes" />		
+			<MsiPackage SourceFile="D:\a\universe\universe\src-tauri\target\release\bundle\msi\!(env.TARI_UNIVERSE_INSTALLER_NAME)" After="VC_REDIST_X64" InstallCondition="VersionNT64"  Vital="yes" />		
 		</Chain>
 	</Bundle>
 </Wix>
