@@ -5,6 +5,7 @@ import {
     AppConfig,
     BaseNodeStatus,
     CpuMinerStatus,
+    GpuDevice,
     GpuMinerStatus,
     TransactionInfo,
     WalletBalance,
@@ -13,6 +14,7 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
+import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -59,6 +61,19 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'CloseSplashscreen';
           payload: any;
+      }
+    | {
+          event_type: 'DetectedDevices';
+          payload: {
+              devices: GpuDevice[];
+          };
+      }
+    | {
+          event_type: 'DetectedAvailableGpuEngines';
+          payload: {
+              engines: string[];
+              selected_engine: string;
+          };
       };
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
@@ -67,6 +82,7 @@ const useTauriEventsListener = () => {
     const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
     const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
     const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
+    const setGpuDevices = useMiningMetricsStore((state) => state.setGpuDevices);
 
     useEffect(() => {
         console.log('Listening for backend state updates');
@@ -98,8 +114,13 @@ const useTauriEventsListener = () => {
                     handleAppConfigLoaded(event.payload);
                     break;
                 case 'CloseSplashscreen':
-                    console.log('CloseSplashscreen', event.payload);
                     handleCloseSplashscreen();
+                    break;
+                case 'DetectedDevices':
+                    setGpuDevices(event.payload.devices);
+                    break;
+                case 'DetectedAvailableGpuEngines':
+                    setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));
