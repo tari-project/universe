@@ -22,6 +22,7 @@ import {
     setAppResumePayload,
     setCriticalProblem,
     setIsStuckOnOrphanChain,
+    setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
 import {
     ConnectedPeersUpdatePayload,
@@ -34,7 +35,6 @@ import {
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from '@app/types/events-payloads';
-import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
