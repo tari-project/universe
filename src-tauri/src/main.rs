@@ -299,16 +299,14 @@ async fn setup_inner(
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        app.emit(
-            "critical_problem",
-            CriticalProblemEvent {
-                title: None,
-                description: Some("not-installed-in-applications-directory".to_string()),
-            },
-        )
-        .inspect_err(
-            |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
-        )?;
+        state
+            .events_manager
+            .handle_critical_problem(
+                &app,
+                None,
+                Some("not-installed-in-applications-directory".to_string()),
+            )
+            .await;
         return Ok(());
     }
 
@@ -341,9 +339,10 @@ async fn setup_inner(
 
         if is_missing {
             *state.missing_dependencies.write().await = Some(external_dependencies);
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
+            state
+                .events_manager
+                .handle_missing_application_files(&app, external_dependencies)
+                .await;
             return Ok(());
         }
     }
@@ -921,7 +920,10 @@ async fn setup_inner(
                             if is_stuck && !has_send_error {
                                 has_send_error = true;
                             }
-                            drop(app_handle_clone.emit("is_stuck", is_stuck));
+                            state
+                        .events_manager
+                        .handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
+                        .await;
                         }
                         Err(ref e) => {
                             error!(target: LOG_TARGET, "{}", e);

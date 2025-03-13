@@ -34,4 +34,15 @@ export interface ResumingAllProcessesPayload {
     is_resuming: boolean;
 }
 
+export interface CriticalProblemPayload {
+    title?: string;
+    description?: string;
+}
+
+export interface ShowReleaseNotesPayload {
+    release_notes: string;
+    is_app_update_available: boolean;
+    should_show_dialog: boolean;
+}
+
 export type ConnectedPeersUpdatePayload = string[];

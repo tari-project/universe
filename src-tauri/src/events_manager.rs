@@ -27,9 +27,13 @@ use tokio::sync::watch::Receiver;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{ResumingAllProcessesPayload, SetupStatusPayload},
+    events::{
+        CriticalProblemPayload, ResumingAllProcessesPayload, SetupStatusPayload,
+        ShowReleaseNotesPayload,
+    },
     events_emitter::EventsEmitter,
     events_service::EventsService,
+    external_dependencies::RequiredExternalDependency,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
     wallet_adapter::WalletState,
@@ -206,5 +210,35 @@ impl EventsManager {
     ) {
         EventsEmitter::emit_network_status(app, download_speed, upload_speed, latency, is_too_low)
             .await;
+    }
+
+    pub async fn handle_critical_problem(
+        &self,
+        app: &AppHandle,
+        title: Option<String>,
+        description: Option<String>,
+    ) {
+        EventsEmitter::emit_critical_problem(app, CriticalProblemPayload { title, description })
+            .await;
+    }
+
+    pub async fn handle_missing_application_files(
+        &self,
+        app: &AppHandle,
+        external_dependecies: RequiredExternalDependency,
+    ) {
+        EventsEmitter::emit_missing_applications(app, external_dependecies).await;
+    }
+
+    pub async fn handle_show_release_notes(
+        &self,
+        app: &AppHandle,
+        payload: ShowReleaseNotesPayload,
+    ) {
+        EventsEmitter::emit_show_release_notes(app, payload).await;
+    }
+
+    pub async fn handle_stuck_on_orphan_chain(&self, app: &AppHandle, is_stuck: bool) {
+        EventsEmitter::emit_stuck_on_orphan_chain(app, is_stuck).await;
     }
 }

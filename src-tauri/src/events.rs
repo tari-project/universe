@@ -44,11 +44,13 @@ pub enum EventType {
     DetectedAvailableGpuEngines,
     SetupStatus,
     ResumingAllProcesses,
-    ShowReleaseNotesPayload,
+    ShowReleaseNotes,
     CriticalProblem,
     MissingApplications,
     StuckOnOrphanChain,
-    Updater,
+    UpdaterDownloadProgress,
+    UpdaterCouldNotUpdate,
+    UpdaterAskForUpdate,
     NetworkStatus,
 }
 
@@ -115,6 +117,6 @@ pub struct ShowReleaseNotesPayload {
 
 #[derive(Debug, Serialize, Clone)]
 pub struct CriticalProblemPayload {
-    title: Option<String>,
-    description: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
 }

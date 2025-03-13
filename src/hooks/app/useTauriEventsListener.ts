@@ -8,6 +8,7 @@ import {
     GpuDevice,
     GpuMinerStatus,
     NetworkStatus,
+    ExternalDependency,
     TransactionInfo,
     WalletBalance,
 } from '@app/types/app-status';
@@ -23,16 +24,25 @@ import {
     setWalletBalance,
 } from '@app/store';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
-import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions';
+import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
-import { handleSetupStatus, setAppResumePayload } from '@app/store/actions/appStateStoreActions';
+import {
+    handleSetupStatus,
+    handleShowRelesaeNotes,
+    loadExternalDependencies,
+    setAppResumePayload,
+    setCriticalProblem,
+    setIsStuckOnOrphanChain,
+} from '@app/store/actions/appStateStoreActions';
 import {
     ConnectedPeersUpdatePayload,
+    CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     ResumingAllProcessesPayload,
     SetupStatusPayload,
+    ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from '@app/types/events-payloads';
 
@@ -92,6 +102,22 @@ type BackendStateUpdateEvent =
           payload: ResumingAllProcessesPayload;
       }
     | {
+          event_type: 'CriticalProblem';
+          payload: CriticalProblemPayload;
+      }
+    | {
+          event_type: 'MissingApplications';
+          payload: ExternalDependency[];
+      }
+    | {
+          event_type: 'StuckOnOrphanChain';
+          payload: boolean;
+      }
+    | {
+          event_type: 'ShowReleaseNotes';
+          payload: ShowReleaseNotesPayload;
+      }
+    | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
       };
@@ -141,6 +167,19 @@ const useTauriEventsListener = () => {
                         break;
                     case 'ResumingAllProcesses':
                         setAppResumePayload(event.payload);
+                        break;
+                    case 'CriticalProblem':
+                        setCriticalProblem(event.payload);
+                        break;
+                    case 'MissingApplications':
+                        loadExternalDependencies(event.payload);
+                        setShowExternalDependenciesDialog(true);
+                        break;
+                    case 'StuckOnOrphanChain':
+                        setIsStuckOnOrphanChain(event.payload);
+                        break;
+                    case 'ShowReleaseNotes':
+                        handleShowRelesaeNotes(event.payload);
                         break;
                     case `NetworkStatus`:
                         setNetworkStatus(event.payload);

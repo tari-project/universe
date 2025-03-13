@@ -27,10 +27,11 @@ use tauri::{AppHandle, Emitter};
 use crate::{
     commands::CpuMinerStatus,
     events::{
-        DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
-        SetupStatusPayload, WalletAddressUpdatePayload,
+        CriticalProblemPayload, DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event,
+        EventType, NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
+        SetupStatusPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
     },
+    external_dependencies::RequiredExternalDependency,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
@@ -44,6 +45,53 @@ const BACKEND_STATE_UPDATE: &str = "backend_state_update";
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_stuck_on_orphan_chain(app_handle: &AppHandle, is_stuck: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::StuckOnOrphanChain,
+            payload: is_stuck,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit StuckOnOrphanChain event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_show_release_notes(app_handle: &AppHandle, payload: ShowReleaseNotesPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ShowReleaseNotes,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit ShowReleaseNotesPayload event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_missing_applications(
+        app_handle: &AppHandle,
+        external_dependencies: RequiredExternalDependency,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::MissingApplications,
+            payload: external_dependencies,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit MissingApplications event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_critical_problem(app_handle: &AppHandle, payload: CriticalProblemPayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::CriticalProblem,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit CriticalProblem event: {:?}", e);
+        }
+    }
+
     pub async fn emit_setup_status(app_handle: &AppHandle, payload: SetupStatusPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
