@@ -145,4 +145,16 @@ impl EventsManager {
     pub async fn handle_gpu_mining_update(&self, app: &AppHandle, status: GpuMinerStatus) {
         EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
+
+    pub async fn handle_network_status_update(
+        &self,
+        app: &AppHandle,
+        download_speed: f64,
+        upload_speed: f64,
+        latency: f64,
+        is_too_low: bool,
+    ) {
+        EventsEmitter::emit_network_status(app, download_speed, upload_speed, latency, is_too_low)
+            .await;
+    }
 }

@@ -45,6 +45,7 @@ pub enum EventType {
     GpuMiningUpdate,
     ConnectedPeersUpdate,
     NewBlockHeight,
+    NetworkStatus,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -65,10 +66,37 @@ struct NewBlockHeightPayload {
     coinbase_transaction: Option<TransactionInfo>,
     balance: WalletBalance,
 }
+#[derive(Clone, Debug, Serialize)]
+struct NetworkStatus {
+    download_speed: f64,
+    upload_speed: f64,
+    latency: f64,
+    is_too_low: bool,
+}
 
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_network_status(
+        app_handle: &AppHandle,
+        download_speed: f64,
+        upload_speed: f64,
+        latency: f64,
+        is_too_low: bool,
+    ) {
+        let event = Event {
+            event_type: EventType::NetworkStatus,
+            payload: NetworkStatus {
+                download_speed,
+                upload_speed,
+                latency,
+                is_too_low,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
+        }
+    }
     pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
         let event = Event {
             event_type: EventType::WalletAddressUpdate,
