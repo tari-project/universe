@@ -69,7 +69,9 @@ const useTauriEventsListener = () => {
     const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
 
     useEffect(() => {
+        console.log('Listening for backend state updates');
         const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+            console.log('Received event', event);
             switch (event.event_type) {
                 case 'WalletAddressUpdate':
                     setWalletAddress(event.payload);
@@ -93,7 +95,6 @@ const useTauriEventsListener = () => {
                     handleNewBlock(event.payload);
                     break;
                 case 'AppConfigLoaded':
-                    console.log('AppConfigLoaded', event.payload);
                     handleAppConfigLoaded(event.payload);
                     break;
                 case 'CloseSplashscreen':

@@ -23,6 +23,7 @@ interface SetModeProps {
 }
 
 export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
+    console.log('handleAppConfigLoaded', appConfig);
     try {
         useAppConfigStore.setState(appConfig);
         changeLanguage(appConfig.application_language);
@@ -32,6 +33,7 @@ export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
         }
         if (appConfig.visual_mode) {
             try {
+                console.log('Loading tower animation');
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
             } catch (e) {
                 console.error('Error at loadTowerAnimation:', e);

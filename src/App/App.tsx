@@ -79,7 +79,7 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+            <GlobalStyle $hideCanvas={!showSplashscreen || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
