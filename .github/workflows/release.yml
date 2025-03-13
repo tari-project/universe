@@ -242,13 +242,14 @@ jobs:
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Locate artifacts path
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         continue-on-error: true
         env:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
+          MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
+          echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: BETA Builds - Upload assets
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -264,13 +265,67 @@ jobs:
           name: tari_universe.pdb
           path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb"
 
-      - name: Windows debug symbols - Upload to Sentry
+      - name: Windows install Sentry CLI
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        shell: bash
+        run: npm install @sentry/cli@2.42.2 -g
+
+      - name: Windows debug symbols - Upload to Sentry
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
         continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         shell: bash
         run: |
-          npm install @sentry/cli@2.42.2
-          ./node_modules/@sentry/cli/bin/sentry-cli debug-files check ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
-          ./node_modules/@sentry/cli/bin/sentry-cli debug-files upload --org tari-labs --project tari-universe ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
+
+      - name: Verify Windows signing for installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        continue-on-error: true
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TEST_ENV: "Tari Universe (Beta) - 0312_0.9.817_x64_en-US.msi"
+        shell: powershell
+        run: |
+          # Get the Program Files (x86) directory dynamically
+          $programFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
+          $sdkBasePath = Join-Path $programFilesX86 "Windows Kits"
+
+          # Check if Windows Kits exists
+          if (-Not (Test-Path $sdkBasePath)) {
+            Write-Error "Windows Kits folder not found at $sdkBasePath!"
+            exit 1
+          }
+
+          Write-Output "Searching for signtool.exe in: $sdkBasePath"
+
+          # Search for signtool.exe within Windows Kits fold with x64 in the path
+          $signtoolPath = Get-ChildItem -Path $sdkBasePath -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+                          Where-Object { $_.FullName -match '\\x64\\' } |
+                          Select-Object -ExpandProperty FullName -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows Kits folder!"
+            exit 1
+          }
+
+          Write-Output "Found signtool.exe at: $signtoolPath"
+
+          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
+
+          # Display results
+          Write-Host "File: ${{ env.MSI_FILE }}"
+          Write-Host "  - Status: $($Signature.Status)"
+          Write-Host "  - Status Message: $($Signature.StatusMessage)"
+          Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
+          Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
+          Write-Host "---------------------------------------------"
+
+          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
+            exit 1
+          }
