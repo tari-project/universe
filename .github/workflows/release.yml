@@ -89,6 +89,7 @@ jobs:
           echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
+          echo "BETA_DATE=${BETA_DATE}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
@@ -260,7 +261,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         if: runner.os == 'Windows'
         env:
-          TARI_UNIVERSE_INSTALLER_NAME: ${{ startsWith(github.ref, 'refs/heads/release') && 'Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' || 'Tari Universe (Beta) - ${BETA_DATE}.${{ steps.build.outputs.appVersion }}_x64_en-US.msi' }}
+          TARI_UNIVERSE_INSTALLER_NAME: ${{ startsWith(github.ref, 'refs/heads/release') && 'Tari Universe_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' || 'Tari Universe (Beta) - ${BETA_DATE}_${{ steps.build.outputs.appVersion }}_x64_en-US.msi' }}
           # TARI_UNIVERSE_INSTALLER_NAME: Tari Universe (Beta) - 0312_0.9.816_x64_en-US.msi
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
         run: |
