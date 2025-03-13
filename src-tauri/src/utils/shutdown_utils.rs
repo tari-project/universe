@@ -23,7 +23,7 @@
 use std::time::Duration;
 
 use crate::{
-    events_emitter::ResumingAllProcessesPayload,
+    events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
     progress_tracker::ProgressTracker,

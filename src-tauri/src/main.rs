@@ -25,7 +25,7 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
-use events_emitter::SetupStatusEvent;
+use events::SetupStatusPayload;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -295,7 +295,7 @@ async fn setup_inner(
         .events_manager
         .handle_setup_status(
             &app,
-            SetupStatusEvent {
+            SetupStatusPayload {
                 event_type: "setup_status".to_string(),
                 title: "starting-up".to_string(),
                 title_params: None,
@@ -897,7 +897,7 @@ async fn setup_inner(
         .events_manager
         .handle_setup_status(
             &app,
-            SetupStatusEvent {
+            SetupStatusPayload {
                 event_type: "setup_status".to_string(),
                 title: "application-started".to_string(),
                 title_params: None,

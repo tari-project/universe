@@ -26,7 +26,7 @@ use log::error;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{watch::Sender, RwLock};
 
-use crate::{events_emitter::SetupStatusEvent, UniverseAppState};
+use crate::{events::SetupStatusPayload, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
@@ -128,7 +128,7 @@ impl ProgressTrackerInner {
             .events_manager
             .handle_setup_status(
                 &self.app_handle,
-                SetupStatusEvent {
+                SetupStatusPayload {
                     event_type: "setup_status".to_string(),
                     title,
                     title_params,
