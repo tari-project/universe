@@ -36,12 +36,10 @@ const SidebarMiner = memo(function Sidebar() {
                 <AirdropGiftTracker />
                 <RewardWrapper>
                     <WalletBalanceMarkup />
-                    {transactions?.length ? (
-                        <HistoryWrapper>
-                            <HistoryLabel>{t('history.label-rewards')}</HistoryLabel>
-                            <HistoryList winsOnly />
-                        </HistoryWrapper>
-                    ) : null}
+                    <HistoryWrapper>
+                        {transactions?.length ? <HistoryLabel>{t('history.label-rewards')}</HistoryLabel> : null}
+                        <HistoryList winsOnly />
+                    </HistoryWrapper>
                 </RewardWrapper>
             </GridAreaBottom>
         </SidebarGrid>

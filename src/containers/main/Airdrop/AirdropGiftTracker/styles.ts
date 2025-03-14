@@ -6,17 +6,13 @@ export const Wrapper = styled.div`
     gap: 10px;
 
     width: 100%;
-    padding: 15px 15px 20px;
-
+    padding: 10px 15px;
     border-radius: 10px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     box-shadow: 0 4px 45px 0 rgba(0, 0, 0, 0.08);
 
     position: relative;
     height: auto;
-    @media (max-height: 670px) {
-        padding: 15px 20px 15px 20px;
-    }
 `;
 
 export const TitleWrapper = styled('div')`

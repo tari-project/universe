@@ -118,7 +118,7 @@ export const FlexButton = styled.button`
         linear-gradient(180deg, #ff84a4 0%, #d92958 100%);
 
     position: relative;
-    color: ${({ theme }) => theme.palette.text.primary};
+    color: ${({ theme }) => theme.colors.greyscale[950]};
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
@@ -140,7 +140,7 @@ export const GemPill = styled.div`
     gap: 4px;
 
     span {
-        color: ${({ theme }) => theme.palette.text.contrast};
+        color: ${({ theme }) => theme.colors.greyscale[50]};
         display: flex;
         font-size: 10px;
         font-weight: 600;
