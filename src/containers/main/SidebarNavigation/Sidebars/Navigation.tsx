@@ -20,7 +20,8 @@ const transition = { rotate: { type: 'spring' }, opacity: { delay: 0.05 } };
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const rotate = sidebarOpen ? '180deg' : '0deg';
-    const activeIcon = isActive ? (
+    const showArrow = sidebarOpen ? isActive : true;
+    const expandIcon = showArrow ? (
         <>
             <HoverIconWrapper
                 whileHover={{ opacity: 1 }}
@@ -42,7 +43,7 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
             aria-pressed={isActive}
             aria-label={isActive ? 'Active sidebar section' : 'Inactive sidebar section'}
         >
-            {activeIcon}
+            {expandIcon}
             <NavIconWrapper>{children}</NavIconWrapper>
         </StyledIconButton>
     );
