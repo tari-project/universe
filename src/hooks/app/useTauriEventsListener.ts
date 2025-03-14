@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { useWalletStore } from '@app/store/useWalletStore';
+
 import {
     BaseNodeStatus,
     CpuMinerStatus,
@@ -9,9 +9,17 @@ import {
     TransactionInfo,
     WalletBalance,
 } from '@app/types/app-status';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
+
+import {
+    handleBaseNodeStatusUpdate,
+    handleConnectedPeersUpdate,
+    setCpuMiningStatus,
+    setGpuMiningStatus,
+    setWalletAddress,
+    setWalletBalance,
+} from '@app/store';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -57,13 +65,6 @@ type BackendStateUpdateEvent =
       };
 
 const useTauriEventsListener = () => {
-    const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
-    const setWalletBalance = useWalletStore((s) => s.setWalletBalance);
-    const setGpuMiningStatus = useMiningMetricsStore((s) => s.setGpuMiningStatus);
-    const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
-    const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
-    const handleBaseNodeStatusUpdate = useMiningMetricsStore((s) => s.handleBaseNodeStatusUpdate);
-
     useEffect(() => {
         const unlisten = listen(BACKEND_STATE_UPDATE, ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
             switch (event.event_type) {
@@ -100,14 +101,7 @@ const useTauriEventsListener = () => {
         return () => {
             unlisten.then((f) => f());
         };
-    }, [
-        handleBaseNodeStatusUpdate,
-        handleConnectedPeersUpdate,
-        setCpuMiningStatus,
-        setGpuMiningStatus,
-        setWalletAddress,
-        setWalletBalance,
-    ]);
+    }, []);
 };
 
 export default useTauriEventsListener;

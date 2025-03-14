@@ -1,0 +1,53 @@
+import { useEffect, useMemo, useState } from 'react';
+import { formatNumber, FormatPreset } from '@app/utils';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
+
+function useTariBalance() {
+    const [showBalance, setShowBalance] = useState(true);
+    const [showLongBalance, setShowLongBalance] = useState(false);
+    const [shouldAnimateBalance, setShouldAnimateBalance] = useState(true);
+
+    const calculated_balance = useWalletStore((s) => s.calculated_balance);
+    const formattedBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
+    const formattedLongBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
+
+    const isWalletScanning = useMemo(() => !Number.isFinite(calculated_balance), [calculated_balance]);
+    const balanceDisplayValue = useMemo(
+        () => (isWalletScanning ? '-' : showBalance ? formattedBalance : '*****'),
+        [formattedBalance, isWalletScanning, showBalance]
+    );
+
+    function toggleBalanceVisibility() {
+        setShowBalance((prev) => !prev);
+    }
+
+    function toggleBalanceFormat({ isMouseOver = false }: { isMouseOver?: boolean }) {
+        if (isWalletScanning) return;
+        setShouldAnimateBalance(false);
+        setShowLongBalance(isMouseOver);
+    }
+
+    useEffect(() => {
+        if (!shouldAnimateBalance) {
+            const timer = setTimeout(() => {
+                setShouldAnimateBalance(true);
+            }, 300);
+
+            return () => clearTimeout(timer);
+        }
+    }, [shouldAnimateBalance]);
+
+    return {
+        balanceDisplayValue,
+        formattedBalance,
+        formattedLongBalance,
+        isWalletScanning,
+        toggleBalanceFormat,
+        toggleBalanceVisibility,
+        showBalance,
+        showLongBalance,
+        shouldAnimateBalance,
+    };
+}
+
+export { useTariBalance };

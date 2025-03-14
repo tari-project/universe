@@ -39,6 +39,8 @@ export const AppContentContainer = styled(m.div).attrs({
     animate: 'visible',
     exit: 'exit',
 })`
-    width: 100vw;
-    height: 100vh;
+    min-width: 100vw;
+    min-height: 100vh;
+    height: 100%;
+    width: 100%;
 `;

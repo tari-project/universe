@@ -1,9 +1,16 @@
+import { DashboardContentContainer, VersionWrapper } from './styles';
 import MiningView from './MiningView/MiningView';
-import { DashboardContentContainer } from './styles';
+import { useMiningStatesSync } from '@app/hooks';
+import VersionChip from '@app/containers/main/SidebarNavigation/components/VersionChip/VersionChip.tsx';
 
 export default function Dashboard() {
+    useMiningStatesSync();
+
     return (
         <DashboardContentContainer>
+            <VersionWrapper>
+                <VersionChip />
+            </VersionWrapper>
             <MiningView />
         </DashboardContentContainer>
     );

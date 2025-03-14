@@ -8,6 +8,7 @@ import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
+import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -20,7 +21,7 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     console.info(`Changing mode to ${mode}...`);
     const metricsState = useMiningMetricsStore.getState();
     useMiningStore.setState({ isChangingMode: true });
-    useMiningMetricsStore.getState().handleMiningModeChange();
+    handleMiningModeChange();
 
     if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
@@ -166,7 +167,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         if (isAllExcluded) {
             setGpuMiningEnabled(false);
         }
-        useMiningMetricsStore.getState().setGpuDevices(updatedDevices);
+        setGpuDevices(updatedDevices);
         if (useMiningStore.getState().miningInitiated) {
             console.info('Restarting mining...');
             await startMining();
