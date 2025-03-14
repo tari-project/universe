@@ -4,8 +4,12 @@ import {
     AddressWrapper,
     ContentWrapper,
     EmojiAddressWrapper,
+    ImgOption,
+    TextOption,
     ToggleWrapper,
 } from './Address.style.ts';
+
+import YatHand from '/assets/img/yat_hand.png';
 
 import { truncateMiddle } from '@app/utils';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -55,6 +59,13 @@ export function Address() {
         </Typography>
     );
 
+    const textOptionMarkup = <TextOption>{`Aa`}</TextOption>;
+    const emojiOptionMarkup = (
+        <ImgOption>
+            <img src={YatHand} alt="" />
+        </ImgOption>
+    );
+
     return (
         <AddressContainer>
             <Typography variant="p">{t('receive.label-address')}</Typography>
@@ -66,7 +77,11 @@ export function Address() {
                     </IconButton>
                 </AddressWrapper>
                 <ToggleWrapper>
-                    <ToggleSwitch checked={useEmoji} onChange={toggleEmoji} />
+                    <ToggleSwitch
+                        checked={useEmoji}
+                        onChange={toggleEmoji}
+                        customDecorators={{ first: textOptionMarkup, second: emojiOptionMarkup }}
+                    />
                 </ToggleWrapper>
             </ContentWrapper>
         </AddressContainer>

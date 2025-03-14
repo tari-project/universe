@@ -15,9 +15,6 @@ export const AddressContainer = styled.div`
     flex-direction: column;
     overflow: hidden;
     gap: 8px;
-    p {
-        font-weight: 500;
-    }
 `;
 
 export const ContentWrapper = styled.div`
@@ -47,4 +44,16 @@ export const AddressWrapper = styled.div`
 
 export const ToggleWrapper = styled.div`
     display: flex;
+`;
+
+export const ImgOption = styled.div`
+    width: 14px;
+    img {
+        max-width: 100%;
+    }
+`;
+export const TextOption = styled.div`
+    font-weight: 500;
+    font-size: 8px;
+    color: inherit;
 `;
