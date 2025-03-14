@@ -8,6 +8,7 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
         authUuid: s.authUuid,
         apiUrl: s.backendInMemoryConfig?.airdropApiUrl,
     }));
+
     useEffect(() => {
         if (!canListen) return;
         if (authUuid && apiUrl) {
@@ -35,7 +36,7 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                         console.error('fetch airdrop token error: ', e);
                     }
                 }
-            }, 1000);
+            }, 2000);
             const timeout = setTimeout(
                 () => {
                     clearInterval(interval);
