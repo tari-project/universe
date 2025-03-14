@@ -12,12 +12,16 @@
   "doLater": "Saya akan melakukannya nanti",
   "giftReferralCode": "Dapatkan {{gems}} permata untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun mereka, Anda akan mendapatkan permata Anda.",
   "giftReferralCodeHeader": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",
+  "invite": "Invite",
   "inviteFriends": "Undang Teman",
   "inviteFriendsText": "Salin tautan dan bagikan",
   "invitedAmount": "Anda telah mengundang <span>{{count}}</span> teman",
+  "joinAirdrop": "Ikuti Airdrop",
   "keep-mining-to-earn-rewards": "Terus menambang untuk mendapatkan lebih banyak hadiah!",
   "linkCopied": "Tautan disalin!",
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Hadiah Airdrop",
+  "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata",
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
@@ -35,8 +39,5 @@
   "topTooltipTitle": "Hadiah Testnet",
   "unclaimedGems": "Permata yang Belum Diklaim",
   "you-reached-your-giftinh-goal": "Anda mencapai tujuan pemberian hadiah Anda!",
-  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!",
-  "joinAirdrop": "Ikuti Airdrop",
-  "loggedInTitle": "Hadiah Airdrop",
-  "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata"
+  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!"
 }

@@ -11,6 +11,7 @@ const BaseIconButton = styled.button<ExtendedButtonStyleProps>`
     transition: background 0.2s ease-in;
     cursor: pointer;
     background: none;
+
     &:hover {
         background: ${({ theme }) =>
             `linear-gradient(0deg, ${convertHexToRGBA(theme.palette.primary.accent, 0.05)} 0%, ${convertHexToRGBA(theme.palette.background.paper, 0.7)} 50%)`};

@@ -36,7 +36,6 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
     ) : null;
     return (
         <StyledIconButton
-            variant="secondary"
             onClick={onClick}
             active={isActive}
             aria-pressed={isActive}

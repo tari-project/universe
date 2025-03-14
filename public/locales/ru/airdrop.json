@@ -12,12 +12,16 @@
   "doLater": "Я сделаю это позже",
   "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого Вы пригласите в Tari Universe. Как только они подключат свой аккаунт, Вы получите свои гемы.",
   "giftReferralCodeHeader": "Получите ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
+  "invite": "Invite",
   "inviteFriends": "Пригласить друзей",
   "inviteFriendsText": "Скопируйте ссылку и поделитесь ею",
   "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
+  "joinAirdrop": "Присоединиться к Airdrop",
   "keep-mining-to-earn-rewards": "Продолжайте майнить, чтобы заработать больше наград!",
   "linkCopied": "Ссылка скопирована!",
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
+  "loggedInTitle": "Награды Airdrop",
+  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
@@ -35,8 +39,5 @@
   "topTooltipTitle": "Награды Testnet",
   "unclaimedGems": "Неполученные гемы",
   "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
-  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!",
-  "joinAirdrop": "Присоединиться к Airdrop",
-  "loggedInTitle": "Награды Airdrop",
-  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы"
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
 }

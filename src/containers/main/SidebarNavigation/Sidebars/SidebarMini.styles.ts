@@ -2,15 +2,15 @@ import * as m from 'motion/react-m';
 import styled from 'styled-components';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { SB_MINI_WIDTH } from '@app/theme/styles.ts';
+import { convertHexToRGBA } from '@app/utils';
 
 export const MiniWrapper = styled.div`
     height: 100%;
     display: grid;
-    padding: 30px 0;
+    padding: 20px 0;
     width: ${SB_MINI_WIDTH}px;
     justify-items: center;
-    grid-auto-flow: row;
-    grid-template-rows: 1fr 2fr 1fr;
+    grid-template-rows: auto 1fr auto;
     grid-template-areas:
         'top'
         'center'
@@ -33,7 +33,9 @@ export const GridCenter = styled.div`
 `;
 export const GridBottom = styled.div`
     grid-area: bottom;
-    align-items: end;
+    flex-direction: column;
+    align-items: center;
+    justify-content: end;
     display: flex;
 `;
 
@@ -72,6 +74,9 @@ export const NavigationWrapper = styled.div`
     gap: 10px;
 `;
 
-export const StyledIconButton = styled(IconButton)`
+export const StyledIconButton = styled(IconButton).attrs({
+    variant: 'secondary',
+})`
     position: relative;
+    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.03)} 0 0 2px 1px`};
 `;
