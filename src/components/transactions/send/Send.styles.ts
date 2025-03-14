@@ -1,13 +1,19 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     display: flex;
     flex-direction: column;
     align-items: stretch;
     flex-flow: column;
     width: 100%;
     height: 100%;
+
+    ${({ $isLoading }) =>
+        $isLoading &&
+        css`
+            opacity: 0.8;
+        `}
 `;
 export const StyledForm = styled.form`
     display: flex;

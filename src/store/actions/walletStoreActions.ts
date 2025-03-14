@@ -8,33 +8,6 @@ interface TxArgs {
     limit?: number;
 }
 
-export const fetchCoinbaseTransactions = async ({ continuation, limit }: TxArgs) => {
-    if (useWalletStore.getState().is_reward_history_loading) {
-        return [];
-    }
-
-    try {
-        useWalletStore.setState({ is_reward_history_loading: true });
-
-        const currentCoinbaseTx = useWalletStore.getState().coinbase_transactions;
-
-        const fetchedTxs = await invoke('get_coinbase_transactions', { continuation, limit });
-        const coinbase_transactions = continuation ? [...currentCoinbaseTx, ...fetchedTxs] : fetchedTxs;
-        const has_more_coinbase_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
-        useWalletStore.setState({
-            has_more_coinbase_transactions,
-            coinbase_transactions,
-        });
-        return coinbase_transactions;
-    } catch (error) {
-        if (error !== ALREADY_FETCHING.HISTORY) {
-            console.error('Could not get transaction history: ', error);
-        }
-        return [];
-    } finally {
-        useWalletStore.setState({ is_reward_history_loading: false });
-    }
-};
 export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) => {
     if (useWalletStore.getState().is_transactions_history_loading) {
         return [];

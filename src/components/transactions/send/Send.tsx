@@ -28,7 +28,7 @@ import {
 
 const defaultValues = { message: '', address: '', amount: '' };
 export function Send() {
-    const { t } = useTranslation('wallet', { useSuspense: false });
+    const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
 
     const { control, handleSubmit, reset, formState, clearErrors, setError, setValue } = useForm<SendInputs>({
@@ -53,16 +53,17 @@ export function Send() {
             };
         }
     }, [isSubmitted, isSubmitSuccessful, errors, reset]);
+
     function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
         setValue(name, e.target.value, { shouldValidate: true });
         clearErrors(name);
     }
 
-    const commonProps = { control, handleChange };
-
-    const paymentIdField = <FormField {...commonProps} name="message" />;
-    const addressField = <FormField {...commonProps} name="address" required />;
-    const amountField = <FormField {...commonProps} name="amount" required icon={<TariOutlineSVG />} />;
+    const paymentIdField = <FormField control={control} handleChange={handleChange} name="message" />;
+    const addressField = <FormField control={control} handleChange={handleChange} name="address" required />;
+    const amountField = (
+        <FormField control={control} handleChange={handleChange} name="amount" required icon={<TariOutlineSVG />} />
+    );
 
     const fieldMarkup = (
         <FormFieldsWrapper>
@@ -96,7 +97,7 @@ export function Send() {
     );
 
     return (
-        <Wrapper>
+        <Wrapper $isLoading={isSubmitting}>
             <StyledForm onSubmit={handleSubmit(handleSend)}>
                 {fieldMarkup}
                 <BottomWrapper>

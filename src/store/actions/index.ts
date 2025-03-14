@@ -73,7 +73,6 @@ export {
 } from './uiStoreActions.ts';
 
 export {
-    fetchCoinbaseTransactions,
     fetchTransactionsHistory,
     importSeedWords,
     initialFetchTxs,

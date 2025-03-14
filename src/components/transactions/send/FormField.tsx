@@ -12,7 +12,7 @@ interface FormFieldProps {
     required?: boolean;
 }
 export function FormField({ control, name, handleChange, icon, required = false }: FormFieldProps) {
-    const { t } = useTranslation('wallet', { useSuspense: false });
+    const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
     const placeholderT = t(`send.placeholder`, { context: name });
 
