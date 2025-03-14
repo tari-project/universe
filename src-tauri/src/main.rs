@@ -353,7 +353,7 @@ async fn setup_inner(
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
 
-    let use_tor = app_config.use_tor();
+    let use_tor = app_config.use_tor().await;
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
 
@@ -437,15 +437,32 @@ async fn setup_inner(
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
-        binary_resolver
+
+        match binary_resolver
             .initialize_binary_timeout(
                 Binaries::Tor,
                 progress.clone(),
                 should_check_for_update,
                 rx.clone(),
             )
-            .await?;
-        sleep(Duration::from_secs(1));
+            .await
+        {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "Tor has been initialized");
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Could not initialize tor: {:?}", e);
+                let _unused = state
+                    .config
+                    .write()
+                    .await
+                    .set_use_tor(false)
+                    .await
+                    .is_ok_and(|_| {
+                        app.restart();
+                    });
+            }
+        }
     }
 
     let _unused = telemetry_service
