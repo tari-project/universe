@@ -4,7 +4,7 @@
 		
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		
-		<BootstrapperApplication>
+		<BootstrapperApplication Name="$(env.TARI_UNIVERSE_BUNDLER_NAME)">
 			<bal:WixStandardBootstrapperApplication LogoFile="tari-win-bundler/resources/71x71.png" LogoSideFile="tari-win-bundler/resources/71x71.png" LicenseUrl="" Theme="hyperlinkLicense" ThemeFile="tari-win-bundler/Theme.xml" LocalizationFile="tari-win-bundler/Theme.wxl" />
 		</BootstrapperApplication>
 

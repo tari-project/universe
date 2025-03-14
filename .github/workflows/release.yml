@@ -269,11 +269,11 @@ jobs:
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
             # release
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
-            TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.exe"
+            TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
           else
             # Beta / Other
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
-            TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.exe"
+            TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
           fi
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
@@ -289,7 +289,6 @@ jobs:
             -includepath tari-win-bundler/executables \
             -includepath wix \
             -includepath src-tauri/target/release/bundle/msi
-            -out tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}
           ls -la src-tauri/target/release/bundle/msi
           ls -la tari-win-bundler
 
@@ -301,15 +300,14 @@ jobs:
         with:
           tag_name: ${{ steps.build.outputs.tag }}
           files: |
-            ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
-            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
+            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
-          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
 
       - name: Locate artifacts path
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
