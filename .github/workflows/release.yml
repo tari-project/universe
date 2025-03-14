@@ -293,6 +293,13 @@ jobs:
           ls -la tari-win-bundler
           mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
 
+      - name: Sign New Windows Installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
         uses: softprops/action-gh-release@v2
