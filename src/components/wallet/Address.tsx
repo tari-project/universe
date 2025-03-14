@@ -8,6 +8,7 @@ import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
+import { useTheme } from 'styled-components';
 
 function Address() {
     const { t } = useTranslation('wallet');
@@ -16,6 +17,7 @@ function Address() {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
 
     const displayAddress = truncateMiddle(walletAddress, 10);
+    const theme = useTheme();
 
     function handleCopyClick() {
         copyToClipboard(walletAddress);
@@ -40,12 +42,8 @@ function Address() {
                     level="H"
                     title="Tari Address QR Code"
                     marginSize={4}
-                    imageSettings={{
-                        src: 'assets/img/logo_round.png',
-                        width: 60,
-                        height: 60,
-                        excavate: false,
-                    }}
+                    bgColor={theme.palette.contrast}
+                    fgColor={theme.palette.base}
                 />
             </QRContainer>
         </Wrapper>

@@ -10,8 +10,7 @@ export const QRContainer = styled.div`
     display: flex;
     width: 100%;
     border-radius: 10px;
-    padding: 4px;
-    background: ${({ theme }) => theme.palette.contrast};
+    background: ${({ theme }) => theme.palette.text.contrast};
     overflow: hidden;
     align-items: center;
     justify-content: center;
