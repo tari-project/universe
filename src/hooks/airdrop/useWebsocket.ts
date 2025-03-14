@@ -151,8 +151,8 @@ export const useWebsocket = () => {
     const disconnect = () => {
         try {
             if (socket) {
-                setConnectedSocket(false);
                 handleEmitMiningStatus(isMining);
+                setConnectedSocket(false);
                 registerWsConnectionEvent({
                     state: 'off',
                 });
