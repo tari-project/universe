@@ -298,6 +298,8 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         run: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
 
       - name: Add installer to release
