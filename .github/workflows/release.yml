@@ -278,8 +278,6 @@ jobs:
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_BUNDLER_NAME is ${TARI_UNIVERSE_BUNDLER_NAME}"
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
-          export TAURI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
-          export TAURI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
@@ -299,14 +297,14 @@ jobs:
         with:
           tag_name: ${{ steps.build.outputs.tag }}
           files: |
-            ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
+            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
-          path: ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
 
       - name: Locate artifacts path
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
