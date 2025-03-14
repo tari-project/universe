@@ -37,6 +37,7 @@ export const GridBottom = styled.div`
     align-items: center;
     justify-content: end;
     display: flex;
+    gap: 10px;
 `;
 
 export const NavIconWrapper = styled.div`

@@ -25,7 +25,7 @@ const BaseIconButton = styled.button<ExtendedButtonStyleProps>`
         $active &&
         css`
             background: ${({ theme }) =>
-                `linear-gradient(0deg, ${convertHexToRGBA(theme.palette.primary.accent, 0.1)} -10%, ${convertHexToRGBA(theme.palette.background.main, 0.9)} 50%)`};
+                `linear-gradient(0deg, ${convertHexToRGBA(theme.palette.primary.accent, 0.07)} -10%, ${convertHexToRGBA(theme.palette.background.main, 0.9)} 50%)`};
         `}
 
     ${({ $variant, $size }) => {
