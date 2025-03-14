@@ -73,11 +73,10 @@ export {
 } from './uiStoreActions.ts';
 
 export {
-    fetchCoinbaseTransactions,
     fetchTransactionsHistory,
     importSeedWords,
     initialFetchTxs,
-    refreshCoinbaseTransactions,
+    refreshTransactions,
     setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';
