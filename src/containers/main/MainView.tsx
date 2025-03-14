@@ -6,6 +6,8 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore';
 export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
 
+    console.log('MainView render', visualMode);
+
     return (
         <DashboardContainer $visualModeOff={!visualMode}>
             <SideBar />

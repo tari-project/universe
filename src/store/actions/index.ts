@@ -12,7 +12,7 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    fetchAppConfig,
+    handleAppConfigLoaded as fetchAppConfig,
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
