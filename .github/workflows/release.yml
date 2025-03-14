@@ -261,7 +261,6 @@ jobs:
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-          TARI_UNIVERSE_INSTALLER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
@@ -278,8 +277,7 @@ jobs:
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_BUNDLER_NAME is ${TARI_UNIVERSE_BUNDLER_NAME}"
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
-          export TAURI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
-          export TAURI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}
+          printenv
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
@@ -288,8 +286,9 @@ jobs:
             -includepath tari-win-bundler/resources \
             -includepath tari-win-bundler/executables \
             -includepath wix \
-            -includepath src-tauri/target/release/bundle/msi \
-            -out "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}"
+            -includepath src-tauri/target/release/bundle/msi
+          ls -la src-tauri/target/release/bundle/msi
+          ls -la tari-win-bundler
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
@@ -300,6 +299,7 @@ jobs:
           tag_name: ${{ steps.build.outputs.tag }}
           files: |
             ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
+            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
