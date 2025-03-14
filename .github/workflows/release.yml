@@ -261,6 +261,7 @@ jobs:
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          TARI_UNIVERSE_INSTALLER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
