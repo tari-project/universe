@@ -1,13 +1,13 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-	<Bundle Name="Tari Universe" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile=".\resources\icon.ico" DisableModify="yes" ParentName="Tari Universe" >
+	<Bundle Name="Tari Universe" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile="tari-win-bundler/resources/icon.ico" DisableModify="yes" ParentName="Tari Universe" >
 		<OptionalUpdateRegistration Name="Tari Universe"  />
 		
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		
 		<BootstrapperApplication>
-			<bal:WixStandardBootstrapperApplication LaunchTarget="C:\Program Files\Tari Universe\Tari Universe.exe" ShowVersion="yes" SuppressRepair="yes" SuppressOptionsUI="yes"  LogoFile=".\resources\71x71.png" LogoSideFile=".\resources\71x71.png" LicenseUrl="" Theme="hyperlinkLicense" ThemeFile=".\Theme.xml" LocalizationFile=".\Theme.wxl" />
-			<Payload Name="clouds.bmp" SourceFile=".\resources\clouds.bmp" Compressed="yes"/>
-			<Payload Name="icon.ico" SourceFile=".\resources\icon.ico" Compressed="yes"/>
+			<bal:WixStandardBootstrapperApplication LaunchTarget="C:/Program Files/Tari Universe/Tari Universe.exe" ShowVersion="yes" SuppressRepair="yes" SuppressOptionsUI="yes"  LogoFile="tari-win-bundler/resources/71x71.png" LogoSideFile="tari-win-bundler/resources/71x71.png" LicenseUrl="" Theme="hyperlinkLicense" ThemeFile="tari-win-bundler/Theme.xml" LocalizationFile="tari-win-bundler/Theme.wxl" />
+			<Payload Name="clouds.bmp" SourceFile="tari-win-bundler/resources/clouds.bmp" Compressed="yes"/>
+			<Payload Name="icon.ico" SourceFile="tari-win-bundler/resources/icon.ico" Compressed="yes"/>
 		</BootstrapperApplication>
 
 
