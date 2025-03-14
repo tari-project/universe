@@ -1,11 +1,9 @@
 import { memo } from 'react';
-
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-
-import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
+import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
+import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import Navigation from './Navigation.tsx';
-import { Actions } from '@app/containers/main/Airdrop/mini/Actions.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     return (
@@ -19,7 +17,7 @@ const SidebarMini = memo(function SidebarMini() {
                 <Navigation />
             </GridCenter>
             <GridBottom>
-                <Actions />
+                <AirdropSidebarItems />
                 <OpenSettingsButton iconSize={22} size="large" />
             </GridBottom>
         </MiniWrapper>

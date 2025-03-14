@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions, shift } from '@floating-ui/react';
-import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper } from './Action.style.ts';
+import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper } from './item.style.ts';
 import { AnimatePresence } from 'motion/react';
 
 interface ActionProps {
@@ -10,7 +10,7 @@ interface ActionProps {
     text?: string;
 }
 
-export function Action({ children, text, hoverContent, tooltipContent }: ActionProps) {
+export function SidebarItem({ children, text, hoverContent, tooltipContent }: ActionProps) {
     const [hovered, setHovered] = useState(false);
 
     const { refs, context, floatingStyles } = useFloating({
