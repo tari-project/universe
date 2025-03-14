@@ -6,6 +6,8 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { useAvatarGradient } from '@app/hooks/airdrop/utils/useAvatarGradient.ts';
 import { Action } from './components/Action.tsx';
 import { ActionImgWrapper, GemImg, Wrapper, Avatar } from './Actions.style.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import LinkIcon from '@app/containers/main/Airdrop/AirdropGiftTracker/sections/LoggedIn/segments/Invite/LinkIcon.tsx';
 
 export function Actions() {
     const { t } = useTranslation('airdrop');
@@ -18,11 +20,23 @@ export function Actions() {
 
     const style = useAvatarGradient({ username: name || '', image: profileimageurl });
 
+    const inviteTooltipContent = (
+        <>
+            <Typography variant="h6">{t('inviteFriends')}</Typography>
+            <Typography variant="p">{t('inviteFriendsText')}</Typography>
+        </>
+    );
+    const inviteHoverContent = (
+        <>
+            <LinkIcon />
+        </>
+    );
+
     return (
         <Wrapper>
-            <Action text={t('invite')}>
+            <Action text={t('invite')} tooltipContent={inviteTooltipContent} hoverContent={inviteHoverContent}>
                 <ActionImgWrapper>
-                    <img src={gift} alt="gift image" style={{ width: 44 }} />
+                    <img src={gift} alt="gift image" style={{ width: 32 }} />
                 </ActionImgWrapper>
             </Action>
             <Action text={formattedCount}>

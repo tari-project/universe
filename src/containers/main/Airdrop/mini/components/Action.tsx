@@ -1,16 +1,51 @@
-import { ReactNode } from 'react';
-import { ActionText, ActionWrapper } from './Action.style.ts';
+import { ReactNode, useState } from 'react';
+import { offset, safePolygon, useFloating, useHover, useInteractions, shift } from '@floating-ui/react';
+import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper } from './Action.style.ts';
+import { AnimatePresence } from 'motion/react';
 
 interface ActionProps {
     children: ReactNode;
+    hoverContent?: ReactNode;
+    tooltipContent?: ReactNode;
     text?: string;
 }
 
-export function Action({ children, text }: ActionProps) {
+export function Action({ children, text, hoverContent, tooltipContent }: ActionProps) {
+    const [hovered, setHovered] = useState(false);
+
+    const { refs, context, floatingStyles } = useFloating({
+        open: hovered,
+        onOpenChange: setHovered,
+        strategy: 'fixed',
+        placement: 'top',
+        middleware: [
+            offset({
+                mainAxis: 10,
+                crossAxis: 10,
+            }),
+            shift(),
+        ],
+    });
+
+    const hover = useHover(context, {
+        move: !hovered,
+        handleClose: safePolygon(),
+    });
+
+    const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
+
     return (
-        <ActionWrapper>
-            {children}
+        <ActionWrapper ref={refs.setReference} {...getReferenceProps()}>
+            <ContentWrapper>{hovered && hoverContent ? hoverContent : children}</ContentWrapper>
             <ActionText>{text}</ActionText>
+
+            <AnimatePresence>
+                {tooltipContent && hovered && (
+                    <ActionHoveredWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                        {tooltipContent}
+                    </ActionHoveredWrapper>
+                )}
+            </AnimatePresence>
         </ActionWrapper>
     );
 }

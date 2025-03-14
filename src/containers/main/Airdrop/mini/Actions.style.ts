@@ -4,6 +4,10 @@ export const Wrapper = styled.div`
     flex-direction: column;
     display: flex;
     gap: 15px;
+
+    @media (max-height: 680px) {
+        gap: 8px;
+    }
 `;
 
 export const ActionImgWrapper = styled.div`

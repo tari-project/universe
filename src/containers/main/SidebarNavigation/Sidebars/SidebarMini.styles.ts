@@ -38,6 +38,10 @@ export const GridBottom = styled.div`
     justify-content: end;
     display: flex;
     gap: 10px;
+
+    @media (max-height: 680px) {
+        gap: 4px;
+    }
 `;
 
 export const NavIconWrapper = styled.div`
