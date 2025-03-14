@@ -29,8 +29,25 @@ impl RemoteNodeAdapter {
     }
 
     pub fn set_grpc_address(&mut self, grpc_address: String) {
+        let has_scheme = grpc_address.starts_with("http");
+        let is_https = grpc_address.starts_with("https");
+        if !has_scheme {
+            let parts = grpc_address.split(':').collect::<Vec<&str>>();
+            let port = parts[1].parse::<u16>().unwrap();
+            let scheme = if port == 443 { "https://" } else { "http://" };
+            self.grpc_address = Some((
+                format!("{}{}", scheme, parts[0].to_string()),
+                if is_https { 443 } else { 80 },
+            ));
+            return;
+        }
+
         let parts = grpc_address.split(':').collect::<Vec<&str>>();
-        self.grpc_address = Some((parts[0].to_string(), parts[1].parse().unwrap()));
+        dbg!(&parts);
+        self.grpc_address = Some((
+            format!("{}:{}", parts[0].to_string(), parts[1].to_string()),
+            parts[2].parse().unwrap(),
+        ));
     }
 
     pub fn tcp_rpc_port(&self) -> u16 {
@@ -39,10 +56,12 @@ impl RemoteNodeAdapter {
 
     pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
         if let Some(grpc_address) = self.grpc_address() {
-            Some(MinotariNodeClient::new(
-                format!("http://{}:{}", grpc_address.0, grpc_address.1),
-                1,
-            ))
+            let address = if grpc_address.0.starts_with("http") {
+                format!("{}:{}", grpc_address.0, grpc_address.1)
+            } else {
+                format!("http://{}:{}", grpc_address.0, grpc_address.1)
+            };
+            Some(MinotariNodeClient::new(address, 1))
         } else {
             None
         }
@@ -65,12 +84,17 @@ impl ProcessAdapter for RemoteNodeAdapter {
         let grpc_address = self
             .grpc_address()
             .ok_or_else(|| anyhow::anyhow!("GRPC address not set"))?;
+        let address = if grpc_address.0.starts_with("http") {
+            format!("{}:{}", grpc_address.0, grpc_address.1)
+        } else {
+            format!("http://{}:{}", grpc_address.0, grpc_address.1)
+        };
         Ok((
             NullProcessInstance {
                 shutdown: inner_shutdown,
             },
             MinotariNodeStatusMonitor::new(
-                MinotariNodeClient::new(format!("http://{}:{}", grpc_address.0, grpc_address.1), 1),
+                MinotariNodeClient::new(address, 1),
                 self.status_broadcast.clone(),
             ),
         ))

@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -46,6 +47,7 @@ use crate::remote_node_adapter::RemoteNodeAdapter;
 use crate::remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use crate::ProgressTracker;
 use async_trait::async_trait;
+use std::str::FromStr;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -196,15 +198,11 @@ impl<T: NodeAdapter> NodeManager<T> {
     pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
         let lock = self.watcher.read().await;
         if let Some((host, port)) = lock.adapter.grpc_address() {
-            return Ok(format!("http://{}:{}", host, port));
-        }
-        Err(anyhow::anyhow!("grpc_address not set"))
-    }
-
-    pub async fn get_base_node_grpc_as_multiaddr(&self) -> Result<String, anyhow::Error> {
-        let lock = self.watcher.read().await;
-        if let Some((host, port)) = lock.adapter.grpc_address() {
-            return Ok(format!("/ip4/{}/tcp/{}", host, port));
+            if !host.starts_with("http") {
+                return Ok(format!("http://{}:{}", host, port));
+            } else {
+                return Ok(format!("{}:{}", host, port));
+            }
         }
         Err(anyhow::anyhow!("grpc_address not set"))
     }
@@ -286,7 +284,9 @@ impl<T: NodeAdapter> NodeManager<T> {
             .adapter
             .get_node_client()
             .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
-        status_monitor.get_identity().await
+        status_monitor.get_identity().await.inspect_err(|e| {
+            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
+        })
     }
 
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {

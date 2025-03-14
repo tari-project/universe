@@ -107,8 +107,10 @@ pub(crate) struct WrappedStatusMonitor {
 impl StatusMonitor for WrappedStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         if self.is_synced.load(std::sync::atomic::Ordering::SeqCst) {
+            dbg!("here");
             self.local.check_health().await
         } else {
+            dbg!("here");
             // Check if we are synced on the node yet.
             let node_is_synced = self
                 .local
@@ -116,11 +118,15 @@ impl StatusMonitor for WrappedStatusMonitor {
                 .await
                 .map(|state| state.is_synced)
                 .unwrap_or_default();
+            dbg!("here");
             if node_is_synced {
+                dbg!("here");
                 self.is_synced
                     .store(true, std::sync::atomic::Ordering::SeqCst);
+                dbg!("here");
                 self.local.check_health().await
             } else {
+                dbg!("here");
                 self.remote.check_health().await
             }
         }

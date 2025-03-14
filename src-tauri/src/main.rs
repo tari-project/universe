@@ -1,5 +1,3 @@
-// Copyright 2024. The Tari Project
-//
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
 //
@@ -801,14 +799,13 @@ async fn setup_inner(
         .update("starting-mmproxy".to_string(), None, 0)
         .await;
 
-    let base_node_grpc_address_multiaddr =
-        state.node_manager.get_base_node_grpc_as_multiaddr().await?;
+    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
         .start(StartConfig {
-            base_node_grpc_address_multiaddr,
+            base_node_grpc_address,
             p2pool_port,
             app_shutdown: state.shutdown.to_signal().clone(),
             base_path: data_dir.clone(),

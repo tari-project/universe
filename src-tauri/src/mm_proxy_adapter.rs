@@ -42,7 +42,7 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
-    pub base_node_grpc_address_multiaddr: String,
+    pub base_node_grpc_address: String,
     pub p2pool_grpc_port: u16,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
@@ -51,8 +51,8 @@ pub(crate) struct MergeMiningProxyConfig {
 }
 
 impl MergeMiningProxyConfig {
-    pub fn set_to_use_base_node(&mut self, grpc_address_multiaddr: String) {
-        self.base_node_grpc_address_multiaddr = grpc_address_multiaddr;
+    pub fn set_to_use_base_node(&mut self, grpc_address: String) {
+        self.base_node_grpc_address = grpc_address;
     }
 
     pub fn set_to_use_p2pool(&mut self, port: u16) {
@@ -118,7 +118,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
                 "merge_mining_proxy.base_node_grpc_address={}",
-                config.base_node_grpc_address_multiaddr
+                config.base_node_grpc_address
             ),
             "-p".to_string(),
             format!(
@@ -159,7 +159,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
             args.push("-p".to_string());
             args.push(format!(
-                "merge_mining_proxy.p2pool_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
+                "merge_mining_proxy.p2pool_node_grpc_address=http://127.0.0.1:{}",
                 config.p2pool_grpc_port
             ));
         }
