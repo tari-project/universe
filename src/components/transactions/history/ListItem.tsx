@@ -1,9 +1,9 @@
 import { memo, useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
-import { useTranslation } from 'react-i18next';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
-import { BaseItemProps, HistoryListItemProps, TransationType } from '../types.ts';
+import { BaseItemProps, HistoryListItemProps } from '../types.ts';
+import { getItemTitle, getItemType } from './helpers.ts';
 import ItemExpand from './ExpandedItem';
 import ItemHover from './HoveredItem';
 import {
@@ -39,8 +39,6 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
 });
 
 const HistoryListItem = memo(function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
-    const { t } = useTranslation(['sidebar', 'common'], { useSuspense: false });
-
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
 
@@ -48,20 +46,14 @@ const HistoryListItem = memo(function ListItem({ item, index, showReplay = false
     const ref = useRef<HTMLDivElement>(null);
     const inView = useInView(ref, { amount: 0.5, once: false });
 
-    const itemType = (
-        item.direction === 2 ? 'sent' : item.direction === 1 && item.status !== 12 ? 'received' : 'mined'
-    ) as TransationType;
+    const itemType = getItemType(item);
 
     const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
     const [expanded, setExpanded] = useState(false);
 
-    const itemTitle = isMined
-        ? `${t('block')} #${item.mined_in_block_height}`
-        : !item.payment_id || item.payment_id?.includes('<No message>')
-          ? t(`common:${itemType}`)
-          : item.payment_id;
+    const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',

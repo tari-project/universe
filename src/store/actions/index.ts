@@ -77,7 +77,7 @@ export {
     fetchTransactionsHistory,
     importSeedWords,
     initialFetchTxs,
-    refreshCoinbaseTransactions,
+    refreshTransactions,
     setWalletAddress,
     setWalletBalance,
 } from './walletStoreActions';

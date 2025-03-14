@@ -72,9 +72,9 @@ export const importSeedWords = async (seedWords: string[]) => {
 export const initialFetchTxs = () => {
     void fetchTransactionsHistory({ continuation: false, limit: 20 });
 };
-export const refreshCoinbaseTransactions = async () => {
-    const limit = useWalletStore.getState().coinbase_transactions.length;
-    return fetchCoinbaseTransactions({ continuation: false, limit: Math.max(limit, 20) });
+export const refreshTransactions = async () => {
+    const limit = useWalletStore.getState().transactions.length;
+    return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
 };
 
 export const setWalletAddress = (addresses: WalletAddress) => {

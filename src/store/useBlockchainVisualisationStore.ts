@@ -1,4 +1,4 @@
-import { refreshCoinbaseTransactions, setWalletBalance } from '@app/store/actions';
+import { refreshTransactions, setWalletBalance } from '@app/store/actions';
 
 let winTimeout: NodeJS.Timeout | undefined;
 let failTimeout: NodeJS.Timeout | undefined;
@@ -77,11 +77,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         winTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             setWalletBalance(balance);
-            refreshCoinbaseTransactions();
+            refreshTransactions();
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
-        await refreshCoinbaseTransactions();
+        await refreshTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
