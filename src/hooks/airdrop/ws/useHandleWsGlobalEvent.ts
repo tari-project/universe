@@ -10,7 +10,7 @@ export const useHandleWsGlobalEvent = () => {
                 break;
             default:
                 // eslint-disable-next-line no-console
-                console.log('Unknown global event', eventParsed);
+                console.warn('Unknown global event', eventParsed);
         }
     };
 };
