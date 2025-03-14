@@ -21,6 +21,7 @@ const XSpaceEventBanner = () => {
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
+    const [isLive, setIsLive] = useState(false);
     const titleRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -31,10 +32,17 @@ const XSpaceEventBanner = () => {
             const now = new Date();
             const start = new Date(latestXSpaceEvent.visibilityStart);
             setIsVisible(now >= start);
+
+            if (!latestXSpaceEvent.goingLive || latestXSpaceEvent.type !== XSpaceEventType.event) return;
+            const currentDate = new Date();
+            setIsLive(
+                new Date(latestXSpaceEvent.visibilityEnd) >= currentDate &&
+                    new Date(latestXSpaceEvent.goingLive) <= currentDate
+            );
         };
 
         checkVisibility();
-        const interval = setInterval(checkVisibility, 30000); // check every 30 sec
+        const interval = setInterval(checkVisibility, 15000); // check every 15 sec
         return () => clearInterval(interval);
     }, [latestXSpaceEvent]);
 
@@ -48,18 +56,6 @@ const XSpaceEventBanner = () => {
             setTransitionPixelWidth(titleWidth / 2);
         }
     }, [latestXSpaceEvent]); // Re-run the effect when the event changes
-
-    const isLive = useMemo(() => {
-        const currentDate = new Date();
-        if (latestXSpaceEvent) {
-            if (!latestXSpaceEvent.goingLive || latestXSpaceEvent.type !== XSpaceEventType.event) return false;
-            return (
-                new Date(latestXSpaceEvent.visibilityEnd) >= currentDate &&
-                new Date(latestXSpaceEvent.goingLive) <= currentDate
-            );
-        }
-        return false;
-    }, [latestXSpaceEvent]);
 
     const displayedDate = useMemo(() => {
         if (!latestXSpaceEvent || isLive || !latestXSpaceEvent.goingLive) {
