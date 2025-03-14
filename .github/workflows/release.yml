@@ -283,7 +283,7 @@ jobs:
             -includepath tari-win-bundler/executables \
             -includepath wix \
             -includepath src-tauri/target/release/bundle/msi \
-            -out ./tari-win-bundler/${TAURI_UNIVERSE_INSTALLER_NAME}
+            -out "./tari-win-bundler/${TAURI_UNIVERSE_INSTALLER_NAME}"
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
