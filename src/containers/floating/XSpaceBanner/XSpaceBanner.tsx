@@ -21,8 +21,8 @@ const XSpaceEventBanner = () => {
     const [isTextTooLong, setIsTextTooLong] = useState(false);
     const [transitionPixelWidth, setTransitionPixelWidth] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
-    const titleRef = useRef(null);
-    const containerRef = useRef(null);
+    const titleRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -41,9 +41,9 @@ const XSpaceEventBanner = () => {
     useEffect(() => {
         if (titleRef.current && containerRef.current) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const titleWidth = (titleRef.current as any).scrollWidth;
+            const titleWidth = titleRef.current.scrollWidth;
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const containerWidth = (containerRef.current as any).clientWidth;
+            const containerWidth = containerRef.current.clientWidth;
             setIsTextTooLong(titleWidth > containerWidth);
             setTransitionPixelWidth(titleWidth / 2);
         }

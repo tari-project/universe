@@ -8,13 +8,11 @@ export const BannerContent = styled(m.div)`
     z-index: 99999;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    color: white;
     padding: 0.3rem 0.3rem;
     border-radius: 9999px;
     max-width: 30rem;
     background-color: #000;
-    color: #fff;
+    color: ${({ theme }) => theme.palette.background.default};
     cursor: pointer;
     pointer-events: all;
     &:hover {
@@ -39,8 +37,6 @@ export const IconContainer = styled(m.div)`
     border-radius: 9999px;
     padding: 0.5rem;
     font-size: 0.875rem;
-    width: 1 rem;
-    height: 1 rem;
 `;
 
 export const TitleContainer = styled(m.div)`
@@ -73,7 +69,6 @@ export const LiveBadgeWrapper = styled(m.div)`
 `;
 
 export const LiveBadgeText = styled(m.div)`
-    color: white;
     font-weight: 700;
 `;
 
