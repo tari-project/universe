@@ -3,7 +3,8 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <PropertyGroup>
-    <OutputName>tari_win_bundler</OutputName>
+    <OutputName>
+    </OutputName>
     <OutputType>Bundle</OutputType>
     <Name>Tari Universe</Name>
   </PropertyGroup>
@@ -21,8 +22,7 @@
     <Content Include="executables\clean.msi" />
     <Content Include="executables\modified.msi" />
     <Content Include="icon.png" />
-    <Content Include="resources\128x128.png" />
-    <Content Include="resources\32x32.png" />
+    <Content Include="resources\clouds.bmp" />
     <Content Include="resources\icon.ico" />
     <Content Include="resources\71x71.png" />
     <Content Include="Theme.xml" />
