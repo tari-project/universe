@@ -1,5 +1,3 @@
-// Copyright 2024. The Tari Project
-//
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
 //
@@ -29,10 +27,12 @@ use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{error, info, warn};
-use node_adapter::BaseNodeStatus;
+use node_adapter::{BaseNodeStatus, MinotariNodeAdapter};
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
+use remote_node_adapter::RemoteNodeAdapter;
+use remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use serde_json::json;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
@@ -70,7 +70,7 @@ use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
 use events::SetupStatusEvent;
-use node_manager::NodeManagerError;
+use node_manager::{NodeAdapter, NodeManagerError};
 use progress_tracker::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
@@ -131,6 +131,8 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod release_notes;
+mod remote_node_adapter;
+mod remote_until_synced_node_adapter;
 mod systemtray_manager;
 mod telemetry_manager;
 mod telemetry_service;
@@ -355,6 +357,7 @@ async fn setup_inner(
 
     let use_tor = app_config.use_tor();
     let p2pool_enabled = app_config.p2pool_enabled();
+    let base_node_grpc_address = app_config.remote_base_node_address();
     drop(app_config);
 
     let mm_proxy_manager = state.mm_proxy_manager.clone();
@@ -648,6 +651,7 @@ async fn setup_inner(
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
+                base_node_grpc_address.clone(),
             )
             .await
         {
@@ -781,9 +785,9 @@ async fn setup_inner(
             .update("starting-p2pool".to_string(), None, 0)
             .await;
 
-        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let base_node_address = state.node_manager.get_grpc_address().await?;
         let p2pool_config = P2poolConfig::builder()
-            .with_base_node(base_node_grpc)
+            .with_base_node(base_node_address.to_string())
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
             .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
             .build()?;
@@ -814,13 +818,13 @@ async fn setup_inner(
         .update("starting-mmproxy".to_string(), None, 0)
         .await;
 
-    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
     let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
         .start(StartConfig {
-            base_node_grpc_port,
+            base_node_grpc_address,
             p2pool_port,
             app_shutdown: state.shutdown.to_signal().clone(),
             base_path: data_dir.clone(),
@@ -951,8 +955,8 @@ struct UniverseAppState {
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
-    node_manager: NodeManager,
-    wallet_manager: WalletManager,
+    node_manager: NodeManager<RemoteUntilSyncedNodeAdapter>,
+    wallet_manager: WalletManager<RemoteUntilSyncedNodeAdapter>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -992,7 +996,14 @@ fn main() {
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-    let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
+    let node_manager = NodeManager::new(
+        &mut stats_collector,
+        RemoteUntilSyncedNodeAdapter::new(
+            MinotariNodeAdapter::new(base_node_watch_tx.clone()),
+            RemoteNodeAdapter::new(base_node_watch_tx.clone()),
+        ),
+        shutdown.to_signal(),
+    );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());

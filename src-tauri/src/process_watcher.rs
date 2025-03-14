@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
@@ -215,9 +216,9 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn do_health_check<T: StatusMonitor>(
-    child: &mut ProcessInstance,
-    status_monitor3: T,
+async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: ProcessInstanceTrait>(
+    child: &mut TProcessInstance,
+    status_monitor3: TStatusMonitor,
     name: String,
     uptime: &mut Instant,
     expected_startup_time: Duration,
@@ -279,7 +280,7 @@ async fn do_health_check<T: StatusMonitor>(
     stats.total_health_check_duration += health_check_duration;
 
     if !is_healthy
-        && !child.shutdown.is_triggered()
+        && !child.is_shutdown_triggered()
         && !app_shutdown.is_triggered()
         && !inner_shutdown.is_triggered()
     {
