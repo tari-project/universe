@@ -291,7 +291,7 @@ jobs:
             -includepath src-tauri/target/release/bundle/msi
           ls -la src-tauri/target/release/bundle/msi
           ls -la tari-win-bundler
-          mv -v ./tari-win-bundler/Bundle.exe ./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe
+          mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
