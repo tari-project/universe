@@ -262,6 +262,7 @@ jobs:
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
           TARI_UNIVERSE_INSTALLER_NAME: ''
+          TARI_UNIVERSE_BUNDLER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
@@ -288,6 +289,7 @@ jobs:
             -includepath tari-win-bundler/executables \
             -includepath wix \
             -includepath src-tauri/target/release/bundle/msi
+            -out tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}
           ls -la src-tauri/target/release/bundle/msi
           ls -la tari-win-bundler
 
