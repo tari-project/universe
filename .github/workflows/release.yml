@@ -20,6 +20,7 @@ permissions: {}
 
 env:
   TS_FEATURES: release-ci
+  BETA_STRING: '(Beta)'
 
 jobs:
   builds:
@@ -68,7 +69,6 @@ jobs:
       - name: BETA Builds - Set environment variables
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          BETA_STRING: '(Beta)'
           OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
@@ -261,6 +261,7 @@ jobs:
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
@@ -268,10 +269,11 @@ jobs:
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
           else
             # Beta / Other
-            TARI_UNIVERSE_INSTALLER_NAME="Tari Universe (Beta) - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
+            TARI_UNIVERSE_INSTALLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
           fi
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
+          export TAURI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
@@ -280,18 +282,25 @@ jobs:
             -includepath tari-win-bundler/resources \
             -includepath tari-win-bundler/executables \
             -includepath wix \
-            -includepath src-tauri/target/release/bundle/msi
+            -includepath src-tauri/target/release/bundle/msi \
+            -out ./tari-win-bundler/${TAURI_UNIVERSE_INSTALLER_NAME}
 
       - name: Add installer to release
-        if: ${{ startsWith(runner.os,'Windows') }}
-        uses: actions/upload-release-asset@v1
+        if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
-          asset_path: .\tari-win-bundler\Bundle.exe
-          asset_name: ${{ env.TARI_UNIVERSE_INSTALLER_NAME }}
-          asset_content_type: application/vnd.microsoft.portable-executable
+          tag_name: ${{ steps.build.outputs.tag }}
+          files: |
+            ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
+
+      - name: BETA Builds - upload wix installer
+        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TAURI_UNIVERSE_INSTALLER_NAME }}
 
       - name: Locate artifacts path
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
