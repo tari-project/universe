@@ -26,7 +26,7 @@ const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
             await fetchTransactionsHistory({ continuation: true, limit: 20 });
         }
     }, [is_transactions_history_loading]);
-
+    console.debug(transactions.slice(0, 2));
     return (
         <ListWrapper id="list">
             {!is_transactions_history_loading && !transactions?.length && (

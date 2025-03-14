@@ -49,11 +49,7 @@ const HistoryListItem = memo(function ListItem({ item, index, showReplay = false
     const inView = useInView(ref, { amount: 0.5, once: false });
 
     const itemType = (
-        item.direction === 2
-            ? 'sent'
-            : !item.mined_in_block_height || item.mined_in_block_height === 0
-              ? 'received'
-              : 'mined'
+        item.direction === 2 ? 'sent' : item.direction === 1 && item.status !== 12 ? 'received' : 'mined'
     ) as TransationType;
 
     const isMined = itemType === 'mined';

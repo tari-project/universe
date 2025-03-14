@@ -28,7 +28,7 @@ import {
 
 const defaultValues = { message: '', address: '', amount: '' };
 export function Send() {
-    const { t } = useTranslation('wallet');
+    const { t } = useTranslation('wallet', { useSuspense: false });
     const [showConfirmation, setShowConfirmation] = useState(false);
 
     const { control, handleSubmit, reset, formState, clearErrors, setError, setValue } = useForm<SendInputs>({
@@ -40,7 +40,7 @@ export function Send() {
 
     useEffect(() => {
         if (isSubmitted) {
-            if (isSubmitSuccessful && !errors.root) {
+            if (isSubmitSuccessful && !errors?.root) {
                 setShowConfirmation(true);
             }
             const submitTimeout = setTimeout(() => {
