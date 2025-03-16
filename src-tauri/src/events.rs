@@ -45,7 +45,9 @@ pub enum EventType {
     SetupStatus,
     ResumingAllProcesses,
     ShowReleaseNotes,
+    #[cfg(target_os = "macos")]
     CriticalProblem,
+    #[cfg(target_os = "windows")]
     MissingApplications,
     StuckOnOrphanChain,
     UpdaterDownloadProgress,

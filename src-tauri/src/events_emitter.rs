@@ -67,6 +67,7 @@ impl EventsEmitter {
         }
     }
 
+    #[cfg(target_os = "windows")]
     pub async fn emit_missing_applications(
         app_handle: &AppHandle,
         external_dependencies: RequiredExternalDependency,
@@ -81,6 +82,7 @@ impl EventsEmitter {
         }
     }
 
+    #[cfg(target_os = "macos")]
     pub async fn emit_critical_problem(app_handle: &AppHandle, payload: CriticalProblemPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

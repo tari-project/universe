@@ -212,6 +212,7 @@ impl EventsManager {
             .await;
     }
 
+    #[cfg(target_os = "macos")]
     pub async fn handle_critical_problem(
         &self,
         app: &AppHandle,
@@ -222,6 +223,7 @@ impl EventsManager {
             .await;
     }
 
+    #[cfg(target_os = "windows")]
     pub async fn handle_missing_application_files(
         &self,
         app: &AppHandle,
