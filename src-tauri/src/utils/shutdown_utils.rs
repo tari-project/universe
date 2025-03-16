@@ -29,9 +29,8 @@ use crate::{
     progress_tracker::ProgressTracker,
     StartConfig, UniverseAppState, APPLICATION_FOLDER_ID,
 };
-use anyhow::anyhow;
 use log::{error, info, warn};
-use tauri::{Emitter, Manager};
+use tauri::Manager;
 use tokio::sync::watch;
 
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
@@ -166,9 +165,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         stage_total += 1;
     }
 
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "resuming-all-processes".to_string(),
                 stage_progress,
@@ -176,7 +176,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: true,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
     stage_progress += 1;
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
@@ -184,9 +184,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
 
     let mut tor_control_port = None;
     if use_tor && !cfg!(target_os = "macos") {
-        app_handle
-            .emit(
-                "resuming-all-processes",
+        state
+            .events_manager
+            .handle_resuming_all_processes(
+                &app_handle,
                 ResumingAllProcessesPayload {
                     title: "resuming-tor".to_string(),
                     stage_progress,
@@ -194,7 +195,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                     is_resuming: true,
                 },
             )
-            .map_err(|e| anyhow!(e))?;
+            .await;
         stage_progress += 1;
 
         state
@@ -209,9 +210,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
 
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "resuming-node".to_string(),
                 stage_progress,
@@ -219,7 +221,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: true,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
     stage_progress += 1;
 
     for _i in 0..2 {
@@ -253,9 +255,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     }
     info!(target: LOG_TARGET, "Node has started and is ready");
 
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "resuming-wallet".to_string(),
                 stage_progress,
@@ -263,7 +266,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: true,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
     stage_progress += 1;
 
     state
@@ -276,9 +279,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         )
         .await?;
 
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "syncing-node".to_string(),
                 stage_progress,
@@ -286,7 +290,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: true,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
     stage_progress += 1;
 
     state.node_manager.wait_synced(progress.clone()).await?;
@@ -304,9 +308,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     drop(cpu_miner);
 
     if p2pool_enabled {
-        app_handle
-            .emit(
-                "resuming-all-processes",
+        state
+            .events_manager
+            .handle_resuming_all_processes(
+                &app_handle,
                 ResumingAllProcessesPayload {
                     title: "resuming-p2pool".to_string(),
                     stage_progress,
@@ -314,7 +319,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                     is_resuming: true,
                 },
             )
-            .map_err(|e| anyhow!(e))?;
+            .await;
         stage_progress += 1;
 
         let base_node_grpc = state.node_manager.get_grpc_port().await?;
@@ -337,10 +342,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     }
 
     let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
-
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "resuming-mm-proxy".to_string(),
                 stage_progress,
@@ -348,7 +353,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: true,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
     stage_progress += 1;
 
     let config = state.config.read().await;
@@ -371,9 +376,10 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     mm_proxy_manager.wait_ready().await?;
     drop(config);
 
-    app_handle
-        .emit(
-            "resuming-all-processes",
+    state
+        .events_manager
+        .handle_resuming_all_processes(
+            &app_handle,
             ResumingAllProcessesPayload {
                 title: "finishing-resume".to_string(),
                 stage_progress,
@@ -381,7 +387,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 is_resuming: false,
             },
         )
-        .map_err(|e| anyhow!(e))?;
+        .await;
 
     Ok(())
 }

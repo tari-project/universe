@@ -16,11 +16,12 @@ import { List } from '@app/components/elements/List.tsx';
 import tinkerEmoji from '@app/assets/icons/emoji/custom.png';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
+import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 const OrphanChainAlert = memo(function OrphanChainAlert() {
     const { t } = useTranslation(['settings', 'mining-view'], { useSuspense: false });
     const adminShow = useUIStore((s) => s.adminShow);
-    const [isOrphanChain, setIsOrphanChain] = useState(false);
+    const isOrphanChain = useAppStateStore((s) => s.isStuckOnOrphanChain);
 
     const [open, setOpen] = useState(false);
     const { refs, context } = useFloating({
@@ -39,15 +40,6 @@ const OrphanChainAlert = memo(function OrphanChainAlert() {
         handleClose: safePolygon(),
     });
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
-
-    useEffect(() => {
-        const unlistenPromise = listen<boolean>('is_stuck', (event) => {
-            setIsOrphanChain(event.payload);
-        });
-        return () => {
-            unlistenPromise.then((unlisten) => unlisten());
-        };
-    }, []);
 
     const steps = Array.from({ length: 6 }).map((_, i) => t(`mining-view:orphan-chain-tooltip.step_${i + 1}`));
 
