@@ -76,9 +76,8 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
-#[allow(unused_imports)]
-use crate::external_dependencies::ExternalDependencies;
-use crate::external_dependencies::RequiredExternalDependency;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -336,7 +335,6 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            *state.missing_dependencies.write().await = Some(external_dependencies);
             state
                 .events_manager
                 .handle_missing_application_files(&app, external_dependencies)
@@ -1120,7 +1118,6 @@ fn main() {
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
-        missing_dependencies: Arc::new(RwLock::new(None)),
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),

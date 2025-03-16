@@ -25,15 +25,16 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
 
+#[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::RequiredExternalDependency;
+
 use crate::{
     commands::CpuMinerStatus,
-    events::{
-        CriticalProblemPayload, ResumingAllProcessesPayload, SetupStatusPayload,
-        ShowReleaseNotesPayload,
-    },
+    events::{ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
-    external_dependencies::RequiredExternalDependency,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
     wallet_adapter::WalletState,

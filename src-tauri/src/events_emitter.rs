@@ -19,25 +19,26 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-use log::{error, info};
-use tari_common_types::tari_address::TariAddress;
-use tauri::{AppHandle, Emitter};
-
+#[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::RequiredExternalDependency;
 use crate::{
     commands::CpuMinerStatus,
     events::{
-        CriticalProblemPayload, DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event,
-        EventType, NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
+        DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
+        NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
         SetupStatusPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
     },
-    external_dependencies::RequiredExternalDependency,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
     AppConfig, BaseNodeStatus, GpuMinerStatus,
 };
+use log::{error, info};
+use tari_common_types::tari_address::TariAddress;
+use tauri::{AppHandle, Emitter};
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
