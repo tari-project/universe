@@ -50,9 +50,6 @@ pub enum EventType {
     #[cfg(target_os = "windows")]
     MissingApplications,
     StuckOnOrphanChain,
-    UpdaterDownloadProgress,
-    UpdaterCouldNotUpdate,
-    UpdaterAskForUpdate,
     NetworkStatus,
 }
 #[derive(Clone, Debug, Serialize)]
