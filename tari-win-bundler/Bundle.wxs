@@ -5,7 +5,7 @@
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		
 		<BootstrapperApplication>
-			<bal:WixStandardBootstrapperApplication LaunchTarget="C:/Program Files/Tari Universe/Tari Universe.exe" ShowVersion="yes" SuppressRepair="yes" SuppressOptionsUI="yes"  LogoFile="tari-win-bundler/resources/71x71.png" LogoSideFile="tari-win-bundler/resources/71x71.png" LicenseUrl="" Theme="hyperlinkLicense" ThemeFile="tari-win-bundler/Theme.xml" LocalizationFile="tari-win-bundler/Theme.wxl" />
+			<bal:WixStandardBootstrapperApplication LaunchTarget="C:/Program Files/Tari Universe/$(env.TARI_UNIVERSE_BUNDLER_NAME).exe" ShowVersion="yes" SuppressRepair="yes" SuppressOptionsUI="yes"  LogoFile="tari-win-bundler/resources/71x71.png" LogoSideFile="tari-win-bundler/resources/71x71.png" LicenseUrl="" Theme="hyperlinkLicense" ThemeFile="tari-win-bundler/Theme.xml" LocalizationFile="tari-win-bundler/Theme.wxl" />
 			<Payload Name="clouds.bmp" SourceFile="tari-win-bundler/resources/clouds.bmp" Compressed="yes"/>
 			<Payload Name="icon.ico" SourceFile="tari-win-bundler/resources/icon.ico" Compressed="yes"/>
 		</BootstrapperApplication>
