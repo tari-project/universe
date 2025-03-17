@@ -62,13 +62,13 @@ pub struct GpuDevice {
 
 #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
 pub struct GpuStatusFile {
-    pub gpu_devices: HashMap<String, GpuDevice>,
+    pub gpu_devices: Vec<GpuDevice>,
 }
 
 impl Default for GpuStatusFile {
     fn default() -> Self {
         Self {
-            gpu_devices: HashMap::new(),
+            gpu_devices: Vec::new(),
         }
     }
 }
