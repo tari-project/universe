@@ -3,10 +3,10 @@ import styled from 'styled-components';
 export const Wrapper = styled.div`
     flex-direction: column;
     display: flex;
-    gap: 15px;
+    gap: 10px;
 
     @media (max-height: 680px) {
-        gap: 8px;
+        gap: 4px;
     }
 `;
 
