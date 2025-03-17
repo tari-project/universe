@@ -37,7 +37,6 @@ const CurrentAppSection = memo(function CurrentAppSection({
         }
 
         if (showSetup) {
-            console.debug(`showSetup= `, showSetup);
             return (
                 <AppContentContainer key="setup" initial="hidden">
                     <Setup />
@@ -46,7 +45,6 @@ const CurrentAppSection = memo(function CurrentAppSection({
         }
 
         if (showMainView) {
-            console.debug(`showMainView= `, showMainView);
             return (
                 <AppContentContainer key="main" initial="dashboardInitial">
                     <MainView />

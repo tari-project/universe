@@ -12,13 +12,15 @@ export const Wrapper = styled.div`
 
 export const ActionImgWrapper = styled.div`
     align-items: center;
+    justify-content: center;
     flex-direction: column;
     img {
         max-width: 100%;
+        display: flex;
     }
 `;
 export const GemImg = styled.img`
-    width: 16px;
+    width: 18px;
 `;
 
 export const GemImgLarge = styled.img`
@@ -34,8 +36,8 @@ export const Avatar = styled.div`
 `;
 
 export const CopyButton = styled.button`
-    width: 30px;
-    height: 30px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -43,7 +45,7 @@ export const CopyButton = styled.button`
     background-color: ${({ theme }) => theme.palette.contrast};
     color: ${({ theme }) => theme.palette.contrast};
     svg {
-        width: 26px;
+        height: 24px;
     }
     path {
         fill: ${({ theme }) => theme.palette.base};
@@ -54,13 +56,14 @@ export const CopyButton = styled.button`
     }
 `;
 
+export const TooltipAction = styled.div`
+    color: ${({ theme }) => theme.palette.warning.main};
+    display: flex;
+    padding-top: 4px;
+`;
 export const TooltipWrapper = styled.div`
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100%;
     gap: 6px;
-    p {
-        font-weight: 500;
-    }
 `;

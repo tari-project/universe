@@ -29,7 +29,7 @@ export default function Invite() {
     return referralCode?.length ? (
         <SidebarItem text={t('invite')} tooltipContent={inviteTooltipContent} hoverContent={inviteHoverContent}>
             <ActionImgWrapper>
-                <img src={gift} alt="gift image" style={{ height: 30 }} />
+                <img src={gift} alt="gift image" style={{ height: 28 }} />
             </ActionImgWrapper>
         </SidebarItem>
     ) : null;

@@ -4,10 +4,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 
 export const ContentWrapper = styled.div`
-    width: 50px;
-    max-height: 40px;
     display: flex;
-    flex-shrink: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -16,13 +13,14 @@ export const ContentWrapper = styled.div`
 
 export const ActionWrapper = styled.div`
     flex-direction: column;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: grid;
+    place-content: center;
+    place-items: center;
+    grid-template-columns: 60px;
+    grid-template-rows: repeat(auto-fill, minmax(35px, auto));
     border-radius: 12px;
-    flex-shrink: 0;
     position: relative;
+    gap: 4px;
     height: 60px;
     width: 60px;
 
@@ -33,11 +31,12 @@ export const ActionWrapper = styled.div`
 
 export const ActionText = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
-    font-size: 11px;
-    line-height: 1;
+    font-size: 10px;
+    line-height: 0.95;
     font-weight: 600;
     text-transform: uppercase;
     text-align: center;
+    padding: 0 0 6px;
 `;
 
 export const ActionHoveredWrapper = styled(m.div)`
@@ -45,8 +44,10 @@ export const ActionHoveredWrapper = styled(m.div)`
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: 10px;
     height: 60px;
-    gap: 4px;
     padding: 10px;
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
     z-index: 20;
     width: max-content;
 `;
