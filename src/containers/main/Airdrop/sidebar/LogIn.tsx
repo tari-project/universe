@@ -8,11 +8,13 @@ import { setAllowTelemetry, setAuthUuid, useAirdropStore, useAppConfigStore } fr
 import useFetchAirdropToken from '@app/hooks/airdrop/stateHelpers/useFetchAirdropToken.ts';
 import { v4 as uuidv4 } from 'uuid';
 import { open } from '@tauri-apps/plugin-shell';
+import { useCopyToClipboard } from '@app/hooks';
 
 export default function LogIn() {
     const { t } = useTranslation('airdrop');
     const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
     const airdropUrl = useAirdropStore((s) => s.backendInMemoryConfig?.airdropUrl);
+    const { isCopied, copyToClipboard } = useCopyToClipboard();
 
     const [linkOpened, setLinkOpened] = useState(false);
 
@@ -33,13 +35,23 @@ export default function LogIn() {
     const handleAuth = useCallback(async () => {
         const url = await prepareAirdropLink();
         if (url) {
-            open(url).then(() => {
+            try {
+                await open(url);
+            } catch (e) {
+                copyToClipboard(url);
+                console.error(e);
+            } finally {
                 setLinkOpened(true);
-            });
+            }
         }
-    }, [prepareAirdropLink]);
+    }, [copyToClipboard, prepareAirdropLink]);
 
-    const tooltipContent = (
+    const tooltipContent = isCopied ? (
+        <>
+            <Typography variant="h6">{`Could not open URL`}</Typography>
+            <Typography variant="p">{`It has been copied to your clipboard, please visit the link directly to log in`}</Typography>
+        </>
+    ) : (
         <>
             <Typography variant="h6">{t('loggedOutTitle')}</Typography>
             <Typography variant="p">{t('topTooltipText')}</Typography>

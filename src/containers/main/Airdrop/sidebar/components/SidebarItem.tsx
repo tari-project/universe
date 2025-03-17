@@ -30,7 +30,7 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
     return (
         <ActionWrapper ref={refs.setReference} {...getReferenceProps()}>
             <ContentWrapper>{hovered && hoverContent ? hoverContent : children}</ContentWrapper>
-            <ActionText>{text}</ActionText>
+            {text ? <ActionText>{text}</ActionText> : null}
             <AnimatePresence>
                 {tooltipContent && hovered && (
                     <ActionHoveredWrapper
