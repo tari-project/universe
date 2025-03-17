@@ -65,6 +65,7 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        overflow: hidden;
         transition:
                 color 0.2s ease,
                 background-color 0.2s ease,

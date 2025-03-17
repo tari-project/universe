@@ -1,6 +1,5 @@
 import { memo } from 'react';
 
-import AirdropGiftTracker from '@app/containers/main/Airdrop/AirdropGiftTracker/AirdropGiftTracker.tsx';
 import OrphanChainAlert from '../components/OrphanChainAlert/OrphanChainAlert.tsx';
 import LostConnectionAlert from '../components/LostConnectionAlert.tsx';
 import MiningButton from '../components/MiningButton/MiningButton.tsx';
@@ -33,7 +32,6 @@ const SidebarMiner = memo(function Sidebar() {
                 <Miner />
             </GridAreaTop>
             <GridAreaBottom>
-                <AirdropGiftTracker />
                 <RewardWrapper>
                     <WalletBalanceMarkup />
                     <HistoryWrapper>

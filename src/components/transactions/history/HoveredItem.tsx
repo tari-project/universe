@@ -6,7 +6,7 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
-import gemImage from '@app/containers/main/Airdrop/AirdropGiftTracker/images/gem.png';
+import gemImage from '@app/assets/images/gem.png';
 import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './ListItem.styles.ts';

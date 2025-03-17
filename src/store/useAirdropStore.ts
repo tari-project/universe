@@ -1,7 +1,6 @@
 import { create } from './create';
 
 export const GIFT_GEMS = 5000;
-export const REFERRAL_GEMS = 5000;
 
 export interface BonusTier {
     id: string;
