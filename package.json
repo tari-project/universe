@@ -48,7 +48,6 @@
         "@nabla/vite-plugin-eslint": "^2.0.5",
         "@taplo/cli": "^0.7.0",
         "@tauri-apps/cli": "^2.2.2",
-        "@types/eslint__js": "^8.42.3",
         "@types/node": "^22.13.5",
         "@types/react": "^18.3.18",
         "@types/react-dom": "^18.3.5",
