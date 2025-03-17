@@ -1,23 +1,21 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
-import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
+import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 
 export const SidebarNavigationWrapper = styled(m.div)`
     height: 100%;
     display: flex;
-    flex-shrink: 0;
     gap: ${SB_SPACING}px;
     pointer-events: all;
     z-index: 10;
 `;
 
 export const SidebarGrid = styled.div`
-    width: 100%;
     height: 100%;
     position: relative;
-    display: flex;
     justify-items: stretch;
+    display: flex;
 `;
 
 const variants = {
@@ -38,9 +36,9 @@ export const SidebarWrapper = styled(m.div).attrs({
     border-radius: 20px;
     height: 100%;
     flex-shrink: 0;
-    padding: ${({ $isMiniBar }) => ($isMiniBar ? 0 : `20px`)};
+    padding: 20px;
     position: relative;
-    width: ${({ $isMiniBar }) => ($isMiniBar ? SB_MINI_WIDTH : SB_WIDTH)}px;
+    width: ${SB_WIDTH}px;
 
     & * {
         pointer-events: all;

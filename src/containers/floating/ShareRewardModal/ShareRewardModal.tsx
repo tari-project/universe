@@ -17,7 +17,7 @@ import {
     GemImage,
 } from './styles';
 import genericHeroImage from './images/generic-image.png';
-import gemImage from '../../main/Airdrop/AirdropGiftTracker/images/gem.png';
+import gemImage from '@app/assets/images/gem.png';
 
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
