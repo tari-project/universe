@@ -210,18 +210,18 @@ jobs:
           echo "SQLITE3_LIB_DIR=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
           echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
-      - name: Azure Code-signing Setup - Windows Only
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
-        shell: bash
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs %1
-        run: |
-          cd "${GITHUB_WORKSPACE}/src-tauri"
-          echo '{}' > ./tauri.windows.conf.json
-          yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
-          cat ./tauri.windows.conf.json
-          cargo install trusted-signing-cli@0.5.0 --locked
+      # - name: Azure Code-signing Setup - Windows Only
+      #   if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+      #   shell: bash
+      #   env:
+      #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      #     WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs %1
+      #   run: |
+      #     cd "${GITHUB_WORKSPACE}/src-tauri"
+      #     echo '{}' > ./tauri.windows.conf.json
+      #     yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
+      #     cat ./tauri.windows.conf.json
+      #     cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
         run: |
@@ -305,7 +305,9 @@ jobs:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-        run: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
+        run: |
+          cargo install trusted-signing-cli@0.5.0 --locked
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
