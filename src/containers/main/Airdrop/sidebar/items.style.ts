@@ -18,6 +18,10 @@ export const ActionImgWrapper = styled.div`
     }
 `;
 export const GemImg = styled.img`
+    width: 16px;
+`;
+
+export const GemImgLarge = styled.img`
     width: 30px;
     transform: scaleX(-1);
 `;
@@ -30,8 +34,16 @@ export const Avatar = styled.div`
 `;
 
 export const CopyButton = styled.button`
-    circle {
-        fill: ${({ theme }) => theme.palette.contrast};
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: ${({ theme }) => theme.palette.contrast};
+    color: ${({ theme }) => theme.palette.contrast};
+    svg {
+        width: 26px;
     }
     path {
         fill: ${({ theme }) => theme.palette.base};
@@ -43,6 +55,10 @@ export const CopyButton = styled.button`
 `;
 
 export const TooltipWrapper = styled.div`
-    min-width: 140px;
+    display: flex;
     align-items: center;
+    gap: 4px;
+    p {
+        font-weight: 500;
+    }
 `;

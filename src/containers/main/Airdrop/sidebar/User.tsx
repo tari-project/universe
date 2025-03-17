@@ -2,6 +2,7 @@ import { useAirdropStore } from '@app/store';
 import { useAvatarGradient } from '@app/hooks/airdrop/utils/useAvatarGradient.ts';
 import { SidebarItem } from './components/SidebarItem';
 import { Avatar } from './items.style';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function User() {
     const userDetails = useAirdropStore((s) => s.userDetails);
@@ -11,8 +12,13 @@ export default function User() {
 
     const style = useAvatarGradient({ username: name || '', image: profileimageurl });
 
+    const tooltipContent = (
+        <>
+            <Typography variant="h6">{`@${name}`}</Typography>
+        </>
+    );
     return (
-        <SidebarItem>
+        <SidebarItem tooltipContent={tooltipContent}>
             <Avatar style={style} />
         </SidebarItem>
     );

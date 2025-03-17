@@ -11,6 +11,7 @@ export const ContentWrapper = styled.div`
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
 `;
 
 export const ActionWrapper = styled.div`
@@ -38,14 +39,13 @@ export const ActionText = styled(Typography)`
     text-transform: uppercase;
 `;
 
-export const ActionHoveredWrapper = styled(m.div).attrs({
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-})`
+export const ActionHoveredWrapper = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.main};
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: 10px;
+    height: 60px;
+    gap: 4px;
     padding: 10px;
     z-index: 20;
+    width: max-content;
 `;

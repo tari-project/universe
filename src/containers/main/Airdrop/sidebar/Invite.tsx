@@ -4,9 +4,10 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { SidebarItem } from './components/SidebarItem';
 import LinkIcon from '@app/assets/icons/LinkIcon.tsx';
 import gift from '@app/assets/images/gift.png';
-import { ActionImgWrapper, CopyButton, TooltipWrapper } from './items.style';
+import { ActionImgWrapper, CopyButton } from './items.style';
 import { useAirdropStore } from '@app/store';
 import { useCopyToClipboard } from '@app/hooks';
+import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
 
 export default function Invite() {
     const { t } = useTranslation('airdrop');
@@ -19,22 +20,12 @@ export default function Invite() {
     }
 
     const inviteTooltipContent = (
-        <TooltipWrapper>
-            {isCopied ? (
-                <Typography variant="h6">{t('linkCopied')}</Typography>
-            ) : (
-                <>
-                    <Typography variant="h6">{t('inviteFriends')}</Typography>
-                    <Typography variant="p">{t('inviteFriendsText')}</Typography>
-                </>
-            )}
-        </TooltipWrapper>
+        <>
+            <Typography variant="h6">{t('inviteFriends')}</Typography>
+            <Typography variant="p">{t('inviteFriendsText')}</Typography>
+        </>
     );
-    const inviteHoverContent = (
-        <CopyButton onClick={handleCopy}>
-            <LinkIcon />
-        </CopyButton>
-    );
+    const inviteHoverContent = <CopyButton onClick={handleCopy}>{isCopied ? <CheckSvg /> : <LinkIcon />}</CopyButton>;
     return referralCode?.length ? (
         <SidebarItem text={t('invite')} tooltipContent={inviteTooltipContent} hoverContent={inviteHoverContent}>
             <ActionImgWrapper>

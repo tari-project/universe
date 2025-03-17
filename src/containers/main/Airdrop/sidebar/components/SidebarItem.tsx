@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { offset, safePolygon, useFloating, useHover, useInteractions, shift } from '@floating-ui/react';
+import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper } from './item.style.ts';
 import { AnimatePresence } from 'motion/react';
 
@@ -11,20 +11,13 @@ interface ActionProps {
 }
 
 export function SidebarItem({ children, text, hoverContent, tooltipContent }: ActionProps) {
-    const [hovered, setHovered] = useState(true);
+    const [hovered, setHovered] = useState(false);
 
-    const { refs, context, floatingStyles } = useFloating({
+    const { x, refs, context, floatingStyles } = useFloating({
         open: hovered,
         onOpenChange: setHovered,
-        strategy: 'fixed',
-        placement: 'top',
-        middleware: [
-            offset({
-                mainAxis: 10,
-                crossAxis: 25,
-            }),
-            shift(),
-        ],
+        placement: 'right',
+        middleware: [offset({ mainAxis: 15 })],
     });
 
     const hover = useHover(context, {
@@ -38,10 +31,16 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
         <ActionWrapper ref={refs.setReference} {...getReferenceProps()}>
             <ContentWrapper>{hovered && hoverContent ? hoverContent : children}</ContentWrapper>
             <ActionText>{text}</ActionText>
-
             <AnimatePresence>
                 {tooltipContent && hovered && (
-                    <ActionHoveredWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                    <ActionHoveredWrapper
+                        ref={refs.setFloating}
+                        {...getFloatingProps()}
+                        style={floatingStyles}
+                        initial={{ opacity: 0, x: x - 10 }}
+                        exit={{ opacity: 0, x: x - 5 }}
+                        animate={{ opacity: 1, x }}
+                    >
                         {tooltipContent}
                     </ActionHoveredWrapper>
                 )}
