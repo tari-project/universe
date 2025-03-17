@@ -56,8 +56,10 @@ export const CopyButton = styled.button`
 
 export const TooltipWrapper = styled.div`
     display: flex;
+    justify-content: center;
     align-items: center;
-    gap: 4px;
+    height: 100%;
+    gap: 6px;
     p {
         font-weight: 500;
     }

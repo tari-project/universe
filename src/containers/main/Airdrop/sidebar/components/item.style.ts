@@ -5,7 +5,7 @@ import { convertHexToRGBA } from '@app/utils';
 
 export const ContentWrapper = styled.div`
     width: 50px;
-    height: 40px;
+    max-height: 40px;
     display: flex;
     flex-shrink: 0;
     flex-direction: column;
@@ -23,7 +23,6 @@ export const ActionWrapper = styled.div`
     border-radius: 12px;
     flex-shrink: 0;
     position: relative;
-    cursor: pointer;
     height: 60px;
     width: 60px;
 
@@ -35,8 +34,10 @@ export const ActionWrapper = styled.div`
 export const ActionText = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 11px;
+    line-height: 1;
     font-weight: 600;
     text-transform: uppercase;
+    text-align: center;
 `;
 
 export const ActionHoveredWrapper = styled(m.div)`
