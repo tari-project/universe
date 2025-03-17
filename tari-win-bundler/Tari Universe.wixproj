@@ -3,6 +3,9 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <PropertyGroup>
+    <SignOutput>true</SignOutput>
+  </PropertyGroup>
+  <PropertyGroup>
     <OutputName>
     </OutputName>
     <OutputType>Bundle</OutputType>

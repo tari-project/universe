@@ -263,6 +263,7 @@ jobs:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
           TARI_UNIVERSE_INSTALLER_NAME: ''
           TARI_UNIVERSE_BUNDLER_NAME: ''
+          TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
@@ -270,15 +271,19 @@ jobs:
             # release
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
             TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
           else
             # Beta / Other
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
             TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}"
           fi
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_BUNDLER_NAME is ${TARI_UNIVERSE_BUNDLER_NAME}"
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
           printenv
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
