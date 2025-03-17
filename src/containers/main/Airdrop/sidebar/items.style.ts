@@ -28,3 +28,21 @@ export const Avatar = styled.div`
     border-radius: 50%;
     flex-shrink: 0;
 `;
+
+export const CopyButton = styled.button`
+    circle {
+        fill: ${({ theme }) => theme.palette.contrast};
+    }
+    path {
+        fill: ${({ theme }) => theme.palette.base};
+    }
+
+    &:hover {
+        opacity: 0.9;
+    }
+`;
+
+export const TooltipWrapper = styled.div`
+    min-width: 140px;
+    align-items: center;
+`;

@@ -11,7 +11,7 @@ interface ActionProps {
 }
 
 export function SidebarItem({ children, text, hoverContent, tooltipContent }: ActionProps) {
-    const [hovered, setHovered] = useState(false);
+    const [hovered, setHovered] = useState(true);
 
     const { refs, context, floatingStyles } = useFloating({
         open: hovered,
@@ -21,7 +21,7 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
         middleware: [
             offset({
                 mainAxis: 10,
-                crossAxis: 10,
+                crossAxis: 25,
             }),
             shift(),
         ],

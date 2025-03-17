@@ -11,6 +11,7 @@ export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     padding: 20px;
     height: 100vh;
     width: 100%;
+    max-height: 100%;
 
     &:after {
         content: '';
