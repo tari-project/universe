@@ -76,7 +76,8 @@
                 "transparent": false,
                 "visible": true,
                 "center": true,
-                "useHttpsScheme": true
+                "useHttpsScheme": true,
+                "backgroundThrottling": "disabled"
             }
         ]
     },
