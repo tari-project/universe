@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{info, warn};
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
