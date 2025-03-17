@@ -309,6 +309,7 @@ jobs:
           wix burn detach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe
           trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/burnengine.exe
           wix burn reattach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe -o "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
