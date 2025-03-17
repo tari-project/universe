@@ -4,10 +4,7 @@
   </PropertyGroup>
   <PropertyGroup>
     <SignOutput>true</SignOutput>
-  </PropertyGroup><Target Name="SignBundle">
-    <Message Importance="high" Text="SignBundle: @(SignBundle)" />
-    <Exec Command='trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs %1 %(SignBundle.FullPath)' />
-  </Target>
+  </PropertyGroup>
   <PropertyGroup>
     <OutputName>
     </OutputName>

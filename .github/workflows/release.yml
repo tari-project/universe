@@ -264,9 +264,6 @@ jobs:
           TARI_UNIVERSE_INSTALLER_NAME: ''
           TARI_UNIVERSE_BUNDLER_NAME: ''
           TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
@@ -299,16 +296,20 @@ jobs:
             -includepath src-tauri/target/release/bundle/msi
           ls -la src-tauri/target/release/bundle/msi
           ls -la tari-win-bundler
-          mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+          mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
 
-      # - name: Sign New Windows Installer
-      #   if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
-      #   shell: bash
-      #   env:
-      #     AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-      #     AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-      #     AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
-      #   run: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
+      - name: Sign New Windows Installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          cargo install trusted-signing-cli@0.5.0 --locked
+          wix burn detach ./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe -engine ./tari-win-bundler/burnengine.exe
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/burnengine.exe
+          wix burn reattach ./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe -engine ./tari-win-bundler/burnengine.exe -o ./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe
 
       - name: Add installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
