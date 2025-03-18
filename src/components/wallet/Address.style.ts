@@ -4,11 +4,10 @@ export const QRContainer = styled.div`
     display: flex;
     width: 100%;
     border-radius: 20px;
-    background: ${({ theme }) => theme.palette.contrast};
-    padding: 10px;
+    background: ${({ theme }) => theme.colors.greyscale[950]};
+    padding: 15px;
     overflow: hidden;
     align-items: center;
-    justify-content: center;
 `;
 export const AddressContainer = styled.div`
     display: flex;

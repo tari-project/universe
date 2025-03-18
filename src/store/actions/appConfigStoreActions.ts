@@ -144,6 +144,11 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
                 await toggleDeviceExclusion(device.device_index, false);
             }
         }
+        if (!enabled && gpuDevices.some((device) => !device.settings.is_excluded)) {
+            for (const device of gpuDevices) {
+                await toggleDeviceExclusion(device.device_index, true);
+            }
+        }
     } catch (e) {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');

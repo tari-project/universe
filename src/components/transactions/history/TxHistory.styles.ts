@@ -10,7 +10,6 @@ export const ListWrapper = styled.div`
 
     h6 {
         text-align: center;
-        border: 1px solid pink;
     }
 `;
 

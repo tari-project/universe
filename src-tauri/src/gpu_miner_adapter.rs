@@ -60,24 +60,23 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
-    pub(crate) gpu_devices: HashMap<String, GpuDevice>,
+    pub(crate) gpu_devices: Vec<GpuDevice>,
     pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
     pub fn new(
-        gpu_devices: HashMap<String, GpuDevice>,
+        gpu_devices: Vec<GpuDevice>,
         gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     ) -> Self {
         Self {
             tari_address: TariAddress::default(),
             gpu_grid_size: gpu_devices
-                .clone()
                 .iter()
-                .map(|(name, content)| GpuThreads {
-                    gpu_name: name.to_string(),
-                    max_gpu_threads: content.status.max_grid_size,
+                .map(|gpu_device| GpuThreads {
+                    gpu_name: gpu_device.device_name.clone(),
+                    max_gpu_threads: gpu_device.status.max_grid_size,
                 })
                 .collect(),
             node_source: None,
@@ -94,8 +93,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
-                        gpu_name: gpu_name.clone(),
+                    .map(|gpu_device| GpuThreads {
+                        gpu_name: gpu_device.device_name.clone(),
                         max_gpu_threads: 2,
                     })
                     .collect()
@@ -104,8 +103,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
-                        gpu_name: gpu_name.clone(),
+                    .map(|gpu_device| GpuThreads {
+                        gpu_name: gpu_device.device_name.clone(),
                         max_gpu_threads: 1024,
                     })
                     .collect()

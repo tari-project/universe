@@ -2,6 +2,8 @@ import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { ThemeColourGroup } from '@app/theme/palettes/colors.ts';
 
 type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info' | 'grey';
+type ButtonBackgroundColor = 'transparent' | ThemeColourGroup;
+
 export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
 
@@ -14,6 +16,7 @@ export interface CommonButtonProps extends ButtonHTMLAttributes<HTMLButtonElemen
     iconPosition?: IconPosition;
     size?: ButtonSize;
     color?: ButtonColor;
+    backgroundColor?: ButtonBackgroundColor;
     fluid?: boolean;
     isLoading?: boolean;
 }
@@ -22,6 +25,7 @@ export interface ButtonStyleProps {
     $variant?: CommonButtonProps['variant'];
     $size?: CommonButtonProps['size'];
     $color?: CommonButtonProps['color'];
+    $backgroundColor?: CommonButtonProps['backgroundColor'];
     $iconPosition?: CommonButtonProps['iconPosition'];
     $disableColour?: boolean;
     $fluid?: boolean;

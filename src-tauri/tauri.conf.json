@@ -1,5 +1,5 @@
 {
-    "version": "0.9.818",
+    "version": "0.9.821",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -75,9 +75,6 @@
         ]
     },
     "plugins": {
-        "shell": {
-            "open": "^(https:\\/\\/github\\.com\\/tari\\-project\\/universe\\/\\w.+)|(https:\\/\\/airdrop\\.tari\\.com\\/\\w.+)"
-        },
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
             "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],

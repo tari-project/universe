@@ -9,8 +9,3 @@ export interface TabItem {
 export interface TabsProps {
     tabItems: TabItem[];
 }
-export interface TabNavProps {
-    items: TabItem[];
-    currentIndex: number;
-    onClick: (index: number) => void;
-}

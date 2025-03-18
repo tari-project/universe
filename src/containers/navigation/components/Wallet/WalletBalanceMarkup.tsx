@@ -15,7 +15,7 @@ import {
 } from './Wallet.styles.ts';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
-import SyncTooltip from '@app/containers/main/SidebarNavigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
+import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
 

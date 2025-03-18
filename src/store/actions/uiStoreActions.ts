@@ -1,4 +1,4 @@
-import { AdminShow, DialogType, SidebarType, useUIStore } from '@app/store/useUIStore.ts';
+import { AdminShow, DialogType, useUIStore } from '@app/store/useUIStore.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
@@ -20,7 +20,6 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useUIStore.setState({ isWebglNotSupported });
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
-export const setCurrentSidebar = (currentSidebar: SidebarType) => useUIStore.setState({ currentSidebar });
 export const setSidebarOpen = (sidebarOpen: boolean) => useUIStore.setState({ sidebarOpen });
 
 export const animationLightBg = [

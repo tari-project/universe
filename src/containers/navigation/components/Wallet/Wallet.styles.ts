@@ -12,8 +12,8 @@ export const WalletBalance = styled(m.div)`
 
 export const WalletBalanceWrapper = styled.div`
     width: 100%;
-    height: 52px;
     display: flex;
+    height: 52px;
     align-items: center;
 `;
 
@@ -21,7 +21,6 @@ export const WalletBalanceContainer = styled(m.div)`
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    position: relative;
     align-items: flex-start;
     width: 100%;
     flex-shrink: 0;

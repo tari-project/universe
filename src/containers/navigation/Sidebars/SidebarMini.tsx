@@ -2,8 +2,8 @@ import { memo } from 'react';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import OpenSettingsButton from '@app/containers/floating/Settings/components/OpenSettingsButton.tsx';
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
+import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
-import Navigation from './Navigation.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     return (
@@ -14,7 +14,7 @@ const SidebarMini = memo(function SidebarMini() {
                 </LogoWrapper>
             </GridTop>
             <GridCenter>
-                <Navigation />
+                <NavigationButton />
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />
