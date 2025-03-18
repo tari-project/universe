@@ -2,8 +2,8 @@ import styled, { css } from 'styled-components';
 import clouds from '@app/assets/backgrounds/clouds.png';
 
 export const SB_MINI_WIDTH = 78;
-export const SB_WIDTH = 348;
-export const SB_SPACING = 20;
+export const SB_WIDTH = 356;
+export const SB_SPACING = 15;
 
 export const DashboardContainer = styled.div<{ $visualModeOff?: boolean }>`
     display: flex;

@@ -4,7 +4,6 @@ export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 
 export interface HistoryListItemProps {
     item: TransactionInfo;
-    showReplay?: boolean;
     index: number;
 }
 
