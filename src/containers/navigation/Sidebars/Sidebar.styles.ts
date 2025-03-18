@@ -22,6 +22,7 @@ export const SidebarWrapper = styled(m.div).attrs({
     flex-shrink: 0;
     padding: 10px;
     position: relative;
+
     width: ${SB_WIDTH}px;
 
     & * {
@@ -30,7 +31,6 @@ export const SidebarWrapper = styled(m.div).attrs({
 `;
 
 export const WrapperGrid = styled.div`
-    gap: 8px;
     height: 100%;
     display: flex;
     flex-flow: column;
@@ -46,7 +46,8 @@ export const GridAreaTop = styled.div`
 export const GridAreaBottom = styled.div`
     display: flex;
     flex-direction: column;
-    justify-content: center;
     position: relative;
     gap: 4px;
+    overflow: hidden;
+    overflow-y: auto;
 `;

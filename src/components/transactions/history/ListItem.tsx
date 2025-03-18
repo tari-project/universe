@@ -38,7 +38,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
     );
 });
 
-const HistoryListItem = memo(function ListItem({ item, index, showReplay = false }: HistoryListItemProps) {
+const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemProps) {
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
 
@@ -64,7 +64,7 @@ const HistoryListItem = memo(function ListItem({ item, index, showReplay = false
     });
 
     function handleTxClick() {
-        if (import.meta.env.MODE !== 'development' || showReplay) return;
+        if (import.meta.env.MODE !== 'development' || isMined) return;
 
         if (!expanded) {
             clickRef.current += 1;
@@ -80,7 +80,7 @@ const HistoryListItem = memo(function ListItem({ item, index, showReplay = false
     const baseItem = (
         <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={itemType} onClick={handleTxClick} />
     );
-    const itemHover = showReplay && isMined ? <ItemHover item={item} /> : null;
+    const itemHover = isMined ? <ItemHover item={item} /> : null;
     const itemExpand = !isMined ? <ItemExpand item={item} /> : null;
 
     return (
@@ -88,7 +88,7 @@ const HistoryListItem = memo(function ListItem({ item, index, showReplay = false
             ref={ref}
             data-index={index}
             initial={{ scale: 0.7, opacity: 0 }}
-            animate={inView ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
+            animate={inView || expanded ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
             transition={{ duration: 0.2 }}
             style={{ height: !isMined && expanded ? 'auto' : 48 }}
             onMouseEnter={() => setHovering(true)}

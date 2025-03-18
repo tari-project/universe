@@ -14,6 +14,7 @@ export const Wrapper = styled.div`
     align-items: center;
     flex-direction: column;
     position: relative;
+    overflow: hidden;
     gap: 10px;
 `;
 
@@ -40,6 +41,9 @@ export const TabNavigation = styled.div`
     justify-content: space-between;
     padding: 18px 0;
     border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+    @media (max-height: 680px) {
+        padding: 8px 0;
+    }
 `;
 export const BottomNavWrapper = styled.div`
     display: flex;

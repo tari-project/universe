@@ -8,7 +8,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export function Tabs({ tabItems }: TabsProps) {
     const { t } = useTranslation();
-    const [currentIndex, setCurrentIndex] = useState<number>(1);
+    const [currentIndex, setCurrentIndex] = useState<number>(0);
 
     const showMainWalletNav = currentIndex !== 0;
 

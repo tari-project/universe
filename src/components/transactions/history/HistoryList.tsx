@@ -8,10 +8,7 @@ import { initialFetchTxs, fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-interface HistoryListProps {
-    winsOnly?: boolean;
-}
-const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
+const HistoryList = () => {
     const { t } = useTranslation('wallet', { useSuspense: false });
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const transactions = useWalletStore((s) => s.transactions);
@@ -41,7 +38,7 @@ const HistoryList = ({ winsOnly = false }: HistoryListProps) => {
             >
                 <ListItemWrapper>
                     {transactions.map((tx, index) => (
-                        <HistoryListItem key={tx.tx_id} item={tx} index={index} showReplay={winsOnly} />
+                        <HistoryListItem key={tx.tx_id} item={tx} index={index} />
                     ))}
                 </ListItemWrapper>
             </InfiniteScroll>
