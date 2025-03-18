@@ -109,6 +109,7 @@ export function Send() {
                         disabled={isSubmitting || !isValid}
                         type="submit"
                         fluid
+                        backgroundColor="greyscale"
                         loader={<CircularProgress />}
                         isLoading={isSubmitting}
                     >

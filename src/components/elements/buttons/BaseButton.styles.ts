@@ -29,7 +29,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         cursor: inherit;
     }
 
-    ${({ $variant, $color, $disableColour, theme }) => {
+    ${({ $variant, $color, $disableColour, theme, $backgroundColor }) => {
         switch ($variant) {
             case 'outlined':
                 return css`
@@ -61,7 +61,11 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     color: ${$color
                         ? theme?.colors[$color ?? 'primary']?.[theme.mode == 'dark' ? 200 : 600]
                         : convertHexToRGBA(theme.palette.contrast, 0.7)};
-                    background-color: ${$disableColour ? 'transparent' : theme.palette.action.background.default};
+                    background-color: ${$disableColour
+                        ? 'transparent'
+                        : $backgroundColor
+                          ? theme?.colors[$backgroundColor ?? 'grey']?.[theme.mode == 'dark' ? 700 : 100]
+                          : theme.palette.action.background.default};
                     &:hover:not(:disabled) {
                         background-color: ${$disableColour
                             ? theme.palette.action.hover.accent

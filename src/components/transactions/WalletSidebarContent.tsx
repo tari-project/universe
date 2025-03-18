@@ -2,18 +2,14 @@ import { TabItem } from './components/Tabs/types';
 import { Tabs } from './components/Tabs/Tabs';
 import { Send } from './send/Send';
 import { Receive } from './receive/Receive';
-import HistoryList from './history/HistoryList';
-import { HistoryWrapper, WalletTabWrapper } from './WalletSidebarContent.styles.ts';
+import Wallet from './wallet/Wallet';
+import { WalletTabWrapper } from './WalletSidebarContent.styles.ts';
 
 const tabItems: TabItem[] = [
     {
         id: 'history',
         titleTransaltionKey: 'wallet:tabs.history',
-        content: (
-            <HistoryWrapper>
-                <HistoryList />
-            </HistoryWrapper>
-        ),
+        content: <Wallet />,
     },
     {
         id: 'send',

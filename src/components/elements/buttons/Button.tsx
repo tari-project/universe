@@ -8,6 +8,7 @@ export const Button = ({
     children,
     variant = 'primary',
     color,
+    backgroundColor,
     size = 'medium',
     iconPosition,
     disableColour = false,
@@ -21,6 +22,7 @@ export const Button = ({
         <StyledButton
             $variant={variant}
             $color={color}
+            $backgroundColor={backgroundColor}
             $size={size}
             $disableColour={disableColour}
             $fluid={fluid}
