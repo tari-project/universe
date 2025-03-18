@@ -30,6 +30,7 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
+use crate::utils::network_status::NetworkStatus;
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -185,6 +186,9 @@ pub struct TelemetryData {
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
     pub current_os: String,
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
 }
 
 pub struct TelemetryManager {
@@ -520,6 +524,11 @@ async fn get_telemetry_data(
         "wallet",
     );
 
+    let (download_speed, upload_speed, latency) = NetworkStatus::current()
+        .get_network_speeds_receiver()
+        .borrow()
+        .clone();
+
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
@@ -541,6 +550,9 @@ async fn get_telemetry_data(
         gpu_tribe_id: None,
         extra_data,
         current_os: std::env::consts::OS.to_string(),
+        download_speed,
+        upload_speed,
+        latency,
     })
 }
 

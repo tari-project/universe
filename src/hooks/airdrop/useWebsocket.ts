@@ -72,8 +72,8 @@ export const useWebsocket = () => {
                 console.error(e);
             }
         },
-        // TODO: fix deps when we refactor + remove disabling of rule in eslint.config
-        [connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
+        // TODO: fix deps when we refactor + remove disabling of rule in this file
+        [socket, connectedSocket, appId, height, applicationsVersions?.tari_universe, network, userId]
     );
 
     useEffect(() => {
@@ -89,8 +89,9 @@ export const useWebsocket = () => {
 
     const init = () => {
         try {
-            if (!socket && baseUrl) {
-                const _socket = io(baseUrl, {
+            let curSocket = socket;
+            if (!curSocket && baseUrl) {
+                curSocket = io(baseUrl, {
                     secure: true,
                     transports: ['websocket', 'polling'],
                     auth: {
@@ -100,36 +101,35 @@ export const useWebsocket = () => {
                         version: applicationsVersions?.tari_universe,
                     },
                 });
-                setSocket(_socket);
+                setSocket(curSocket);
             }
 
-            if (!socket) return;
+            if (!curSocket) return;
 
-            socket.emit('subscribe-to-gem-updates');
-            socket.on('connect', () => {
-                if (!socket) return;
+            curSocket.emit('subscribe-to-gem-updates');
+            curSocket.on('connect', () => {
                 registerWsConnectionEvent({
                     state: 'up',
                 });
                 setConnectedSocket(true);
-                socket.emit('auth', airdropToken);
-                socket.on(userId as string, handleWsUserIdEvent);
+                curSocket.emit('auth', airdropToken);
+                curSocket.on(userId as string, handleWsUserIdEvent);
             });
 
-            socket.on('connect_error', (_e) => {
+            curSocket.on('connect_error', (_e) => {
                 registerWsConnectionEvent({
                     state: 'error',
                     error: 'could not connect to server',
                 });
             });
-            socket.on('disconnect', (reason, details) => {
+            curSocket.on('disconnect', (reason, details) => {
                 registerWsConnectionEvent({
                     state: 'error',
                     error: 'disconnected from server',
                 });
                 console.error(reason, details);
             });
-            socket.io.on('reconnect', (_e) => {
+            curSocket.io.on('reconnect', (_e) => {
                 registerWsConnectionEvent({
                     state: 'up',
                 });

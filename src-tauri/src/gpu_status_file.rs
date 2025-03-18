@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::{
-    collections::HashMap,
     fs::File,
     io::BufReader,
     path::{Path, PathBuf},
@@ -62,7 +61,7 @@ pub struct GpuDevice {
 
 #[derive(serde::Deserialize, Default, serde::Serialize, Debug, Clone)]
 pub struct GpuStatusFile {
-    pub gpu_devices: HashMap<String, GpuDevice>,
+    pub gpu_devices: Vec<GpuDevice>,
 }
 
 impl GpuStatusFile {

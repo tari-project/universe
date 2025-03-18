@@ -187,8 +187,6 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
-    FrontendReadyChannel::current().set_ready();
-
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
@@ -219,6 +217,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
                 .emit("missing-applications", external_dependencies)
                 .expect("Could not emit event 'missing-applications");
         }
+        FrontendReadyChannel::current().set_ready();
     });
 }
 
