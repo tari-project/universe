@@ -126,15 +126,7 @@ impl Default for CpuMinerStatus {
     }
 }
 
-impl Default for CpuMinerConnectionStatus {
-    fn default() -> Self {
-        Self {
-            is_connected: false,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, Default)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
     // pub error: Option<String>,
@@ -856,8 +848,6 @@ pub async fn reset_settings<'r>(
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
-
-    Ok(())
 }
 
 #[tauri::command]

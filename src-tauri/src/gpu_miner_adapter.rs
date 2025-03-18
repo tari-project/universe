@@ -93,8 +93,8 @@ impl GpuMinerAdapter {
             MiningMode::Eco => {
                 self.gpu_grid_size = self
                     .gpu_devices
-                    .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
+                    .keys()
+                    .map(|gpu_name| GpuThreads {
                         gpu_name: gpu_name.clone(),
                         max_gpu_threads: 2,
                     })
@@ -103,8 +103,8 @@ impl GpuMinerAdapter {
             MiningMode::Ludicrous => {
                 self.gpu_grid_size = self
                     .gpu_devices
-                    .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
+                    .keys()
+                    .map(|gpu_name| GpuThreads {
                         gpu_name: gpu_name.clone(),
                         max_gpu_threads: 1024,
                     })

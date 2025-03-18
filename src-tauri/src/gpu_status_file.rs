@@ -60,17 +60,9 @@ pub struct GpuDevice {
     pub settings: GpuSettings,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+#[derive(serde::Deserialize, Default, serde::Serialize, Debug, Clone)]
 pub struct GpuStatusFile {
     pub gpu_devices: HashMap<String, GpuDevice>,
-}
-
-impl Default for GpuStatusFile {
-    fn default() -> Self {
-        Self {
-            gpu_devices: HashMap::new(),
-        }
-    }
 }
 
 impl GpuStatusFile {

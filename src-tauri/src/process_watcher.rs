@@ -22,7 +22,7 @@
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::ProcessInstanceTrait;
-use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
+use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;

@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::net::IpAddr;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -36,18 +35,15 @@ use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::RwLock;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
-use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
-use crate::process_adapter::{ProcessAdapter, StatusMonitor};
+use crate::node_adapter::{BaseNodeStatus, MinotariNodeStatusMonitorError};
+use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
-use crate::remote_node_adapter::RemoteNodeAdapter;
-use crate::remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use crate::ProgressTracker;
 use async_trait::async_trait;
-use std::str::FromStr;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -65,10 +61,12 @@ pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
 pub(crate) trait NodeAdapter: ProcessAdapter {
     type NodeClient: NodeClient;
-    fn set_grpc_address(&mut self, grpc_address: String);
+    fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn grpc_address(&self) -> Option<&(String, u16)>;
     fn tcp_rpc_port(&self) -> u16;
     fn get_node_client(&self) -> Option<Self::NodeClient>;
+    fn use_tor(&mut self, use_tor: bool);
+    fn tor_control_port(&mut self, tor_control_port: Option<u16>);
 }
 
 #[async_trait]
@@ -138,6 +136,7 @@ impl<T: NodeAdapter> NodeManager<T> {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
@@ -151,13 +150,13 @@ impl<T: NodeAdapter> NodeManager<T> {
         {
             let mut process_watcher = self.watcher.write().await;
 
-            // process_watcher.adapter.use_tor = use_tor;
-            // process_watcher.adapter.tor_control_port = tor_control_port;
-            // process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
+            process_watcher.adapter.use_tor(use_tor);
+            process_watcher.adapter.tor_control_port(tor_control_port);
+            process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
             if let Some(remote_grpc_address) = remote_grpc_address {
                 process_watcher
                     .adapter
-                    .set_grpc_address(remote_grpc_address);
+                    .set_grpc_address(remote_grpc_address)?;
             }
             process_watcher
                 .start(
@@ -198,10 +197,10 @@ impl<T: NodeAdapter> NodeManager<T> {
     pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
         let lock = self.watcher.read().await;
         if let Some((host, port)) = lock.adapter.grpc_address() {
-            if !host.starts_with("http") {
-                return Ok(format!("http://{}:{}", host, port));
-            } else {
+            if host.starts_with("http") {
                 return Ok(format!("{}:{}", host, port));
+            } else {
+                return Ok(format!("http://{}:{}", host, port));
             }
         }
         Err(anyhow::anyhow!("grpc_address not set"))

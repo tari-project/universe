@@ -2,18 +2,17 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::Peer;
-use sha2::digest::typenum::Min;
 use tari_shutdown::ShutdownSignal;
 
 use crate::{
     node_adapter::{
-        self, MinotariNodeAdapter, MinotariNodeClient, MinotariNodeStatusMonitor,
+        MinotariNodeAdapter, MinotariNodeClient, MinotariNodeStatusMonitor,
         MinotariNodeStatusMonitorError,
     },
     node_manager::{NodeAdapter, NodeClient, NodeIdentity},
     process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor},
-    progress_tracker::{self, ProgressTracker},
-    remote_node_adapter::{NullProcessInstance, RemoteNodeAdapter},
+    progress_tracker::ProgressTracker,
+    remote_node_adapter::RemoteNodeAdapter,
     BaseNodeStatus,
 };
 
@@ -24,19 +23,15 @@ pub(crate) struct RemoteUntilSyncedNodeAdapter {
 
 impl RemoteUntilSyncedNodeAdapter {
     pub(crate) fn new(node: MinotariNodeAdapter, remote: RemoteNodeAdapter) -> Self {
-        Self {
-            node: node,
-            remote: remote,
-        }
+        Self { node, remote }
     }
 }
 
 impl NodeAdapter for RemoteUntilSyncedNodeAdapter {
     type NodeClient = WrappedNodeClient;
 
-    fn set_grpc_address(&mut self, grpc_address: String) {
-        // self.node.set_grpc_address(grpc_address);
-        self.remote.set_grpc_address(grpc_address);
+    fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error> {
+        self.remote.set_grpc_address(grpc_address)
     }
 
     fn grpc_address(&self) -> Option<&(String, u16)> {
@@ -53,6 +48,14 @@ impl NodeAdapter for RemoteUntilSyncedNodeAdapter {
             self.node.get_node_client()?,
             self.remote.get_node_client()?,
         ))
+    }
+
+    fn use_tor(&mut self, use_tor: bool) {
+        self.node.use_tor = use_tor;
+    }
+
+    fn tor_control_port(&mut self, tor_control_port: Option<u16>) {
+        self.node.tor_control_port = tor_control_port;
     }
 }
 
@@ -79,11 +82,7 @@ impl ProcessAdapter for RemoteUntilSyncedNodeAdapter {
 
         Ok((
             node_process,
-            WrappedStatusMonitor {
-                remote: remote_status,
-                local: node_status,
-                is_synced: Arc::new(AtomicBool::new(false)),
-            },
+            WrappedStatusMonitor::new(remote_status, node_status),
         ))
     }
 
@@ -107,10 +106,8 @@ pub(crate) struct WrappedStatusMonitor {
 impl StatusMonitor for WrappedStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         if self.is_synced.load(std::sync::atomic::Ordering::SeqCst) {
-            dbg!("here");
             self.local.check_health().await
         } else {
-            dbg!("here");
             // Check if we are synced on the node yet.
             let node_is_synced = self
                 .local
@@ -118,15 +115,11 @@ impl StatusMonitor for WrappedStatusMonitor {
                 .await
                 .map(|state| state.is_synced)
                 .unwrap_or_default();
-            dbg!("here");
             if node_is_synced {
-                dbg!("here");
                 self.is_synced
                     .store(true, std::sync::atomic::Ordering::SeqCst);
-                dbg!("here");
                 self.local.check_health().await
             } else {
-                dbg!("here");
                 self.remote.check_health().await
             }
         }
@@ -140,10 +133,6 @@ impl WrappedStatusMonitor {
             remote,
             is_synced: Arc::new(AtomicBool::new(false)),
         }
-    }
-
-    fn is_synced(&self) -> bool {
-        self.is_synced.load(std::sync::atomic::Ordering::SeqCst)
     }
 }
 

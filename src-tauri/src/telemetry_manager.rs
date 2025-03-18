@@ -200,6 +200,7 @@ pub struct TelemetryManager {
 }
 
 impl TelemetryManager {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         config: Arc<RwLock<AppConfig>>,
@@ -317,6 +318,7 @@ impl TelemetryManager {
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_arguments)]
 async fn get_telemetry_data(
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,

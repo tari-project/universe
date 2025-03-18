@@ -1,4 +1,4 @@
-use tari_shutdown::{Shutdown, ShutdownSignal};
+use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 use tonic::async_trait;
 
@@ -28,26 +28,23 @@ impl RemoteNodeAdapter {
         self.grpc_address.as_ref()
     }
 
-    pub fn set_grpc_address(&mut self, grpc_address: String) {
+    pub fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error> {
         let has_scheme = grpc_address.starts_with("http");
         let is_https = grpc_address.starts_with("https");
         if !has_scheme {
             let parts = grpc_address.split(':').collect::<Vec<&str>>();
-            let port = parts[1].parse::<u16>().unwrap();
+            let port = parts[1].parse::<u16>()?;
             let scheme = if port == 443 { "https://" } else { "http://" };
             self.grpc_address = Some((
-                format!("{}{}", scheme, parts[0].to_string()),
+                format!("{}{}", scheme, parts[0]),
                 if is_https { 443 } else { 80 },
             ));
-            return;
+            return Ok(());
         }
 
         let parts = grpc_address.split(':').collect::<Vec<&str>>();
-        dbg!(&parts);
-        self.grpc_address = Some((
-            format!("{}:{}", parts[0].to_string(), parts[1].to_string()),
-            parts[2].parse().unwrap(),
-        ));
+        self.grpc_address = Some((format!("{}:{}", parts[0], parts[1]), parts[2].parse()?));
+        Ok(())
     }
 
     pub fn tcp_rpc_port(&self) -> u16 {
@@ -80,7 +77,6 @@ impl ProcessAdapter for RemoteNodeAdapter {
         _binary_version_path: PathBuf,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
-        let status_shutdown = inner_shutdown.to_signal();
         let grpc_address = self
             .grpc_address()
             .ok_or_else(|| anyhow::anyhow!("GRPC address not set"))?;
@@ -116,21 +112,17 @@ pub struct NullProcessInstance {
 #[async_trait]
 impl ProcessInstanceTrait for NullProcessInstance {
     fn ping(&self) -> bool {
-        dbg!("ping");
         true
     }
     async fn start(&mut self) -> Result<(), anyhow::Error> {
-        dbg!("start");
         Ok(())
     }
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {
-        dbg!("stop");
         self.shutdown.trigger();
         Ok(0)
     }
 
     fn is_shutdown_triggered(&self) -> bool {
-        dbg!("is_shutdown_triggered");
-        self.is_shutdown_triggered()
+        self.shutdown.is_triggered()
     }
 }

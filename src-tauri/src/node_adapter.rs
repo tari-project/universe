@@ -121,7 +121,6 @@ impl ProcessAdapter for MinotariNodeAdapter {
         binary_version_path: PathBuf,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
-        let status_shutdown = inner_shutdown.to_signal();
 
         info!(target: LOG_TARGET, "Starting minotari node");
         let working_dir: PathBuf = data_dir.join("node");
@@ -236,7 +235,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             let network = Network::get_current_or_user_setting_or_default();
             args.push("-p".to_string());
             args.push(format!(
-                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com,seeds.{key}.tari.com",
                 key = network.as_key_str(),
             ));
         }
@@ -351,23 +350,18 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         let duration = std::time::Duration::from_secs(5);
         match timeout(duration, self.node_client.get_network_state()).await {
-            Ok(res) => {
-                dbg!("asdfasdf");
-                match res {
-                    Ok(status) => {
-                        let _res = self.status_broadcast.send(status.clone());
-                        HealthStatus::Healthy
-                    }
-                    Err(e) => {
-                        warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
-                        HealthStatus::Unhealthy
-                    }
+            Ok(res) => match res {
+                Ok(status) => {
+                    let _res = self.status_broadcast.send(status.clone());
+                    HealthStatus::Healthy
                 }
-            }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
             Err(e) => {
-                dbg!("here");
                 warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
-                dbg!("here");
                 match self.node_client.get_identity().await {
                     Ok(_) => {
                         return HealthStatus::Healthy;
@@ -385,7 +379,6 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
 #[async_trait]
 impl NodeClient for MinotariNodeClient {
     async fn get_network_state(&self) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
-        dbg!(&self.grpc_address);
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
             .await
             .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
@@ -441,14 +434,11 @@ impl NodeClient for MinotariNodeClient {
     }
 
     async fn get_identity(&self) -> Result<NodeIdentity, Error> {
-        dbg!("identity");
-        dbg!(&self.grpc_address);
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
 
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
-        dbg!(&res);
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
                 .map_err(|e| anyhow!(e.to_string()))?,
