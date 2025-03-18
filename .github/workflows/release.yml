@@ -283,6 +283,9 @@ jobs:
           TARI_UNIVERSE_BUNDLER_NAME: ''
           TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
           WIX_LOGLEVEL: Verbose
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
