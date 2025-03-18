@@ -4,7 +4,7 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 
 import { SidebarType, useUIStore } from '@app/store/useUIStore.ts';
 import { setCurrentSidebar, setSidebarOpen } from '@app/store/actions/uiStoreActions';
-import { WalletOutlineSVG } from '@app/assets/icons/wallet-outline.tsx';
+
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
@@ -87,17 +87,7 @@ const Navigation = memo(function Navigation() {
             <CubeOutlineSVG />
         </NavButton>
     );
-    const walletSection = (
-        <NavButton onClick={() => handleActiveSidebar('wallet')} isActive={!miningActive}>
-            <WalletOutlineSVG />
-        </NavButton>
-    );
-    return (
-        <NavigationWrapper>
-            {miningSection}
-            {walletSection}
-        </NavigationWrapper>
-    );
+    return <NavigationWrapper>{miningSection}</NavigationWrapper>;
 });
 
 export default Navigation;

@@ -5,7 +5,6 @@ import { Send } from './send/Send.tsx';
 import { Receive } from './receive/Receive.tsx';
 import HistoryList from './history/HistoryList.tsx';
 import { ContentWrapper, HistoryWrapper, TabWrapper, WalletBalanceWrapper } from './WalletSidebarContent.styles.ts';
-import WalletBalanceMarkup from '@app/containers/main/SidebarNavigation/components/Wallet/WalletBalanceMarkup.tsx';
 
 const tabItems: TabItem[] = [
     {
@@ -35,9 +34,7 @@ export function WalletSidebarContent() {
             <TabWrapper>
                 <Tabs tabItems={tabItems} />
             </TabWrapper>
-            <WalletBalanceWrapper>
-                <WalletBalanceMarkup />
-            </WalletBalanceWrapper>
+            <WalletBalanceWrapper></WalletBalanceWrapper>
         </ContentWrapper>
     );
 }

@@ -1,7 +1,6 @@
 import styled from 'styled-components';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const SidebarGrid = styled.div`
+export const WrapperGrid = styled.div`
     gap: 8px;
     display: grid;
     height: 100%;
@@ -29,24 +28,4 @@ export const GridAreaBottom = styled.div`
     justify-content: center;
     position: relative;
     gap: 4px;
-`;
-
-export const HistoryLabel = styled(Typography).attrs({ variant: 'span' })`
-    color: ${({ theme }) => theme.palette.text.secondary};
-    font-size: 11px;
-`;
-export const HistoryWrapper = styled.div`
-    overflow: hidden;
-    border-radius: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 4px 6px 0;
-`;
-export const RewardWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    max-height: min(400px, 35vh);
-    border-radius: 10px;
-    padding: 4px 0 0 0;
 `;
