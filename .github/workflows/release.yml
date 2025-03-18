@@ -283,9 +283,6 @@ jobs:
           TARI_UNIVERSE_BUNDLER_NAME: ''
           TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
           WIX_LOGLEVEL: Verbose
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
-          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         shell: bash
         run: |
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
@@ -308,7 +305,6 @@ jobs:
           printenv
           mkdir -p "tari-win-bundler/executables"
           curl -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/executables/vc_redist.x64.exe
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
