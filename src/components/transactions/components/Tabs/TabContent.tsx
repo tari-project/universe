@@ -1,25 +1,7 @@
-import * as m from 'motion/react-m';
-import styled from 'styled-components';
 import { ReactNode } from 'react';
-import { SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { TabItem } from './types.ts';
-
-const SB_CONTENT_WIDTH = SB_WIDTH - SB_SPACING * 2;
-
-const Track = styled(m.div)`
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    flex-shrink: 0;
-`;
-
-const ItemWrapper = styled(m.div)`
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    max-height: 100%;
-    width: ${SB_CONTENT_WIDTH}px;
-`;
+import { ItemWrapper, Track, SB_CONTENT_WIDTH, GUTTER } from './tab.styles';
+import { SB_WIDTH } from '@app/theme/styles.ts';
 
 const SPRING_OPTIONS = { type: 'spring', stiffness: 300, damping: 30 };
 
@@ -46,7 +28,7 @@ interface TabContentProps {
 
 function TabContent({ items, currentIndex }: TabContentProps) {
     return (
-        <Track animate={{ x: -(currentIndex * (SB_CONTENT_WIDTH + SB_SPACING)) }} transition={SPRING_OPTIONS}>
+        <Track animate={{ x: -(currentIndex * (SB_WIDTH - GUTTER)) }} transition={SPRING_OPTIONS}>
             {items.map(({ id, content }, index) => {
                 const isActiveTab = index === currentIndex;
                 return <Item key={`item-content-${id}}`}>{isActiveTab ? content : null}</Item>;

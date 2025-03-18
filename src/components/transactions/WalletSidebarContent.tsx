@@ -1,12 +1,20 @@
-import { Tabs } from '@app/components/Tabs/Tabs.tsx';
-import { TabItem } from '@app/components/Tabs/types.ts';
-
-import { Send } from './send/Send.tsx';
-import { Receive } from './receive/Receive.tsx';
-import HistoryList from './history/HistoryList.tsx';
-import { ContentWrapper, HistoryWrapper, TabWrapper, WalletBalanceWrapper } from './WalletSidebarContent.styles.ts';
+import { TabItem } from './components/Tabs/types';
+import { Tabs } from './components/Tabs/Tabs';
+import { Send } from './send/Send';
+import { Receive } from './receive/Receive';
+import HistoryList from './history/HistoryList';
+import { HistoryWrapper, WalletTabWrapper } from './WalletSidebarContent.styles.ts';
 
 const tabItems: TabItem[] = [
+    {
+        id: 'history',
+        titleTransaltionKey: 'wallet:tabs.history',
+        content: (
+            <HistoryWrapper>
+                <HistoryList />
+            </HistoryWrapper>
+        ),
+    },
     {
         id: 'send',
         titleTransaltionKey: 'wallet:tabs.send',
@@ -17,24 +25,12 @@ const tabItems: TabItem[] = [
         titleTransaltionKey: 'wallet:tabs.receive',
         content: <Receive />,
     },
-    {
-        id: 'history',
-        titleTransaltionKey: 'wallet:tabs.history',
-        content: (
-            <HistoryWrapper>
-                <HistoryList />
-            </HistoryWrapper>
-        ),
-    },
 ];
 
 export function WalletSidebarContent() {
     return (
-        <ContentWrapper>
-            <TabWrapper>
-                <Tabs tabItems={tabItems} />
-            </TabWrapper>
-            <WalletBalanceWrapper></WalletBalanceWrapper>
-        </ContentWrapper>
+        <WalletTabWrapper>
+            <Tabs tabItems={tabItems} />
+        </WalletTabWrapper>
     );
 }
