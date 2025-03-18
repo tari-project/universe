@@ -241,3 +241,10 @@ export interface MaxConsumptionLevels {
     max_cpu_threads: number;
     max_gpus_threads: GpuThreads[];
 }
+
+export interface NetworkStatus {
+    download_speed: number;
+    upload_speed: number;
+    latency: number;
+    is_too_low: boolean;
+}

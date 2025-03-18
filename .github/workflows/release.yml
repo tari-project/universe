@@ -69,7 +69,7 @@ jobs:
       - name: BETA Builds - Set environment variables
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         env:
-          OS_BETA_STRING: ${{ runner.os == 'Linux' && '-(Beta)' || ' (Beta)' }}
+          BETA_STRING: '(Beta)'
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
           TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
@@ -82,10 +82,22 @@ jobs:
           #set -xueo pipefail
           echo "TARI_NETWORK=esme" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          # Make envs available to other steps
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
           echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          # GitHub Actions does not expand environment variables dynamically in envs
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            OS_BETA_STRING=-${BETA_STRING}
+            BETA_STRING_SAFE=$(echo ${BETA_STRING} | sed 's/[^a-zA-Z0-9]/_/g')
+            OS_BETA_STRING_BinName=-${BETA_STRING_SAFE}
+          else
+            OS_BETA_STRING=\ ${BETA_STRING}
+            OS_BETA_STRING_BinName=\ ${BETA_STRING}
+          fi
+          echo "OS_BETA_STRING is ${OS_BETA_STRING}"
+          echo "OS_BETA_STRING_BinName is ${OS_BETA_STRING_BinName}"
           echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
@@ -93,8 +105,8 @@ jobs:
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${{ env.OS_BETA_STRING }}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
-          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${{ env.OS_BETA_STRING }}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING_BinName}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" --output-format=json -i tauri.conf.json
           yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
@@ -156,6 +168,12 @@ jobs:
             patchelf \
             libprotobuf-dev \
             protobuf-compiler
+
+      - name: Install Dependencies - Linux/AppImage
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            appstream
 
       - name: Install Dependencies - Linux/OpenCL
         if: startsWith(runner.os,'Linux')
@@ -230,7 +248,7 @@ jobs:
 
       - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@dev
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
@@ -329,13 +347,14 @@ jobs:
           path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
 
       - name: Locate artifacts path
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         continue-on-error: true
         env:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
+          MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
+          echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: BETA Builds - Upload assets
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -351,13 +370,74 @@ jobs:
           name: tari_universe.pdb
           path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
 
-      - name: Windows debug symbols - Upload to Sentry
-        if: startsWith(runner.os,'Windows')
+      - name: Windows install Sentry CLI
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        shell: bash
+        run: npm install @sentry/cli@2.42.2 -g
+
+      - name: Windows install Sentry CLI
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        shell: bash
+        run: npm install @sentry/cli@2.42.2 -g
+
+      - name: Windows debug symbols - Upload to Sentry
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
         continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
         shell: bash
         run: |
-          npm install @sentry/cli@2.42.2
-          sentry-cli debug-files check ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
-          sentry-cli debug-files upload --org tari-labs --project tari-universe ${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
+
+      - name: Verify Windows signing for installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        continue-on-error: true
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          TEST_ENV: 'Tari Universe (Beta) - 0312_0.9.817_x64_en-US.msi'
+        shell: powershell
+        run: |
+          # Get the Program Files (x86) directory dynamically
+          $programFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
+          $sdkBasePath = Join-Path $programFilesX86 "Windows Kits"
+
+          # Check if Windows Kits exists
+          if (-Not (Test-Path $sdkBasePath)) {
+            Write-Error "Windows Kits folder not found at $sdkBasePath!"
+            exit 1
+          }
+
+          Write-Output "Searching for signtool.exe in: $sdkBasePath"
+
+          # Search for signtool.exe within Windows Kits fold with x64 in the path
+          $signtoolPath = Get-ChildItem -Path $sdkBasePath -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+                          Where-Object { $_.FullName -match '\\x64\\' } |
+                          Select-Object -ExpandProperty FullName -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows Kits folder!"
+            exit 1
+          }
+
+          Write-Output "Found signtool.exe at: $signtoolPath"
+
+          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
+
+          # Display results
+          Write-Host "File: ${{ env.MSI_FILE }}"
+          Write-Host "  - Status: $($Signature.Status)"
+          Write-Host "  - Status Message: $($Signature.StatusMessage)"
+          Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
+          Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
+          Write-Host "---------------------------------------------"
+
+          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
+            exit 1
+          }
