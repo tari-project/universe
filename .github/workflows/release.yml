@@ -304,7 +304,8 @@ jobs:
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
           printenv
           mkdir -p "tari-win-bundler/executables"
-          curl -o "tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          curl -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/executables/vc_redist.x64.exe
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
