@@ -1,9 +1,9 @@
-import { memo, ReactNode, useCallback, useEffect } from 'react';
+import { memo, ReactNode, useEffect } from 'react';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 
-import { SidebarType, useUIStore } from '@app/store/useUIStore.ts';
-import { setCurrentSidebar, setSidebarOpen } from '@app/store/actions/uiStoreActions';
+import { useUIStore } from '@app/store/useUIStore.ts';
+import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
@@ -16,7 +16,6 @@ interface NavButtonProps {
 }
 
 const transition = { rotate: { type: 'spring' }, opacity: { delay: 0.05 } };
-
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const rotate = sidebarOpen ? '180deg' : '0deg';
@@ -47,25 +46,12 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
         </StyledIconButton>
     );
 });
-const Navigation = memo(function Navigation() {
+const NavigationButton = memo(function NavigationButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
-    const currentSidebar = useUIStore((s) => s.currentSidebar);
 
-    const miningActive = currentSidebar === 'mining';
-
-    const handleActiveSidebar = useCallback(
-        (sidebarType: SidebarType) => {
-            if (currentSidebar === sidebarType) {
-                setSidebarOpen(!sidebarOpen);
-            } else {
-                setCurrentSidebar(sidebarType);
-                if (!sidebarOpen) {
-                    setSidebarOpen(true);
-                }
-            }
-        },
-        [currentSidebar, sidebarOpen]
-    );
+    function handleToggleOpen() {
+        setSidebarOpen(!sidebarOpen);
+    }
 
     useEffect(() => {
         const offset = (!sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
@@ -82,12 +68,13 @@ const Navigation = memo(function Navigation() {
         };
     }, [sidebarOpen]);
 
-    const miningSection = (
-        <NavButton onClick={() => handleActiveSidebar('mining')} isActive={miningActive}>
-            <CubeOutlineSVG />
-        </NavButton>
+    return (
+        <NavigationWrapper>
+            <NavButton onClick={handleToggleOpen} isActive={true}>
+                <CubeOutlineSVG />
+            </NavButton>
+        </NavigationWrapper>
     );
-    return <NavigationWrapper>{miningSection}</NavigationWrapper>;
 });
 
-export default Navigation;
+export default NavigationButton;

@@ -1,29 +1,28 @@
 import { memo } from 'react';
-import { useTranslation } from 'react-i18next';
-import { GridAreaBottom, GridAreaTop, WrapperGrid } from './Sidebar.styles.ts';
-import MiningButton from '@app/containers/navigation/components/MiningButton/MiningButton.tsx';
-import LostConnectionAlert from '@app/containers/navigation/components/LostConnectionAlert.tsx';
-import OrphanChainAlert from '@app/containers/navigation/components/OrphanChainAlert/OrphanChainAlert.tsx';
-import Miner from '@app/containers/navigation/components/Miner/Miner.tsx';
 import { WalletSidebarContent } from '@app/components/transactions';
-import WalletBalanceMarkup from '@app/containers/navigation/components/Wallet/WalletBalanceMarkup.tsx';
+import MiningButton from '../components/MiningButton/MiningButton.tsx';
+import LostConnectionAlert from '../components/LostConnectionAlert.tsx';
+import OrphanChainAlert from '../components/OrphanChainAlert/OrphanChainAlert.tsx';
+import Miner from '../components/Miner/Miner.tsx';
+import WalletBalanceMarkup from '../components/Wallet/WalletBalanceMarkup.tsx';
+import { GridAreaBottom, GridAreaTop, WrapperGrid, SidebarWrapper } from './Sidebar.styles.ts';
 
 const Sidebar = memo(function Sidebar() {
-    const { t } = useTranslation('wallet', { useSuspense: false });
-
     return (
-        <WrapperGrid>
-            <GridAreaTop>
-                <MiningButton />
-                <LostConnectionAlert />
-                <OrphanChainAlert />
-                <Miner />
-            </GridAreaTop>
-            <GridAreaBottom>
-                <WalletBalanceMarkup />
-                <WalletSidebarContent />
-            </GridAreaBottom>
-        </WrapperGrid>
+        <SidebarWrapper key="sidebar">
+            <WrapperGrid>
+                <GridAreaTop>
+                    <MiningButton />
+                    <LostConnectionAlert />
+                    <OrphanChainAlert />
+                    <Miner />
+                </GridAreaTop>
+                <GridAreaBottom>
+                    <WalletBalanceMarkup />
+                    <WalletSidebarContent />
+                </GridAreaBottom>
+            </WrapperGrid>
+        </SidebarWrapper>
     );
 });
 
