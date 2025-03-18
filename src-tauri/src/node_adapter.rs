@@ -44,6 +44,7 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
+use tari_utilities::epoch_time::EpochTime;
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
 use tokio::time::timeout;
@@ -314,6 +315,15 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status.clone());
+                    if EpochTime::now()
+                        .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
+                        .unwrap_or(EpochTime::from(0))
+                        .as_u64()
+                        > 600
+                    {
+                        warn!(target: LOG_TARGET, "Base node height has not changed in ten minutes");
+                        return HealthStatus::Unhealthy;
+                    }
                     HealthStatus::Healthy
                 }
                 Err(e) => {
