@@ -308,21 +308,20 @@ impl StatusMonitor for TorStatusMonitor {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(Some(status.clone()));
                 if status.is_bootstrapped && status.network_liveness {
-                    // HealthStatus::Healthy
+                    HealthStatus::Healthy
                 } else {
-                    // HealthStatus::Unhealthy
+                    HealthStatus::Warning
                 }
             }
             Ok(Err(e)) => {
                 warn!(target: LOG_TARGET, "Failed to get Tor status: {}", e);
-                // HealthStatus::Unhealthy
+                HealthStatus::Unhealthy
             }
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timed out getting Tor status");
-                // HealthStatus::Unhealthy
+                HealthStatus::Unhealthy
             }
-        };
-        HealthStatus::Healthy
+        }
     }
 }
 
