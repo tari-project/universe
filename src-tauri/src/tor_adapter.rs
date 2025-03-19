@@ -27,12 +27,15 @@ use tokio::net::TcpStream;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio::sync::watch;
+use tokio::time::timeout;
 
 use crate::port_allocator::PortAllocator;
+use crate::tor_control_client::{TorControlClient, TorStatus};
 use crate::{
     process_adapter::{
         HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -46,16 +49,18 @@ pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
     config: TorConfig,
+    status_broadcast: watch::Sender<Option<TorStatus>>,
 }
 
 impl TorAdapter {
-    pub fn new() -> Self {
+    pub fn new(status_broadcast: watch::Sender<Option<TorStatus>>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
 
         Self {
             socks_port: port,
             config_file: None,
             config: TorConfig::default(),
+            status_broadcast,
         }
     }
 
@@ -273,7 +278,10 @@ impl ProcessAdapter for TorAdapter {
                     name: self.name().to_string(),
                 },
             },
-            TorStatusMonitor { control_port },
+            TorStatusMonitor {
+                control_port,
+                status_broadcast: self.status_broadcast.clone(),
+            },
         ))
     }
 
@@ -289,12 +297,31 @@ impl ProcessAdapter for TorAdapter {
 #[derive(Clone)]
 pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
+    status_broadcast: watch::Sender<Option<TorStatus>>,
 }
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        // TODO: Implement health check
+        let client = TorControlClient::new(self.control_port);
+        match timeout(std::time::Duration::from_secs(1), client.get_info()).await {
+            Ok(Ok(status)) => {
+                let _res = self.status_broadcast.send(Some(status.clone()));
+                if status.is_bootstrapped && status.network_liveness {
+                    // HealthStatus::Healthy
+                } else {
+                    // HealthStatus::Unhealthy
+                }
+            }
+            Ok(Err(e)) => {
+                warn!(target: LOG_TARGET, "Failed to get Tor status: {}", e);
+                // HealthStatus::Unhealthy
+            }
+            Err(_) => {
+                warn!(target: LOG_TARGET, "Timed out getting Tor status");
+                // HealthStatus::Unhealthy
+            }
+        };
         HealthStatus::Healthy
     }
 }
