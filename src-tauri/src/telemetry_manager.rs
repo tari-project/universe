@@ -575,7 +575,7 @@ async fn get_telemetry_data(
         upload_speed,
         latency,
     };
-    info!(target: LOG_TARGET,"Telemetry data collected: {:?}", &data);
+    // info!(target: LOG_TARGET,"Telemetry data collected: {:?}", &data);
     Ok(data)
 }
 
