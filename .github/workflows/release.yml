@@ -251,7 +251,7 @@ jobs:
         run: |
           mkdir -p "tari-win-bundler/executables"
           ls -la ./tari-win-bundler
-          curl -v -o "tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          curl -v -L -o "tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
 
       - name: Check downloaded content
         shell: bash
