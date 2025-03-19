@@ -257,7 +257,6 @@ jobs:
         shell: bash
         run: |
           ls -la ./tari-win-bundler/executables
-          cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
 
       - name: Build Tauri Apps
         id: build
