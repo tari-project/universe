@@ -142,7 +142,9 @@ jobs:
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             --output-format=json -i tauri.conf.json
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        if: ${{ false }}
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
@@ -293,6 +295,7 @@ jobs:
           mkdir -p "tari-win-bundler/executables"
           cd "tari-win-bundler/executables"
           pwd
+          # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
           curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cd ../..
           pwd
@@ -320,6 +323,9 @@ jobs:
           wix extension add WixToolset.Util.wixext/5.0.2
           wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
           wix extension list
+          pwd
+          ls -la tari-win-bundler
+          printenv
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
             -ext WixToolset.BootstrapperApplications.wixext \
