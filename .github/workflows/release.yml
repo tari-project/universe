@@ -249,8 +249,14 @@ jobs:
       - name: Download Bundler Files
         run: |
           curl -v -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-          cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check downloaded content
+        run: |
           ls -la ./tari-win-bundler/executables
+          cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
 
       - name: Build Tauri Apps
         id: build
