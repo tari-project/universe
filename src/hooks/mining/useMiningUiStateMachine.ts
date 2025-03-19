@@ -20,7 +20,7 @@ export const useUiMiningStateMachine = () => {
 
     const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
-    const bockTimeTrigger = Number(blockTime?.seconds) % 5 === 0;
+    const blockTimeTrigger = Number(blockTime?.seconds) % 5 === 0;
 
     useEffect(() => {
         if (!visualMode || visualModeLoading) return;
@@ -35,7 +35,7 @@ export const useUiMiningStateMachine = () => {
             setAnimationState('start');
         }
     }, [
-        bockTimeTrigger,
+        blockTimeTrigger, // do not remove - needed to re-trigger these checks since `animationStatus` takes a while to come back updated
         isChangingMode,
         isMining,
         isMiningInitiated,
