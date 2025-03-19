@@ -8,6 +8,7 @@ on:
       - 'release'
       - 'beta'
       - 'build-*'
+      - 'feat/include-vc-in-installer'
   schedule:
     - cron: '05 00 * * *'
   workflow_dispatch:
@@ -200,22 +201,6 @@ jobs:
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
-      - name: Add msbuild to PATH (windows)
-        uses: microsoft/setup-msbuild@v2
-        if: startsWith(runner.os,'Windows')
-
-      - name: Install WiX (windows)
-        run: dotnet tool install --global wix --version 5.0.2
-        if: startsWith(runner.os,'Windows')
-
-      - name: Add WiX Extensions ( 1 / 2 ) ( Windows )
-        if: startsWith(runner.os,'Windows')
-        run: wix extension add WixToolset.Util.wixext/5.0.2
-
-      - name: Add WiX Extensions ( 2 / 2 ) ( Windows )
-        if: startsWith(runner.os,'Windows')
-        run: wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
-
       - name: Install Dependencies - Windows/OpenCL
         if: startsWith(runner.os,'Windows')
         run: |
@@ -242,23 +227,13 @@ jobs:
           cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
+        if: ${{ false }}
         run: |
           npm --version
           npm install
 
-      - name: Download Bundler Files
-        shell: bash
-        run: |
-          mkdir -p "tari-win-bundler/executables"
-          ls -la ./tari-win-bundler
-          curl -v -L -o "tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
-
-      - name: Check downloaded content
-        shell: bash
-        run: |
-          ls -la ./tari-win-bundler/executables
-
       - name: Build Tauri Apps
+        if: ${{ false }}
         id: build
         uses: tauri-apps/tauri-action@v0
         env:
@@ -287,6 +262,10 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+      - name: Add msbuild to PATH (windows)
+        uses: microsoft/setup-msbuild@v2
+        if: startsWith(runner.os,'Windows')
+
       - name: Build WiX on Windows
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
@@ -297,6 +276,21 @@ jobs:
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
+          pwd
+          mkdir -p "src-tauri/target/release/bundle/msi"
+          cd "src-tauri/target/release/bundle/msi"
+          pwd
+          curl -v --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
+          cd ../../../../..
+          pwd
+          mkdir -p "tari-win-bundler/executables"
+          cd "tari-win-bundler/executables"
+          pwd
+          curl -v --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          cd ../..
+          pwd
+          ls -la "src-tauri/target/release/bundle/msi"
+          ls -la "tari-win-bundler/executables"
           if [[ "$GITHUB_REF" == refs/heads/release* ]]; then
             # release
             TARI_UNIVERSE_INSTALLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US.msi"
@@ -314,6 +308,10 @@ jobs:
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
+
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add WixToolset.Util.wixext/5.0.2
+          wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
