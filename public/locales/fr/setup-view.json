@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "Nous n\"avons pas pu mettre à jour automatiquement Tari Universe vers {{version}} pendant que la machine était verrouillée ou en mode veille.",
   "dont-worry": "Ne t'inquiète pas, la prochaine fois, ça ne prendra pas autant de temps.",
   "installing-latest-version": "Installation de la version {{version}} de Tari Universe",
   "new-tari-version-available": "Une nouvelle version du Tari Universe est disponible !",
@@ -7,25 +8,27 @@
   "this-might-take-a-few-minutes": "Cela peut prendre quelques minutes",
   "title": {
     "application-started": "Applications démarrées",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Vérification de la dernière version de xtrgpuminer",
     "checking-latest-version-mmproxy": "Vérification de la dernière version de mmproxy",
     "checking-latest-version-node": "Vérification de la dernière version de node",
     "checking-latest-version-sha-p2pool": "Vérification de la dernière version de sha-p2pool",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "Vérification de la dernière version de wallet",
     "checking-latest-version-xmrig": "Vérification de la dernière version de xmrig",
     "download-completed": "Téléchargement terminé",
     "downloading": "Téléchargement",
+    "minotari-node-restarting": "Les données du nœud Minotari étaient corrompues, nettoyage des anciennes données",
     "preparing-for-initial-sync": "Connexion aux pairs du réseau {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Démarrage du proxy de minage combiné",
     "starting-p2pool": "Démarrage de P2Pool",
     "starting-up": "En cours de démarrage",
     "waiting-for-block-sync": "En attente de synchronisation des blocs. Blocs {{local_height}}/{{tip_height}} synchronisés",
     "waiting-for-header-sync": "En attente de synchronisation des en-têtes. En-têtes {{local_height}}/{{tip_height}} synchronisés",
+    "waiting-for-minotari-node-to-start": "En attente du démarrage du nœud Minotari",
     "waiting-for-node": "En attente de la synchronisation du nœud",
     "waiting-for-wallet": "En attente du porte-monnaie",
-    "waiting-for-minotari-node-to-start": "En attente du démarrage du nœud Minotari",
-    "wallet-started": "Portefeuille démarré",
-    "minotari-node-restarting": "Les données du nœud Minotari étaient corrompues, nettoyage des anciennes données"
+    "wallet-started": "Portefeuille démarré"
   },
   "would-you-like-to-install": "Souhaitez-vous installer Tari Universe {{version}} maintenant ?",
   "yes": "Oui"

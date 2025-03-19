@@ -65,6 +65,12 @@ pub(crate) trait ProcessAdapter {
 
     fn pid_file_name(&self) -> &str;
 
+    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
+        std::path::Path::new(&base_folder)
+            .join(self.pid_file_name())
+            .exists()
+    }
+
     async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {

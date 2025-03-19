@@ -189,6 +189,10 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         }
     }
 
+    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        self.adapter.pid_file_exisits(base_path)
+    }
+
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
             if task.is_finished() {

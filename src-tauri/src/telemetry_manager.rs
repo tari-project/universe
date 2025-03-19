@@ -29,6 +29,7 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
+use crate::utils::network_status::NetworkStatus;
 use crate::TasksTracker;
 use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
@@ -187,6 +188,9 @@ pub struct TelemetryData {
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
     pub current_os: String,
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
 }
 
 pub struct TelemetryManager {
@@ -476,6 +480,11 @@ async fn get_telemetry_data(
         "total_memory".to_string(),
         system.total_memory().to_string(),
     );
+    let memory_utilization = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
+    extra_data.insert(
+        "memory_utilization".to_string(),
+        memory_utilization.round().to_string(),
+    );
     extra_data.insert("free_memory".to_string(), system.free_memory().to_string());
     if let Some(core_count) = system.physical_core_count() {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
@@ -523,6 +532,11 @@ async fn get_telemetry_data(
         "wallet",
     );
 
+    let (download_speed, upload_speed, latency) = NetworkStatus::current()
+        .get_network_speeds_receiver()
+        .borrow()
+        .clone();
+
     Ok(TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
@@ -544,6 +558,9 @@ async fn get_telemetry_data(
         gpu_tribe_id: None,
         extra_data,
         current_os: std::env::consts::OS.to_string(),
+        download_speed,
+        upload_speed,
+        latency,
     })
 }
 

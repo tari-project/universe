@@ -12,7 +12,6 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
-import { AirdropTokens } from '@app/store/useAirdropStore';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -20,6 +19,7 @@ declare module '@tauri-apps/api/core' {
         payload: { shouldAlwaysUseSystemLanguage: boolean }
     ): Promise<void>;
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
+    function invoke(param: 'set_selected_engine', payload: { selectedEngine: string }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
     function invoke(
         param: 'download_and_start_installer',
@@ -54,10 +54,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
     function invoke(param: 'get_used_p2pool_stats_server_port'): Promise<number>;
     function invoke(param: 'set_gpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
-    function invoke(
-        param: 'set_excluded_gpu_devices',
-        payload: { excludedGpuDevice: number | undefined }
-    ): Promise<void>;
     function invoke(param: 'set_cpu_mining_enabled', payload: { enabled: boolean }): Promise<void>;
     function invoke(param: 'exit_application'): Promise<string>;
     function invoke(param: 'restart_application', payload: { shouldStopMiners: boolean }): Promise<string>;
@@ -77,10 +73,14 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'check_for_updates'): Promise<string | undefined>;
     function invoke(
         param: 'set_airdrop_tokens',
-        airdropTokens: Pick<AirdropTokens, 'refreshToken' | 'token'>
+        airdropTokens: { token: string; refresh_token: string }
     ): Promise<void>;
     function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
+    function invoke(
+        param: 'toggle_device_exclusion',
+        payload: { device_index: number; excluded: boolean }
+    ): Promise<void>;
     function invoke(
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }

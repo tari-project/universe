@@ -1,3 +1,54 @@
+# TARI UNIVERSE v0.9.817: The Path Less Traveled
+
+_March 12, 2025_
+
+## 🚀 Hey Tari Fam,
+
+The Testnet has been reset! A quick reminder:
+1️⃣ You may still see a fork message for 30 minutes—just ignore it.
+2️⃣ Your tXTM balance has been reset to 0.
+
+---
+
+# 🌑 TARI UNIVERSE v0.9.813: The Tide’s Forge Episode 2
+
+_March 6, 2025_
+
+## Hey Tari Fam,
+
+The journey to mainnet continues with another round of performance enhancements and fixes. This release brings several GPU-related improvements, more responsive mining behavior, and refinements to system settings. Thank you all for being Tari OGs —Tari exists because of you! 💜🐢
+
+## WHAT'S NEW  
+
+🎨 Visual Mode Update - Full canvas mode has been removed.
+⏳ Faster Miner Recovery - Lowered XMRig retry time from 5s to 1s for quicker reconnections.
+🎮 GPU Stability Enhancements - Refactored GPU-related deadlock handling.
+🔄 GPU Device Fix - Resolved issues with toggling GPU mining on/off.
+🔔 Windows UAC Update - The UAC dialog (security prompt when updating)  now displays a clearer Tari Universe name.
+♻️ Better App Restarts - Improved reliability of restarts across all scenarios.
+⚙️ Settings Reset Dialog - Enhanced confirmation dialog before resetting settings.
+🌗 Dark Mode Behavior - Now defaults to the system setting.
+
+---
+
+# 🌑 TARI UNIVERSE v0.9.811: The Tide’s Forge Episode 1
+
+_March 3, 2025_
+
+## Hi Everyone,  
+With mainnet coming in April, Tari contributors continue to work on bugs and improve the overall Tari Universe experience. Introducing the Tide’s Forge series of TU releases. These releases are focused on continued optimization, reliability, and performance improvements across the board. Thank you for your feedback and being a part of the Tari community. Tari exists for one reason: you 💜🐢
+
+## WHAT'S NEW  
+🔵 Unread pill count fix - No more incorrect badge counts!  
+💰 mmproxy fix - We believe this resolves XTM estimated earnings issues.  
+🔄 Updater improvements - Ensures the *"new version"* dialog appears for units that don’t auto-update. 
+📱 Aurora QR code sync fix - Seamless syncing to phone on macOS.  
+♻️ Restart reliability - Fixes cases where the app wouldn’t restart properly after an auto-update.  
+🐞 More deadlock fixes - Addresses sync freezes on startup.  
+🤝 p2pool fix - Resolves issues with absent peers.  
+
+---
+
 # 🌑 TARI UNIVERSE v0.9.809: The Dawn of Dork Mode  
 
 _February 26, 2025_
@@ -9,9 +60,9 @@ The wait is over—**Dark (Dork!) Mode** is here! 🎉 Welcome our Prince and Pr
 
 ## 🔜 Coming Soon
 🔵 Wallet unread wins count fix
-🔄 Fixing restart issues – Sometimes, the app doesn’t restart properly after an auto-update
-🐞 More deadlock fixes – Addressing sync freezes on startup
-💻 Laptop sleep mode recovery – UX handling here needs review
+🔄 Fixing restart issues - Sometimes, the app doesn’t restart properly after an auto-update
+🐞 More deadlock fixes - Addressing sync freezes on startup
+💻 Laptop sleep mode recovery - UX handling here needs review
 🚀 A surprise…
 
 ---

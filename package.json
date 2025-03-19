@@ -1,10 +1,10 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.809",
+    "version": "0.9.822",
     "type": "module",
     "scripts": {
-        "dev": "vite dev --mode development",
+        "dev": "vite dev",
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
@@ -17,6 +17,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.4",
         "@lottiefiles/dotlottie-react": "^0.13.0",
+        "@tari-project/tari-tower": "^0.0.16",
         "@tauri-apps/api": "^2.2.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.0",
         "@tauri-apps/plugin-os": "^2.2.0",
@@ -60,6 +61,7 @@
         "eslint-plugin-i18next": "^6.1.1",
         "eslint-plugin-prettier": "^5.2.1",
         "eslint-plugin-react": "^7.37.3",
+        "eslint-plugin-react-compiler": "^19.0.0-beta-30d8a17-20250209",
         "eslint-plugin-react-hooks": "^5.1.0",
         "knip": "^5.44.0",
         "prettier": "^3.5.2",

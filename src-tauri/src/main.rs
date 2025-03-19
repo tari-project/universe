@@ -28,7 +28,7 @@ use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
-use log::{debug, error, info, warn};
+use log::{error, info, warn};
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
@@ -42,13 +42,16 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use utils::locks_utils::{try_read_with_retry, try_write_with_retry};
+use utils::app_flow_utils::FrontendReadyChannel;
+use utils::locks_utils::try_write_with_retry;
+use utils::network_status::NetworkStatus;
+use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
 use std::fs;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::{Duration, SystemTime};
@@ -89,6 +92,7 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
+use utils::shutdown_utils::resume_all_processes;
 
 mod airdrop;
 mod app_config;
@@ -109,6 +113,7 @@ mod feedback;
 mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
+mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -142,6 +147,7 @@ mod xmrig;
 mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
+const RESTART_EXIT_CODE: i32 = i32::MAX;
 #[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 #[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
@@ -178,19 +184,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
             .events_manager
             .handle_internal_wallet_loaded_or_created(&move_app)
             .await;
-        let gpu_devices = match HardwareStatusMonitor::current().get_gpu_devices().await {
-            Ok(devices) => devices,
-            Err(e) => {
-                let err_msg = format!("Failed to get GPU devices: {:?}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                vec![]
-            }
-        };
-        let _ = &app_state
-            .events_manager
-            .handle_gpu_devices_update(&move_app, gpu_devices)
-            .await;
     });
 
     let move_app = app.clone();
@@ -224,28 +217,8 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
 
-                    let gpu_miner = match try_read_with_retry(&app_state.gpu_miner, 6).await {
-                        Ok(gm) => gm,
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire gpu_miner read lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
-                            continue;
-                        }
-                    };
-
-                    if let Ok(gpu_status) = gpu_miner
-                        .status(node_status.sha_network_hashrate, node_status.block_reward, gpu_status.clone())
-                        .await
-                    {
-                        let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
-                    } else {
-                        let err_msg = "Error getting gpu miner status";
-                        error!(target: LOG_TARGET, "{}", err_msg);
-                        sentry::capture_message(err_msg, sentry::Level::Error);
-                    };
+                    let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
                 },
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
@@ -314,6 +287,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+    FrontendReadyChannel::current().wait_for_ready().await?;
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -339,6 +313,11 @@ async fn setup_inner(
         )?;
         return Ok(());
     }
+
+    state
+        .updates_manager
+        .init_periodic_updates(app.clone())
+        .await?;
 
     let data_dir = app
         .path()
@@ -376,18 +355,22 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
+
     let use_tor = app_config.use_tor();
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
+
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
-    AutoLauncher::current()
+    let _unused = AutoLauncher::current()
         .initialize_auto_launcher(is_auto_launcher_enabled)
-        .await?;
+        .await
+        .inspect_err(|e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e));
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));
+    progress.set_max(1).await;
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -425,17 +408,35 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    telemetry_service
+        .send(
+            "benchmarking-network".to_string(),
+            json!({
+                "service": "speedtest",
+                "percentage": 0,
+            }),
+        )
+        .await?;
+    progress.set_max(5).await;
+    progress
+        .update("benchmarking-network".to_string(), None, 0)
+        .await;
+
+    NetworkStatus::current()
+        .run_speed_test_with_timeout(&app)
+        .await;
+
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service
             .send(
                 "checking-latest-version-tor".to_string(),
                 json!({
                     "service": "tor_manager",
-                    "percentage": 0,
+                    "percentage": 5,
                 }),
             )
             .await?;
-        progress.set_max(5).await;
+        progress.set_max(10).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
@@ -455,11 +456,11 @@ async fn setup_inner(
             "checking-latest-version-node".to_string(),
             json!({
                 "service": "node_manager",
-                "percentage": 5,
+                "percentage": 10,
             }),
         )
         .await;
-    progress.set_max(10).await;
+    progress.set_max(15).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
         .await;
@@ -478,11 +479,11 @@ async fn setup_inner(
             "checking-latest-version-mmproxy".to_string(),
             json!({
                 "service": "mmproxy",
-                "percentage": 10,
+                "percentage": 15,
             }),
         )
         .await;
-    progress.set_max(15).await;
+    progress.set_max(20).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
         .await;
@@ -501,11 +502,11 @@ async fn setup_inner(
             "checking-latest-version-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage": 15,
+                "percentage": 20,
             }),
         )
         .await;
-    progress.set_max(20).await;
+    progress.set_max(25).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
         .await;
@@ -524,11 +525,11 @@ async fn setup_inner(
             "checking-latest-version-gpuminer".to_string(),
             json!({
                 "service": "gpuminer",
-                "percentage":20,
+                "percentage":25,
             }),
         )
         .await;
-    progress.set_max(25).await;
+    progress.set_max(30).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
         .await;
@@ -547,11 +548,11 @@ async fn setup_inner(
             "checking-latest-version-xmrig".to_string(),
             json!({
                 "service": "xmrig",
-                "percentage":25,
+                "percentage":30,
             }),
         )
         .await;
-    progress.set_max(30).await;
+    progress.set_max(35).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
@@ -570,11 +571,11 @@ async fn setup_inner(
             "checking-latest-version-sha-p2pool".to_string(),
             json!({
                 "service": "sha_p2pool",
-                "percentage":30,
+                "percentage":35,
             }),
         )
         .await;
-    progress.set_max(35).await;
+    progress.set_max(40).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -604,7 +605,11 @@ async fn setup_inner(
         .gpu_miner
         .write()
         .await
-        .detect(config_dir.clone())
+        .detect(
+            app.clone(),
+            config_dir.clone(),
+            state.config.read().await.gpu_engine(),
+        )
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
@@ -628,11 +633,11 @@ async fn setup_inner(
             "waiting-for-minotari-node-to-start".to_string(),
             json!({
                 "service": "minotari_node",
-                "percentage":35,
+                "percentage":40,
             }),
         )
         .await;
-    progress.set_max(37).await;
+    progress.set_max(45).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -660,11 +665,11 @@ async fn setup_inner(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
                                     "service": "minotari_node",
-                                    "percentage":37,
+                                    "percentage":45,
                                 }),
                             )
                             .await;
-                        progress.set_max(38).await;
+                        progress.set_max(50).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -685,11 +690,11 @@ async fn setup_inner(
             "waiting-for-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":35,
+                "percentage":50,
             }),
         )
         .await;
-    progress.set_max(40).await;
+    progress.set_max(55).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
@@ -708,11 +713,11 @@ async fn setup_inner(
             "wallet-started".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":40,
+                "percentage":55,
             }),
         )
         .await;
-    progress.set_max(45).await;
+    progress.set_max(60).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
@@ -722,7 +727,7 @@ async fn setup_inner(
             "preparing-for-initial-sync".to_string(),
             json!({
                 "service": "initial_sync",
-                "percentage":45,
+                "percentage":60,
             }),
         )
         .await;
@@ -900,6 +905,31 @@ async fn setup_inner(
         }
     });
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+        let mut last_state = *receiver.borrow();
+        loop {
+            if receiver.changed().await.is_ok() {
+                let current_state = *receiver.borrow();
+
+                if last_state && !current_state {
+                    info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                    let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                }
+
+                if !last_state && current_state {
+                    info!(target: LOG_TARGET, "System entered sleep mode");
+                    TasksTracker::stop_all_processes(app_handle_clone.clone()).await;
+                }
+
+                last_state = current_state;
+            } else {
+                error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+            }
+        }
+    });
+
     let _unused = ReleaseNotes::current()
         .handle_release_notes_event_emit(state.clone(), app)
         .await;
@@ -939,12 +969,6 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
-}
-
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-    args: Vec<String>,
-    cwd: String,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -988,6 +1012,7 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
     let wallet_manager = WalletManager::new(
@@ -1012,7 +1037,6 @@ fn main() {
     let app_in_memory_config =
         Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
 
-    let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
             &mut stats_collector,
@@ -1021,8 +1045,14 @@ fn main() {
         )
         .into(),
     );
-    let gpu_miner: Arc<RwLock<GpuMiner>> =
-        Arc::new(GpuMiner::new(gpu_status_tx, &mut stats_collector).into());
+    let gpu_miner: Arc<RwLock<GpuMiner>> = Arc::new(
+        GpuMiner::new(
+            gpu_status_tx,
+            base_node_watch_rx.clone(),
+            &mut stats_collector,
+        )
+        .into(),
+    );
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
@@ -1085,10 +1115,15 @@ fn main() {
         .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
             println!("{}, {argv:?}, {cwd}", app.package_info().name);
 
-            app.emit("single-instance", Payload { args: argv, cwd })
-                .unwrap_or_else(
-                    |e| error!(target: LOG_TARGET, "Could not emit single-instance event: {:?}", e),
-                );
+            match app.get_webview_window("main") {
+                Some(w) => {
+                    let _unused = w.show().map_err(|err| error!(target: LOG_TARGET, "Couldn't show the main window {:?}", err));
+                    let _unused = w.set_focus();
+                },
+                None => {
+                    error!(target: LOG_TARGET, "Could not find main window");
+                }
+            };
         }))
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_cli::init())
@@ -1295,7 +1330,6 @@ fn main() {
             commands::set_auto_update,
             commands::set_cpu_mining_enabled,
             commands::set_display_mode,
-            commands::set_excluded_gpu_devices,
             commands::set_gpu_mining_enabled,
             commands::set_mine_on_app_start,
             commands::set_mode,
@@ -1318,10 +1352,12 @@ fn main() {
             commands::set_pre_release,
             commands::check_for_updates,
             commands::try_update,
+            commands::toggle_device_exclusion,
             commands::get_network,
             commands::sign_ws_data,
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
+            commands::set_selected_engine,
             commands::frontend_ready
         ])
         .build(tauri::generate_context!())
@@ -1335,7 +1371,19 @@ fn main() {
         "Starting Tari Universe version: {}",
         app.package_info().version
     );
-    app.run(move |app_handle, event| match event {
+
+    let power_monitor = SystemStatus::current().start_listener();
+
+    let is_restart_requested = Arc::new(AtomicBool::new(false));
+    let is_restart_requested_clone = is_restart_requested.clone();
+
+    app.run(move |app_handle, event| {
+        // We can only receive system events from the event loop so this needs to be here
+        let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
+            error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
+        });
+
+        match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
@@ -1346,21 +1394,31 @@ fn main() {
                     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
-        tauri::RunEvent::ExitRequested { api: _, .. } => {
-            info!(target: LOG_TARGET, "App shutdown request caught");
+        tauri::RunEvent::ExitRequested { api: _, code, .. } => {
+            info!(target: LOG_TARGET, "App shutdown request caught with code: {:#?}", code);
+            if let Some(exit_code) = code {
+                if exit_code == RESTART_EXIT_CODE {
+                    // RunEvent does not hold the exit code so we store it separately
+                    is_restart_requested.store(true, Ordering::SeqCst);
+                }
+            }
             block_on(TasksTracker::stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
             block_on(TasksTracker::stop_all_processes(app_handle.clone()));
+            if is_restart_requested_clone.load(Ordering::SeqCst) {
+                app_handle.cleanup_before_exit();
+                let env = app_handle.env();
+                tauri::process::restart(&env); // this will call exit(0) so we'll not return to the event loop
+            }
             info!(target: LOG_TARGET, "Tari Universe v{} shut down successfully", app_handle.package_info().version);
         }
         RunEvent::MainEventsCleared => {
             // no need to handle
         }
-        _ => {
-            debug!(target: LOG_TARGET, "Unhandled event: {:?}", event);
-        }
+        _ => {}
+    };
     });
 }

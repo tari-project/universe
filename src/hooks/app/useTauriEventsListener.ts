@@ -5,12 +5,13 @@ import {
     BaseNodeStatus,
     CpuMinerStatus,
     GpuMinerStatus,
-    PublicDeviceParameters,
+    NetworkStatus,
     TransactionInfo,
     WalletBalance,
 } from '@app/types/app-status';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
 
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
@@ -31,10 +32,6 @@ type BackendStateUpdateEvent =
           payload: WalletBalance;
       }
     | {
-          event_type: 'GpuDevicesUpdate';
-          payload: PublicDeviceParameters[];
-      }
-    | {
           event_type: 'CpuMiningUpdate';
           payload: CpuMinerStatus;
       }
@@ -53,12 +50,15 @@ type BackendStateUpdateEvent =
               coinbase_transaction?: TransactionInfo;
               balance: WalletBalance;
           };
+      }
+    | {
+          event_type: 'NetworkStatus';
+          payload: NetworkStatus;
       };
 
 const useTauriEventsListener = () => {
     const setWalletAddress = useWalletStore((s) => s.setWalletAddress);
     const setWalletBalance = useWalletStore((s) => s.setWalletBalance);
-    const setGpuDevices = useMiningMetricsStore((s) => s.setGpuDevices);
     const setGpuMiningStatus = useMiningMetricsStore((s) => s.setGpuMiningStatus);
     const setCpuMiningStatus = useMiningMetricsStore((s) => s.setCpuMiningStatus);
     const handleConnectedPeersUpdate = useMiningMetricsStore((s) => s.handleConnectedPeersUpdate);
@@ -76,9 +76,6 @@ const useTauriEventsListener = () => {
                 case 'BaseNodeUpdate':
                     handleBaseNodeStatusUpdate(event.payload);
                     break;
-                case 'GpuDevicesUpdate':
-                    setGpuDevices(event.payload);
-                    break;
                 case 'GpuMiningUpdate':
                     setGpuMiningStatus(event.payload);
                     break;
@@ -90,6 +87,9 @@ const useTauriEventsListener = () => {
                     break;
                 case 'NewBlockHeight':
                     handleNewBlock(event.payload);
+                    break;
+                case `NetworkStatus`:
+                    setNetworkStatus(event.payload);
                     break;
                 default:
                     console.warn('Unknown event', JSON.stringify(event));
@@ -104,7 +104,6 @@ const useTauriEventsListener = () => {
         handleBaseNodeStatusUpdate,
         handleConnectedPeersUpdate,
         setCpuMiningStatus,
-        setGpuDevices,
         setGpuMiningStatus,
         setWalletAddress,
         setWalletBalance,
