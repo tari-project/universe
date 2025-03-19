@@ -298,6 +298,7 @@ jobs:
           # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
           #curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           curl -s -OL "https://github.com/tari-project/universe/raw/26edbecef3d8a33faf851f1b588e4952cf13e1c8/tari-win-bundler/executables/VC_redist.x64.exe"
+          curl -s -OL "https://github.com/tari-project/universe/raw/26edbecef3d8a33faf851f1b588e4952cf13e1c8/tari-win-bundler/executables/VC_redist.x86.exe"
           cd ../..
           pwd
           ls -la "src-tauri/target/release/bundle/msi"
