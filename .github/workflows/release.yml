@@ -9,7 +9,6 @@ name: Release
       - 'release'
       - 'beta'
       - 'build-*'
-      - 'feat/include-vc-in-installer'
   schedule:
     - cron: '05 00 * * *'
   workflow_dispatch:
@@ -35,20 +34,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles deb,appimage,updater'
-          #   extra: '-x64'
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles deb,appimage,updater'
-          #   best_effort: true
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles rpm'
-          #   extra: '-x64-rpm'
-          #   best_effort: true
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles rpm'
-          #   extra: '-rpm'
-          #   best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles deb,appimage,updater'
+            extra: '-x64'
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles deb,appimage,updater'
+            best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles rpm'
+            extra: '-x64-rpm'
+            best_effort: true
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles rpm'
+            extra: '-rpm'
+            best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
           - platform: 'macos-latest'
@@ -201,14 +200,12 @@ jobs:
           rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
       - name: Install Dependencies - Windows
-        # if: ${{ false }}
         if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
       - name: Install Dependencies - Windows/OpenCL
-        # if: ${{ false }}
         if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe --triplet=x64-windows install opencl
@@ -221,7 +218,6 @@ jobs:
           echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
       - name: Azure Code-signing Setup - Windows Only
-        # if: ${{ false }}
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         shell: bash
         env:
@@ -235,13 +231,11 @@ jobs:
           cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
-        # if: ${{ false }}
         run: |
           npm --version
           npm install
 
       - name: Build Tauri Apps
-        # if: ${{ false }}
         id: build
         uses: tauri-apps/tauri-action@v0
         env:
@@ -278,7 +272,6 @@ jobs:
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-          # TARI_UNIVERSE_APP_VERSION: '0.9.823'
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
