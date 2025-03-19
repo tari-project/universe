@@ -277,6 +277,7 @@ jobs:
         run: |
           mkdir -p "tari-win-bundler/executables"
           cd "tari-win-bundler/executables"
+          # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
           curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cd ../..
           ls -la "src-tauri/target/release/bundle/msi"
@@ -302,8 +303,6 @@ jobs:
           wix extension add WixToolset.Util.wixext/5.0.2
           wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
           wix extension list
-          # ls -la tari-win-bundler
-          printenv | grep -i TARI_UNIVERSE || true
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
             -ext WixToolset.BootstrapperApplications.wixext \
