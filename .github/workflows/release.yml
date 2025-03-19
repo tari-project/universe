@@ -218,7 +218,8 @@ jobs:
           echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
       - name: Azure Code-signing Setup - Windows Only
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        if: ${{ false }}
+        # if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -275,9 +276,9 @@ jobs:
         env:
           #TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
           TARI_UNIVERSE_APP_VERSION: '0.9.823'
-          #TARI_UNIVERSE_INSTALLER_NAME: ''
-          #TARI_UNIVERSE_BUNDLER_NAME: ''
-          #TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
+          TARI_UNIVERSE_INSTALLER_NAME: ''
+          TARI_UNIVERSE_BUNDLER_NAME: ''
+          TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
@@ -285,13 +286,13 @@ jobs:
           mkdir -p "src-tauri/target/release/bundle/msi"
           cd "src-tauri/target/release/bundle/msi"
           pwd
-          curl -v --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
+          curl -s --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
           cd ../../../../..
           pwd
           mkdir -p "tari-win-bundler/executables"
           cd "tari-win-bundler/executables"
           pwd
-          curl -v --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cd ../..
           pwd
           ls -la "src-tauri/target/release/bundle/msi"
