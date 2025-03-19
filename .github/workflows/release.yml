@@ -275,6 +275,12 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+      - name: Download Bundler Files
+        run: |
+          curl -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
+          ls -la ./tari-win-bundler/executables
+
       - name: Build WiX on Windows
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
@@ -302,9 +308,6 @@ jobs:
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
-          printenv
-          mkdir -p "tari-win-bundler/executables"
-          curl -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           wix extension list
           wix build tari-win-bundler/Bundle.wxs \
             -ext WixToolset.Util.wixext \
