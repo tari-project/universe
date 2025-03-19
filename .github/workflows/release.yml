@@ -317,13 +317,6 @@ jobs:
           ls -la tari-win-bundler/executables
           mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
 
-      - name: BETA Builds - upload wix installer
-        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: tari-universe-beta_unsigned.exe
-          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe
-
       - name: Sign New Windows Installer
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         shell: bash
