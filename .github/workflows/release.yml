@@ -392,7 +392,6 @@ jobs:
         continue-on-error: true
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          TEST_ENV: 'Tari Universe (Beta) - 0312_0.9.817_x64_en-US.msi'
         shell: powershell
         run: |
           # Get the Program Files (x86) directory dynamically
