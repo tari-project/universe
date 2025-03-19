@@ -27,7 +27,7 @@ use crate::{
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
     progress_tracker::ProgressTracker,
-    StartConfig, UniverseAppState, APPLICATION_FOLDER_ID,
+    StartConfig, UniverseAppState,
 };
 use anyhow::anyhow;
 use log::{error, info, warn};
