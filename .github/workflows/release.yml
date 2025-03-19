@@ -248,7 +248,7 @@ jobs:
 
       - name: Download Bundler Files
         run: |
-          curl -o -v "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          curl -v -o "./tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
           cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
           ls -la ./tari-win-bundler/executables
 
