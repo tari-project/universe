@@ -287,6 +287,7 @@ jobs:
           cd "src-tauri/target/release/bundle/msi"
           pwd
           curl -s --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
+          cp -v Tari.Universe_0.9.823_x64_en-US.msi "Tari Universe (Beta) - 0319_0.9.823_x64_en-US.msi"
           cd ../../../../..
           pwd
           mkdir -p "tari-win-bundler/executables"
