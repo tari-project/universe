@@ -247,6 +247,7 @@ jobs:
           npm install
 
       - name: Download Bundler Files
+        shell: bash
         run: |
           ls -la ./tari-win-bundler
           curl -v -o "tari-win-bundler/executables/vc_redist.x64.exe" "https://aka.ms/vs/17/release/vc_redist.x64.exe"
@@ -255,6 +256,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Check downloaded content
+        shell: bash
         run: |
           ls -la ./tari-win-bundler/executables
           cp -v ./tari-win-bundler/executables/vc_redist.x64.exe ./tari-win-bundler/executables/VC_redist.x64.exe
