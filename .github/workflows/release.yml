@@ -1,6 +1,7 @@
+---
 name: Release
 
-on:
+'on':
   push:
     paths-ignore:
       - '**/*.md'
@@ -50,8 +51,8 @@ jobs:
           #   best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
-          # - platform: 'macos-latest'
-          #   args: '--target universal-apple-darwin'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -143,21 +144,21 @@ jobs:
             --output-format=json -i tauri.conf.json
 
       - name: Setup Node
-        if: ${{ false }}
+        # if: ${{ false }}
         uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
 
       - name: Rust Setup
-        if: ${{ false }}
+        # if: ${{ false }}
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Cargo files and outputs
-        if: ${{ false }}
-        # if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
+        # if: ${{ false }}
+        if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
@@ -200,15 +201,15 @@ jobs:
           rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
       - name: Install Dependencies - Windows
-        if: ${{ false }}
-        # if: startsWith(runner.os,'Windows')
+        # if: ${{ false }}
+        if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
       - name: Install Dependencies - Windows/OpenCL
-        if: ${{ false }}
-        # if: startsWith(runner.os,'Windows')
+        # if: ${{ false }}
+        if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe --triplet=x64-windows install opencl
 
@@ -220,8 +221,8 @@ jobs:
           echo "LIB=C:\vcpkg\installed\x64-windows\lib" >> $GITHUB_ENV
 
       - name: Azure Code-signing Setup - Windows Only
-        if: ${{ false }}
-        # if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        # if: ${{ false }}
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
@@ -234,13 +235,13 @@ jobs:
           cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
-        if: ${{ false }}
+        # if: ${{ false }}
         run: |
           npm --version
           npm install
 
       - name: Build Tauri Apps
-        if: ${{ false }}
+        # if: ${{ false }}
         id: build
         uses: tauri-apps/tauri-action@v0
         env:
@@ -276,16 +277,16 @@ jobs:
       - name: Build WiX on Windows
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
-          #TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-          TARI_UNIVERSE_APP_VERSION: '0.9.823'
+          TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          # TARI_UNIVERSE_APP_VERSION: '0.9.823'
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
-          mkdir -p "src-tauri/target/release/bundle/msi"
-          cd "src-tauri/target/release/bundle/msi"
-          curl -s --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
-          cp -v Tari.Universe_0.9.823_x64_en-US.msi "Tari Universe (Beta) - 0319_0.9.823_x64_en-US.msi"
-          cd ../../../../..
+          # mkdir -p "src-tauri/target/release/bundle/msi"
+          # cd "src-tauri/target/release/bundle/msi"
+          # curl -s --location --remote-name "https://github.com/tari-project/universe/releases/download/v0.9.823/Tari.Universe_0.9.823_x64_en-US.msi"
+          # cp -v Tari.Universe_0.9.823_x64_en-US.msi "Tari Universe (Beta) - 0319_0.9.823_x64_en-US.msi"
+          # cd ../../../../..
           mkdir -p "tari-win-bundler/executables"
           cd "tari-win-bundler/executables"
           # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
