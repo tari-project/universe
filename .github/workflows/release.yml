@@ -148,12 +148,14 @@ jobs:
           cache: 'npm'
 
       - name: Rust Setup
+        if: ${{ false }}
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Cargo files and outputs
-        if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
+        if: ${{ false }}
+        # if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
@@ -196,13 +198,15 @@ jobs:
           rustup toolchain install stable-aarch64-apple-darwin --force-non-host
 
       - name: Install Dependencies - Windows
-        if: startsWith(runner.os,'Windows')
+        if: ${{ false }}
+        # if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe install sqlite3:x64-windows zlib:x64-windows
           choco upgrade protoc -y
 
       - name: Install Dependencies - Windows/OpenCL
-        if: startsWith(runner.os,'Windows')
+        if: ${{ false }}
+        # if: startsWith(runner.os,'Windows')
         run: |
           vcpkg.exe --triplet=x64-windows install opencl
 
@@ -269,10 +273,11 @@ jobs:
       - name: Build WiX on Windows
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
-          TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
-          TARI_UNIVERSE_INSTALLER_NAME: ''
-          TARI_UNIVERSE_BUNDLER_NAME: ''
-          TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
+          #TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          TARI_UNIVERSE_APP_VERSION: '0.9.823'
+          #TARI_UNIVERSE_INSTALLER_NAME: ''
+          #TARI_UNIVERSE_BUNDLER_NAME: ''
+          #TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME: ''
           WIX_LOGLEVEL: Verbose
         shell: bash
         run: |
