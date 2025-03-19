@@ -15,7 +15,7 @@
 		<util:RegistrySearch Id="REG_ARCH" Root="HKLM" Key="SYSTEM\CurrentControlSet\Control\Session Manager\Environment" Value="PROCESSOR_ARCHITECTURE" Result="value" Variable="ARCH_NAME" />
 
 		<!-- Visual C++ 2015-2022 Redistributable (x86) runtime minimum msi package version -->
-		<util:ProductSearch Id="VCRUNTIME_X86" Result="version" Variable="VCRUNTIME_X86_VER" UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A" Condition="VersionNT" />
+		<!-- <util:ProductSearch Id="VCRUNTIME_X86" Result="version" Variable="VCRUNTIME_X86_VER" UpgradeCode="65E5BD06-6392-3027-8C26-853107D3CF1A" Condition="VersionNT" /> -->
 
 		<!-- Visual C++ 2015-2022 Redistributable (x64) runtime minimum msi package version -->
 		<util:ProductSearch Id="VCRUNTIME_X64" Result="version" Variable="VCRUNTIME_X64_VER" UpgradeCode="36F68A90-239C-34DF-B58C-64B30153CE35" Condition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" After="REG_ARCH" />
@@ -28,10 +28,12 @@
 		
 		<Chain>
 			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33810 -->
+			<!-- 
 			<ExePackage Id="VC_REDIST_X86" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT AND (ARCH_NAME = &quot;x86&quot;)" DetectCondition="(VCRUNTIME_X86_VER &gt;= VCRUNTIME_VER) AND VersionNT" SourceFile="tari-win-bundler/executables/VC_redist.x86.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			 -->
 
 			<!-- Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816 -->
-			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile="tari-win-bundler/executables/VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile="tari-win-bundler/executables/VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
 
 			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816 -->
 			<!-- <ExePackage Id="VC_REDIST_ARM64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (Arm64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="(ARCH_NAME = &quot;ARM64&quot;)" DetectCondition="(VCRUNTIME_ARM64_VER &gt;= VCRUNTIME_VER) AND (ARCH_NAME = &quot;ARM64&quot;)" SourceFile=".\executables\VC_redist.arm64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" /> -->
