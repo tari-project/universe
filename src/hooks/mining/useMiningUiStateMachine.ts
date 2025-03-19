@@ -1,7 +1,8 @@
-import { useAppStateStore } from '@app/store/appStateStore';
-import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
+
+import { useAppStateStore } from '@app/store/appStateStore';
+import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
@@ -19,40 +20,20 @@ export const useUiMiningStateMachine = () => {
     const indexTrigger = animationStatus;
 
     useEffect(() => {
-        let isLatestEffect = true;
         if (!visualMode || visualModeToggleLoading) return;
         const notStarted = !animationStatus || animationStatus == 'not-started';
         if (isMining && notStarted && !isResuming) {
-            // Debounce animation state changes
-            const timer = setTimeout(() => {
-                if (isLatestEffect) {
-                    setAnimationState('start');
-                }
-            }, 300);
-            return () => {
-                clearTimeout(timer);
-                isLatestEffect = false;
-            };
+            setAnimationState('start');
         }
     }, [indexTrigger, isMining, isResuming, visualMode, visualModeToggleLoading]);
 
     useEffect(() => {
-        let isLatestEffect = true;
         if (!visualMode || visualModeToggleLoading) return;
         const notStopped = animationStatus !== 'not-started';
         const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
         const shouldStop = !isMining && notStopped && !preventStop;
         if (shouldStop) {
-            // Debounce animation state changes
-            const timer = setTimeout(() => {
-                if (isLatestEffect) {
-                    setAnimationState('stop');
-                }
-            }, 300);
-            return () => {
-                clearTimeout(timer);
-                isLatestEffect = false;
-            };
+            setAnimationState('stop');
         }
     }, [indexTrigger, setupComplete, isMiningInitiated, isMining, isChangingMode, visualMode, visualModeToggleLoading]);
 };
