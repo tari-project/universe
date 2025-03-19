@@ -9,7 +9,6 @@ export const useHandleWsGlobalEvent = () => {
                 useAirdropStore.setState({ latestXSpaceEvent: eventParsed.data });
                 break;
             default:
-                // eslint-disable-next-line no-console
                 console.warn('Unknown global event', eventParsed);
         }
     };

@@ -15,6 +15,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import XSpaceSvg from '@app/components/svgs/XSpaceSvg';
 import { open } from '@tauri-apps/plugin-shell';
 import { XSpaceEventType } from '@app/utils/XSpaceEventType';
+import { useTranslation } from 'react-i18next';
 
 const XSpaceEventBanner = () => {
     const latestXSpaceEvent = useAirdropStore((state) => state.latestXSpaceEvent);
@@ -24,6 +25,7 @@ const XSpaceEventBanner = () => {
     const [isLive, setIsLive] = useState(false);
     const titleRef = useRef<HTMLDivElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const { t } = useTranslation('common', { useSuspense: false });
 
     useEffect(() => {
         if (!latestXSpaceEvent) return;
@@ -48,9 +50,7 @@ const XSpaceEventBanner = () => {
 
     useEffect(() => {
         if (titleRef.current && containerRef.current) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const titleWidth = titleRef.current.scrollWidth;
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const containerWidth = containerRef.current.clientWidth;
             setIsTextTooLong(titleWidth > containerWidth);
             setTransitionPixelWidth(titleWidth / 2);
@@ -81,7 +81,7 @@ const XSpaceEventBanner = () => {
     const liveBadge = (
         <LiveBadgeWrapper>
             <LiveBadgePoint />
-            <LiveBadgeText>LIVE</LiveBadgeText>
+            <LiveBadgeText>{t('live').toUpperCase()}</LiveBadgeText>
         </LiveBadgeWrapper>
     );
 
