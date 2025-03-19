@@ -305,7 +305,7 @@ jobs:
             export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
           else
             # Beta / Other
-            export TARI_UNIVERSE_BUNDLER_NAME=  "Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
             export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}"
           fi
           export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
