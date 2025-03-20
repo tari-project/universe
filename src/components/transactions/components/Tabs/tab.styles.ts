@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -9,7 +9,6 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 export const TabsWrapper = styled.div`
     width: 100%;
     display: flex;
-    flex-grow: 1;
 `;
 export const Wrapper = styled.div`
     width: 100%;
@@ -18,7 +17,7 @@ export const Wrapper = styled.div`
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    gap: 10px;
+    gap: 15px;
 `;
 
 export const GUTTER = 20;
@@ -42,17 +41,20 @@ export const HeaderLabel = styled(Typography).attrs({
     font-weight: 500;
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
 `;
-export const TabHeader = styled.div`
+export const TabHeader = styled.div<{ $bordered?: boolean }>`
     display: flex;
     width: 100%;
     text-transform: capitalize;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
+    padding: 0;
 
-    @media (max-height: 680px) {
-        padding: 4px 0;
-    }
+    ${({ $bordered, theme }) =>
+        $bordered &&
+        css`
+            padding: 10px 0 18px 0;
+            border-bottom: 1px solid ${theme.colorsAlpha.greyscaleAlpha[10]};
+        `}
 `;
 export const BottomNavWrapper = styled.div`
     display: flex;
@@ -60,7 +62,6 @@ export const BottomNavWrapper = styled.div`
     align-items: center;
     width: 100%;
     gap: 10px;
-    margin: 10px 0 15px;
 `;
 
 export const NavButtonContent = styled.div`
@@ -72,7 +73,7 @@ export const NavButtonContent = styled.div`
 `;
 export const NavButton = styled(Button).attrs({
     variant: 'outlined',
-    size: 'small',
+    size: 'medium',
 })<{ $isActive?: boolean }>`
     line-height: 1.1;
     width: 100%;

@@ -20,7 +20,7 @@ export const SidebarWrapper = styled(m.div).attrs({
     border-radius: 20px;
     height: 100%;
     flex-shrink: 0;
-    padding: 10px;
+    padding: 15px 10px;
     position: relative;
 
     width: ${SB_WIDTH}px;

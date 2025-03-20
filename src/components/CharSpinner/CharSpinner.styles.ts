@@ -69,8 +69,8 @@ export const Character = styled(m.div)<Props>`
     ${({ $unit, $fontSize }) =>
         $unit &&
         css`
-            margin-top: 3px;
+            margin: 3px 0 0 2px;
             font-size: ${$fontSize}px;
-            letter-spacing: 1px;
+            letter-spacing: 0.02em;
         `}
 `;

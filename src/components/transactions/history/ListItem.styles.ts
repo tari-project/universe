@@ -5,13 +5,14 @@ import { convertHexToRGBA } from '@app/utils';
 
 export const ItemWrapper = styled(m.div)`
     display: flex;
+    align-items: center;
     width: 100%;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.07);
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    box-shadow: 0 2px 5px 0 ${({ theme }) => theme.palette.contrastAlpha};
+    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px 1px`};
 `;
 
 export const HoverWrapper = styled(m.div)`

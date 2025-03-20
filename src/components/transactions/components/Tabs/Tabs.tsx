@@ -36,7 +36,7 @@ export function Tabs({ tabItems }: TabsProps) {
     const showTabNav = currentIndex !== 0;
 
     const tabNav = showTabNav ? (
-        <TabHeader>
+        <TabHeader $bordered>
             <HeaderLabel>{`${t(tabItems[currentIndex].titleTransaltionKey)}  ${t('tari')}`}</HeaderLabel>
             <Button size="xs" variant="outlined" onClick={() => setCurrentIndex(0)}>
                 {t('common:back')}
@@ -54,26 +54,28 @@ export function Tabs({ tabItems }: TabsProps) {
         </TabHeader>
     );
 
-    const bottomNavMarkup = !showTabNav
-        ? tabItems.map(({ id, titleTransaltionKey }, i) => {
-              if (id === 'history') return null;
-              const isActive = currentIndex === i;
-              return (
-                  <NavButton
-                      key={`item:${i}-${id}`}
-                      onClick={() => setCurrentIndex(i)}
-                      $isActive={isActive}
-                      aria-selected={isActive}
-                      id={`tab-${id}`}
-                  >
-                      <NavButtonContent>
-                          {icons[id]}
-                          {t(titleTransaltionKey)}
-                      </NavButtonContent>
-                  </NavButton>
-              );
-          })
-        : null;
+    const bottomNavMarkup = !showTabNav ? (
+        <BottomNavWrapper>
+            {tabItems.map(({ id, titleTransaltionKey }, i) => {
+                if (id === 'history') return null;
+                const isActive = currentIndex === i;
+                return (
+                    <NavButton
+                        key={`item:${i}-${id}`}
+                        onClick={() => setCurrentIndex(i)}
+                        $isActive={isActive}
+                        aria-selected={isActive}
+                        id={`tab-${id}`}
+                    >
+                        <NavButtonContent>
+                            {icons[id]}
+                            {t(titleTransaltionKey)}
+                        </NavButtonContent>
+                    </NavButton>
+                );
+            })}
+        </BottomNavWrapper>
+    ) : null;
 
     return (
         <Wrapper>
@@ -81,7 +83,7 @@ export function Tabs({ tabItems }: TabsProps) {
             <TabsWrapper>
                 <TabContent items={tabItems} currentIndex={currentIndex} />
             </TabsWrapper>
-            <BottomNavWrapper>{bottomNavMarkup}</BottomNavWrapper>
+            {bottomNavMarkup}
         </Wrapper>
     );
 }
