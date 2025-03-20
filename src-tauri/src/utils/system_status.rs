@@ -59,20 +59,12 @@ impl SystemStatus {
         if let Ok(event) = power_monitor.event_receiver().try_recv() {
             info!(target: LOG_TARGET, "Power event: {:?}", event);
             match event {
-                PowerState::ScreenLocked => {
-                    info!(target: LOG_TARGET, "Screen locked");
-                    self.sleep_mode_watcher_sender.send(true)?;
-                }
                 PowerState::Suspend => {
                     info!(target: LOG_TARGET, "Suspend");
                     self.sleep_mode_watcher_sender.send(true)?;
                 }
                 PowerState::Resume => {
                     info!(target: LOG_TARGET, "Resume");
-                    self.sleep_mode_watcher_sender.send(false)?;
-                }
-                PowerState::ScreenUnlocked => {
-                    info!(target: LOG_TARGET, "Screen unlocked");
                     self.sleep_mode_watcher_sender.send(false)?;
                 }
                 _ => {
