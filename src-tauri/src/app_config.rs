@@ -239,48 +239,48 @@ pub struct GpuThreads {
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct AppConfig {
-    config_version: u32,
-    config_file: Option<PathBuf>,
-    created_at: Option<DateTime<Utc>>,
-    mode: MiningMode,
-    display_mode: DisplayMode,
-    mine_on_app_start: bool,
-    p2pool_enabled: bool,
-    last_binaries_update_timestamp: SystemTime,
-    allow_telemetry: bool,
-    anon_id: String,
-    monero_address: String,
-    monero_address_is_generated: bool,
-    gpu_mining_enabled: bool,
-    cpu_mining_enabled: bool,
-    has_system_language_been_proposed: bool,
-    should_always_use_system_language: bool,
-    should_auto_launch: bool,
-    application_language: String,
-    paper_wallet_enabled: bool,
-    use_tor: bool,
-    eco_mode_cpu_threads: Option<u32>,
-    ludicrous_mode_cpu_threads: Option<u32>,
-    eco_mode_cpu_options: Vec<String>,
-    ludicrous_mode_cpu_options: Vec<String>,
-    custom_mode_cpu_options: Vec<String>,
-    mmproxy_use_monero_fail: bool,
-    mmproxy_monero_nodes: Vec<String>,
-    custom_max_cpu_usage: Option<u32>,
-    custom_max_gpu_usage: Vec<GpuThreads>,
-    auto_update: bool,
-    keyring_accessed: bool,
-    custom_power_levels_enabled: bool,
-    sharing_enabled: bool,
-    visual_mode: bool,
-    window_settings: Option<WindowSettings>,
-    show_experimental_settings: bool,
-    p2pool_stats_server_port: Option<u16>,
-    pre_release: bool,
-    last_changelog_version: String,
-    airdrop_tokens: Option<AirdropTokens>,
-    gpu_engine: String,
+pub struct AppConfig {
+    config_version: u32,                        // PER CONFIG
+    config_file: Option<PathBuf>,               // REMOVE
+    created_at: Option<DateTime<Utc>>,          // PER CONFIG
+    mode: MiningMode,                           // Mining
+    display_mode: DisplayMode,                  // UI
+    mine_on_app_start: bool,                    // UI
+    p2pool_enabled: bool,                       // Core
+    last_binaries_update_timestamp: SystemTime, // Core
+    allow_telemetry: bool,                      // CORE
+    anon_id: String,                            // CORE
+    monero_address: String,                     // Wallet
+    monero_address_is_generated: bool,          // Wallet
+    gpu_mining_enabled: bool,                   // UI
+    cpu_mining_enabled: bool,                   // UI
+    has_system_language_been_proposed: bool,    // UI
+    should_always_use_system_language: bool,    // UI
+    should_auto_launch: bool,                   // Core
+    application_language: String,               // UI
+    paper_wallet_enabled: bool,                 // UI
+    use_tor: bool,                              // CORE
+    eco_mode_cpu_threads: Option<u32>,          // Mining
+    ludicrous_mode_cpu_threads: Option<u32>,    // Mining
+    eco_mode_cpu_options: Vec<String>,          // Mining
+    ludicrous_mode_cpu_options: Vec<String>,    // Mining
+    custom_mode_cpu_options: Vec<String>,       // Mining
+    mmproxy_use_monero_fail: bool,              // CORE
+    mmproxy_monero_nodes: Vec<String>,          // CORE
+    custom_max_cpu_usage: Option<u32>,          // Mining
+    custom_max_gpu_usage: Vec<GpuThreads>,      // Mining
+    auto_update: bool,                          // CORE
+    keyring_accessed: bool,                     // Wallet
+    custom_power_levels_enabled: bool,          // UI
+    sharing_enabled: bool,                      // UI
+    visual_mode: bool,                          // UI
+    window_settings: Option<WindowSettings>,    // CORE
+    show_experimental_settings: bool,           // UI
+    p2pool_stats_server_port: Option<u16>,      // CORE
+    pre_release: bool,                          // CORE
+    last_changelog_version: String,             // CORE
+    airdrop_tokens: Option<AirdropTokens>,      // CORE
+    gpu_engine: String,                         // Mining
 }
 
 impl AppConfig {
@@ -519,8 +519,16 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn display_mode(&self) -> DisplayMode {
+        self.display_mode
+    }
+
     pub fn mode(&self) -> MiningMode {
         self.mode
+    }
+
+    pub fn keyring_accessed(&self) -> bool {
+        self.keyring_accessed
     }
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
@@ -643,6 +651,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn mine_on_app_start(&self) -> bool {
+        self.mine_on_app_start
+    }
+
     pub async fn set_allow_telemetry(
         &mut self,
         allow_telemetry: bool,
@@ -717,6 +729,34 @@ impl AppConfig {
             self.update_config_file().await?;
             Ok(())
         }
+    }
+
+    pub fn should_always_use_system_language(&self) -> bool {
+        self.should_always_use_system_language
+    }
+
+    pub fn has_system_language_been_proposed(&self) -> bool {
+        self.has_system_language_been_proposed
+    }
+
+    pub fn paper_wallet_enabled(&self) -> bool {
+        self.paper_wallet_enabled
+    }
+
+    pub fn custom_power_levels_enabled(&self) -> bool {
+        self.custom_power_levels_enabled
+    }
+
+    pub fn sharing_enabled(&self) -> bool {
+        self.sharing_enabled
+    }
+
+    pub fn visual_mode(&self) -> bool {
+        self.visual_mode
+    }
+
+    pub fn show_experimental_settings(&self) -> bool {
+        self.show_experimental_settings
     }
 
     pub fn use_tor(&self) -> bool {

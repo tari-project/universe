@@ -25,6 +25,8 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
+use configs::config_ui::ConfigUIContent;
+use configs::trait_config::ConfigImpl;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -99,6 +101,7 @@ mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
 mod commands;
+mod configs;
 mod consts;
 mod cpu_miner;
 mod credential_manager;
