@@ -5,6 +5,7 @@ export enum FormatPreset {
     TXTM_COMPACT = 'txtm-compact',
     TXTM_LONG = 'txtm-crypto',
     DECIMAL_COMPACT = 'decimal-compact',
+    COMPACT = 'compact',
 }
 
 const removeDecimals = (value: number, decimals: number) => {
@@ -72,6 +73,12 @@ const formatDecimalCompact = (value: number) => formatValue(value, { maximumFrac
 
 export function formatNumber(value: number, preset: FormatPreset): string {
     switch (preset) {
+        case FormatPreset.COMPACT:
+            return formatValue(roundCompactDecimals(value), {
+                maximumFractionDigits: 2,
+                notation: 'compact',
+                style: 'decimal',
+            });
         case FormatPreset.PERCENT:
             return formatPercent(value);
         case FormatPreset.TXTM_COMPACT:
@@ -101,3 +108,5 @@ export function formatHashrate(hashrate: number, joinUnit = true): string {
         return (hashrate / 1000000000000000).toFixed(2) + (joinUnit ? ' PH/s' : 'P');
     }
 }
+
+export { formatDecimalCompact, roundToTwoDecimals, removeDecimals };

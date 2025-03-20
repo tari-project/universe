@@ -1,0 +1,31 @@
+{
+  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
+  "empty-tx": "No transactions found",
+  "history": {
+    "label-rewards": "My rewards"
+  },
+  "my_tari": "My Tari",
+  "receive": {
+    "label-address": "My Address"
+  },
+  "send": {
+    "cta-send": "Send Tari",
+    "error-message": "Error sending transaction: ",
+    "field-address": "address",
+    "field-amount": "amount",
+    "field-message": "message",
+    "label-address": "Tari Wallet Address",
+    "label-amount": "Amount",
+    "label-message": "Payment ID",
+    "placeholder-address": "Enter address",
+    "placeholder-amount": "100",
+    "placeholder-message": "Enter message",
+    "required": "The {{fieldName}} field is required"
+  },
+  "tabs": {
+    "history": "history",
+    "receive": "receive",
+    "send": "send"
+  },
+  "tari": "Tari"
+}
