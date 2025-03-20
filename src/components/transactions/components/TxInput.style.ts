@@ -7,16 +7,16 @@ export const Wrapper = styled.div`
     flex-direction: column;
     position: relative;
     width: 100%;
-    padding: 20px 10px;
+    padding: 20px 10px 10px;
     border-radius: 10px;
-    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.1)} 0 1px 4px -3px inset`};
+    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.3)} 0 0 4px -3px inset`};
 `;
 
 export const AccentWrapper = styled.div`
     position: absolute;
-    top: 0;
+    top: -10px;
     left: 50%;
-    transform: translate(-50%, -50%);
+    transform: translate(-50%, -10px);
 `;
 
 export const StyledInput = styled.input<{ $hasIcon?: boolean }>`

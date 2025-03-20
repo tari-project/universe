@@ -20,13 +20,14 @@ export const StyledForm = styled.form`
     align-items: stretch;
     justify-content: space-between;
     width: 100%;
+    gap: 10px;
     flex-grow: 1;
 `;
 
 export const FormFieldsWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    padding: 0 4px;
+    gap: 10px;
     align-items: center;
 `;
 
