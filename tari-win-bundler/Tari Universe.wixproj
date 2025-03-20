@@ -1,0 +1,36 @@
+<Project Sdk="WixToolset.Sdk/5.0.2">
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignOutput>true</SignOutput>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OutputName>
+    </OutputName>
+    <OutputType>Bundle</OutputType>
+    <Name>Tari Universe</Name>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <DefineConstants>Debug</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Bundle.wxs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="WixToolset.Util.wixext" Version="5.0.2" />
+    <PackageReference Include="WixToolset.Bal.wixext" Version="5.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="executables\clean.msi" />
+    <Content Include="executables\modified.msi" />
+    <Content Include="icon.png" />
+    <Content Include="resources\clouds.bmp" />
+    <Content Include="resources\icon.ico" />
+    <Content Include="resources\71x71.png" />
+    <Content Include="Theme.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="executables\" />
+  </ItemGroup>
+</Project>
