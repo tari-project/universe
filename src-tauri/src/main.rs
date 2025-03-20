@@ -142,6 +142,7 @@ mod updates_manager;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
+mod websocket;
 mod xmrig;
 mod xmrig_adapter;
 

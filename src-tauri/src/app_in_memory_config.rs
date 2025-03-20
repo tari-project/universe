@@ -43,6 +43,7 @@ pub struct AppInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
+    pub websocket_url: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,6 +68,7 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
+            websocket_url: "ws://localhost:3004".into(),
         }
     }
 }
