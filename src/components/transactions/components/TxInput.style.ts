@@ -1,13 +1,24 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
     width: 100%;
-    padding: 8px 0;
+    padding: 20px 10px 10px;
+    border-radius: 10px;
+    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.3)} 0 0 4px -3px inset`};
 `;
+
+export const AccentWrapper = styled.div`
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translate(-50%, -10px);
+`;
+
 export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     display: flex;
     padding: ${({ $hasIcon }) => ($hasIcon ? `6px 0 6px 34px` : `6px 0 6px`)};
@@ -25,12 +36,10 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
         font-size: 1.4rem;
     }
 `;
-export const ContentWrapper = styled.div<{ $hasError?: boolean }>`
+export const ContentWrapper = styled.div`
     display: flex;
     position: relative;
     width: 100%;
-    border-bottom: ${({ $hasError, theme }) =>
-        $hasError ? `1px solid ${theme.palette.warning.dark}` : '1px solid transparent'};
 `;
 export const IconWrapper = styled.div`
     display: flex;

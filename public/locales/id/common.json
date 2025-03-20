@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Batal",
+  "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
   "connection": "Koneksi",
   "continue": "Lanjutkan",
@@ -26,11 +28,10 @@
   "testnet": "Testnet",
   "unknown": "Tidak diketahui",
   "unminimize": "Maksimalkan",
+  "update": "Perbarui",
   "usage": "Penggunaan",
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
-  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
-  "close": "Tutup",
-  "update": "Perbarui"
+  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan."
 }

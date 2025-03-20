@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { formatNumber, FormatPreset } from '@app/utils';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useUIStore } from '@app/store';
 
 function useTariBalance() {
-    const [showBalance, setShowBalance] = useState(true);
+    const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
     const [showLongBalance, setShowLongBalance] = useState(false);
     const [shouldAnimateBalance, setShouldAnimateBalance] = useState(true);
 
@@ -13,13 +14,9 @@ function useTariBalance() {
 
     const isWalletScanning = useMemo(() => !Number.isFinite(calculated_balance), [calculated_balance]);
     const balanceDisplayValue = useMemo(
-        () => (isWalletScanning ? '-' : showBalance ? formattedBalance : '*****'),
-        [formattedBalance, isWalletScanning, showBalance]
+        () => (isWalletScanning ? '-' : !hideWalletBalance ? formattedBalance : '*****'),
+        [formattedBalance, isWalletScanning, hideWalletBalance]
     );
-
-    function toggleBalanceVisibility() {
-        setShowBalance((prev) => !prev);
-    }
 
     function toggleBalanceFormat({ isMouseOver = false }: { isMouseOver?: boolean }) {
         if (isWalletScanning) return;
@@ -43,8 +40,6 @@ function useTariBalance() {
         formattedLongBalance,
         isWalletScanning,
         toggleBalanceFormat,
-        toggleBalanceVisibility,
-        showBalance,
         showLongBalance,
         shouldAnimateBalance,
     };

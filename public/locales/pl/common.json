@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Anuluj",
+  "close": "Zamknij",
   "close-tari-universe": "Zamknij Tari Universe",
   "connection": "Połączenie",
   "continue": "Kontynuuj",
@@ -26,11 +28,10 @@
   "testnet": "Testnet",
   "unknown": "Nieznany",
   "unminimize": "Przywróć",
+  "update": "Aktualizuj",
   "usage": "Użycie",
   "utilization": "Wykorzystanie",
   "version": "Wersja",
   "versions": "Wersje",
-  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
-  "close": "Zamknij",
-  "update": "Aktualizuj"
+  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony."
 }

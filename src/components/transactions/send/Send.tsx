@@ -16,15 +16,7 @@ import type { SendInputs, InputName } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
-import {
-    BottomWrapper,
-    DividerIcon,
-    ErrorMessageWrapper,
-    FormFieldsWrapper,
-    SendDivider,
-    StyledForm,
-    Wrapper,
-} from './Send.styles';
+import { BottomWrapper, DividerIcon, ErrorMessageWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 
 const defaultValues = { message: '', address: '', amount: '' };
 export function Send() {
@@ -62,18 +54,24 @@ export function Send() {
     const paymentIdField = <FormField control={control} handleChange={handleChange} name="message" />;
     const addressField = <FormField control={control} handleChange={handleChange} name="address" required />;
     const amountField = (
-        <FormField control={control} handleChange={handleChange} name="amount" required icon={<TariOutlineSVG />} />
+        <FormField
+            control={control}
+            handleChange={handleChange}
+            name="amount"
+            required
+            icon={<TariOutlineSVG />}
+            accent={
+                <DividerIcon>
+                    <FaArrowDown size={18} />
+                </DividerIcon>
+            }
+        />
     );
 
     const fieldMarkup = (
         <FormFieldsWrapper>
             {paymentIdField}
             {addressField}
-            <SendDivider>
-                <DividerIcon>
-                    <FaArrowDown size={18} />
-                </DividerIcon>
-            </SendDivider>
             {amountField}
         </FormFieldsWrapper>
     );
@@ -101,10 +99,6 @@ export function Send() {
             <StyledForm onSubmit={handleSubmit(handleSend)}>
                 {fieldMarkup}
                 <BottomWrapper>
-                    <ErrorMessageWrapper>
-                        <Typography variant="p">{errors.address?.message}</Typography>
-                        <Typography variant="p">{errors.amount?.message}</Typography>
-                    </ErrorMessageWrapper>
                     <Button
                         disabled={isSubmitting || !isValid}
                         type="submit"
@@ -115,6 +109,10 @@ export function Send() {
                     >
                         {t('send.cta-send')}
                     </Button>
+                    <ErrorMessageWrapper>
+                        <Typography variant="p">{errors.address?.message}</Typography>
+                        <Typography variant="p">{errors.amount?.message}</Typography>
+                    </ErrorMessageWrapper>
                 </BottomWrapper>
             </StyledForm>
             <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>

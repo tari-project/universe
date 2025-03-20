@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Annuler",
+  "close": "Fermer",
   "close-tari-universe": "Fermer le Tari Universe",
   "connection": "Connexion",
   "continue": "Continuer",
@@ -26,11 +28,10 @@
   "testnet": "Testnet",
   "unknown": "Inconnu",
   "unminimize": "Démagnifier",
+  "update": "Mettre à jour",
   "usage": "Utilisation",
   "utilization": "Utilisation",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
-  "close": "Fermer",
-  "update": "Mettre à jour"
+  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé."
 }

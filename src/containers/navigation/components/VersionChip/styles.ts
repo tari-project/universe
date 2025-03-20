@@ -5,7 +5,6 @@ export const Wrapper = styled('div')`
     justify-content: center;
     align-items: center;
     gap: 4px;
-
     height: 21px;
     padding: 0 10px 0 8px;
     width: max-content;

@@ -7,7 +7,14 @@ import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
-import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
+import {
+    ConnectionWrapper,
+    HoverIconWrapper,
+    NavIconWrapper,
+    NavigationWrapper,
+    StyledIconButton,
+} from './SidebarMini.styles.ts';
+import ConnectedPulse from '@app/containers/navigation/components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -70,6 +77,9 @@ const NavigationButton = memo(function NavigationButton() {
 
     return (
         <NavigationWrapper>
+            <ConnectionWrapper>
+                <ConnectedPulse />
+            </ConnectionWrapper>
             <NavButton onClick={handleToggleOpen} isActive={true}>
                 <CubeOutlineSVG />
             </NavButton>

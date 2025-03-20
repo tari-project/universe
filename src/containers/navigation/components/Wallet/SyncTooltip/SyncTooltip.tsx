@@ -1,12 +1,12 @@
 import { AnimatePresence } from 'motion/react';
 import { Menu, Text, Title, Trigger, Wrapper } from './styles';
-import { useState } from 'react';
+import { ReactNode, useState } from 'react';
 import { autoUpdate, offset, safePolygon, shift, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
-    trigger: JSX.Element;
-    title: string | JSX.Element;
-    text: string | JSX.Element;
+    trigger: ReactNode;
+    title: string | ReactNode;
+    text: string | ReactNode;
 }
 
 export default function SyncTooltip({ trigger, title, text }: Props) {

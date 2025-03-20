@@ -34,8 +34,8 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'outlined':
                 return css`
                     color: ${theme.palette.text.primary};
-                    background-color: ${theme.palette.text.contrast};
-                    border: 1px solid ${theme.palette.primary.accent};
+                    background-color: ${theme.palette.action.background};
+                    border: 1px solid ${theme.colorsAlpha.greyscaleAlpha[20]};
                 `;
             case 'gradient':
                 return css`

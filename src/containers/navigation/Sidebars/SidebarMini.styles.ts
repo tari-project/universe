@@ -73,9 +73,16 @@ export const LogoWrapper = styled.div`
         max-width: 100%;
     }
 `;
+export const ConnectionWrapper = styled.div`
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    z-index: 2;
+`;
 export const NavigationWrapper = styled.div`
     display: flex;
     flex-direction: column;
+    position: relative;
     gap: 10px;
 `;
 

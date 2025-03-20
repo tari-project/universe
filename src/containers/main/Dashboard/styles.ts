@@ -10,11 +10,6 @@ export const DashboardContentContainer = styled(m.div)`
     position: relative;
 `;
 
-export const VersionWrapper = styled.div`
-    position: fixed;
-    top: 20px;
-    right: 35px;
-`;
 export const ProgressWrapper = styled.div`
     margin: 20px 0;
     display: flex;
