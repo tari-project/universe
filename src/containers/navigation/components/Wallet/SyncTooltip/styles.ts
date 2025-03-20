@@ -22,14 +22,14 @@ export const Menu = styled(m.div)`
     padding: 20px;
 
     border-radius: 15px;
-    background: #fff;
+    background: ${({ theme }) => theme.palette.background.default};
     box-shadow: 0 3px 25px 0 rgba(0, 0, 0, 0.25);
 
     width: 216px;
 `;
 
 export const Title = styled('div')`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 14px;
     font-style: normal;
     font-weight: 500;
@@ -38,7 +38,7 @@ export const Title = styled('div')`
 `;
 
 export const Text = styled('div')`
-    color: #797979;
+    color: ${({ theme }) => theme.palette.text.secondary};
     font-size: 12px;
     font-weight: 500;
     line-height: 116.667%;

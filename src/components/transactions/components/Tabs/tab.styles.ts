@@ -4,6 +4,7 @@ import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 export const TabsWrapper = styled.div`
     width: 100%;
@@ -57,16 +58,26 @@ export const BottomNavWrapper = styled.div`
     display: flex;
     flex-flow: row;
     align-items: center;
-    justify-content: space-evenly;
     width: 100%;
+    gap: 10px;
+    margin: 10px 0 15px;
 `;
-export const NavButton = styled.button.attrs({
-    role: 'tab',
-})<{ $isActive?: boolean }>`
+
+export const NavButtonContent = styled.div`
+    text-transform: capitalize;
+    gap: 8px;
     display: flex;
     align-items: center;
+    justify-content: center;
+`;
+export const NavButton = styled(Button).attrs({
+    variant: 'outlined',
+    size: 'small',
+})<{ $isActive?: boolean }>`
+    line-height: 1.1;
+    width: 100%;
     color: ${({ theme }) => theme.palette.text.primary};
-    opacity: ${({ $isActive }) => ($isActive ? 1 : 0.7)};
+    opacity: 0.6;
     text-transform: capitalize;
     &:hover {
         opacity: 0.85;

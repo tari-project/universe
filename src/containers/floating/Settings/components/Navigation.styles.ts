@@ -24,8 +24,6 @@ export const ButtonContainer = styled.div`
     gap: 10px;
 `;
 
-
-
 export const SectionButton = styled(Button)`
     display: flex;
     text-transform: capitalize;

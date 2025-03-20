@@ -12,13 +12,20 @@ import {
     HeaderLabel,
     StyledIconButton,
     AddressWrapper,
+    NavButtonContent,
 } from './tab.styles';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
 import { useCopyToClipboard } from '@app/hooks';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
+import { SendSVG } from '@app/assets/icons/send.tsx';
+import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 
+const icons = {
+    send: <SendSVG />,
+    receive: <ReceiveSVG />,
+};
 export function Tabs({ tabItems }: TabsProps) {
     const { t } = useTranslation(['wallet', 'common']);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
@@ -59,7 +66,10 @@ export function Tabs({ tabItems }: TabsProps) {
                       aria-selected={isActive}
                       id={`tab-${id}`}
                   >
-                      {t(titleTransaltionKey)}
+                      <NavButtonContent>
+                          {icons[id]}
+                          {t(titleTransaltionKey)}
+                      </NavButtonContent>
                   </NavButton>
               );
           })

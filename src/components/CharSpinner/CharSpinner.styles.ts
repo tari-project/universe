@@ -54,7 +54,7 @@ export const Character = styled(m.div)<Props>`
     display: flex;
     text-transform: lowercase;
     position: relative;
-    letter-spacing: -0.2rem;
+    letter-spacing: -0.08em;
     width: max-content;
     z-index: 1;
 
