@@ -3,25 +3,51 @@ import { useTranslation } from 'react-i18next';
 
 import { type TabsProps } from './types';
 import { TabContent } from './TabContent.tsx';
-import { TabsWrapper, Wrapper, NavButton, BottomNavWrapper, TabNavigation, NavLabel } from './tab.styles';
+import {
+    TabsWrapper,
+    Wrapper,
+    NavButton,
+    BottomNavWrapper,
+    TabHeader,
+    HeaderLabel,
+    StyledIconButton,
+    AddressWrapper,
+} from './tab.styles';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { useWalletStore } from '@app/store';
+import { truncateMiddle } from '@app/utils';
+import { useCopyToClipboard } from '@app/hooks';
+import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
 export function Tabs({ tabItems }: TabsProps) {
-    const { t } = useTranslation();
+    const { t } = useTranslation(['wallet', 'common']);
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const [currentIndex, setCurrentIndex] = useState<number>(0);
 
-    const showMainWalletNav = currentIndex !== 0;
+    const displayAddress = truncateMiddle(walletAddress, 4);
+    const showTabNav = currentIndex !== 0;
 
-    const mainWalletNav = showMainWalletNav ? (
-        <TabNavigation>
-            <NavLabel variant="p">{`${t(tabItems[currentIndex].titleTransaltionKey)}  Tari`}</NavLabel>
+    const tabNav = showTabNav ? (
+        <TabHeader>
+            <HeaderLabel>{`${t(tabItems[currentIndex].titleTransaltionKey)}  ${t('tari')}`}</HeaderLabel>
             <Button size="xs" variant="outlined" onClick={() => setCurrentIndex(0)}>
-                {`Back`}
+                {t('common:back')}
             </Button>
-        </TabNavigation>
-    ) : null;
+        </TabHeader>
+    ) : (
+        <TabHeader>
+            <HeaderLabel>{t(tabItems[currentIndex].titleTransaltionKey)}</HeaderLabel>
+            <AddressWrapper>
+                <HeaderLabel>{displayAddress}</HeaderLabel>
+                <StyledIconButton onClick={() => copyToClipboard(walletAddress)}>
+                    {!isCopied ? <IoCopyOutline size={12} /> : <IoCheckmarkOutline size={12} />}
+                </StyledIconButton>
+            </AddressWrapper>
+        </TabHeader>
+    );
 
-    const bottomNavMarkup = !showMainWalletNav
+    const bottomNavMarkup = !showTabNav
         ? tabItems.map(({ id, titleTransaltionKey }, i) => {
               if (id === 'history') return null;
               const isActive = currentIndex === i;
@@ -41,7 +67,7 @@ export function Tabs({ tabItems }: TabsProps) {
 
     return (
         <Wrapper>
-            {mainWalletNav}
+            {tabNav}
             <TabsWrapper>
                 <TabContent items={tabItems} currentIndex={currentIndex} />
             </TabsWrapper>

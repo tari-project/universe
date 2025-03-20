@@ -8,17 +8,17 @@ import { WalletTabWrapper } from './WalletSidebarContent.styles.ts';
 const tabItems: TabItem[] = [
     {
         id: 'history',
-        titleTransaltionKey: 'wallet:tabs.history',
+        titleTransaltionKey: 'my_tari',
         content: <Wallet />,
     },
     {
         id: 'send',
-        titleTransaltionKey: 'wallet:tabs.send',
+        titleTransaltionKey: 'tabs.send',
         content: <Send />,
     },
     {
         id: 'receive',
-        titleTransaltionKey: 'wallet:tabs.receive',
+        titleTransaltionKey: 'tabs.receive',
         content: <Receive />,
     },
 ];

@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "रद्द करें",
+  "close": "बंद करें",
   "close-tari-universe": "Tari Universe बंद करें",
   "connection": "कनेक्शन",
   "continue": "जारी रखें",
@@ -26,11 +28,10 @@
   "testnet": "टेस्टनेट",
   "unknown": "अज्ञात",
   "unminimize": "अनमिनिमाइज़",
+  "update": "अपडेट",
   "usage": "उपयोग",
   "utilization": "उपयोग",
   "version": "संस्करण",
   "versions": "संस्करण",
-  "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।",
-  "close": "बंद करें",
-  "update": "अपडेट"
+  "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।"
 }

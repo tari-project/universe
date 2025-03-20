@@ -7,6 +7,7 @@ export const Container = styled.div`
     background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
     justify-content: space-between;
+    align-items: center;
     height: 100%;
     width: 250px;
 
@@ -19,6 +20,14 @@ export const ButtonContainer = styled.div`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    width: 100%;
+    gap: 10px;
+`;
+
+export const BottomContainer = styled.div`
+    display: flex;
+    flex-flow: column;
+    align-items: center;
     width: 100%;
     gap: 10px;
 `;

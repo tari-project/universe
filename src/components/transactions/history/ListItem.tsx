@@ -15,6 +15,7 @@ import {
     ValueWrapper,
     CurrencyText,
 } from './ListItem.styles.ts';
+import { useUIStore } from '@app/store';
 
 const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
@@ -39,6 +40,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
 });
 
 const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemProps) {
+    const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
     const appLanguage = useAppConfigStore((s) => s.application_language);
     const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
 
@@ -54,7 +56,9 @@ const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemP
     const [expanded, setExpanded] = useState(false);
 
     const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
-    const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
+    const earningsFormatted = hideWalletBalance
+        ? `***`
+        : formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',

@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Kanselleer",
+  "close": "Sluit",
   "close-tari-universe": "Sluit Tari Universe",
   "connection": "Verbinding",
   "continue": "Gaan voort",
@@ -26,11 +28,10 @@
   "testnet": "Toetsnetwerk",
   "unknown": "Onbekend",
   "unminimize": "Maak volskerm",
+  "update": "Opdateer",
   "usage": "Gebruik",
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
-  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
-  "close": "Sluit",
-  "update": "Opdateer"
+  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer."
 }

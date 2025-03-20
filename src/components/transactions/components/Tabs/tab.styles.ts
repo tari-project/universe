@@ -2,6 +2,8 @@ import styled from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
+import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 
 export const TabsWrapper = styled.div`
     width: 100%;
@@ -33,16 +35,22 @@ export const ItemWrapper = styled(m.div)`
     flex-direction: column;
     max-height: 100%;
 `;
-export const NavLabel = styled(Typography)``;
-export const TabNavigation = styled.div`
+export const HeaderLabel = styled(Typography).attrs({
+    variant: 'p',
+})`
+    font-weight: 500;
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+`;
+export const TabHeader = styled.div`
     display: flex;
     width: 100%;
     text-transform: capitalize;
     justify-content: space-between;
-    padding: 18px 0;
-    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
+    align-items: center;
+    padding: 10px 0;
+
     @media (max-height: 680px) {
-        padding: 8px 0;
+        padding: 4px 0;
     }
 `;
 export const BottomNavWrapper = styled.div`
@@ -63,4 +71,18 @@ export const NavButton = styled.button.attrs({
     &:hover {
         opacity: 0.85;
     }
+`;
+export const StyledIconButton = styled(IconButton)`
+    border-radius: 50%;
+    background: ${({ theme }) => theme.palette.background.paper};
+    height: 22px;
+    width: 22px;
+    svg {
+        fill: ${({ theme }) => theme.palette.text.primary};
+    }
+`;
+export const AddressWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 4px;
 `;

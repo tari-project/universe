@@ -18,9 +18,12 @@ import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import SyncTooltip from './SyncTooltip/SyncTooltip.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore.ts';
+import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
+import { useUIStore } from '@app/store';
 
 export default function WalletBalanceMarkup() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
+    const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const handleSyncButtonClick = (e) => {
         e.stopPropagation();
@@ -30,10 +33,8 @@ export default function WalletBalanceMarkup() {
         balanceDisplayValue,
         formattedLongBalance,
         isWalletScanning,
-        showBalance,
         showLongBalance,
         shouldAnimateBalance,
-        toggleBalanceVisibility,
         toggleBalanceFormat,
     } = useTariBalance();
 
@@ -53,8 +54,8 @@ export default function WalletBalanceMarkup() {
                     <Typography variant="span" style={{ fontSize: '11px' }}>
                         {t('wallet-balance')}
                     </Typography>
-                    <BalanceVisibilityButton onClick={toggleBalanceVisibility}>
-                        {showBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
+                    <BalanceVisibilityButton onClick={toggleHideWalletBalance}>
+                        {!hideWalletBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
                     </BalanceVisibilityButton>
                 </Stack>
                 <SyncTooltip
@@ -73,7 +74,7 @@ export default function WalletBalanceMarkup() {
             >
                 {!isWalletScanning ? (
                     <AnimatePresence mode="popLayout">
-                        {!showLongBalance || !showBalance || isWalletScanning ? (
+                        {!showLongBalance || hideWalletBalance || isWalletScanning ? (
                             <WalletBalance
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
