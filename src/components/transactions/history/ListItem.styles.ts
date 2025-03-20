@@ -12,7 +12,7 @@ export const ItemWrapper = styled(m.div)`
     flex-direction: column;
     overflow: hidden;
     position: relative;
-    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px 1px`};
+    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
 `;
 
 export const HoverWrapper = styled(m.div)`

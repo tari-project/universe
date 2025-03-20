@@ -9,9 +9,10 @@ interface FormFieldProps {
     control: Control<SendInputs>;
     handleChange: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
     icon?: ReactNode;
+    accent?: ReactNode;
     required?: boolean;
 }
-export function FormField({ control, name, handleChange, icon, required = false }: FormFieldProps) {
+export function FormField({ control, name, handleChange, icon, required = false, accent }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
     const placeholderT = t(`send.placeholder`, { context: name });
@@ -35,6 +36,7 @@ export function FormField({ control, name, handleChange, icon, required = false 
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}
+                        accent={accent}
                         errorMessage={fieldState.error?.message}
                     />
                 );
