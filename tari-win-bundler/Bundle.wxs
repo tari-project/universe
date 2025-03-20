@@ -24,7 +24,7 @@
 		<!-- <util:ProductSearch Id="VCRUNTIME_ARM64" Result="version" Variable="VCRUNTIME_ARM64_VER" UpgradeCode="DC9BAE42-810B-423A-9E25-E4073F1C7B00" Condition="(ARCH_NAME = &quot;ARM64&quot;)" After="REG_ARCH" /> -->
 
 		<!-- Visual C++ 2015-2022 Redistributable runtime msi package version -->
-		<Variable Name="VCRUNTIME_VER" Type="version" Value="14.40.33816.0" />
+		<Variable Name="VCRUNTIME_VER" Type="version" Value="14.42.34433.0" />
 		
 		<Chain>
 			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33810 -->
@@ -33,7 +33,7 @@
 			 -->
 
 			<!-- Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816 -->
-			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile="tari-win-bundler/executables/VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
+			<ExePackage Id="VC_REDIST_X64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.42.34433.0" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" DetectCondition="(VCRUNTIME_X64_VER &gt;= VCRUNTIME_VER) AND VersionNT64 AND (ARCH_NAME = &quot;AMD64&quot;)" SourceFile="tari-win-bundler/executables/VC_redist.x64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" />
 
 			<!-- Visual C++ 2015-2022 Redistributable (x86) - 14.40.33816 -->
 			<!-- <ExePackage Id="VC_REDIST_ARM64" DisplayName="Microsoft Visual C++ 2015-2022 Redistributable (Arm64) - 14.40.33816" Cache="remove" PerMachine="yes" Permanent="yes" Protocol="burn" InstallCondition="(ARCH_NAME = &quot;ARM64&quot;)" DetectCondition="(VCRUNTIME_ARM64_VER &gt;= VCRUNTIME_VER) AND (ARCH_NAME = &quot;ARM64&quot;)" SourceFile=".\executables\VC_redist.arm64.exe" InstallArguments="/install /quiet /norestart" RepairArguments="/repair /quiet /norestart" UninstallArguments="/uninstall /quiet /norestart" /> -->
