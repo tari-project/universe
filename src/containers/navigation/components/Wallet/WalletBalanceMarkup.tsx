@@ -46,28 +46,14 @@ export default function WalletBalanceMarkup() {
         if (length <= 9) return baseSize;
         return baseSize - (length - 6) * step;
     }, [formattedLongBalance.length]);
+    const balanceVis = (
+        <BalanceVisibilityButton onClick={toggleHideWalletBalance}>
+            {!hideWalletBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
+        </BalanceVisibilityButton>
+    );
 
     return (
         <WalletBalanceContainer>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" style={{ width: '100%' }}>
-                <Stack direction="row" alignItems="center">
-                    <Typography variant="span" style={{ fontSize: '11px' }}>
-                        {t('wallet-balance')}
-                    </Typography>
-                    <BalanceVisibilityButton onClick={toggleHideWalletBalance}>
-                        {!hideWalletBalance ? <IoEyeOffOutline size={14} /> : <IoEyeOutline size={14} />}
-                    </BalanceVisibilityButton>
-                </Stack>
-                <SyncTooltip
-                    title={t('paper-wallet-tooltip-title')}
-                    text={t('paper-wallet-tooltip-message')}
-                    trigger={
-                        <Button size="xs" onClick={handleSyncButtonClick}>
-                            {t('paper-wallet-button')}
-                        </Button>
-                    }
-                />
-            </Stack>
             <WalletBalanceWrapper
                 onMouseOver={() => toggleBalanceFormat({ isMouseOver: true })}
                 onMouseOut={() => toggleBalanceFormat({ isMouseOver: false })}
@@ -108,6 +94,7 @@ export default function WalletBalanceMarkup() {
                     <CircularProgress />
                 )}
             </WalletBalanceWrapper>
+            {balanceVis}
         </WalletBalanceContainer>
     );
 }

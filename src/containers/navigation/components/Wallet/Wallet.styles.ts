@@ -19,9 +19,8 @@ export const WalletBalanceWrapper = styled.div`
 
 export const WalletBalanceContainer = styled(m.div)`
     display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    align-items: flex-start;
+    justify-content: space-between;
+    align-items: center;
     width: 100%;
     flex-shrink: 0;
     color: ${({ theme }) => theme.palette.text.secondary};
