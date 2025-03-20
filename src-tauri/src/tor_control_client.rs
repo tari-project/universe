@@ -9,7 +9,7 @@ use tokio::{
 const LOG_TARGET: &str = "tari::universe::tor_control_client";
 const BOOTSTRAP_QUERY: &str = "GETINFO status/bootstrap-phase\r\n";
 const AUTH_COMMAND: &str = "AUTHENTICATE\r\n";
-// const CIRCUIT_QUERY: &str = "GETINFO circuit-status\r\n";
+const CIRCUIT_QUERY: &str = "GETINFO status/circuit-established\r\n";
 const NETWORK_QUERY: &str = "GETINFO network-liveness\r\n";
 
 #[derive(Debug, Clone)]
@@ -17,6 +17,7 @@ pub(crate) struct TorStatus {
     pub bootstrap_phase: u8,
     pub is_bootstrapped: bool,
     pub network_liveness: bool,
+    pub circuit_ok: bool,
 }
 
 pub(crate) struct TorControlClient {
@@ -55,7 +56,6 @@ impl TorControlClient {
 
         if let Some(response) = reader.next_line().await? {
             // Expected output 250-status/bootstrap-phase=NOTICE BOOTSTRAP PROGRESS=100 TAG=done SUMMARY="Done"
-            info!(target: LOG_TARGET, "Tor control response: {}", response);
             let regex = Regex::new(r#"250-status\/bootstrap-phase=NOTICE\s+BOOTSTRAP\s+PROGRESS=(\d+)\s+TAG=(\w+) SUMMARY="([^"]+)""#).expect("If regex is wrong, don't start");
             if let Some(captures) = regex.captures(&response) {
                 bootstrap_phase = captures
@@ -75,12 +75,23 @@ impl TorControlClient {
             }
         }
 
+        writer.write_all(CIRCUIT_QUERY.as_bytes()).await?;
+        writer.flush().await?;
+        let mut circuit_ok = false;
+        if let Some(response) = reader.next_line().await? {
+            if response.contains("circuit-established=1") {
+                circuit_ok = true;
+            } else {
+                warn!(target: LOG_TARGET, "Circuit status not up: {}", response);
+            }
+            let _s250_ok = reader.next_line().await?;
+        }
+
         writer.write_all(NETWORK_QUERY.as_bytes()).await?;
         writer.flush().await?;
 
         let mut network_liveness = false;
         if let Some(response) = reader.next_line().await? {
-            info!(target: LOG_TARGET, "Tor control liveness response: {}", response);
             if response.contains("network-liveness=up") {
                 network_liveness = true;
             }
@@ -89,6 +100,7 @@ impl TorControlClient {
             bootstrap_phase,
             is_bootstrapped: bootstrapped,
             network_liveness,
+            circuit_ok,
         })
     }
 }

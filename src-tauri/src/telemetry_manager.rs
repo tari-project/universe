@@ -475,6 +475,7 @@ async fn get_telemetry_data(
             "tor_network_liveness".to_string(),
             stats.network_liveness.to_string(),
         );
+        extra_data.insert("tor_circuit_ok".to_string(), stats.circuit_ok.to_string());
     }
 
     if !all_cpus.is_empty() {
