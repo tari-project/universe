@@ -24,13 +24,7 @@ export const ButtonContainer = styled.div`
     gap: 10px;
 `;
 
-export const BottomContainer = styled.div`
-    display: flex;
-    flex-flow: column;
-    align-items: center;
-    width: 100%;
-    gap: 10px;
-`;
+
 
 export const SectionButton = styled(Button)`
     display: flex;

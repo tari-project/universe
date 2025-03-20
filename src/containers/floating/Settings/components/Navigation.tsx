@@ -2,10 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { Typography } from '@app/components/elements/Typography';
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
-import { BottomContainer, ButtonContainer, Container, SectionButton, TermsBtn } from './Navigation.styles.ts';
+import { ButtonContainer, Container, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
 import { open } from '@tauri-apps/plugin-shell';
-import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
 interface SettingsNavigationProps {
     activeSection: SettingsType;
     onChangeActiveSection: (section: SettingsType) => void;
@@ -36,13 +35,10 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                     );
                 })}
             </ButtonContainer>
-            <BottomContainer>
-                <VersionChip />
-                <TermsBtn onClick={() => open('https://github.com/tari-project/universe/blob/main/LICENSE.md')}>
-                    <Typography>{t('terms-and-conditions')}</Typography>
-                    <HiOutlineExternalLink />
-                </TermsBtn>
-            </BottomContainer>
+            <TermsBtn onClick={() => open('https://github.com/tari-project/universe/blob/main/LICENSE.md')}>
+                <Typography>{t('terms-and-conditions')}</Typography>
+                <HiOutlineExternalLink />
+            </TermsBtn>
         </Container>
     );
 }

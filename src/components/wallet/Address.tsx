@@ -5,6 +5,7 @@ import {
     ContentWrapper,
     EmojiAddressWrapper,
     ImgOption,
+    Label,
     TextOption,
     ToggleWrapper,
 } from './Address.style.ts';
@@ -68,7 +69,7 @@ export function Address() {
 
     return (
         <AddressContainer>
-            <Typography variant="p">{t('receive.label-address')}</Typography>
+            <Label>{t('receive.label-address')}</Label>
             <ContentWrapper>
                 <AddressWrapper>
                     {addressMarkup}
