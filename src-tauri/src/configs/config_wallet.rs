@@ -1,9 +1,9 @@
-use crate::app_config::{GpuThreads, MiningMode};
 use std::{
     sync::{LazyLock, Mutex},
     time::SystemTime,
 };
 
+use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 
 use crate::AppConfig;
@@ -15,11 +15,13 @@ static INSTANCE: LazyLock<Mutex<ConfigWallet>> = LazyLock::new(|| Mutex::new(Con
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
 pub struct ConfigWalletContent {
     created_at: SystemTime,
-    monero_address: String,            // Wallet
-    monero_address_is_generated: bool, // Wallet
-    keyring_accessed: bool,            // Wallet
+    monero_address: String,
+    monero_address_is_generated: bool,
+    keyring_accessed: bool,
 }
 
 impl Default for ConfigWalletContent {
@@ -34,32 +36,6 @@ impl Default for ConfigWalletContent {
 }
 
 impl ConfigContentImpl for ConfigWalletContent {}
-
-impl ConfigWalletContent {
-    pub fn monero_address(&self) -> &str {
-        &self.monero_address
-    }
-
-    pub fn monero_address_is_generated(&self) -> bool {
-        self.monero_address_is_generated
-    }
-
-    pub fn keyring_accessed(&self) -> bool {
-        self.keyring_accessed
-    }
-
-    pub fn set_monero_address(&mut self, monero_address: String) {
-        self.monero_address = monero_address;
-    }
-
-    pub fn set_monero_address_is_generated(&mut self, monero_address_is_generated: bool) {
-        self.monero_address_is_generated = monero_address_is_generated;
-    }
-
-    pub fn set_keyring_accessed(&mut self, keyring_accessed: bool) {
-        self.keyring_accessed = keyring_accessed;
-    }
-}
 
 pub struct ConfigWallet {
     content: ConfigWalletContent,

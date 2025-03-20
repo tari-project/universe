@@ -1,9 +1,9 @@
+use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
 use std::{
     sync::{LazyLock, Mutex},
     time::SystemTime,
 };
-
-use serde::{Deserialize, Serialize};
 
 use crate::{app_config::AirdropTokens, AppConfig};
 
@@ -14,6 +14,8 @@ static INSTANCE: LazyLock<Mutex<ConfigCore>> = LazyLock::new(|| Mutex::new(Confi
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
     created_at: SystemTime,
     is_p2pool_enabled: bool,
@@ -52,115 +54,6 @@ impl Default for ConfigCoreContent {
     }
 }
 impl ConfigContentImpl for ConfigCoreContent {}
-
-impl ConfigCoreContent {
-    pub fn is_p2pool_enabled(&self) -> bool {
-        self.is_p2pool_enabled
-    }
-
-    pub fn use_tor(&self) -> bool {
-        self.use_tor
-    }
-
-    pub fn allow_telemetry(&self) -> bool {
-        self.allow_telemetry
-    }
-
-    pub fn last_binaries_update_timestamp(&self) -> Option<SystemTime> {
-        self.last_binaries_update_timestamp
-    }
-
-    pub fn anon_id(&self) -> Option<String> {
-        self.anon_id.clone()
-    }
-
-    pub fn should_auto_launch(&self) -> bool {
-        self.should_auto_launch
-    }
-
-    pub fn mmproxy_use_monero_fail(&self) -> bool {
-        self.mmproxy_use_monero_failover
-    }
-
-    pub fn mmproxy_monero_nodes(&self) -> &[String] {
-        &self.mmproxy_monero_nodes
-    }
-
-    pub fn auto_update(&self) -> bool {
-        self.auto_update
-    }
-
-    pub fn p2pool_stats_server_port(&self) -> Option<u16> {
-        self.p2pool_stats_server_port
-    }
-
-    pub fn pre_release(&self) -> bool {
-        self.pre_release
-    }
-
-    pub fn last_changelog_version(&self) -> Option<String> {
-        self.last_changelog_version.clone()
-    }
-
-    pub fn airdrop_tokens(&self) -> Option<&AirdropTokens> {
-        self.airdrop_tokens.as_ref()
-    }
-
-    pub fn set_is_p2pool_enabled(&mut self, is_p2pool_enabled: bool) {
-        self.is_p2pool_enabled = is_p2pool_enabled;
-    }
-
-    pub fn set_use_tor(&mut self, use_tor: bool) {
-        self.use_tor = use_tor;
-    }
-
-    pub fn set_allow_telemetry(&mut self, allow_telemetry: bool) {
-        self.allow_telemetry = allow_telemetry;
-    }
-
-    pub fn set_last_binaries_update_timestamp(
-        &mut self,
-        last_binaries_update_timestamp: Option<SystemTime>,
-    ) {
-        self.last_binaries_update_timestamp = last_binaries_update_timestamp;
-    }
-
-    pub fn set_anon_id(&mut self, anon_id: Option<String>) {
-        self.anon_id = anon_id;
-    }
-
-    pub fn set_should_auto_launch(&mut self, should_auto_launch: bool) {
-        self.should_auto_launch = should_auto_launch;
-    }
-
-    pub fn set_mmproxy_use_monero_fail(&mut self, mmproxy_use_monero_failover: bool) {
-        self.mmproxy_use_monero_failover = mmproxy_use_monero_failover;
-    }
-
-    pub fn set_mmproxy_monero_nodes(&mut self, mmproxy_monero_nodes: Vec<String>) {
-        self.mmproxy_monero_nodes = mmproxy_monero_nodes;
-    }
-
-    pub fn set_auto_update(&mut self, auto_update: bool) {
-        self.auto_update = auto_update;
-    }
-
-    pub fn set_p2pool_stats_server_port(&mut self, p2pool_stats_server_port: Option<u16>) {
-        self.p2pool_stats_server_port = p2pool_stats_server_port;
-    }
-
-    pub fn set_pre_release(&mut self, pre_release: bool) {
-        self.pre_release = pre_release;
-    }
-
-    pub fn set_last_changelog_version(&mut self, last_changelog_version: Option<String>) {
-        self.last_changelog_version = last_changelog_version;
-    }
-
-    pub fn set_airdrop_tokens(&mut self, airdrop_tokens: Option<AirdropTokens>) {
-        self.airdrop_tokens = airdrop_tokens;
-    }
-}
 
 pub struct ConfigCore {
     content: ConfigCoreContent,

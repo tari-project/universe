@@ -7,6 +7,7 @@ use std::{
     time::SystemTime,
 };
 
+use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 
 use crate::AppConfig;
@@ -18,17 +19,19 @@ static INSTANCE: LazyLock<Mutex<ConfigMining>> = LazyLock::new(|| Mutex::new(Con
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
 pub struct ConfigMiningContent {
     created_at: SystemTime,
     mode: MiningMode,
-    eco_mode_cpu_threads: Option<u32>,       // Mining
-    ludicrous_mode_cpu_threads: Option<u32>, // Mining
-    eco_mode_cpu_options: Vec<String>,       // Mining
-    ludicrous_mode_cpu_options: Vec<String>, // Mining
-    custom_mode_cpu_options: Vec<String>,    // Mining
-    custom_max_cpu_usage: Option<u32>,       // Mining
-    custom_max_gpu_usage: Vec<GpuThreads>,   // Mining
-    gpu_engine: EngineType,                  // Mining
+    eco_mode_cpu_threads: Option<u32>,
+    ludicrous_mode_cpu_threads: Option<u32>,
+    eco_mode_cpu_options: Vec<String>,
+    ludicrous_mode_cpu_options: Vec<String>,
+    custom_mode_cpu_options: Vec<String>,
+    custom_max_cpu_usage: Option<u32>,
+    custom_max_gpu_usage: Vec<GpuThreads>,
+    gpu_engine: EngineType,
 }
 
 impl Default for ConfigMiningContent {
@@ -48,80 +51,6 @@ impl Default for ConfigMiningContent {
     }
 }
 impl ConfigContentImpl for ConfigMiningContent {}
-
-impl ConfigMiningContent {
-    pub fn mode(&self) -> MiningMode {
-        self.mode
-    }
-
-    pub fn custom_cpu_usage(&self) -> Option<u32> {
-        self.custom_max_cpu_usage
-    }
-
-    pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
-        self.custom_max_gpu_usage.clone()
-    }
-
-    pub fn custom_mode_cpu_options(&self) -> Vec<String> {
-        self.custom_mode_cpu_options.clone()
-    }
-
-    pub fn eco_mode_cpu_options(&self) -> Vec<String> {
-        self.eco_mode_cpu_options.clone()
-    }
-
-    pub fn eco_mode_cpu_threads(&self) -> Option<u32> {
-        self.eco_mode_cpu_threads
-    }
-
-    pub fn gpu_engine(&self) -> EngineType {
-        self.gpu_engine.clone()
-    }
-
-    pub fn ludicrous_mode_cpu_options(&self) -> Vec<String> {
-        self.ludicrous_mode_cpu_options.clone()
-    }
-
-    pub fn ludicrous_mode_cpu_threads(&self) -> Option<u32> {
-        self.ludicrous_mode_cpu_threads
-    }
-
-    pub fn set_mode(&mut self, mode: MiningMode) {
-        self.mode = mode;
-    }
-
-    pub fn set_custom_cpu_usage(&mut self, custom_max_cpu_usage: Option<u32>) {
-        self.custom_max_cpu_usage = custom_max_cpu_usage;
-    }
-
-    pub fn set_custom_gpu_usage(&mut self, custom_max_gpu_usage: Vec<GpuThreads>) {
-        self.custom_max_gpu_usage = custom_max_gpu_usage;
-    }
-
-    pub fn set_custom_mode_cpu_options(&mut self, custom_mode_cpu_options: Vec<String>) {
-        self.custom_mode_cpu_options = custom_mode_cpu_options;
-    }
-
-    pub fn set_eco_mode_cpu_options(&mut self, eco_mode_cpu_options: Vec<String>) {
-        self.eco_mode_cpu_options = eco_mode_cpu_options;
-    }
-
-    pub fn set_eco_mode_cpu_threads(&mut self, eco_mode_cpu_threads: Option<u32>) {
-        self.eco_mode_cpu_threads = eco_mode_cpu_threads;
-    }
-
-    pub fn set_gpu_engine(&mut self, gpu_engine: EngineType) {
-        self.gpu_engine = gpu_engine;
-    }
-
-    pub fn set_ludicrous_mode_cpu_options(&mut self, ludicrous_mode_cpu_options: Vec<String>) {
-        self.ludicrous_mode_cpu_options = ludicrous_mode_cpu_options;
-    }
-
-    pub fn set_ludicrous_mode_cpu_threads(&mut self, ludicrous_mode_cpu_threads: Option<u32>) {
-        self.ludicrous_mode_cpu_threads = ludicrous_mode_cpu_threads;
-    }
-}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
