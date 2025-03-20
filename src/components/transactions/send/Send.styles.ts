@@ -1,5 +1,4 @@
 import styled, { css } from 'styled-components';
-import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     display: flex;
@@ -21,14 +20,15 @@ export const StyledForm = styled.form`
     align-items: stretch;
     justify-content: space-between;
     width: 100%;
+    gap: 10px;
     flex-grow: 1;
 `;
 
 export const FormFieldsWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    padding: 0 4px;
-    align-items: stretch;
+    gap: 10px;
+    align-items: center;
 `;
 
 export const BottomWrapper = styled.div`
@@ -38,38 +38,15 @@ export const BottomWrapper = styled.div`
     justify-content: flex-end;
 `;
 
-export const SendDivider = styled.div`
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    position: relative;
-
-    &:before,
-    &:after {
-        content: '';
-        height: 1px;
-        position: absolute;
-        width: 40%;
-        top: 50%;
-        background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.075)};
-    }
-
-    &:before {
-        left: 0;
-    }
-    &:after {
-        right: 0;
-    }
-`;
-
 export const DividerIcon = styled.div`
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     background: linear-gradient(0deg, #040723 4%, #071e6b 120%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
     color: #fff;
 `;
 
@@ -78,5 +55,5 @@ export const ErrorMessageWrapper = styled.div`
     align-items: center;
     flex-direction: column;
 
-    color: ${({ theme }) => theme.palette.warning.dark};
+    color: ${({ theme }) => theme.palette.error.main};
 `;

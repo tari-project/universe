@@ -29,6 +29,12 @@ export const HeaderContainer = styled.div`
     z-index: 1;
 `;
 
+export const EndContainer = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 10px;
+`;
+
 export const ContentContainer = styled.div`
     width: 100%;
     max-width: min(450px, max-content);

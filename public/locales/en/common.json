@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Cancel",
+  "close": "Close",
   "close-tari-universe": "Close Tari Universe",
   "connection": "Connection",
   "continue": "Continue",
@@ -26,11 +28,10 @@
   "testnet": "Testnet",
   "unknown": "Unknown",
   "unminimize": "Unminimize",
+  "update": "Update",
   "usage": "Usage",
   "utilization": "Utilization",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
-  "close": "Close",
-  "update": "Update"
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }

@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Отмена",
+  "close": "Закрыть",
   "close-tari-universe": "Закрыть Tari Universe",
   "connection": "Соединение",
   "continue": "Продолжить",
@@ -26,11 +28,10 @@
   "testnet": "Тестовая сеть",
   "unknown": "Неизвестно",
   "unminimize": "Увеличить",
+  "update": "Обновить",
   "usage": "Использование",
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
-  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
-  "close": "Закрыть",
-  "update": "Обновить"
+  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен."
 }

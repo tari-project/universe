@@ -1,14 +1,12 @@
 import { Dot, Pulse, Wrapper } from './styles';
+import { useMiningMetricsStore } from '@app/store';
 
-interface Props {
-    isConnected: boolean;
-}
-
-export default function ConnectedPulse({ isConnected }: Props) {
+export default function ConnectedPulse() {
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
     return (
         <Wrapper>
-            <Dot $isConnected={isConnected} />
-            <Pulse $isConnected={isConnected} />
+            <Dot $isConnected={isConnectedToTariNetwork} />
+            <Pulse $isConnected={isConnectedToTariNetwork} />
         </Wrapper>
     );
 }

@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "キャンセル",
+  "close": "閉じる",
   "close-tari-universe": "Tari Universeを閉じる",
   "connection": "接続",
   "continue": "続行",
@@ -26,11 +28,10 @@
   "testnet": "テストネット",
   "unknown": "不明",
   "unminimize": "最小化解除",
+  "update": "更新",
   "usage": "使用量",
   "utilization": "利用率",
   "version": "バージョン",
   "versions": "バージョン",
-  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。",
-  "close": "閉じる",
-  "update": "更新"
+  "webgl-not-supported": "WebGLがサポートされていません。ビジュアルモードが無効になりました。"
 }

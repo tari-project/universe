@@ -4,6 +4,7 @@
   "history": {
     "label-rewards": "My rewards"
   },
+  "my_tari": "My Tari",
   "receive": {
     "label-address": "My Address"
   },
@@ -25,5 +26,6 @@
     "history": "history",
     "receive": "receive",
     "send": "send"
-  }
+  },
+  "tari": "Tari"
 }

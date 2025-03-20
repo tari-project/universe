@@ -1,11 +1,15 @@
 import styled from 'styled-components';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 export const QRContainer = styled.div`
     display: flex;
+    flex-direction: column;
     width: 100%;
     border-radius: 20px;
     background: ${({ theme }) => theme.colors.greyscale[950]};
     padding: 15px;
+    gap: 10px;
     overflow: hidden;
     align-items: center;
 `;
@@ -55,4 +59,11 @@ export const TextOption = styled.div`
     font-weight: 500;
     font-size: 8px;
     color: inherit;
+`;
+
+export const Label = styled(Typography).attrs({
+    variant: 'p',
+})`
+    font-weight: 500;
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
 `;
