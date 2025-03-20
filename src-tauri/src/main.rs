@@ -1069,7 +1069,11 @@ fn main() {
         p2pool_stats_rx.clone(),
         stats_collector.build(),
     );
-    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
+    let telemetry_service = TelemetryService::new(
+        app_config.clone(),
+        app_in_memory_config.clone(),
+        shutdown.to_signal(),
+    );
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
