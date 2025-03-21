@@ -1,0 +1,207 @@
+use std::{
+    sync::{LazyLock, Mutex},
+    time::SystemTime,
+};
+
+use getset::{Getters, Setters};
+use serde::{Deserialize, Serialize};
+
+use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+static INSTANCE: LazyLock<Mutex<TestConfig>> = LazyLock::new(|| Mutex::new(TestConfig::new()));
+
+#[derive(Clone)]
+struct TestOldConfig {
+    some_test_string: String,
+    some_test_bool: bool,
+}
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
+struct NotFullConfigContent {
+    created_at: SystemTime,
+    some_test_string: String,
+}
+
+impl Default for NotFullConfigContent {
+    fn default() -> Self {
+        Self {
+            created_at: SystemTime::now(),
+            some_test_string: "".to_string(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[serde(rename_all = "snake_case")]
+#[serde(default)]
+#[derive(Getters, Setters)]
+#[getset(get = "pub", set = "pub")]
+struct TestConfigContent {
+    created_at: SystemTime,
+    some_test_string: String,
+    some_test_bool: bool,
+    some_test_int: i32,
+}
+
+impl Default for TestConfigContent {
+    fn default() -> Self {
+        Self {
+            created_at: SystemTime::now(),
+            some_test_string: "".to_string(),
+            some_test_bool: false,
+            some_test_int: 0,
+        }
+    }
+}
+
+impl ConfigContentImpl for TestConfigContent {}
+
+struct TestConfig {
+    content: TestConfigContent,
+}
+
+impl ConfigImpl for TestConfig {
+    type Config = TestConfigContent;
+    type OldConfig = TestOldConfig;
+
+    fn current() -> &'static Mutex<Self> {
+        &INSTANCE
+    }
+
+    fn new() -> Self {
+        Self {
+            content: TestConfigContent::default(),
+        }
+    }
+
+    fn get_name() -> String {
+        "test_config".to_string()
+    }
+
+    fn get_content(&self) -> &Self::Config {
+        &self.content
+    }
+
+    fn get_content_mut(&mut self) -> &mut Self::Config {
+        &mut self.content
+    }
+
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        self.content = TestConfigContent {
+            created_at: SystemTime::now(),
+            some_test_string: old_config.some_test_string,
+            some_test_bool: old_config.some_test_bool,
+            some_test_int: 0,
+        };
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    fn clear_config_file() {
+        if TestConfig::get_config_path().exists() {
+            std::fs::remove_file(TestConfig::get_config_path()).unwrap();
+        }
+    }
+
+    fn before_each() {
+        clear_config_file();
+    }
+
+    #[test]
+    fn test_saving_to_file() {
+        before_each();
+
+        let config = TestConfig::current().lock().unwrap();
+        config.save_config().unwrap();
+
+        assert!(TestConfig::get_config_path().exists());
+    }
+
+    #[test]
+    fn test_loading_from_file() {
+        before_each();
+
+        let config = TestConfig::current().lock().unwrap();
+        config.save_config().unwrap();
+
+        let loaded_config = config.load_config().unwrap();
+        assert_eq!(config.get_content(), &loaded_config);
+    }
+
+    #[test]
+    fn test_update_field() {
+        before_each();
+
+        let mut config = TestConfig::current().lock().unwrap();
+        let initial_value = *config.get_content().some_test_bool();
+        config
+            .update_field(TestConfigContent::set_some_test_bool, !initial_value)
+            .unwrap();
+
+        assert_eq!(!initial_value, *config.get_content().some_test_bool());
+        assert_eq!(
+            !initial_value,
+            *config.load_config().unwrap().some_test_bool()
+        );
+    }
+    #[test]
+    fn test_migrate_old_config() {
+        before_each();
+
+        let old_config = TestOldConfig {
+            some_test_string: "test".to_string(),
+            some_test_bool: true,
+        };
+
+        let mut config = TestConfig::current().lock().unwrap();
+        config.migrate_old_config(old_config.clone()).unwrap();
+
+        assert_eq!(
+            &old_config.some_test_string,
+            config.get_content().some_test_string()
+        );
+        assert_eq!(
+            old_config.some_test_bool,
+            *config.get_content().some_test_bool()
+        );
+        assert_eq!(0, *config.get_content().some_test_int());
+    }
+
+    #[test]
+    fn test_if_loading_with_missing_files_is_handled() {
+        before_each();
+
+        let not_full_config = NotFullConfigContent {
+            created_at: SystemTime::now(),
+            some_test_string: "test".to_string(),
+        };
+
+        let not_full_config_serialized = serde_json::to_string_pretty(&not_full_config).unwrap();
+        fs::write(TestConfig::get_config_path(), not_full_config_serialized).unwrap();
+
+        let config = TestConfig::current().lock().unwrap();
+        let loaded_config = config.load_config().unwrap();
+
+        assert_eq!(
+            loaded_config.some_test_string,
+            not_full_config.some_test_string
+        );
+        assert_eq!(loaded_config.created_at, not_full_config.created_at);
+        assert_eq!(
+            loaded_config.some_test_bool,
+            TestConfigContent::default().some_test_bool
+        );
+        assert_eq!(
+            loaded_config.some_test_int,
+            TestConfigContent::default().some_test_int
+        );
+    }
+}

@@ -48,21 +48,12 @@ pub trait ConfigImpl {
 
     fn update_field<F, I: Debug>(&mut self, setter_callback: F, value: I) -> Result<(), Error>
     where
-        F: FnOnce(&mut Self::Config, I),
+        F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::get_name(), std::any::type_name::<F>(), value);
         let mut content = self.get_content_mut();
         setter_callback(&mut content, value);
         self.save_config()?;
         Ok(())
-    }
-
-    fn get_field<F, T>(&self, getter_callback: F) -> T
-    where
-        F: FnOnce(&Self::Config) -> T,
-    {
-        debug!(target: LOG_TARGET, "[{}] [get_field] with function: {:?}", Self::get_name(), std::any::type_name::<F>());
-        let content = self.get_content();
-        getter_callback(content)
     }
 }

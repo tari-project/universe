@@ -172,7 +172,7 @@ pub enum DisplayMode {
     Light,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AirdropTokens {
     pub token: String,
     pub refresh_token: String,
