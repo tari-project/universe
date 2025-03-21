@@ -78,7 +78,7 @@ pub trait ConfigImpl {
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::get_name(), std::any::type_name::<F>(), value);
-        let mut content = self.get_content_mut();
+        let content = self.get_content_mut();
         setter_callback(content, value);
         self.save_config()?;
         Ok(())
