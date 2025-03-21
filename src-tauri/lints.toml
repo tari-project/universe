@@ -67,4 +67,8 @@ allow = [
   # `assert!(!foo(bar))` is misread the majority of the time, while `assert_eq!(foo(bar), false)` is crystal clear
   'clippy::bool-assert-comparison',
   'clippy::blocks_in_conditions',
+  # test should be light on linting
+  'allow-dbg-in-tests',
+  'allow-print-in-tests',
+  'allow-unwraps-in-tests',
 ]
