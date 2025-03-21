@@ -332,7 +332,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.build.outputs.tag }}
+          tag_name: ${{ env.tagName }}
           files: |
             ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
 
