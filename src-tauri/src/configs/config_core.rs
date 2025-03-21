@@ -32,7 +32,7 @@ use crate::{app_config::AirdropTokens, AppConfig};
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<Mutex<ConfigCore>> = LazyLock::new(|| Mutex::new(ConfigCore::new()));
-
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]

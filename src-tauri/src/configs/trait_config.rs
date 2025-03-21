@@ -29,10 +29,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::APPLICATION_FOLDER_ID;
 
+#[allow(dead_code)]
 pub trait ConfigContentImpl: Default + Serialize + for<'de> Deserialize<'de> {}
 
+#[allow(dead_code)]
 static LOG_TARGET: &str = "config_trait";
 
+#[allow(dead_code)]
 pub trait ConfigImpl {
     type Config: ConfigContentImpl;
     type OldConfig: Any;
@@ -76,7 +79,7 @@ pub trait ConfigImpl {
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::get_name(), std::any::type_name::<F>(), value);
         let mut content = self.get_content_mut();
-        setter_callback(&mut content, value);
+        setter_callback(content, value);
         self.save_config()?;
         Ok(())
     }

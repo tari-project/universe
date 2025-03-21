@@ -35,7 +35,7 @@ use crate::AppConfig;
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<Mutex<ConfigUI>> = LazyLock::new(|| Mutex::new(ConfigUI::new()));
-
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
