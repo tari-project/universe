@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
@@ -49,7 +50,7 @@ use crate::{process_utils, BaseNodeStatus};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum EngineType {
     Cuda,
     OpenCL,
