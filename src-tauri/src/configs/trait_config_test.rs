@@ -141,9 +141,9 @@ mod tests {
 
     #[test]
     fn test_saving_to_file() {
+        let config = TestConfig::current().lock().unwrap();
         before_each();
 
-        let config = TestConfig::current().lock().unwrap();
         config.save_config().unwrap();
 
         assert!(TestConfig::get_config_path().exists());
@@ -151,9 +151,9 @@ mod tests {
 
     #[test]
     fn test_loading_from_file() {
+        let config = TestConfig::current().lock().unwrap();
         before_each();
 
-        let config = TestConfig::current().lock().unwrap();
         config.save_config().unwrap();
 
         let loaded_config = config.load_config().unwrap();
@@ -162,9 +162,9 @@ mod tests {
 
     #[test]
     fn test_update_field() {
+        let mut config = TestConfig::current().lock().unwrap();
         before_each();
 
-        let mut config = TestConfig::current().lock().unwrap();
         let initial_value = *config.get_content().some_test_bool();
         config
             .update_field(TestConfigContent::set_some_test_bool, !initial_value)
@@ -178,6 +178,7 @@ mod tests {
     }
     #[test]
     fn test_migrate_old_config() {
+        let mut config = TestConfig::current().lock().unwrap();
         before_each();
 
         let old_config = TestOldConfig {
@@ -185,7 +186,6 @@ mod tests {
             some_test_bool: true,
         };
 
-        let mut config = TestConfig::current().lock().unwrap();
         config.migrate_old_config(old_config.clone()).unwrap();
 
         assert_eq!(
@@ -201,6 +201,7 @@ mod tests {
 
     #[test]
     fn test_if_loading_with_missing_files_is_handled() {
+        let config = TestConfig::current().lock().unwrap();
         before_each();
 
         let not_full_config = NotFullConfigContent {
@@ -211,7 +212,6 @@ mod tests {
         let not_full_config_serialized = serde_json::to_string_pretty(&not_full_config).unwrap();
         fs::write(TestConfig::get_config_path(), not_full_config_serialized).unwrap();
 
-        let config = TestConfig::current().lock().unwrap();
         let loaded_config = config.load_config().unwrap();
 
         assert_eq!(

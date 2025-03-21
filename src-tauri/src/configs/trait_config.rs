@@ -53,8 +53,9 @@ pub trait ConfigImpl {
     }
     fn save_config(&self) -> Result<(), Error> {
         let config_path = Self::get_config_path();
-        let config_dir = config_path.parent();
-        fs::create_dir_all(config_dir)?;
+        if let Some(parent) = config_path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         let config_content = self.get_content();
         let config_content_serialized = serde_json::to_string_pretty(config_content)?;
         fs::write(config_path, config_content_serialized)?;
@@ -62,6 +63,7 @@ pub trait ConfigImpl {
     }
     fn load_config(&self) -> Result<Self::Config, Error> {
         let config_path = Self::get_config_path();
+        println!("config_path: {:?}", config_path);
         let config_content_serialized = fs::read_to_string(config_path)?;
         let config_content: Self::Config = serde_json::from_str(&config_content_serialized)?;
         Ok(config_content)
