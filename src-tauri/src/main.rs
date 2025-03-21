@@ -70,7 +70,7 @@ use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
 use node_manager::NodeManagerError;
-use progress_tracker::ProgressTracker;
+use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
 use crate::cpu_miner::CpuMiner;
@@ -128,7 +128,7 @@ mod process_killer;
 mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
-mod progress_tracker;
+mod progress_tracker_old;
 mod release_notes;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;

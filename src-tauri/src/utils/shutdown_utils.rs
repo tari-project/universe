@@ -26,7 +26,7 @@ use crate::{
     events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
-    progress_tracker::ProgressTracker,
+    progress_tracker_old::ProgressTracker,
     StartConfig, UniverseAppState,
 };
 use log::{error, info, warn};
