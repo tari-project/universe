@@ -3,7 +3,6 @@ import { listen } from '@tauri-apps/api/event';
 import { useUIStore } from '@app/store/useUIStore';
 import { TauriEvent } from '../../types.ts';
 import {
-    airdropSetup,
     fetchApplicationsVersionsWithRetry,
     setSetupComplete,
     setSetupParams,
@@ -17,13 +16,12 @@ export function useSetUp() {
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
-        await airdropSetup();
     }, []);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
         const unlistenPromise = listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
-            console.log('Received tauri event: ', { e, p });
+            console.info('Received tauri event: ', { e, p });
             switch (p.event_type) {
                 case 'setup_status':
                     if (p.progress >= 0) {

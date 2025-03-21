@@ -56,7 +56,6 @@ export default function HistoryItem({ item }: HistoryItemProps) {
 
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const earningsFormatted = formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
-    const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
 
     const [hovering, setHovering] = useState(false);
@@ -74,8 +73,7 @@ export default function HistoryItem({ item }: HistoryItemProps) {
         hour: 'numeric',
         minute: 'numeric',
     });
-    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
-
+    const gemsValue = GIFT_GEMS.toLocaleString();
     const handleShareClick = () => {
         setShowModal(true);
         setItemData(item);

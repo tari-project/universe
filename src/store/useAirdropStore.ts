@@ -78,10 +78,7 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
-export interface ReferralQuestPoints {
-    pointsPerReferral: number;
-    pointsForClaimingReferral: number;
-}
+
 interface MiningPoint {
     blockHeight: string;
     reward: number;
@@ -93,11 +90,9 @@ export interface AirdropStoreState {
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
-    referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
-    referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
 }
 
@@ -107,7 +102,6 @@ const initialState: AirdropStoreState = {
     miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
-    referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
 };
