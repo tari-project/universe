@@ -53,7 +53,7 @@ pub trait ConfigImpl {
     }
     fn save_config(&self) -> Result<(), Error> {
         let config_path = Self::get_config_path();
-        let config_dir = config_path.parent().unwrap();
+        let config_dir = config_path.parent();
         fs::create_dir_all(config_dir)?;
         let config_content = self.get_content();
         let config_content_serialized = serde_json::to_string_pretty(config_content)?;
