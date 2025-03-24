@@ -1,6 +1,6 @@
 use crate::events::EventType;
 
-use super::progress_tracker_impl::{ProgressEvent, ProgressStep};
+use super::trait_progress_tracker::{ProgressEvent, ProgressStep};
 
 pub struct ProgressPlanEventPayload {
     event_type: EventType,
@@ -22,36 +22,37 @@ impl ProgressEvent for ProgressPlanEventPayload {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum ProgressStartupPlan {
-    InitializeApp,
-    InitializeTor,
-    InitializeNode,
+    App,
+    Tor,
+    Node,
 }
 
 impl ProgressStep for ProgressStartupPlan {
     type ChannelEvent = ProgressPlanEventPayload;
     fn get_description(&self) -> Option<String> {
         match self {
-            ProgressStartupPlan::InitializeApp => None,
-            ProgressStartupPlan::InitializeTor => None,
-            ProgressStartupPlan::InitializeNode => None,
+            ProgressStartupPlan::App => None,
+            ProgressStartupPlan::Tor => None,
+            ProgressStartupPlan::Node => None,
         }
     }
 
     fn get_event_type(&self) -> EventType {
         match self {
-            ProgressStartupPlan::InitializeApp => EventType::ProgressTrackerStartup,
-            ProgressStartupPlan::InitializeTor => EventType::ProgressTrackerStartup,
-            ProgressStartupPlan::InitializeNode => EventType::ProgressTrackerStartup,
+            ProgressStartupPlan::App => EventType::ProgressTrackerStartup,
+            ProgressStartupPlan::Tor => EventType::ProgressTrackerStartup,
+            ProgressStartupPlan::Node => EventType::ProgressTrackerStartup,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressStartupPlan::InitializeApp => "Initializing app".to_string(),
-            ProgressStartupPlan::InitializeTor => "Initializing Tor".to_string(),
-            ProgressStartupPlan::InitializeNode => "Initializing Node".to_string(),
+            ProgressStartupPlan::App => "Initializing app".to_string(),
+            ProgressStartupPlan::Tor => "Initializing Tor".to_string(),
+            ProgressStartupPlan::Node => "Initializing Node".to_string(),
         }
     }
 
@@ -65,18 +66,18 @@ impl ProgressStep for ProgressStartupPlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressStartupPlan::InitializeApp => 1,
-            ProgressStartupPlan::InitializeTor => 1,
-            ProgressStartupPlan::InitializeNode => 1,
+            ProgressStartupPlan::App => 1,
+            ProgressStartupPlan::Tor => 1,
+            ProgressStartupPlan::Node => 1,
         }
     }
 }
-
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum ProgressResumePlan {
-    InitializeWallet,
-    InitializeTor,
-    InitializeNode,
+    Wallet,
+    Tor,
+    Node,
 }
 
 impl ProgressStep for ProgressResumePlan {
@@ -84,25 +85,25 @@ impl ProgressStep for ProgressResumePlan {
 
     fn get_description(&self) -> Option<String> {
         match self {
-            ProgressResumePlan::InitializeWallet => None,
-            ProgressResumePlan::InitializeTor => None,
-            ProgressResumePlan::InitializeNode => None,
+            ProgressResumePlan::Wallet => None,
+            ProgressResumePlan::Tor => None,
+            ProgressResumePlan::Node => None,
         }
     }
 
     fn get_event_type(&self) -> EventType {
         match self {
-            ProgressResumePlan::InitializeWallet => EventType::ProgressTrackerResume,
-            ProgressResumePlan::InitializeTor => EventType::ProgressTrackerResume,
-            ProgressResumePlan::InitializeNode => EventType::ProgressTrackerResume,
+            ProgressResumePlan::Wallet => EventType::ProgressTrackerResume,
+            ProgressResumePlan::Tor => EventType::ProgressTrackerResume,
+            ProgressResumePlan::Node => EventType::ProgressTrackerResume,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressResumePlan::InitializeWallet => "Initializing wallet".to_string(),
-            ProgressResumePlan::InitializeTor => "Initializing Tor".to_string(),
-            ProgressResumePlan::InitializeNode => "Initializing Node".to_string(),
+            ProgressResumePlan::Wallet => "Initializing wallet".to_string(),
+            ProgressResumePlan::Tor => "Initializing Tor".to_string(),
+            ProgressResumePlan::Node => "Initializing Node".to_string(),
         }
     }
 
@@ -115,19 +116,19 @@ impl ProgressStep for ProgressResumePlan {
     }
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressResumePlan::InitializeWallet => 1,
-            ProgressResumePlan::InitializeTor => 1,
-            ProgressResumePlan::InitializeNode => 1,
+            ProgressResumePlan::Wallet => 1,
+            ProgressResumePlan::Tor => 1,
+            ProgressResumePlan::Node => 1,
         }
     }
 }
-
+#[allow(dead_code)]
 #[derive(Clone)]
 pub enum ProgressPlans {
     Startup(ProgressStartupPlan),
     Resume(ProgressResumePlan),
 }
-
+#[allow(dead_code)]
 impl ProgressPlans {
     fn get_event_type(&self) -> EventType {
         match self {

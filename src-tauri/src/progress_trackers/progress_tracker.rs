@@ -7,7 +7,7 @@ use crate::UniverseAppState;
 
 use super::{
     progress_plans::ProgressPlans,
-    progress_tracker_impl::{
+    trait_progress_tracker::{
         ProgressEvent, ProgressPlanBuilderImpl, ProgressPlanExecutorImpl, ProgressStep,
     },
 };
@@ -108,7 +108,8 @@ impl ProgressPlanBuilderImpl<ProgressPlanExecutor> for ProgressPlanBuilder {
             .sum();
         let mut current_percentage = 0.0;
         for step in &self.plan {
-            let percentage = (step.get_progress_weight() as f64 / total_weight as f64) * 100.0;
+            let percentage =
+                (f64::from(step.get_progress_weight()) / f64::from(total_weight)) * 100.0;
             current_percentage += percentage;
             self.percentage_steps
                 .push(current_percentage.min(100.0).round());
@@ -126,16 +127,16 @@ impl ProgressPlanBuilderImpl<ProgressPlanExecutor> for ProgressPlanBuilder {
 
 #[cfg(test)]
 mod tests {
-    use crate::progress_tracker::progress_plans::ProgressResumePlan;
+    use crate::progress_trackers::progress_plans::ProgressResumePlan;
 
     use super::*;
 
     #[tokio::test]
     async fn test_progress_plan_builder_3() {
         let mut progress_tracker = ProgressPlanBuilder::new()
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeNode))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeTor))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeWallet))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Node))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Tor))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Wallet))
             .calculate_percentage_steps()
             .build();
 
@@ -143,7 +144,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeNode.get_title());
+                assert_eq!(*title, ProgressResumePlan::Node.get_title());
                 assert_eq!(*percentage, 33.0);
             });
 
@@ -151,7 +152,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeTor.get_title());
+                assert_eq!(*title, ProgressResumePlan::Tor.get_title());
                 assert_eq!(*percentage, 67.0);
             });
 
@@ -159,7 +160,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeWallet.get_title());
+                assert_eq!(*title, ProgressResumePlan::Wallet.get_title());
                 assert_eq!(*percentage, 100.0);
             });
     }
@@ -167,11 +168,11 @@ mod tests {
     #[tokio::test]
     async fn test_progress_plan_builder_5() {
         let mut progress_tracker = ProgressPlanBuilder::new()
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeNode))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeTor))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeWallet))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeNode))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeTor))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Node))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Tor))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Wallet))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Node))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Tor))
             .calculate_percentage_steps()
             .build();
 
@@ -179,7 +180,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeNode.get_title());
+                assert_eq!(*title, ProgressResumePlan::Node.get_title());
                 assert_eq!(*percentage, 20.0);
             });
 
@@ -187,7 +188,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeTor.get_title());
+                assert_eq!(*title, ProgressResumePlan::Tor.get_title());
                 assert_eq!(*percentage, 40.0);
             });
 
@@ -195,7 +196,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeWallet.get_title());
+                assert_eq!(*title, ProgressResumePlan::Wallet.get_title());
                 assert_eq!(*percentage, 60.0);
             });
 
@@ -203,7 +204,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeNode.get_title());
+                assert_eq!(*title, ProgressResumePlan::Node.get_title());
                 assert_eq!(*percentage, 80.0);
             });
 
@@ -211,7 +212,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeTor.get_title());
+                assert_eq!(*title, ProgressResumePlan::Tor.get_title());
                 assert_eq!(*percentage, 100.0);
             });
     }
@@ -219,9 +220,9 @@ mod tests {
     #[tokio::test]
     async fn test_progress_plan_builder_3_skip() {
         let mut progress_tracker = ProgressPlanBuilder::new()
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeNode))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeTor))
-            .add_step(ProgressPlans::Resume(ProgressResumePlan::InitializeWallet))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Node))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Tor))
+            .add_step(ProgressPlans::Resume(ProgressResumePlan::Wallet))
             .calculate_percentage_steps()
             .build();
 
@@ -229,12 +230,12 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeNode.get_title());
+                assert_eq!(*title, ProgressResumePlan::Node.get_title());
                 assert_eq!(*percentage, 33.0);
             });
 
         let _unused = progress_tracker.skip_step().inspect(|(title, percentage)| {
-            assert_eq!(*title, ProgressResumePlan::InitializeTor.get_title());
+            assert_eq!(*title, ProgressResumePlan::Tor.get_title());
             assert_eq!(*percentage, 67.0);
         });
 
@@ -242,7 +243,7 @@ mod tests {
             .resolve_step(None)
             .await
             .inspect(|(title, percentage)| {
-                assert_eq!(*title, ProgressResumePlan::InitializeWallet.get_title());
+                assert_eq!(*title, ProgressResumePlan::Wallet.get_title());
                 assert_eq!(*percentage, 100.0);
             });
     }
