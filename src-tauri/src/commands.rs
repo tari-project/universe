@@ -35,7 +35,7 @@ use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker::ProgressTracker;
+use crate::progress_tracker_old::ProgressTracker;
 use crate::tasks_tracker::TasksTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;

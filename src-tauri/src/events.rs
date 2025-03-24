@@ -51,7 +51,16 @@ pub enum EventType {
     MissingApplications,
     StuckOnOrphanChain,
     NetworkStatus,
+    ProgressTrackerResume,
+    ProgressTrackerStartup,
 }
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgressTrackerUpdatePayload {
+    pub title: String,
+    pub progress: f64,
+    pub description: Option<String>,
+}
+
 #[derive(Clone, Debug, Serialize)]
 pub struct NetworkStatusPayload {
     pub download_speed: f64,

@@ -32,7 +32,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
+    events::{EventType, ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
@@ -244,5 +244,16 @@ impl EventsManager {
 
     pub async fn handle_stuck_on_orphan_chain(&self, app: &AppHandle, is_stuck: bool) {
         EventsEmitter::emit_stuck_on_orphan_chain(app, is_stuck).await;
+    }
+    pub async fn handle_progress_tracker_update(
+        &self,
+        app: &AppHandle,
+        event_type: EventType,
+        title: String,
+        progress: f64,
+        description: Option<String>,
+    ) {
+        EventsEmitter::emit_progress_tracker_update(app, event_type, title, progress, description)
+            .await;
     }
 }
