@@ -705,6 +705,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn application_language(&self) -> String {
+        self.application_language.clone()
+    }
+
     pub async fn set_should_always_use_system_language(
         &mut self,
         should_always_use_system_language: bool,
