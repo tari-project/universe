@@ -13,7 +13,6 @@ import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
 import MainView from '../containers/main/MainView.tsx';
-import Setup from '../containers/phase/Setup/Setup';
 
 import { AppContentContainer } from './App.styles.ts';
 
@@ -26,20 +25,11 @@ const CurrentAppSection = memo(function CurrentAppSection({
 }) {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const currentSection = useMemo(() => {
-        const showSetup = isSettingUp && !isShuttingDown && isAppReady;
         const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
         if (!isAppReady) {
             return (
                 <AppContentContainer key="splashscreen" initial="hidden">
                     <Splashscreen />
-                </AppContentContainer>
-            );
-        }
-
-        if (showSetup) {
-            return (
-                <AppContentContainer key="setup" initial="hidden">
-                    <Setup />
                 </AppContentContainer>
             );
         }
