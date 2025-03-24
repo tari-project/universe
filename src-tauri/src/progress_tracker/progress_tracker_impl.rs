@@ -13,11 +13,15 @@ pub trait ProgressStep {
     type ChannelEvent: ProgressChannelEvent;
     fn resolve_to_event(&self) -> Self::ChannelEvent;
     fn get_progress_weight(&self) -> u8;
+    fn get_event_type(&self) -> EventType;
+    fn get_title(&self) -> String;
+    fn get_description(&self) -> Option<String>;
 }
 
 pub trait ProgressPlanExecutorImpl {
-    async fn resolve_step(&mut self, app_handle: AppHandle) -> Result<(), Error>;
-    fn skip_step(&mut self) -> Result<(), Error>;
+    async fn resolve_step(&mut self, app_handle: Option<AppHandle>)
+        -> Result<(String, f64), Error>;
+    fn skip_step(&mut self) -> Result<(String, f64), Error>;
 }
 
 pub trait ProgressPlanBuilderImpl<Executor: ProgressPlanExecutorImpl> {
