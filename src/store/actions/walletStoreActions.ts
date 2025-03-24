@@ -1,14 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
-import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
+import { TransactionStatus, WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from '../useWalletStore';
 
 interface TxArgs {
-    continuation: boolean;
+    lastTxId?: number;
+    statusFilters?: TransactionStatus[];
     limit?: number;
 }
 
-export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) => {
+export const fetchTransactions = async ({ lastTxId, statusFilters, limit }: TxArgs = {}) => {
     if (useWalletStore.getState().is_transactions_history_loading) {
         return [];
     }
@@ -16,9 +17,13 @@ export const fetchTransactionsHistory = async ({ continuation, limit }: TxArgs) 
     try {
         useWalletStore.setState({ is_transactions_history_loading: true });
         const currentTxs = useWalletStore.getState().transactions;
-        const fetchedTxs = await invoke('get_transactions_history', { continuation, limit });
+        const fetchedTxs = await invoke('get_transactions', {
+            lastTxId,
+            statusFilters,
+            limit,
+        });
 
-        const transactions = continuation ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
+        const transactions = lastTxId ? [...currentTxs, ...fetchedTxs] : fetchedTxs;
         const has_more_transactions = fetchedTxs.length > 0 && (!limit || fetchedTxs.length === limit);
         useWalletStore.setState({
             has_more_transactions,
@@ -43,11 +48,11 @@ export const importSeedWords = async (seedWords: string[]) => {
     }
 };
 export const initialFetchTxs = () => {
-    void fetchTransactionsHistory({ continuation: false, limit: 20 });
+    void fetchTransactions({ limit: 20 });
 };
 export const refreshTransactions = async () => {
     const limit = useWalletStore.getState().transactions.length;
-    return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
+    return fetchTransactions({ limit: Math.max(limit, 20) });
 };
 
 export const setWalletAddress = (addresses: WalletAddress) => {

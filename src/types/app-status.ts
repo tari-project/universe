@@ -248,3 +248,36 @@ export interface NetworkStatus {
     latency: number;
     is_too_low: boolean;
 }
+
+export enum TransactionStatus {
+    // This transaction has been completed between the parties but has not been broadcast to the base layer network.
+    COMPLETED = 0,
+    // This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
+    BROADCAST = 1,
+    // This transaction has been mined and included in a block.
+    MINED_UNCONFIRMED = 2,
+    // This transaction was generated as part of importing a spendable UTXO
+    IMPORTED = 3,
+    // This transaction is still being negotiated by the parties
+    PENDING = 4,
+    // This is a created Coinbase Transaction
+    COINBASE = 5,
+    // This transaction is mined and confirmed at the current base node's height
+    MINED_CONFIRMED = 6,
+    // The transaction was rejected by the mempool
+    REJECTED = 7,
+    // This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
+    ONE_SIDED_UNCONFIRMED = 8,
+    // All Imported and FauxUnconfirmed transactions will end up with this status when the outputs have been confirmed
+    ONE_SIDED_CONFIRMED = 9,
+    // This transaction is still being queued for sending
+    QUEUED = 10,
+    // The transaction was not found by the wallet its in transaction database
+    NOT_FOUND = 11,
+    // This is Coinbase transaction that is detected from chain
+    COINBASE_UNCONFIRMED = 12,
+    // This is Coinbase transaction that is detected from chain
+    COINBASE_CONFIRMED = 13,
+    // This is Coinbase transaction that is not currently detected as mined
+    COINBASE_NOT_IN_BLOCK_CHAIN = 14,
+}

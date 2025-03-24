@@ -25,6 +25,7 @@ use crate::node_manager::NodeManagerError;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::TransactionStatus;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use futures_util::future::FusedFuture;
@@ -122,15 +123,16 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
-    pub async fn get_transactions_history(
+    pub async fn get_transactions(
         &self,
-        continuation: bool,
+        last_tx_id: Option<u64>,
+        status_filters: Option<Vec<TransactionStatus>>,
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
             .adapter
-            .get_transactions_history(continuation, limit)
+            .get_transactions(last_tx_id, status_filters, limit)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
@@ -138,20 +140,22 @@ impl WalletManager {
             })
     }
 
-    pub async fn get_coinbase_transactions(
-        &self,
-        continuation: bool,
-        limit: Option<u32>,
-    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
+    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
+        let mut process_watcher = self.watcher.write().await;
         process_watcher
-            .adapter
-            .get_coinbase_transactions(continuation, limit)
+            .stop()
             .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
+            .map_err(WalletManagerError::UnknownError)
+    }
+
+    pub async fn is_running(&self) -> bool {
+        let process_watcher = self.watcher.read().await;
+        process_watcher.is_running()
+    }
+
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
     }
 
     #[deprecated(

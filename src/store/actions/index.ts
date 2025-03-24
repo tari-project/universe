@@ -73,7 +73,7 @@ export {
 } from './uiStoreActions.ts';
 
 export {
-    fetchTransactionsHistory,
+    fetchTransactions,
     importSeedWords,
     initialFetchTxs,
     refreshTransactions,
