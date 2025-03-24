@@ -25,6 +25,7 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
+use events::SetupStatusPayload;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -42,14 +43,12 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
-use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
-use serde::Serialize;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -59,7 +58,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
 use tokio::sync::{Mutex, RwLock};
@@ -70,7 +69,6 @@ use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
-use events::SetupStatusEvent;
 use node_manager::NodeManagerError;
 use progress_tracker::ProgressTracker;
 use telemetry_manager::TelemetryManager;
@@ -78,9 +76,8 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
-#[allow(unused_imports)]
-use crate::external_dependencies::ExternalDependencies;
-use crate::external_dependencies::RequiredExternalDependency;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
@@ -169,13 +166,6 @@ struct CpuMinerConfig {
     custom_mode_xmrig_options: Vec<String>,
     eco_mode_cpu_percentage: Option<u32>,
     ludicrous_mode_cpu_percentage: Option<u32>,
-}
-
-#[derive(Debug, Serialize, Clone)]
-#[allow(dead_code)]
-struct CriticalProblemEvent {
-    title: Option<String>,
-    description: Option<String>,
 }
 
 #[allow(clippy::too_many_lines)]
@@ -291,30 +281,30 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
-    FrontendReadyChannel::current().wait_for_ready().await?;
-    app.emit(
-        "setup_message",
-        SetupStatusEvent {
-            event_type: "setup_status".to_string(),
-            title: "starting-up".to_string(),
-            title_params: None,
-            progress: 0.0,
-        },
-    )
-    .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e))?;
+    state.events_manager.handle_app_config_loaded(&app).await;
+    state
+        .events_manager
+        .handle_setup_status(
+            &app,
+            SetupStatusPayload {
+                event_type: "setup_status".to_string(),
+                title: "starting-up".to_string(),
+                title_params: None,
+                progress: 0.0,
+            },
+        )
+        .await;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
-        app.emit(
-            "critical_problem",
-            CriticalProblemEvent {
-                title: None,
-                description: Some("not-installed-in-applications-directory".to_string()),
-            },
-        )
-        .inspect_err(
-            |e| error!(target: LOG_TARGET, "Could not emit event 'critical_problem': {:?}", e),
-        )?;
+        state
+            .events_manager
+            .handle_critical_problem(
+                &app,
+                None,
+                Some("not-installed-in-applications-directory".to_string()),
+            )
+            .await;
         return Ok(());
     }
 
@@ -346,7 +336,10 @@ async fn setup_inner(
             .await;
 
         if is_missing {
-            *state.missing_dependencies.write().await = Some(external_dependencies);
+            state
+                .events_manager
+                .handle_missing_application_files(&app, external_dependencies)
+                .await;
             return Ok(());
         }
     }
@@ -889,21 +882,18 @@ async fn setup_inner(
 
     initialize_frontend_updates(&app).await?;
 
-    drop(
-        app.clone()
-            .emit(
-                "setup_message",
-                SetupStatusEvent {
-                    event_type: "setup_status".to_string(),
-                    title: "application-started".to_string(),
-                    title_params: None,
-                    progress: 1.0,
-                },
-            )
-            .inspect_err(
-                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            ),
-    );
+    state
+        .events_manager
+        .handle_setup_status(
+            &app,
+            SetupStatusPayload {
+                event_type: "setup_status".to_string(),
+                title: "application-started".to_string(),
+                title_params: None,
+                progress: 1.0,
+            },
+        )
+        .await;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     let mut shutdown_signal = state.shutdown.to_signal();
@@ -927,7 +917,10 @@ async fn setup_inner(
                             if is_stuck && !has_send_error {
                                 has_send_error = true;
                             }
-                            drop(app_handle_clone.emit("is_stuck", is_stuck));
+                            state
+                        .events_manager
+                        .handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
+                        .await;
                         }
                         Err(ref e) => {
                             error!(target: LOG_TARGET, "{}", e);
@@ -987,7 +980,6 @@ struct UniverseAppState {
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
-    missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     shutdown: Shutdown,
@@ -1127,7 +1119,6 @@ fn main() {
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
-        missing_dependencies: Arc::new(RwLock::new(None)),
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
@@ -1350,7 +1341,6 @@ fn main() {
             commands::download_and_start_installer,
             commands::exit_application,
             commands::fetch_tor_bridges,
-            commands::get_app_config,
             commands::get_app_in_memory_config,
             commands::get_applications_versions,
             commands::get_external_dependencies,
@@ -1368,7 +1358,6 @@ fn main() {
             commands::log_web_message,
             commands::open_log_dir,
             commands::reset_settings,
-            commands::resolve_application_language,
             commands::restart_application,
             commands::send_feedback,
             commands::set_allow_telemetry,

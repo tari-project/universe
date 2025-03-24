@@ -25,13 +25,13 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_should_auto_launch', payload: { shouldAutoLaunch: boolean }): Promise<void>;
     function invoke(param: 'set_selected_engine', payload: { selectedEngine: string }): Promise<void>;
     function invoke(param: 'set_application_language', payload: { applicationLanguage: Language }): Promise<void>;
+    function invoke(param: 'frontend_ready'): Promise<void>;
     function invoke(
         param: 'download_and_start_installer',
         payload: { missingDependency: ExternalDependency }
     ): Promise<void>;
     function invoke(param: 'get_external_dependencies'): Promise<ExternalDependency[]>;
     function invoke(param: 'get_paper_wallet_details', payload?: { authUuid?: string }): Promise<PaperWalletDetails>;
-    function invoke(param: 'resolve_application_language'): Promise<Language>;
     function invoke(param: 'set_mine_on_app_start', payload: { mineOnAppStart: boolean }): Promise<void>;
     function invoke(param: 'open_log_dir'): Promise<void>;
     function invoke(param: 'start_mining'): Promise<void>;
@@ -52,7 +52,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_monero_address', payload: { moneroAddress: string }): Promise<void>;
     function invoke(param: 'send_feedback', payload: { feedback: string; includeLogs: boolean }): Promise<string>;
     function invoke(param: 'reset_settings', payload: { resetWallet: boolean }): Promise<string>;
-    function invoke(param: 'get_app_config'): Promise<AppConfig>;
     function invoke(param: 'set_p2pool_enabled', payload: { p2pool_enabled: boolean }): Promise<void>;
     function invoke(param: 'get_p2pool_stats'): Promise<P2poolStatsResult>;
     function invoke(param: 'get_p2pool_connections'): Promise<P2poolConnections>;
