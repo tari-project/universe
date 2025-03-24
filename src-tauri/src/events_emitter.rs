@@ -42,10 +42,31 @@ use tauri::{AppHandle, Emitter};
 
 const LOG_TARGET: &str = "tari::universe::events_emitter";
 const BACKEND_STATE_UPDATE: &str = "backend_state_update";
+const PROGRESS_TRACKER_UPDATE: &str = "progress_tracker_update";
 
 pub(crate) struct EventsEmitter;
 
 impl EventsEmitter {
+    pub async fn emit_progress_tracker_update(
+        app_handle: &AppHandle,
+        event_type: EventType,
+        title: String,
+        progress: f64,
+        description: Option<String>,
+    ) {
+        let event: Event<ProgressTrackerUpdatePayload> = Event {
+            event_type,
+            payload: ProgressTrackerUpdatePayload {
+                title,
+                progress,
+                description,
+            },
+        };
+        if let Err(e) = app_handle.emit(PROGRESS_TRACKER_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit ProgressTrackerUpdate event: {:?}", e);
+        }
+    }
+
     pub async fn emit_stuck_on_orphan_chain(app_handle: &AppHandle, is_stuck: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

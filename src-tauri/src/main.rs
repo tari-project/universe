@@ -128,6 +128,7 @@ mod process_killer;
 mod process_stats_collector;
 mod process_utils;
 mod process_watcher;
+mod progress_tracker;
 mod progress_tracker_old;
 mod release_notes;
 mod spend_wallet_adapter;
