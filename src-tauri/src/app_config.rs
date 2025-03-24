@@ -684,10 +684,6 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn application_language(&self) -> &str {
-        &self.application_language
-    }
-
     pub async fn set_application_language(
         &mut self,
         language: String,

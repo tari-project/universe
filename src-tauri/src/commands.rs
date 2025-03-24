@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
+use crate::app_config::{AirdropTokens, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
@@ -56,9 +56,8 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
-use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -196,36 +195,15 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
     let app_handle = app.clone();
+    FrontendReadyChannel::current().set_ready();
     TasksTracker::current().spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        if let Err(e) = state
-            .updates_manager
-            .init_periodic_updates(app.clone())
-            .await
-        {
-            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
-        }
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
-        FrontendReadyChannel::current().set_ready();
+        let app_state = app_handle.state::<UniverseAppState>();
+        // Give the splash screen a few seconds to show before closing it
+        sleep(Duration::from_secs(3));
+        app_state
+            .events_manager
+            .handle_close_splash_screen(&app_handle)
+            .await;
     });
 }
 
@@ -283,15 +261,6 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
-}
-
-#[tauri::command]
-pub async fn get_app_config(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<AppConfig, String> {
-    Ok(state.config.read().await.clone())
 }
 
 #[tauri::command]
@@ -891,17 +860,6 @@ pub async fn reset_settings<'r>(
 
     Ok(())
 }
-
-#[tauri::command]
-pub async fn resolve_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let mut config = state.config.write().await;
-    let _unused = config.propose_system_language().await;
-
-    Ok(config.application_language().to_string())
-}
-
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
