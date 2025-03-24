@@ -23,7 +23,6 @@ export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ admi
 export const toggleHideWalletBalance = () =>
     useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
 export const setSidebarOpen = (sidebarOpen: boolean) => useUIStore.setState({ sidebarOpen });
-
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
 
 export const animationLightBg = [

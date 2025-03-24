@@ -45,6 +45,15 @@ import {
     WalletAddressUpdatePayload,
 } from '@app/types/events-payloads';
 
+import {
+    handleBaseNodeStatusUpdate,
+    handleConnectedPeersUpdate,
+    setCpuMiningStatus,
+    setGpuMiningStatus,
+    setWalletAddress,
+    setWalletBalance,
+} from '@app/store';
+
 const BACKEND_STATE_UPDATE = 'backend_state_update';
 
 type BackendStateUpdateEvent =
