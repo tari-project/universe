@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Abbrechen",
+  "close": "Schließen",
   "close-tari-universe": "Tari Universe schließen",
   "connection": "Verbindung",
   "continue": "Fortsetzen",
@@ -14,9 +16,11 @@
   "mode": "Modus",
   "not-installed-in-applications-directory": "Ups! Tari Universe muss im Anwendungsverzeichnis installiert sein. Bitte dort installieren?",
   "please-try-again-later": "Bitte versuche es später erneut. Wenn das Problem weiterhin besteht, kontaktiere uns bitte.",
+  "received": "Received",
   "resources": "Ressourcen",
   "restart": "Neustarten",
   "seconds": "Sekunden",
+  "sent": "Sent",
   "shutting-down": "Fährt herunter..",
   "submit": "Absenden",
   "tari-universe": "Tari-Universum",
@@ -24,11 +28,10 @@
   "testnet": "Testnet",
   "unknown": "Unbekannt",
   "unminimize": "Wiederherstellen",
+  "update": "Aktualisieren",
   "usage": "Nutzung",
   "utilization": "Auslastung",
   "version": "Version",
   "versions": "Versionen",
-  "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert.",
-  "close": "Schließen",
-  "update": "Aktualisieren"
+  "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert."
 }

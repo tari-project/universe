@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Отмена",
+  "close": "Закрыть",
   "close-tari-universe": "Закрыть Tari Universe",
   "connection": "Соединение",
   "continue": "Продолжить",
@@ -14,9 +16,11 @@
   "mode": "Режим",
   "not-installed-in-applications-directory": "Упс! Tari Universe должен находиться в папке Applications. Не могли бы Вы установить его там?",
   "please-try-again-later": "Пожалуйста, попробуйте позже. Если проблема сохраняется, свяжитесь с нами.",
+  "received": "Received",
   "resources": "Ресурсы",
   "restart": "Перезапустить",
   "seconds": "секунды",
+  "sent": "Sent",
   "shutting-down": "Выключение..",
   "submit": "Отправить",
   "tari-universe": "Tari Universe",
@@ -24,11 +28,10 @@
   "testnet": "Тестовая сеть",
   "unknown": "Неизвестно",
   "unminimize": "Увеличить",
+  "update": "Обновить",
   "usage": "Использование",
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
-  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
-  "close": "Закрыть",
-  "update": "Обновить"
+  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен."
 }

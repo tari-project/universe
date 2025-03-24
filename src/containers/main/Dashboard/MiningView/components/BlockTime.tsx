@@ -11,6 +11,7 @@ function BlockTime() {
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
+
     const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const isMining = isCPUMining || isGPUMining;

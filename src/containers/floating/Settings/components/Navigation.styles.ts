@@ -7,6 +7,7 @@ export const Container = styled.div`
     background: ${({ theme }) => theme.palette.background.default};
     flex-direction: column;
     justify-content: space-between;
+    align-items: center;
     height: 100%;
     width: 250px;
 

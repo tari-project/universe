@@ -25,7 +25,6 @@ const CurrentAppSection = memo(function CurrentAppSection({
     isShuttingDown?: boolean;
 }) {
     const isSettingUp = useAppStateStore((s) => !s.setupComplete);
-
     const currentSection = useMemo(() => {
         const showSetup = isSettingUp && !isShuttingDown && isAppReady;
         const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
@@ -60,9 +59,10 @@ const CurrentAppSection = memo(function CurrentAppSection({
                 </AppContentContainer>
             );
         }
+        return null;
     }, [isAppReady, isSettingUp, isShuttingDown]);
 
-    return <AnimatePresence mode="popLayout">{currentSection}</AnimatePresence>;
+    return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
 });
 
 export default function App() {

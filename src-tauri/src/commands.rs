@@ -655,18 +655,53 @@ pub async fn get_airdrop_tokens(
 }
 
 #[tauri::command]
+pub async fn get_transactions_history(
+    state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    limit: Option<u32>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transactions_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transfers history");
+        return Err("Already getting transfers history".to_string());
+    }
+    state
+        .is_getting_transactions_history
+        .store(true, Ordering::SeqCst);
+    let transactions = state
+        .wallet_manager
+        .get_transactions_history(continuation, limit)
+        .await
+        .unwrap_or_else(|e| {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transactions_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transactions_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
+}
+
+#[tauri::command]
 pub async fn get_coinbase_transactions(
     state: tauri::State<'_, UniverseAppState>,
     continuation: bool,
     limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
-    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
-        warn!(target: LOG_TARGET, "Already getting transaction history");
-        return Err("Already getting transaction history".to_string());
+    if state.is_getting_coinbase_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting coinbase history");
+        return Err("Already getting coinbase history".to_string());
     }
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
@@ -684,7 +719,7 @@ pub async fn get_coinbase_transactions(
     }
 
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(false, Ordering::SeqCst);
     Ok(transactions)
 }
@@ -1839,5 +1874,25 @@ pub async fn set_selected_engine(
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_one_sided_to_stealth_address(
+    state: tauri::State<'_, UniverseAppState>,
+    amount: String,
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination, payment_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }
