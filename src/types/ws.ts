@@ -1,3 +1,7 @@
+import { XSpaceEventType } from '@app/utils/XSpaceEventType';
+
+export const GLOBAL_EVENT_NAME = 'global-event';
+
 export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
     MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
@@ -5,6 +9,7 @@ export enum WebsocketEventNames {
     REFERRAL_INSTALL_REWARD = 'referral_install_reward',
     MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
     USER_SCORE_UPDATE = 'user_score_update',
+    X_SPACE_EVENT = 'x_space_event',
 }
 
 interface QuestCompletedEvent {
@@ -69,10 +74,29 @@ export interface UserScoreUpdate {
     };
 }
 
+interface XSpaceEventUpdate {
+    name: WebsocketEventNames.X_SPACE_EVENT;
+    data: XSpaceEvent | null;
+}
+
+export interface XSpaceEvent {
+    text: string;
+    visibilityEnd: Date;
+    visibilityStart: Date;
+    goingLive?: Date | null;
+    link: string;
+    isVisible: boolean;
+    type: XSpaceEventType;
+    id: string;
+}
+
 export type WebsocketUserEvent =
     | UserScoreUpdate
     | ReferralInstallRewardEvent
     | QuestCompletedEvent
     | MiningStatusCrewUpdateEvent
     | MiningStatusUserUpdateEvent
-    | MiningStatusCrewDisconnectedEvent;
+    | MiningStatusCrewDisconnectedEvent
+    | XSpaceEventUpdate;
+
+export type WebsocketGlobalEvent = XSpaceEventUpdate;
