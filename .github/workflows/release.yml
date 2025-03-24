@@ -34,26 +34,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage,updater'
-            extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage,updater'
-            best_effort: true
-          - platform: 'ubuntu-22.04'
-            args: '--bundles rpm'
-            extra: '-x64-rpm'
-            best_effort: true
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles rpm'
-            extra: '-rpm'
-            best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage,updater'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage,updater'
+          #   best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
+      - name: Dump env
+        run: env | sort
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - uses: actions/checkout@v4
 
       - name: BETA Builds - Install dependencies (windows) [yq]
@@ -261,6 +268,14 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+      - name: Dump env
+        run: env | sort
+
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - name: Add msbuild to PATH (windows)
         uses: microsoft/setup-msbuild@v2
         if: startsWith(runner.os,'Windows')
@@ -326,16 +341,63 @@ jobs:
           wix burn reattach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe -o "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
           trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
 
-      - name: Add installer to release
+      - name: Verify Windows signing for installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        continue-on-error: true
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        shell: powershell
+        run: |
+          # Get the Program Files (x86) directory dynamically
+          $programFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
+          $sdkBasePath = Join-Path $programFilesX86 "Windows Kits"
+
+          # Check if Windows Kits exists
+          if (-Not (Test-Path $sdkBasePath)) {
+            Write-Error "Windows Kits folder not found at $sdkBasePath!"
+            exit 1
+          }
+
+          Write-Output "Searching for signtool.exe in: $sdkBasePath"
+
+          # Search for signtool.exe within Windows Kits fold with x64 in the path
+          $signtoolPath = Get-ChildItem -Path $sdkBasePath -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+                          Where-Object { $_.FullName -match '\\x64\\' } |
+                          Select-Object -ExpandProperty FullName -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows Kits folder!"
+            exit 1
+          }
+
+          Write-Output "Found signtool.exe at: $signtoolPath"
+
+          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
+
+          # Display results
+          Write-Host "File: ${{ env.MSI_FILE }}"
+          Write-Host "  - Status: $($Signature.Status)"
+          Write-Host "  - Status Message: $($Signature.StatusMessage)"
+          Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
+          Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
+          Write-Host "---------------------------------------------"
+
+          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
+            exit 1
+          }
+
+      - name: Add Windows bundled wix installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
-        uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
-          asset_path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
-          asset_name: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
-          asset_content_type: application/vnd.microsoft.portable-executable
+        shell: bash
+        run: |
+          #gh release upload ${{ github.event.release.tag_name }} ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          gh release upload "v${{ steps.build.outputs.appVersion }}" \
+            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe \
+            ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
@@ -384,50 +446,3 @@ jobs:
         run: |
           sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
           sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
-
-      - name: Verify Windows signing for installer
-        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
-        continue-on-error: true
-        env:
-          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-        shell: powershell
-        run: |
-          # Get the Program Files (x86) directory dynamically
-          $programFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
-          $sdkBasePath = Join-Path $programFilesX86 "Windows Kits"
-
-          # Check if Windows Kits exists
-          if (-Not (Test-Path $sdkBasePath)) {
-            Write-Error "Windows Kits folder not found at $sdkBasePath!"
-            exit 1
-          }
-
-          Write-Output "Searching for signtool.exe in: $sdkBasePath"
-
-          # Search for signtool.exe within Windows Kits fold with x64 in the path
-          $signtoolPath = Get-ChildItem -Path $sdkBasePath -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
-                          Where-Object { $_.FullName -match '\\x64\\' } |
-                          Select-Object -ExpandProperty FullName -First 1
-
-          if (-not $signtoolPath) {
-            Write-Error "signtool.exe not found in Windows Kits folder!"
-            exit 1
-          }
-
-          Write-Output "Found signtool.exe at: $signtoolPath"
-
-          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
-
-          # Display results
-          Write-Host "File: ${{ env.MSI_FILE }}"
-          Write-Host "  - Status: $($Signature.Status)"
-          Write-Host "  - Status Message: $($Signature.StatusMessage)"
-          Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
-          Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
-          Write-Host "---------------------------------------------"
-
-          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
-          if ($LASTEXITCODE -ne 0) {
-            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
-            exit 1
-          }
