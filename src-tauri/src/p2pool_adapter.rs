@@ -132,7 +132,7 @@ impl ProcessAdapter for P2poolAdapter {
 
         args.push("--squad-prefix".to_string());
         let mut squad_prefix = "default";
-        let mut num_squads = 3;
+        let mut num_squads = 10;
         if let Some(benchmark) = config.cpu_benchmark_hashrate {
             if benchmark < 4000 {
                 squad_prefix = "mini";
