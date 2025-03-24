@@ -1,7 +1,7 @@
 ---
 name: Release
 
-on:
+'on':
   push:
     paths-ignore:
       - '**/*.md'
@@ -21,9 +21,9 @@ permissions: {}
 
 env:
   TS_FEATURES: release-ci
+  BETA_STRING: '(Beta)'
 
 jobs:
-
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -102,6 +102,7 @@ jobs:
           echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
+          echo "BETA_DATE=${BETA_DATE}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
@@ -141,7 +142,8 @@ jobs:
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             --output-format=json -i tauri.conf.json
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
@@ -259,6 +261,89 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
+      - name: Add msbuild to PATH (windows)
+        uses: microsoft/setup-msbuild@v2
+        if: startsWith(runner.os,'Windows')
+
+      - name: Build WiX on Windows
+        if: ${{ startsWith(runner.os,'Windows') }}
+        env:
+          TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          WIX_LOGLEVEL: Verbose
+        shell: bash
+        run: |
+          mkdir -p "tari-win-bundler/executables"
+          cd "tari-win-bundler/executables"
+          # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+          curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          cd ../..
+          ls -la "src-tauri/target/release/bundle/msi"
+          ls -la "tari-win-bundler/executables"
+          if [[ "$GITHUB_REF" == refs/heads/release ]]; then
+            # release
+            export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
+          else
+            # Beta / Other
+            export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}"
+          fi
+          export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
+          echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
+          echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_BUNDLER_NAME is ${TARI_UNIVERSE_BUNDLER_NAME}"
+          echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
+
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add WixToolset.Util.wixext/5.0.2
+          wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
+          wix extension list
+          wix build tari-win-bundler/Bundle.wxs \
+            -ext WixToolset.Util.wixext \
+            -ext WixToolset.BootstrapperApplications.wixext \
+            -includepath tari-win-bundler \
+            -includepath tari-win-bundler/resources \
+            -includepath tari-win-bundler/executables \
+            -includepath wix \
+            -includepath src-tauri/target/release/bundle/msi
+          ls -la src-tauri/target/release/bundle/msi
+          ls -la tari-win-bundler
+          ls -la tari-win-bundler/executables
+          mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
+
+      - name: Sign New Windows Installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          wix burn detach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/burnengine.exe
+          wix burn reattach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe -o "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+
+      - name: Add installer to release
+        if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.build.outputs.releaseUploadUrl }}
+          asset_path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          asset_name: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
+
+      - name: BETA Builds - upload wix installer
+        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+
       - name: Locate artifacts path
         continue-on-error: true
         env:
@@ -281,7 +366,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tari_universe.pdb
-          path: "${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb"
+          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
 
       - name: Windows install Sentry CLI
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
@@ -305,7 +390,6 @@ jobs:
         continue-on-error: true
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          TEST_ENV: "Tari Universe (Beta) - 0312_0.9.817_x64_en-US.msi"
         shell: powershell
         run: |
           # Get the Program Files (x86) directory dynamically

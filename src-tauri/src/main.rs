@@ -37,6 +37,7 @@ use serde_json::json;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
+use tasks_tracker::TasksTracker;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
@@ -91,7 +92,7 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::{resume_all_processes, stop_all_processes};
+use utils::shutdown_utils::resume_all_processes;
 
 mod airdrop;
 mod app_config;
@@ -133,6 +134,7 @@ mod process_watcher;
 mod progress_tracker;
 mod release_notes;
 mod systemtray_manager;
+mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;
@@ -176,7 +178,7 @@ struct CriticalProblemEvent {
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let _ = &app_state
@@ -186,7 +188,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -251,7 +253,8 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     });
 
     let move_app = app.clone();
-    tauri::async_runtime::spawn(async move {
+
+    TasksTracker::current().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let mut shutdown_signal = app_state.shutdown.to_signal();
         let mut interval = time::interval(Duration::from_secs(10));
@@ -867,33 +870,37 @@ async fn setup_inner(
     );
 
     let app_handle_clone: tauri::AppHandle = app.clone();
-    tauri::async_runtime::spawn(async move {
+    let mut shutdown_signal = state.shutdown.to_signal();
+    TasksTracker::current().spawn(async move {
         let mut interval: time::Interval = time::interval(Duration::from_secs(30));
         let mut has_send_error = false;
 
         loop {
-            let state = app_handle_clone.state::<UniverseAppState>().inner();
-            if state.shutdown.is_triggered() {
-                break;
-            }
-
-            interval.tick().await;
-            let check_if_orphan = state
-                .node_manager
-                .check_if_is_orphan_chain(!has_send_error)
-                .await;
-            match check_if_orphan {
-                Ok(is_stuck) => {
-                    if is_stuck {
-                        error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+            tokio::select! {
+                _ = interval.tick() => {
+                    let state = app_handle_clone.state::<UniverseAppState>().inner();
+                    let check_if_orphan = state
+                        .node_manager
+                        .check_if_is_orphan_chain(!has_send_error)
+                        .await;
+                    match check_if_orphan {
+                        Ok(is_stuck) => {
+                            if is_stuck {
+                                error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                            }
+                            if is_stuck && !has_send_error {
+                                has_send_error = true;
+                            }
+                            drop(app_handle_clone.emit("is_stuck", is_stuck));
+                        }
+                        Err(ref e) => {
+                            error!(target: LOG_TARGET, "{}", e);
+                        }
                     }
-                    if is_stuck && !has_send_error {
-                        has_send_error = true;
-                    }
-                    drop(app_handle_clone.emit("is_stuck", is_stuck));
-                }
-                Err(ref e) => {
-                    error!(target: LOG_TARGET, "{}", e);
+                },
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+                    break;
                 }
             }
         }
@@ -914,7 +921,7 @@ async fn setup_inner(
 
                 if !last_state && current_state {
                     info!(target: LOG_TARGET, "System entered sleep mode");
-                    let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+                    TasksTracker::stop_all_processes(app_handle_clone.clone()).await;
                 }
 
                 last_state = current_state;
@@ -972,6 +979,16 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -1053,7 +1070,11 @@ fn main() {
         p2pool_stats_rx.clone(),
         stats_collector.build(),
     );
-    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
+    let telemetry_service = TelemetryService::new(
+        app_config.clone(),
+        app_in_memory_config.clone(),
+        shutdown.to_signal(),
+    );
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
@@ -1386,12 +1407,12 @@ fn main() {
                     is_restart_requested.store(true, Ordering::SeqCst);
                 }
             }
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            block_on(TasksTracker::stop_all_processes(app_handle.clone()));
             info!(target: LOG_TARGET, "App shutdown complete");
         }
         tauri::RunEvent::Exit => {
             info!(target: LOG_TARGET, "App shutdown caught");
-            let _unused = block_on(stop_all_processes(app_handle.clone(), true));
+            block_on(TasksTracker::stop_all_processes(app_handle.clone()));
             if is_restart_requested_clone.load(Ordering::SeqCst) {
                 app_handle.cleanup_before_exit();
                 let env = app_handle.env();
