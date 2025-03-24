@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Gems from '../../components/Gems/Gems';
 import UserInfo from './segments/UserInfo/UserInfo';
 import { UserRow, Wrapper } from './styles';
 import { useAirdropStore, REFERRAL_GEMS } from '@app/store/useAirdropStore';
 import Invite from './segments/Invite/Invite';
 import Flare from './segments/Flare/Flare';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 
 export default function LoggedIn() {
-    const [gems, setGems] = useState(0);
     const { userRankGems, userPointsGems, flareAnimationType, bonusTiers, referralGems, miningRewardPoints } =
         useAirdropStore((s) => ({
             userRankGems: s.userDetails?.user?.rank?.gems,
@@ -18,10 +17,6 @@ export default function LoggedIn() {
             referralGems: s.referralQuestPoints?.pointsForClaimingReferral || REFERRAL_GEMS,
             miningRewardPoints: s.miningRewardPoints,
         }));
-
-    useEffect(() => {
-        setGems(userPointsGems || userRankGems || 0);
-    }, [userPointsGems, userRankGems]);
 
     const bonusTier = useMemo(
         () =>
@@ -48,7 +43,7 @@ export default function LoggedIn() {
         <Wrapper>
             <UserRow>
                 <UserInfo />
-                <Gems number={gems} label={`Gems`} />
+                <Gems number={userPointsGems || userRankGems || 0} label={`Gems`} />
             </UserRow>
 
             <Invite />

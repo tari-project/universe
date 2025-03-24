@@ -12,7 +12,7 @@
   "doLater": "Zrobię to później",
   "giftReferralCode": "Zdobądź {{gems}} klejnotów za każdego znajomego, którego zaprosisz do Tari Universe. Po połączeniu ich konta otrzymasz swoje klejnoty.",
   "giftReferralCodeHeader": "Odbierz swój kod polecający <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> klejnotów.",
-  "inviteFirends": "Zaproś znajomych",
+  "inviteFriends": "Zaproś znajomych",
   "inviteFriendsText": "Skopiuj link i udostępnij go",
   "invitedAmount": "Zaprosiłeś <span>{{count}}</span> znajomych",
   "keep-mining-to-earn-rewards": "Kontynuuj kopanie, aby zdobyć więcej nagród!",
@@ -35,5 +35,8 @@
   "topTooltipTitle": "Nagrody Testnet",
   "unclaimedGems": "Nieodebrane klejnoty",
   "you-reached-your-giftinh-goal": "Osiągnąłeś swój cel obdarowywania!",
-  "your-friend-accepted-gift": "Jeden z Twoich przyjaciół zaakceptował Twój prezent!"
+  "your-friend-accepted-gift": "Jeden z Twoich przyjaciół zaakceptował Twój prezent!",
+  "joinAirdrop": "Dołącz do Airdropu",
+  "loggedInTitle": "Nagrody Airdrop",
+  "loggedOutTitle": "Kop i zapraszaj znajomych, aby zdobywać klejnoty"
 }

@@ -32,6 +32,7 @@ use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
@@ -51,6 +52,22 @@ pub(crate) struct StartConfig {
     pub use_monero_fail: bool,
 }
 
+impl StartConfig {
+    fn override_by(&self, override_by: MergeMiningProxyConfig) -> Self {
+        let cloned = self.clone();
+        Self {
+            p2pool_enabled: override_by.p2pool_enabled,
+            base_node_grpc_port: override_by.base_node_grpc_port,
+            p2pool_port: override_by.p2pool_grpc_port,
+            coinbase_extra: override_by.coinbase_extra,
+            tari_address: override_by.tari_address,
+            use_monero_fail: override_by.use_monero_fail,
+            monero_nodes: override_by.monero_nodes,
+            ..cloned
+        }
+    }
+}
+
 pub struct MmProxyManager {
     watcher: Arc<RwLock<ProcessWatcher<MergeMiningProxyAdapter>>>,
     start_config: Arc<RwLock<Option<StartConfig>>>,
@@ -66,9 +83,10 @@ impl Clone for MmProxyManager {
 }
 
 impl MmProxyManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
-        let mut process_watcher = ProcessWatcher::new(sidecar_adapter);
+        let mut process_watcher =
+            ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
 
@@ -84,16 +102,17 @@ impl MmProxyManager {
     }
 
     pub async fn change_config(&self, config: MergeMiningProxyConfig) -> Result<(), anyhow::Error> {
-        let mut lock = self.watcher.write().await;
-        lock.stop().await?;
-        lock.adapter.config = Some(config);
+        if self.watcher.read().await.is_running() {
+            let mut lock = self.watcher.write().await;
+            lock.stop().await?;
+            drop(lock);
+        }
         let start_config_read = self.start_config.read().await;
         match start_config_read.as_ref() {
             Some(start_config) => {
-                drop(lock);
-                let config = start_config.clone();
+                let config_with_override = start_config.override_by(config);
                 drop(start_config_read);
-                self.start(config).await?;
+                self.start(config_with_override).await?;
                 self.wait_ready().await?;
             }
             None => {
@@ -151,21 +170,5 @@ impl MmProxyManager {
             Some(config) => Ok(config.port),
             None => Err(anyhow!("MM proxy not started")),
         }
-    }
-
-    pub async fn stop(&self) -> Result<(), anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher.stop().await?;
-        Ok(())
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 }

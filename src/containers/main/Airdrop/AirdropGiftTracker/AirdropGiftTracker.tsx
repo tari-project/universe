@@ -14,13 +14,13 @@ export default function AirdropGiftTracker() {
     useWebsocket();
 
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const { airdropTokens } = useAirdropStore();
+    const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const isLoggedIn = !!airdropTokens;
 
     return (
-        <Wrapper layout>
+        <Wrapper>
             <TitleWrapper>
-                <Title>{t('airdropGame')}</Title>
+                <Title>{isLoggedIn ? t('loggedInTitle') : t('loggedOutTitle')}</Title>
                 <InfoTooltip title={t('topTooltipTitle')} text={t('topTooltipText')} />
             </TitleWrapper>
 

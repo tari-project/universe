@@ -1,11 +1,11 @@
 import { useAirdropTokensRefresh } from './stateHelpers/useAirdropTokensRefresh';
 import { useAirdropUserPointsListener } from './stateHelpers/useAirdropUserPointsListener';
-import { useGetAirdropUserDetails } from './stateHelpers/useGetAirdropUserDetails';
 import { useGetReferralQuestPoints } from './stateHelpers/useGetReferralQuestPoints';
+import { useXSpaceEventRefresh } from './stateHelpers/useXSpaceEventRefresh';
 
 export const useAirdropSyncState = () => {
     useAirdropTokensRefresh();
-    useGetAirdropUserDetails();
+    useXSpaceEventRefresh();
     useAirdropUserPointsListener();
     useGetReferralQuestPoints();
 };

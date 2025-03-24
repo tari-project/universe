@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use std::{path::PathBuf, sync::Arc};
@@ -39,9 +40,9 @@ impl Clone for TorManager {
 }
 
 impl TorManager {
-    pub fn new() -> Self {
+    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let adapter = TorAdapter::new();
-        let process_watcher = ProcessWatcher::new(adapter);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -117,21 +118,5 @@ impl TorManager {
 
     pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
         self.watcher.read().await.adapter.get_entry_guards().await
-    }
-
-    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        let exit_code = process_watcher.stop().await?;
-        Ok(exit_code)
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 }

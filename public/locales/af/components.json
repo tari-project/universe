@@ -7,5 +7,27 @@
     "invalid-url": "Moet 'n geldige URL-adres wees",
     "password-too-short": "Wagwoord moet ten minste 8 karakters hê",
     "required": "Veld benodig"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Kanselleer",
+    "description": "Belaglike modus kan jou stelsel onreaktief maak. Bevestig asseblief dat jy wil begin myn in Belaglike modus of Tari Universe sal terugskakel na Eco modus in",
+    "keepChanges": "Behou Veranderings",
+    "seconds": "sekondes",
+    "title": "Skakel oor na Belaglike Modus?"
+  },
+  "releaseNotesDialog": {
+    "close": "Verstaan",
+    "title": "Vrylatingsnotas"
+  },
+  "resume-app-modal": {
+    "title": "Hervat Tari Universe",
+    "resuming-all-processes": "Hervat alle prosesse...",
+    "resuming-tor": "Hervat Tor...",
+    "resuming-node": "Hervat Node...",
+    "resuming-wallet": "Hervat Beursie...",
+    "syncing-node": "Sinkroniseer Node...",
+    "resuming-p2pool": "Hervat P2Pool...",
+    "resuming-mm-proxy": "Hervat MM Proxy...",
+    "finishing-resume": "Voltooi Hervat..."
   }
 }

@@ -1,20 +1,19 @@
 import styled from 'styled-components';
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
-export const Wrapper = styled(m.div)`
-    overflow: hidden;
+export const Wrapper = styled.div`
     top: 40px;
     width: 60vw;
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    height: calc(100% - 100px);
+    height: calc(100% - 80px);
     position: fixed;
     right: 10px;
 `;
 
-export const Column = styled(m.div)<{ $isNumber?: boolean }>`
+export const Column = styled.div<{ $isNumber?: boolean }>`
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -23,11 +22,11 @@ export const Column = styled(m.div)<{ $isNumber?: boolean }>`
     height: 100%;
 `;
 
-export const MarkGroup = styled(m.div)`
+export const MarkGroup = styled.div`
     display: flex;
 `;
 
-export const RulerMarkGroup = styled(m.div)`
+export const RulerMarkGroup = styled.div`
     display: flex;
     position: relative;
     flex-direction: column;

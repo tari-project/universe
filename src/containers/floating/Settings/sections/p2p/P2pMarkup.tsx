@@ -6,7 +6,7 @@ import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
 import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { useUIStore } from '@app/store/useUIStore.ts';
+
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -14,6 +14,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { setDialogToShow, setP2poolEnabled } from '@app/store';
 
 interface P2pMarkupProps {
     setDisabledStats: (value: boolean) => void;
@@ -22,18 +23,17 @@ interface P2pMarkupProps {
 const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
-    const setP2poolEnabled = useAppConfigStore((state) => state.setP2poolEnabled);
-    const miningAllowed = useAppStateStore((s) => !s.isSettingUp);
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
+    const miningAllowed = useAppStateStore((s) => s.setupComplete);
+
     const isDisabled = !miningAllowed;
 
     const handleP2poolEnabled = useCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
-            setDisabledStats(true);
             await setP2poolEnabled(event.target.checked);
+            setDisabledStats(!event.target.checked);
             setDialogToShow('restart');
         },
-        [setDialogToShow, setDisabledStats, setP2poolEnabled]
+        [setDisabledStats]
     );
 
     return (

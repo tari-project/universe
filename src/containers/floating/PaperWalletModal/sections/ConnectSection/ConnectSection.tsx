@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react';
 import { usePaperWalletStore } from '@app/store/usePaperWalletStore';
 import { invoke } from '@tauri-apps/api/core';
 import LoadingSvg from '@app/components/svgs/LoadingSvg';
+import { useAirdropSetTokenToUuid } from '@app/hooks/airdrop/stateHelpers/useAirdropSetTokens';
 
 interface Props {
     setSection: (section: PaperWalletModalSectionType) => void;
@@ -23,6 +24,7 @@ export default function ConnectSection({ setSection }: Props) {
     const { t } = useTranslation(['paper-wallet'], { useSuspense: false });
     const [isLoading, setIsLoading] = useState(false);
     const { setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
+    const setTokenToUuid = useAirdropSetTokenToUuid();
 
     // const handleTextButtonClick = () => {
     //     console.log('Learn more about Tari Aurora');
@@ -36,7 +38,8 @@ export default function ConnectSection({ setSection }: Props) {
         setIsLoading(true);
 
         try {
-            const r = await invoke('get_paper_wallet_details');
+            const authUuid = await setTokenToUuid();
+            const r = await invoke('get_paper_wallet_details', { authUuid: authUuid });
 
             if (r) {
                 const url = r.qr_link;
@@ -51,7 +54,7 @@ export default function ConnectSection({ setSection }: Props) {
         }
 
         setIsLoading(false);
-    }, [setIdentificationCode, setIsLoading, setQrCodeValue, setSection]);
+    }, [setIdentificationCode, setIsLoading, setQrCodeValue, setSection, setTokenToUuid]);
 
     return (
         <Wrapper>

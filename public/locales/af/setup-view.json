@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "Ons kon nie Tari Universe outomaties opdateer na {{version}} terwyl die masjien gesluit of in slaapmodus was nie.",
   "dont-worry": "Moenie bekommerd wees nie, volgende keer sal dit nie so lank vat nie",
   "installing-latest-version": "Installeer {{version}} weergawe van Tari Universe",
   "new-tari-version-available": "'n Nuwe weergawe van Tari Universe is beskikbaar",
@@ -7,22 +8,27 @@
   "this-might-take-a-few-minutes": "Hierdie mag 'n paar minute neem",
   "title": {
     "application-started": "Toepassings het begin",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Bepaal nuutste weergawe van xtrgpuminer",
     "checking-latest-version-mmproxy": "Bepaal nuutste weergawe van mmproxy",
     "checking-latest-version-node": "Bepaal nuutste weergawe van node",
     "checking-latest-version-sha-p2pool": "Bepaal nuutste weergawe van sha-p2pool",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "Bepaal nuutste weergawe van beursie",
     "checking-latest-version-xmrig": "Bepaal nuutste weergawe van xmrig",
     "download-completed": "Aflaai voltooi",
     "downloading": "Besig om af te laai",
+    "minotari-node-restarting": "Minotari-knooppuntdata was korrup, ou data word skoongemaak",
     "preparing-for-initial-sync": "Gekoppel aan netwerk nodes {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Begin mmproxy",
     "starting-p2pool": "Begin P2Pool",
     "starting-up": "Begin",
     "waiting-for-block-sync": "Wag vir bloksinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
     "waiting-for-header-sync": "Wag vir kopkopsinchronisasie. {{local_height}}/{{tip_height}} gesinchroniseer",
+    "waiting-for-minotari-node-to-start": "Wag vir Minotari-knooppunt om te begin",
     "waiting-for-node": "Wag vir node om te sinkroniseer",
-    "waiting-for-wallet": "Wag vir beursie"
+    "waiting-for-wallet": "Wag vir beursie",
+    "wallet-started": "Beursie het begin"
   },
   "would-you-like-to-install": "Wil jy nou Tari Universe {{version}} installeer?",
   "yes": "Ja"

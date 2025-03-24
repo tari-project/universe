@@ -2,8 +2,8 @@ import BonusGems from './BonusGems/BonusGems';
 import FriendAccepted from './FriendAccepted/FriendAccepted';
 import GoalComplete from './GoalComplete/GoalComplete';
 import { Wrapper } from './styles';
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
-import { useCallback, useEffect } from 'react';
+import { useEffect } from 'react';
+import { setFlareAnimationType } from '@app/store';
 
 interface Props {
     gems: number;
@@ -21,25 +21,23 @@ const durations = {
 };
 
 export default function Flare({ gems, animationType }: Props) {
-    const setFlareAnimationType = useAirdropStore((s) => s.setFlareAnimationType);
-    const clearFlareAnimationType = useCallback(() => setFlareAnimationType(), [setFlareAnimationType]);
-
     useEffect(() => {
+        if (!animationType) return;
         const duration = durations[animationType] || 0;
-        const animationTimeout = setTimeout(clearFlareAnimationType, duration);
+        const animationTimeout = setTimeout(setFlareAnimationType, duration);
         return () => {
             clearTimeout(animationTimeout);
         };
-    }, [animationType, clearFlareAnimationType]);
+    }, [animationType]);
 
     return (
         <Wrapper
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={clearFlareAnimationType}
+            onClick={() => setFlareAnimationType()}
         >
-            {animationType === 'GoalComplete' && <GoalComplete gems={gems} />}
+            {animationType === 'GoalComplete' && gems > 0 && <GoalComplete gems={gems} />}
             {animationType === 'FriendAccepted' && <FriendAccepted gems={gems} />}
             {animationType === 'BonusGems' && <BonusGems gems={gems} />}
         </Wrapper>

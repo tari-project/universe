@@ -13,16 +13,16 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
+import { setCpuMiningEnabled } from '@app/store';
 
 export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
-    const setCpuMiningEnabled = useAppConfigStore((s) => s.setCpuMiningEnabled);
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
+    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
 
     const handleCpuMiningEnabled = useCallback(async () => {
         await setCpuMiningEnabled(!isCpuMiningEnabled);
-    }, [isCpuMiningEnabled, setCpuMiningEnabled]);
+    }, [isCpuMiningEnabled]);
 
     return (
         <SettingsGroupWrapper>

@@ -7,5 +7,27 @@
     "invalid-url": "Musisz podać poprawny adres URL",
     "password-too-short": "Hasło musi mieć co najmniej 8 znaków",
     "required": "Pole wymagane"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Anuluj",
+    "description": "Tryb Ludicrous może spowodować, że system przestanie odpowiadać. Proszę potwierdzić, że chcesz rozpocząć kopanie w trybie Ludicrous, w przeciwnym razie Tari Universe przełączy się z powrotem na tryb Eco za",
+    "keepChanges": "Zachowaj zmiany",
+    "seconds": "sekund",
+    "title": "Przełączyć na tryb Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Rozumiem",
+    "title": "Informacje o wydaniu"
+  },
+  "resume-app-modal": {
+    "title": "Wznawianie Tari Universe",
+    "resuming-all-processes": "Wznawianie wszystkich procesów...",
+    "resuming-tor": "Wznawianie Tor...",
+    "resuming-node": "Wznawianie węzła...",
+    "resuming-wallet": "Wznawianie portfela...",
+    "syncing-node": "Synchronizowanie węzła...",
+    "resuming-p2pool": "Wznawianie P2Pool...",
+    "resuming-mm-proxy": "Wznawianie MM Proxy...",
+    "finishing-resume": "Kończenie wznawiania..."
   }
 }

@@ -7,5 +7,27 @@
     "invalid-url": "Harus berupa alamat URL yang valid",
     "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
     "required": "Kolom diperlukan"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Batal",
+    "description": "Mode Ludicrous dapat membuat sistem Anda tidak responsif. Harap konfirmasi jika Anda ingin memulai penambangan dalam mode Ludicrous atau Tari Universe akan beralih kembali ke mode Eco dalam",
+    "keepChanges": "Simpan Perubahan",
+    "seconds": "detik",
+    "title": "Beralih ke Mode Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Mengerti",
+    "title": "Catatan Rilis"
+  },
+  "resume-app-modal": {
+    "title": "Melanjutkan Tari Universe",
+    "resuming-all-processes": "Melanjutkan semua proses...",
+    "resuming-tor": "Melanjutkan Tor...",
+    "resuming-node": "Melanjutkan Node...",
+    "resuming-wallet": "Melanjutkan Dompet...",
+    "syncing-node": "Sinkronisasi Node...",
+    "resuming-p2pool": "Melanjutkan P2Pool...",
+    "resuming-mm-proxy": "Melanjutkan MM Proxy...",
+    "finishing-resume": "Menyelesaikan Resume..."
   }
 }

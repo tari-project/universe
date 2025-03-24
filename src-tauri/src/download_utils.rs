@@ -21,11 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::ProgressTracker;
-use anyhow::{anyhow, Error};
+use anyhow::{anyhow, Context, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
-use log::info;
+use log::{info, warn};
 use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -54,7 +54,7 @@ pub async fn download_file_with_retries(
                     return Err(err);
                 }
                 retries += 1;
-                eprintln!("Error downloading file: {}. Try {:?}/3", err, retries);
+                warn!(target: LOG_TARGET, "Error downloading file: {}. Try {:?}/3", err, retries);
                 progress_tracker
                     .send_last_action(format!(
                         "Failed at retry: {} to download binary from url: {} to destination: {}",
@@ -102,20 +102,20 @@ async fn download_file(
 }
 
 pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Error> {
-    match file_path.extension() {
-        Some(ext) => match ext.to_str() {
-            Some("gz") => {
-                extract_gz(file_path, dest_dir).await?;
-            }
-            Some("zip") => {
-                extract_zip(file_path, dest_dir).await?;
-            }
-            _ => {
-                return Err(anyhow::anyhow!("Unsupported file extension"));
-            }
-        },
-        None => {
-            return Err(anyhow::anyhow!("File has no extension"));
+    let ext = file_path
+        .extension()
+        .context("File has no extension")?
+        .to_str()
+        .context("Cant parse to str")?;
+    match ext {
+        "gz" => {
+            extract_gz(file_path, dest_dir).await?;
+        }
+        "zip" => {
+            extract_zip(file_path, dest_dir).await?;
+        }
+        _ => {
+            return Err(anyhow::anyhow!("Unsupported file extension"));
         }
     }
     Ok(())

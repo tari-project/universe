@@ -7,5 +7,27 @@
     "invalid-url": "必须是有效的链接",
     "password-too-short": "密码必须至少包含 8 个字符",
     "required": "必填字段"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "取消",
+    "description": "疯狂模式可能会导致系统无响应。请确认您要在疯狂模式下开始挖矿，否则 Tari Universe 将在",
+    "keepChanges": "保留更改",
+    "seconds": "秒",
+    "title": "切换到疯狂模式？"
+  },
+  "releaseNotesDialog": {
+    "close": "知道了",
+    "title": "发布说明"
+  },
+  "resume-app-modal": {
+    "title": "恢复 Tari Universe",
+    "resuming-all-processes": "恢复所有进程...",
+    "resuming-tor": "恢复 Tor...",
+    "resuming-node": "恢复节点...",
+    "resuming-wallet": "恢复钱包...",
+    "syncing-node": "同步节点...",
+    "resuming-p2pool": "恢复 P2Pool...",
+    "resuming-mm-proxy": "恢复 MM 代理...",
+    "finishing-resume": "完成恢复..."
   }
 }

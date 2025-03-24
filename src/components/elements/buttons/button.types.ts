@@ -1,9 +1,9 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 import { ThemeColourGroup } from '@app/theme/palettes/colors.ts';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
+type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
+type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info' | 'grey';
 export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
-export type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info';
 
 export type IconPosition = 'end' | 'start' | 'hug';
 

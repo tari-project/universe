@@ -1,7 +1,5 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
-
-export const Wrapper = styled('div')``;
 
 export const HeroImage = styled('img')`
     position: absolute;
@@ -34,8 +32,8 @@ export const Title = styled('div')`
     color: #000;
     text-align: center;
     font-family: DrukWide, sans-serif;
-    font-size: 30px;
     font-weight: 800;
+    font-size: 30px;
     line-height: 99.7%;
     text-transform: uppercase;
     max-width: 276px;
@@ -50,7 +48,7 @@ export const WinnerPill = styled('div')`
     border-radius: 131px;
     background: rgba(0, 0, 0, 0.1);
 
-    padding: 0px 12px;
+    padding: 0 12px;
     height: 28px;
 
     display: flex;
@@ -61,7 +59,7 @@ export const WinnerPill = styled('div')`
 export const BlackButton = styled('button')`
     border-radius: 49px;
     background: #000;
-    box-shadow: 28px 28px 77px 0px rgba(0, 0, 0, 0.1);
+    box-shadow: 28px 28px 77px 0 rgba(0, 0, 0, 0.1);
 
     width: 100%;
     height: 81px;
@@ -69,9 +67,9 @@ export const BlackButton = styled('button')`
     color: #c9eb00;
     text-align: center;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     font-size: 21px;
     font-style: normal;
-    font-weight: 800;
     line-height: 99.7%;
     text-transform: uppercase;
     cursor: pointer;
@@ -99,21 +97,8 @@ export const Copied = styled(m.div)`
     justify-content: center;
 `;
 
-export const Text = styled('div')`
-    color: #000;
-    text-align: center;
-    font-size: 16.8px;
-    font-weight: 500;
-    line-height: 99.7%;
-    text-transform: uppercase;
-
-    strong {
-        font-weight: 800;
-    }
-`;
-
 export const RewardWrapper = styled('div')`
-    padding: px 30px;
+    padding: 0 30px;
 
     display: flex;
     flex-direction: column;
@@ -132,7 +117,7 @@ export const Label = styled('div')`
     text-align: center;
     font-size: 14px;
     font-style: normal;
-    font-weight: 800;
+    font-weight: 700;
     line-height: 50%;
     text-transform: uppercase;
 `;
@@ -140,9 +125,9 @@ export const Label = styled('div')`
 export const Value = styled('div')`
     color: #000;
     font-family: DrukWide, sans-serif;
+    font-weight: 800;
     font-size: 12px;
     font-style: normal;
-    font-weight: 800;
     line-height: 50%;
     text-transform: uppercase;
 `;
@@ -170,7 +155,6 @@ export const GemPill = styled('div')`
     right: 20px;
     transform: translateY(-50%);
 
-    color: #000;
     font-size: 17px;
     font-weight: 600;
     font-family: Poppins, sans-serif;

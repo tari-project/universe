@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "Kami tidak dapat memperbarui Tari Universe ke {{version}} secara otomatis saat mesin terkunci atau dalam mode tidur.",
   "dont-worry": "Jangan khawatir, lain kali tidak akan memakan waktu lama",
   "installing-latest-version": "Menginstal versi {{version}} dari Tari Universe",
   "new-tari-version-available": "Versi baru dari Tari Universe tersedia!",
@@ -7,22 +8,27 @@
   "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
   "title": {
     "application-started": "Aplikasi dimulai",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Memeriksa versi terbaru dari xtrgpuminer",
     "checking-latest-version-mmproxy": "Memeriksa versi terbaru dari mmproxy",
     "checking-latest-version-node": "Memeriksa versi terbaru dari node",
     "checking-latest-version-sha-p2pool": "Memeriksa versi terbaru dari sha-p2pool",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "Memeriksa versi terbaru dari dompet",
     "checking-latest-version-xmrig": "Memeriksa versi terbaru dari xmrig",
     "download-completed": "Unduhan selesai",
     "downloading": "Mengunduh",
+    "minotari-node-restarting": "Data node Minotari rusak, membersihkan data lama",
     "preparing-for-initial-sync": "Menghubungkan ke rekan jaringan {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Memulai proxy penambangan gabungan",
     "starting-p2pool": "Memulai P2Pool",
     "starting-up": "Memulai",
     "waiting-for-block-sync": "Menunggu sinkronisasi blok. {{local_height}}/{{tip_height}} blok tersinkronisasi",
     "waiting-for-header-sync": "Menunggu sinkronisasi header. {{local_height}}/{{tip_height}} header tersinkronisasi",
+    "waiting-for-minotari-node-to-start": "Menunggu node Minotari untuk memulai",
     "waiting-for-node": "Menunggu node untuk sinkronisasi",
-    "waiting-for-wallet": "Menunggu dompet"
+    "waiting-for-wallet": "Menunggu dompet",
+    "wallet-started": "Dompet dimulai"
   },
   "would-you-like-to-install": "Apakah Anda ingin menginstal Tari Universe {{version}} sekarang?",
   "yes": "Ya"

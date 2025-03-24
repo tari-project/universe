@@ -2,14 +2,12 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { CustomPowerLevelsDialog } from './CustomPowerLevelsDialog';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
+import { getMaxAvailableThreads, setCustomLevelsDialogOpen } from '@app/store';
 
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
-    const setCustomLevelsDialogOpen = useMiningStore((s) => s.setCustomLevelsDialogOpen);
-
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const maxThreads = useMiningStore((s) => s.maxAvailableThreads);
-    const fetchMaxThreads = useMiningStore((s) => s.getMaxAvailableThreads);
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
@@ -17,9 +15,9 @@ export const CustomPowerLevelsDialogContainer = () => {
 
     useEffect(() => {
         if (!maxThreads) {
-            fetchMaxThreads();
+            getMaxAvailableThreads();
         }
-    }, [fetchMaxThreads, maxThreads]);
+    }, [maxThreads]);
 
     return (
         <Dialog

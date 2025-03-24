@@ -18,6 +18,7 @@ import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
+import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -83,7 +84,6 @@ export function CustomPowerLevelsDialog({
     const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
 
-    const changeMiningMode = useMiningStore((s) => s.changeMiningMode);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, setValue } = useForm<FormValues>({
@@ -107,16 +107,13 @@ export function CustomPowerLevelsDialog({
         }
     }, [saved]);
 
-    const onSubmit = useCallback(
-        (data: FormValues) => {
-            changeMiningMode({
-                mode: 'Custom',
-                customCpuLevels: data[FormFields.CPU],
-                customGpuLevels: data[FormFields.GPUS],
-            }).then(() => setSaved(true));
-        },
-        [changeMiningMode]
-    );
+    const onSubmit = useCallback((data: FormValues) => {
+        changeMiningMode({
+            mode: 'Custom',
+            customCpuLevels: data[FormFields.CPU],
+            customGpuLevels: data[FormFields.GPUS],
+        }).then(() => setSaved(true));
+    }, []);
 
     if (!maxAvailableThreads) return <LinearProgress />;
 
@@ -158,7 +155,7 @@ export function CustomPowerLevelsDialog({
                         render={({ field: _field }) => (
                             <RangeInputComponent
                                 label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
-                                maxLevel={maxAvailableThreads.max_gpus_threads[index].max_gpu_threads}
+                                maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
                                 value={gpu.max_gpu_threads}
                                 step={2}
                                 desc={'custom-power-levels.choose-gpu-power-level'}

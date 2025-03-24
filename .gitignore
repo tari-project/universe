@@ -23,6 +23,15 @@ dist-ssr
 *.sln
 *.sw?
 src-tauri/gpu_status.json
+vite-profile*
 
 # Sentry Config File
 .env.sentry-build-plugin
+
+# Ignore hosted auto updater json files
+.updater/*.json
+
+# tari-win-bundler
+tari-win-bundler/.vs
+tari-win-bundler/logs
+tari-win-bundler/bin

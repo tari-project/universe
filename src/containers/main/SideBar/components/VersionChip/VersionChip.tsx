@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import ConnectedPulse from './ConnectedPulse/ConnectedPulse';
 import { Divider, Wrapper } from './styles';
-import { useMiningStore } from '@app/store/useMiningStore';
+
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 interface Props {
     version: string;
@@ -10,7 +11,7 @@ interface Props {
 export default function VersionChip({ version }: Props) {
     const { t } = useTranslation('common', { useSuspense: false });
 
-    const isConnectedToTariNetwork = useMiningStore((s) => s.base_node?.is_connected);
+    const isConnectedToTariNetwork = useMiningMetricsStore((s) => s.isNodeConnected);
 
     return (
         <Wrapper>

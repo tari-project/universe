@@ -7,20 +7,16 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useUIStore } from '@app/store/useUIStore';
 import { ExternalDependencyStatus } from '@app/types/app-status';
 import { invoke } from '@tauri-apps/api/core';
-import { useCallback, useState } from 'react';
+import { memo, useCallback, useState } from 'react';
 import { ExternalDependencyCard } from './ExternalDependencyCard';
 import { useTranslation } from 'react-i18next';
+import { setShowExternalDependenciesDialog } from '@app/store';
 
-export const ExternalDependenciesDialog = () => {
+const ExternalDependenciesDialog = memo(function ExternalDependenciesDialog() {
     const { t } = useTranslation('external-dependency-dialog', { useSuspense: false });
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
-    const setShowExternalDependenciesDialog = useUIStore((s) => s.setShowExternalDependenciesDialog);
     const externalDependencies = useAppStateStore((s) => s.externalDependencies);
-    const setView = useUIStore((s) => s.setView);
-    const setCriticalError = useAppStateStore((s) => s.setCriticalError);
     const [isRestarting, setIsRestarting] = useState(false);
-    const [isInitializing, setIsInitializing] = useState(false);
-
     const [installationSlot, setInstallationSlot] = useState<number | null>(null);
 
     const handleRestart = useCallback(async () => {
@@ -32,20 +28,6 @@ export const ExternalDependenciesDialog = () => {
         }
         setIsRestarting(false);
     }, []);
-
-    const handleContinue = useCallback(() => {
-        setShowExternalDependenciesDialog(false);
-        if (isInitializing) return;
-        setIsInitializing(true);
-        invoke('setup_application')
-            .catch((e) => {
-                setCriticalError(`Failed to setup application: ${e}`);
-                setView('mining');
-            })
-            .then(() => {
-                setIsInitializing(false);
-            });
-    }, [setCriticalError, setShowExternalDependenciesDialog, setView, isInitializing]);
 
     const shouldAllowContinue = Object.values(externalDependencies).every(
         (missingDependency) => missingDependency.status === ExternalDependencyStatus.Installed
@@ -61,9 +43,8 @@ export const ExternalDependenciesDialog = () => {
                     </Stack>
 
                     {Object.values(externalDependencies).map((missingDependency, index, array) => (
-                        <>
+                        <Stack key={`dependency:${index}:${missingDependency.display_name}`}>
                             <ExternalDependencyCard
-                                key={missingDependency.display_name}
                                 missingDependency={missingDependency}
                                 freeInstallationSlot={() => setInstallationSlot(null)}
                                 isInInstallationSlot={installationSlot === index}
@@ -71,13 +52,13 @@ export const ExternalDependenciesDialog = () => {
                                 occupyInstallationSlot={() => setInstallationSlot(index)}
                             />
                             {index === array.length - 1 ? null : <Divider />}
-                        </>
+                        </Stack>
                     ))}
                     <Stack direction="row" justifyContent="flex-end" gap={8}>
                         <SquaredButton
                             color="grey"
                             size="medium"
-                            onClick={handleContinue}
+                            onClick={() => setShowExternalDependenciesDialog(false)}
                             disabled={isRestarting || !shouldAllowContinue}
                             style={{ width: '100px' }}
                         >
@@ -97,4 +78,5 @@ export const ExternalDependenciesDialog = () => {
             </DialogContent>
         </Dialog>
     );
-};
+});
+export default ExternalDependenciesDialog;

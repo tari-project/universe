@@ -1,5 +1,3 @@
-import { useUIStore } from '@app/store/useUIStore.ts';
-
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { Trans, useTranslation } from 'react-i18next';
@@ -11,7 +9,7 @@ import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
-import { NodesSettingsContainer, StyledInput } from './MonerodMarkup.styles';
+import { AddButtonContainer, NodesSettingsContainer, StyledInput } from './MonerodMarkup.styles';
 
 import {
     SettingsGroup,
@@ -20,6 +18,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../../components/SettingsGroup.styles.ts';
+import { setDialogToShow, setMonerodConfig } from '@app/store';
 
 interface FormValues {
     use_monero_fail: boolean;
@@ -30,10 +29,9 @@ const node_url_regex = /^(https?:\/\/[a-zA-Z0-9.-]+(:\d{1,5})?)(\/.*)?$/;
 
 const MonerodMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const use_monero_fail = useAppConfigStore((s) => Boolean(s.mmproxy_use_monero_fail));
     const monero_nodes = useAppConfigStore((s) => s.mmproxy_monero_nodes || []);
-    const setMonerodConfig = useAppConfigStore((s) => s.setMonerodConfig);
+
     const {
         control,
         watch,
@@ -58,8 +56,9 @@ const MonerodMarkup = () => {
         !errors.monero_nodes?.length;
 
     const onSave = async (formValues: FormValues) => {
-        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes);
-        setDialogToShow('restart');
+        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes).then(() => {
+            setDialogToShow('restart');
+        });
     };
 
     return (
@@ -89,9 +88,13 @@ const MonerodMarkup = () => {
                     )}
                 </SettingsGroupAction>
             </SettingsGroup>
-
             {!form_use_monero_fail ? (
                 <NodesSettingsContainer>
+                    <AddButtonContainer>
+                        <IconButton onClick={() => append('')}>
+                            <IoAddCircleOutline color="green" size={20} />
+                        </IconButton>
+                    </AddButtonContainer>
                     {fields.map((field, index) => (
                         <Stack key={field.id} direction="row" alignItems="center" style={{ margin: '4px 0' }}>
                             <Controller
@@ -115,16 +118,11 @@ const MonerodMarkup = () => {
                                     );
                                 }}
                             />
-                            {fields.length > 1 && (
-                                <IconButton onClick={() => remove(index)}>
-                                    <IoRemoveCircleOutline color="red" size={20} />
-                                </IconButton>
-                            )}
+                            <IconButton onClick={() => remove(index)} disabled={fields.length <= 1}>
+                                <IoRemoveCircleOutline color="red" size={20} />
+                            </IconButton>
                         </Stack>
                     ))}
-                    <IconButton onClick={() => append('')}>
-                        <IoAddCircleOutline color="green" size={20} />
-                    </IconButton>
                 </NodesSettingsContainer>
             ) : null}
         </SettingsGroupWrapper>

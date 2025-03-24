@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "We couldn't auto update Tari Universe to {{version}} while machine was locked or in sleep mode.",
   "dont-worry": "Don't worry, next time it won't take as long",
   "installing-latest-version": "Installing {{version}} version of Tari Universe",
   "new-tari-version-available": "A new version of Tari Universe is available!",
@@ -7,22 +8,27 @@
   "this-might-take-a-few-minutes": "This might take a few minutes",
   "title": {
     "application-started": "Applications started",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "Checking for latest version of xtrgpuminer",
     "checking-latest-version-mmproxy": "Checking for latest version of mmproxy",
     "checking-latest-version-node": "Checking for latest version of node",
     "checking-latest-version-sha-p2pool": "Checking for latest version of sha-p2pool",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "Checking for latest version of wallet",
     "checking-latest-version-xmrig": "Checking for latest version of xmrig",
     "download-completed": "Download completed",
     "downloading": "Downloading",
+    "minotari-node-restarting": "Minotari node data was corrupt, cleaning old data",
     "preparing-for-initial-sync": "Connecting to network peers {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Starting merge mining proxy",
     "starting-p2pool": "Starting P2Pool",
     "starting-up": "Starting up",
     "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
     "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
-    "waiting-for-node": "Waiting for node to sync",
-    "waiting-for-wallet": "Waiting for wallet"
+    "waiting-for-minotari-node-to-start": "Waiting for Minotari node to start",
+    "waiting-for-node": "Waiting for node to start",
+    "waiting-for-wallet": "Waiting for wallet",
+    "wallet-started": "Wallet started"
   },
   "would-you-like-to-install": "Would you like to install Tari Universe {{version}} now?",
   "yes": "Yes"

@@ -3,12 +3,20 @@ import * as path from 'node:path';
 import react from '@vitejs/plugin-react';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import eslintPlugin from '@nabla/vite-plugin-eslint';
-import packageInfo from './package.json';
-import { sentryVitePlugin } from '@sentry/vite-plugin';
 
 const plugins: UserConfig['plugins'] = [
     react({
-        babel: { plugins: ['styled-components'] },
+        babel: {
+            plugins: [
+                [
+                    'babel-plugin-styled-components',
+                    {
+                        displayName: true,
+                        fileName: false,
+                    },
+                ],
+            ],
+        },
     }),
     tsconfigPaths(),
     eslintPlugin({ eslintOptions: { cache: false } }),
@@ -34,37 +42,15 @@ const devOptions: UserConfig = {
     },
 };
 
-export default defineConfig(({ command, mode }) => {
+export default defineConfig(({ command }) => {
     if (command === 'serve') {
         return { ...devOptions, ...baseOptions };
     }
     return {
         ...baseOptions,
+        plugins,
         build: {
             sourcemap: true,
         },
-        plugins: [
-            ...plugins,
-            sentryVitePlugin({
-                org: 'tari-labs',
-                project: 'tari-universe',
-                release: {
-                    name: packageInfo.version,
-                },
-                reactComponentAnnotation: { enabled: true },
-                authToken: process.env.SENTRY_AUTH_TOKEN,
-                disable: mode === 'development',
-                telemetry: false,
-                sourcemaps: {
-                    assets: ['./dist/**'],
-                    ignore: [
-                        'node_modules',
-                        './dist/assets/textures/**',
-                        './dist/assets/models/**',
-                        './dist/assets/glApp.js',
-                    ],
-                },
-            }),
-        ],
     };
 });

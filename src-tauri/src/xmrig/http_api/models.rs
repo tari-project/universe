@@ -22,7 +22,7 @@
 
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub(crate) struct Summary {
     pub(crate) connection: Connection,
 
@@ -42,7 +42,7 @@ pub struct Results {
     // error_log: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Connection {
     pub(crate) uptime: u64,
     // Sometimes doesn't exist
@@ -52,7 +52,7 @@ pub struct Connection {
 #[derive(Deserialize, Debug)]
 pub struct Cpu {}
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Hashrate {
     pub(crate) total: Vec<Option<f64>>,
 }

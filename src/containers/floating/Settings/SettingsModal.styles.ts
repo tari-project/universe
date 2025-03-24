@@ -1,13 +1,15 @@
-import { m } from 'framer-motion';
 import styled from 'styled-components';
 
 export const Container = styled.div`
     width: 75vw;
+    height: 70vh;
+
     display: flex;
     position: relative;
     align-items: stretch;
-    height: 70vh;
     overflow: hidden;
+
+    max-width: 1000px;
 
     @media (min-width: 1200px) {
         height: 80vh;
@@ -36,33 +38,7 @@ export const ContentContainer = styled.div`
     position: relative;
 `;
 
-const transition = {
-    ease: 'linear',
-    duration: 0.25,
-};
-
-export const variants = {
-    initial: {
-        x: -15,
-        opacity: 0,
-        transition,
-    },
-    exit: {
-        x: 20,
-        opacity: 0,
-        transition,
-    },
-    visible: {
-        x: 0,
-        opacity: 1,
-        transition,
-    },
-};
-export const SectionWrapper = styled(m.div).attrs({
-    initial: 'initial',
-    animate: 'visible',
-    exit: 'exit',
-})`
+export const SectionWrapper = styled.div`
     max-width: 100%;
     display: flex;
     flex-direction: column;

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useUIStore } from '@app/store/useUIStore.ts';
+
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -17,8 +17,9 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
+import { setCustomStatsServerPort, setDialogToShow } from '@app/store';
 
-export const ErrorTypography = styled(Typography)(({ theme }) => ({
+const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
     // Prevent jumping when the error message appears
     minHeight: '14px',
@@ -30,13 +31,10 @@ const hasStatsServerPortError = (cp: number) => {
 
 const P2poolMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setDialogToShow = useUIStore((s) => s.setDialogToShow);
     const customStatsServerPort = useAppConfigStore((s) => s.p2pool_stats_server_port);
-    const setCustomStatsServerPort = useAppConfigStore((s) => s.setP2poolStatsServerPort);
     const [editedCustomStatsServerPort, setEditedCustomStatsServerPort] = useState(customStatsServerPort);
     const [isRandomStatsServerPort, setIsRandomStatsServerPort] = useState(!customStatsServerPort);
     const [currentStatsServerPort, setCurrentStatsServerPort] = useState(customStatsServerPort);
-
     useEffect(() => {
         invoke('get_used_p2pool_stats_server_port').then(setCurrentStatsServerPort).catch(console.error);
     }, []);
@@ -50,7 +48,7 @@ const P2poolMarkup = () => {
             console.error('P2Pool unhandled case', editedCustomStatsServerPort);
         }
         setDialogToShow('restart');
-    }, [isRandomStatsServerPort, setDialogToShow, setCustomStatsServerPort, editedCustomStatsServerPort]);
+    }, [isRandomStatsServerPort, editedCustomStatsServerPort]);
 
     const isSaveButtonVisible = useMemo(() => {
         if (isRandomStatsServerPort) {
@@ -76,6 +74,11 @@ const P2poolMarkup = () => {
         [currentStatsServerPort, editedCustomStatsServerPort, isRandomStatsServerPort]
     );
 
+    const emptyContext = currentStatsServerInputPort ? '' : 'empty';
+    const errorMessage = hasStatsServerPortError(currentStatsServerInputPort)
+        ? t('invalid-stats-server-port', { context: emptyContext })
+        : null;
+
     return (
         <>
             <SettingsGroupWrapper>
@@ -88,7 +91,7 @@ const P2poolMarkup = () => {
                             </Typography>
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
-                    <SettingsGroupAction style={{ alignItems: 'center' }}>
+                    <SettingsGroupAction style={{ alignItems: 'center', minHeight: 50 }}>
                         {isSaveButtonVisible && <Button onClick={onSave}>{t('save')}</Button>}
                     </SettingsGroupAction>
                 </SettingsGroup>
@@ -108,9 +111,7 @@ const P2poolMarkup = () => {
                                 setEditedCustomStatsServerPort(Number(target.value.trim()));
                             }}
                         />
-                        <ErrorTypography variant="p">
-                            {hasStatsServerPortError(currentStatsServerInputPort) && t('invalid-stats-server-port')}
-                        </ErrorTypography>
+                        <ErrorTypography variant="p">{!isRandomStatsServerPort && errorMessage}</ErrorTypography>
                     </SettingsGroupContent>
                     <SettingsGroupAction>
                         <ToggleSwitch

@@ -1,5 +1,6 @@
+import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import GreenModal from '@app/components/GreenModal/GreenModal';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { useShareRewardStore } from '@app/store/useShareRewardStore';
 import {
     BlackButton,
@@ -18,14 +19,12 @@ import {
 import genericHeroImage from './images/generic-image.png';
 import gemImage from '../../main/Airdrop/AirdropGiftTracker/images/gem.png';
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
-export type PaperWalletModalSectionType = 'Connect' | 'QRCode';
-
-export default function ShareRewardModal() {
+const ShareRewardModal = memo(function ShareRewardModal() {
     const { t } = useTranslation('sidebar', { useSuspense: false });
 
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
@@ -52,16 +51,17 @@ export default function ShareRewardModal() {
 
     const referralCode = userDetails?.user?.referral_code || '';
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
-    const block = item?.blockHeight || 0;
+    const block = item?.mined_in_block_height || 0;
     const reward = item?.amount || 0;
     const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.TXTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(shareUrl);
-        setCopied(true);
-    };
+    const handleCopy = useCallback(() => {
+        writeText(shareUrl).then(() => {
+            setCopied(true);
+        });
+    }, [shareUrl]);
 
     return (
         <AnimatePresence>
@@ -71,9 +71,11 @@ export default function ShareRewardModal() {
 
                     <ContentWrapper>
                         <Title>{t('share.title')}</Title>
-                        <WinnerPill>
-                            {t('share.winner-pill')} #{block.toLocaleString()}
-                        </WinnerPill>
+                        {block ? (
+                            <WinnerPill>
+                                {t('share.winner-pill')} #{block.toLocaleString()}
+                            </WinnerPill>
+                        ) : null}
 
                         <BlackButton onClick={handleCopy}>
                             <AnimatePresence>
@@ -102,4 +104,6 @@ export default function ShareRewardModal() {
             )}
         </AnimatePresence>
     );
-}
+});
+
+export default ShareRewardModal;

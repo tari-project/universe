@@ -85,11 +85,16 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
 
-        let gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+        let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
 
-        let gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
 
-        let (tari_prerelease_prefix, gpuminer_specific_nanme) =
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
+            gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
+        }
+
+        let (tari_prerelease_prefix, gpuminer_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
@@ -114,9 +119,9 @@ impl BinaryResolver {
                 Binaries::GpuMiner.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
-                    repo: "tarigpuminer".to_string(),
-                    owner: "stringhandler".to_string(),
-                    specific_name: gpuminer_specific_nanme,
+                    repo: "glytex".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: gpuminer_specific_name,
                 }),
                 None,
                 true,

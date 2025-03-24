@@ -1,77 +1,88 @@
-import * as Sentry from '@sentry/react';
-import { useEffect } from 'react';
-import { AppContentContainer } from '@app/App/App.styles';
-import { useShuttingDown } from '@app/hooks';
-
-import { useAppStateStore } from '@app/store/appStateStore';
-import { LazyMotion, domMax, MotionConfig, AnimatePresence } from 'framer-motion';
-import { useUIStore } from '@app/store/useUIStore.ts';
+import { memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 
+import { useIsAppReady } from '../hooks/app/isAppReady.ts';
+import { useShuttingDown } from '../hooks';
+
+import { useAppStateStore } from '../store/appStateStore';
+import { setError, setIsWebglNotSupported } from '../store/actions';
+import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
+import ThemeProvider from '../theme/ThemeProvider.tsx';
+import Splashscreen from '../containers/phase/Splashscreen/Splashscreen.tsx';
 import ShuttingDownScreen from '../containers/phase/ShuttingDownScreen/ShuttingDownScreen.tsx';
 import FloatingElements from '../containers/floating/FloatingElements.tsx';
 import MainView from '../containers/main/MainView.tsx';
 import Setup from '../containers/phase/Setup/Setup';
 
-import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
-import ThemeProvider from '../theme/ThemeProvider.tsx';
+import { AppContentContainer } from './App.styles.ts';
+
+const CurrentAppSection = memo(function CurrentAppSection({
+    isAppReady,
+    isShuttingDown,
+}: {
+    isAppReady?: boolean;
+    isShuttingDown?: boolean;
+}) {
+    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+
+    const currentSection = useMemo(() => {
+        const showSetup = isSettingUp && !isShuttingDown && isAppReady;
+        const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
+        if (!isAppReady) {
+            return (
+                <AppContentContainer key="splashscreen" initial="hidden">
+                    <Splashscreen />
+                </AppContentContainer>
+            );
+        }
+
+        if (showSetup) {
+            return (
+                <AppContentContainer key="setup" initial="hidden">
+                    <Setup />
+                </AppContentContainer>
+            );
+        }
+
+        if (showMainView) {
+            return (
+                <AppContentContainer key="main" initial="dashboardInitial">
+                    <MainView />
+                </AppContentContainer>
+            );
+        }
+
+        if (isShuttingDown) {
+            return (
+                <AppContentContainer key="shutdown" initial="hidden">
+                    <ShuttingDownScreen />
+                </AppContentContainer>
+            );
+        }
+    }, [isAppReady, isSettingUp, isShuttingDown]);
+
+    return <AnimatePresence mode="popLayout">{currentSection}</AnimatePresence>;
+});
 
 export default function App() {
+    const isAppReady = useIsAppReady();
     const isShuttingDown = useShuttingDown();
-    const isSettingUp = useAppStateStore((s) => s.isSettingUp);
 
-    const showSetup = isSettingUp && !isShuttingDown;
-
-    const setError = useAppStateStore((s) => s.setError);
-    const setIsWebglNotSupported = useUIStore((s) => s.setIsWebglNotSupported);
     const { t } = useTranslation('common', { useSuspense: false });
 
-    useEffect(() => {
-        if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
-            Sentry.captureMessage('WebGL not supported by the browser', { extra: { userAgent: navigator.userAgent } });
-            setIsWebglNotSupported(true);
-            setError(t('webgl-not-supported'));
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    useEffect(() => {
-        const canvasElement = document.getElementById('canvas');
-        if (canvasElement) {
-            canvasElement.style.opacity = isShuttingDown || isSettingUp ? '0' : '1';
-        }
-    }, [isShuttingDown, isSettingUp]);
-
+    if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
+        console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
+        setIsWebglNotSupported(true);
+        setError(t('webgl-not-supported'));
+    }
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle />
-            <LazyMotion features={domMax} strict>
-                {/*
-                 * added to reduce bundle size
-                 * see https://www.framer.com/motion/guide-reduce-bundle-size/#synchronous-loading
-                 * strict prop for using `m` instead of `motion`- see https://www.framer.com/motion/guide-reduce-bundle-size/#how-to-reduce-the-size-of-the-motion-component
-                 */}
-                <MotionConfig reducedMotion="user">
-                    <FloatingElements />
-                    <AnimatePresence>
-                        {showSetup ? (
-                            <AppContentContainer key="setup" initial="visible">
-                                <Setup />
-                            </AppContentContainer>
-                        ) : null}
-                        {isShuttingDown || showSetup ? null : (
-                            <AppContentContainer key="main" initial="hidden">
-                                <MainView />
-                            </AppContentContainer>
-                        )}
-                        {isShuttingDown ? (
-                            <AppContentContainer key="shutdown" initial="hidden">
-                                <ShuttingDownScreen />
-                            </AppContentContainer>
-                        ) : null}
-                    </AnimatePresence>
-                </MotionConfig>
+            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
+            <LazyMotion features={domAnimation} strict>
+                <FloatingElements />
+                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
             </LazyMotion>
         </ThemeProvider>
     );

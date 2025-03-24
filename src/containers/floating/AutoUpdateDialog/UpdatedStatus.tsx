@@ -3,7 +3,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ProgressWrapper } from '@app/containers/main/Dashboard/styles.ts';
 
-export interface UpdatedStatusProps {
+interface UpdatedStatusProps {
     contentLength: number;
     downloaded: number;
 }

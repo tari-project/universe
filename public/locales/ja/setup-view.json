@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "マシンがロックされているかスリープモード中にTari Universeを{{version}}に自動更新できませんでした。",
   "dont-worry": "心配しないでください、次回はそれほど時間がかかりません",
   "installing-latest-version": "Tari Universeの{{version}}バージョンをインストール中",
   "new-tari-version-available": "Tari Universeの新しいバージョンが利用可能です！",
@@ -7,22 +8,27 @@
   "this-might-take-a-few-minutes": "数分かかる場合があります",
   "title": {
     "application-started": "アプリケーションが開始されました",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminerの最新バージョンを確認中",
     "checking-latest-version-mmproxy": "mmproxyの最新バージョンを確認中",
     "checking-latest-version-node": "ノードの最新バージョンを確認中",
     "checking-latest-version-sha-p2pool": "sha-p2poolの最新バージョンを確認中",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "ウォレットの最新バージョンを確認中",
     "checking-latest-version-xmrig": "xmrigの最新バージョンを確認中",
     "download-completed": "ダウンロードが完了しました",
     "downloading": "ダウンロード中",
+    "minotari-node-restarting": "Minotariノードのデータが破損しました。古いデータをクリーニングしています",
     "preparing-for-initial-sync": "ネットワークピアに接続中 {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "マージマイニングプロキシを開始しています",
     "starting-p2pool": "P2Poolを開始しています",
     "starting-up": "起動中",
     "waiting-for-block-sync": "ブロック同期を待っています。{{local_height}}/{{tip_height}} ブロックが同期されました",
     "waiting-for-header-sync": "ヘッダー同期を待っています。{{local_height}}/{{tip_height}} ヘッダーが同期されました",
+    "waiting-for-minotari-node-to-start": "Minotariノードの起動を待っています",
     "waiting-for-node": "ノードの同期を待っています",
-    "waiting-for-wallet": "ウォレットを待っています"
+    "waiting-for-wallet": "ウォレットを待っています",
+    "wallet-started": "ウォレットが起動しました"
   },
   "would-you-like-to-install": "Tari Universe {{version}} を今すぐインストールしますか？",
   "yes": "はい"

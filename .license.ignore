@@ -1,2 +1,5 @@
-./public/assets/glApp.js
-./dist-isolation/index.js
+./tari-win-bundler/Bundle.wxs
+./tari-win-bundler/Tari Universe.wixproj
+./tari-win-bundler/Tari Universe.wixproj.user
+./tari-win-bundler/Theme.wxl
+./tari-win-bundler/Theme.xml

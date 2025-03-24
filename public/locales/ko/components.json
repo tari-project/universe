@@ -7,5 +7,27 @@
     "invalid-url": "유효한 URL 주소여야 합니다",
     "password-too-short": "비밀번호는 최소 8자 이상이어야 합니다",
     "required": "필수 필드"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "취소",
+    "description": "Ludicrous 모드는 시스템이 응답하지 않을 수 있습니다. Ludicrous 모드에서 채굴을 시작하려는지 확인해 주세요. 그렇지 않으면 Tari Universe가 Eco 모드로 전환됩니다.",
+    "keepChanges": "변경 사항 유지",
+    "seconds": "초",
+    "title": "Ludicrous 모드로 전환하시겠습니까?"
+  },
+  "releaseNotesDialog": {
+    "close": "확인",
+    "title": "릴리스 노트"
+  },
+  "resume-app-modal": {
+    "title": "Tari Universe 재개 중",
+    "resuming-all-processes": "모든 프로세스 재개 중...",
+    "resuming-tor": "Tor 재개 중...",
+    "resuming-node": "노드 재개 중...",
+    "resuming-wallet": "지갑 재개 중...",
+    "syncing-node": "노드 동기화 중...",
+    "resuming-p2pool": "P2Pool 재개 중...",
+    "resuming-mm-proxy": "MM 프록시 재개 중...",
+    "finishing-resume": "재개 완료 중..."
   }
 }

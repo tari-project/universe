@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
+
 import ConnectionStatus from '../connections/ConnectionStatus.tsx';
 
 import {
@@ -12,11 +12,15 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { formatHashrate } from '@app/utils/formatters.ts';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 export default function Network() {
     const { t } = useTranslation('settings');
-    const sha_network_hash_rate = useMiningStore((state) => state?.sha_network_hash_rate);
-    const randomx_network_hash_rate = useMiningStore((state) => state?.randomx_network_hash_rate);
+    const sha_network_hashrate = useMiningMetricsStore((state) => state?.base_node_status?.sha_network_hashrate);
+    const randomx_network_hashrate = useMiningMetricsStore(
+        (state) => state?.base_node_status?.randomx_network_hashrate
+    );
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -31,13 +35,13 @@ export default function Network() {
                             <Stack direction="row">
                                 <Typography>{t('sha-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(sha_network_hash_rate || 0)}</b>
+                                    <b>{formatHashrate(sha_network_hashrate || 0)}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">
                                 <Typography>{t('randomx-network-hash-rate')}</Typography>
                                 <Typography>
-                                    <b>{formatHashrate(randomx_network_hash_rate || 0)}</b>
+                                    <b>{formatHashrate(randomx_network_hashrate || 0)}</b>
                                 </Typography>
                             </Stack>
                         </Stack>

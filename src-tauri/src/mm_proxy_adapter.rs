@@ -137,6 +137,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            // Difficulty is checked in p2pool; no need to check it in the merge mining proxy as well.
+            "-p".to_string(),
+            "merge_mining_proxy.check_tari_difficulty_before_submit=false".to_string(),
             "-p".to_string(),
             format!(
                 "merge_mining_proxy.use_dynamic_fail_data={}",
@@ -198,17 +201,17 @@ pub struct MergeMiningProxyStatusMonitor {
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        // TODO: Monero calls are really slow, so temporarily changing to Healthy
-        // HealthStatus::Healthy
         if self
             .get_version()
             .await
-            .inspect_err(|e| warn!(target: LOG_TARGET, "Failed to get block template during health check: {:?}", e))
+            .inspect_err(
+                |e| warn!(target: LOG_TARGET, "Failed to get version during health check: {}", e),
+            )
             .is_ok()
         {
             HealthStatus::Healthy
         } else {
-            if self.start_time.elapsed().as_secs() <30 {
+            if self.start_time.elapsed().as_secs() < 30 {
                 return HealthStatus::Healthy;
             }
             // HealthStatus::Unhealthy
@@ -242,19 +245,16 @@ impl MergeMiningProxyStatusMonitor {
             let response_json: serde_json::Value = serde_json::from_str(&response_text)?;
             if response_json.get("error").is_some() {
                 return Err(anyhow!(
-                    "Failed to get block template Jsonrpc error: {}",
+                    "Failed to get version Jsonrpc error: {}",
                     response_text
                 ));
             }
             if response_json.get("result").is_none() {
-                return Err(anyhow!("Failed to get block template: {}", response_text));
+                return Err(anyhow!("Failed to get version: {}", response_text));
             }
             Ok(response_text)
         } else {
-            Err(anyhow!(
-                "Failed to get block template: {}",
-                response.status()
-            ))
+            Err(anyhow!("Failed to get version: {}", response.status()))
         }
     }
 }

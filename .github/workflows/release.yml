@@ -1,7 +1,7 @@
 ---
 name: Release
 
-on:
+'on':
   push:
     paths-ignore:
       - '**/*.md'
@@ -21,24 +21,46 @@ permissions: {}
 
 env:
   TS_FEATURES: release-ci
+  BETA_STRING: '(Beta)'
 
 jobs:
   builds:
-    name: Building ${{ matrix.platform }}
+    name: Building ${{ matrix.platform }}${{ matrix.extra }}
+    # best effort disabled by default
+    continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: 'ubuntu-22.04'
-            args: ''
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage,updater'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage,updater'
+          #   best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
           - platform: 'windows-latest'
             args: '--bundles msi,updater'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
+      - name: Dump env
+        run: env | sort
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - uses: actions/checkout@v4
 
       - name: BETA Builds - Install dependencies (windows) [yq]
@@ -58,33 +80,55 @@ jobs:
           BETA_STRING: '(Beta)'
           AIRDROP_BASE_URL: ${{ secrets.BETA_AIRDROP_BASE_URL }}
           AIRDROP_API_BASE_URL: ${{ secrets.BETA_AIRDROP_API_BASE_URL }}
-          AIRDROP_TWITTER_AUTH_URL: ${{ secrets.BETA_AIRDROP_TWITTER_AUTH_URL }}
+          TELEMETRY_API_URL: ${{ secrets.BETA_TELEMETRY_API_URL }}
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.DEV_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
+          # Used for linux formatting
+          OS_BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
+          OS_BETA_DATE_SUFFIX: ${{ runner.os == 'Linux' && '-' || ' - ' }}
         shell: bash
         run: |
           #set -xueo pipefail
           echo "TARI_NETWORK=esme" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=testnet" >> $GITHUB_ENV
+          # Make envs available to other steps
           echo "AIRDROP_BASE_URL=${{ env.AIRDROP_BASE_URL }}" >> $GITHUB_ENV
           echo "AIRDROP_API_BASE_URL=${{ env.AIRDROP_API_BASE_URL }}" >> $GITHUB_ENV
-          echo "AIRDROP_TWITTER_AUTH_URL=${{ env.AIRDROP_TWITTER_AUTH_URL }}" >> $GITHUB_ENV
-          echo "TS_FEATURES=release-ci-beta, airdrop-env" >> $GITHUB_ENV
+          echo "TELEMETRY_API_URL=${{ env.TELEMETRY_API_URL }}" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
+          # GitHub Actions does not expand environment variables dynamically in envs
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            OS_BETA_STRING=-${BETA_STRING}
+            BETA_STRING_SAFE=$(echo ${BETA_STRING} | sed 's/[^a-zA-Z0-9]/_/g')
+            OS_BETA_STRING_BinName=-${BETA_STRING_SAFE}
+          else
+            OS_BETA_STRING=\ ${BETA_STRING}
+            OS_BETA_STRING_BinName=\ ${BETA_STRING}
+          fi
+          echo "OS_BETA_STRING is ${OS_BETA_STRING}"
+          echo "OS_BETA_STRING_BinName is ${OS_BETA_STRING_BinName}"
+          echo "TS_FEATURES=release-ci-beta, airdrop-env, telemetry-env" >> $GITHUB_ENV
           # numeric-only and cannot be greater than 65535 for msi target
           export BETA_DATE=$(date +%m%d)
+          echo "BETA_DATE=${BETA_DATE}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           echo "releaseName=Tari Universe ${{ env.BETA_STRING }} v__VERSION__-${BETA_DATE}" >> $GITHUB_ENV
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".mainBinaryName = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} \"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
-          yq eval ".app.windows[1].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" -i tauri.conf.json
-          yq eval ".identifier = \"com.tari.universe.beta\"" -i tauri.conf.json
+          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}${OS_BETA_STRING_BinName}${{ env.OS_BETA_DATE_SUFFIX }}${BETA_DATE}\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe ${{ env.BETA_STRING }} - ${BETA_DATE} | Testnet\"" --output-format=json -i tauri.conf.json
+          yq eval ".build.beforeBuildCommand = \"npm run build -- --mode development\"" --output-format=json -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe.beta\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/beta-latest.json\"]" \
-            -i tauri.conf.json
+            --output-format=json -i tauri.conf.json
           cat tauri.conf.json
           sed -i.bak -e "s/\"icons\//\"beta-icons\//g" tauri.conf.json
 
       - name: RELEASE Builds - Set environment variables
         if: ${{ startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
+          # Used for linux formatting
+          OS_BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -94,16 +138,19 @@ jobs:
           #echo "releaseId=" >> $GITHUB_ENV
           echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
+          TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes
-          yq eval ".productName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".mainBinaryName = \"Tari Universe\"" -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe | Testnet\"" -i tauri.conf.json
-          yq eval ".identifier = \"com.tari.universe\"" -i tauri.conf.json
+          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} | Testnet\"" --output-format=json -i tauri.conf.json
+          yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
-            -i tauri.conf.json
+            --output-format=json -i tauri.conf.json
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: lts/*
           cache: 'npm'
@@ -130,6 +177,12 @@ jobs:
             patchelf \
             libprotobuf-dev \
             protobuf-compiler
+
+      - name: Install Dependencies - Linux/AppImage
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        run: |
+          sudo apt-get install --no-install-recommends --assume-yes \
+            appstream
 
       - name: Install Dependencies - Linux/OpenCL
         if: startsWith(runner.os,'Linux')
@@ -173,14 +226,13 @@ jobs:
         shell: bash
         env:
           AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
-          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -c Tarilabs %1
+          WINDOWS_SIGN_COMMAND: trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d 'TariUniverse' -c Tarilabs %1
         run: |
           cd "${GITHUB_WORKSPACE}/src-tauri"
-          echo "{}" | \
-            jq '.bundle .windows += {"signCommand": "${{ env.WINDOWS_SIGN_COMMAND }}"}' > \
-              ./tauri.windows.conf.json
+          echo '{}' > ./tauri.windows.conf.json
+          yq eval ".bundle.windows.signCommand = env(WINDOWS_SIGN_COMMAND)" --output-format=json -i ./tauri.windows.conf.json
           cat ./tauri.windows.conf.json
-          cargo install trusted-signing-cli@0.3.0 --locked
+          cargo install trusted-signing-cli@0.5.0 --locked
 
       - name: Install Dependencies - Node
         run: |
@@ -189,7 +241,7 @@ jobs:
 
       - name: Build Tauri Apps
         id: build
-        uses: tauri-apps/tauri-action@dev
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_CODE_SIGNING: ${{ secrets.APPLE_CERTIFICATE || secrets.AZURE_TENANT_ID }}
@@ -216,18 +268,181 @@ jobs:
           includeRelease: true
           args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
 
-      - name: Debug Step - artifactPaths
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+      - name: Dump env
+        run: env | sort
+
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Add msbuild to PATH (windows)
+        uses: microsoft/setup-msbuild@v2
+        if: startsWith(runner.os,'Windows')
+
+      - name: Build WiX on Windows
+        if: ${{ startsWith(runner.os,'Windows') }}
+        env:
+          TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
+          WIX_LOGLEVEL: Verbose
+        shell: bash
+        run: |
+          mkdir -p "tari-win-bundler/executables"
+          cd "tari-win-bundler/executables"
+          # https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170
+          curl -s --location --remote-name "https://aka.ms/vs/17/release/vc_redist.x64.exe"
+          cd ../..
+          ls -la "src-tauri/target/release/bundle/msi"
+          ls -la "tari-win-bundler/executables"
+          if [[ "$GITHUB_REF" == refs/heads/release ]]; then
+            # release
+            export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
+          else
+            # Beta / Other
+            export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+            export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}"
+          fi
+          export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
+          echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
+          echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_BUNDLER_NAME is ${TARI_UNIVERSE_BUNDLER_NAME}"
+          echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
+          echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
+
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add WixToolset.Util.wixext/5.0.2
+          wix extension add WixToolset.BootstrapperApplications.wixext/5.0.2
+          wix extension list
+          wix build tari-win-bundler/Bundle.wxs \
+            -ext WixToolset.Util.wixext \
+            -ext WixToolset.BootstrapperApplications.wixext \
+            -includepath tari-win-bundler \
+            -includepath tari-win-bundler/resources \
+            -includepath tari-win-bundler/executables \
+            -includepath wix \
+            -includepath src-tauri/target/release/bundle/msi
+          ls -la src-tauri/target/release/bundle/msi
+          ls -la tari-win-bundler
+          ls -la tari-win-bundler/executables
+          mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
+
+      - name: Sign New Windows Installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        shell: bash
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        run: |
+          wix burn detach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs ./tari-win-bundler/burnengine.exe
+          wix burn reattach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe -o "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+          trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
+
+      - name: Verify Windows signing for installer
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
+        continue-on-error: true
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        shell: powershell
+        run: |
+          # Get the Program Files (x86) directory dynamically
+          $programFilesX86 = [System.Environment]::GetFolderPath("ProgramFilesX86")
+          $sdkBasePath = Join-Path $programFilesX86 "Windows Kits"
+
+          # Check if Windows Kits exists
+          if (-Not (Test-Path $sdkBasePath)) {
+            Write-Error "Windows Kits folder not found at $sdkBasePath!"
+            exit 1
+          }
+
+          Write-Output "Searching for signtool.exe in: $sdkBasePath"
+
+          # Search for signtool.exe within Windows Kits fold with x64 in the path
+          $signtoolPath = Get-ChildItem -Path $sdkBasePath -Recurse -Filter signtool.exe -ErrorAction SilentlyContinue |
+                          Where-Object { $_.FullName -match '\\x64\\' } |
+                          Select-Object -ExpandProperty FullName -First 1
+
+          if (-not $signtoolPath) {
+            Write-Error "signtool.exe not found in Windows Kits folder!"
+            exit 1
+          }
+
+          Write-Output "Found signtool.exe at: $signtoolPath"
+
+          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
+
+          # Display results
+          Write-Host "File: ${{ env.MSI_FILE }}"
+          Write-Host "  - Status: $($Signature.Status)"
+          Write-Host "  - Status Message: $($Signature.StatusMessage)"
+          Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
+          Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
+          Write-Host "---------------------------------------------"
+
+          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
+            exit 1
+          }
+
+      - name: Add Windows bundled wix installer to release
+        if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          #gh release upload ${{ github.event.release.tag_name }} ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          gh release upload "v${{ steps.build.outputs.appVersion }}" \
+            ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe \
+            ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+
+      - name: BETA Builds - upload wix installer
+        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+
+      - name: Locate artifacts path
         continue-on-error: true
         env:
           artifactPaths: ${{ steps.build.outputs.artifactPaths }}
         shell: bash
         run: |
-          echo -e "Artifact paths:\n ${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+          echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
+          MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
+          echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: BETA Builds - Upload assets
         if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
-          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}
+          name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+
+      - name: Windows debug symbols - Upload asset
+        if: startsWith(runner.os,'Windows')
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe.pdb
+          path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
+
+      - name: Windows install Sentry CLI
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        shell: bash
+        run: npm install @sentry/cli@2.42.2 -g
+
+      - name: Windows debug symbols - Upload to Sentry
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.SENTRY_AUTH_TOKEN != '' ) }}
+        continue-on-error: true
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_SYMBOLS_AUTH_TOKEN }}
+        shell: bash
+        run: |
+          sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
+          sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb

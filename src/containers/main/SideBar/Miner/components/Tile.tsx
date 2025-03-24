@@ -6,7 +6,7 @@ import { colorsAll } from '@app/theme/palettes/colors.ts';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
 
-export interface TileProps {
+interface TileProps {
     title: string;
     stats: string;
     unit?: string;
@@ -21,8 +21,8 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
     const chipText = formatNumber(chipValue, FormatPreset.PERCENT);
 
     return (
-        <TileItem layoutId={`tile-item-${title}`}>
-            <TileTop layout>
+        <TileItem>
+            <TileTop>
                 <Typography>{title}</Typography>
                 {chipValue ? (
                     <Chip size="small" background={chipColor} color={'#fff'}>
@@ -33,7 +33,7 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
             {isLoading ? (
                 <SpinnerIcon />
             ) : (
-                <StatWrapper $useLowerCase={useLowerCase} layout>
+                <StatWrapper $useLowerCase={useLowerCase}>
                     {truncateString(stats, 8)}
                     <Unit>{unit}</Unit>
                 </StatWrapper>

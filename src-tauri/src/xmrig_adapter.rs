@@ -25,18 +25,21 @@ use async_trait::async_trait;
 use log::warn;
 use std::path::PathBuf;
 use tari_shutdown::Shutdown;
+use tokio::sync::watch;
 
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
 use crate::xmrig;
+use crate::xmrig::http_api::models::Summary;
 use crate::xmrig::http_api::XmrigHttpApiClient;
 
 const LOG_TARGET: &str = "tari::universe::xmrig_adapter";
 
 pub enum XmrigNodeConnection {
     LocalMmproxy { host_name: String, port: u16 },
+    Benchmark,
 }
 
 impl XmrigNodeConnection {
@@ -48,7 +51,12 @@ impl XmrigNodeConnection {
                     format!("--url={}:{}", host_name, port),
                     // "--daemon-poll-interval=10000".to_string(),
                     "--coin=monero".to_string(),
+                    // We are using a local daemon, so retry as soon as possible
+                    "--retry-pause=1".to_string(),
                 ]
+            }
+            XmrigNodeConnection::Benchmark => {
+                vec!["--benchmark=1m".to_string()]
             }
         }
     }
@@ -61,10 +69,11 @@ pub struct XmrigAdapter {
     pub http_api_port: u16,
     pub cpu_threads: Option<Option<u32>>,
     pub extra_options: Vec<String>,
+    pub summary_broadcast: watch::Sender<Option<Summary>>,
 }
 
 impl XmrigAdapter {
-    pub fn new() -> Self {
+    pub fn new(summary_broadcast: watch::Sender<Option<Summary>>) -> Self {
         let http_api_port = PortAllocator::new().assign_port_with_fallback();
         let http_api_token = "pass".to_string();
         Self {
@@ -74,6 +83,7 @@ impl XmrigAdapter {
             http_api_port,
             cpu_threads: None,
             extra_options: Vec::new(),
+            summary_broadcast,
         }
     }
 }
@@ -128,13 +138,9 @@ impl ProcessAdapter for XmrigAdapter {
                 .as_ref()
                 .ok_or(anyhow::anyhow!("Monero address not set"))?
         ));
-        #[allow(clippy::collapsible_match)]
         // don't specify threads for ludicrous mode
-        #[allow(clippy::collapsible_match)]
-        if let Some(cpu_threads) = self.cpu_threads {
-            if let Some(cpu_threads) = cpu_threads {
-                args.push(format!("--threads={}", cpu_threads));
-            }
+        if let Some(Some(cpu_threads)) = self.cpu_threads {
+            args.push(format!("--threads={}", cpu_threads));
         }
         args.push("--verbose".to_string());
         for extra_option in &self.extra_options {
@@ -155,6 +161,7 @@ impl ProcessAdapter for XmrigAdapter {
                 },
             },
             XmrigStatusMonitor {
+                summary_broadcast: self.summary_broadcast.clone(),
                 client: XmrigHttpApiClient::new(
                     format!("http://127.0.0.1:{}", self.http_api_port),
                     self.http_api_token.clone(),
@@ -175,13 +182,23 @@ impl ProcessAdapter for XmrigAdapter {
 #[derive(Clone)]
 pub struct XmrigStatusMonitor {
     client: XmrigHttpApiClient,
+    summary_broadcast: watch::Sender<Option<Summary>>,
 }
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
-        // TODO: Connect this to actual stats
-        HealthStatus::Healthy
+        match self.summary().await {
+            Ok(s) => {
+                let _result = self.summary_broadcast.send(Some(s));
+                HealthStatus::Healthy
+            }
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                let _result = self.summary_broadcast.send(None);
+                HealthStatus::Unhealthy
+            }
+        }
     }
 }
 

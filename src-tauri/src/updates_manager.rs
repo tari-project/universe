@@ -31,12 +31,12 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::app_config::AppConfig;
+use crate::{
+    app_config::AppConfig, tasks_tracker::TasksTracker, utils::system_status::SystemStatus,
+};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
-
 const LOG_TARGET: &str = "tari::universe::updates_manager";
-
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct DownloadProgressPayload {
     pub event_type: String,
@@ -55,18 +55,24 @@ impl DownloadProgressPayload {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct AskForUpdatePayload {
+pub struct CouldNotUpdatePayload {
     pub event_type: String,
     pub version: String,
 }
 
-impl AskForUpdatePayload {
+impl CouldNotUpdatePayload {
     pub fn new(version: String) -> Self {
         Self {
-            event_type: "ask_for_update".to_string(),
+            event_type: "could_not_update".to_string(),
             version,
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AskForUpdatePayload {
+    pub event_type: String,
+    pub version: String,
 }
 
 #[derive(Clone)]
@@ -88,16 +94,20 @@ impl UpdatesManager {
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let app_clone = app.clone();
         let self_clone = self.clone();
-        tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(3600));
+        let mut interval = time::interval(Duration::from_secs(3600));
+        let mut shutdown_signal = self_clone.app_shutdown.clone();
+        TasksTracker::current().spawn(async move {
             loop {
-                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
-                {
-                    break;
-                };
-                interval.tick().await;
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                tokio::select! {
+                    _ = interval.tick() => {
+                        if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                            error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                        }
+                    },
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
+                        break;
+                    }
                 }
             }
         });
@@ -118,7 +128,15 @@ impl UpdatesManager {
                 *self.update.write().await = Some(update);
                 let is_auto_update = self.config.read().await.auto_update();
 
-                if force {
+                let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
+
+                if is_screen_locked && is_auto_update {
+                    info!(target: LOG_TARGET, "try_update: Screen is locked. Displaying notification");
+                    let payload = CouldNotUpdatePayload::new(version);
+                    drop(app.emit("updates_event", payload).inspect_err(|e| {
+                        warn!(target: LOG_TARGET, "Failed to emit 'updates-event' with CouldNotUpdatePayload: {}", e);
+                    }));
+                } else if force {
                     info!(target: LOG_TARGET, "try_update: Proceeding with force update");
                     self.proceed_with_update(app.clone()).await?;
                 } else if is_auto_update {
@@ -152,7 +170,7 @@ impl UpdatesManager {
         let is_pre_release = self.config.read().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
-        let update = app
+        let builder = app
             .updater_builder()
             .version_comparator(move |current, update| {
                 if enable_downgrade {
@@ -161,14 +179,28 @@ impl UpdatesManager {
                 } else {
                     update.version > current
                 }
-            })
-            .endpoints(vec![updates_url])
-            .expect("Failed to set update URL")
-            .build()
-            .expect("Failed to build updater")
-            .check()
-            .await
-            .expect("Failed to check for updates");
+            });
+        let builder = match builder.endpoints(vec![updates_url]) {
+            Ok(b) => b,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to set update URL: {}", e);
+                return Ok(None);
+            }
+        };
+        let updater = match builder.build() {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to build updater: {}", e);
+                return Ok(None);
+            }
+        };
+        let update = match updater.check().await {
+            Ok(u) => u,
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Failed to check for updates: {}", e);
+                return Ok(None);
+            }
+        };
 
         Ok(update)
     }
@@ -211,11 +243,11 @@ impl UpdatesManager {
                     }
                 },
                 || {
-                    app.restart();
+                    info!(target: LOG_TARGET, "Latest version download finished");
                 },
             )
             .await?;
 
-        Ok(())
+        app.restart();
     }
 }

@@ -7,5 +7,27 @@
     "invalid-url": "Должен быть действительный URL-адрес",
     "password-too-short": "Пароль должен содержать не менее 8 символов",
     "required": "Поле обязательно"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Отмена",
+    "description": "Режим Ludicrous может сделать вашу систему неотзывчивой. Пожалуйста, подтвердите, что вы хотите начать майнинг в режиме Ludicrous, или Tari Universe переключится обратно в режим Eco через",
+    "keepChanges": "Сохранить изменения",
+    "seconds": "секунд",
+    "title": "Переключиться в режим Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Понял",
+    "title": "Примечания к выпуску"
+  },
+  "resume-app-modal": {
+    "title": "Возобновление Tari Universe",
+    "resuming-all-processes": "Возобновление всех процессов...",
+    "resuming-tor": "Возобновление Tor...",
+    "resuming-node": "Возобновление узла...",
+    "resuming-wallet": "Возобновление кошелька...",
+    "syncing-node": "Синхронизация узла...",
+    "resuming-p2pool": "Возобновление P2Pool...",
+    "resuming-mm-proxy": "Возобновление MM Proxy...",
+    "finishing-resume": "Завершение возобновления..."
   }
 }

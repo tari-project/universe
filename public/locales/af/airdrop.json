@@ -12,7 +12,7 @@
   "doLater": "Ek sal dit later doen",
   "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
   "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
-  "inviteFirends": "Nooi Vriende",
+  "inviteFriends": "Nooi Vriende",
   "inviteFriendsText": "Kopieer skakel en deel dit",
   "invitedAmount": "U het <span>{{count}}</span> vriende genooi",
   "keep-mining-to-earn-rewards": "Hou aan myn om meer belonings te verdien!",
@@ -35,5 +35,8 @@
   "topTooltipTitle": "Testnet Belonings",
   "unclaimedGems": "Ongeëisde Edelstene",
   "you-reached-your-giftinh-goal": "Jy het jou geskenkdoelwit bereik!",
-  "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!"
+  "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!",
+  "joinAirdrop": "Sluit aan by Airdrop",
+  "loggedInTitle": "Airdrop Belonings",
+  "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien"
 }

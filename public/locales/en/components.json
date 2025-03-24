@@ -7,5 +7,27 @@
     "invalid-url": "Must be a valid URL address",
     "password-too-short": "Password must have at least 8 characters",
     "required": "Field required"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Cancel",
+    "description": "Ludicrous mode may make your system unresponsive. Please confirm you want to start mining in Ludicrous mode or Tari Universe will switch back to Eco mode in",
+    "keepChanges": "Keep Changes",
+    "seconds": "seconds",
+    "title": "Switch to Ludicrous Mode?"
+  },
+  "releaseNotesDialog": {
+    "close": "Got IT",
+    "title": "Release Notes"
+  },
+  "resume-app-modal": {
+    "title": "Resuming Tari Universe",
+    "resuming-all-processes": "Resuming all processes...",
+    "resuming-tor": "Resuming Tor...",
+    "resuming-node": "Resuming Node...",
+    "resuming-wallet": "Resuming Wallet...",
+    "syncing-node": "Syncing Node...",
+    "resuming-p2pool": "Resuming P2Pool...",
+    "resuming-mm-proxy": "Resuming MM Proxy...",
+    "finishing-resume": "Finishing Resume..."
   }
 }

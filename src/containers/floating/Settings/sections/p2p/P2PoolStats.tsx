@@ -7,7 +7,7 @@ import {
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
+import { fetchP2poolConnections, fetchP2poolStats, useP2poolStatsStore } from '@app/store/useP2poolStatsStore';
 import PeerTable from './PeerTable.tsx';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { ConnectedPeerInfo } from '@app/types/app-status.ts';
@@ -25,25 +25,24 @@ const P2PoolStats = () => {
     const sha3Stats = useP2poolStatsStore((s) => s?.sha3x_stats);
     const randomXStats = useP2poolStatsStore((s) => s?.randomx_stats);
     const peers = useP2poolStatsStore((s) => s?.peers);
-    const fetchP2pStats = useP2poolStatsStore((s) => s?.fetchP2poolStats);
-    const fetchP2poolConnections = useP2poolStatsStore((s) => s?.fetchP2poolConnections);
 
     useEffect(() => {
-        const fetchP2pStatsInterval = setInterval(async () => {
-            await fetchP2pStats?.();
+        const handleFetchP2pStats = async () => {
+            await fetchP2poolStats?.();
             await fetchP2poolConnections?.();
-        }, 5000);
-
+        };
+        void handleFetchP2pStats();
+        const fetchP2pStatsInterval = setInterval(handleFetchP2pStats, 5000);
         return () => {
             clearInterval(fetchP2pStatsInterval);
         };
-    }, [fetchP2pStats, fetchP2poolConnections]);
+    }, []);
 
     const displayPeers = useMemo(() => {
         const sha3Height = sha3Stats?.height;
         const randomXHeight = randomXStats?.height;
         return peers?.map((peer) => {
-            const { current_sha3x_height, current_random_x_height } = peer.peer_info || {};
+            const { current_sha3x_height, current_random_x_height } = peer?.peer_info || {};
             const sha3Diff = sha3Height ? sha3Height - current_sha3x_height : undefined;
             const randomxDiff = randomXHeight ? randomXHeight - current_random_x_height : undefined;
 

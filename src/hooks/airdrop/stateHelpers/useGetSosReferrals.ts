@@ -1,24 +1,25 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAirdropRequest } from '../utils/useHandleRequest';
+
 import { ReferralsResponse, useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { CrewMember } from '@app/types/ws';
+import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 
 const MAX_REFERRALS = 100;
 
 export const useGetSosReferrals = () => {
-    const [intervalSeconds, setIntervalSeconds] = useState(0);
-    const handleRequest = useAirdropRequest();
+    const [intervalSeconds, _setIntervalSeconds] = useState(0);
+
     const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
     const referrals = useShellOfSecretsStore((state) => state.referrals);
 
     const fetchUserReferrals = useCallback(async () => {
-        const data = await handleRequest<ReferralsResponse>({
+        const data = await handleAirdropRequest<ReferralsResponse>({
             path: '/sos/referrals/',
             method: 'GET',
         });
         if (!data?.toleranceMs) return;
         setReferrals(data);
-    }, [handleRequest, setReferrals]);
+    }, [setReferrals]);
 
     const fetchCrewMemberDetails = useCallback(
         async (userId: string) => {
@@ -33,7 +34,7 @@ export const useGetSosReferrals = () => {
                 shouldUpdate = true;
                 totalActiveReferrals += 1;
 
-                const data = await handleRequest<CrewMember>({
+                const data = await handleAirdropRequest<CrewMember>({
                     path: `/sos/crew-member-data/${userId}/`,
                     method: 'GET',
                 });
@@ -69,7 +70,7 @@ export const useGetSosReferrals = () => {
                 });
             }
         },
-        [handleRequest, referrals, setReferrals]
+        [referrals, setReferrals]
     );
 
     useEffect(() => {
@@ -77,12 +78,7 @@ export const useGetSosReferrals = () => {
             const intervalId = setInterval(fetchUserReferrals, intervalSeconds * 1000);
             return () => clearInterval(intervalId);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [intervalSeconds]);
+    }, [fetchUserReferrals, intervalSeconds]);
 
-    return {
-        fetchUserReferrals,
-        setRefetchIntervalSeconds: setIntervalSeconds,
-        fetchCrewMemberDetails,
-    };
+    return fetchCrewMemberDetails;
 };

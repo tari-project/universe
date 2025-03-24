@@ -22,14 +22,16 @@
 
 use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
+use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
-use crate::wallet_adapter::{WalletAdapter, WalletBalance};
+use crate::wallet_adapter::{WalletAdapter, WalletState};
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tokio::sync::watch;
 use tokio::sync::RwLock;
 
 #[derive(thiserror::Error, Debug)]
@@ -57,12 +59,16 @@ impl Clone for WalletManager {
 }
 
 impl WalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+    pub fn new(
+        node_manager: NodeManager,
+        wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
         // TODO: wire up to front end
         let use_tor = false;
 
-        let adapter = WalletAdapter::new(use_tor);
-        let process_watcher = ProcessWatcher::new(adapter);
+        let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -116,52 +122,22 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
-    pub async fn get_balance(&self) -> Result<WalletBalance, WalletManagerError> {
-        let process_watcher = self.watcher.read().await;
-        process_watcher
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_balance()
-            .await
-            .map_err(|e| match e {
-                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
-                _ => WalletManagerError::UnknownError(e.into()),
-            })
-    }
-
-    pub async fn get_transaction_history(
+    pub async fn get_coinbase_transactions(
         &self,
+        continuation: bool,
+        limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
             .status_monitor
             .as_ref()
             .ok_or_else(|| WalletManagerError::WalletNotStarted)?
-            .get_transaction_history()
+            .get_coinbase_transactions(continuation, limit)
             .await
             .map_err(|e| match e {
                 WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
                 _ => WalletManagerError::UnknownError(e.into()),
             })
-    }
-
-    pub async fn stop(&self) -> Result<i32, WalletManagerError> {
-        let mut process_watcher = self.watcher.write().await;
-        process_watcher
-            .stop()
-            .await
-            .map_err(WalletManagerError::UnknownError)
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 
     #[deprecated(

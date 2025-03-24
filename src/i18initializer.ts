@@ -131,4 +131,5 @@ i18n.use(HttpBackend)
             Language.DE,
         ],
         saveMissingTo: 'all',
+        contextSeparator: '-',
     });

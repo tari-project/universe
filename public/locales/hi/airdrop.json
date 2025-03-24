@@ -12,7 +12,7 @@
   "doLater": "मैं इसे बाद में करूंगा",
   "giftReferralCode": "Tari Universe में आमंत्रित प्रत्येक मित्र के लिए {{gems}} रत्न कमाएं। एक बार जब वे अपना खाता कनेक्ट कर लेते हैं, तो आपको आपके रत्न प्रदान किए जाएंगे।",
   "giftReferralCodeHeader": "अपना रेफरल कोड <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> रत्नों का दावा करें।",
-  "inviteFirends": "मित्रों को आमंत्रित करें",
+  "inviteFriends": "मित्रों को आमंत्रित करें",
   "inviteFriendsText": "लिंक कॉपी करें और साझा करें",
   "invitedAmount": "आपने <span>{{count}}</span> मित्रों को आमंत्रित किया है",
   "keep-mining-to-earn-rewards": "अधिक पुरस्कार अर्जित करने के लिए माइनिंग जारी रखें!",
@@ -35,5 +35,8 @@
   "topTooltipTitle": "टेस्टनेट पुरस्कार",
   "unclaimedGems": "अदावा किए गए रत्न",
   "you-reached-your-giftinh-goal": "आपने अपना उपहार लक्ष्य प्राप्त कर लिया है!",
-  "your-friend-accepted-gift": "आपके दोस्तों में से एक ने आपका उपहार स्वीकार कर लिया है!"
+  "your-friend-accepted-gift": "आपके दोस्तों में से एक ने आपका उपहार स्वीकार कर लिया है!",
+  "joinAirdrop": "एयरड्रॉप में शामिल हों",
+  "loggedInTitle": "एयरड्रॉप पुरस्कार",
+  "loggedOutTitle": "माइन करें और रत्न कमाने के लिए दोस्तों को आमंत्रित करें"
 }

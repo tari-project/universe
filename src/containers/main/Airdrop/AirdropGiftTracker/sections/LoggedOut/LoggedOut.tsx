@@ -1,83 +1,112 @@
-import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
-import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { v4 as uuidv4 } from 'uuid';
-import ClaimModal from '../../components/ClaimModal/ClaimModal';
 import { useTranslation } from 'react-i18next';
+import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore';
+import { setAuthUuid } from '@app/store/actions/airdropStoreActions';
+import { ClaimButton, GemPill, Image, Title, Wrapper } from './styles';
 import gemImage from '../../images/gem.png';
-import { useMiningStore } from '@app/store/useMiningStore';
+import useFetchAirdropToken from '@app/hooks/airdrop/stateHelpers/useFetchAirdropToken.ts';
+import { setAllowTelemetry, useAppConfigStore } from '@app/store';
+import { useCopyToClipboard } from '@app/hooks';
 
 export default function LoggedOut() {
-    const [modalIsOpen, setModalIsOpen] = useState(false);
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const restartMining = useMiningStore((s) => s.restartMining);
-    const { referralQuestPoints, authUuid, setAuthUuid, setAirdropTokens, setUserPoints, backendInMemoryConfig } =
-        useAirdropStore();
+    const [linkOpened, setLinkOpened] = useState(false);
+    const [copying, setCopying] = useState(false);
+    const [copyError, setCopyError] = useState(false);
+    const { isCopied, copyToClipboard } = useCopyToClipboard();
+    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const { referralQuestPoints, airdropUrl } = useAirdropStore((s) => ({
+        referralQuestPoints: s.referralQuestPoints,
+        authUuid: s.authUuid,
+        airdropUrl: s.backendInMemoryConfig?.airdropUrl,
+    }));
 
-    const handleAuth = useCallback(
-        (code?: string) => {
+    useFetchAirdropToken({ canListen: linkOpened });
+
+    // Extracted common logic for preparing the airdrop link
+    const prepareAirdropLink = useCallback(
+        async (code?: string) => {
             const token = uuidv4();
-            if (backendInMemoryConfig?.airdropTwitterAuthUrl) {
-                setAuthUuid(token);
-                open(
-                    `${backendInMemoryConfig?.airdropTwitterAuthUrl}?tauri=${token}${code ? `&universeReferral=${code}` : ''}`
-                );
+            if (!allowTelemetry) {
+                await setAllowTelemetry(true);
             }
+            if (airdropUrl) {
+                setAuthUuid(token);
+                return `${airdropUrl}/auth?tauri=${token}${code ? `&universeReferral=${code}` : ''}`;
+            }
+            return null;
         },
-        [backendInMemoryConfig?.airdropTwitterAuthUrl, setAuthUuid]
+        [airdropUrl, allowTelemetry]
     );
 
-    useEffect(() => {
-        if (authUuid && backendInMemoryConfig?.airdropApiUrl) {
-            const interval = setInterval(() => {
-                if (authUuid) {
-                    fetch(`${backendInMemoryConfig?.airdropApiUrl}/auth/twitter/get-token/${authUuid}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                    })
-                        .then((response) => response.json())
-                        .then((data) => {
-                            if (!data.error) {
-                                clearInterval(interval);
-                                setAirdropTokens(data);
-                                restartMining();
-                            }
-                        });
-                }
-            }, 1000);
-            const timeout = setTimeout(
-                () => {
-                    clearInterval(interval);
-                    setAuthUuid('');
-                },
-                1000 * 60 * 5
-            );
+    const handleAuth = useCallback(
+        async (code?: string) => {
+            const url = await prepareAirdropLink(code);
+            if (url) {
+                open(url).then(() => {
+                    setLinkOpened(true);
+                });
+            }
+        },
+        [prepareAirdropLink]
+    );
 
-            return () => {
-                clearInterval(interval);
-                clearTimeout(timeout);
-            };
-        }
-    }, [authUuid, backendInMemoryConfig?.airdropApiUrl, restartMining, setAirdropTokens, setAuthUuid, setUserPoints]);
+    const handleRightClick = useCallback(
+        async (e, code?: string) => {
+            e.preventDefault();
+            setCopying(true);
+            setCopyError(false);
+
+            try {
+                const url = await prepareAirdropLink(code);
+                if (url) {
+                    copyToClipboard(url);
+                } else {
+                    throw new Error('Failed to generate URL');
+                }
+            } catch (error) {
+                console.error('Failed to copy to clipboard:', error);
+                setCopyError(true);
+
+                // Auto-clear error state after 3 seconds
+                setTimeout(() => {
+                    setCopyError(false);
+                }, 3000);
+            } finally {
+                setCopying(false);
+            }
+        },
+        [prepareAirdropLink, copyToClipboard]
+    );
 
     const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
 
-    return (
-        <>
-            <Wrapper>
-                <ClaimButton onClick={() => setModalIsOpen(true)}>
-                    <Title>{t('claimGems')}</Title>
+    // Determine button text based on state
+    const getButtonText = () => {
+        if (copying) return t('copying');
+        if (copyError) return t('copyFailed');
+        if (isCopied) return t('copied');
+        return t('joinAirdrop');
+    };
 
-                    <GemPill>
-                        {gemsValue}
-                        <Image src={gemImage} alt="" />
-                    </GemPill>
-                </ClaimButton>
-            </Wrapper>
-            {modalIsOpen && <ClaimModal onSubmit={handleAuth} onClose={() => setModalIsOpen(false)} />}
-        </>
+    return (
+        <Wrapper>
+            <ClaimButton
+                onClick={() => handleAuth()}
+                onContextMenu={(e) => handleRightClick(e)}
+                title={t('rightClickToCopy')}
+                aria-label={t('joinAirdropButtonAriaLabel')}
+                $hasError={copyError}
+            >
+                <Title>{getButtonText()}</Title>
+
+                <GemPill>
+                    {gemsValue}
+                    <Image src={gemImage} alt="" />
+                </GemPill>
+            </ClaimButton>
+        </Wrapper>
     );
 }

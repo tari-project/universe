@@ -26,7 +26,7 @@ use log::error;
 use tauri::{AppHandle, Emitter};
 use tokio::sync::{watch::Sender, RwLock};
 
-use crate::setup_status_event::SetupStatusEvent;
+use crate::events::SetupStatusEvent;
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
@@ -121,9 +121,10 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
+
         self.app_handle
             .emit(
-                "message",
+                "setup_message",
                 SetupStatusEvent {
                     event_type: "setup_status".to_string(),
                     title,
@@ -131,7 +132,9 @@ impl ProgressTrackerInner {
                     progress: progress_percentage,
                 },
             )
-            .inspect_err(|e| error!(target: LOG_TARGET, "Could not emit event 'message': {:?}", e))
+            .inspect_err(
+                |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
+            )
             .ok();
     }
 }

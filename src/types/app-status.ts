@@ -7,7 +7,7 @@ export interface TorConfig {
     bridges: string[];
 }
 
-export interface WindowSettings {
+interface WindowSettings {
     width: number;
     height: number;
     x: number;
@@ -36,7 +36,6 @@ export interface AppConfig {
     monero_address: string;
     p2pool_enabled: boolean;
     paper_wallet_enabled: boolean;
-    reset_earnings: boolean;
     sharing_enabled: boolean;
     should_always_use_system_language: boolean;
     should_auto_launch: boolean;
@@ -48,6 +47,10 @@ export interface AppConfig {
     created_at: string;
     p2pool_stats_server_port: number | null;
     pre_release: boolean;
+    airdrop_tokens?: {
+        token: string;
+        refreshToken: string;
+    };
 }
 
 export enum ExternalDependencyStatus {
@@ -56,7 +59,7 @@ export enum ExternalDependencyStatus {
     Unknown = 'Unknown',
 }
 
-export interface Manufacturer {
+interface Manufacturer {
     name: string;
     logo: string;
     url: string;
@@ -75,27 +78,7 @@ export interface CriticalProblem {
     title: string;
     description: string;
 }
-
-export interface CpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: CpuMinerStatus;
-}
-
-export interface GpuMinerMetrics {
-    hardware: PublicDeviceParameters[];
-    mining: GpuMinerStatus;
-}
-
-export interface MinerMetrics {
-    sha_network_hash_rate: number;
-    randomx_network_hash_rate: number;
-    cpu: CpuMinerMetrics;
-    gpu: GpuMinerMetrics;
-    base_node: BaseNodeStatus;
-}
-
-export interface TariWalletDetails {
-    wallet_balance: WalletBalance;
+export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
 }
@@ -113,6 +96,7 @@ export interface TransactionInfo {
     timestamp: number;
     message: string;
     payment_id: string;
+    mined_in_block_height?: number;
 }
 
 export interface P2poolStatsResult {
@@ -122,18 +106,18 @@ export interface P2poolStatsResult {
     sha3x_stats: P2poolStats;
 }
 
-export interface P2poolConnectionInfo {
+interface P2poolConnectionInfo {
     listener_addresses: string[];
     connected_peers: number;
     network_info: P2poolNetworkInfo;
 }
 
-export interface P2poolNetworkInfo {
+interface P2poolNetworkInfo {
     num_peers: number;
     connection_counters: P2poolConnectionCounters;
 }
 
-export interface P2poolConnectionCounters {
+interface P2poolConnectionCounters {
     pending_incoming: number;
     pending_outgoing: number;
     established_incoming: number;
@@ -148,7 +132,7 @@ export interface P2poolStats {
     p2pool_block_stats: P2poolBlockStats;
 }
 
-export interface PeerInfo {
+interface PeerInfo {
     version: number;
     peer_id?: string;
     current_sha3x_height: number;
@@ -173,45 +157,33 @@ export interface P2poolConnections {
     peers: ConnectedPeerInfo[];
 }
 
-export interface P2poolSquadDetails {
+interface P2poolSquadDetails {
     id: string;
     name: string;
 }
 
-export interface P2poolBlockStats {
+interface P2poolBlockStats {
     accepted: number;
     rejected: number;
     submitted: number;
 }
-export enum HardwareVendor {
-    Nvidia = 'Nvidia',
-    Amd = 'Amd',
-    Intel = 'Intel',
-    Apple = 'Apple',
-    Unknown = 'Unknown',
+
+interface GpuStatus {
+    recommended_grid_size: number;
+    recommended_block_size: number;
+    max_grid_size: number;
 }
 
-export interface DeviceStatus {
+export interface GpuSettings {
+    is_excluded: boolean;
     is_available: boolean;
-    is_reader_implemented: boolean;
 }
 
-export interface DeviceParameters {
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
-}
-export interface PublicDeviceParameters {
-    vendor: HardwareVendor;
-    name: string;
-    status: DeviceStatus;
-    parameters?: DeviceParameters;
-}
-export interface HardwareParameters {
-    label: string;
-    usage_percentage: number;
-    current_temperature: number;
-    max_temperature: number;
+export interface GpuDevice {
+    device_name: string;
+    device_index: number;
+    status: GpuStatus;
+    settings: GpuSettings;
 }
 
 export interface CpuMinerStatus {
@@ -221,7 +193,7 @@ export interface CpuMinerStatus {
     connection: CpuMinerConnectionStatus;
 }
 
-export interface CpuMinerConnectionStatus {
+interface CpuMinerConnectionStatus {
     is_connected: boolean;
 }
 
@@ -236,15 +208,15 @@ export interface BaseNodeStatus {
     block_height: number;
     block_time: number;
     is_synced: boolean;
-    is_connected: boolean;
-    connected_peers: string[];
+    sha_network_hashrate: number;
+    randomx_network_hashrate: number;
 }
 
 export interface WalletBalance {
-    available_balance?: number;
-    timelocked_balance?: number;
-    pending_incoming_balance?: number;
-    pending_outgoing_balance?: number;
+    available_balance: number;
+    timelocked_balance: number;
+    pending_incoming_balance: number;
+    pending_outgoing_balance: number;
 }
 
 export interface ApplicationsVersions {
@@ -268,4 +240,11 @@ export interface GpuThreads {
 export interface MaxConsumptionLevels {
     max_cpu_threads: number;
     max_gpus_threads: GpuThreads[];
+}
+
+export interface NetworkStatus {
+    download_speed: number;
+    upload_speed: number;
+    latency: number;
+    is_too_low: boolean;
 }

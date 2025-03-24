@@ -1,4 +1,4 @@
-import { m } from 'framer-motion';
+import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
 import cardBg from '@app/assets/images/wallet-bg.png';
@@ -92,9 +92,8 @@ export const HistoryContainer = styled(m.div)`
 `;
 
 export const HistoryPadding = styled('div')`
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    height: 310;
+    overflow: auto;
     width: 100%;
     padding: 0 5px 60px 5px;
 `;

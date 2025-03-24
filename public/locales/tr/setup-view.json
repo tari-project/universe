@@ -1,4 +1,5 @@
 {
+  "could-not-auto-update": "Makine kilitli veya uyku modundayken Tari Universe\"i {{version}} sürümüne otomatik olarak güncelleyemedik.",
   "dont-worry": "Merak etmeyin, bir dahaki sefere bu kadar uzun sürmeyecek",
   "installing-latest-version": "Tari Universe\"in {{version}} sürümü yükleniyor",
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
@@ -7,22 +8,27 @@
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {
     "application-started": "Uygulamalar başladı",
+    "benchmarking-network": "Network Benchmark",
     "checking-latest-version-gpuminer": "xtrgpuminer'in en son sürümü kontrol ediliyor",
     "checking-latest-version-mmproxy": "mmproxy'nin son sürümü kontrol ediliyor",
     "checking-latest-version-node": "Düğümün en son sürümü kontrol ediliyor",
     "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
+    "checking-latest-version-tor": "Checking latest version of tor",
     "checking-latest-version-wallet": "Cüzdanın en son sürümü kontrol ediliyor",
     "checking-latest-version-xmrig": "xmrig'in en son sürümü kontrol ediliyor",
     "download-completed": "İndirme tamamlandı",
     "downloading": "İndiriliyor",
+    "minotari-node-restarting": "Minotari düğüm verileri bozuldu, eski veriler temizleniyor",
     "preparing-for-initial-sync": "İlk senkronizasyon için hazırlanıyor {{initial_connected_peers}}/{{required_peers}}",
     "starting-mmproxy": "Merge mining proxy'sini başlatılıyor",
     "starting-p2pool": "P2Pool başlatılıyor",
     "starting-up": "Başlatılıyor",
     "waiting-for-block-sync": "Blok senkronize için bekleniyor. {{local_height}}/{{tip_height}} bloklar senkronize edildi",
     "waiting-for-header-sync": "Üstbilgi senkronizasyonu bekleniyor. {{local_height}}/{{tip_height}} üstbilgiler senkronize edildi",
+    "waiting-for-minotari-node-to-start": "Minotari düğümünün başlaması bekleniyor",
     "waiting-for-node": "Düğümün senkronize edilmesi bekleniyor",
-    "waiting-for-wallet": "Cüzdan bekleniyor"
+    "waiting-for-wallet": "Cüzdan bekleniyor",
+    "wallet-started": "Cüzdan başlatıldı"
   },
   "would-you-like-to-install": "Tari Universe'ü şimdi yüklemek ister misiniz {{version}} ?",
   "yes": "Evet"

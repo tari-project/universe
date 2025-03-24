@@ -66,11 +66,14 @@ pub(crate) struct ConnectionCounters {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct Stats {
+pub struct P2poolStats {
     pub connection_info: ConnectionInfo,
     pub connected_since: Option<EpochTime>,
     pub randomx_stats: ChainStats,
     pub sha3x_stats: ChainStats,
+    pub last_gossip_message: EpochTime,
+    pub peer_id: String,
+    pub squad: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

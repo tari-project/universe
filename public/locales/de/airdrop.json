@@ -12,7 +12,7 @@
   "doLater": "Ich mache das später",
   "giftReferralCode": "Verdiene {{gems}} Edelsteine für jeden Freund, den du in Tari Universe einlädst. Sobald sie ihr Konto verbinden, wirst du deine Edelsteine erhalten.",
   "giftReferralCodeHeader": "Beanspruche deinen Empfehlungs-Code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> Edelsteine.",
-  "inviteFirends": "Freunde einladen",
+  "inviteFriends": "Freunde einladen",
   "inviteFriendsText": "Link kopieren und teilen",
   "invitedAmount": "Du hast <span>{{count}}</span> Freunde eingeladen",
   "keep-mining-to-earn-rewards": "Weiter minen, um mehr Belohnungen zu verdienen!",
@@ -35,5 +35,8 @@
   "topTooltipTitle": "Testnet Belohnungen",
   "unclaimedGems": "Nicht beanspruchte Edelsteine",
   "you-reached-your-giftinh-goal": "Sie haben Ihr Geschenkziel erreicht!",
-  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!"
+  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!",
+  "joinAirdrop": "Am Airdrop teilnehmen",
+  "loggedInTitle": "Airdrop-Belohnungen",
+  "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen"
 }
