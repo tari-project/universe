@@ -4,12 +4,17 @@ export const GLOBAL_EVENT_NAME = 'global-event';
 
 export enum WebsocketEventNames {
     COMPLETED_QUEST = 'completed_quest',
+    REFERRAL_INSTALL_REWARD = 'referral_install_reward',
     MINING_STATUS_CREW_UPDATE = 'mining_status_crew_update',
     MINING_STATUS_CREW_DISCONNECTED = 'mining_status_crew_disconnected',
-    REFERRAL_INSTALL_REWARD = 'referral_install_reward',
     MINING_STATUS_USER_UPDATE = 'mining_status_user_update',
     USER_SCORE_UPDATE = 'user_score_update',
     X_SPACE_EVENT = 'x_space_event',
+}
+
+export interface SignData {
+    signature: string;
+    pubKey: string;
 }
 
 interface QuestCompletedEvent {
@@ -93,10 +98,10 @@ export interface XSpaceEvent {
 export type WebsocketUserEvent =
     | UserScoreUpdate
     | ReferralInstallRewardEvent
+    | MiningStatusCrewDisconnectedEvent
     | QuestCompletedEvent
     | MiningStatusCrewUpdateEvent
     | MiningStatusUserUpdateEvent
-    | MiningStatusCrewDisconnectedEvent
     | XSpaceEventUpdate;
 
 export type WebsocketGlobalEvent = XSpaceEventUpdate;
