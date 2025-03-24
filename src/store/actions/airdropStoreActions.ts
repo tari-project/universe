@@ -123,8 +123,12 @@ export const airdropSetup = async () => {
         console.error('Error in airdropSetup: ', error);
     }
 };
-export const handleAirdropLogout = async () => {
-    console.error('Error fetching user details, logging out');
+export const handleAirdropLogout = async (isUserLogout = false) => {
+    if (!isUserLogout) {
+        console.error('Error fetching user details, logging out');
+    } else {
+        console.info('User logout | removing airdrop tokens');
+    }
     await setAirdropTokens(undefined);
 };
 
@@ -184,7 +188,7 @@ export const fetchAllUserData = async () => {
         return await handleAirdropRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
-            onError: handleAirdropLogout,
+            onError: () => handleAirdropLogout(),
         })
             .then((data) => {
                 if (data?.user?.id) {

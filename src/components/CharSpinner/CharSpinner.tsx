@@ -42,7 +42,7 @@ export default function CharSpinner({
 
     const charMarkup = charArray.map((char, i) => {
         const isNum = !isNaN(Number(char));
-        const isDec = char === '.';
+        const isDec = char === '.' || char === ',';
         if (!isNum) {
             return (
                 <Characters
@@ -62,13 +62,7 @@ export default function CharSpinner({
                             {char}
                         </Character>
                     ) : (
-                        <Character
-                            $unit
-                            key={`${i}-${char}`}
-                            layout-id={`${i}-${char}`}
-                            $letterWidth={letterWidth}
-                            $fontSize={fontSize - 8}
-                        >
+                        <Character $unit key={`${i}-${char}`} layout-id={`${i}-${char}`} $fontSize={fontSize - 8}>
                             {char}
                         </Character>
                     )}
@@ -102,6 +96,7 @@ export default function CharSpinner({
             <SpinnerWrapper style={{ height: letterHeight }} $variant={variant}>
                 <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
             </SpinnerWrapper>
+
             {/* // eslint-disable-next-line i18next/no-literal-string */}
             {value === '-' ? null : (
                 <XTMWrapper>

@@ -88,6 +88,7 @@ use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node_manager::{NodeManager, STOP_ON_ERROR_CODES};
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
@@ -132,6 +133,8 @@ mod process_utils;
 mod process_watcher;
 mod progress_tracker;
 mod release_notes;
+mod spend_wallet_adapter;
+mod spend_wallet_manager;
 mod systemtray_manager;
 mod tasks_tracker;
 mod telemetry_manager;
@@ -698,6 +701,28 @@ async fn setup_inner(
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
+
+    // let binary_version_path = BinaryResolver::current()
+    //     .read()
+    //     .await
+    //     .resolve_path_to_binary_files(Binaries::Wallet)?;
+    // match OpenOptions::new()
+    //     .create_new(true)
+    //     .write(true)
+    //     .open(binary_version_path.clone()).await
+    // {
+    //     Ok(_) => {
+    //         println!("Lock acquired. Running executable...");
+    //         // Run your executable here
+    //         // ...
+    //         // Remove the lock file when exiting
+    //         std::fs::remove_file(binary_version_path)?;
+    //     },
+    //     Err(err) => {
+    //         eprintln!("Error creating lock file: {}", err);
+    //     }
+    // }
+
     state
         .wallet_manager
         .ensure_started(
@@ -839,6 +864,17 @@ async fn setup_inner(
     mm_proxy_manager.wait_ready().await?;
     drop(config);
 
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .init(
+            state.shutdown.to_signal().clone(),
+            data_dir,
+            config_dir,
+            log_dir,
+        )
+        .await?;
+    drop(spend_wallet_manager);
+
     *state.is_setup_finished.write().await = true;
     let _unused = telemetry_service
         .send(
@@ -947,7 +983,8 @@ struct UniverseAppState {
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
-    is_getting_transaction_history: Arc<AtomicBool>,
+    is_getting_transactions_history: Arc<AtomicBool>,
+    is_getting_coinbase_history: Arc<AtomicBool>,
     is_setup_finished: Arc<RwLock<bool>>,
     missing_dependencies: Arc<RwLock<Option<RequiredExternalDependency>>>,
     config: Arc<RwLock<AppConfig>>,
@@ -960,6 +997,7 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager,
     wallet_manager: WalletManager,
+    spend_wallet_manager: Arc<RwLock<SpendWalletManager>>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -1021,6 +1059,7 @@ fn main() {
         &mut stats_collector,
     );
     let wallet_manager2 = wallet_manager.clone();
+    let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
@@ -1088,7 +1127,8 @@ fn main() {
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
         missing_dependencies: Arc::new(RwLock::new(None)),
-        is_getting_transaction_history: Arc::new(AtomicBool::new(false)),
+        is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
+        is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         shutdown: shutdown.clone(),
@@ -1099,6 +1139,7 @@ fn main() {
         mm_proxy_manager: mm_proxy_manager.clone(),
         node_manager,
         wallet_manager,
+        spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),
         p2pool_manager,
         telemetry_manager: Arc::new(RwLock::new(telemetry_manager)),
         telemetry_service: Arc::new(RwLock::new(telemetry_service)),
@@ -1320,6 +1361,7 @@ fn main() {
             commands::get_seed_words,
             commands::get_tor_config,
             commands::get_tor_entry_guards,
+            commands::get_transactions_history,
             commands::get_coinbase_transactions,
             commands::import_seed_words,
             commands::log_web_message,
@@ -1362,7 +1404,8 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::send_one_sided_to_stealth_address,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
