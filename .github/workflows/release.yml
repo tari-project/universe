@@ -396,11 +396,12 @@ jobs:
         shell: bash
         run: |
           #gh release upload ${{ github.event.release.tag_name }} ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          gh release list
           releaseName="${releaseName//__VERSION__/${{ steps.build.outputs.appVersion }}}"
           echo "Release name is ${releaseName}"
+          gh release view "${releaseName}"
           gh release upload "${releaseName}" \
-            "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe" \
-            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+            "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe#${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
