@@ -375,7 +375,7 @@ jobs:
             exit 1
           }
 
-      - name: Add bundled Wdinows installer to release
+      - name: Add bundled Windows installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
