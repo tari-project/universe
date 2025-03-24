@@ -14,11 +14,11 @@ import { useTranslation } from 'react-i18next';
 import { Divider } from '@app/components/elements/Divider.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoClose } from 'react-icons/io5';
-import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
 import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 enum FormFields {
     CPU = 'cpu',
@@ -115,7 +115,7 @@ export function CustomPowerLevelsDialog({
         }).then(() => setSaved(true));
     }, []);
 
-    if (!maxAvailableThreads) return <LinearProgress />;
+    if (!maxAvailableThreads) return <CircularProgress />;
 
     return (
         <React.Fragment>

@@ -22,7 +22,9 @@ export const setSetupComplete = async () => {
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }
-    useSetupStore.setState({ setupComplete: true });
+    // useSetupStore.setState({ setupComplete: true });
+    // TODO! - undo after testing
+    useSetupStore.setState({ setupComplete: false });
 };
 
 export const setSetupProgress = (setupProgress: number) => useSetupStore.setState({ setupProgress });
