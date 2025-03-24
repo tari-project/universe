@@ -12,6 +12,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
+import { SignData } from '@app/types/ws.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -96,4 +97,5 @@ declare module '@tauri-apps/api/core' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
+    function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
 }
