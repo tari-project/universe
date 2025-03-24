@@ -23,14 +23,15 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
+use crate::tasks_tracker::TasksTracker;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::sync::watch;
+use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
 
@@ -126,7 +127,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(tauri::async_runtime::spawn(async move {
+        self.watcher_task = Some(TasksTracker::current().spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
@@ -183,19 +184,15 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub fn is_running(&self) -> bool {
         if let Some(task) = self.watcher_task.as_ref() {
-            !task.inner().is_finished()
+            !task.is_finished()
         } else {
             false
         }
     }
 
-    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        self.adapter.pid_file_exisits(base_path)
-    }
-
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
-            if task.inner().is_finished() {
+            if task.is_finished() {
                 //let exit_code = task.await??;
 
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));

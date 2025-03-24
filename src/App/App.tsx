@@ -62,7 +62,7 @@ const CurrentAppSection = memo(function CurrentAppSection({
         }
     }, [isAppReady, isSettingUp, isShuttingDown]);
 
-    return <AnimatePresence mode="popLayout">{currentSection}</AnimatePresence>;
+    return <AnimatePresence>{currentSection}</AnimatePresence>;
 });
 
 export default function App() {
