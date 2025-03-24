@@ -1,6 +1,6 @@
 use crate::events_emitter::EventType;
 
-use super::progress_tracker_impl::{ProgressChannelEvent, ProgressStep};
+use super::progress_tracker_impl::{ProgressEvent, ProgressStep};
 
 pub struct ProgressPlanEventPayload {
     event_type: EventType,
@@ -8,7 +8,7 @@ pub struct ProgressPlanEventPayload {
     description: Option<String>,
 }
 
-impl ProgressChannelEvent for ProgressPlanEventPayload {
+impl ProgressEvent for ProgressPlanEventPayload {
     fn get_event_type(&self) -> EventType {
         self.event_type.clone()
     }

@@ -3,14 +3,14 @@ use tauri::AppHandle;
 
 use crate::events_emitter::EventType;
 
-pub trait ProgressChannelEvent {
+pub trait ProgressEvent {
     fn get_event_type(&self) -> EventType;
     fn get_title(&self) -> String;
     fn get_description(&self) -> Option<String>;
 }
 
 pub trait ProgressStep {
-    type ChannelEvent: ProgressChannelEvent;
+    type ChannelEvent: ProgressEvent;
     fn resolve_to_event(&self) -> Self::ChannelEvent;
     fn get_progress_weight(&self) -> u8;
     fn get_event_type(&self) -> EventType;
@@ -19,6 +19,7 @@ pub trait ProgressStep {
 }
 
 pub trait ProgressPlanExecutorImpl {
+    // App handle is optional only for testing purposes
     async fn resolve_step(&mut self, app_handle: Option<AppHandle>)
         -> Result<(String, f64), Error>;
     fn skip_step(&mut self) -> Result<(String, f64), Error>;

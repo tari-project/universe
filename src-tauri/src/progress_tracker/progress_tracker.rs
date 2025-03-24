@@ -8,7 +8,7 @@ use crate::UniverseAppState;
 use super::{
     progress_plans::ProgressPlans,
     progress_tracker_impl::{
-        ProgressChannelEvent, ProgressPlanBuilderImpl, ProgressPlanExecutorImpl, ProgressStep,
+        ProgressEvent, ProgressPlanBuilderImpl, ProgressPlanExecutorImpl, ProgressStep,
     },
 };
 
@@ -34,6 +34,7 @@ impl ProgressPlanExecutorImpl for ProgressPlanExecutor {
 
         let event = step.resolve_to_event();
 
+        // App handle is optional only for current testing purposes
         match app_handle {
             Some(app_handle) => {
                 let app_state = app_handle.state::<UniverseAppState>();
