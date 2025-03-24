@@ -23,9 +23,10 @@
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tor_adapter::{TorAdapter, TorConfig};
+use crate::tor_control_client::TorStatus;
 use std::{path::PathBuf, sync::Arc};
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::RwLock;
+use tokio::sync::{watch, RwLock};
 
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
@@ -40,8 +41,11 @@ impl Clone for TorManager {
 }
 
 impl TorManager {
-    pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
-        let adapter = TorAdapter::new();
+    pub fn new(
+        status_broadcast: watch::Sender<Option<TorStatus>>,
+        stats_collector: &mut ProcessStatsCollectorBuilder,
+    ) -> Self {
+        let adapter = TorAdapter::new(status_broadcast);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
 
         Self {
@@ -118,21 +122,5 @@ impl TorManager {
 
     pub async fn get_entry_guards(&self) -> Result<Vec<String>, anyhow::Error> {
         self.watcher.read().await.adapter.get_entry_guards().await
-    }
-
-    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        let exit_code = process_watcher.stop().await?;
-        Ok(exit_code)
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 }

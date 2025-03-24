@@ -2,7 +2,6 @@ import { CrewMember } from '@app/types/ws.ts';
 import { create } from './create.ts';
 
 const SOS_GAME_ENDING_DATE = new Date('2025-01-30');
-export const MINING_EVENT_INTERVAL_MS = 15000;
 
 // Type for the response structure
 export interface ReferralsResponse {
