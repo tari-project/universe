@@ -58,14 +58,13 @@ const CurrentAppSection = memo(function CurrentAppSection({
 export default function App() {
     const isAppReady = useIsAppReady();
     const isShuttingDown = useShuttingDown();
-
     const { t } = useTranslation('common', { useSuspense: false });
-
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
         console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);
         setIsWebglNotSupported(true);
         setError(t('webgl-not-supported'));
     }
+
     return (
         <ThemeProvider>
             <GlobalReset />
