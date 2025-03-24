@@ -1,3 +1,4 @@
+import { XSpaceEvent } from '@app/types/ws';
 import { create } from './create';
 
 export const GIFT_GEMS = 5000;
@@ -82,6 +83,9 @@ export interface ReferralQuestPoints {
     pointsPerReferral: number;
     pointsForClaimingReferral: number;
 }
+
+//////////////////////////////////////////
+
 interface MiningPoint {
     blockHeight: string;
     reward: number;
@@ -99,6 +103,7 @@ export interface AirdropStoreState {
     bonusTiers?: BonusTier[];
     referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    latestXSpaceEvent?: XSpaceEvent | null;
 }
 
 const initialState: AirdropStoreState = {
@@ -110,6 +115,7 @@ const initialState: AirdropStoreState = {
     referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    latestXSpaceEvent: null,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
