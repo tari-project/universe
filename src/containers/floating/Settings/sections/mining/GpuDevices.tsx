@@ -1,5 +1,4 @@
 import { memo, useCallback } from 'react';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
@@ -17,10 +16,11 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { GpuDevice } from '@app/types/app-status.ts';
 import { toggleDeviceExclusion } from '@app/store/actions/miningStoreActions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const miningAllowed = useAppStateStore((s) => s.setupComplete);
+    const miningAllowed = useSetupStore((s) => s.setupComplete);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
@@ -30,7 +30,7 @@ const GpuDevices = memo(function GpuDevices() {
     const isDisabled = isExcludingGpuDevices || isGPUMining || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
 
     const handleSetExcludedDevice = useCallback(async (device: GpuDevice) => {
-        toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
+        await toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
     }, []);
 
     return (

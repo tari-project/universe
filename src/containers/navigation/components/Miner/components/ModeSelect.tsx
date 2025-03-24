@@ -1,24 +1,26 @@
-import { ModeSelectWrapper, TileItem } from '../styles';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
+import { modeType } from '@app/store/types';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
+import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
-import { memo, useCallback, useMemo } from 'react';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { modeType } from '@app/store/types';
+
 import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
-import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
+import { ModeSelectWrapper, TileItem } from '../styles';
 
 const ModeSelect = memo(function ModeSelect() {
     const { t } = useTranslation('common', { useSuspense: false });
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.setupComplete);
     const mode = useAppConfigStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);

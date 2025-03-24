@@ -2,14 +2,13 @@ import { useCallback, useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { useUIStore } from '@app/store/useUIStore';
 import { TauriEvent } from '../../types.ts';
+import { airdropSetup, fetchApplicationsVersionsWithRetry } from '@app/store/actions';
 import {
-    airdropSetup,
-    fetchApplicationsVersionsWithRetry,
     setSetupComplete,
-    setSetupParams,
     setSetupProgress,
     setSetupTitle,
-} from '@app/store/actions';
+    setSetupTitleParams,
+} from '@app/store/actions/setupStoreActions.ts';
 
 export function useSetUp() {
     const isInitializingRef = useRef(false);
@@ -28,7 +27,7 @@ export function useSetUp() {
                 case 'setup_status':
                     if (p.progress >= 0) {
                         setSetupTitle(p.title);
-                        setSetupParams(p.title_params);
+                        setSetupTitleParams(p.title_params);
                         setSetupProgress(p.progress);
                     }
                     if (p.progress >= 1) {
