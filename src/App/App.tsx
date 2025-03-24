@@ -5,7 +5,6 @@ import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 import { useIsAppReady } from '../hooks/app/isAppReady.ts';
 import { useShuttingDown } from '../hooks';
 
-import { useAppStateStore } from '../store/appStateStore';
 import { setError, setIsWebglNotSupported } from '../store/actions';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
 import ThemeProvider from '../theme/ThemeProvider.tsx';
@@ -23,9 +22,8 @@ const CurrentAppSection = memo(function CurrentAppSection({
     isAppReady?: boolean;
     isShuttingDown?: boolean;
 }) {
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
     const currentSection = useMemo(() => {
-        const showMainView = !isSettingUp && !isShuttingDown && isAppReady;
+        const showMainView = !isShuttingDown && isAppReady;
         if (!isAppReady) {
             return (
                 <AppContentContainer key="splashscreen" initial="hidden">
@@ -50,7 +48,7 @@ const CurrentAppSection = memo(function CurrentAppSection({
             );
         }
         return null;
-    }, [isAppReady, isSettingUp, isShuttingDown]);
+    }, [isAppReady, isShuttingDown]);
 
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
 });
