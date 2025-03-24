@@ -373,19 +373,21 @@ jobs:
 
           Write-Output "Found signtool.exe at: $signtoolPath"
 
-          $Signature = Get-AuthenticodeSignature "${{ env.MSI_FILE }}"
+          cd tari-win-bundler
+
+          $Signature = Get-AuthenticodeSignature "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
 
           # Display results
-          Write-Host "File: ${{ env.MSI_FILE }}"
+          Write-Host "File: ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
           Write-Host "  - Status: $($Signature.Status)"
           Write-Host "  - Status Message: $($Signature.StatusMessage)"
           Write-Host "  - Signer: $($Signature.SignerCertificate.Subject)"
           Write-Host "  - Issuer: $($Signature.SignerCertificate.Issuer)"
           Write-Host "---------------------------------------------"
 
-          & $signtoolPath verify /pa "${{ env.MSI_FILE }}"
+          & $signtoolPath verify /pa "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "!! Signature verification failed for ${{ env.MSI_FILE }} !!"
+            Write-Error "!! Signature verification failed for ${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe !!"
             exit 1
           }
 
@@ -395,24 +397,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          #gh release upload ${{ github.event.release.tag_name }} ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
-          gh release list
-          gh release view
-          #releaseName="${releaseName//__VERSION__/${{ steps.build.outputs.appVersion }}}"
-          #echo "Release name is ${releaseName}"
-          #gh release view "${releaseName}"
           gh release view "v${{ steps.build.outputs.appVersion }}"
           cd tari-win-bundler
           ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+          gh release view "v${{ steps.build.outputs.appVersion }}"
           gh release upload "v${{ steps.build.outputs.appVersion }}" \
             "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+          gh release view "v${{ steps.build.outputs.appVersion }}"
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:
           name: tari-universe-beta_${{ steps.build.outputs.appVersion }}_x64_en-US
-          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
 
       - name: Locate artifacts path
         continue-on-error: true
