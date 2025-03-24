@@ -1,6 +1,7 @@
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
 import { setFlareAnimationType, setUserPoints } from '@app/store';
 import { useCallback } from 'react';
+import { setLatestXSpaceEvent } from '@app/store/actions/airdropStoreActions.ts';
 
 export function useHandleWsUserIdEvent() {
     return useCallback((event: string) => {
@@ -22,6 +23,9 @@ export function useHandleWsUserIdEvent() {
                         base: eventParsed.data.userPoints,
                     });
                 }
+                break;
+            case WebsocketEventNames.X_SPACE_EVENT:
+                setLatestXSpaceEvent(eventParsed.data);
                 break;
             default:
                 console.warn('Unknown event', eventParsed);

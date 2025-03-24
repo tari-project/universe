@@ -15,6 +15,7 @@ import {
 } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
+import { XSpaceEvent } from '@app/types/ws.ts';
 
 interface TokenResponse {
     exp: number;
@@ -168,6 +169,8 @@ export const setBonusTiers = (bonusTiers: BonusTier[]) => useAirdropStore.setSta
 export const setFlareAnimationType = (flareAnimationType?: AnimationType) =>
     useAirdropStore.setState({ flareAnimationType });
 
+export const setLatestXSpaceEvent = (latestXSpaceEvent: XSpaceEvent | null) =>
+    useAirdropStore.setState({ latestXSpaceEvent });
 export const setUserDetails = (userDetails?: UserDetails) => useAirdropStore.setState({ userDetails });
 
 export const setUserPoints = (userPoints: UserPoints) => {

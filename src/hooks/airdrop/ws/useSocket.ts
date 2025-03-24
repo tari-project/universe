@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { useAirdropStore } from '@app/store';
 import { useHandleWsUserIdEvent } from '@app/hooks/airdrop/ws/useHandleWsUserIdEvent.ts';
 import { OnDisconnectEventMessage, socket, SUBSCRIBE_EVENT } from '@app/utils/socket.ts';
+import { useHandleWsGlobalEvent } from '@app/hooks/airdrop/ws/useHandleWsGlobalEvent.ts';
+import { GLOBAL_EVENT_NAME } from '@app/types/ws.ts';
 
 const AUTH_EVENT = 'auth';
 
@@ -9,6 +11,7 @@ export default function useSocketEvents() {
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
     const airdropToken = useAirdropStore((s) => s.airdropTokens?.token);
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
+    const handleWsGlobalEvent = useHandleWsGlobalEvent();
 
     useEffect(() => {
         socket?.connect();
@@ -40,6 +43,7 @@ export default function useSocketEvents() {
         const onConnect = () => {
             socket?.emit(AUTH_EVENT, airdropToken);
             socket?.on(userId as string, handleWsUserIdEvent);
+            socket?.on(GLOBAL_EVENT_NAME, handleWsGlobalEvent);
         };
 
         socket.emit(SUBSCRIBE_EVENT);
@@ -48,5 +52,5 @@ export default function useSocketEvents() {
         return () => {
             socket?.off('connect', onConnect);
         };
-    }, [airdropToken, handleWsUserIdEvent, userId]);
+    }, [airdropToken, handleWsGlobalEvent, handleWsUserIdEvent, userId]);
 }

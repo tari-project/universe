@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::airdrop;
 use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -31,6 +30,8 @@ use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::utils::network_status::NetworkStatus;
+use crate::TasksTracker;
+use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -44,12 +45,13 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, thread::sleep, time::Duration};
+use std::{sync::Arc, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
-use tauri::Emitter;
+use tauri::{Emitter, Manager};
 use tokio::sync::{watch, RwLock};
+use tokio::time;
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -295,11 +297,15 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = async {
-                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
-                    loop {
+        let state = app_handle.state::<UniverseAppState>();
+        let mut app_shutdown = state.shutdown.to_signal();
+        let mut interval = time::interval(timeout);
+
+        TasksTracker::current().spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
                         if telemetry_collection_enabled {
@@ -308,11 +314,15 @@ impl TelemetryManager {
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
-                        sleep(timeout);
+                    },
+                    _ = cancellation_token.cancelled() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
+                        break;
                     }
-                } => {},
-                _ = cancellation_token.cancelled() => {
-                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    _ = app_shutdown.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                        break;
+                    }
                 }
             }
         });
