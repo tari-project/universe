@@ -400,8 +400,10 @@ jobs:
           releaseName="${releaseName//__VERSION__/${{ steps.build.outputs.appVersion }}}"
           echo "Release name is ${releaseName}"
           gh release view "${releaseName}"
+          cd tari-win-bundler
+          ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
           gh release upload "${releaseName}" \
-            "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe#${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
 
       - name: BETA Builds - upload wix installer
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
