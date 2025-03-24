@@ -36,7 +36,10 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
+<<<<<<< HEAD
 use crate::tasks_tracker::TasksTracker;
+=======
+>>>>>>> 2273f75d (merge)
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
