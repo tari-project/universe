@@ -1,8 +1,7 @@
 use anyhow::Error;
 use tauri::AppHandle;
 
-use crate::events_emitter::EventType;
-
+use crate::events::EventType;
 pub trait ProgressEvent {
     fn get_event_type(&self) -> EventType;
     fn get_title(&self) -> String;

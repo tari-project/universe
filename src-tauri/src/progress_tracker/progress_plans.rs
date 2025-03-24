@@ -1,4 +1,4 @@
-use crate::events_emitter::EventType;
+use crate::events::EventType;
 
 use super::progress_tracker_impl::{ProgressEvent, ProgressStep};
 

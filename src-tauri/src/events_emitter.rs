@@ -27,8 +27,9 @@ use crate::{
     commands::CpuMinerStatus,
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, ResumingAllProcessesPayload,
-        SetupStatusPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
+        NetworkStatusPayload, NewBlockHeightPayload, ProgressTrackerUpdatePayload,
+        ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload,
+        WalletAddressUpdatePayload,
     },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,

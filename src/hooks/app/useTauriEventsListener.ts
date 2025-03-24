@@ -12,15 +12,7 @@ import {
 } from '@app/types/app-status';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
 
-import {
-    handleBaseNodeStatusUpdate,
-    handleConnectedPeersUpdate,
-    setCpuMiningStatus,
-    setGpuDevices,
-    setGpuMiningStatus,
-    setWalletAddress,
-    setWalletBalance,
-} from '@app/store';
+import { setGpuDevices } from '@app/store';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
