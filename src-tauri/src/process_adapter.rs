@@ -36,6 +36,7 @@ use tokio::task::JoinHandle;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
+use crate::tasks_tracker::TasksTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -63,12 +64,6 @@ pub(crate) trait ProcessAdapter {
     }
 
     fn pid_file_name(&self) -> &str;
-
-    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
-        std::path::Path::new(&base_folder)
-            .join(self.pid_file_name())
-            .exists()
-    }
 
     async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
@@ -154,7 +149,7 @@ impl ProcessInstance {
             return Ok(());
         };
 
-        self.handle = Some(tokio::spawn(async move {
+        self.handle = Some(TasksTracker::current().spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
             info!(target: LOG_TARGET, "Launching process for: {}", spec.name);
