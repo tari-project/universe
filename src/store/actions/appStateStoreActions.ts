@@ -98,9 +98,7 @@ export const updateApplicationsVersions = async () => {
     }
 };
 
-<<<<<<< HEAD
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
-=======
 export const handleSetupStatus = async (payload: SetupStatusPayload) => {
     if (payload.progress > 0) {
         setSetupTitle(payload.title);
@@ -120,4 +118,3 @@ export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
         setDialogToShow('releaseNotes');
     }
 };
->>>>>>> 46742994 (cleanup taurieventslistener)

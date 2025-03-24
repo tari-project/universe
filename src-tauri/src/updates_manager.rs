@@ -32,10 +32,9 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::{
-    
     app_config::AppConfig,
-    tasks_tracker::TasksTracker, utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
-,
+    tasks_tracker::TasksTracker,
+    utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;

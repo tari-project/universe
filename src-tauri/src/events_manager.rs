@@ -36,7 +36,8 @@ use crate::{
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
-    hardware::hardware_status_monitor::GpuDeviceProperties,tasks_tracker::TasksTracker
+    hardware::hardware_status_monitor::GpuDeviceProperties,
+    tasks_tracker::TasksTracker,
     wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };

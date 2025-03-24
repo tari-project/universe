@@ -5,20 +5,18 @@ import {
     AppConfig,
     BaseNodeStatus,
     CpuMinerStatus,
-    GpuDevice,
     GpuMinerStatus,
     NetworkStatus,
     ExternalDependency,
-    TransactionInfo,
     WalletBalance,
 } from '@app/types/app-status';
 import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
-import { setNetworkStatus } from '@app/store/actions/appStateStoreActions';
 
 import {
     handleBaseNodeStatusUpdate,
     handleConnectedPeersUpdate,
     setCpuMiningStatus,
+    setGpuDevices,
     setGpuMiningStatus,
     setWalletAddress,
     setWalletBalance,
