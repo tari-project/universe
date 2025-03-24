@@ -46,10 +46,6 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    setSetupComplete,
-    setSetupParams,
-    setSetupProgress,
-    setSetupTitle,
     updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 
