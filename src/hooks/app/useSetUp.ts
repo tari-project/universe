@@ -3,7 +3,6 @@ import { listen } from '@tauri-apps/api/event';
 import { useUIStore } from '@app/store/useUIStore';
 import { TauriEvent } from '../../types.ts';
 import {
-    airdropSetup,
     fetchApplicationsVersionsWithRetry,
     setSetupComplete,
     setSetupParams,
@@ -18,7 +17,6 @@ export function useSetUp() {
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
-        await airdropSetup();
     }, []);
 
     useEffect(() => {
