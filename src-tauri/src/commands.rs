@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
+use crate::app_config::{AirdropTokens, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
@@ -36,9 +36,9 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
+use crate::tasks_tracker::TasksTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::{TransactionInfo, TransactionStatus};
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -56,9 +56,8 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
-use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -195,38 +194,16 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
-    FrontendReadyChannel::current().set_ready();
-
     let app_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        if let Err(e) = state
-            .updates_manager
-            .init_periodic_updates(app.clone())
-            .await
-        {
-            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
-        }
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
+    FrontendReadyChannel::current().set_ready();
+    TasksTracker::current().spawn(async move {
+        let app_state = app_handle.state::<UniverseAppState>();
+        // Give the splash screen a few seconds to show before closing it
+        sleep(Duration::from_secs(3));
+        app_state
+            .events_manager
+            .handle_close_splash_screen(&app_handle)
+            .await;
     });
 }
 
@@ -258,7 +235,7 @@ pub async fn download_and_start_installer(
 
 #[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+    TasksTracker::stop_all_processes(app.clone()).await;
 
     app.exit(0);
     Ok(())
@@ -284,15 +261,6 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
-}
-
-#[tauri::command]
-pub async fn get_app_config(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<AppConfig, String> {
-    Ok(state.config.read().await.clone())
 }
 
 #[tauri::command]
@@ -668,7 +636,6 @@ pub async fn get_transactions(
         return Err("Already getting transactions".to_string());
     }
     state.is_getting_transactions.store(true, Ordering::SeqCst);
-
     let transactions = state
         .wallet_manager
         .get_transactions(last_tx_id, status_filters, limit)
@@ -683,7 +650,6 @@ pub async fn get_transactions(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_transactions took too long: {:?}", timer.elapsed());
     }
-
     state.is_getting_transactions.store(false, Ordering::SeqCst);
     Ok(transactions)
 }
@@ -704,10 +670,9 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), false).await?;
-
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
+            TasksTracker::stop_all_processes(app.clone()).await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -751,8 +716,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[reset_settings] Resetting settings, reset_wallet: {:?}", reset_wallet);
-    stop_all_processes(app.clone(), true).await?;
+    TasksTracker::stop_all_processes(app.clone()).await;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -857,17 +821,6 @@ pub async fn reset_settings<'r>(
 
     Ok(())
 }
-
-#[tauri::command]
-pub async fn resolve_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let mut config = state.config.write().await;
-    let _unused = config.propose_system_language().await;
-
-    Ok(config.application_language().to_string())
-}
-
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
@@ -875,7 +828,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(app.clone(), true).await?;
+        TasksTracker::stop_all_processes(app.clone()).await;
     }
 
     app.restart();
