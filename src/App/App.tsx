@@ -1,8 +1,7 @@
-import { memo, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 
-import { useIsAppReady } from '../hooks/app/isAppReady.ts';
 import { useShuttingDown } from '../hooks';
 
 import { setError, setIsWebglNotSupported } from '../store/actions';
@@ -14,17 +13,19 @@ import FloatingElements from '../containers/floating/FloatingElements.tsx';
 import MainView from '../containers/main/MainView.tsx';
 
 import { AppContentContainer } from './App.styles.ts';
+import { useUIStore } from '@app/store/useUIStore.ts';
 
-const CurrentAppSection = memo(function CurrentAppSection({
-    isAppReady,
+const CurrentAppSection = function CurrentAppSection({
+    showSplashscreen,
     isShuttingDown,
 }: {
-    isAppReady?: boolean;
+    showSplashscreen?: boolean;
     isShuttingDown?: boolean;
 }) {
     const currentSection = useMemo(() => {
-        const showMainView = !isShuttingDown && isAppReady;
-        if (!isAppReady) {
+        const showMainView = !isShuttingDown && !showSplashscreen;
+
+        if (showSplashscreen) {
             return (
                 <AppContentContainer key="splashscreen" initial="hidden">
                     <Splashscreen />
@@ -48,13 +49,13 @@ const CurrentAppSection = memo(function CurrentAppSection({
             );
         }
         return null;
-    }, [isAppReady, isShuttingDown]);
+    }, [showSplashscreen, isShuttingDown]);
 
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
-});
+};
 
 export default function App() {
-    const isAppReady = useIsAppReady();
+    const showSplashscreen = useUIStore((s) => s.showSplashscreen);
     const isShuttingDown = useShuttingDown();
     const { t } = useTranslation('common', { useSuspense: false });
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
@@ -66,10 +67,10 @@ export default function App() {
     return (
         <ThemeProvider>
             <GlobalReset />
-            <GlobalStyle $hideCanvas={!isAppReady || isShuttingDown} />
+            <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
-                <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
+                <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
             </LazyMotion>
         </ThemeProvider>
     );

@@ -2,7 +2,13 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
+import {
+    ResumingAllProcessesPayload,
+    SetupStatusPayload,
+    ShowReleaseNotesPayload,
+} from '@app/types/events-payloads.ts';
+import { airdropSetup, setDialogToShow } from '../index.ts';
+import { setSetupComplete, setSetupProgress, setSetupTitle, setSetupTitleParams } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -37,6 +43,8 @@ export const fetchExternalDependencies = async () => {
         console.error('Error loading missing external dependencies', error);
     }
 };
+export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
+    useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
 export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
@@ -44,9 +52,11 @@ export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayloa
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
-export const setError = (error: string | undefined) => {
+export const setError = (error: string | undefined, log = false) => {
     useAppStateStore.setState({ error });
-    console.error('setError:', error);
+    if (log) {
+        console.error('setError:', error);
+    }
     addToast({ title: 'Error', text: error, type: 'error' });
 };
 export const setIsAppUpdateAvailable = (isAppUpdateAvailable: boolean) =>
@@ -65,3 +75,22 @@ export const updateApplicationsVersions = async () => {
 };
 
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
+export const handleSetupStatus = async (payload: SetupStatusPayload) => {
+    if (payload.progress > 0) {
+        setSetupTitle(payload.title);
+        setSetupProgress(payload.progress);
+        if (payload.title_params) setSetupTitleParams(payload.title_params);
+    }
+    if (payload.progress >= 1) {
+        await setSetupComplete();
+        await fetchApplicationsVersionsWithRetry();
+        await airdropSetup();
+    }
+};
+export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
+    setReleaseNotes(payload.release_notes || '');
+    setIsAppUpdateAvailable(payload.is_app_update_available);
+    if (payload.should_show_dialog) {
+        setDialogToShow('releaseNotes');
+    }
+};

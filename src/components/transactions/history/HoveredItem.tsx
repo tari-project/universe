@@ -14,11 +14,10 @@ import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButto
 const ItemHover = memo(function ItemHover({ item }: { item: TransactionInfo }) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
-    const referralQuestPoints = useAirdropStore((s) => s.referralQuestPoints);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
 
-    const gemsValue = (referralQuestPoints?.pointsForClaimingReferral || GIFT_GEMS).toLocaleString();
+    const gemsValue = GIFT_GEMS.toLocaleString();
 
     const handleShareClick = () => {
         setShowModal(true);

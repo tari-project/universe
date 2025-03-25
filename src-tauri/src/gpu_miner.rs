@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{info, warn};
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
@@ -29,13 +30,12 @@ use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Manager};
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
 use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::events::{DetectedAvailableGpuEngines, DetectedDevices};
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -45,11 +45,11 @@ use crate::{
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_watcher::ProcessWatcher,
 };
-use crate::{process_utils, BaseNodeStatus};
+use crate::{process_utils, BaseNodeStatus, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub enum EngineType {
     Cuda,
     OpenCL,
@@ -216,25 +216,24 @@ impl GpuMiner {
         match output.status.code() {
             Some(0) => {
                 self.is_available = true;
-                app.emit(
-                    "detected-available-gpu-engines",
-                    DetectedAvailableGpuEngines {
-                        engines: self
-                            .get_available_gpu_engines(config_dir)
+                let app_state = app.state::<UniverseAppState>();
+                app_state
+                    .events_manager
+                    .handle_detected_available_gpu_engines(
+                        &app,
+                        self.get_available_gpu_engines(config_dir)
                             .await?
                             .iter()
                             .map(|x| x.to_string())
                             .collect(),
-                        selected_engine: self.curent_selected_engine.to_string(),
-                    },
-                )?;
-                app.emit(
-                    "detected-devices",
-                    DetectedDevices {
-                        devices: self.gpu_devices.clone(),
-                    },
-                )?;
+                        self.curent_selected_engine.to_string(),
+                    )
+                    .await;
 
+                app_state
+                    .events_manager
+                    .handle_detected_devices(&app, self.gpu_devices.clone())
+                    .await;
                 Ok(())
             }
             _ => {
@@ -379,12 +378,11 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        app.emit(
-            "detected-devices",
-            DetectedDevices {
-                devices: self.gpu_devices.clone(),
-            },
-        )?;
+        let app_state = app.state::<UniverseAppState>();
+        app_state
+            .events_manager
+            .handle_detected_devices(&app, self.gpu_devices.clone())
+            .await;
 
         Ok(())
     }

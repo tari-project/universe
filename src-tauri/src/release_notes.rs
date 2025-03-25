@@ -34,10 +34,10 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Manager, State};
 use tokio::sync::RwLock;
 
-use crate::{events::ReleaseNotesHandlerEvent, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{events::ShowReleaseNotesPayload, UniverseAppState, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn-universe.tari.com/tari-project/universe/CHANGELOG.md";
@@ -282,15 +282,18 @@ impl ReleaseNotes {
 
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
 
-        app.emit(
-            "release_notes_handler",
-            ReleaseNotesHandlerEvent {
-                release_notes: release_notes.content,
-                is_app_update_available,
-                should_show_dialog: should_show_release_notes,
-            },
-        )
-        .map_err(|e| anyhow::anyhow!(e))?;
+        let app_state = app.state::<UniverseAppState>();
+        app_state
+            .events_manager
+            .handle_show_release_notes(
+                &app,
+                ShowReleaseNotesPayload {
+                    release_notes: release_notes.content,
+                    is_app_update_available,
+                    should_show_dialog: should_show_release_notes,
+                },
+            )
+            .await;
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
 
         if should_show_release_notes {

@@ -4,13 +4,12 @@ import User from './User.tsx';
 import LogIn from './LogIn.tsx';
 import { Wrapper } from './items.style';
 import { useAirdropStore } from '@app/store';
-import { useWebsocket } from '@app/hooks/airdrop/useWebsocket.ts';
-import { useAirdropSyncState } from '@app/hooks/airdrop/useAirdropSyncState.ts';
+import useAirdropWebsocket from '@app/hooks/airdrop/ws/useAirdropWebsocket.ts';
+import { useXSpaceEventRefresh } from '@app/hooks/airdrop/stateHelpers/useXSpaceEventRefresh.ts';
 
 function LoggedInItems() {
-    useAirdropSyncState();
-    useWebsocket();
-
+    useAirdropWebsocket();
+    useXSpaceEventRefresh();
     return (
         <>
             <Invite />
