@@ -15,7 +15,6 @@ import { setUITheme } from './uiStoreActions';
 import { AppConfig, GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { loadTowerAnimation } from '@tari-project/tari-tower';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -32,7 +31,7 @@ export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
         if (configTheme) {
             setUITheme(configTheme as displayMode);
         }
-        if (appConfig.visual_mode && useSetupStore.getState().setupComplete) {
+        if (appConfig.visual_mode) {
             try {
                 console.info('Loading tower animation');
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });

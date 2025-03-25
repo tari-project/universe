@@ -5,15 +5,17 @@ export const SB_MINI_WIDTH = 78;
 export const SB_WIDTH = 356;
 export const SB_SPACING = 15;
 
-export const DashboardContainer = styled.div`
+export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
     display: flex;
     position: relative;
     padding: 20px;
     height: 100vh;
     width: 100%;
     max-height: 100%;
-    background: ${({ theme }) =>
-        `radial-gradient(140% 90% at 35% 20%, transparent 93%,  ${theme.palette.background.main} 98%)`};
+    background: ${({ theme, $disableBackground }) =>
+        $disableBackground
+            ? 'none'
+            : `radial-gradient(140% 90% at 35% 20%, transparent 93%,  ${theme.palette.background.main} 98%)`};
 `;
 
 export const Background = styled.div`

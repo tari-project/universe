@@ -9,7 +9,7 @@ export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const isSettingUp = useSetupStore((s) => !s.setupComplete);
     return (
-        <DashboardContainer>
+        <DashboardContainer $disableBackground={isSettingUp}>
             {!visualMode && !isSettingUp && <Background />}
             <SidebarNavigation />
             {isSettingUp ? <Sync /> : <Dashboard />}
