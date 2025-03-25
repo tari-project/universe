@@ -164,7 +164,8 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::LocalNode, true);
+            .set_phase_status(app_handle, SetupPhase::LocalNode, true)
+            .await;
 
         // Todo: send event
         Ok(())

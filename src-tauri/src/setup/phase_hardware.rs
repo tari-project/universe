@@ -21,7 +21,7 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhasePayload {
-    cpu_benchmarked_hashrate: u64,
+    pub cpu_benchmarked_hashrate: u64,
 }
 
 #[derive(Clone, Default)]
@@ -30,17 +30,17 @@ pub struct HardwareSetupPhaseSessionConfiguration {}
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhaseAppConfiguration {}
 
-pub struct CoreSetupPhase {
+pub struct HardwareSetupPhase {
     progress_stepper: ProgressStepper,
     app_configuration: HardwareSetupPhaseAppConfiguration,
     session_configuration: HardwareSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<HardwareSetupPhasePayload> for CoreSetupPhase {
+impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
     type Configuration = HardwareSetupPhaseSessionConfiguration;
 
     fn new() -> Self {
-        CoreSetupPhase {
+        HardwareSetupPhase {
             progress_stepper: Self::create_progress_stepper(),
             app_configuration: HardwareSetupPhaseAppConfiguration::default(),
             session_configuration: HardwareSetupPhaseSessionConfiguration::default(),
@@ -136,7 +136,8 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for CoreSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::Hardware, true);
+            .set_phase_status(app_handle, SetupPhase::Hardware, true)
+            .await;
 
         SetupManager::get_instance()
             .lock()

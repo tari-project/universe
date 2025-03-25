@@ -24,7 +24,7 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 pub struct UnknownSetupPhasePayload {}
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseSessionConfiguration {
-    cpu_benchmarked_hashrate: u64,
+    pub cpu_benchmarked_hashrate: u64,
 }
 
 #[derive(Clone, Default)]
@@ -168,7 +168,8 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::Unknown, true);
+            .set_phase_status(app_handle, SetupPhase::Unknown, true)
+            .await;
 
         // Todo: send event
         Ok(())

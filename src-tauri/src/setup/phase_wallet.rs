@@ -130,7 +130,8 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::Wallet, true);
+            .set_phase_status(app_handle, SetupPhase::Wallet, true)
+            .await;
 
         // Todo: send event
         Ok(())

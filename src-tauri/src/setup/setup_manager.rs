@@ -1,11 +1,25 @@
-use std::{collections::HashMap, sync::LazyLock};
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock},
+};
 
 use anyhow::{Error, Ok};
 use getset::{Getters, Setters};
 use log::info;
+use tauri::AppHandle;
 use tokio::sync::Mutex;
 
-use super::phase_hardware::HardwareSetupPhasePayload;
+use super::{
+    phase_core::{CoreSetupPhase, CoreSetupPhaseSessionConfiguration},
+    phase_hardware::{
+        HardwareSetupPhase, HardwareSetupPhasePayload, HardwareSetupPhaseSessionConfiguration,
+    },
+    phase_local_node::{LocalNodeSetupPhase, LocalNodeSetupPhaseSessionConfiguration},
+    phase_remote_node::{RemoteNodeSetupPhase, RemoteNodeSetupPhaseSessionConfiguration},
+    phase_unknown::{UnknownSetupPhase, UnknownSetupPhaseSessionConfiguration},
+    phase_wallet::{WalletSetupPhase, WalletSetupPhaseSessionConfiguration},
+    trait_setup_phase::SetupPhaseImpl,
+};
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
@@ -21,12 +35,15 @@ pub enum SetupPhase {
     Unknown,
 }
 
-#[derive(Clone, Default, Getters, Setters)]
+#[derive(Default, Getters, Setters)]
 
 pub struct SetupManager {
     phase_statuses: HashMap<SetupPhase, bool>,
     #[getset(get = "pub", set = "pub")]
     hardware_status_output: Option<HardwareSetupPhasePayload>,
+    start_setup_lock: Mutex<()>,
+    spawn_first_batch_of_setup_phases_lock: Mutex<()>,
+    spawn_second_batch_of_setup_phases_lock: Mutex<()>,
 }
 
 impl SetupManager {
@@ -40,6 +57,9 @@ impl SetupManager {
         Self {
             phase_statuses,
             hardware_status_output: None,
+            start_setup_lock: Mutex::new(()),
+            spawn_first_batch_of_setup_phases_lock: Mutex::new(()),
+            spawn_second_batch_of_setup_phases_lock: Mutex::new(()),
         }
     }
 
@@ -47,22 +67,71 @@ impl SetupManager {
         &INSTANCE
     }
 
-    pub fn start_setup(&self) {
-        todo!()
+    pub async fn start_setup(&self, app_handle: AppHandle) {
+        let mut core_phase_setup = CoreSetupPhase::new();
+        core_phase_setup
+            .load_configuration(CoreSetupPhaseSessionConfiguration {})
+            .await;
+        let core_phase_setup = Arc::new(core_phase_setup);
+        core_phase_setup.setup(app_handle.clone()).await;
     }
 
-    pub fn spawn_first_batch_of_setup_phases(&self) {
-        todo!()
+    pub async fn spawn_first_batch_of_setup_phases(&self, app_handle: AppHandle) {
+        let mut hardware_phase_setup = HardwareSetupPhase::new();
+        hardware_phase_setup
+            .load_configuration(HardwareSetupPhaseSessionConfiguration {})
+            .await;
+        let hardware_phase_setup = Arc::new(hardware_phase_setup);
+        hardware_phase_setup.setup(app_handle.clone()).await;
+
+        let mut local_node_phase_setup = LocalNodeSetupPhase::new();
+        local_node_phase_setup
+            .load_configuration(LocalNodeSetupPhaseSessionConfiguration {})
+            .await;
+        let local_node_phase_setup = Arc::new(local_node_phase_setup);
+        local_node_phase_setup.setup(app_handle.clone()).await;
+
+        let mut remote_node_phase_setup = RemoteNodeSetupPhase::new();
+        remote_node_phase_setup
+            .load_configuration(RemoteNodeSetupPhaseSessionConfiguration {})
+            .await;
+        let remote_node_phase_setup = Arc::new(remote_node_phase_setup);
+        remote_node_phase_setup.setup(app_handle.clone()).await;
     }
 
-    pub fn spawn_second_batch_of_setup_phases(&self) {
-        todo!()
+    pub async fn spawn_second_batch_of_setup_phases(&self, app_handle: AppHandle) {
+        let mut wallet_phase_setup = WalletSetupPhase::new();
+        wallet_phase_setup
+            .load_configuration(WalletSetupPhaseSessionConfiguration {})
+            .await;
+        let wallet_phase_setup = Arc::new(wallet_phase_setup);
+        wallet_phase_setup.setup(app_handle.clone()).await;
+
+        let mut unknown_phase_setup = UnknownSetupPhase::new();
+        let cpu_benchmarked_hashrate = self
+            .hardware_status_output
+            .clone()
+            .unwrap_or_default()
+            .cpu_benchmarked_hashrate;
+        unknown_phase_setup
+            .load_configuration(UnknownSetupPhaseSessionConfiguration {
+                cpu_benchmarked_hashrate,
+            })
+            .await;
+        let unknown_phase_setup = Arc::new(unknown_phase_setup);
+        unknown_phase_setup.setup(app_handle.clone()).await;
     }
 
-    pub fn set_phase_status(&mut self, phase: SetupPhase, status: bool) {
+    pub async fn set_phase_status(
+        &mut self,
+        app_handle: AppHandle,
+        phase: SetupPhase,
+        status: bool,
+    ) {
         self.phase_statuses.insert(phase, status);
         //Todo: handle phase status update
-        let _unused = self.handle_phase_status_update(&self.phase_statuses);
+        self.handle_phase_status_update(app_handle, &self.phase_statuses)
+            .await;
     }
 
     fn unlock_app(&self) {
@@ -77,8 +146,9 @@ impl SetupManager {
         todo!()
     }
 
-    fn handle_phase_status_update(
+    async fn handle_phase_status_update(
         &self,
+        app_handle: AppHandle,
         phases_statuses: &HashMap<SetupPhase, bool>,
     ) -> Result<(), Error> {
         let core_phase_status = *phases_statuses.get(&SetupPhase::Core).unwrap_or(&false);
@@ -90,11 +160,24 @@ impl SetupManager {
         let remote_node_phase_status = *phases_statuses
             .get(&SetupPhase::RemoteNode)
             .unwrap_or(&false);
+        let unknown_phase_status = *phases_statuses.get(&SetupPhase::Unknown).unwrap_or(&false);
+
+        // todo find better way for reapeted calls
 
         if core_phase_status {
             info!(target: LOG_TARGET, "Unlocking app");
             self.unlock_app();
+            self.spawn_first_batch_of_setup_phases(app_handle.clone())
+                .await;
         };
+
+        if core_phase_status
+            && hardware_phase_status
+            && (local_node_phase_status || remote_node_phase_status)
+        {
+            self.spawn_second_batch_of_setup_phases(app_handle.clone())
+                .await;
+        }
 
         if core_phase_status
             && wallet_phase_status

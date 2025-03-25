@@ -105,7 +105,8 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::RemoteNode, true);
+            .set_phase_status(app_handle, SetupPhase::RemoteNode, true)
+            .await;
 
         // Todo: send event
         Ok(())
