@@ -35,10 +35,10 @@ jobs:
       matrix:
         include:
           - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage,updater'
+            args: '--bundles deb,appimage'
             extra: '-x64'
           - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage,updater'
+            args: '--bundles deb,appimage'
             best_effort: true
           - platform: 'ubuntu-22.04'
             args: '--bundles rpm'
@@ -49,7 +49,7 @@ jobs:
             extra: '-rpm'
             best_effort: true
           - platform: 'windows-latest'
-            args: '--bundles msi,updater'
+            args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
