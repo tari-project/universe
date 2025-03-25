@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::Ok;
 use log::info;
 use tokio::net::TcpStream;
 use tokio::sync::RwLock;
@@ -42,7 +43,7 @@ impl Websocket {
     async fn connect_to_url(
         config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
         stream_cloned: &Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
-    ) -> Result<(), WebsocketError> {
+    ) -> Result<(), anyhow::Error> {
         let mut stream = stream_cloned.write().await;
         let config_read = config_cloned.read().await;
         let (ws_stream, _) = connect_async(config_read.websocket_url.clone()).await?;
@@ -51,7 +52,7 @@ impl Websocket {
         Ok(())
     }
 
-    pub async fn connect(&mut self) -> Result<(), WebsocketError> {
+    pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
         let cancellation = self.cancellation_token.clone();
@@ -59,7 +60,7 @@ impl Websocket {
             self.ws_stream.clone();
         tauri::async_runtime::spawn(async move {
             tokio::select! {
-                _ = async {
+                res = async {
                     loop {
                         let read_stream = stream_cloned.read().await;
                         match &*read_stream {
@@ -68,37 +69,37 @@ impl Websocket {
                             }
                             None => {
                                 Websocket::connect_to_url(&config_cloned, &stream_cloned).await?;
-                                // handle_ws_events(ws_stream);
+                                Websocket::handle_ws_events(stream_cloned.clone()).await?;
                             }
                         }
                     }
-                    Ok::<(), WebsocketError>(())
                 } => {
-                    Ok::<(), WebsocketError>(())
+                    res
                 },
                 _ = cancellation.cancelled() => {
                     info!(target: LOG_TARGET,"websocket service has been cancelled.");
-                    Ok::<(),WebsocketError>(())
+                    Ok::<()>(())
                 }
             }
         });
         Ok(())
     }
 
-    // pub async fn handle_ws_events(
-    //     stream: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
-    // ) -> Result<(), WebsocketError> {
-    //     tokio::select! {
-    //         _ = async {
-    //                 let config_read = config_cloned.read().await;
-    //                 let (_ws_stream,_) = connect_async(config_read.websocket_url.clone()).await?;
-    //                 println!("WebSocket handshake has been successfully completed");
-    //                 Ok::<Some(ws_stream),WebsocketError>(())
-    //         } => { Ok::<(),WebsocketError>(())},
-    //         _ = cancellation.cancelled() => {
-    //             info!(target: LOG_TARGET,"websocket service has been cancelled.");
-    //             Ok::<None,WebsocketError>(())
-    //         }
-    //     }
-    // }
+    pub async fn handle_ws_events(
+        stream: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
+    ) -> Result<(), anyhow::Error> {
+        // tokio::select! {
+        //     _ = async {
+        //             let config_read = config_cloned.read().await;
+        //             let (_ws_stream,_) = connect_async(config_read.websocket_url.clone()).await?;
+        //             println!("WebSocket handshake has been successfully completed");
+        //             Ok::<Some(ws_stream),WebsocketError>(())
+        //     } => { Ok::<(),WebsocketError>(())},
+        //     _ = cancellation.cancelled() => {
+        //         info!(target: LOG_TARGET,"websocket service has been cancelled.");
+        //         Ok::<None,WebsocketError>(())
+        //     }
+        // }
+        Ok(())
+    }
 }
