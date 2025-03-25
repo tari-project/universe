@@ -1,8 +1,10 @@
 use std::sync::Arc;
+use std::time::Duration;
 
-use log::debug;
+use log::info;
 use tokio::net::TcpStream;
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::WebSocketStream;
@@ -22,8 +24,8 @@ pub enum WebsocketError {
 
 pub struct Websocket {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    ws_stream: Option<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    pub cancellation_token: CancellationToken,
+    ws_stream: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
+    cancellation_token: CancellationToken,
 }
 
 impl Websocket {
@@ -33,29 +35,70 @@ impl Websocket {
     ) -> Self {
         Websocket {
             app_in_memory_config,
-            ws_stream: None,
+            ws_stream: Arc::new(RwLock::new(None)),
             cancellation_token,
         }
     }
+    async fn connect_to_url(
+        config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
+        stream_cloned: &Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
+    ) -> Result<(), WebsocketError> {
+        let mut stream = stream_cloned.write().await;
+        let config_read = config_cloned.read().await;
+        let (ws_stream, _) = connect_async(config_read.websocket_url.clone()).await?;
+        *stream = Some(ws_stream);
+        drop(stream);
+        Ok(())
+    }
 
-    pub async fn connect(&self) -> Result<(), WebsocketError> {
+    pub async fn connect(&mut self) -> Result<(), WebsocketError> {
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
         let cancellation = self.cancellation_token.clone();
-        tokio::spawn(async move {
+        let stream_cloned: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>> =
+            self.ws_stream.clone();
+        tauri::async_runtime::spawn(async move {
             tokio::select! {
                 _ = async {
-                        let config_read = config_cloned.read().await;
-                        let (_ws_stream,_) = connect_async(config_read.websocket_url).await?;
-                        println!("WebSocket handshake has been successfully completed");
-                        Ok::<(),WebsocketError>(())
-                }=>{ Ok::<(),WebsocketError>(())},
+                    loop {
+                        let read_stream = stream_cloned.read().await;
+                        match &*read_stream {
+                            Some(_) => {
+                                sleep(Duration::from_millis(5000)).await;
+                            }
+                            None => {
+                                Websocket::connect_to_url(&config_cloned, &stream_cloned).await?;
+                                // handle_ws_events(ws_stream);
+                            }
+                        }
+                    }
+                    Ok::<(), WebsocketError>(())
+                } => {
+                    Ok::<(), WebsocketError>(())
+                },
                 _ = cancellation.cancelled() => {
-                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    info!(target: LOG_TARGET,"websocket service has been cancelled.");
                     Ok::<(),WebsocketError>(())
                 }
-            };
+            }
         });
         Ok(())
     }
+
+    // pub async fn handle_ws_events(
+    //     stream: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
+    // ) -> Result<(), WebsocketError> {
+    //     tokio::select! {
+    //         _ = async {
+    //                 let config_read = config_cloned.read().await;
+    //                 let (_ws_stream,_) = connect_async(config_read.websocket_url.clone()).await?;
+    //                 println!("WebSocket handshake has been successfully completed");
+    //                 Ok::<Some(ws_stream),WebsocketError>(())
+    //         } => { Ok::<(),WebsocketError>(())},
+    //         _ = cancellation.cancelled() => {
+    //             info!(target: LOG_TARGET,"websocket service has been cancelled.");
+    //             Ok::<None,WebsocketError>(())
+    //         }
+    //     }
+    // }
 }
