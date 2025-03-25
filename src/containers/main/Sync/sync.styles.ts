@@ -19,13 +19,12 @@ export const Content = styled(m.div)`
     width: min(100%, 80vw);
     display: grid;
     grid-auto-columns: 100%;
-    grid-template-rows: 5fr 2fr 1fr;
+    grid-template-rows: 4fr 2fr 1fr;
     place-items: stretch;
     align-content: center;
     overflow: hidden;
-    gap: 20px;
+    gap: 40px;
     padding: calc(0.3rem + 1vmin);
-    border: 1px solid deeppink;
 `;
 
 export const HeaderContent = styled(m.div)`
@@ -33,7 +32,6 @@ export const HeaderContent = styled(m.div)`
     flex-flow: column;
     align-items: center;
     text-align: center;
-    border: 1px solid hotpink;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h1' })`
@@ -53,7 +51,6 @@ export const HeaderImg = styled.img`
 export const ActionContent = styled(m.div)`
     display: flex;
     align-items: stretch;
-    border: 1px solid hotpink;
     justify-content: stretch;
     gap: 15px;
     width: 100%;
@@ -63,5 +60,4 @@ export const FooterContent = styled(m.div)`
     display: flex;
     width: 100%;
     align-items: center;
-    border: 1px solid hotpink;
 `;

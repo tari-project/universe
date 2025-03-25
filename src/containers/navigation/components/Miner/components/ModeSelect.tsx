@@ -15,10 +15,12 @@ import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
 
-import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
-import { ModeSelectWrapper, TileItem } from '../styles';
+import { TileItem } from '../styles';
 
-const ModeSelect = memo(function ModeSelect() {
+interface ModeSelectProps {
+    variant?: 'primary' | 'minimal';
+}
+const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
     const isSettingUp = useSetupStore((s) => !s.setupComplete);
     const mode = useAppConfigStore((s) => s.mode);
@@ -61,20 +63,28 @@ const ModeSelect = memo(function ModeSelect() {
         return tabs;
     }, [custom_power_levels_enabled]);
 
+    const isMininimal = variant === 'minimal';
+
+    const selectMarkup = (
+        <Select
+            disabled={isSettingUp && !isMininimal}
+            loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
+            onChange={handleChange}
+            selectedValue={mode}
+            options={tabOptions}
+            forceHeight={21}
+            variant={isMininimal ? 'minimal' : 'primary'}
+        />
+    );
+
+    if (isMininimal) {
+        return selectMarkup;
+    }
+
     return (
-        <TileItem>
-            <Typography>{t('mode')}</Typography>
-            <ModeSelectWrapper>
-                <Select
-                    disabled={isSettingUp}
-                    loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
-                    onChange={handleChange}
-                    selectedValue={mode}
-                    options={tabOptions}
-                    forceHeight={21}
-                />
-            </ModeSelectWrapper>
-            <CustomPowerLevelsDialogContainer />
+        <TileItem $unpadded>
+            <Typography style={{ padding: `0 15px` }}>{t('mode')}</Typography>
+            {selectMarkup}
         </TileItem>
     );
 });

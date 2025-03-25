@@ -28,5 +28,20 @@ export const CardActionWrapper = styled.div`
     display: flex;
     flex: 1;
     align-items: flex-end;
-    width: max(175px, 60%);
+    width: max(240px, 70%);
+`;
+
+export const ActionWrapper = styled.div`
+    color: ${({ theme }) => theme.palette.text.primary};
+    background-color: ${({ theme }) => theme.palette.background.paper};
+    border-radius: ${({ theme }) => theme.shape.borderRadius.buttonBase};
+    padding: 0 5px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: stretch;
+    width: 100%;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
 `;

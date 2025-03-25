@@ -1,8 +1,7 @@
 import { useAirdropStore } from '@app/store';
 import { SyncActionCard } from '@app/containers/main/Sync/components/SyncActionCard.tsx';
-import { Button } from '@app/components/elements/buttons/Button';
 import { XIconSVG } from '@app/assets/icons/x-icon.tsx';
-import { ButtonIconWrapper } from '@app/containers/main/Sync/actions/actions.style.ts';
+import { ActionButton, ActionContentWrapper, ButtonIconWrapper } from './actions.style.ts';
 import { useAirdropAuth } from '@app/hooks/airdrop/utils/useAirdropAuth.ts';
 
 export default function AirdropLogin() {
@@ -10,18 +9,12 @@ export default function AirdropLogin() {
     const { handleAuth } = useAirdropAuth();
 
     const action = (
-        <Button
-            icon={
-                <ButtonIconWrapper>
-                    <XIconSVG />
-                </ButtonIconWrapper>
-            }
-            backgroundColor="grey"
-            iconPosition="start"
-            onClick={() => handleAuth()}
-        >
-            {`Connect X account`}
-        </Button>
+        <ActionButton onClick={() => handleAuth()}>
+            <ButtonIconWrapper>
+                <XIconSVG />
+            </ButtonIconWrapper>
+            <ActionContentWrapper>{`Connect X Account`}</ActionContentWrapper>
+        </ActionButton>
     );
     return !airdropToken ? (
         <SyncActionCard

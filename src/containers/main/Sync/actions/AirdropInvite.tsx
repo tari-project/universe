@@ -1,11 +1,11 @@
 import { useAirdropStore } from '@app/store';
 import { SyncActionCard } from '@app/containers/main/Sync/components/SyncActionCard.tsx';
-import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { ButtonIconWrapper } from '@app/containers/main/Sync/actions/actions.style.ts';
+
 import { useCopyToClipboard } from '@app/hooks';
 import LinkIcon from '@app/assets/icons/LinkIcon.tsx';
 import { useTranslation } from 'react-i18next';
 import CheckSvg from '@app/components/svgs/CheckSvg.tsx';
+import { ActionButton, ActionContentWrapper, ButtonIconWrapper } from './actions.style.ts';
 
 export default function AirdropInvite() {
     const { t } = useTranslation('airdrop');
@@ -17,15 +17,10 @@ export default function AirdropInvite() {
         copyToClipboard(`${airdropUrl}/download/${referralCode}`);
     }
     const action = (
-        <Button
-            icon={<ButtonIconWrapper>{isCopied ? <CheckSvg /> : <LinkIcon />}</ButtonIconWrapper>}
-            backgroundColor="grey"
-            iconPosition="start"
-            fluid
-            onClick={handleCopyClick}
-        >
-            {t(isCopied ? 'copied' : 'inviteFriendsText')}
-        </Button>
+        <ActionButton onClick={handleCopyClick}>
+            <ButtonIconWrapper>{isCopied ? <CheckSvg /> : <LinkIcon />}</ButtonIconWrapper>
+            <ActionContentWrapper>{t(isCopied ? 'copied' : 'inviteFriendsText')}</ActionContentWrapper>
+        </ActionButton>
     );
 
     return referralCode ? (
