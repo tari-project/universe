@@ -22,10 +22,8 @@
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use std::{
-    sync::{LazyLock, Mutex},
-    time::SystemTime,
-};
+use std::{sync::LazyLock, time::SystemTime};
+use tokio::sync::Mutex;
 
 use crate::{app_config::AirdropTokens, AppConfig};
 

@@ -22,6 +22,13 @@
 
 use std::fmt::Display;
 
+use anyhow::anyhow;
+
+use crate::UniverseAppState;
+
+#[cfg(target_os = "macos")]
+use super::macos_utils::is_app_in_applications_folder;
+
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
     Windows,
@@ -51,5 +58,81 @@ impl PlatformUtils {
         } else {
             panic!("Unsupported OS");
         }
+    }
+
+    pub async fn initialize_preqesities(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+        let current_os = PlatformUtils::detect_current_os();
+        match current_os {
+            CurrentOperatingSystem::Windows => {
+                #[cfg(target_os = "windows")]
+                PlatformUtils::initialize_windows_preqesities(app_handle).await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::Linux => {
+                #[cfg(target_os = "linux")]
+                PlatformUtils::initialize_linux_preqesities(app_handle).await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::MacOS => {
+                #[cfg(target_os = "macos")]
+                PlatformUtils::initialize_macos_preqesities(app_handle).await?;
+                Ok(())
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn initialize_macos_preqesities(
+        app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        let state = app_handle.state::<UniverseAppState>();
+        if !cfg!(dev) && !is_app_in_applications_folder() {
+            state
+                .events_manager
+                .handle_critical_problem(
+                    &app_handle,
+                    None,
+                    Some("not-installed-in-applications-directory".to_string()),
+                )
+                .await;
+            return Err(anyhow!(
+                "App is not installed in the Applications directory"
+            ));
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn initialize_windows_preqesities(
+        app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        let state = app_handle.state::<UniverseAppState>();
+        if cfg!(target_os = "windows") && !cfg!(dev) {
+            ExternalDependencies::current()
+                .read_registry_installed_applications()
+                .await?;
+            let is_missing = ExternalDependencies::current()
+                .check_if_some_dependency_is_not_installed()
+                .await;
+            if is_missing {
+                state
+                    .events_manager
+                    .handle_critical_problem(
+                        &app_handle,
+                        None,
+                        Some("missing-required-dependencies".to_string()),
+                    )
+                    .await;
+                return Err(anyhow!("Missing required dependencies"));
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    async fn initialize_linux_preqesities(
+        app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
     }
 }

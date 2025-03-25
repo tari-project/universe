@@ -20,13 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    sync::{LazyLock, Mutex},
-    time::SystemTime,
-};
+use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::AppConfig;
 

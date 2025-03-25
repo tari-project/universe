@@ -20,12 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{any::Any, env::temp_dir, fmt::Debug, fs, path::PathBuf, sync::Mutex};
+use std::{any::Any, env::temp_dir, fmt::Debug, fs, path::PathBuf};
 
 use anyhow::Error;
 use dirs::config_dir;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::APPLICATION_FOLDER_ID;
 

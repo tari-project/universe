@@ -43,38 +43,64 @@ impl ProgressEvent for ProgressPlanEventPayload {
         self.description.clone()
     }
 }
-
-#[allow(dead_code)]
 #[derive(Clone)]
-pub enum ProgressStartupPlan {
-    App,
-    Tor,
-    Node,
+pub enum ProgressSetupCorePlan {
+    PlatformPrequisites,
+    InitializeApplicationModules,
+    NetworkSpeedTest,
+    BinariesTor,
+    BinariesNode,
+    BinariesWallet,
+    BinariesCpuMiner,
+    BinariesGpuMiner,
+    BinariesP2pool,
+    BinariesMergeMiningProxy,
 }
 
-impl ProgressStep for ProgressStartupPlan {
+impl ProgressStep for ProgressSetupCorePlan {
     type ChannelEvent = ProgressPlanEventPayload;
+
     fn get_description(&self) -> Option<String> {
-        match self {
-            ProgressStartupPlan::App => None,
-            ProgressStartupPlan::Tor => None,
-            ProgressStartupPlan::Node => None,
-        }
+        None
     }
 
     fn get_event_type(&self) -> EventType {
+        EventType::ProgressTrackerStartup
+    }
+
+    fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressStartupPlan::App => EventType::ProgressTrackerStartup,
-            ProgressStartupPlan::Tor => EventType::ProgressTrackerStartup,
-            ProgressStartupPlan::Node => EventType::ProgressTrackerStartup,
+            ProgressSetupCorePlan::PlatformPrequisites => 1,
+            ProgressSetupCorePlan::InitializeApplicationModules => 1,
+            ProgressSetupCorePlan::NetworkSpeedTest => 1,
+            ProgressSetupCorePlan::BinariesTor => 2,
+            ProgressSetupCorePlan::BinariesNode => 2,
+            ProgressSetupCorePlan::BinariesWallet => 2,
+            ProgressSetupCorePlan::BinariesCpuMiner => 2,
+            ProgressSetupCorePlan::BinariesGpuMiner => 2,
+            ProgressSetupCorePlan::BinariesP2pool => 2,
+            ProgressSetupCorePlan::BinariesMergeMiningProxy => 2,
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressStartupPlan::App => "Initializing app".to_string(),
-            ProgressStartupPlan::Tor => "Initializing Tor".to_string(),
-            ProgressStartupPlan::Node => "Initializing Node".to_string(),
+            ProgressSetupCorePlan::PlatformPrequisites => {
+                "setup-core.platform-prequisites".to_string()
+            }
+            ProgressSetupCorePlan::InitializeApplicationModules => {
+                "setup-core.initialize-application-modules".to_string()
+            }
+            ProgressSetupCorePlan::NetworkSpeedTest => "setup-core.network-speed-test".to_string(),
+            ProgressSetupCorePlan::BinariesTor => "setup-core.binaries-tor".to_string(),
+            ProgressSetupCorePlan::BinariesNode => "setup-core.binaries-node".to_string(),
+            ProgressSetupCorePlan::BinariesWallet => "setup-core.binaries-wallet".to_string(),
+            ProgressSetupCorePlan::BinariesCpuMiner => "setup-core.binaries-cpu-miner".to_string(),
+            ProgressSetupCorePlan::BinariesGpuMiner => "setup-core.binaries-gpu-miner".to_string(),
+            ProgressSetupCorePlan::BinariesP2pool => "setup-core.binaries-p2pool".to_string(),
+            ProgressSetupCorePlan::BinariesMergeMiningProxy => {
+                "setup-core.binaries-merge-mining-proxy".to_string()
+            }
         }
     }
 
@@ -85,77 +111,18 @@ impl ProgressStep for ProgressStartupPlan {
             description: self.get_description(),
         }
     }
-
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressStartupPlan::App => 1,
-            ProgressStartupPlan::Tor => 1,
-            ProgressStartupPlan::Node => 1,
-        }
-    }
-}
-#[allow(dead_code)]
-#[derive(Clone)]
-pub enum ProgressResumePlan {
-    Wallet,
-    Tor,
-    Node,
 }
 
-impl ProgressStep for ProgressResumePlan {
-    type ChannelEvent = ProgressPlanEventPayload;
-
-    fn get_description(&self) -> Option<String> {
-        match self {
-            ProgressResumePlan::Wallet => None,
-            ProgressResumePlan::Tor => None,
-            ProgressResumePlan::Node => None,
-        }
-    }
-
-    fn get_event_type(&self) -> EventType {
-        match self {
-            ProgressResumePlan::Wallet => EventType::ProgressTrackerResume,
-            ProgressResumePlan::Tor => EventType::ProgressTrackerResume,
-            ProgressResumePlan::Node => EventType::ProgressTrackerResume,
-        }
-    }
-
-    fn get_title(&self) -> String {
-        match self {
-            ProgressResumePlan::Wallet => "Initializing wallet".to_string(),
-            ProgressResumePlan::Tor => "Initializing Tor".to_string(),
-            ProgressResumePlan::Node => "Initializing Node".to_string(),
-        }
-    }
-
-    fn resolve_to_event(&self) -> Self::ChannelEvent {
-        ProgressPlanEventPayload {
-            event_type: self.get_event_type(),
-            title: self.get_title(),
-            description: self.get_description(),
-        }
-    }
-    fn get_progress_weight(&self) -> u8 {
-        match self {
-            ProgressResumePlan::Wallet => 1,
-            ProgressResumePlan::Tor => 1,
-            ProgressResumePlan::Node => 1,
-        }
-    }
-}
 #[allow(dead_code)]
 #[derive(Clone)]
 pub enum ProgressPlans {
-    Startup(ProgressStartupPlan),
-    Resume(ProgressResumePlan),
+    SetupCore(ProgressSetupCorePlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
     fn get_event_type(&self) -> EventType {
         match self {
-            ProgressPlans::Resume(_) => EventType::ProgressTrackerResume,
-            ProgressPlans::Startup(_) => EventType::ProgressTrackerStartup,
+            ProgressPlans::SetupCore(_) => EventType::ProgressTrackerStartup,
         }
     }
 }
@@ -165,36 +132,31 @@ impl ProgressStep for ProgressPlans {
 
     fn get_description(&self) -> Option<String> {
         match self {
-            ProgressPlans::Resume(plan) => plan.get_description(),
-            ProgressPlans::Startup(plan) => plan.get_description(),
+            ProgressPlans::SetupCore(plan) => plan.get_description(),
         }
     }
 
     fn get_event_type(&self) -> EventType {
         match self {
-            ProgressPlans::Resume(plan) => plan.get_event_type(),
-            ProgressPlans::Startup(plan) => plan.get_event_type(),
+            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressPlans::Resume(plan) => plan.get_title(),
-            ProgressPlans::Startup(plan) => plan.get_title(),
+            ProgressPlans::SetupCore(plan) => plan.get_title(),
         }
     }
 
     fn resolve_to_event(&self) -> Self::ChannelEvent {
         match self {
-            ProgressPlans::Resume(plan) => plan.resolve_to_event(),
-            ProgressPlans::Startup(plan) => plan.resolve_to_event(),
+            ProgressPlans::SetupCore(plan) => plan.resolve_to_event(),
         }
     }
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressPlans::Resume(plan) => plan.get_progress_weight(),
-            ProgressPlans::Startup(plan) => plan.get_progress_weight(),
+            ProgressPlans::SetupCore(plan) => plan.get_progress_weight(),
         }
     }
 }

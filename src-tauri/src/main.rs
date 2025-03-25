@@ -132,6 +132,7 @@ mod process_watcher;
 mod progress_tracker_old;
 mod progress_trackers;
 mod release_notes;
+mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;

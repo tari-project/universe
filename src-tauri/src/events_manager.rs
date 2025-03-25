@@ -20,10 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::sync::LazyLock;
+
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
-use tokio::sync::watch::Receiver;
+use tokio::sync::{watch::Receiver, RwLock};
 
 #[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
