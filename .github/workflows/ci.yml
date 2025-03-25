@@ -124,7 +124,7 @@ jobs:
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |
-          cargo install tauri-cli --version "2.1.0" --locked
+          cargo install tauri-cli --version "2.4.0" --locked
           cargo tauri --version
           cargo tauri build --ci --no-bundle
 

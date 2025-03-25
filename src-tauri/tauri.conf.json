@@ -31,23 +31,16 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": "v1Compatible"
+        "createUpdaterArtifacts": true
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "dangerousDisableAssetCspModification": [
-                "style-src"
-            ],
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' asset: tauri: URL: blob: data: https:",
-                "script-src": "'wasm-unsafe-eval'",
+                "default-src": "'self' tauri: URL: blob: data: https:",
                 "style-src": "'self' 'unsafe-inline'",
-                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm data: application/octet-stream base64"
+                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost data: application/octet-stream base64"
             },
             "pattern": {
                 "use": "isolation",
@@ -83,9 +76,7 @@
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }

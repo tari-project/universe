@@ -1,5 +1,4 @@
 import Footer from '@app/containers/phase/Setup/components/Footer';
-import { useSetUp } from '@app/hooks';
 import HeroText from './components/HeroText';
 import InfoNav from './components/InfoNav/InfoNav';
 import { SetupWrapper } from '@app/containers/phase/Setup/Setup.styles';

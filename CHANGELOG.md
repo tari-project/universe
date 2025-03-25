@@ -1,3 +1,31 @@
+# TARI UNIVERSE v0.9.823: Pool of Fortune
+
+_March 20, 2025_
+
+Hey Tari Fam,
+Welcome to Pool of Fortune, the latest release of Tari Universe. Pool of Fortune is a celebration of your OG status. You are a rebel, a maverick, and a pioneer. Nothing in the world is quite like Tari, and you are undeniably early. Here’s what contributors have been cooking up for you and everyone in the amazing Tari community: 
+
+🚀 WHAT'S NEW
+⏸️ Pause & Resume - Services now pause and resync automatically in sleep mode
+🎛️ MacOS GPU Options - Added Metal vs OpenCL engine selection (for testing)
+📊 Better GPU Detection - Improved accuracy in identifying GPU hardware
+🛠️ Crash Fix - Resolved issue when changing custom power levels
+🐧 Linux Naming Consistency - App names now use lowercase
+📏 Window Sizing Limits - Prevented windows from exceeding screen area
+⚠️ Install Folder Warning - Fixed incorrect directory warning during installation
+🔄 xtrgpuminer → Glytex - Renamed for better AV compatibility
+📡 Network Bandwidth Detection - Currently telemetry-only (alert thresholds coming soon!)
+🎨 UI Tweaks - Minor theme fixes for a smoother experience
+
+While this release is chock full of improvements, Tari contributors aren't stopping. Here are things to look forward to in upcoming releases of the one and only Tari Universe: 
+⚡ Setup & Sync Speed - Faster initial setup and improved sync reliability
+🏗️ Fork & Orphan Chain Avoidance - Strengthening consensus and stability
+🎯 Win Rate Optimization - Enhancing miner efficiency
+😉 Much more
+
+See you in the Tari Universe 💜🐢
+__
+
 # TARI UNIVERSE v0.9.817: The Path Less Traveled
 
 _March 12, 2025_
