@@ -17,29 +17,29 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseSessionConfiguration {}
+pub struct UnknownSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {
+pub struct UnknownSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
     last_binaries_update_timestamp: Option<SystemTime>,
     use_tor: bool,
 }
 
-pub struct WalletSetupPhase {
+pub struct UnknownSetupPhase {
     progress_stepper: ProgressStepper,
-    app_configuration: WalletSetupPhaseAppConfiguration,
-    session_configuration: WalletSetupPhaseSessionConfiguration,
+    app_configuration: UnknownSetupPhaseAppConfiguration,
+    session_configuration: UnknownSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl for WalletSetupPhase {
-    type Configuration = WalletSetupPhaseAppConfiguration;
+impl SetupPhaseImpl for UnknownSetupPhase {
+    type Configuration = UnknownSetupPhaseAppConfiguration;
 
     fn new() -> Self {
-        WalletSetupPhase {
+        UnknownSetupPhase {
             progress_stepper: Self::create_progress_stepper(),
-            app_configuration: WalletSetupPhaseAppConfiguration::default(),
-            session_configuration: WalletSetupPhaseSessionConfiguration::default(),
+            app_configuration: UnknownSetupPhaseAppConfiguration::default(),
+            session_configuration: UnknownSetupPhaseSessionConfiguration::default(),
         }
     }
 
@@ -94,7 +94,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(SetupPhase::Wallet, true);
+            .set_phase_status(SetupPhase::Unknown, true);
 
         // Todo: send event
         Ok(())

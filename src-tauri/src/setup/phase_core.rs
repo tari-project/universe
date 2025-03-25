@@ -1,11 +1,13 @@
-use std::time::{Duration, SystemTime};
+use std::{
+    sync::Arc,
+    time::{Duration, SystemTime},
+};
 
-use anyhow::anyhow;
 use log::{error, info};
 use serde_json::json;
 use tauri::Manager;
 use tauri_plugin_sentry::sentry;
-use tokio::sync::watch;
+use tokio::sync::{watch, Mutex};
 
 use crate::{
     auto_launcher::AutoLauncher,
@@ -17,6 +19,7 @@ use crate::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
     },
+    tasks_tracker::TasksTracker,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
 };
@@ -28,6 +31,7 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
 const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6);
+const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseSessionConfiguration {}
 
@@ -39,7 +43,7 @@ pub struct CoreSetupPhaseAppConfiguration {
 }
 
 pub struct CoreSetupPhase {
-    progress_stepper: ProgressStepper,
+    progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
     session_configuration: CoreSetupPhaseSessionConfiguration,
 }
@@ -49,7 +53,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn new() -> Self {
         Self {
-            progress_stepper: Self::create_progress_stepper(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper()),
             app_configuration: CoreSetupPhaseAppConfiguration::default(),
             session_configuration: CoreSetupPhaseSessionConfiguration::default(),
         }
@@ -116,20 +120,35 @@ impl SetupPhaseImpl for CoreSetupPhase {
         Ok(())
     }
 
-    async fn setup(&mut self, app_handle: tauri::AppHandle) {
-        match self.setup_inner(app_handle.clone()).await {
-            Ok(_) => {
-                info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-            }
-            Err(error) => {
-                error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
-                let error_message = format!("[ Core Phase ] Setup failed with error: {:?}", error);
-                sentry::capture_message(&error_message, sentry::Level::Error);
-            }
-        }
+    async fn setup(self: Arc<Self>, app_handle: tauri::AppHandle) {
+        info!(target: LOG_TARGET, "[ Core Phase ] Starting setup");
+
+        TasksTracker::current().spawn(async move {
+            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            tokio::select! {
+                _ = setup_timeout => {
+                    error!(target: LOG_TARGET, "[ Core Phase ] Setup timed out");
+                    let error_message = "[ Core Phase ] Setup timed out";
+                    sentry::capture_message(&error_message, sentry::Level::Error);
+                }
+                result = self.setup_inner(app_handle.clone()) => {
+                    match result {
+                        Ok(_) => {
+                            info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
+                            self.finalize_setup(app_handle.clone()).await;
+                        }
+                        Err(error) => {
+                            error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
+                            let error_message = format!("[ Core Phase ] Setup failed with error: {:?}", error);
+                            sentry::capture_message(&error_message, sentry::Level::Error);
+                        }
+                    }
+                }
+            };
+        });
     }
 
-    async fn setup_inner(&mut self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    async fn setup_inner(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let state = app_handle.state::<UniverseAppState>();
         state
             .events_manager
@@ -154,6 +173,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
         PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::PlatformPrequisites),
@@ -218,6 +239,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::InitializeApplicationModules),
@@ -239,6 +262,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await;
 
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::NetworkSpeedTest),
@@ -265,6 +290,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 )
                 .await?;
             self.progress_stepper
+                .lock()
+                .await
                 .resolve_step(
                     Some(app_handle.clone()),
                     ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor),
@@ -272,6 +299,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 .await;
         } else {
             self.progress_stepper
+                .lock()
+                .await
                 .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
         }
 
@@ -293,6 +322,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesNode),
@@ -317,6 +348,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesMergeMiningProxy),
@@ -342,6 +375,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesWallet),
@@ -366,6 +401,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesGpuMiner),
@@ -382,6 +419,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesCpuMiner),
@@ -414,6 +453,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await?;
         self.progress_stepper
+            .lock()
+            .await
             .resolve_step(
                 Some(app_handle.clone()),
                 ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesP2pool),
@@ -435,10 +476,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
         Ok(())
     }
 
-    fn finalize_setup(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    async fn finalize_setup(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
         SetupManager::get_instance()
             .lock()
-            .map_err(|_| anyhow!("Failed to lock SetupManager"))?
+            .await
             .set_phase_status(SetupPhase::Core, true);
 
         // Todo: send event

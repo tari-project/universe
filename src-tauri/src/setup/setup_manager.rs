@@ -1,10 +1,8 @@
-use std::{
-    collections::HashMap,
-    sync::{LazyLock, Mutex},
-};
+use std::{collections::HashMap, sync::LazyLock};
 
 use anyhow::{Error, Ok};
 use log::info;
+use tokio::sync::Mutex;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
@@ -17,7 +15,10 @@ pub enum SetupPhase {
     Hardware,
     LocalNode,
     RemoteNode,
+    Unknown,
 }
+
+#[derive(Clone, Default)]
 pub struct SetupManager {
     phase_statuses: HashMap<SetupPhase, bool>,
 }
