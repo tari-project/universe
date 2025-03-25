@@ -11,9 +11,10 @@ import {
 import { fetchApplicationsVersionsWithRetry } from '@app/store/actions/appStateStoreActions.ts';
 
 export function useSetUp() {
-    const isInitializingRef = useRef(false);
-    const adminShow = useUIStore((s) => s.adminShow);
     const setupProgressRef = useRef(0);
+    const isInitializingRef = useRef(false);
+
+    const adminShow = useUIStore((s) => s.adminShow);
     const handlePostSetup = useCallback(async () => {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();

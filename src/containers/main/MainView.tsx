@@ -8,7 +8,6 @@ import Sync from '@app/containers/main/Sync/Sync.tsx';
 export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const isSettingUp = useSetupStore((s) => !s.setupComplete);
-
     return (
         <DashboardContainer $visualModeOff={!visualMode && !isSettingUp}>
             <SidebarNavigation />

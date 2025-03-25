@@ -36,7 +36,8 @@ const BarSVG = styled.svg`
 `;
 const BarLine = styled(m.line)<{ $variant?: LinearProgressVariant }>`
     stroke-width: ${({ $variant }) => ($variant === 'small' ? '5px' : '10px')};
-    stroke: url('#bar_gradient');
+    stroke: ${({ theme }) => `url(${theme.mode === 'dark' ? '#bar_gradient_dark' : '#bar_gradient_light'})`};
+    color: rgba(13, 24, 32, 0.7);
 `;
 
 interface LinearProgressProps {
@@ -63,17 +64,32 @@ export function LinearProgress({ value = 0, variant = 'small', duration, onAnima
                 />
                 <defs>
                     <linearGradient
-                        id="bar_gradient"
+                        id="bar_gradient_light"
                         x1="0%"
                         y1="50%"
                         x2="100%"
                         y2="100%"
                         gradientUnits="userSpaceOnUse"
                     >
-                        <stop offset="0%" stopColor="#8DBCF9" />
-                        <stop offset="10%" stopColor="#071E6B" />
-                        <stop offset="65%" stopColor="#0D1820" />
-                        <stop offset="130%" stopColor="#8DBCF9" />
+                        <stop offset="0%" stopColor="#8DBCF95f" />
+                        <stop offset="15%" stopColor="#071E6B" />
+                        <stop offset="50%" stopColor="#0D1820" />
+                        <stop offset="85%" stopColor="#071E6B" />
+                        <stop offset="100%" stopColor="#8DBCF95f" />
+                    </linearGradient>
+                    <linearGradient
+                        id="bar_gradient_dark"
+                        x1="0%"
+                        y1="100%"
+                        x2="100%"
+                        y2="0%"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop offset="0%" stopColor="#0D1820B3" />
+                        <stop offset="15%" stopColor="#0D1820" />
+                        <stop offset="50%" stopColor="#8DBCF950" />
+                        <stop offset="85%" stopColor="#0D1820" />
+                        <stop offset="100%" stopColor="#0D1820B3" />
                     </linearGradient>
                 </defs>
             </BarSVG>

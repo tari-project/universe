@@ -7,11 +7,12 @@ const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     align-items: center;
+    width: 100%;
     gap: 6px;
 `;
 
 const Label = styled(Typography).attrs({ variant: 'p' })`
-    font-weight: 500;
+    font-weight: 700;
 `;
 export default function Progress() {
     const setupProgress = useSetupStore((s) => s.setupProgress);

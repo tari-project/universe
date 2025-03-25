@@ -7,17 +7,25 @@ export const Wrapper = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: calc(0.4rem + 1vmin);
     box-sizing: border-box;
+    will-change: contents;
+    & * {
+        pointer-events: all;
+    }
 `;
 
 export const Content = styled(m.div)`
     height: 100%;
+    will-change: width;
+    width: min(100%, 80vw);
     display: grid;
     grid-auto-columns: 100%;
-    grid-template-rows: 5fr 3fr 1fr;
-    place-items: stretch;
+    grid-template-rows: 5fr 2fr 1fr;
+    place-items: center;
     align-content: center;
+    overflow: hidden;
+    gap: min(15px, 8vh);
+    padding: calc(0.4rem + 1vmin);
 `;
 
 export const HeaderContent = styled(m.div)`
@@ -37,15 +45,20 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const HeaderImg = styled.img`
-    width: min(360px, 24vw);
+    width: min(360px, 36vh);
     max-width: 100%;
 `;
 
 export const ActionContent = styled(m.div)`
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    justify-content: stretch;
     gap: 15px;
-    text-align: center;
     width: 100%;
+    height: 100%;
 `;
-export const FooterContent = styled(m.div)``;
+export const FooterContent = styled(m.div)`
+    display: flex;
+    width: 100%;
+    align-items: flex-end;
+`;
