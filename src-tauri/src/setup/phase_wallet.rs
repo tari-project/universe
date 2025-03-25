@@ -3,10 +3,11 @@ use std::time::{Duration, SystemTime};
 use crate::{
     progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
     tasks_tracker::TasksTracker,
+    UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 
 use super::{
@@ -16,6 +17,10 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
+
+#[derive(Clone, Default)]
+pub struct WalletSetupPhasePayload {}
+
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseSessionConfiguration {}
 
@@ -32,8 +37,8 @@ pub struct WalletSetupPhase {
     session_configuration: WalletSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl for WalletSetupPhase {
-    type Configuration = WalletSetupPhaseAppConfiguration;
+impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
+    type Configuration = WalletSetupPhaseSessionConfiguration;
 
     fn new() -> Self {
         WalletSetupPhase {
@@ -53,7 +58,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         &mut self,
         configuration: Self::Configuration,
     ) -> Result<(), Error> {
-        self.app_configuration = configuration;
+        self.session_configuration = configuration;
 
         Ok(())
     }
@@ -71,9 +76,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 }
                 result = self.setup_inner(app_handle.clone()) => {
                     match result {
-                        Ok(_) => {
+                        Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Hardware Phase ] Setup completed successfully");
-                            self.finalize_setup(app_handle.clone()).await;
+                            self.finalize_setup(app_handle.clone(), payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Hardware Phase ] Setup failed with error: {:?}", error);
@@ -86,11 +91,42 @@ impl SetupPhaseImpl for WalletSetupPhase {
         });
     }
 
-    async fn setup_inner(&self, app_handle: AppHandle) -> Result<(), Error> {
-        todo!()
+    async fn setup_inner(
+        &self,
+        app_handle: AppHandle,
+    ) -> Result<Option<WalletSetupPhasePayload>, Error> {
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
+        let state = app_handle.state::<UniverseAppState>();
+
+        state
+            .wallet_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+
+        let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+        spend_wallet_manager
+            .init(
+                state.shutdown.to_signal().clone(),
+                data_dir,
+                config_dir,
+                log_dir,
+            )
+            .await?;
+        drop(spend_wallet_manager);
+
+        Ok(None)
     }
 
-    async fn finalize_setup(&self, app_handle: AppHandle) -> Result<(), Error> {
+    async fn finalize_setup(
+        &self,
+        app_handle: AppHandle,
+        payload: Option<WalletSetupPhasePayload>,
+    ) -> Result<(), Error> {
         SetupManager::get_instance()
             .lock()
             .await

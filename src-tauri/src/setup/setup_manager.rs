@@ -1,8 +1,11 @@
 use std::{collections::HashMap, sync::LazyLock};
 
 use anyhow::{Error, Ok};
+use getset::{Getters, Setters};
 use log::info;
 use tokio::sync::Mutex;
+
+use super::phase_hardware::HardwareSetupPhasePayload;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
@@ -18,9 +21,12 @@ pub enum SetupPhase {
     Unknown,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Getters, Setters)]
+
 pub struct SetupManager {
     phase_statuses: HashMap<SetupPhase, bool>,
+    #[getset(get = "pub", set = "pub")]
+    hardware_status_output: Option<HardwareSetupPhasePayload>,
 }
 
 impl SetupManager {
@@ -31,7 +37,10 @@ impl SetupManager {
         phase_statuses.insert(SetupPhase::Hardware, false);
         phase_statuses.insert(SetupPhase::LocalNode, false);
         phase_statuses.insert(SetupPhase::RemoteNode, false);
-        Self { phase_statuses }
+        Self {
+            phase_statuses,
+            hardware_status_output: None,
+        }
     }
 
     pub fn get_instance() -> &'static LazyLock<Mutex<SetupManager>> {

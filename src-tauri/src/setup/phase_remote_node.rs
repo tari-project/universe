@@ -16,6 +16,10 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
+
+#[derive(Clone, Default)]
+pub struct RemoteNodeSetupPhasePayload {}
+
 #[derive(Clone, Default)]
 pub struct RemoteNodeSetupPhaseSessionConfiguration {}
 
@@ -32,8 +36,8 @@ pub struct RemoteNodeSetupPhase {
     session_configuration: RemoteNodeSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl for RemoteNodeSetupPhase {
-    type Configuration = RemoteNodeSetupPhaseAppConfiguration;
+impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
+    type Configuration = RemoteNodeSetupPhaseSessionConfiguration;
 
     fn new() -> Self {
         RemoteNodeSetupPhase {
@@ -53,7 +57,7 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
         &mut self,
         configuration: Self::Configuration,
     ) -> Result<(), Error> {
-        self.app_configuration = configuration;
+        self.session_configuration = configuration;
 
         Ok(())
     }
@@ -71,9 +75,9 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
                 }
                 result = self.setup_inner(app_handle.clone()) => {
                     match result {
-                        Ok(_) => {
+                        Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Hardware Phase ] Setup completed successfully");
-                            self.finalize_setup(app_handle.clone()).await;
+                            self.finalize_setup(app_handle.clone(),payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Hardware Phase ] Setup failed with error: {:?}", error);
@@ -86,11 +90,18 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
         });
     }
 
-    async fn setup_inner(&self, app_handle: AppHandle) -> Result<(), Error> {
+    async fn setup_inner(
+        &self,
+        app_handle: AppHandle,
+    ) -> Result<Option<RemoteNodeSetupPhasePayload>, Error> {
         todo!()
     }
 
-    async fn finalize_setup(&self, app_handle: AppHandle) -> Result<(), Error> {
+    async fn finalize_setup(
+        &self,
+        app_handle: AppHandle,
+        payload: Option<RemoteNodeSetupPhasePayload>,
+    ) -> Result<(), Error> {
         SetupManager::get_instance()
             .lock()
             .await

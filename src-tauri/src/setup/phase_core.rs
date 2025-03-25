@@ -32,6 +32,10 @@ use super::{
 static LOG_TARGET: &str = "tari::universe::phase_core";
 const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6);
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
+
+#[derive(Clone, Default)]
+pub struct CoreSetupPhasePayload {}
+
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseSessionConfiguration {}
 
@@ -48,7 +52,7 @@ pub struct CoreSetupPhase {
     session_configuration: CoreSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl for CoreSetupPhase {
+impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
     type Configuration = CoreSetupPhaseSessionConfiguration;
 
     fn new() -> Self {
@@ -133,9 +137,9 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 }
                 result = self.setup_inner(app_handle.clone()) => {
                     match result {
-                        Ok(_) => {
+                        Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-                            self.finalize_setup(app_handle.clone()).await;
+                            self.finalize_setup(app_handle.clone(),payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
@@ -148,7 +152,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
         });
     }
 
-    async fn setup_inner(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    async fn setup_inner(
+        &self,
+        app_handle: tauri::AppHandle,
+    ) -> Result<Option<CoreSetupPhasePayload>, anyhow::Error> {
         let state = app_handle.state::<UniverseAppState>();
         state
             .events_manager
@@ -473,10 +480,14 @@ impl SetupPhaseImpl for CoreSetupPhase {
         //drop binary resolver to release the lock
         drop(binary_resolver);
 
-        Ok(())
+        Ok(None)
     }
 
-    async fn finalize_setup(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    async fn finalize_setup(
+        &self,
+        app_handle: tauri::AppHandle,
+        payload: Option<CoreSetupPhasePayload>,
+    ) -> Result<(), anyhow::Error> {
         SetupManager::get_instance()
             .lock()
             .await
