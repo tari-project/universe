@@ -37,6 +37,7 @@ async function refreshAirdropTokens(airdropTokens: AirdropTokens) {
 export async function handleRefreshAirdropTokens(): Promise<AirdropTokens | undefined> {
     const airdropTokens = useAirdropStore.getState().airdropTokens;
     let tokens: AirdropTokens | undefined = airdropTokens;
+
     if (!tokens) {
         return;
     }
