@@ -1,7 +1,6 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useTranslation } from 'react-i18next';
-import { memo, useEffect, useState } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { memo, useState } from 'react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 import {
     TooltipTrigger,

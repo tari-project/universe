@@ -5,10 +5,7 @@ export {
     setAuthUuid,
     setBonusTiers,
     setFlareAnimationType,
-    setReferralCount,
-    setReferralQuestPoints,
     setUserDetails,
-    setUserGems,
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
@@ -29,7 +26,6 @@ export {
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
     setShowExperimentalSettings,
-    setTheme,
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';

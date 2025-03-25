@@ -1,6 +1,6 @@
 import InfoItemGraphic from '@app/containers/phase/Setup/components/InfoNav/InfoItemGraphic';
 import { AnimatePresence } from 'motion/react';
-import { memo, Suspense, useState } from 'react';
+import { memo, useState } from 'react';
 import InfoItem from './InfoItem';
 import { Nav, NavContainer, NavItem, NavItemCurrent } from './InfoNav.styles';
 import { useTranslation } from 'react-i18next';

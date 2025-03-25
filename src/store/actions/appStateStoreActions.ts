@@ -54,9 +54,11 @@ export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayloa
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
-export const setError = (error: string | undefined) => {
+export const setError = (error: string | undefined, log = false) => {
     useAppStateStore.setState({ error });
-    console.error('setError:', error);
+    if (log) {
+        console.error('setError:', error);
+    }
     addToast({ title: 'Error', text: error, type: 'error' });
 };
 export const setIsAppUpdateAvailable = (isAppUpdateAvailable: boolean) =>

@@ -123,11 +123,11 @@ type BackendStateUpdateEvent =
       };
 const useTauriEventsListener = () => {
     useEffect(() => {
-        console.log('Listening for backend state updates');
+        console.info('Listening for backend state updates');
         const unlisten = listen(
             BACKEND_STATE_UPDATE,
             async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                console.log('Received event', event);
+                console.info('Received event', event);
                 switch (event.event_type) {
                     case 'WalletAddressUpdate':
                         setWalletAddress(event.payload);
@@ -148,10 +148,10 @@ const useTauriEventsListener = () => {
                         handleConnectedPeersUpdate(event.payload);
                         break;
                     case 'NewBlockHeight':
-                        handleNewBlock(event.payload);
+                        await handleNewBlock(event.payload);
                         break;
                     case 'AppConfigLoaded':
-                        handleAppConfigLoaded(event.payload);
+                        await handleAppConfigLoaded(event.payload);
                         break;
                     case 'CloseSplashscreen':
                         handleCloseSplashscreen();
@@ -163,7 +163,7 @@ const useTauriEventsListener = () => {
                         setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                         break;
                     case 'SetupStatus':
-                        handleSetupStatus(event.payload);
+                        await handleSetupStatus(event.payload);
                         break;
                     case 'ResumingAllProcesses':
                         setAppResumePayload(event.payload);

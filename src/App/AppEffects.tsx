@@ -4,7 +4,7 @@ import useTauriEventsListener from '../hooks/app/useTauriEventsListener.ts';
 import { setMiningNetwork } from '../store/actions/miningStoreActions.ts';
 import { useDetectMode, useDisableRefresh, useSetUp } from '../hooks';
 import { invoke } from '@tauri-apps/api/core';
-
+import { airdropSetup } from '@app/store';
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
 
@@ -13,6 +13,7 @@ export default function AppEffects() {
     useEffect(() => {
         async function initialize() {
             await setMiningNetwork();
+            await airdropSetup();
             await invoke('frontend_ready')
                 .then(() => {
                     console.info('Successfully called frontend_ready');

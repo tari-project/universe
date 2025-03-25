@@ -23,17 +23,17 @@ interface SetModeProps {
 }
 
 export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
-    console.log('handleAppConfigLoaded', appConfig);
+    console.info('handleAppConfigLoaded', appConfig);
     try {
         useAppConfigStore.setState(appConfig);
-        changeLanguage(appConfig.application_language);
+        await changeLanguage(appConfig.application_language);
         const configTheme = appConfig.display_mode?.toLowerCase();
         if (configTheme) {
             setUITheme(configTheme as displayMode);
         }
         if (appConfig.visual_mode) {
             try {
-                console.log('Loading tower animation');
+                console.info('Loading tower animation');
                 await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
             } catch (e) {
                 console.error('Error at loadTowerAnimation:', e);
@@ -236,12 +236,6 @@ export const setShowExperimentalSettings = async (showExperimentalSettings: bool
         setError('Could not change experimental settings');
         useAppConfigStore.setState({ show_experimental_settings: !showExperimentalSettings });
     });
-};
-export const setTheme = async (themeArg: displayMode) => {
-    const display_mode = themeArg?.toLowerCase() as displayMode;
-    const prefersDarkMode = () => window.matchMedia('(prefers-color-scheme:dark)').matches;
-    const uiTheme = display_mode === 'system' ? (prefersDarkMode() ? 'dark' : 'light') : display_mode;
-    setUITheme(uiTheme);
 };
 
 export const setDisplayMode = async (displayMode: displayMode) => {
