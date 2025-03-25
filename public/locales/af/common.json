@@ -1,5 +1,7 @@
 {
+  "back": "Back",
   "cancel": "Kanselleer",
+  "close": "Sluit",
   "close-tari-universe": "Sluit Tari Universe",
   "connection": "Verbinding",
   "continue": "Gaan voort",
@@ -14,9 +16,11 @@
   "mode": "Modus",
   "not-installed-in-applications-directory": "Oeps! Tari Universe moet in die Toepassingsgids wees. Sal jy dit daar installeer?",
   "please-try-again-later": "Probeer asseblief later weer. As die probleem voortduur, kontak ons asseblief.",
+  "received": "Received",
   "resources": "Hulpbronne",
   "restart": "Herbegin",
   "seconds": "Sekondes",
+  "sent": "Sent",
   "shutting-down": "Afskakel..",
   "submit": "Dien in",
   "tari-universe": "Tari Heelal",
@@ -24,11 +28,10 @@
   "testnet": "Toetsnetwerk",
   "unknown": "Onbekend",
   "unminimize": "Maak volskerm",
+  "update": "Opdateer",
   "usage": "Gebruik",
   "utilization": "Benutting",
   "version": "Weergawe",
   "versions": "Weergawes",
-  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer.",
-  "close": "Sluit",
-  "update": "Opdateer"
+  "webgl-not-supported": "WebGL word nie ondersteun nie. Visuele modus gedeaktiveer."
 }

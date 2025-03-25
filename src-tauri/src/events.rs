@@ -23,24 +23,61 @@
 use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::gpu_status_file::GpuDevice;
+use crate::{
+    gpu_status_file::GpuDevice,
+    wallet_adapter::{TransactionInfo, WalletBalance},
+};
 
-#[derive(Debug, Serialize, Clone)]
-pub struct SetupStatusEvent {
+#[derive(Clone, Debug, Serialize)]
+pub enum EventType {
+    WalletAddressUpdate,
+    WalletBalanceUpdate,
+    BaseNodeUpdate,
+    GpuDevicesUpdate,
+    CpuMiningUpdate,
+    GpuMiningUpdate,
+    ConnectedPeersUpdate,
+    NewBlockHeight,
+    AppConfigLoaded,
+    CloseSplashscreen,
+    DetectedDevices,
+    DetectedAvailableGpuEngines,
+    SetupStatus,
+    ResumingAllProcesses,
+    ShowReleaseNotes,
+    #[cfg(target_os = "macos")]
+    CriticalProblem,
+    #[cfg(target_os = "windows")]
+    MissingApplications,
+    StuckOnOrphanChain,
+    NetworkStatus,
+    ProgressTrackerResume,
+    ProgressTrackerStartup,
+}
+#[derive(Clone, Debug, Serialize)]
+pub struct ProgressTrackerUpdatePayload {
+    pub title: String,
+    pub progress: f64,
+    pub description: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NetworkStatusPayload {
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
+    pub is_too_low: bool,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct SetupStatusPayload {
     pub event_type: String,
     pub title: String,
     pub title_params: Option<HashMap<String, String>>,
     pub progress: f64,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct ReleaseNotesHandlerEvent {
-    pub release_notes: String,
-    pub is_app_update_available: bool,
-    pub should_show_dialog: bool,
-}
-
-#[derive(Debug, Serialize, Clone)]
+#[derive(Clone, Debug, Serialize)]
 pub struct ResumingAllProcessesPayload {
     pub title: String,
     pub stage_progress: u32,
@@ -48,13 +85,53 @@ pub struct ResumingAllProcessesPayload {
     pub is_resuming: bool,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct DetectedAvailableGpuEngines {
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedAvailableGpuEnginesPayload {
     pub engines: Vec<String>,
     pub selected_engine: String,
 }
 
-#[derive(Debug, Serialize, Clone)]
-pub struct DetectedDevices {
+#[derive(Clone, Debug, Serialize)]
+pub struct DetectedDevicesPayload {
     pub devices: Vec<GpuDevice>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Event<T> {
+    pub event_type: EventType,
+    pub payload: T,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct WalletAddressUpdatePayload {
+    pub tari_address_base58: String,
+    pub tari_address_emoji: String,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NewBlockHeightPayload {
+    pub block_height: u64,
+    pub coinbase_transaction: Option<TransactionInfo>,
+    pub balance: WalletBalance,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct ShowReleaseNotesPayload {
+    pub release_notes: String,
+    pub is_app_update_available: bool,
+    pub should_show_dialog: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct CriticalProblemPayload {
+    pub title: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub struct NetworkStatus {
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
+    pub is_too_low: bool,
 }

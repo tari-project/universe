@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
+use crate::app_config::{AirdropTokens, GpuThreads};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
@@ -35,7 +35,7 @@ use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker::ProgressTracker;
+use crate::progress_tracker_old::ProgressTracker;
 use crate::tasks_tracker::TasksTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
@@ -56,9 +56,8 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
-use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -188,36 +187,15 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
     let app_handle = app.clone();
+    FrontendReadyChannel::current().set_ready();
     TasksTracker::current().spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        if let Err(e) = state
-            .updates_manager
-            .init_periodic_updates(app.clone())
-            .await
-        {
-            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
-        }
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
-        FrontendReadyChannel::current().set_ready();
+        let app_state = app_handle.state::<UniverseAppState>();
+        // Give the splash screen a few seconds to show before closing it
+        sleep(Duration::from_secs(3));
+        app_state
+            .events_manager
+            .handle_close_splash_screen(&app_handle)
+            .await;
     });
 }
 
@@ -275,15 +253,6 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
-}
-
-#[tauri::command]
-pub async fn get_app_config(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<AppConfig, String> {
-    Ok(state.config.read().await.clone())
 }
 
 #[tauri::command]
@@ -647,18 +616,53 @@ pub async fn get_airdrop_tokens(
 }
 
 #[tauri::command]
+pub async fn get_transactions_history(
+    state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    limit: Option<u32>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transactions_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transfers history");
+        return Err("Already getting transfers history".to_string());
+    }
+    state
+        .is_getting_transactions_history
+        .store(true, Ordering::SeqCst);
+    let transactions = state
+        .wallet_manager
+        .get_transactions_history(continuation, limit)
+        .await
+        .unwrap_or_else(|e| {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transactions_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transactions_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
+}
+
+#[tauri::command]
 pub async fn get_coinbase_transactions(
     state: tauri::State<'_, UniverseAppState>,
     continuation: bool,
     limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
-    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
-        warn!(target: LOG_TARGET, "Already getting transaction history");
-        return Err("Already getting transaction history".to_string());
+    if state.is_getting_coinbase_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting coinbase history");
+        return Err("Already getting coinbase history".to_string());
     }
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
@@ -676,7 +680,7 @@ pub async fn get_coinbase_transactions(
     }
 
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(false, Ordering::SeqCst);
     Ok(transactions)
 }
@@ -846,17 +850,6 @@ pub async fn reset_settings<'r>(
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 }
-
-#[tauri::command]
-pub async fn resolve_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let mut config = state.config.write().await;
-    let _unused = config.propose_system_language().await;
-
-    Ok(config.application_language().to_string())
-}
-
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
@@ -1831,5 +1824,25 @@ pub async fn set_selected_engine(
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_one_sided_to_stealth_address(
+    state: tauri::State<'_, UniverseAppState>,
+    amount: String,
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination, payment_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
+    }
     Ok(())
 }

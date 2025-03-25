@@ -22,8 +22,9 @@ import {
     ReleaseNotes,
 } from './sections';
 
-import { Container, ContentContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
+import { Container, ContentContainer, EndContainer, HeaderContainer, SectionWrapper } from './SettingsModal.styles.ts';
 import { setIsSettingsOpen } from '@app/store';
+import VersionChip from '@app/containers/navigation/components/VersionChip/VersionChip.tsx';
 
 const SettingsModal = memo(function SettingsModal() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
@@ -61,9 +62,12 @@ const SettingsModal = memo(function SettingsModal() {
                     <ContentContainer>
                         <HeaderContainer>
                             <Typography variant="h4">{title}</Typography>
-                            <IconButton onClick={() => onOpenChange()}>
-                                <IoClose size={18} />
-                            </IconButton>
+                            <EndContainer>
+                                <VersionChip />
+                                <IconButton onClick={() => onOpenChange()}>
+                                    <IoClose size={18} />
+                                </IconButton>
+                            </EndContainer>
                         </HeaderContainer>
 
                         <SectionWrapper key={activeSection}>{sectionMarkup}</SectionWrapper>

@@ -20,15 +20,26 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::error;
+use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::Receiver;
 
+#[cfg(target_os = "macos")]
+use crate::events::CriticalProblemPayload;
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::RequiredExternalDependency;
+
 use crate::{
-    commands::CpuMinerStatus, events_emitter::EventsEmitter, events_service::EventsService,
-    hardware::hardware_status_monitor::GpuDeviceProperties, tasks_tracker::TasksTracker,
-    wallet_adapter::WalletState, BaseNodeStatus, GpuMinerStatus, UniverseAppState,
+    commands::CpuMinerStatus,
+    events::{EventType, ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
+    events_emitter::EventsEmitter,
+    events_service::EventsService,
+    gpu_status_file::GpuDevice,
+    hardware::hardware_status_monitor::GpuDeviceProperties,
+    tasks_tracker::TasksTracker,
+    wallet_adapter::WalletState,
+    BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
@@ -146,6 +157,51 @@ impl EventsManager {
         EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
 
+    pub async fn handle_app_config_loaded(&self, app: &AppHandle) {
+        info!(target: LOG_TARGET, "Loading app config");
+        let app_state: tauri::State<'_, UniverseAppState> = app.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "Proposing system language");
+        let _unused = app_state
+            .config
+            .write()
+            .await
+            .propose_system_language()
+            .await;
+        info!(target: LOG_TARGET, "Reading app config");
+        let app_config = app_state.config.read().await.clone();
+        info!(target: LOG_TARGET, "Emitting app config loaded event");
+        EventsEmitter::emit_app_config_loaded(app, app_config).await;
+    }
+
+    pub async fn handle_close_splash_screen(&self, app: &AppHandle) {
+        EventsEmitter::emit_close_splashscreen(app).await;
+    }
+
+    pub async fn handle_detected_devices(&self, app: &AppHandle, devices: Vec<GpuDevice>) {
+        EventsEmitter::emit_detected_devices(app, devices).await;
+    }
+
+    pub async fn handle_detected_available_gpu_engines(
+        &self,
+        app: &AppHandle,
+        engines: Vec<String>,
+        selected_engine: String,
+    ) {
+        EventsEmitter::emit_detected_available_gpu_engines(app, engines, selected_engine).await;
+    }
+
+    pub async fn handle_resuming_all_processes(
+        &self,
+        app: &AppHandle,
+        payload: ResumingAllProcessesPayload,
+    ) {
+        EventsEmitter::emit_resuming_all_processes(app, payload).await;
+    }
+
+    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusPayload) {
+        EventsEmitter::emit_setup_status(app, payload).await;
+    }
+
     pub async fn handle_network_status_update(
         &self,
         app: &AppHandle,
@@ -155,6 +211,49 @@ impl EventsManager {
         is_too_low: bool,
     ) {
         EventsEmitter::emit_network_status(app, download_speed, upload_speed, latency, is_too_low)
+            .await;
+    }
+
+    #[cfg(target_os = "macos")]
+    pub async fn handle_critical_problem(
+        &self,
+        app: &AppHandle,
+        title: Option<String>,
+        description: Option<String>,
+    ) {
+        EventsEmitter::emit_critical_problem(app, CriticalProblemPayload { title, description })
+            .await;
+    }
+
+    #[cfg(target_os = "windows")]
+    pub async fn handle_missing_application_files(
+        &self,
+        app: &AppHandle,
+        external_dependecies: RequiredExternalDependency,
+    ) {
+        EventsEmitter::emit_missing_applications(app, external_dependecies).await;
+    }
+
+    pub async fn handle_show_release_notes(
+        &self,
+        app: &AppHandle,
+        payload: ShowReleaseNotesPayload,
+    ) {
+        EventsEmitter::emit_show_release_notes(app, payload).await;
+    }
+
+    pub async fn handle_stuck_on_orphan_chain(&self, app: &AppHandle, is_stuck: bool) {
+        EventsEmitter::emit_stuck_on_orphan_chain(app, is_stuck).await;
+    }
+    pub async fn handle_progress_tracker_update(
+        &self,
+        app: &AppHandle,
+        event_type: EventType,
+        title: String,
+        progress: f64,
+        description: Option<String>,
+    ) {
+        EventsEmitter::emit_progress_tracker_update(app, event_type, title, progress, description)
             .await;
     }
 }

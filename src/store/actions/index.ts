@@ -9,7 +9,7 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    fetchAppConfig,
+    handleAppConfigLoaded as fetchAppConfig,
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
@@ -26,7 +26,6 @@ export {
     setShouldAlwaysUseSystemLanguage,
     setShouldAutoLaunch,
     setShowExperimentalSettings,
-    setTheme,
     setUseTor,
     setVisualMode,
 } from './appConfigStoreActions.ts';
@@ -68,3 +67,20 @@ export {
     setIsWebglNotSupported,
     setAdminShow,
 } from './uiStoreActions.ts';
+
+export {
+    fetchTransactionsHistory,
+    importSeedWords,
+    initialFetchTxs,
+    refreshTransactions,
+    setWalletAddress,
+    setWalletBalance,
+} from './walletStoreActions';
+export {
+    setGpuDevices,
+    setGpuMiningStatus,
+    setCpuMiningStatus,
+    handleConnectedPeersUpdate,
+    handleBaseNodeStatusUpdate,
+    handleMiningModeChange,
+} from './miningMetricsStoreActions.ts';

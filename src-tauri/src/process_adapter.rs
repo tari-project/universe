@@ -163,7 +163,7 @@ impl ProcessInstanceTrait for ProcessInstance {
         self.handle = Some(TasksTracker::current().spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
-            info!(target: LOG_TARGET, "Launching {} node", spec.name);
+            info!(target: LOG_TARGET, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
                 &spec.file_path,
                 spec.data_dir.as_path(),
@@ -198,7 +198,7 @@ impl ProcessInstanceTrait for ProcessInstance {
                     }
                 },
             };
-            info!(target: LOG_TARGET, "Stopping {} node with exit code: {}", spec.name, exit_code);
+            info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
                 warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
@@ -219,6 +219,15 @@ impl ProcessInstanceTrait for ProcessInstance {
 
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
+    }
+
+    pub async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+        let handle = self.handle.take();
+
+        match handle {
+            Some(handle) => handle.await?,
+            None => Err(anyhow!("No process handle available")),
+        }
     }
 }
 
