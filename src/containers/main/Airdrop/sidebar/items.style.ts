@@ -43,12 +43,9 @@ export const CopyButton = styled.button`
     align-items: center;
     justify-content: center;
     background-color: ${({ theme }) => theme.palette.contrast};
-    color: ${({ theme }) => theme.palette.contrast};
+    color: ${({ theme }) => theme.palette.base};
     svg {
         height: 24px;
-    }
-    path {
-        fill: ${({ theme }) => theme.palette.base};
     }
 
     &:hover {

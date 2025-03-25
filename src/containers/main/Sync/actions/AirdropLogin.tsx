@@ -3,9 +3,11 @@ import { SyncActionCard } from '@app/containers/main/Sync/components/SyncActionC
 import { Button } from '@app/components/elements/buttons/Button';
 import { XIconSVG } from '@app/assets/icons/x-icon.tsx';
 import { ButtonIconWrapper } from '@app/containers/main/Sync/actions/actions.style.ts';
+import { useAirdropAuth } from '@app/hooks/airdrop/utils/useAirdropAuth.ts';
 
 export default function AirdropLogin() {
     const airdropToken = useAirdropStore((s) => s.airdropTokens?.token);
+    const { handleAuth } = useAirdropAuth();
 
     const action = (
         <Button
@@ -16,6 +18,7 @@ export default function AirdropLogin() {
             }
             backgroundColor="grey"
             iconPosition="start"
+            onClick={() => handleAuth()}
         >
             {`Connect X account`}
         </Button>

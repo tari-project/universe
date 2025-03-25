@@ -8,7 +8,6 @@ export const Wrapper = styled(m.div)`
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    will-change: contents;
     & * {
         pointer-events: all;
     }
@@ -21,11 +20,12 @@ export const Content = styled(m.div)`
     display: grid;
     grid-auto-columns: 100%;
     grid-template-rows: 5fr 2fr 1fr;
-    place-items: center;
+    place-items: stretch;
     align-content: center;
     overflow: hidden;
-    gap: min(15px, 8vh);
-    padding: calc(0.4rem + 1vmin);
+    gap: 20px;
+    padding: calc(0.3rem + 1vmin);
+    border: 1px solid deeppink;
 `;
 
 export const HeaderContent = styled(m.div)`
@@ -33,10 +33,11 @@ export const HeaderContent = styled(m.div)`
     flex-flow: column;
     align-items: center;
     text-align: center;
+    border: 1px solid hotpink;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h1' })`
-    font-size: min(max(30px, 3.5vw), 50px);
+    font-size: min(max(28px, 3.25vw), 48px);
 `;
 
 export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
@@ -45,13 +46,14 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const HeaderImg = styled.img`
-    width: min(360px, 36vh);
+    width: min(360px, 34vh);
     max-width: 100%;
 `;
 
 export const ActionContent = styled(m.div)`
     display: flex;
     align-items: stretch;
+    border: 1px solid hotpink;
     justify-content: stretch;
     gap: 15px;
     width: 100%;
@@ -60,5 +62,6 @@ export const ActionContent = styled(m.div)`
 export const FooterContent = styled(m.div)`
     display: flex;
     width: 100%;
-    align-items: flex-end;
+    align-items: center;
+    border: 1px solid hotpink;
 `;
