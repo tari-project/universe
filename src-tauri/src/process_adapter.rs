@@ -169,6 +169,7 @@ impl ProcessInstance {
             return Ok(());
         };
 
+        let pid = self.pid.clone();
         self.handle = Some(tokio::spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
@@ -239,5 +240,4 @@ impl Drop for ProcessInstance {
             });
         }
     }
-}
 }

@@ -221,7 +221,6 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
 }
 
 impl MergeMiningProxyStatusMonitor {
-    #[allow(dead_code)]
     pub async fn get_version(&self) -> Result<String, Error> {
         let rpc_url = format!("http://127.0.0.1:{}/json_rpc", self.json_rpc_port);
         let request_body = json!({
