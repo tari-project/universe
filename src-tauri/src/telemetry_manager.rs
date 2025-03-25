@@ -479,9 +479,7 @@ async fn get_telemetry_data(
     if let Some(core_count) = system.physical_core_count() {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
     }
-    if let Some(arch) = System::cpu_arch() {
-        extra_data.insert("cpu_arch".to_string(), arch);
-    }
+    extra_data.insert("cpu_arch".to_string(), System::cpu_arch());
     extra_data.insert(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
@@ -592,6 +590,14 @@ fn add_process_stats(
             .total_health_check_duration
             .as_secs()
             .to_string(),
+    );
+    extra_data.insert(
+        format!("{}_memory_usage", process),
+        process_stats.memory_usage.to_string(),
+    );
+    extra_data.insert(
+        format!("{}_virtual_memory_usage", process),
+        process_stats.virtual_memory_usage.to_string(),
     );
 }
 

@@ -261,10 +261,9 @@ impl ProcessAdapter for TorAdapter {
         }
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
                     args,
@@ -272,7 +271,7 @@ impl ProcessAdapter for TorAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-            },
+            ),
             TorStatusMonitor { control_port },
         ))
     }

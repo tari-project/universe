@@ -137,10 +137,9 @@ impl ProcessAdapter for P2poolAdapter {
         add_firewall_rule("sha_p2pool.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: Some(envs),
                     args,
@@ -148,7 +147,7 @@ impl ProcessAdapter for P2poolAdapter {
                     pid_file_name,
                     name: "P2pool".to_string(),
                 },
-            },
+            ),
             P2poolStatusMonitor::new(
                 format!("http://127.0.0.1:{}", config.stats_server_port),
                 self.stats_broadcast.clone(),

@@ -34,7 +34,7 @@ use crate::{
 use super::CpuParametersReader;
 
 #[derive(Clone)]
-pub struct AppleCpuParametersReader {}
+pub(crate) struct AppleCpuParametersReader {}
 
 impl AppleCpuParametersReader {
     pub fn new() -> Self {
@@ -55,8 +55,9 @@ impl CpuParametersReader for AppleCpuParametersReader {
         &self,
         old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
-        let mut system =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
+        let mut system = System::new_with_specifics(
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+        );
         let mut components = Components::new_with_refreshed_list();
 
         let available_cpu_components: Vec<&Component> = components
@@ -67,7 +68,7 @@ impl CpuParametersReader for AppleCpuParametersReader {
 
         let avarage_temperature = available_cpu_components
             .iter()
-            .map(|c| c.temperature())
+            .filter_map(|c| c.temperature())
             .sum::<f32>()
             / available_cpu_components.len() as f32;
 

@@ -148,10 +148,9 @@ impl ProcessAdapter for XmrigAdapter {
         }
 
         Ok((
-            ProcessInstance {
-                shutdown: xmrig_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                xmrig_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
                     args,
@@ -159,7 +158,7 @@ impl ProcessAdapter for XmrigAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-            },
+            ),
             XmrigStatusMonitor {
                 summary_broadcast: self.summary_broadcast.clone(),
                 client: XmrigHttpApiClient::new(

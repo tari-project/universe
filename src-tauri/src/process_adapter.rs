@@ -28,6 +28,8 @@ use sentry::protocol::Event;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicI64, AtomicU32};
+use std::sync::Arc;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -128,14 +130,32 @@ pub(crate) struct ProcessInstance {
     pub shutdown: Shutdown,
     pub handle: Option<JoinHandle<Result<i32, anyhow::Error>>>,
     pub startup_spec: ProcessStartupSpec,
+    pub pid: Arc<AtomicU32>,
 }
 
 impl ProcessInstance {
+    pub fn new(shutdown: Shutdown, startup_spec: ProcessStartupSpec) -> Self {
+        Self {
+            shutdown,
+            handle: None,
+            startup_spec,
+            pid: Arc::new(AtomicU32::new(0)),
+        }
+    }
     pub fn ping(&self) -> bool {
         self.handle
             .as_ref()
             .map(|m| !m.is_finished())
             .unwrap_or_else(|| false)
+    }
+
+    pub fn pid(&self) -> Option<u32> {
+        let id = self.pid.load(std::sync::atomic::Ordering::SeqCst);
+        if id == 0 {
+            None
+        } else {
+            Some(id)
+        }
     }
 
     pub async fn start(&mut self) -> Result<(), anyhow::Error> {
@@ -154,6 +174,7 @@ impl ProcessInstance {
             return Ok(());
         };
 
+        let pid = self.pid.clone();
         self.handle = Some(tokio::spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
@@ -170,6 +191,7 @@ impl ProcessInstance {
                     spec.data_dir.join(spec.pid_file_name.clone()),
                     id.to_string(),
                 )?;
+                pid.store(id, std::sync::atomic::Ordering::SeqCst);
             }
             let exit_code;
 

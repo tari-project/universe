@@ -164,10 +164,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         }
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_verison_path,
                     envs: None,
                     args,
@@ -175,7 +174,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-            },
+            ),
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
                 start_time: std::time::Instant::now(),

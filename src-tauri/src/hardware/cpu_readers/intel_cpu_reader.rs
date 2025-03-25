@@ -34,7 +34,7 @@ use crate::{
 use super::CpuParametersReader;
 
 #[derive(Clone)]
-pub struct IntelCpuParametersReader {}
+pub(crate) struct IntelCpuParametersReader {}
 
 impl IntelCpuParametersReader {
     pub fn new() -> Self {
@@ -56,8 +56,9 @@ impl CpuParametersReader for IntelCpuParametersReader {
         &self,
         old_device_parameters: Option<DeviceParameters>,
     ) -> Result<DeviceParameters, Error> {
-        let mut system =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
+        let mut system = System::new_with_specifics(
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+        );
         let components = Components::new_with_refreshed_list();
 
         let available_cpu_components: Vec<&Component> = match PlatformUtils::detect_current_os() {
@@ -80,7 +81,7 @@ impl CpuParametersReader for IntelCpuParametersReader {
 
         let avarage_temperature = available_cpu_components
             .iter()
-            .map(|c| c.temperature())
+            .filter_map(|c| c.temperature())
             .sum::<f32>()
             / available_cpu_components.len() as f32;
 
