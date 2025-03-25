@@ -21,9 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 pub mod progress_plans;
-pub mod progress_tracker;
-pub mod trait_progress_tracker;
+pub mod progress_stepper;
 
 pub use progress_plans::ProgressSetupCorePlan;
-pub use progress_tracker::ProgressTracker;
-pub use trait_progress_tracker::ProgressTrackerImpl;
+pub use progress_stepper::ProgressStepper;

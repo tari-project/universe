@@ -22,7 +22,20 @@
 
 use crate::events::EventType;
 
-use super::trait_progress_tracker::{ProgressEvent, ProgressStep};
+pub trait ProgressEvent {
+    fn get_event_type(&self) -> EventType;
+    fn get_title(&self) -> String;
+    fn get_description(&self) -> Option<String>;
+}
+
+pub trait ProgressStep {
+    type ChannelEvent: ProgressEvent;
+    fn resolve_to_event(&self) -> Self::ChannelEvent;
+    fn get_progress_weight(&self) -> u8;
+    fn get_event_type(&self) -> EventType;
+    fn get_title(&self) -> String;
+    fn get_description(&self) -> Option<String>;
+}
 
 pub struct ProgressPlanEventPayload {
     event_type: EventType,
@@ -43,7 +56,7 @@ impl ProgressEvent for ProgressPlanEventPayload {
         self.description.clone()
     }
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum ProgressSetupCorePlan {
     PlatformPrequisites,
     InitializeApplicationModules,
@@ -114,7 +127,7 @@ impl ProgressStep for ProgressSetupCorePlan {
 }
 
 #[allow(dead_code)]
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum ProgressPlans {
     SetupCore(ProgressSetupCorePlan),
 }

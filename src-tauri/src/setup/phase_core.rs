@@ -4,17 +4,18 @@ use anyhow::anyhow;
 use log::{error, info};
 use serde_json::json;
 use tauri::Manager;
+use tauri_plugin_sentry::sentry;
+use tokio::sync::watch;
 
 use crate::{
     auto_launcher::AutoLauncher,
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events::SetupStatusPayload,
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
-        progress_plans::ProgressPlans,
-        progress_tracker::ProgressPlanExecutor,
-        trait_progress_tracker::{ProgressPlanBuilderImpl, ProgressPlanExecutorImpl},
-        ProgressSetupCorePlan, ProgressTracker, ProgressTrackerImpl,
+        progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
+        ProgressSetupCorePlan, ProgressStepper,
     },
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
@@ -38,7 +39,7 @@ pub struct CoreSetupPhaseAppConfiguration {
 }
 
 pub struct CoreSetupPhase {
-    progress_tracker: ProgressPlanExecutor,
+    progress_stepper: ProgressStepper,
     app_configuration: CoreSetupPhaseAppConfiguration,
     session_configuration: CoreSetupPhaseSessionConfiguration,
 }
@@ -48,14 +49,14 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     fn new() -> Self {
         Self {
-            progress_tracker: Self::create_progress_tracker(),
+            progress_stepper: Self::create_progress_stepper(),
             app_configuration: CoreSetupPhaseAppConfiguration::default(),
             session_configuration: CoreSetupPhaseSessionConfiguration::default(),
         }
     }
 
-    fn create_progress_tracker() -> ProgressPlanExecutor {
-        let progress_tracker = ProgressTracker::new()
+    fn create_progress_stepper() -> ProgressStepper {
+        let progress_tracker = ProgressStepperBuilder::new()
             .add_step(ProgressPlans::SetupCore(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
@@ -115,7 +116,20 @@ impl SetupPhaseImpl for CoreSetupPhase {
         Ok(())
     }
 
-    async fn setup(&self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    async fn setup(&mut self, app_handle: tauri::AppHandle) {
+        match self.setup_inner(app_handle.clone()).await {
+            Ok(_) => {
+                info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
+            }
+            Err(error) => {
+                error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
+                let error_message = format!("[ Core Phase ] Setup failed with error: {:?}", error);
+                sentry::capture_message(&error_message, sentry::Level::Error);
+            }
+        }
+    }
+
+    async fn setup_inner(&mut self, app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let state = app_handle.state::<UniverseAppState>();
         state
             .events_manager
@@ -134,9 +148,16 @@ impl SetupPhaseImpl for CoreSetupPhase {
             )
             .await;
 
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
+
         PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::PlatformPrequisites),
+            )
             .await;
 
         state
@@ -196,8 +217,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .unwrap_or(Duration::from_secs(0))
             .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::InitializeApplicationModules),
+            )
             .await;
 
         telemetry_service
@@ -214,8 +238,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .run_speed_test_with_timeout(&app_handle)
             .await;
 
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::NetworkSpeedTest),
+            )
             .await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
@@ -237,11 +264,15 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     rx.clone(),
                 )
                 .await?;
-            self.progress_tracker
-                .resolve_step(Some(app_handle.clone()))
+            self.progress_stepper
+                .resolve_step(
+                    Some(app_handle.clone()),
+                    ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor),
+                )
                 .await;
         } else {
-            self.progress_tracker.skip_step();
+            self.progress_stepper
+                .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
         }
 
         let _unused = telemetry_service
@@ -261,8 +292,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesNode),
+            )
             .await;
 
         let _unused = telemetry_service
@@ -282,8 +316,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesMergeMiningProxy),
+            )
             .await;
 
         let _unused = telemetry_service
@@ -304,8 +341,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesWallet),
+            )
             .await;
 
         let _unused = telemetry_service
@@ -325,8 +365,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesGpuMiner),
+            )
             .await;
 
         let _unused = telemetry_service
@@ -338,8 +381,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 }),
             )
             .await;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesCpuMiner),
+            )
             .await;
         binary_resolver
             .initialize_binary_timeout(
@@ -367,8 +413,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_tracker
-            .resolve_step(Some(app_handle.clone()))
+        self.progress_stepper
+            .resolve_step(
+                Some(app_handle.clone()),
+                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesP2pool),
+            )
             .await;
 
         if should_check_for_update {
