@@ -247,7 +247,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
             .await?;
     }
 
-    let base_node_grpc_port = state.node_manager.get_grpc_address().await?;
+    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
     state
         .events_manager
         .handle_resuming_all_processes(

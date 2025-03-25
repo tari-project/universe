@@ -30,6 +30,7 @@ use crate::{
     BaseNodeStatus,
 };
 use std::path::PathBuf;
+use anyhow::Error;
 
 pub(crate) struct RemoteNodeAdapter {
     grpc_address: Option<(String, u16)>,
@@ -147,4 +148,6 @@ impl ProcessInstanceTrait for NullProcessInstance {
     fn is_shutdown_triggered(&self) -> bool {
         self.shutdown.is_triggered()
     }
+
+    async fn wait(&mut self) -> Result<i32, Error> { Ok(0) }
 }

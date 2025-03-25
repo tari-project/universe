@@ -33,10 +33,10 @@ use crate::{
     },
     node_manager::{NodeAdapter, NodeClient, NodeIdentity},
     process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor},
-    progress_tracker::ProgressTracker,
     remote_node_adapter::RemoteNodeAdapter,
     BaseNodeStatus,
 };
+use crate::progress_tracker_old::ProgressTracker;
 
 pub(crate) struct RemoteUntilSyncedNodeAdapter {
     pub(crate) node: MinotariNodeAdapter,

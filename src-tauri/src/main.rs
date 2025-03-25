@@ -998,7 +998,7 @@ struct UniverseAppState {
     mm_proxy_manager: MmProxyManager,
     node_manager: NodeManager<RemoteUntilSyncedNodeAdapter>,
     wallet_manager: WalletManager<RemoteUntilSyncedNodeAdapter>,
-    spend_wallet_manager: Arc<RwLock<SpendWalletManager>>,
+    spend_wallet_manager: Arc<RwLock<SpendWalletManager<RemoteUntilSyncedNodeAdapter>>>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,

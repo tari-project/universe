@@ -117,6 +117,7 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     async fn start(&mut self) -> Result<(), anyhow::Error>;
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
+    async fn wait(&mut self) -> Result<i32, anyhow::Error>;
 }
 
 #[derive(Clone)]
@@ -221,7 +222,7 @@ impl ProcessInstanceTrait for ProcessInstance {
         self.shutdown.is_triggered()
     }
 
-    pub async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+     async fn wait(&mut self) -> Result<i32, anyhow::Error> {
         let handle = self.handle.take();
 
         match handle {
