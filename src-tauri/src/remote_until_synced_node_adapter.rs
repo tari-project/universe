@@ -26,6 +26,7 @@ use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::Peer;
 use tari_shutdown::ShutdownSignal;
 
+use crate::progress_tracker_old::ProgressTracker;
 use crate::{
     node_adapter::{
         MinotariNodeAdapter, MinotariNodeClient, MinotariNodeStatusMonitor,
@@ -36,7 +37,6 @@ use crate::{
     remote_node_adapter::RemoteNodeAdapter,
     BaseNodeStatus,
 };
-use crate::progress_tracker_old::ProgressTracker;
 
 pub(crate) struct RemoteUntilSyncedNodeAdapter {
     pub(crate) node: MinotariNodeAdapter,

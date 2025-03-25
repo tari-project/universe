@@ -23,11 +23,11 @@
 use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
 use crate::node_manager::{NodeAdapter, NodeManager};
+use crate::remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use anyhow::Error;
 use std::path::PathBuf;
 use tari_shutdown::ShutdownSignal;
-use crate::remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 
 pub struct SpendWalletManager<T: NodeAdapter> {
     adapter: SpendWalletAdapter,

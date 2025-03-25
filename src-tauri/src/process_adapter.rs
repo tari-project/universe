@@ -222,7 +222,7 @@ impl ProcessInstanceTrait for ProcessInstance {
         self.shutdown.is_triggered()
     }
 
-     async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
         let handle = self.handle.take();
 
         match handle {

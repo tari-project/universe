@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::port_allocator::PortAllocator;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec, StatusMonitor};
+use crate::process_adapter::{
+    ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec, StatusMonitor,
+};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
