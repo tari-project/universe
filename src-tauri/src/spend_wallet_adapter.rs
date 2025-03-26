@@ -106,12 +106,11 @@ impl SpendWalletAdapter {
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let commands = vec![
             ExecutionCommand::new("recovery")
-                .with_extra_args(vec!["--seed-words".to_string(), seed_words]),
-            // Use when https://github.com/tari-project/tari/pull/6855 merged
-            // .with_extra_args(vec!["--recovery".to_string()])
-            // .with_extra_envs(HashMap::from([
-            //     ("MINOTARI_WALLET_SEED_WORDS".to_string(), seed_words.clone())
-            // ])),
+                .with_extra_args(vec!["--recovery".to_string()])
+                .with_extra_envs(HashMap::from([(
+                    "MINOTARI_WALLET_SEED_WORDS".to_string(),
+                    seed_words.clone(),
+                )])),
             ExecutionCommand::new("sync").with_extra_args(vec!["sync".to_string()]),
             ExecutionCommand::new("send-one-sided").with_extra_args({
                 let mut args = vec!["send-one-sided-to-stealth-address".to_string()];
