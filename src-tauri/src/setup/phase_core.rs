@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use std::{
     sync::Arc,
     time::{Duration, SystemTime},
@@ -133,13 +155,13 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ Core Phase ] Setup timed out");
                     let error_message = "[ Core Phase ] Setup timed out";
-                    sentry::capture_message(&error_message, sentry::Level::Error);
+                    sentry::capture_message(error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner(app_handle.clone()) => {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-                            self.finalize_setup(app_handle.clone(),payload).await;
+                            let _unused = self.finalize_setup(app_handle.clone(),payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
@@ -152,6 +174,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         });
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(
         &self,
         app_handle: tauri::AppHandle,
@@ -179,7 +202,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
 
         PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -245,7 +269,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .unwrap_or(Duration::from_secs(0))
             .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -268,7 +293,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .run_speed_test_with_timeout(&app_handle)
             .await;
 
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -296,7 +322,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                     rx.clone(),
                 )
                 .await?;
-            self.progress_stepper
+            let _unused = self
+                .progress_stepper
                 .lock()
                 .await
                 .resolve_step(
@@ -305,7 +332,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 )
                 .await;
         } else {
-            self.progress_stepper
+            let _unused = self
+                .progress_stepper
                 .lock()
                 .await
                 .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
@@ -328,7 +356,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -354,7 +383,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -381,7 +411,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -407,7 +438,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -425,7 +457,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 }),
             )
             .await;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -459,7 +492,8 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        self.progress_stepper
+        let _unused = self
+            .progress_stepper
             .lock()
             .await
             .resolve_step(
@@ -486,7 +520,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
     async fn finalize_setup(
         &self,
         app_handle: tauri::AppHandle,
-        payload: Option<CoreSetupPhasePayload>,
+        _payload: Option<CoreSetupPhasePayload>,
     ) -> Result<(), anyhow::Error> {
         SetupManager::get_instance()
             .lock()

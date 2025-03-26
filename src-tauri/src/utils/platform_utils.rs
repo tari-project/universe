@@ -22,10 +22,6 @@
 
 use std::fmt::Display;
 
-use anyhow::anyhow;
-
-use crate::UniverseAppState;
-
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
 
@@ -131,7 +127,7 @@ impl PlatformUtils {
 
     #[cfg(target_os = "linux")]
     async fn initialize_linux_preqesities(
-        app_handle: tauri::AppHandle,
+        _app_handle: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
         Ok(())
     }

@@ -60,7 +60,7 @@ pub enum EventType {
     UnlockApp,
     UnlockWallet,
     UnlockMining,
-    ProgressTrackerResume,
+    // ProgressTrackerResume,
     ProgressTrackerStartup,
 }
 #[derive(Clone, Debug, Serialize)]

@@ -280,6 +280,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(dead_code)]
 async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -982,6 +983,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
+    #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
