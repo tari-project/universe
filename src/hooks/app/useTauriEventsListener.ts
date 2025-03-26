@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
@@ -24,15 +24,77 @@ import {
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
 import { setWalletAddress, setWalletBalance } from '@app/store';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
+import { setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
+
+const LOG_EVENT_TYPES = [
+    'ResumingAllProcesses',
+    'StuckOnOrphanChain',
+    'MissingApplications',
+    'CriticalProblem',
+    'DetectedDevices',
+    'DetectedAvailableGpuEngines',
+    'AppConfigLoaded',
+];
 
 const useTauriEventsListener = () => {
+    const eventRef = useRef<BackendStateUpdateEvent | null>(null);
+    function handleLogUpdate(newEvent: BackendStateUpdateEvent) {
+        if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
+            const isEqual = deepEqual(eventRef.current, newEvent);
+            if (!isEqual) {
+                console.info('Received event', newEvent);
+                eventRef.current = newEvent;
+            }
+        }
+    }
     useEffect(() => {
         console.info('Listening for backend state updates');
         const unlisten = listen(
             BACKEND_STATE_UPDATE,
             async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
-                console.info('Received event', event);
+                handleLogUpdate(event);
                 switch (event.event_type) {
+                    case 'CorePhaseFinished':
+                        console.info('Core phase finished', event.payload);
+                        setSetupProgress(0.15);
+                        break;
+
+                    case 'HardwarePhaseFinished':
+                        console.info('Hardware phase finished', event.payload);
+                        setSetupProgress(0.35);
+                        break;
+                    case 'RemoteNodePhaseFinished':
+                        console.info('Remote node phase finished', event.payload);
+                        setSetupProgress(0.4);
+                        break;
+                    case 'LocalNodePhaseFinished':
+                        console.info('Local node phase finished', event.payload);
+                        setSetupProgress(0.45);
+                        break;
+                    case 'UnknownPhaseFinished':
+                        console.info('Unknown phase finished', event.payload);
+                        setSetupProgress(0.5);
+                        break;
+                    case 'WalletPhaseFinished':
+                        console.info('Wallet phase finished', event.payload);
+                        setSetupProgress(0.65);
+                        break;
+                    case 'UnlockApp':
+                        console.info('Unlock app', event.payload);
+                        setSetupProgress(0.9);
+                        break;
+                    case 'UnlockWallet':
+                        console.info('Unlock wallet', event.payload);
+                        setSetupProgress(0.95);
+                        break;
+                    case 'UnlockMining':
+                        console.info('Unlock mining', event.payload);
+                        setSetupProgress(0.98);
+                        break;
+                    case 'SetupStatus':
+                        await handleSetupStatus(event.payload);
+                        break;
                     case 'WalletAddressUpdate':
                         setWalletAddress(event.payload);
                         break;
@@ -66,9 +128,7 @@ const useTauriEventsListener = () => {
                     case 'DetectedAvailableGpuEngines':
                         setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                         break;
-                    case 'SetupStatus':
-                        await handleSetupStatus(event.payload);
-                        break;
+
                     case 'ResumingAllProcesses':
                         setAppResumePayload(event.payload);
                         break;
@@ -87,42 +147,6 @@ const useTauriEventsListener = () => {
                         break;
                     case `NetworkStatus`:
                         setNetworkStatus(event.payload);
-                        break;
-                    case 'CorePhaseFinished':
-                        console.info('Core phase finished', event.payload);
-                        // todo handle core phase finished
-                        break;
-                    case 'WalletPhaseFinished':
-                        console.info('Wallet phase finished', event.payload);
-                        // todo handle wallet phase finished
-                        break;
-                    case 'HardwarePhaseFinished':
-                        console.info('Hardware phase finished', event.payload);
-                        // todo handle hardware phase finished
-                        break;
-                    case 'RemoteNodePhaseFinished':
-                        console.info('Remote node phase finished', event.payload);
-                        // todo handle remote node phase finished
-                        break;
-                    case 'LocalNodePhaseFinished':
-                        console.info('Local node phase finished', event.payload);
-                        // todo handle local node phase finished
-                        break;
-                    case 'UnknownPhaseFinished':
-                        console.info('Unknown phase finished', event.payload);
-                        // todo handle unknown phase finished
-                        break;
-                    case 'UnlockApp':
-                        console.info('Unlock app', event.payload);
-                        // todo handle unlock app
-                        break;
-                    case 'UnlockWallet':
-                        console.info('Unlock wallet', event.payload);
-                        // todo handle unlock wallet
-                        break;
-                    case 'UnlockMining':
-                        console.info('Unlock mining', event.payload);
-                        // todo handle unlock mining
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));
