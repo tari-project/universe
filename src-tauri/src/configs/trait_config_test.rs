@@ -20,13 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    sync::{LazyLock, Mutex},
-    time::SystemTime,
-};
+use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -139,9 +137,9 @@ mod tests {
         clear_config_file();
     }
 
-    #[test]
-    fn test_saving_to_file() {
-        let config = TestConfig::current().lock().unwrap();
+    #[tokio::test]
+    async fn test_saving_to_file() {
+        let config = TestConfig::current().lock().await;
         before_each();
 
         config.save_config().unwrap();
@@ -149,9 +147,9 @@ mod tests {
         assert!(TestConfig::get_config_path().exists());
     }
 
-    #[test]
-    fn test_loading_from_file() {
-        let config = TestConfig::current().lock().unwrap();
+    #[tokio::test]
+    async fn test_loading_from_file() {
+        let config = TestConfig::current().lock().await;
         before_each();
 
         config.save_config().unwrap();
@@ -160,9 +158,9 @@ mod tests {
         assert_eq!(config.get_content(), &loaded_config);
     }
 
-    #[test]
-    fn test_update_field() {
-        let mut config = TestConfig::current().lock().unwrap();
+    #[tokio::test]
+    async fn test_update_field() {
+        let mut config = TestConfig::current().lock().await;
         before_each();
 
         let initial_value = *config.get_content().some_test_bool();
@@ -176,9 +174,9 @@ mod tests {
             *config.load_config().unwrap().some_test_bool()
         );
     }
-    #[test]
-    fn test_migrate_old_config() {
-        let mut config = TestConfig::current().lock().unwrap();
+    #[tokio::test]
+    async fn test_migrate_old_config() {
+        let mut config = TestConfig::current().lock().await;
         before_each();
 
         let old_config = TestOldConfig {
@@ -199,9 +197,9 @@ mod tests {
         assert_eq!(0, *config.get_content().some_test_int());
     }
 
-    #[test]
-    fn test_if_loading_with_missing_files_is_handled() {
-        let config = TestConfig::current().lock().unwrap();
+    #[tokio::test]
+    async fn test_if_loading_with_missing_files_is_handled() {
+        let config = TestConfig::current().lock().await;
         before_each();
 
         let not_full_config = NotFullConfigContent {

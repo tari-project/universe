@@ -120,7 +120,44 @@ type BackendStateUpdateEvent =
     | {
           event_type: 'NetworkStatus';
           payload: NetworkStatus;
+      }
+    | {
+          event_type: 'CorePhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'WalletPhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'HardwarePhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'RemoteNodePhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'LocalNodePhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'UnknownPhaseFinished';
+          payload: boolean;
+      }
+    | {
+          event_type: 'UnlockApp';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UnlockWallet';
+          payload: undefined;
+      }
+    | {
+          event_type: 'UnlockMining';
+          payload: undefined;
       };
+
 const useTauriEventsListener = () => {
     useEffect(() => {
         console.info('Listening for backend state updates');
@@ -183,6 +220,42 @@ const useTauriEventsListener = () => {
                         break;
                     case `NetworkStatus`:
                         setNetworkStatus(event.payload);
+                        break;
+                    case 'CorePhaseFinished':
+                        console.log('Core phase finished', event.payload);
+                        // todo handle core phase finished
+                        break;
+                    case 'WalletPhaseFinished':
+                        console.log('Wallet phase finished', event.payload);
+                        // todo handle wallet phase finished
+                        break;
+                    case 'HardwarePhaseFinished':
+                        console.log('Hardware phase finished', event.payload);
+                        // todo handle hardware phase finished
+                        break;
+                    case 'RemoteNodePhaseFinished':
+                        console.log('Remote node phase finished', event.payload);
+                        // todo handle remote node phase finished
+                        break;
+                    case 'LocalNodePhaseFinished':
+                        console.log('Local node phase finished', event.payload);
+                        // todo handle local node phase finished
+                        break;
+                    case 'UnknownPhaseFinished':
+                        console.log('Unknown phase finished', event.payload);
+                        // todo handle unknown phase finished
+                        break;
+                    case 'UnlockApp':
+                        console.log('Unlock app', event.payload);
+                        // todo handle unlock app
+                        break;
+                    case 'UnlockWallet':
+                        console.log('Unlock wallet', event.payload);
+                        // todo handle unlock wallet
+                        break;
+                    case 'UnlockMining':
+                        console.log('Unlock mining', event.payload);
+                        // todo handle unlock mining
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

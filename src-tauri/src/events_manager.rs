@@ -256,4 +256,37 @@ impl EventsManager {
         EventsEmitter::emit_progress_tracker_update(app, event_type, title, progress, description)
             .await;
     }
+
+    pub async fn handle_core_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_core_phase_finished(app, status).await;
+    }
+
+    pub async fn handle_wallet_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_wallet_phase_finished(app, status).await;
+    }
+
+    pub async fn handle_hardware_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_hardware_phase_finished(app, status).await;
+    }
+
+    pub async fn handle_remote_node_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_remote_node_phase_finished(app, status).await;
+    }
+    pub async fn handle_local_node_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_local_node_phase_finished(app, status).await;
+    }
+    pub async fn handle_unknown_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_unknown_phase_finished(app, status).await;
+    }
+    pub async fn handle_unlock_app(&self, app: &AppHandle) {
+        EventsEmitter::emit_unlock_app(app).await;
+    }
+
+    pub async fn handle_unlock_wallet(&self, app: &AppHandle) {
+        EventsEmitter::emit_unlock_wallet(app).await;
+    }
+
+    pub async fn handle_unlock_mining(&self, app: &AppHandle) {
+        EventsEmitter::emit_unlock_mining(app).await;
+    }
 }

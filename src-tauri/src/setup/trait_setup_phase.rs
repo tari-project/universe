@@ -20,44 +20,37 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::{path::PathBuf, sync::Arc};
+
 use anyhow::Error;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 
-use crate::events::EventType;
-pub trait ProgressEvent {
-    fn get_event_type(&self) -> EventType;
-    fn get_title(&self) -> String;
-    fn get_description(&self) -> Option<String>;
-}
+use crate::progress_trackers::progress_stepper::ProgressStepper;
 
-pub trait ProgressStep {
-    type ChannelEvent: ProgressEvent;
-    fn resolve_to_event(&self) -> Self::ChannelEvent;
-    fn get_progress_weight(&self) -> u8;
-    fn get_event_type(&self) -> EventType;
-    fn get_title(&self) -> String;
-    fn get_description(&self) -> Option<String>;
-}
-#[allow(dead_code)]
-pub trait ProgressPlanExecutorImpl {
-    // App handle is optional only for testing purposes
-    async fn resolve_step(&mut self, app_handle: Option<AppHandle>)
-        -> Result<(String, f64), Error>;
-    fn skip_step(&mut self) -> Result<(String, f64), Error>;
-}
-#[allow(dead_code)]
-pub trait ProgressPlanBuilderImpl<Executor: ProgressPlanExecutorImpl> {
-    type PlanElement: ProgressStep;
+pub trait SetupPhaseImpl<T> {
+    type Configuration: Clone + Default;
 
     fn new() -> Self;
-    fn add_step(&mut self, element: Self::PlanElement) -> &mut Self;
-    fn calculate_percentage_steps(&mut self) -> &mut Self;
-    fn build(&self) -> Executor;
-}
-#[allow(dead_code)]
-pub trait ProgressTrackerImpl {
-    type PlanExecuter: ProgressPlanExecutorImpl;
-    type PlanBuilder: ProgressPlanBuilderImpl<Self::PlanExecuter>;
+    fn create_progress_stepper() -> ProgressStepper;
+    async fn load_configuration(&mut self, configuration: Self::Configuration)
+        -> Result<(), Error>;
+    async fn setup(self: Arc<Self>, app_handle: AppHandle);
+    async fn setup_inner(&self, app_handle: AppHandle) -> Result<Option<T>, Error>;
+    async fn finalize_setup(&self, app_handle: AppHandle, payload: Option<T>) -> Result<(), Error>;
+    fn get_app_dirs(&self, app_handle: &AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+        let data_dir = app_handle
+            .path()
+            .app_local_data_dir()
+            .expect("Could not get data dir");
+        let config_dir = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+        let log_dir = app_handle
+            .path()
+            .app_log_dir()
+            .expect("Could not get log dir");
 
-    fn new() -> Self::PlanBuilder;
+        Ok((data_dir, config_dir, log_dir))
+    }
 }

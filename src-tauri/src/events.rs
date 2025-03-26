@@ -51,7 +51,16 @@ pub enum EventType {
     MissingApplications,
     StuckOnOrphanChain,
     NetworkStatus,
-    ProgressTrackerResume,
+    CorePhaseFinished,
+    WalletPhaseFinished,
+    HardwarePhaseFinished,
+    RemoteNodePhaseFinished,
+    LocalNodePhaseFinished,
+    UnknownPhaseFinished,
+    UnlockApp,
+    UnlockWallet,
+    UnlockMining,
+    // ProgressTrackerResume,
     ProgressTrackerStartup,
 }
 #[derive(Clone, Debug, Serialize)]

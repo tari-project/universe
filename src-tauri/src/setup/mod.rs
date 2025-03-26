@@ -20,8 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod progress_plans;
-pub mod progress_stepper;
+pub mod setup_manager;
+mod trait_setup_phase;
 
-pub use progress_plans::ProgressSetupCorePlan;
-pub use progress_stepper::ProgressStepper;
+mod phase_core;
+mod phase_hardware;
+mod phase_local_node;
+mod phase_remote_node;
+mod phase_unknown;
+mod phase_wallet;
