@@ -142,6 +142,8 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             tor_control_port = state.tor_manager.get_control_port().await?;
         }
 
+        let remote_node_address = state.config.read().await.remote_base_node_address();
+
         for _i in 0..2 {
             match state
                 .node_manager
@@ -152,7 +154,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                     log_dir.clone(),
                     self.app_configuration.use_tor,
                     tor_control_port,
-                    None,
+                    remote_node_address.clone(),
                 )
                 .await
             {
