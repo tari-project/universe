@@ -3,10 +3,11 @@ use std::time::{Duration, SystemTime};
 use crate::{
     progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
     tasks_tracker::TasksTracker,
+    UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 
 use super::{
@@ -105,10 +106,15 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status_first(app_handle, SetupPhase::RemoteNode, true)
+            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::RemoteNode, true)
             .await;
 
-        // Todo: send event
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_remote_node_phase_finished(&app_handle, true)
+            .await;
+
         Ok(())
     }
 }

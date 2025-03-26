@@ -318,4 +318,103 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit NewBlockHeight event: {:?}", e);
         }
     }
+
+    pub async fn emit_core_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::CorePhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit CorePhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_wallet_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::WalletPhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit WalletPhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_hardware_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::HardwarePhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit HardwarePhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_remote_node_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::RemoteNodePhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit RemoteNodePhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_local_node_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::LocalNodePhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit LocalNodePhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_unknown_phase_finished(app_handle: &AppHandle, status: bool) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UnknownPhaseFinished,
+            payload: status,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UnknownPhaseFinished event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_unlock_app(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UnlockApp,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UnlockApp event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_unlock_wallet(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UnlockWallet,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UnlockWallet event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_unlock_mining(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::UnlockMining,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UnlockMining event: {:?}", e);
+        }
+    }
 }

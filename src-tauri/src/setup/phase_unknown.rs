@@ -168,10 +168,15 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status_second(app_handle, SetupPhase::Unknown, true)
+            .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Unknown, true)
             .await;
 
-        // Todo: send event
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_unknown_phase_finished(&app_handle, true)
+            .await;
+
         Ok(())
     }
 }

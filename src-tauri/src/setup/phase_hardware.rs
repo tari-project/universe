@@ -148,15 +148,19 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status_first(app_handle, SetupPhase::Hardware, true)
+            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::Hardware, true)
+            .await;
+
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_hardware_phase_finished(&app_handle, true)
             .await;
 
         SetupManager::get_instance()
             .lock()
             .await
             .set_hardware_status_output(payload);
-
-        // Todo: send event
         Ok(())
     }
 }

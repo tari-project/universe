@@ -488,15 +488,18 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         app_handle: tauri::AppHandle,
         payload: Option<CoreSetupPhasePayload>,
     ) -> Result<(), anyhow::Error> {
-        info!(target: LOG_TARGET, "[ Core Phase ] Finalizing setup");
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(app_handle, SetupPhase::Core, true)
+            .handle_start_setup_callbacks(app_handle.clone(), SetupPhase::Core, true)
             .await;
 
-        info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-        // Todo: send event
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_core_phase_finished(&app_handle, true)
+            .await;
+
         Ok(())
     }
 }

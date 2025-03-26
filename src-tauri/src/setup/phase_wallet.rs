@@ -130,10 +130,15 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status_second(app_handle, SetupPhase::Wallet, true)
+            .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Wallet, true)
             .await;
 
-        // Todo: send event
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_wallet_phase_finished(&app_handle, true)
+            .await;
+
         Ok(())
     }
 }

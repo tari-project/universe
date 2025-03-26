@@ -164,10 +164,15 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status_first(app_handle, SetupPhase::LocalNode, true)
+            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::LocalNode, true)
             .await;
 
-        // Todo: send event
+        let state = app_handle.state::<UniverseAppState>();
+        state
+            .events_manager
+            .handle_local_node_phase_finished(&app_handle, true)
+            .await;
+
         Ok(())
     }
 }

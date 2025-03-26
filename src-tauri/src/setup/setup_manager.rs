@@ -120,7 +120,7 @@ impl SetupManager {
         unknown_phase_setup.setup(app_handle.clone()).await;
     }
 
-    pub async fn set_phase_status(
+    pub async fn handle_start_setup_callbacks(
         &mut self,
         app_handle: AppHandle,
         phase: SetupPhase,
@@ -128,27 +128,21 @@ impl SetupManager {
     ) {
         self.phase_statuses.insert(phase, status);
 
-        // //Todo: handle phase status update
-        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
-        //     .await;
         let core_phase_status = *self.phase_statuses.get(&SetupPhase::Core).unwrap_or(&false);
         if core_phase_status {
+            self.unlock_app(app_handle.clone()).await;
             self.spawn_first_batch_of_setup_phases(app_handle.clone())
                 .await;
         };
     }
 
-    pub async fn set_phase_status_first(
+    pub async fn handle_first_batch_callbacks(
         &mut self,
         app_handle: AppHandle,
         phase: SetupPhase,
         status: bool,
     ) {
         self.phase_statuses.insert(phase, status);
-
-        // //Todo: handle phase status update
-        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
-        //     .await;
 
         let hardware_phase_status = *self
             .phase_statuses
@@ -169,17 +163,13 @@ impl SetupManager {
         }
     }
 
-    pub async fn set_phase_status_second(
+    pub async fn handle_second_batch_callbacks(
         &mut self,
         app_handle: AppHandle,
         phase: SetupPhase,
         status: bool,
     ) {
         self.phase_statuses.insert(phase, status);
-
-        // //Todo: handle phase status update
-        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
-        //     .await;
 
         let wallet_phase_status = *self
             .phase_statuses
@@ -191,6 +181,9 @@ impl SetupManager {
             .unwrap_or(&false);
 
         if wallet_phase_status && unknown_phase_status {
+            self.unlock_mining(app_handle.clone()).await;
+            self.unlock_wallet(app_handle.clone()).await;
+
             let state = app_handle.state::<UniverseAppState>();
             initialize_frontend_updates(&app_handle).await;
             state
@@ -208,58 +201,18 @@ impl SetupManager {
         }
     }
 
-    fn unlock_app(&self) {
-        todo!()
+    async fn unlock_app(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        state.events_manager.handle_unlock_app(&app_handle).await;
     }
 
-    fn unlock_wallet(&self) {
-        todo!()
+    async fn unlock_wallet(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        state.events_manager.handle_unlock_wallet(&app_handle).await;
     }
 
-    fn unlock_mining(&self) {
-        todo!()
+    async fn unlock_mining(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        state.events_manager.handle_unlock_mining(&app_handle).await;
     }
-
-    // async fn handle_phase_status_update(
-    //     &self,
-    //     app_handle: AppHandle,
-    //     phases_statuses: &HashMap<SetupPhase, bool>,
-    // ) -> Result<(), Error> {
-    //     let core_phase_status = *phases_statuses.get(&SetupPhase::Core).unwrap_or(&false);
-    //     let wallet_phase_status = *phases_statuses.get(&SetupPhase::Wallet).unwrap_or(&false);
-    //     let hardware_phase_status = *phases_statuses.get(&SetupPhase::Hardware).unwrap_or(&false);
-    //     let local_node_phase_status = *phases_statuses
-    //         .get(&SetupPhase::LocalNode)
-    //         .unwrap_or(&false);
-    //     let remote_node_phase_status = *phases_statuses
-    //         .get(&SetupPhase::RemoteNode)
-    //         .unwrap_or(&false);
-    //     let unknown_phase_status = *phases_statuses.get(&SetupPhase::Unknown).unwrap_or(&false);
-
-    //     // todo find better way for reapeted calls
-
-    //     if core_phase_status {
-    //         info!(target: LOG_TARGET, "Unlocking app");
-    //         self.unlock_app();
-    //     };
-
-    //     if core_phase_status
-    //         && wallet_phase_status
-    //         && (local_node_phase_status || remote_node_phase_status)
-    //     {
-    //         info!(target: LOG_TARGET, "Unlocking wallet");
-    //         self.unlock_wallet();
-    //     };
-
-    //     if core_phase_status
-    //         && wallet_phase_status
-    //         && hardware_phase_status
-    //         && (local_node_phase_status || remote_node_phase_status)
-    //     {
-    //         info!(target: LOG_TARGET, "Unlocking mining");
-    //         self.unlock_mining();
-    //     };
-
-    //     Ok(())
-    // }
 }
