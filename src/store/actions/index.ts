@@ -13,7 +13,6 @@ export {
     setAllowTelemetry,
     setApplicationLanguage,
     setAutoUpdate,
-    setCpuMiningEnabled,
     setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,

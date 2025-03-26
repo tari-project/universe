@@ -25,7 +25,7 @@ import {
 } from '@app/store/actions/appStateStoreActions';
 import { setWalletAddress, setWalletBalance } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { setHardwarePhaseComplete, setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
+import { setHardwarePhaseComplete, setMiningUnlocked, setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
 
 const LOG_EVENT_TYPES = [
     'ResumingAllProcesses',
@@ -96,8 +96,11 @@ const useTauriEventsListener = () => {
                         setSetupProgress(0.95);
                         break;
                     case 'UnlockMining':
-                        console.info('Unlock mining', event.payload);
-                        setSetupProgress(0.98);
+                        if (event.payload) {
+                            console.info('Unlock mining');
+                            setMiningUnlocked(true);
+                            setSetupProgress(0.98);
+                        }
                         break;
                     case 'SetupStatus':
                         await handleSetupStatus(event.payload);

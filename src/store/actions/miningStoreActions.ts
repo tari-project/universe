@@ -9,6 +9,7 @@ import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -121,6 +122,8 @@ export const setMiningNetwork = async () => {
     }
 };
 export const startMining = async () => {
+    if (!useSetupStore.getState().miningUnlocked) return;
+
     useMiningStore.setState({ miningInitiated: true });
     console.info('Mining starting....');
     useBlockchainVisualisationStore

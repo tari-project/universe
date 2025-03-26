@@ -28,7 +28,7 @@ export const setSetupComplete = async () => {
         }
     }
 
-    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
+    if (mine_on_app_start && useSetupStore.getState().miningUnlocked && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }
     useSetupStore.setState({ setupComplete: true });
@@ -38,6 +38,8 @@ export const setSetupProgress = (setupProgress: number) => useSetupStore.setStat
 export const setSetupTitle = (setupTitle: string) => useSetupStore.setState({ setupTitle });
 export const setHardwarePhaseComplete = (hardwarePhaseComplete: boolean) =>
     useSetupStore.setState({ hardwarePhaseComplete });
+
+export const setMiningUnlocked = (miningUnlocked: boolean) => useSetupStore.setState({ miningUnlocked });
 export const setSetupTitleParams = (setupTitleParams: SetupTitleParams) =>
     useSetupStore.setState((current) => {
         const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);

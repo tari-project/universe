@@ -7,5 +7,6 @@ const initialState: SetupState = {
     setupTitle: '',
     setupTitleParams: {},
     hardwarePhaseComplete: false,
+    miningUnlocked: false,
 };
 export const useSetupStore = create<SetupState>()(() => ({ ...initialState }));
