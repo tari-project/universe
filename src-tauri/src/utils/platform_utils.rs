@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::fmt::Display;
-
+use anyhow::anyhow;
+use tauri::Manager;
+use crate::UniverseAppState;
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
 

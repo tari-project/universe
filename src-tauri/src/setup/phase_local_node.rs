@@ -152,6 +152,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                     log_dir.clone(),
                     self.app_configuration.use_tor,
                     tor_control_port,
+                    None,
                 )
                 .await
             {

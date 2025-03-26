@@ -136,7 +136,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .await;
 
         if self.app_configuration.p2pool_enabled {
-            let base_node_grpc = state.node_manager.get_grpc_port().await?;
+            let base_node_grpc = state.node_manager.get_grpc_address().await?;
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
                 .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
@@ -156,14 +156,14 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
                 )
                 .await?;
         }
-        let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+        let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
         let config = state.config.read().await;
         let p2pool_port = state.p2pool_manager.grpc_port().await;
         state
             .mm_proxy_manager
             .start(StartConfig {
-                base_node_grpc_port,
+                base_node_grpc_address,
                 p2pool_port,
                 app_shutdown: state.shutdown.to_signal().clone(),
                 base_path: data_dir.clone(),
