@@ -12,7 +12,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setCpuMiningEnabled } from '@app/store';
+import { setCpuMiningEnabled } from '@app/store/actions/appConfigStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 export default function CpuMiningSettings() {

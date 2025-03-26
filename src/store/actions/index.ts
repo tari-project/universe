@@ -9,12 +9,10 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    handleAppConfigLoaded,
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
     setAutoUpdate,
-    setCpuMiningEnabled,
     setCustomStatsServerPort,
     setGpuMiningEnabled,
     setMineOnAppStart,

@@ -7,7 +7,7 @@ import {
     SetupStatusPayload,
     ShowReleaseNotesPayload,
 } from '@app/types/events-payloads.ts';
-import { airdropSetup, setDialogToShow } from '../index.ts';
+import { setDialogToShow } from '../index.ts';
 import { setSetupComplete, setSetupProgress, setSetupTitle, setSetupTitleParams } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
@@ -84,7 +84,6 @@ export const handleSetupStatus = async (payload: SetupStatusPayload) => {
     if (payload.progress >= 1) {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
-        await airdropSetup();
     }
 };
 export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {

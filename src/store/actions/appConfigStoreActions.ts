@@ -1,20 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
-import {
-    AirdropTokens,
-    sidebarTowerOffset,
-    TOWER_CANVAS_ID,
-    useAppConfigStore,
-    useMiningMetricsStore,
-    useMiningStore,
-} from '../index.ts';
+import { AirdropTokens, useAppConfigStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
 import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { AppConfig, GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { loadTowerAnimation } from '@tari-project/tari-tower';
 
 interface SetModeProps {
     mode: modeType;
@@ -23,7 +15,6 @@ interface SetModeProps {
 }
 
 export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
-    console.info('handleAppConfigLoaded', appConfig);
     try {
         useAppConfigStore.setState(appConfig);
         await changeLanguage(appConfig.application_language);
@@ -31,17 +22,6 @@ export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
         if (configTheme) {
             setUITheme(configTheme as displayMode);
         }
-        if (appConfig.visual_mode) {
-            try {
-                console.info('Loading tower animation');
-                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
-            } catch (e) {
-                console.error('Error at loadTowerAnimation:', e);
-                useAppConfigStore.setState({ visual_mode: false });
-            }
-        }
-
-        return appConfig;
     } catch (e) {
         console.error('Could not get app config:', e);
     }
