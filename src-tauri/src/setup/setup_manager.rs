@@ -184,8 +184,10 @@ impl SetupManager {
             self.unlock_mining(app_handle.clone()).await;
             self.unlock_wallet(app_handle.clone()).await;
 
+            // todo move it out from here
             let state = app_handle.state::<UniverseAppState>();
             initialize_frontend_updates(&app_handle).await;
+            // todo remove once its not needed
             state
                 .events_manager
                 .handle_setup_status(
