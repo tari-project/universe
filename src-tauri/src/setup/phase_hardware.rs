@@ -1,6 +1,8 @@
 use std::time::{Duration, SystemTime};
 
 use crate::{
+    configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
+    gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
     tasks_tracker::TasksTracker,
@@ -28,7 +30,9 @@ pub struct HardwareSetupPhasePayload {
 pub struct HardwareSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhaseAppConfiguration {}
+pub struct HardwareSetupPhaseAppConfiguration {
+    gpu_engine: EngineType,
+}
 
 pub struct HardwareSetupPhase {
     progress_stepper: ProgressStepper,
@@ -58,6 +62,14 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         configuration: Self::Configuration,
     ) -> Result<(), Error> {
         self.session_configuration = configuration;
+
+        let gpu_engine = ConfigMining::current()
+            .lock()
+            .await
+            .get_content()
+            .gpu_engine()
+            .clone();
+        self.app_configuration = HardwareSetupPhaseAppConfiguration { gpu_engine };
 
         Ok(())
     }
@@ -104,7 +116,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .detect(
                 app_handle.clone(),
                 config_dir.clone(),
-                state.config.read().await.gpu_engine(),
+                self.app_configuration.gpu_engine.clone(),
             )
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));

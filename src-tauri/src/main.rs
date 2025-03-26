@@ -1428,11 +1428,11 @@ fn main() {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
-                SetupManager::get_instance().lock().await.start_setup(handle_clone).await;
-            //     let state = handle_clone.state::<UniverseAppState>().clone();
-            //     let _res = setup_inner(state, handle_clone.clone())
-            //         .await
-            //         .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+                // SetupManager::get_instance().lock().await.start_setup(handle_clone).await;
+                let state = handle_clone.state::<UniverseAppState>().clone();
+                let _res = setup_inner(state, handle_clone.clone())
+                    .await
+                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
         tauri::RunEvent::ExitRequested { api: _, code, .. } => {
