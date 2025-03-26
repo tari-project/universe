@@ -3,21 +3,22 @@ import { CustomPowerLevelsDialog } from './CustomPowerLevelsDialog';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
 import { getMaxAvailableThreads, setCustomLevelsDialogOpen } from '@app/store';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const maxThreads = useMiningStore((s) => s.maxAvailableThreads);
+    const hardwarePhaseComplete = useSetupStore((s) => s.hardwarePhaseComplete);
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
     };
-
     useEffect(() => {
-        if (!maxThreads) {
+        if (!maxThreads && hardwarePhaseComplete) {
             getMaxAvailableThreads();
         }
-    }, [maxThreads]);
+    }, [maxThreads, hardwarePhaseComplete]);
 
     return (
         <Dialog
@@ -26,9 +27,7 @@ export const CustomPowerLevelsDialogContainer = () => {
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {maxThreads && maxThreads.max_cpu_threads && (
-                    <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />
-                )}
+                {maxThreads && <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />}
             </DialogContent>
         </Dialog>
     );

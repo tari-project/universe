@@ -23,6 +23,7 @@ interface ModeSelectProps {
 const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
     const isSettingUp = useSetupStore((s) => !s.setupComplete);
+    const hardwarePhaseComplete = useSetupStore((s) => s.hardwarePhaseComplete);
     const mode = useAppConfigStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
@@ -31,7 +32,8 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isMining = isCPUMining || isGPUMining;
-    const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
+
+    const isMiningLoading = isMiningInitiated ? !isMining : isMining;
     const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
 
     const handleChange = useCallback(async (newMode: string) => {
@@ -67,8 +69,10 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
 
     const selectMarkup = (
         <Select
-            disabled={isSettingUp && !isMininimal}
-            loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
+            disabled={!hardwarePhaseComplete || (isSettingUp && !isMininimal)}
+            loading={
+                !hardwarePhaseComplete || isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))
+            }
             onChange={handleChange}
             selectedValue={mode}
             options={tabOptions}

@@ -62,7 +62,6 @@ export const pauseMining = async () => {
     } catch (e) {
         console.error('Failed to pause (stop) mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ miningInitiated: true });
     }
 };
 export const restartMining = async () => {
@@ -122,8 +121,8 @@ export const setMiningNetwork = async () => {
     }
 };
 export const startMining = async () => {
-    console.info('Mining starting....');
     useMiningStore.setState({ miningInitiated: true });
+    console.info('Mining starting....');
     useBlockchainVisualisationStore
         .getState()
         .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });

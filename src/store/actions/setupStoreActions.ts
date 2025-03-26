@@ -36,6 +36,8 @@ export const setSetupComplete = async () => {
 
 export const setSetupProgress = (setupProgress: number) => useSetupStore.setState({ setupProgress });
 export const setSetupTitle = (setupTitle: string) => useSetupStore.setState({ setupTitle });
+export const setHardwarePhaseComplete = (hardwarePhaseComplete: boolean) =>
+    useSetupStore.setState({ hardwarePhaseComplete });
 export const setSetupTitleParams = (setupTitleParams: SetupTitleParams) =>
     useSetupStore.setState((current) => {
         const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);

@@ -25,7 +25,7 @@ import {
 } from '@app/store/actions/appStateStoreActions';
 import { setWalletAddress, setWalletBalance } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
+import { setHardwarePhaseComplete, setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
 
 const LOG_EVENT_TYPES = [
     'ResumingAllProcesses',
@@ -56,29 +56,36 @@ const useTauriEventsListener = () => {
                 handleLogUpdate(event);
                 switch (event.event_type) {
                     case 'CorePhaseFinished':
-                        console.info('Core phase finished', event.payload);
-                        setSetupProgress(0.15);
+                        if (event.payload) {
+                            setSetupProgress(0.15);
+                        }
                         break;
 
                     case 'HardwarePhaseFinished':
-                        console.info('Hardware phase finished', event.payload);
-                        setSetupProgress(0.35);
+                        if (event.payload) {
+                            setHardwarePhaseComplete(event.payload);
+                            setSetupProgress(0.35);
+                        }
                         break;
                     case 'RemoteNodePhaseFinished':
-                        console.info('Remote node phase finished', event.payload);
-                        setSetupProgress(0.4);
+                        if (event.payload) {
+                            setSetupProgress(0.4);
+                        }
                         break;
                     case 'LocalNodePhaseFinished':
-                        console.info('Local node phase finished', event.payload);
-                        setSetupProgress(0.45);
+                        if (event.payload) {
+                            setSetupProgress(0.45);
+                        }
                         break;
                     case 'UnknownPhaseFinished':
-                        console.info('Unknown phase finished', event.payload);
-                        setSetupProgress(0.5);
+                        if (event.payload) {
+                            setSetupProgress(0.5);
+                        }
                         break;
                     case 'WalletPhaseFinished':
-                        console.info('Wallet phase finished', event.payload);
-                        setSetupProgress(0.65);
+                        if (event.payload) {
+                            setSetupProgress(0.65);
+                        }
                         break;
                     case 'UnlockApp':
                         console.info('Unlock app', event.payload);
