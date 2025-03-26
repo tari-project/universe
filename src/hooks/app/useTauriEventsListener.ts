@@ -1,18 +1,16 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 
-import {
-    AppConfig,
-    BaseNodeStatus,
-    CpuMinerStatus,
-    GpuMinerStatus,
-    NetworkStatus,
-    ExternalDependency,
-    WalletBalance,
-} from '@app/types/app-status';
-import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
-import { setGpuDevices } from '@app/store';
+import { handleNewBlock } from '@app/store/useBlockchainVisualisationStore';
+import {
+    handleBaseNodeStatusUpdate,
+    handleConnectedPeersUpdate,
+    setCpuMiningStatus,
+    setGpuDevices,
+    setGpuMiningStatus,
+} from '@app/store/actions/miningMetricsStoreActions';
 import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
@@ -25,138 +23,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import {
-    ConnectedPeersUpdatePayload,
-    CriticalProblemPayload,
-    DetectedAvailableGpuEngines,
-    DetectedDevicesPayload,
-    NewBlockHeightPayload,
-    ResumingAllProcessesPayload,
-    SetupStatusPayload,
-    ShowReleaseNotesPayload,
-    WalletAddressUpdatePayload,
-} from '@app/types/events-payloads';
-
-import {
-    handleBaseNodeStatusUpdate,
-    handleConnectedPeersUpdate,
-    setCpuMiningStatus,
-    setGpuMiningStatus,
-    setWalletAddress,
-    setWalletBalance,
-} from '@app/store';
-
-const BACKEND_STATE_UPDATE = 'backend_state_update';
-
-type BackendStateUpdateEvent =
-    | {
-          event_type: 'WalletAddressUpdate';
-          payload: WalletAddressUpdatePayload;
-      }
-    | {
-          event_type: 'BaseNodeUpdate';
-          payload: BaseNodeStatus;
-      }
-    | {
-          event_type: 'WalletBalanceUpdate';
-          payload: WalletBalance;
-      }
-    | {
-          event_type: 'CpuMiningUpdate';
-          payload: CpuMinerStatus;
-      }
-    | {
-          event_type: 'GpuMiningUpdate';
-          payload: GpuMinerStatus;
-      }
-    | {
-          event_type: 'ConnectedPeersUpdate';
-          payload: ConnectedPeersUpdatePayload;
-      }
-    | {
-          event_type: 'NewBlockHeight';
-          payload: NewBlockHeightPayload;
-      }
-    | {
-          event_type: 'AppConfigLoaded';
-          payload: AppConfig;
-      }
-    | {
-          event_type: 'CloseSplashscreen';
-          payload: undefined;
-      }
-    | {
-          event_type: 'DetectedDevices';
-          payload: DetectedDevicesPayload;
-      }
-    | {
-          event_type: 'DetectedAvailableGpuEngines';
-          payload: DetectedAvailableGpuEngines;
-      }
-    | {
-          event_type: 'SetupStatus';
-          payload: SetupStatusPayload;
-      }
-    | {
-          event_type: 'ResumingAllProcesses';
-          payload: ResumingAllProcessesPayload;
-      }
-    | {
-          event_type: 'CriticalProblem';
-          payload: CriticalProblemPayload;
-      }
-    | {
-          event_type: 'MissingApplications';
-          payload: ExternalDependency[];
-      }
-    | {
-          event_type: 'StuckOnOrphanChain';
-          payload: boolean;
-      }
-    | {
-          event_type: 'ShowReleaseNotes';
-          payload: ShowReleaseNotesPayload;
-      }
-    | {
-          event_type: 'NetworkStatus';
-          payload: NetworkStatus;
-      }
-    | {
-          event_type: 'CorePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'WalletPhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'HardwarePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'RemoteNodePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'LocalNodePhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'UnknownPhaseFinished';
-          payload: boolean;
-      }
-    | {
-          event_type: 'UnlockApp';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockWallet';
-          payload: undefined;
-      }
-    | {
-          event_type: 'UnlockMining';
-          payload: undefined;
-      };
+import { setWalletAddress, setWalletBalance } from '@app/store';
 
 const useTauriEventsListener = () => {
     useEffect(() => {
@@ -222,39 +89,39 @@ const useTauriEventsListener = () => {
                         setNetworkStatus(event.payload);
                         break;
                     case 'CorePhaseFinished':
-                        console.log('Core phase finished', event.payload);
+                        console.info('Core phase finished', event.payload);
                         // todo handle core phase finished
                         break;
                     case 'WalletPhaseFinished':
-                        console.log('Wallet phase finished', event.payload);
+                        console.info('Wallet phase finished', event.payload);
                         // todo handle wallet phase finished
                         break;
                     case 'HardwarePhaseFinished':
-                        console.log('Hardware phase finished', event.payload);
+                        console.info('Hardware phase finished', event.payload);
                         // todo handle hardware phase finished
                         break;
                     case 'RemoteNodePhaseFinished':
-                        console.log('Remote node phase finished', event.payload);
+                        console.info('Remote node phase finished', event.payload);
                         // todo handle remote node phase finished
                         break;
                     case 'LocalNodePhaseFinished':
-                        console.log('Local node phase finished', event.payload);
+                        console.info('Local node phase finished', event.payload);
                         // todo handle local node phase finished
                         break;
                     case 'UnknownPhaseFinished':
-                        console.log('Unknown phase finished', event.payload);
+                        console.info('Unknown phase finished', event.payload);
                         // todo handle unknown phase finished
                         break;
                     case 'UnlockApp':
-                        console.log('Unlock app', event.payload);
+                        console.info('Unlock app', event.payload);
                         // todo handle unlock app
                         break;
                     case 'UnlockWallet':
-                        console.log('Unlock wallet', event.payload);
+                        console.info('Unlock wallet', event.payload);
                         // todo handle unlock wallet
                         break;
                     case 'UnlockMining':
-                        console.log('Unlock mining', event.payload);
+                        console.info('Unlock mining', event.payload);
                         // todo handle unlock mining
                         break;
                     default:
