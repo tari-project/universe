@@ -1,13 +1,17 @@
+use anyhow::Error;
+use getset::{Getters, Setters};
+use log::info;
 use std::{
     collections::HashMap,
     sync::{Arc, LazyLock},
 };
+use tauri::{AppHandle, Manager};
+use tokio::sync::{
+    watch::{channel, Receiver, Sender},
+    Mutex,
+};
 
-use anyhow::{Error, Ok};
-use getset::{Getters, Setters};
-use log::info;
-use tauri::AppHandle;
-use tokio::sync::Mutex;
+use crate::{events::SetupStatusPayload, initialize_frontend_updates, UniverseAppState};
 
 use super::{
     phase_core::{CoreSetupPhase, CoreSetupPhaseSessionConfiguration},
@@ -35,15 +39,12 @@ pub enum SetupPhase {
     Unknown,
 }
 
-#[derive(Default, Getters, Setters)]
+#[derive(Getters, Setters)]
 
 pub struct SetupManager {
     phase_statuses: HashMap<SetupPhase, bool>,
     #[getset(get = "pub", set = "pub")]
     hardware_status_output: Option<HardwareSetupPhasePayload>,
-    start_setup_lock: Mutex<()>,
-    spawn_first_batch_of_setup_phases_lock: Mutex<()>,
-    spawn_second_batch_of_setup_phases_lock: Mutex<()>,
 }
 
 impl SetupManager {
@@ -57,9 +58,6 @@ impl SetupManager {
         Self {
             phase_statuses,
             hardware_status_output: None,
-            start_setup_lock: Mutex::new(()),
-            spawn_first_batch_of_setup_phases_lock: Mutex::new(()),
-            spawn_second_batch_of_setup_phases_lock: Mutex::new(()),
         }
     }
 
@@ -91,12 +89,12 @@ impl SetupManager {
         let local_node_phase_setup = Arc::new(local_node_phase_setup);
         local_node_phase_setup.setup(app_handle.clone()).await;
 
-        let mut remote_node_phase_setup = RemoteNodeSetupPhase::new();
-        remote_node_phase_setup
-            .load_configuration(RemoteNodeSetupPhaseSessionConfiguration {})
-            .await;
-        let remote_node_phase_setup = Arc::new(remote_node_phase_setup);
-        remote_node_phase_setup.setup(app_handle.clone()).await;
+        // let mut remote_node_phase_setup = RemoteNodeSetupPhase::new();
+        // remote_node_phase_setup
+        //     .load_configuration(RemoteNodeSetupPhaseSessionConfiguration {})
+        //     .await;
+        // let remote_node_phase_setup = Arc::new(remote_node_phase_setup);
+        // remote_node_phase_setup.setup(app_handle.clone()).await;
     }
 
     pub async fn spawn_second_batch_of_setup_phases(&self, app_handle: AppHandle) {
@@ -129,9 +127,85 @@ impl SetupManager {
         status: bool,
     ) {
         self.phase_statuses.insert(phase, status);
-        //Todo: handle phase status update
-        self.handle_phase_status_update(app_handle, &self.phase_statuses)
-            .await;
+
+        // //Todo: handle phase status update
+        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
+        //     .await;
+        let core_phase_status = *self.phase_statuses.get(&SetupPhase::Core).unwrap_or(&false);
+        if core_phase_status {
+            self.spawn_first_batch_of_setup_phases(app_handle.clone())
+                .await;
+        };
+    }
+
+    pub async fn set_phase_status_first(
+        &mut self,
+        app_handle: AppHandle,
+        phase: SetupPhase,
+        status: bool,
+    ) {
+        self.phase_statuses.insert(phase, status);
+
+        // //Todo: handle phase status update
+        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
+        //     .await;
+
+        let hardware_phase_status = *self
+            .phase_statuses
+            .get(&SetupPhase::Hardware)
+            .unwrap_or(&false);
+        let local_node_phase_status = *self
+            .phase_statuses
+            .get(&SetupPhase::LocalNode)
+            .unwrap_or(&false);
+        let remote_node_phase_status = *self
+            .phase_statuses
+            .get(&SetupPhase::RemoteNode)
+            .unwrap_or(&false);
+
+        if hardware_phase_status && (local_node_phase_status || remote_node_phase_status) {
+            self.spawn_second_batch_of_setup_phases(app_handle.clone())
+                .await;
+        }
+    }
+
+    pub async fn set_phase_status_second(
+        &mut self,
+        app_handle: AppHandle,
+        phase: SetupPhase,
+        status: bool,
+    ) {
+        self.phase_statuses.insert(phase, status);
+
+        // //Todo: handle phase status update
+        // self.handle_phase_status_update(app_handle, &self.phase_statuses)
+        //     .await;
+
+        let wallet_phase_status = *self
+            .phase_statuses
+            .get(&SetupPhase::Wallet)
+            .unwrap_or(&false);
+        let unknown_phase_status = *self
+            .phase_statuses
+            .get(&SetupPhase::Unknown)
+            .unwrap_or(&false);
+
+        if wallet_phase_status && unknown_phase_status {
+            let state = app_handle.state::<UniverseAppState>();
+            initialize_frontend_updates(&app_handle).await;
+            state
+                .events_manager
+                .handle_setup_status(
+                    &app_handle,
+                    SetupStatusPayload {
+                        event_type: "setup_status".to_string(),
+                        title: "application-started".to_string(),
+                        title_params: None,
+                        progress: 1.0,
+                    },
+                )
+                .await;
+        }
     }
 
     fn unlock_app(&self) {
@@ -146,56 +220,46 @@ impl SetupManager {
         todo!()
     }
 
-    async fn handle_phase_status_update(
-        &self,
-        app_handle: AppHandle,
-        phases_statuses: &HashMap<SetupPhase, bool>,
-    ) -> Result<(), Error> {
-        let core_phase_status = *phases_statuses.get(&SetupPhase::Core).unwrap_or(&false);
-        let wallet_phase_status = *phases_statuses.get(&SetupPhase::Wallet).unwrap_or(&false);
-        let hardware_phase_status = *phases_statuses.get(&SetupPhase::Hardware).unwrap_or(&false);
-        let local_node_phase_status = *phases_statuses
-            .get(&SetupPhase::LocalNode)
-            .unwrap_or(&false);
-        let remote_node_phase_status = *phases_statuses
-            .get(&SetupPhase::RemoteNode)
-            .unwrap_or(&false);
-        let unknown_phase_status = *phases_statuses.get(&SetupPhase::Unknown).unwrap_or(&false);
+    // async fn handle_phase_status_update(
+    //     &self,
+    //     app_handle: AppHandle,
+    //     phases_statuses: &HashMap<SetupPhase, bool>,
+    // ) -> Result<(), Error> {
+    //     let core_phase_status = *phases_statuses.get(&SetupPhase::Core).unwrap_or(&false);
+    //     let wallet_phase_status = *phases_statuses.get(&SetupPhase::Wallet).unwrap_or(&false);
+    //     let hardware_phase_status = *phases_statuses.get(&SetupPhase::Hardware).unwrap_or(&false);
+    //     let local_node_phase_status = *phases_statuses
+    //         .get(&SetupPhase::LocalNode)
+    //         .unwrap_or(&false);
+    //     let remote_node_phase_status = *phases_statuses
+    //         .get(&SetupPhase::RemoteNode)
+    //         .unwrap_or(&false);
+    //     let unknown_phase_status = *phases_statuses.get(&SetupPhase::Unknown).unwrap_or(&false);
 
-        // todo find better way for reapeted calls
+    //     // todo find better way for reapeted calls
 
-        if core_phase_status {
-            info!(target: LOG_TARGET, "Unlocking app");
-            self.unlock_app();
-            self.spawn_first_batch_of_setup_phases(app_handle.clone())
-                .await;
-        };
+    //     if core_phase_status {
+    //         info!(target: LOG_TARGET, "Unlocking app");
+    //         self.unlock_app();
+    //     };
 
-        if core_phase_status
-            && hardware_phase_status
-            && (local_node_phase_status || remote_node_phase_status)
-        {
-            self.spawn_second_batch_of_setup_phases(app_handle.clone())
-                .await;
-        }
+    //     if core_phase_status
+    //         && wallet_phase_status
+    //         && (local_node_phase_status || remote_node_phase_status)
+    //     {
+    //         info!(target: LOG_TARGET, "Unlocking wallet");
+    //         self.unlock_wallet();
+    //     };
 
-        if core_phase_status
-            && wallet_phase_status
-            && (local_node_phase_status || remote_node_phase_status)
-        {
-            info!(target: LOG_TARGET, "Unlocking wallet");
-            self.unlock_wallet();
-        };
+    //     if core_phase_status
+    //         && wallet_phase_status
+    //         && hardware_phase_status
+    //         && (local_node_phase_status || remote_node_phase_status)
+    //     {
+    //         info!(target: LOG_TARGET, "Unlocking mining");
+    //         self.unlock_mining();
+    //     };
 
-        if core_phase_status
-            && wallet_phase_status
-            && hardware_phase_status
-            && (local_node_phase_status || remote_node_phase_status)
-        {
-            info!(target: LOG_TARGET, "Unlocking mining");
-            self.unlock_mining();
-        };
-
-        Ok(())
-    }
+    //     Ok(())
+    // }
 }

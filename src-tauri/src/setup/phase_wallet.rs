@@ -64,25 +64,25 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
     }
 
     async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "[ Hardware Phase ] Starting setup");
+        info!(target: LOG_TARGET, "[ Wallet Phase ] Starting setup");
 
         TasksTracker::current().spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Hardware Phase ] Setup timed out");
-                    let error_message = "[ Hardware Phase ] Setup timed out";
+                    error!(target: LOG_TARGET, "[ Wallet Phase ] Setup timed out");
+                    let error_message = "[ Wallet Phase ] Setup timed out";
                     sentry::capture_message(&error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner(app_handle.clone()) => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Hardware Phase ] Setup completed successfully");
+                            info!(target: LOG_TARGET, "[ Wallet Phase ] Setup completed successfully");
                             self.finalize_setup(app_handle.clone(), payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Hardware Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Hardware Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ Wallet Phase ] Setup failed with error: {:?}", error);
+                            let error_message = format!("[ Wallet Phase ] Setup failed with error: {:?}", error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
@@ -130,7 +130,7 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(app_handle, SetupPhase::Wallet, true)
+            .set_phase_status_second(app_handle, SetupPhase::Wallet, true)
             .await;
 
         // Todo: send event

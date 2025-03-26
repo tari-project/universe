@@ -136,7 +136,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         SetupManager::get_instance()
             .lock()
             .await
-            .set_phase_status(app_handle, SetupPhase::Hardware, true)
+            .set_phase_status_first(app_handle, SetupPhase::Hardware, true)
             .await;
 
         SetupManager::get_instance()
