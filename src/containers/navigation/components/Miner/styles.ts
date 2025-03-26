@@ -13,9 +13,9 @@ export const TileContainer = styled.div`
     gap: 6px;
 `;
 
-export const TileItem = styled.div`
+export const TileItem = styled.div<{ $unpadded?: boolean }>`
     height: 61px;
-    padding: 9px 15px;
+    padding: ${({ $unpadded }) => ($unpadded ? '' : '9px 15px')};
 
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
@@ -57,10 +57,4 @@ export const Unit = styled.div`
     font-style: normal;
     font-weight: 500;
     line-height: 100%;
-`;
-
-export const ModeSelectWrapper = styled.div`
-    position: relative;
-    display: flex;
-    height: 21px;
 `;

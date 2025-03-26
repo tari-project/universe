@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-mod progress_plans;
-mod progress_tracker;
-mod trait_progress_tracker;
+pub mod progress_plans;
+pub mod progress_stepper;
+
+pub use progress_plans::ProgressSetupCorePlan;
+pub use progress_stepper::ProgressStepper;

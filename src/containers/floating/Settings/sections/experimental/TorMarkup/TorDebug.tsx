@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { invoke } from '@tauri-apps/api/core';
 
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { Typography } from '@app/components/elements/Typography';
-import { useAppStateStore } from '@app/store/appStateStore';
 
 import {
     SettingsGroup,
@@ -14,7 +14,7 @@ import {
 
 export const TorDebug = ({ isMac }: { isMac?: boolean }) => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setupProgress = useAppStateStore((s) => s.setupProgress);
+    const setupProgress = useSetupStore((s) => s.setupProgress);
     const [entryGuards, setEntryGuards] = useState<string[]>([]);
 
     useEffect(() => {

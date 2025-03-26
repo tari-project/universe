@@ -15,6 +15,7 @@ import {
 import { setVisualMode } from '@app/store';
 
 import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -22,6 +23,7 @@ const ErrorTypography = styled(Typography)(({ theme }) => ({
 
 function VisualMode() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const setupComplete = useSetupStore((s) => s.setupComplete);
     const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
@@ -44,13 +46,15 @@ function VisualMode() {
         loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset })
             .then(() => {
                 setVisualMode(true);
-                setAnimationState('showVisual');
+                if (setupComplete) {
+                    setAnimationState('showVisual');
+                }
             })
             .catch((e) => {
                 console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
                 setVisualMode(false);
             });
-    }, []);
+    }, [setupComplete]);
 
     const handleSwitch = useCallback(() => {
         if (visualMode) {

@@ -37,6 +37,7 @@ use release_notes::ReleaseNotes;
 use remote_node_adapter::RemoteNodeAdapter;
 use remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use serde_json::json;
+use setup::setup_manager::SetupManager;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
@@ -136,6 +137,7 @@ mod progress_trackers;
 mod release_notes;
 mod remote_node_adapter;
 mod remote_until_synced_node_adapter;
+mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
@@ -283,6 +285,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(dead_code)]
 async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
@@ -987,6 +990,7 @@ struct UniverseAppState {
     is_getting_p2pool_connections: Arc<AtomicBool>,
     is_getting_transactions_history: Arc<AtomicBool>,
     is_getting_coinbase_history: Arc<AtomicBool>,
+    #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -1442,10 +1446,11 @@ fn main() {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
-                let state = handle_clone.state::<UniverseAppState>().clone();
-                let _res = setup_inner(state, handle_clone.clone())
-                    .await
-                    .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+                SetupManager::get_instance().lock().await.start_setup(handle_clone).await;
+                // let state = handle_clone.state::<UniverseAppState>().clone();
+                // let _res = setup_inner(state, handle_clone.clone())
+                //     .await
+                //     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
             });
         }
         tauri::RunEvent::ExitRequested { api: _, code, .. } => {

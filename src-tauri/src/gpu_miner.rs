@@ -56,6 +56,12 @@ pub enum EngineType {
     Metal,
 }
 
+impl Default for EngineType {
+    fn default() -> Self {
+        EngineType::OpenCL
+    }
+}
+
 impl Display for EngineType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

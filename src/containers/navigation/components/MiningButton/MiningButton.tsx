@@ -4,7 +4,7 @@ import { IoChevronForwardOutline } from 'react-icons/io5';
 import { useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
+
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
@@ -14,6 +14,7 @@ import LoadingSvg from '@app/components/svgs/LoadingSvg.tsx';
 import ButtonOrbitAnimation from '../Miner/components/ButtonOrbitAnimation.tsx';
 
 import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -22,7 +23,7 @@ enum MiningButtonStateText {
 
 export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
-    const isAppSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isAppSettingUp = useSetupStore((s) => !s.setupComplete);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
 

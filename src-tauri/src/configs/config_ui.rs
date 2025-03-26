@@ -22,13 +22,11 @@
 
 use crate::app_config::DisplayMode;
 
-use std::{
-    sync::{LazyLock, Mutex},
-    time::SystemTime,
-};
+use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tokio::sync::Mutex;
 
 use crate::AppConfig;
 
