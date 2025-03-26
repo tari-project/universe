@@ -21,7 +21,9 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::port_allocator::PortAllocator;
-use crate::process_adapter::{ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor};
+use crate::process_adapter::{
+    ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec, StatusMonitor,
+};
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
@@ -34,7 +36,6 @@ use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::hex::Hex;
 use tonic::async_trait;
-
 // TODO: Ensure we actually need this
 // #[cfg(target_os = "windows")]
 // use crate::utils::windows_setup_utils::add_firewall_rule;
@@ -250,6 +251,7 @@ impl StatusMonitor for DummyStatusMonitor {
 
 impl ProcessAdapter for SpendWalletAdapter {
     type StatusMonitor = DummyStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     fn spawn_inner(
         &self,
@@ -257,7 +259,7 @@ impl ProcessAdapter for SpendWalletAdapter {
         _config_folder: PathBuf,
         _log_folder: PathBuf,
         binary_version_path: PathBuf,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let shared_args = self.get_shared_args()?;
         let envs = HashMap::from([(
             "MINOTARI_WALLET_PASSWORD".to_string(),

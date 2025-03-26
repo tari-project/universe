@@ -117,6 +117,8 @@ pub struct AppConfigFromFile {
     airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_gpu_engine")]
     gpu_engine: String,
+    #[serde(default)]
+    remote_base_node_address: Option<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -161,6 +163,7 @@ impl Default for AppConfigFromFile {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             gpu_engine: default_gpu_engine(),
+            remote_base_node_address: None,
         }
     }
 }
@@ -281,6 +284,7 @@ pub struct AppConfig {
     last_changelog_version: String,             // CORE
     airdrop_tokens: Option<AirdropTokens>,      // CORE
     gpu_engine: String,                         // Mining
+    remote_base_node_address: Option<String>,
 }
 
 impl AppConfig {
@@ -327,6 +331,7 @@ impl AppConfig {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             gpu_engine: EngineType::OpenCL.to_string(),
+            remote_base_node_address: None,
         }
     }
 
@@ -397,6 +402,7 @@ impl AppConfig {
                 self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.gpu_engine = config.gpu_engine;
+                self.remote_base_node_address = config.remote_base_node_address;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -828,6 +834,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn remote_base_node_address(&self) -> Option<String> {
+        self.remote_base_node_address.clone()
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -877,6 +887,7 @@ impl AppConfig {
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
             gpu_engine: self.gpu_engine.clone(),
+            remote_base_node_address: self.remote_base_node_address.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());

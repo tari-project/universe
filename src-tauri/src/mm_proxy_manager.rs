@@ -44,7 +44,7 @@ pub(crate) struct StartConfig {
     pub config_path: PathBuf,
     pub log_path: PathBuf,
     pub tari_address: TariAddress,
-    pub base_node_grpc_port: u16,
+    pub base_node_grpc_address: String,
     pub coinbase_extra: String,
     pub p2pool_enabled: bool,
     pub p2pool_port: u16,
@@ -57,7 +57,7 @@ impl StartConfig {
         let cloned = self.clone();
         Self {
             p2pool_enabled: override_by.p2pool_enabled,
-            base_node_grpc_port: override_by.base_node_grpc_port,
+            base_node_grpc_address: override_by.base_node_grpc_address,
             p2pool_port: override_by.p2pool_grpc_port,
             coinbase_extra: override_by.coinbase_extra,
             tari_address: override_by.tari_address,
@@ -132,7 +132,7 @@ impl MmProxyManager {
 
         let new_config = MergeMiningProxyConfig {
             tari_address: config.tari_address.clone(),
-            base_node_grpc_port: config.base_node_grpc_port,
+            base_node_grpc_address: config.base_node_grpc_address.clone(),
             coinbase_extra: config.coinbase_extra.clone(),
             p2pool_enabled: config.p2pool_enabled,
             port: PortAllocator::new().assign_port_with_fallback(),

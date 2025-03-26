@@ -65,6 +65,7 @@ impl P2poolAdapter {
 
 impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     fn spawn_inner(
         &self,

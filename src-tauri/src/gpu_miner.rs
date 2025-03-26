@@ -210,10 +210,7 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_status_file_name = format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        );
+        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
         let gpu_status_file_path =
             get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
         let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
@@ -350,10 +347,8 @@ impl GpuMiner {
             gpu_device.settings.is_excluded = excluded;
         }
 
-        let path = get_gpu_engines_statuses_path(&config_dir).join(format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        ));
+        let path = get_gpu_engines_statuses_path(&config_dir)
+            .join(format!("{}_gpu_status.json", self.curent_selected_engine));
         GpuStatusFile::save(
             GpuStatusFile {
                 gpu_devices: self.gpu_devices.clone(),
@@ -374,10 +369,7 @@ impl GpuMiner {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.curent_selected_engine = engine;
 
-        let gpu_status_file_name = format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        );
+        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
         let gpu_status_file_path =
             get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
         let gpu_settings = GpuStatusFile::load(&gpu_status_file_path)?;

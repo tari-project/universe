@@ -22,18 +22,19 @@
 
 use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
-use crate::node_manager::NodeManager;
+use crate::node_manager::{NodeAdapter, NodeManager};
+use crate::remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use anyhow::Error;
 use std::path::PathBuf;
 use tari_shutdown::ShutdownSignal;
 
-pub struct SpendWalletManager {
+pub struct SpendWalletManager<T: NodeAdapter> {
     adapter: SpendWalletAdapter,
-    node_manager: NodeManager,
+    node_manager: NodeManager<T>,
 }
 
-impl Clone for SpendWalletManager {
+impl Clone for SpendWalletManager<RemoteUntilSyncedNodeAdapter> {
     fn clone(&self) -> Self {
         Self {
             adapter: self.adapter.clone(),
@@ -42,8 +43,8 @@ impl Clone for SpendWalletManager {
     }
 }
 
-impl SpendWalletManager {
-    pub fn new(node_manager: NodeManager) -> Self {
+impl SpendWalletManager<RemoteUntilSyncedNodeAdapter> {
+    pub fn new(node_manager: NodeManager<RemoteUntilSyncedNodeAdapter>) -> Self {
         let adapter = SpendWalletAdapter::new();
 
         Self {

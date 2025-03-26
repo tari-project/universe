@@ -54,8 +54,12 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .app_log_dir()
         .expect("Could not get log dir");
 
-    let use_tor = state.config.read().await.use_tor();
-    let p2pool_enabled = state.config.read().await.p2pool_enabled();
+    let config = state.config.read().await;
+    let use_tor = config.use_tor();
+    let p2pool_enabled = config.p2pool_enabled();
+    let remote_node_grpc_address = config.remote_base_node_address();
+    drop(config);
+
     let mut stage_total = 5;
     let mut stage_progress = 0;
     if use_tor {
@@ -135,6 +139,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
+                remote_node_grpc_address.clone(),
             )
             .await
         {
@@ -223,7 +228,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
             .await;
         stage_progress += 1;
 
-        let base_node_grpc = state.node_manager.get_grpc_port().await?;
+        let base_node_grpc = state.node_manager.get_grpc_address().await?;
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
@@ -242,7 +247,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
             .await?;
     }
 
-    let base_node_grpc_port = state.node_manager.get_grpc_port().await?;
+    let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
     state
         .events_manager
         .handle_resuming_all_processes(
@@ -261,7 +266,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
         .start(StartConfig {
-            base_node_grpc_port,
+            base_node_grpc_address,
             p2pool_port,
             app_shutdown: state.shutdown.to_signal().clone(),
             base_path: data_dir.clone(),
