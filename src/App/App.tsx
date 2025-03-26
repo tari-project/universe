@@ -55,8 +55,8 @@ const CurrentAppSection = function CurrentAppSection({
 };
 
 export default function App() {
-    const showSplashscreen = useUIStore((s) => s.showSplashscreen);
     const isShuttingDown = useShuttingDown();
+    const showSplashscreen = useUIStore((s) => s.showSplashscreen);
     const { t } = useTranslation('common', { useSuspense: false });
     if (!window.WebGL2RenderingContext && !window.WebGLRenderingContext) {
         console.error(`WebGL not supported by the browser - userAgent: ${navigator.userAgent}`);

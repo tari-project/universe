@@ -1,6 +1,6 @@
 import { Typography } from '@app/components/elements/Typography';
 import { useMiningStore } from '@app/store/useMiningStore';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status';
 import { RangeInputComponent } from './RangeInput';
 import { useAppConfigStore } from '@app/store/useAppConfigStore';
@@ -18,7 +18,6 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 enum FormFields {
     CPU = 'cpu',
@@ -50,40 +49,40 @@ const resolveGpuInitialThreads = (
     mode: modeType | undefined,
     maxAvailableThreads: MaxConsumptionLevels
 ) => {
-    if (configGpuLevels && configGpuLevels.length > 0) {
+    if (configGpuLevels?.length) {
         return configGpuLevels;
-    } else {
-        switch (mode) {
-            case 'Eco':
-                return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
-                    gpu_name: gpu.gpu_name,
-                    max_gpu_threads: 2,
-                }));
-            case 'Ludicrous':
-                return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
-                    gpu_name: gpu.gpu_name,
-                    max_gpu_threads: 1024,
-                }));
-            default:
-                return configGpuLevels || [];
-        }
+    }
+
+    switch (mode) {
+        case 'Eco':
+            return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 2,
+            }));
+        case 'Ludicrous':
+            return maxAvailableThreads.max_gpus_threads.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: 1024,
+            }));
+        default:
+            return maxAvailableThreads?.max_gpus_threads?.map((gpu) => ({
+                gpu_name: gpu.gpu_name,
+                max_gpu_threads: gpu.max_gpu_threads ? gpu.max_gpu_threads / 4 : 4,
+            }));
     }
 };
 
-export function CustomPowerLevelsDialog({
-    maxAvailableThreads,
-    handleClose,
-}: {
+interface CustomPowerLevelsDialogProps {
     maxAvailableThreads: MaxConsumptionLevels;
     handleClose: () => void;
-}) {
+}
+export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: CustomPowerLevelsDialogProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
     const mode = useAppConfigStore((s) => s.mode);
     const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
     const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
-
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, setValue } = useForm<FormValues>({
@@ -115,10 +114,56 @@ export function CustomPowerLevelsDialog({
         }).then(() => setSaved(true));
     }, []);
 
-    if (!maxAvailableThreads) return <CircularProgress />;
+    const cpuMarkup = (
+        <Controller
+            control={control}
+            name={FormFields.CPU}
+            render={({ field }) => (
+                <RangeInputComponent
+                    label={t('custom-power-levels.cpu-power-level')}
+                    maxLevel={maxAvailableThreads.max_cpu_threads}
+                    value={field.value}
+                    desc={'custom-power-levels.choose-cpu-power-level'}
+                    warning={t('custom-power-levels.cpu-warning')}
+                    onChange={field.onChange}
+                    isLoading={isChangingMode}
+                />
+            )}
+        />
+    );
+
+    const gpuMarkup = fields?.map((gpu, index) => {
+        return (
+            <Controller
+                key={gpu.id}
+                control={control}
+                name={`${FormFields.GPUS}.${index}.gpu_name`}
+                render={({ field: _field }) => {
+                    return (
+                        <>
+                            <Divider />
+                            <RangeInputComponent
+                                key={gpu.id}
+                                label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
+                                maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
+                                value={gpu.max_gpu_threads}
+                                step={2}
+                                desc={'custom-power-levels.choose-gpu-power-level'}
+                                warning={t('custom-power-levels.gpu-warning')}
+                                onChange={(value: number) => {
+                                    setValue(`${FormFields.GPUS}.${index}.max_gpu_threads`, value as never);
+                                }}
+                                isLoading={isChangingMode}
+                            />
+                        </>
+                    );
+                }}
+            />
+        );
+    });
 
     return (
-        <React.Fragment>
+        <>
             <CustomLevelsHeader>
                 <Typography>{t('custom-power-levels.title')}</Typography>
                 <TopRightContainer>
@@ -131,48 +176,13 @@ export function CustomPowerLevelsDialog({
                 </TopRightContainer>
             </CustomLevelsHeader>
             <CustomLevelsContent>
-                <Controller
-                    control={control}
-                    name={FormFields.CPU}
-                    render={({ field }) => (
-                        <RangeInputComponent
-                            label={t('custom-power-levels.cpu-power-level')}
-                            maxLevel={maxAvailableThreads.max_cpu_threads}
-                            value={field.value}
-                            desc={'custom-power-levels.choose-cpu-power-level'}
-                            warning={t('custom-power-levels.cpu-warning')}
-                            onChange={field.onChange}
-                            isLoading={isChangingMode}
-                        />
-                    )}
-                />
-                <Divider />
-                {fields.map((gpu, index) => (
-                    <Controller
-                        key={gpu.id}
-                        control={control}
-                        name={`${FormFields.GPUS}.${index}.gpu_name`}
-                        render={({ field: _field }) => (
-                            <RangeInputComponent
-                                label={`${t('custom-power-levels.gpu-power-level', { index: index + 1 })}: ${gpu.gpu_name}`}
-                                maxLevel={maxAvailableThreads?.max_gpus_threads?.[index]?.max_gpu_threads}
-                                value={gpu.max_gpu_threads}
-                                step={2}
-                                desc={'custom-power-levels.choose-gpu-power-level'}
-                                warning={t('custom-power-levels.gpu-warning')}
-                                onChange={(value: number) => {
-                                    setValue(`${FormFields.GPUS}.${index}.max_gpu_threads`, value as never);
-                                }}
-                                isLoading={isChangingMode}
-                            />
-                        )}
-                    />
-                ))}
+                {cpuMarkup}
+                {gpuMarkup}
                 <Divider />
                 <Button onClick={handleSubmit(onSubmit)} disabled={isChangingMode}>
                     {t('custom-power-levels.save-changes')}
                 </Button>
             </CustomLevelsContent>
-        </React.Fragment>
+        </>
     );
 }
