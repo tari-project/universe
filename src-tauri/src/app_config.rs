@@ -147,7 +147,7 @@ impl Default for AppConfigFromFile {
             custom_mode_cpu_options: Vec::new(),
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
-            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            mmproxy_monero_nodes: default_monero_nodes(),
             mmproxy_use_monero_fail: false,
             keyring_accessed: false,
             auto_update: true,
@@ -314,7 +314,7 @@ impl AppConfig {
             eco_mode_cpu_threads: None,
             ludicrous_mode_cpu_threads: None,
             mmproxy_use_monero_fail: false,
-            mmproxy_monero_nodes: vec!["https://xmr-01.tari.com".to_string()],
+            mmproxy_monero_nodes: default_monero_nodes(),
             custom_power_levels_enabled: true,
             auto_update: true,
             sharing_enabled: true,
@@ -441,6 +441,16 @@ impl AppConfig {
         if self.config_version <= 12 {
             self.paper_wallet_enabled = true;
             self.config_version = 13;
+        }
+
+        if self.config_version <= 13 {
+            if self.mmproxy_monero_nodes.len() == 1
+                && self.mmproxy_monero_nodes.get(0).map(|s| s.as_str())
+                    == Some("https://xmr-01.tari.com")
+            {
+                self.mmproxy_monero_nodes = default_monero_nodes();
+            }
+            self.config_version = 14;
         }
     }
 
@@ -926,7 +936,13 @@ fn default_application_language() -> String {
 }
 
 fn default_monero_nodes() -> Vec<String> {
-    vec!["https://xmr-01.tari.com".to_string()]
+    vec![
+        "https://xmr-01.tari.com".to_string(),
+        "https://xmr-waw.tari.com".to_string(),
+        "https://xmr-sbg.tari.com".to_string(),
+        "https://xmr-gra.tari.com".to_string(),
+        "https://xmr-bhs.tari.com".to_string(),
+    ]
 }
 
 fn default_window_settings() -> Option<WindowSettings> {
