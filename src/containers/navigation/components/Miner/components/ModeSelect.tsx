@@ -1,24 +1,28 @@
-import { ModeSelectWrapper, TileItem } from '../styles';
+import { memo, useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography } from '@app/components/elements/Typography.tsx';
+
+import { modeType } from '@app/store/types';
+import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useAppConfigStore } from '@app/store/useAppConfigStore';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useMiningStore } from '@app/store/useMiningStore.ts';
+import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
+import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
 import { Select, SelectOption } from '@app/components/elements/inputs/Select.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 import eco from '@app/assets/icons/emoji/eco.png';
 import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
-import { memo, useCallback, useMemo } from 'react';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
-import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-import { modeType } from '@app/store/types';
-import { CustomPowerLevelsDialogContainer } from './CustomPowerLevels/CustomPowerLevelsDialogContainer';
-import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
-import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
 
-const ModeSelect = memo(function ModeSelect() {
+import { TileItem } from '../styles';
+
+interface ModeSelectProps {
+    variant?: 'primary' | 'minimal';
+}
+const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.setupComplete);
     const mode = useAppConfigStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
@@ -59,20 +63,28 @@ const ModeSelect = memo(function ModeSelect() {
         return tabs;
     }, [custom_power_levels_enabled]);
 
+    const isMininimal = variant === 'minimal';
+
+    const selectMarkup = (
+        <Select
+            disabled={isSettingUp && !isMininimal}
+            loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
+            onChange={handleChange}
+            selectedValue={mode}
+            options={tabOptions}
+            forceHeight={21}
+            variant={isMininimal ? 'minimal' : 'primary'}
+        />
+    );
+
+    if (isMininimal) {
+        return selectMarkup;
+    }
+
     return (
-        <TileItem>
-            <Typography>{t('mode')}</Typography>
-            <ModeSelectWrapper>
-                <Select
-                    disabled={isSettingUp}
-                    loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
-                    onChange={handleChange}
-                    selectedValue={mode}
-                    options={tabOptions}
-                    forceHeight={21}
-                />
-            </ModeSelectWrapper>
-            <CustomPowerLevelsDialogContainer />
+        <TileItem $unpadded>
+            <Typography style={{ padding: `0 15px` }}>{t('mode')}</Typography>
+            {selectMarkup}
         </TileItem>
     );
 });

@@ -9,7 +9,7 @@ export {
     setUserPoints,
 } from './airdropStoreActions.ts';
 export {
-    handleAppConfigLoaded as fetchAppConfig,
+    handleAppConfigLoaded,
     setAirdropTokensInConfig,
     setAllowTelemetry,
     setApplicationLanguage,
@@ -42,10 +42,6 @@ export {
     setIsSettingsOpen,
     setIssueReference,
     setReleaseNotes,
-    setSetupComplete,
-    setSetupParams,
-    setSetupProgress,
-    setSetupTitle,
     updateApplicationsVersions,
 } from './appStateStoreActions.ts';
 

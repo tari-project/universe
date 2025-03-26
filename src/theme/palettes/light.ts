@@ -49,6 +49,7 @@ const lightPalette: ThemePalette = {
         },
         divider: 'rgba(0,0,0,0.06)',
         text: {
+            default: c.greyscale[900],
             main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',

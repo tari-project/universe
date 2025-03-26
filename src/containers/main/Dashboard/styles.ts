@@ -9,9 +9,3 @@ export const DashboardContentContainer = styled(m.div)`
     will-change: width;
     position: relative;
 `;
-
-export const ProgressWrapper = styled.div`
-    margin: 20px 0;
-    display: flex;
-    width: 100%;
-`;

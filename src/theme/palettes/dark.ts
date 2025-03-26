@@ -49,6 +49,7 @@ const darkPalette: ThemePalette = {
         },
         divider: 'rgba(255,255,255,0.1)',
         text: {
+            default: c.greyscale[100],
             main: c.tariPurple[300],
             primary: '#FFFFFF',
             accent: 'rgba(255,255,255,0.6)',

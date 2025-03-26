@@ -125,7 +125,7 @@ export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: bo
         switch ($position) {
             case 'start': {
                 return css`
-                    left: ${PADDING};
+                    left: 0.5rem;
                 `;
             }
             case 'hug': {
