@@ -57,8 +57,8 @@ impl Default for ConfigCoreContent {
     fn default() -> Self {
         Self {
             created_at: SystemTime::now(),
-            is_p2pool_enabled: false,
-            use_tor: false,
+            is_p2pool_enabled: true,
+            use_tor: true,
             allow_telemetry: true,
             last_binaries_update_timestamp: None,
             anon_id: None,
