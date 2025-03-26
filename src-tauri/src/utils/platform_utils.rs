@@ -20,12 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::fmt::Display;
-use anyhow::anyhow;
-use tauri::Manager;
-use crate::UniverseAppState;
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
+use crate::UniverseAppState;
+use anyhow::anyhow;
+use std::fmt::Display;
+use tauri::Manager;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
