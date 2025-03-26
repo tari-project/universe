@@ -1,5 +1,9 @@
 {
+<<<<<<< HEAD
     "version": "0.9.836",
+=======
+    "version": "0.9.826",
+>>>>>>> 21c1757b (chore: version bump to 0.9.826)
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
