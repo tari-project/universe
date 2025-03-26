@@ -132,7 +132,6 @@ mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
 mod systemtray_manager;
-mod tasks_tracker;
 mod telemetry_manager;
 mod telemetry_service;
 mod tests;

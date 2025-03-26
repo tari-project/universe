@@ -46,7 +46,7 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;

@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{debug, error, info, warn};
+use log::{debug, error, warn};
 use serde::Serialize;
 use serde_json::Value;
 use std::{sync::Arc, time::SystemTime};
