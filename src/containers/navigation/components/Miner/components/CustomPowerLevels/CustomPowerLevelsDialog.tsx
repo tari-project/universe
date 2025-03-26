@@ -18,7 +18,6 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 enum FormFields {
     CPU = 'cpu',
@@ -114,8 +113,6 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
             customGpuLevels: data[FormFields.GPUS],
         }).then(() => setSaved(true));
     }, []);
-
-    if (!maxAvailableThreads) return <CircularProgress />;
 
     const cpuMarkup = (
         <Controller

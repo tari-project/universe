@@ -62,10 +62,8 @@ const useTauriEventsListener = () => {
                         break;
 
                     case 'HardwarePhaseFinished':
-                        if (event.payload) {
-                            setHardwarePhaseComplete(event.payload);
-                            setSetupProgress(0.35);
-                        }
+                        setHardwarePhaseComplete(event.payload);
+                        setSetupProgress(0.35);
                         break;
                     case 'RemoteNodePhaseFinished':
                         if (event.payload) {
@@ -96,11 +94,9 @@ const useTauriEventsListener = () => {
                         setSetupProgress(0.95);
                         break;
                     case 'UnlockMining':
-                        if (event.payload) {
-                            console.info('Unlock mining');
-                            setMiningUnlocked(true);
-                            setSetupProgress(0.98);
-                        }
+                        console.info('Unlock mining');
+                        setMiningUnlocked(true);
+                        setSetupProgress(0.98);
                         break;
                     case 'SetupStatus':
                         await handleSetupStatus(event.payload);

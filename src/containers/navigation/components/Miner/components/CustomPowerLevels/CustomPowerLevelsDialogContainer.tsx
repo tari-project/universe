@@ -4,6 +4,7 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { useEffect } from 'react';
 import { getMaxAvailableThreads, setCustomLevelsDialogOpen } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 
 export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
@@ -27,7 +28,11 @@ export const CustomPowerLevelsDialogContainer = () => {
             disableClose={isChangingMode}
         >
             <DialogContent>
-                {maxThreads && <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />}
+                {maxThreads ? (
+                    <CustomPowerLevelsDialog maxAvailableThreads={maxThreads} handleClose={handleClose} />
+                ) : (
+                    <CircularProgress />
+                )}
             </DialogContent>
         </Dialog>
     );
