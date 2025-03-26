@@ -53,6 +53,7 @@ pub struct LocalNodeSetupPhaseSessionConfiguration {}
 #[derive(Clone, Default)]
 pub struct LocalNodeSetupPhaseAppConfiguration {
     use_tor: bool,
+    base_node_grpc_address: String,
 }
 
 pub struct LocalNodeSetupPhase {
@@ -84,7 +85,16 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         self.session_configuration = configuration;
 
         let use_tor = *ConfigCore::current().lock().await.get_content().use_tor();
-        self.app_configuration = LocalNodeSetupPhaseAppConfiguration { use_tor };
+        let base_node_grpc_address = ConfigCore::current()
+            .lock()
+            .await
+            .get_content()
+            .remote_base_node_address()
+            .clone();
+        self.app_configuration = LocalNodeSetupPhaseAppConfiguration {
+            use_tor,
+            base_node_grpc_address,
+        };
 
         Ok(())
     }
@@ -142,8 +152,6 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             tor_control_port = state.tor_manager.get_control_port().await?;
         }
 
-        let remote_node_address = state.config.read().await.remote_base_node_address();
-
         for _i in 0..2 {
             match state
                 .node_manager
@@ -154,7 +162,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                     log_dir.clone(),
                     self.app_configuration.use_tor,
                     tor_control_port,
-                    remote_node_address.clone(),
+                    Some(self.app_configuration.base_node_grpc_address.clone()),
                 )
                 .await
             {

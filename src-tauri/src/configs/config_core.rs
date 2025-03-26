@@ -51,6 +51,7 @@ pub struct ConfigCoreContent {
     pre_release: bool,
     last_changelog_version: Option<String>,
     airdrop_tokens: Option<AirdropTokens>,
+    remote_base_node_address: String,
 }
 
 impl Default for ConfigCoreContent {
@@ -70,6 +71,7 @@ impl Default for ConfigCoreContent {
             pre_release: false,
             last_changelog_version: None,
             airdrop_tokens: None,
+            remote_base_node_address: "https://grpc.esmeralda.tari.com:443".to_string(),
         }
     }
 }
@@ -121,6 +123,7 @@ impl ConfigImpl for ConfigCore {
             pre_release: old_config.pre_release(),
             last_changelog_version: Some(old_config.last_changelog_version().to_string()),
             airdrop_tokens: old_config.airdrop_tokens(),
+            remote_base_node_address: old_config.remote_base_node_address().unwrap_or_default(),
         };
         Ok(())
     }
