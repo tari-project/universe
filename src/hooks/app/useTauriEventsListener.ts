@@ -15,7 +15,6 @@ import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions'
 import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
-    handleSetupStatus,
     handleShowRelesaeNotes,
     loadExternalDependencies,
     setAppResumePayload,
@@ -25,7 +24,7 @@ import {
 } from '@app/store/actions/appStateStoreActions';
 import { setWalletAddress, setWalletBalance } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { setHardwarePhaseComplete, setMiningUnlocked, setSetupProgress } from '@app/store/actions/setupStoreActions.ts';
+import { handleAppUnlocked, handleMiningUnlocked, handleWalletUnlocked } from '@app/store/actions/setupStoreActions';
 
 const LOG_EVENT_TYPES = [
     'ResumingAllProcesses',
@@ -56,50 +55,25 @@ const useTauriEventsListener = () => {
                 handleLogUpdate(event);
                 switch (event.event_type) {
                     case 'CorePhaseFinished':
-                        if (event.payload) {
-                            setSetupProgress(0.15);
-                        }
                         break;
-
                     case 'HardwarePhaseFinished':
-                        setHardwarePhaseComplete(event.payload);
-                        setSetupProgress(0.35);
                         break;
                     case 'RemoteNodePhaseFinished':
-                        if (event.payload) {
-                            setSetupProgress(0.4);
-                        }
                         break;
                     case 'LocalNodePhaseFinished':
-                        if (event.payload) {
-                            setSetupProgress(0.45);
-                        }
                         break;
                     case 'UnknownPhaseFinished':
-                        if (event.payload) {
-                            setSetupProgress(0.5);
-                        }
                         break;
                     case 'WalletPhaseFinished':
-                        if (event.payload) {
-                            setSetupProgress(0.65);
-                        }
                         break;
                     case 'UnlockApp':
-                        console.info('Unlock app', event.payload);
-                        setSetupProgress(0.9);
+                        handleAppUnlocked();
                         break;
                     case 'UnlockWallet':
-                        console.info('Unlock wallet', event.payload);
-                        setSetupProgress(0.95);
+                        handleWalletUnlocked();
                         break;
                     case 'UnlockMining':
-                        console.info('Unlock mining');
-                        setMiningUnlocked(true);
-                        setSetupProgress(0.98);
-                        break;
-                    case 'SetupStatus':
-                        await handleSetupStatus(event.payload);
+                        handleMiningUnlocked();
                         break;
                     case 'WalletAddressUpdate':
                         setWalletAddress(event.payload);

@@ -26,7 +26,6 @@ use std::{
 };
 
 use log::{error, info};
-use serde_json::json;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, Mutex};
@@ -35,7 +34,6 @@ use crate::{
     auto_launcher::AutoLauncher,
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events::SetupStatusPayload,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
@@ -115,6 +113,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .add_step(ProgressPlans::SetupCore(
                 ProgressSetupCorePlan::BinariesP2pool,
             ))
+            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
             .calculate_percentage_steps()
             .build(app_handle);
 
@@ -188,18 +187,6 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         state
             .events_manager
             .handle_app_config_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_setup_status(
-                &app_handle,
-                SetupStatusPayload {
-                    event_type: "setup_status".to_string(),
-                    title: "starting-up".to_string(),
-                    title_params: None,
-                    progress: 0.0,
-                },
-            )
             .await;
 
         // TODO Remove once not needed
@@ -399,6 +386,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
         //drop binary resolver to release the lock
         drop(binary_resolver);
+
+        let _uunused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
+            .await;
 
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
 

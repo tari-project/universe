@@ -34,7 +34,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{EventType, ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
+    events::{EventType, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
@@ -199,11 +199,6 @@ impl EventsManager {
     ) {
         EventsEmitter::emit_resuming_all_processes(app, payload).await;
     }
-
-    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusPayload) {
-        EventsEmitter::emit_setup_status(app, payload).await;
-    }
-
     pub async fn handle_network_status_update(
         &self,
         app: &AppHandle,
@@ -250,7 +245,7 @@ impl EventsManager {
     pub async fn handle_progress_tracker_update(
         &self,
         app: &AppHandle,
-        event_type: EventType,
+        event_type: ProgressEvents,
         phase_title: String,
         title: String,
         progress: f64,

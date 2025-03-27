@@ -37,27 +37,29 @@ pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
     next_step_percentage: Option<f64>,
-    app_handle: AppHandle,
+    app_handle: Option<AppHandle>,
 }
 
 impl ChanneledStepUpdate {
     pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
-        let app_state = self.app_handle.state::<UniverseAppState>();
-        let resolved_percentage = self.step_percentage
-            + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
-                * current_step_percentage;
+        if let Some(app_handle) = &self.app_handle {
+            let app_state = app_handle.state::<UniverseAppState>();
+            let resolved_percentage = self.step_percentage
+                + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
+                    * current_step_percentage;
 
-        app_state
-            .events_manager
-            .handle_progress_tracker_update(
-                &self.app_handle,
-                self.step.get_event_type(),
-                self.step.get_phase_title(),
-                self.step.get_title(),
-                resolved_percentage,
-                Some(params),
-            )
-            .await;
+            app_state
+                .events_manager
+                .handle_progress_tracker_update(
+                    app_handle,
+                    self.step.get_event_type(),
+                    self.step.get_phase_title(),
+                    self.step.get_title(),
+                    resolved_percentage,
+                    Some(params),
+                )
+                .await;
+        }
     }
 }
 pub struct ProgressStepper {
@@ -76,15 +78,20 @@ impl ProgressStepper {
     }
 
     pub async fn resolve_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
+        info!(
+            target: LOG_TARGET,
+            "Resolving step: {}",
+            step.get_title(),
+        );
+
+        info!(target: LOG_TARGET, "Current plan:");
+        self.plan.iter().for_each(|x| {
+            info!(target: LOG_TARGET, "Step: {}", x.get_title());
+        });
+
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let resolved_step = self.plan.remove(index);
             let resolved_percentage = self.percentage_steps.remove(index);
-            info!(
-                target: LOG_TARGET,
-                "Resolving step: {} with percentage: {}",
-                resolved_step.get_title(),
-                resolved_percentage
-            );
 
             let event = resolved_step.resolve_to_event();
 
@@ -137,7 +144,7 @@ impl ProgressStepper {
                         step: resolved_step.clone(),
                         step_percentage: resolved_percentage.clone(),
                         next_step_percentage,
-                        app_handle: self.app_handle.clone().unwrap(),
+                        app_handle: self.app_handle.clone(),
                     };
 
                     return Some(channel_step_update);
@@ -146,7 +153,7 @@ impl ProgressStepper {
                 let channel_step_update = ChanneledStepUpdate {
                     step: resolved_step.clone(),
                     step_percentage: resolved_percentage.clone(),
-                    app_handle: self.app_handle.clone().unwrap(),
+                    app_handle: self.app_handle.clone(),
                     next_step_percentage: None,
                 };
 

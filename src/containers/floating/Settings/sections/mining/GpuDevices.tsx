@@ -20,7 +20,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const miningAllowed = useSetupStore((s) => s.setupComplete);
+    const miningAllowed = useSetupStore((s) => s.miningUnlocked);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 

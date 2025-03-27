@@ -23,7 +23,7 @@ const ErrorTypography = styled(Typography)(({ theme }) => ({
 
 function VisualMode() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const setupComplete = useSetupStore((s) => s.setupComplete);
+    const setupComplete = useSetupStore((s) => s.appUnlocked);
     const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });

@@ -10,16 +10,16 @@ export const CustomPowerLevelsDialogContainer = () => {
     const customLevelsDialogOpen = useMiningStore((s) => s.customLevelsDialogOpen);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const maxThreads = useMiningStore((s) => s.maxAvailableThreads);
-    const hardwarePhaseComplete = useSetupStore((s) => s.hardwarePhaseComplete);
+    const isMiningnlocked = useSetupStore((s) => s.miningUnlocked);
 
     const handleClose = () => {
         setCustomLevelsDialogOpen(false);
     };
     useEffect(() => {
-        if (!maxThreads && hardwarePhaseComplete) {
+        if (!maxThreads && isMiningnlocked) {
             getMaxAvailableThreads();
         }
-    }, [maxThreads, hardwarePhaseComplete]);
+    }, [maxThreads, isMiningnlocked]);
 
     return (
         <Dialog

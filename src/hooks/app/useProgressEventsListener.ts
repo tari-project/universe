@@ -1,0 +1,60 @@
+import { updateCoreSetupPhaseInfo, updateLocalNodeSetupPhaseInfo } from '@app/store/actions/setupStoreActions';
+import { deepEqual } from '@app/utils/objectDeepEqual';
+import { listen } from '@tauri-apps/api/event';
+import { useEffect, useRef } from 'react';
+
+export const PROGRESS_STATE_UPDATE = 'progress_tracker_update';
+
+export interface ProgressTrackerUpdatePayload {
+    phase_title: string;
+    title: string;
+    progress: number;
+    title_params: Record<string, string>;
+}
+
+export type ProgressStateUpdateEvent =
+    | {
+          event_type: 'CorePhaseUpdate';
+          payload: ProgressTrackerUpdatePayload;
+      }
+    | {
+          event_type: 'LocalNodePhaseUpdate';
+          payload: ProgressTrackerUpdatePayload;
+      };
+
+const LOG_EVENT_TYPES = ['ProgressTrackerStartup'];
+
+export const useProgressEventsListener = () => {
+    const eventRef = useRef<ProgressStateUpdateEvent | null>(null);
+    function handleLogUpdate(newEvent: ProgressStateUpdateEvent) {
+        if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
+            const isEqual = deepEqual(eventRef.current, newEvent);
+            if (!isEqual) {
+                console.info('Received event', newEvent);
+                eventRef.current = newEvent;
+            }
+        }
+    }
+
+    useEffect(() => {
+        const unlisten = listen(
+            PROGRESS_STATE_UPDATE,
+            async ({ payload: event }: { payload: ProgressStateUpdateEvent }) => {
+                handleLogUpdate(event);
+                switch (event.event_type) {
+                    case 'CorePhaseUpdate':
+                        updateCoreSetupPhaseInfo(event.payload);
+                        break;
+                    case 'LocalNodePhaseUpdate':
+                        updateLocalNodeSetupPhaseInfo(event.payload);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        );
+        return () => {
+            unlisten.then((fn) => fn());
+        };
+    }, []);
+};

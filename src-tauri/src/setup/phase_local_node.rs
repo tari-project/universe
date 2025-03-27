@@ -92,7 +92,9 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .add_step(ProgressPlans::SetupLocalNode(
                 ProgressSetupLocalNodePlan::WaitingForBlockSync,
             ))
+            .calculate_percentage_steps()
             .build(app_handle.clone());
+
         *self.progress_stepper.lock().await = progress_stepper;
     }
 
@@ -161,6 +163,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                 ProgressSetupLocalNodePlan::StartingLocalNode,
             ))
             .await;
+
         for _i in 0..2 {
             match state
                 .node_manager

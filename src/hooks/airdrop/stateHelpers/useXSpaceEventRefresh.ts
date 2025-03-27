@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 export function useXSpaceEventRefresh() {
-    const setupComplete = useSetupStore((state) => state.setupComplete);
+    const setupComplete = useSetupStore((state) => state.appUnlocked);
     const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
 
     useEffect(() => {

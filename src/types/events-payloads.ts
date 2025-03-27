@@ -20,13 +20,6 @@ export interface DetectedAvailableGpuEngines {
     selected_engine: string;
 }
 
-export interface SetupStatusPayload {
-    event_type: string;
-    title: string;
-    title_params?: Record<string, string>;
-    progress: number;
-}
-
 export interface ResumingAllProcessesPayload {
     title: string;
     stage_progress: number;

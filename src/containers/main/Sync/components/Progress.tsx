@@ -22,15 +22,17 @@ const Label = styled(Typography).attrs({ variant: 'p' })`
 `;
 export default function Progress() {
     const { t } = useTranslation('setup-view');
-    const setupProgress = useSetupStore((s) => s.setupProgress);
-    const setupTitle = useSetupStore((s) => s.setupTitle);
-    const setupTitleParams = useSetupStore((s) => s.setupTitleParams);
+    const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
+    const phaseTitleParams = corePhaseInfoPayload?.title_params;
+    const setupTitle = corePhaseInfoPayload?.title;
+    const setupProgress = corePhaseInfoPayload?.progress;
+    const setupTitleParams = phaseTitleParams ? { ...phaseTitleParams } : {};
+
     const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
-    const progressPercentage = Math.floor(setupProgress * 100);
     return (
         <Wrapper>
-            <LinearProgress variant="large" value={progressPercentage} />
-            <Percentage>{`${progressPercentage}%`}</Percentage>
+            <LinearProgress variant="large" value={setupProgress} />
+            <Percentage>{`${setupProgress}%`}</Percentage>
             <Label>{setUpText}</Label>
         </Wrapper>
     );

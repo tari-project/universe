@@ -1,17 +1,13 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
-import { SetupTitleParams } from '../types/setup.ts';
 import { useAppConfigStore } from '../useAppConfigStore';
 import { useSetupStore } from '../useSetupStore';
 import { startMining } from './miningStoreActions';
-import { sidebarTowerOffset, TOWER_CANVAS_ID } from '@app/store';
+import { fetchApplicationsVersionsWithRetry, sidebarTowerOffset, TOWER_CANVAS_ID } from '@app/store';
+import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
-export const setSetupComplete = async () => {
-    // Proceed with auto mining when enabled
-    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
-    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
-    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+export const handleAppUnlocked = async () => {
+    useSetupStore.setState({ appUnlocked: true });
     const visual_mode = useAppConfigStore.getState().visual_mode;
     if (visual_mode) {
         try {
@@ -27,21 +23,45 @@ export const setSetupComplete = async () => {
             useAppConfigStore.setState({ visual_mode: false });
         }
     }
-
+    // todo move it to event
+    await fetchApplicationsVersionsWithRetry();
+};
+export const handleWalletUnlocked = () => {
+    useSetupStore.setState({ walletUnlocked: true });
+};
+export const handleMiningUnlocked = async () => {
+    useSetupStore.setState({ miningUnlocked: true });
+    // Proceed with auto mining when enabled
+    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
+    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
     if (mine_on_app_start && useSetupStore.getState().miningUnlocked && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }
-    useSetupStore.setState({ setupComplete: true });
 };
 
-export const setSetupProgress = (setupProgress: number) => useSetupStore.setState({ setupProgress });
-export const setSetupTitle = (setupTitle: string) => useSetupStore.setState({ setupTitle });
-export const setHardwarePhaseComplete = (hardwarePhaseComplete: boolean) =>
-    useSetupStore.setState({ hardwarePhaseComplete });
+export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ core_phase_setup_payload: payload });
+};
 
-export const setMiningUnlocked = (miningUnlocked: boolean) => useSetupStore.setState({ miningUnlocked });
-export const setSetupTitleParams = (setupTitleParams: SetupTitleParams) =>
-    useSetupStore.setState((current) => {
-        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
-        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
-    });
+export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ hardware_phase_setup_payload: payload });
+};
+
+export const updateRemoteNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ remote_node_phase_setup_payload: payload });
+};
+
+export const updateLocalNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ local_node_phase_setup_payload: payload });
+};
+
+export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ wallet_phase_setup_payload: payload });
+};
+
+export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ unknown_phase_setup_payload: payload });
+};
+
+// await setSetupComplete();

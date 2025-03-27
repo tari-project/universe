@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events::EventType;
+use crate::events::ProgressEvents;
 
 pub trait ProgressEvent {
-    fn get_event_type(&self) -> EventType;
+    fn get_event_type(&self) -> ProgressEvents;
     fn get_phase_title(&self) -> String;
     fn get_title(&self) -> String;
 }
@@ -32,19 +32,19 @@ pub trait ProgressStep {
     type ChannelEvent: ProgressEvent;
     fn resolve_to_event(&self) -> Self::ChannelEvent;
     fn get_progress_weight(&self) -> u8;
-    fn get_event_type(&self) -> EventType;
+    fn get_event_type(&self) -> ProgressEvents;
     fn get_phase_title(&self) -> String;
     fn get_title(&self) -> String;
 }
 
 pub struct ProgressPlanEventPayload {
-    event_type: EventType,
+    event_type: ProgressEvents,
     phase_title: String,
     title: String,
 }
 
 impl ProgressEvent for ProgressPlanEventPayload {
-    fn get_event_type(&self) -> EventType {
+    fn get_event_type(&self) -> ProgressEvents {
         self.event_type.clone()
     }
 
@@ -68,13 +68,14 @@ pub enum ProgressSetupCorePlan {
     BinariesGpuMiner,
     BinariesP2pool,
     BinariesMergeMiningProxy,
+    StartTor,
 }
 
 impl ProgressStep for ProgressSetupCorePlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
-    fn get_event_type(&self) -> EventType {
-        EventType::ProgressTrackerStartup
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::CorePhaseUpdate
     }
 
     fn get_progress_weight(&self) -> u8 {
@@ -89,6 +90,7 @@ impl ProgressStep for ProgressSetupCorePlan {
             ProgressSetupCorePlan::BinariesGpuMiner => 2,
             ProgressSetupCorePlan::BinariesP2pool => 2,
             ProgressSetupCorePlan::BinariesMergeMiningProxy => 2,
+            ProgressSetupCorePlan::StartTor => 1,
         }
     }
 
@@ -112,6 +114,7 @@ impl ProgressStep for ProgressSetupCorePlan {
             ProgressSetupCorePlan::BinariesMergeMiningProxy => {
                 "binaries-merge-mining-proxy".to_string()
             }
+            ProgressSetupCorePlan::StartTor => "start-tor".to_string(),
         }
     }
 
@@ -135,8 +138,8 @@ pub enum ProgressSetupLocalNodePlan {
 impl ProgressStep for ProgressSetupLocalNodePlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
-    fn get_event_type(&self) -> EventType {
-        EventType::ProgressTrackerStartup
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::LocalNodePhaseUpdate
     }
 
     fn get_progress_weight(&self) -> u8 {
@@ -182,7 +185,7 @@ pub enum ProgressPlans {
 }
 #[allow(dead_code)]
 impl ProgressPlans {
-    fn get_event_type(&self) -> EventType {
+    fn get_event_type(&self) -> ProgressEvents {
         match self {
             ProgressPlans::SetupCore(plan) => plan.get_event_type(),
             ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),
@@ -193,7 +196,7 @@ impl ProgressPlans {
 impl ProgressStep for ProgressPlans {
     type ChannelEvent = ProgressPlanEventPayload;
 
-    fn get_event_type(&self) -> EventType {
+    fn get_event_type(&self) -> ProgressEvents {
         match self {
             ProgressPlans::SetupCore(plan) => plan.get_event_type(),
             ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),

@@ -14,7 +14,7 @@ import {
 
 export const TorDebug = ({ isMac }: { isMac?: boolean }) => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setupProgress = useSetupStore((s) => s.setupProgress);
+    const appUnlocked = useSetupStore((s) => s.appUnlocked);
     const [entryGuards, setEntryGuards] = useState<string[]>([]);
 
     useEffect(() => {
@@ -25,12 +25,12 @@ export const TorDebug = ({ isMac }: { isMac?: boolean }) => {
                 });
             };
 
-            if (setupProgress >= 0.5) {
+            if (appUnlocked) {
                 // Fetch entry guards after the tor is up
                 fetchEntryGuards();
             }
         }
-    }, [isMac, setupProgress]);
+    }, [isMac, appUnlocked]);
 
     return (
         <SettingsGroupWrapper>

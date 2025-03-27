@@ -23,10 +23,8 @@
 use std::{collections::HashMap, sync::Arc};
 
 use log::{error, info};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::{watch::Sender, RwLock};
-
-use crate::{events::SetupStatusPayload, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
@@ -123,19 +121,5 @@ impl ProgressTrackerInner {
                 .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
                 .ok();
         }
-
-        let app_state = self.app_handle.state::<UniverseAppState>();
-        app_state
-            .events_manager
-            .handle_setup_status(
-                &self.app_handle,
-                SetupStatusPayload {
-                    event_type: "setup_status".to_string(),
-                    title,
-                    title_params,
-                    progress: progress_percentage,
-                },
-            )
-            .await;
     }
 }

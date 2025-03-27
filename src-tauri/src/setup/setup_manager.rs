@@ -34,7 +34,6 @@ use tokio::{
 };
 
 use crate::{
-    events::SetupStatusPayload,
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTracker,
@@ -225,19 +224,6 @@ impl SetupManager {
             // todo move it out from here
             let state = app_handle.state::<UniverseAppState>();
             let _unused = initialize_frontend_updates(&app_handle).await;
-            // todo remove once its not needed
-            state
-                .events_manager
-                .handle_setup_status(
-                    &app_handle,
-                    SetupStatusPayload {
-                        event_type: "setup_status".to_string(),
-                        title: "application-started".to_string(),
-                        title_params: None,
-                        progress: 1.0,
-                    },
-                )
-                .await;
 
             let app_handle_clone: tauri::AppHandle = app_handle.clone();
             let mut shutdown_signal = state.shutdown.to_signal();
