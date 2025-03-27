@@ -10,8 +10,6 @@ import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import Tile from './components/Tile.tsx';
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
 
-import { useMiningStatesSync } from '@app/hooks';
-
 import { ExpandableTile } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.tsx';
 import {
     ExpandableTileItem,
@@ -19,6 +17,7 @@ import {
 } from '@app/containers/main/SideBar/Miner/components/ExpandableTile.styles.ts';
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
+import { useMiningStatesSync } from '@app/hooks/mining/useMiningStatesSync.ts';
 
 export default function Miner() {
     useMiningStatesSync();
