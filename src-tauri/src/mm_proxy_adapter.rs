@@ -118,7 +118,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
                 "merge_mining_proxy.base_node_grpc_address={}",
-                config.base_node_grpc_address
+                "/dns4/grpc.esmeralda.tari.com/tcp/443"
             ),
             "-p".to_string(),
             format!(
@@ -159,8 +159,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
             args.push("-p".to_string());
             args.push(format!(
-                "merge_mining_proxy.p2pool_node_grpc_address=http://127.0.0.1:{}",
-                config.p2pool_grpc_port
+                "merge_mining_proxy.p2pool_node_grpc_address={}",
+                "/dns4/grpc-p2pool.nextnet.tari.com/tcp/443"
+
             ));
         }
 
