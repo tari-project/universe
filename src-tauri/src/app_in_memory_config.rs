@@ -113,7 +113,7 @@ impl AppInMemoryConfig {
             telemetry_api_url: TELEMETRY_API_URL.into(),
         };
 
-        #[cfg(feature = "airdrop-local")]
+        #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
         return AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
