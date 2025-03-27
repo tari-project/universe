@@ -1,5 +1,5 @@
 {
-    "version": "0.9.826",
+    "version": "0.9.827",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -31,32 +31,23 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true
+        "createUpdaterArtifacts": "v1Compatible"
     },
     "app": {
         "security": {
-            "capabilities": ["desktop-capability", "default", "migrated"],
-            "dangerousDisableAssetCspModification": ["style-src"],
+            "capabilities": [
+                "desktop-capability",
+                "default",
+                "migrated"
+            ],
+            "dangerousDisableAssetCspModification": [
+                "style-src"
+            ],
             "csp": {
-                "default-src": "'self' tauri: https:",
+                "default-src": "'self' asset: tauri: URL: blob: data: https:",
+                "script-src": "'wasm-unsafe-eval'",
                 "style-src": "'self' 'unsafe-inline'",
-                "connect-src": [
-                    "'self'",
-                    "https:",
-                    "wss://ut.tari.com",
-                    "tauri:",
-                    "ipc:",
-                    "http://ipc.localhost",
-                    "data:",
-                    "blob:",
-                    "application/octet-stream",
-                    "base64"
-                ],
-                "script-src": "'self' 'unsafe-eval'",
-                "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower",
-                "object-src": "'self' data: blob:",
-                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
+                "connect-src": "https: wss://ut.tari.com tauri: ipc: http://ipc.localhost https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm https://unpkg.com/@lottiefiles/dotlottie-web@0.40.1/dist/dotlottie-player.wasm data: application/octet-stream base64"
             },
             "pattern": {
                 "use": "isolation",
