@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
@@ -249,12 +251,20 @@ impl EventsManager {
         &self,
         app: &AppHandle,
         event_type: EventType,
+        phase_title: String,
         title: String,
         progress: f64,
-        description: Option<String>,
+        title_params: Option<HashMap<String, String>>,
     ) {
-        EventsEmitter::emit_progress_tracker_update(app, event_type, title, progress, description)
-            .await;
+        EventsEmitter::emit_progress_tracker_update(
+            app,
+            event_type,
+            phase_title,
+            title,
+            progress,
+            title_params,
+        )
+        .await;
     }
 
     pub async fn handle_core_phase_finished(&self, app: &AppHandle, status: bool) {

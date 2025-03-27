@@ -99,6 +99,9 @@ impl SetupManager {
         let _unused = core_phase_setup
             .load_configuration(CoreSetupPhaseSessionConfiguration {})
             .await;
+        core_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
+            .await;
         let core_phase_setup = Arc::new(core_phase_setup);
         core_phase_setup.setup(app_handle.clone()).await;
     }
@@ -108,12 +111,16 @@ impl SetupManager {
         let _unused = hardware_phase_setup
             .load_configuration(HardwareSetupPhaseSessionConfiguration {})
             .await;
+        hardware_phase_setup.create_progress_stepper(None).await;
         let hardware_phase_setup = Arc::new(hardware_phase_setup);
         hardware_phase_setup.setup(app_handle.clone()).await;
 
         let mut local_node_phase_setup = LocalNodeSetupPhase::new();
         let _unused = local_node_phase_setup
             .load_configuration(LocalNodeSetupPhaseSessionConfiguration {})
+            .await;
+        local_node_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
             .await;
         let local_node_phase_setup = Arc::new(local_node_phase_setup);
         local_node_phase_setup.setup(app_handle.clone()).await;
@@ -131,6 +138,7 @@ impl SetupManager {
         let _unused = wallet_phase_setup
             .load_configuration(WalletSetupPhaseSessionConfiguration {})
             .await;
+        wallet_phase_setup.create_progress_stepper(None).await;
         let wallet_phase_setup = Arc::new(wallet_phase_setup);
         wallet_phase_setup.setup(app_handle.clone()).await;
 
@@ -145,6 +153,7 @@ impl SetupManager {
                 cpu_benchmarked_hashrate,
             })
             .await;
+        unknown_phase_setup.create_progress_stepper(None).await;
         let unknown_phase_setup = Arc::new(unknown_phase_setup);
         unknown_phase_setup.setup(app_handle.clone()).await;
     }

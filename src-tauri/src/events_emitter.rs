@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -51,16 +53,18 @@ impl EventsEmitter {
     pub async fn emit_progress_tracker_update(
         app_handle: &AppHandle,
         event_type: EventType,
+        phase_title: String,
         title: String,
         progress: f64,
-        description: Option<String>,
+        title_params: Option<HashMap<String, String>>,
     ) {
         let event: Event<ProgressTrackerUpdatePayload> = Event {
             event_type,
             payload: ProgressTrackerUpdatePayload {
+                phase_title,
                 title,
                 progress,
-                description,
+                title_params,
             },
         };
         if let Err(e) = app_handle.emit(PROGRESS_TRACKER_UPDATE, event) {

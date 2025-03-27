@@ -199,7 +199,8 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .await;
     stage_progress += 1;
 
-    state.node_manager.wait_synced(progress.clone()).await?;
+    // !todo resume_all_processes will be replaced by new setup
+    // state.node_manager.wait_synced(progress.clone()).await?;
 
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner

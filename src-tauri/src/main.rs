@@ -762,7 +762,7 @@ async fn setup_inner(
         )
         .await;
     progress.set_max(75).await;
-    state.node_manager.wait_synced(progress.clone()).await?;
+    // state.node_manager.wait_synced(progress.clone()).await?;
     let mut telemetry_id = state
         .telemetry_manager
         .read()

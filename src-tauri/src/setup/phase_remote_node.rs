@@ -31,6 +31,7 @@ use anyhow::Error;
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
+use tokio::sync::Mutex;
 
 use super::{
     setup_manager::{SetupManager, SetupPhase},
@@ -51,7 +52,7 @@ pub struct RemoteNodeSetupPhaseAppConfiguration {}
 
 pub struct RemoteNodeSetupPhase {
     #[allow(dead_code)]
-    progress_stepper: ProgressStepper,
+    progress_stepper: Mutex<ProgressStepper>,
     #[allow(dead_code)]
     app_configuration: RemoteNodeSetupPhaseAppConfiguration,
     session_configuration: RemoteNodeSetupPhaseSessionConfiguration,
@@ -62,14 +63,15 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
 
     fn new() -> Self {
         RemoteNodeSetupPhase {
-            progress_stepper: Self::create_progress_stepper(),
+            progress_stepper: Mutex::new(ProgressStepper::new()),
             app_configuration: RemoteNodeSetupPhaseAppConfiguration::default(),
             session_configuration: RemoteNodeSetupPhaseSessionConfiguration::default(),
         }
     }
 
-    fn create_progress_stepper() -> ProgressStepper {
-        ProgressStepperBuilder::new().build()
+    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
+        let progress_stepper = ProgressStepperBuilder::new().build(app_handle.clone());
+        *self.progress_stepper.lock().await = progress_stepper;
     }
 
     async fn load_configuration(

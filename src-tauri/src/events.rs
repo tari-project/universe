@@ -60,14 +60,14 @@ pub enum EventType {
     UnlockApp,
     UnlockWallet,
     UnlockMining,
-    // ProgressTrackerResume,
     ProgressTrackerStartup,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
+    pub phase_title: String,
     pub title: String,
     pub progress: f64,
-    pub description: Option<String>,
+    pub title_params: Option<HashMap<String, String>>,
 }
 
 #[derive(Clone, Debug, Serialize)]

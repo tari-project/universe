@@ -26,7 +26,11 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_tracker_old::ProgressTracker,
-    progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
+    progress_trackers::{
+        progress_plans::{ProgressPlans, ProgressSetupLocalNodePlan},
+        progress_stepper::ProgressStepperBuilder,
+        ProgressStepper,
+    },
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -34,7 +38,7 @@ use anyhow::Error;
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::watch;
+use tokio::sync::{watch, Mutex};
 
 use super::{
     setup_manager::{SetupManager, SetupPhase},
@@ -58,7 +62,7 @@ pub struct LocalNodeSetupPhaseAppConfiguration {
 
 pub struct LocalNodeSetupPhase {
     #[allow(dead_code)]
-    progress_stepper: ProgressStepper,
+    progress_stepper: Mutex<ProgressStepper>,
     app_configuration: LocalNodeSetupPhaseAppConfiguration,
     session_configuration: LocalNodeSetupPhaseSessionConfiguration,
 }
@@ -68,14 +72,28 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
 
     fn new() -> Self {
         LocalNodeSetupPhase {
-            progress_stepper: Self::create_progress_stepper(),
+            progress_stepper: Mutex::new(ProgressStepper::new()),
             app_configuration: LocalNodeSetupPhaseAppConfiguration::default(),
             session_configuration: LocalNodeSetupPhaseSessionConfiguration::default(),
         }
     }
 
-    fn create_progress_stepper() -> ProgressStepper {
-        ProgressStepperBuilder::new().build()
+    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
+        let progress_stepper = ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::StartingLocalNode,
+            ))
+            .add_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::WaitingForInitialSync,
+            ))
+            .add_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::WaitingForHeaderSync,
+            ))
+            .add_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::WaitingForBlockSync,
+            ))
+            .build(app_handle.clone());
+        *self.progress_stepper.lock().await = progress_stepper;
     }
 
     async fn load_configuration(
@@ -131,27 +149,18 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         &self,
         app_handle: AppHandle,
     ) -> Result<Option<LocalNodeSetupPhasePayload>, Error> {
+        let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
         let state = app_handle.state::<UniverseAppState>();
 
-        // TODO Remove once not needed
-        let (tx, _rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
+        info!(target: LOG_TARGET, "Starting node manager with base node address: {}", self.app_configuration.base_node_grpc_address);
 
-        let mut tor_control_port = None;
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            state
-                .tor_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
-                .await?;
-            tor_control_port = state.tor_manager.get_control_port().await?;
-        }
-
+        let tor_control_port = state.tor_manager.get_control_port().await?;
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::StartingLocalNode,
+            ))
+            .await;
         for _i in 0..2 {
             match state
                 .node_manager
@@ -183,7 +192,33 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             }
         }
 
-        state.node_manager.wait_synced(progress.clone()).await?;
+        let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForInitialSync),
+            Some(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::WaitingForHeaderSync,
+            )),
+        );
+
+        let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForHeaderSync),
+            Some(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::WaitingForBlockSync,
+            )),
+        );
+
+        let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
+            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForBlockSync),
+            None,
+        );
+
+        state
+            .node_manager
+            .wait_synced(vec![
+                wait_for_initial_sync_tracker,
+                wait_for_header_sync_tracker,
+                wait_for_block_sync_tracker,
+            ])
+            .await?;
 
         Ok(None)
     }

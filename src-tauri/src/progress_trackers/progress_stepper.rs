@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
 
@@ -31,17 +33,49 @@ use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
+pub struct ChanneledStepUpdate {
+    step: ProgressPlans,
+    step_percentage: f64,
+    next_step_percentage: Option<f64>,
+    app_handle: AppHandle,
+}
+
+impl ChanneledStepUpdate {
+    pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
+        let app_state = self.app_handle.state::<UniverseAppState>();
+        let resolved_percentage = self.step_percentage
+            + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
+                * current_step_percentage;
+
+        app_state
+            .events_manager
+            .handle_progress_tracker_update(
+                &self.app_handle,
+                self.step.get_event_type(),
+                self.step.get_phase_title(),
+                self.step.get_title(),
+                resolved_percentage,
+                Some(params),
+            )
+            .await;
+    }
+}
 pub struct ProgressStepper {
     plan: Vec<ProgressPlans>,
     percentage_steps: Vec<f64>,
+    app_handle: Option<AppHandle>,
 }
 
 impl ProgressStepper {
-    pub async fn resolve_step(
-        &mut self,
-        app_handle: Option<AppHandle>,
-        step: ProgressPlans,
-    ) -> Result<(), Error> {
+    pub fn new() -> Self {
+        ProgressStepper {
+            plan: Vec::new(),
+            percentage_steps: Vec::new(),
+            app_handle: None,
+        }
+    }
+
+    pub async fn resolve_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let resolved_step = self.plan.remove(index);
             let resolved_percentage = self.percentage_steps.remove(index);
@@ -54,7 +88,7 @@ impl ProgressStepper {
 
             let event = resolved_step.resolve_to_event();
 
-            match app_handle {
+            match &self.app_handle {
                 Some(app_handle) => {
                     let app_state = app_handle.state::<UniverseAppState>();
                     app_state
@@ -62,9 +96,10 @@ impl ProgressStepper {
                         .handle_progress_tracker_update(
                             &app_handle,
                             event.get_event_type(),
+                            event.get_phase_title(),
                             event.get_title(),
                             resolved_percentage,
-                            event.get_description(),
+                            None,
                         )
                         .await;
                 }
@@ -85,6 +120,43 @@ impl ProgressStepper {
 
         Ok(())
     }
+
+    pub fn channel_step_range_updates(
+        &mut self,
+        step: ProgressPlans,
+        next_step: Option<ProgressPlans>,
+    ) -> Option<ChanneledStepUpdate> {
+        if let Some(first_index) = self.plan.iter().position(|x| x.eq(&step)) {
+            let resolved_step = self.plan.remove(first_index);
+            let resolved_percentage = self.percentage_steps.remove(first_index);
+
+            if let Some(next_step) = next_step {
+                if let Some(next_index) = self.plan.iter().position(|x| x.eq(&next_step)) {
+                    let next_step_percentage = self.percentage_steps.get(next_index).cloned();
+                    let channel_step_update = ChanneledStepUpdate {
+                        step: resolved_step.clone(),
+                        step_percentage: resolved_percentage.clone(),
+                        next_step_percentage,
+                        app_handle: self.app_handle.clone().unwrap(),
+                    };
+
+                    return Some(channel_step_update);
+                }
+            } else {
+                let channel_step_update = ChanneledStepUpdate {
+                    step: resolved_step.clone(),
+                    step_percentage: resolved_percentage.clone(),
+                    app_handle: self.app_handle.clone().unwrap(),
+                    next_step_percentage: None,
+                };
+
+                return Some(channel_step_update);
+            }
+        };
+
+        None
+    }
+
     pub fn skip_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let removed_step = self.plan.remove(index);
@@ -141,10 +213,11 @@ impl ProgressStepperBuilder {
         self
     }
 
-    pub fn build(&self) -> ProgressStepper {
+    pub fn build(&self, app_handle: Option<AppHandle>) -> ProgressStepper {
         ProgressStepper {
             plan: self.plan.clone().into_iter().rev().collect(),
             percentage_steps: self.percentage_steps.clone().into_iter().rev().collect(),
+            app_handle,
         }
     }
 }

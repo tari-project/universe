@@ -22,10 +22,7 @@
 
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
-use crate::UniverseAppState;
-use anyhow::anyhow;
 use std::fmt::Display;
-use tauri::Manager;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
