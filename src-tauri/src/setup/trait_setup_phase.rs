@@ -25,13 +25,11 @@ use std::{path::PathBuf, sync::Arc};
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
 
-use crate::progress_trackers::progress_stepper::ProgressStepper;
-
 pub trait SetupPhaseImpl<T> {
     type Configuration: Clone + Default;
 
     fn new() -> Self;
-    fn create_progress_stepper() -> ProgressStepper;
+    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>);
     async fn load_configuration(&mut self, configuration: Self::Configuration)
         -> Result<(), Error>;
     async fn setup(self: Arc<Self>, app_handle: AppHandle);

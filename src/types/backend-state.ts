@@ -5,7 +5,6 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     ResumingAllProcessesPayload,
-    SetupStatusPayload,
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from './events-payloads.ts';
@@ -64,10 +63,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'DetectedAvailableGpuEngines';
           payload: DetectedAvailableGpuEngines;
-      }
-    | {
-          event_type: 'SetupStatus';
-          payload: SetupStatusPayload;
       }
     | {
           event_type: 'ResumingAllProcesses';

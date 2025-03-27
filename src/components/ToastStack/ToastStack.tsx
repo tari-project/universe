@@ -7,7 +7,7 @@ import { Inside, Wrapper } from './styles';
 
 const ToastStack = memo(function ToastStack() {
     const { toasts } = useToastStore();
-    const isSettingUp = useSetupStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = useCallback(() => {

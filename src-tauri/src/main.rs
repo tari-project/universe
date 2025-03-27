@@ -25,7 +25,6 @@
 
 use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
-use events::SetupStatusPayload;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
@@ -291,18 +290,6 @@ async fn setup_inner(
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
     state.events_manager.handle_app_config_loaded(&app).await;
-    state
-        .events_manager
-        .handle_setup_status(
-            &app,
-            SetupStatusPayload {
-                event_type: "setup_status".to_string(),
-                title: "starting-up".to_string(),
-                title_params: None,
-                progress: 0.0,
-            },
-        )
-        .await;
 
     #[cfg(target_os = "macos")]
     if !cfg!(dev) && !is_app_in_applications_folder() {
@@ -762,7 +749,7 @@ async fn setup_inner(
         )
         .await;
     progress.set_max(75).await;
-    state.node_manager.wait_synced(progress.clone()).await?;
+    // state.node_manager.wait_synced(progress.clone()).await?;
     let mut telemetry_id = state
         .telemetry_manager
         .read()
@@ -892,19 +879,6 @@ async fn setup_inner(
         .await;
 
     initialize_frontend_updates(&app).await?;
-
-    state
-        .events_manager
-        .handle_setup_status(
-            &app,
-            SetupStatusPayload {
-                event_type: "setup_status".to_string(),
-                title: "application-started".to_string(),
-                title_params: None,
-                progress: 1.0,
-            },
-        )
-        .await;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
     let mut shutdown_signal = state.shutdown.to_signal();

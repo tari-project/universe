@@ -21,16 +21,23 @@ const Label = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.default};
 `;
 export default function Progress() {
-    const { t } = useTranslation('setup-view');
-    const setupProgress = useSetupStore((s) => s.setupProgress);
-    const setupTitle = useSetupStore((s) => s.setupTitle);
-    const setupTitleParams = useSetupStore((s) => s.setupTitleParams);
-    const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
-    const progressPercentage = Math.floor(setupProgress * 100);
+    const { t } = useTranslation('setup-progresses');
+    const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
+    const setupPhaseTitle = corePhaseInfoPayload?.phase_title;
+    const setupTitle = corePhaseInfoPayload?.title;
+    const setupProgress = corePhaseInfoPayload?.progress;
+    const setupParams = corePhaseInfoPayload?.title_params ? { ...corePhaseInfoPayload.title_params } : {};
+
+    // const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
+
+    const setUpText =
+        setupTitle && setupPhaseTitle
+            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
+            : '';
     return (
         <Wrapper>
-            <LinearProgress variant="large" value={progressPercentage} />
-            <Percentage>{`${progressPercentage}%`}</Percentage>
+            <LinearProgress variant="large" value={setupProgress} />
+            <Percentage>{`${setupProgress}%`}</Percentage>
             <Label>{setUpText}</Label>
         </Wrapper>
     );

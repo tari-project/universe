@@ -2,13 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import {
-    ResumingAllProcessesPayload,
-    SetupStatusPayload,
-    ShowReleaseNotesPayload,
-} from '@app/types/events-payloads.ts';
+import { ResumingAllProcessesPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow } from '../index.ts';
-import { setSetupComplete, setSetupProgress, setSetupTitle, setSetupTitleParams } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -75,17 +70,6 @@ export const updateApplicationsVersions = async () => {
 };
 
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
-export const handleSetupStatus = async (payload: SetupStatusPayload) => {
-    if (payload.progress > 0) {
-        setSetupTitle(payload.title);
-        setSetupProgress(payload.progress);
-        if (payload.title_params) setSetupTitleParams(payload.title_params);
-    }
-    if (payload.progress >= 1) {
-        await setSetupComplete();
-        await fetchApplicationsVersionsWithRetry();
-    }
-};
 export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
     setReleaseNotes(payload.release_notes || '');
     setIsAppUpdateAvailable(payload.is_app_update_available);

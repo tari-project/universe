@@ -26,20 +26,16 @@ use crate::{
     events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
-    progress_tracker_old::ProgressTracker,
     StartConfig, UniverseAppState,
 };
 use log::{error, info, warn};
 use tauri::Manager;
-use tokio::sync::watch;
 
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
 
 #[allow(clippy::too_many_lines)]
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app_handle.state::<UniverseAppState>().inner();
-    let (tx, _rx) = watch::channel("".to_string());
-    let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
 
     let data_dir = app_handle
         .path()
@@ -199,7 +195,8 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .await;
     stage_progress += 1;
 
-    state.node_manager.wait_synced(progress.clone()).await?;
+    // !todo resume_all_processes will be replaced by new setup
+    // state.node_manager.wait_synced(progress.clone()).await?;
 
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner

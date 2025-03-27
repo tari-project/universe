@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
+
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
@@ -32,7 +34,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{EventType, ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload},
+    events::{ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
@@ -197,11 +199,6 @@ impl EventsManager {
     ) {
         EventsEmitter::emit_resuming_all_processes(app, payload).await;
     }
-
-    pub async fn handle_setup_status(&self, app: &AppHandle, payload: SetupStatusPayload) {
-        EventsEmitter::emit_setup_status(app, payload).await;
-    }
-
     pub async fn handle_network_status_update(
         &self,
         app: &AppHandle,
@@ -248,13 +245,21 @@ impl EventsManager {
     pub async fn handle_progress_tracker_update(
         &self,
         app: &AppHandle,
-        event_type: EventType,
+        event_type: ProgressEvents,
+        phase_title: String,
         title: String,
         progress: f64,
-        description: Option<String>,
+        title_params: Option<HashMap<String, String>>,
     ) {
-        EventsEmitter::emit_progress_tracker_update(app, event_type, title, progress, description)
-            .await;
+        EventsEmitter::emit_progress_tracker_update(
+            app,
+            event_type,
+            phase_title,
+            title,
+            progress,
+            title_params,
+        )
+        .await;
     }
 
     pub async fn handle_core_phase_finished(&self, app: &AppHandle, status: bool) {

@@ -25,9 +25,9 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
-use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{info, warn};
@@ -448,7 +448,7 @@ impl NodeClient for MinotariNodeClient {
     #[allow(clippy::too_many_lines)]
     async fn wait_synced(
         &self,
-        progress_tracker: ProgressTracker,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
@@ -473,98 +473,94 @@ impl NodeClient for MinotariNodeClient {
                 break Ok(());
             }
 
+            let (initial_sync_tracker, header_sync_tracker, block_sync_tracker) =
+                match progress_tracker.as_slice() {
+                    [Some(initial_sync), Some(header_sync), Some(block_sync)] => {
+                        (initial_sync, header_sync, block_sync)
+                    }
+                    _ => {
+                        return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                            "Progress tracker not set up correctly"
+                        )));
+                    }
+                };
+
             if sync_progress.state == SyncState::Startup as i32 {
-                progress_tracker
-                    .update(
-                        "preparing-for-initial-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "initial_connected_peers".to_string(),
-                                sync_progress.initial_connected_peers.to_string(),
-                            ),
-                            (
-                                "required_peers".to_string(),
-                                self.required_sync_peers.to_string(),
-                            ),
-                        ])),
-                        10,
-                    )
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage = sync_progress.initial_connected_peers as f64
+                    / f64::from(self.required_sync_peers);
+                progress_params.insert(
+                    "initial_connected_peers".to_string(),
+                    sync_progress.initial_connected_peers.to_string(),
+                );
+                progress_params.insert(
+                    "required_peers".to_string(),
+                    self.required_sync_peers.to_string(),
+                );
+                initial_sync_tracker
+                    .send_update(progress_params, percentage)
                     .await;
             } else if sync_progress.state == SyncState::Header as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    10
-                } else {
-                    10 + (30 * sync_progress.local_height / sync_progress.tip_height)
-                };
-                progress_tracker
-                    .update(
-                        "waiting-for-header-sync".to_string(),
-                        Some(HashMap::from([
-                            (
-                                "local_header_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_header_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                            ("local_block_height".to_string(), "0".to_string()),
-                            (
-                                "tip_block_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                            // Keep these fields for old translations that have not been updated
-                            (
-                                "local_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                        ])),
-                        progress,
-                    )
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage =
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert(
+                    "local_header_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert("local_block_height".to_string(), "0".to_string());
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                // Keep these fields for old translations that have not been updated
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                header_sync_tracker
+                    .send_update(progress_params, percentage)
                     .await;
             } else if sync_progress.state == SyncState::Block as i32 {
-                let progress = if sync_progress.tip_height == 0 {
-                    40
-                } else {
-                    40 + (60 * sync_progress.local_height / sync_progress.tip_height)
-                };
-                progress_tracker
-                    .update(
-                        "waiting-for-block-sync".to_string(),
-                        Some(HashMap::from([
-                            // Assume the headers have already been synced
-                            (
-                                "local_header_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                            (
-                                "tip_header_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                            (
-                                "local_block_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_block_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                            // Keep these fields for old translations that have not been updated
-                            (
-                                "local_height".to_string(),
-                                sync_progress.local_height.to_string(),
-                            ),
-                            (
-                                "tip_height".to_string(),
-                                sync_progress.tip_height.to_string(),
-                            ),
-                        ])),
-                        progress,
-                    )
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage =
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert(
+                    "local_header_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert(
+                    "local_block_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                // Keep these fields for old translations that have not been updated
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+
+                block_sync_tracker
+                    .send_update(progress_params, percentage)
                     .await;
             } else {
                 // do nothing

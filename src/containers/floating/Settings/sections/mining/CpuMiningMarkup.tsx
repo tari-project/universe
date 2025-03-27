@@ -18,7 +18,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
-    const isSettingUp = useSetupStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.miningUnlocked);
 
     const handleCpuMiningEnabled = useCallback(async () => {
         await setCpuMiningEnabled(!isCpuMiningEnabled);

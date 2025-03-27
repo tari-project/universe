@@ -20,40 +20,40 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::events::EventType;
+use crate::events::ProgressEvents;
 
 pub trait ProgressEvent {
-    fn get_event_type(&self) -> EventType;
+    fn get_event_type(&self) -> ProgressEvents;
+    fn get_phase_title(&self) -> String;
     fn get_title(&self) -> String;
-    fn get_description(&self) -> Option<String>;
 }
 
 pub trait ProgressStep {
     type ChannelEvent: ProgressEvent;
     fn resolve_to_event(&self) -> Self::ChannelEvent;
     fn get_progress_weight(&self) -> u8;
-    fn get_event_type(&self) -> EventType;
+    fn get_event_type(&self) -> ProgressEvents;
+    fn get_phase_title(&self) -> String;
     fn get_title(&self) -> String;
-    fn get_description(&self) -> Option<String>;
 }
 
 pub struct ProgressPlanEventPayload {
-    event_type: EventType,
+    event_type: ProgressEvents,
+    phase_title: String,
     title: String,
-    description: Option<String>,
 }
 
 impl ProgressEvent for ProgressPlanEventPayload {
-    fn get_event_type(&self) -> EventType {
+    fn get_event_type(&self) -> ProgressEvents {
         self.event_type.clone()
+    }
+
+    fn get_phase_title(&self) -> String {
+        self.phase_title.clone()
     }
 
     fn get_title(&self) -> String {
         self.title.clone()
-    }
-
-    fn get_description(&self) -> Option<String> {
-        self.description.clone()
     }
 }
 #[derive(Clone, PartialEq)]
@@ -68,17 +68,14 @@ pub enum ProgressSetupCorePlan {
     BinariesGpuMiner,
     BinariesP2pool,
     BinariesMergeMiningProxy,
+    StartTor,
 }
 
 impl ProgressStep for ProgressSetupCorePlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
-    fn get_description(&self) -> Option<String> {
-        None
-    }
-
-    fn get_event_type(&self) -> EventType {
-        EventType::ProgressTrackerStartup
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::Core
     }
 
     fn get_progress_weight(&self) -> u8 {
@@ -93,35 +90,89 @@ impl ProgressStep for ProgressSetupCorePlan {
             ProgressSetupCorePlan::BinariesGpuMiner => 2,
             ProgressSetupCorePlan::BinariesP2pool => 2,
             ProgressSetupCorePlan::BinariesMergeMiningProxy => 2,
+            ProgressSetupCorePlan::StartTor => 1,
         }
+    }
+
+    fn get_phase_title(&self) -> String {
+        "setup-core".to_string()
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupCorePlan::PlatformPrequisites => {
-                "setup-core.platform-prequisites".to_string()
-            }
+            ProgressSetupCorePlan::PlatformPrequisites => "platform-prequisites".to_string(),
             ProgressSetupCorePlan::InitializeApplicationModules => {
-                "setup-core.initialize-application-modules".to_string()
+                "initialize-application-modules".to_string()
             }
-            ProgressSetupCorePlan::NetworkSpeedTest => "setup-core.network-speed-test".to_string(),
-            ProgressSetupCorePlan::BinariesTor => "setup-core.binaries-tor".to_string(),
-            ProgressSetupCorePlan::BinariesNode => "setup-core.binaries-node".to_string(),
-            ProgressSetupCorePlan::BinariesWallet => "setup-core.binaries-wallet".to_string(),
-            ProgressSetupCorePlan::BinariesCpuMiner => "setup-core.binaries-cpu-miner".to_string(),
-            ProgressSetupCorePlan::BinariesGpuMiner => "setup-core.binaries-gpu-miner".to_string(),
-            ProgressSetupCorePlan::BinariesP2pool => "setup-core.binaries-p2pool".to_string(),
+            ProgressSetupCorePlan::NetworkSpeedTest => "network-speed-test".to_string(),
+            ProgressSetupCorePlan::BinariesTor => "binaries-tor".to_string(),
+            ProgressSetupCorePlan::BinariesNode => "binaries-node".to_string(),
+            ProgressSetupCorePlan::BinariesWallet => "binaries-wallet".to_string(),
+            ProgressSetupCorePlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
+            ProgressSetupCorePlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
+            ProgressSetupCorePlan::BinariesP2pool => "binaries-p2pool".to_string(),
             ProgressSetupCorePlan::BinariesMergeMiningProxy => {
-                "setup-core.binaries-merge-mining-proxy".to_string()
+                "binaries-merge-mining-proxy".to_string()
             }
+            ProgressSetupCorePlan::StartTor => "start-tor".to_string(),
         }
     }
 
     fn resolve_to_event(&self) -> Self::ChannelEvent {
         ProgressPlanEventPayload {
             event_type: self.get_event_type(),
+            phase_title: self.get_phase_title(),
             title: self.get_title(),
-            description: self.get_description(),
+        }
+    }
+}
+
+#[derive(Clone, PartialEq)]
+pub enum ProgressSetupLocalNodePlan {
+    StartingLocalNode,
+    WaitingForInitialSync,
+    WaitingForHeaderSync,
+    WaitingForBlockSync,
+}
+
+impl ProgressStep for ProgressSetupLocalNodePlan {
+    type ChannelEvent = ProgressPlanEventPayload;
+
+    fn get_event_type(&self) -> ProgressEvents {
+        ProgressEvents::LocalNode
+    }
+
+    fn get_progress_weight(&self) -> u8 {
+        match self {
+            ProgressSetupLocalNodePlan::StartingLocalNode => 1,
+            ProgressSetupLocalNodePlan::WaitingForInitialSync => 1,
+            ProgressSetupLocalNodePlan::WaitingForHeaderSync => 1,
+            ProgressSetupLocalNodePlan::WaitingForBlockSync => 1,
+        }
+    }
+
+    fn get_phase_title(&self) -> String {
+        "setup-local-node".to_string()
+    }
+
+    fn get_title(&self) -> String {
+        match self {
+            ProgressSetupLocalNodePlan::StartingLocalNode => "starting-local-node".to_string(),
+            ProgressSetupLocalNodePlan::WaitingForInitialSync => {
+                "waiting-for-initial-sync".to_string()
+            }
+            ProgressSetupLocalNodePlan::WaitingForHeaderSync => {
+                "waiting-for-header-sync".to_string()
+            }
+            ProgressSetupLocalNodePlan::WaitingForBlockSync => "waiting-for-block-sync".to_string(),
+        }
+    }
+
+    fn resolve_to_event(&self) -> Self::ChannelEvent {
+        ProgressPlanEventPayload {
+            event_type: self.get_event_type(),
+            phase_title: self.get_phase_title(),
+            title: self.get_title(),
         }
     }
 }
@@ -130,12 +181,14 @@ impl ProgressStep for ProgressSetupCorePlan {
 #[derive(Clone, PartialEq)]
 pub enum ProgressPlans {
     SetupCore(ProgressSetupCorePlan),
+    SetupLocalNode(ProgressSetupLocalNodePlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
-    fn get_event_type(&self) -> EventType {
+    fn get_event_type(&self) -> ProgressEvents {
         match self {
-            ProgressPlans::SetupCore(_) => EventType::ProgressTrackerStartup,
+            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
+            ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),
         }
     }
 }
@@ -143,33 +196,38 @@ impl ProgressPlans {
 impl ProgressStep for ProgressPlans {
     type ChannelEvent = ProgressPlanEventPayload;
 
-    fn get_description(&self) -> Option<String> {
+    fn get_event_type(&self) -> ProgressEvents {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_description(),
+            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
+            ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),
         }
     }
 
-    fn get_event_type(&self) -> EventType {
+    fn get_phase_title(&self) -> String {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
+            ProgressPlans::SetupCore(plan) => plan.get_phase_title(),
+            ProgressPlans::SetupLocalNode(plan) => plan.get_phase_title(),
         }
     }
 
     fn get_title(&self) -> String {
         match self {
             ProgressPlans::SetupCore(plan) => plan.get_title(),
+            ProgressPlans::SetupLocalNode(plan) => plan.get_title(),
         }
     }
 
     fn resolve_to_event(&self) -> Self::ChannelEvent {
         match self {
             ProgressPlans::SetupCore(plan) => plan.resolve_to_event(),
+            ProgressPlans::SetupLocalNode(plan) => plan.resolve_to_event(),
         }
     }
 
     fn get_progress_weight(&self) -> u8 {
         match self {
             ProgressPlans::SetupCore(plan) => plan.get_progress_weight(),
+            ProgressPlans::SetupLocalNode(plan) => plan.get_progress_weight(),
         }
     }
 }

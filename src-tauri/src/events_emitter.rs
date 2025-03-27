@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -27,9 +29,8 @@ use crate::{
     commands::CpuMinerStatus,
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, ProgressTrackerUpdatePayload,
-        ResumingAllProcessesPayload, SetupStatusPayload, ShowReleaseNotesPayload,
-        WalletAddressUpdatePayload,
+        NetworkStatusPayload, NewBlockHeightPayload, ProgressEvents, ProgressTrackerUpdatePayload,
+        ResumingAllProcessesPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
     },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
@@ -50,17 +51,19 @@ pub(crate) struct EventsEmitter;
 impl EventsEmitter {
     pub async fn emit_progress_tracker_update(
         app_handle: &AppHandle,
-        event_type: EventType,
+        event_type: ProgressEvents,
+        phase_title: String,
         title: String,
         progress: f64,
-        description: Option<String>,
+        title_params: Option<HashMap<String, String>>,
     ) {
-        let event: Event<ProgressTrackerUpdatePayload> = Event {
+        let event = Event {
             event_type,
             payload: ProgressTrackerUpdatePayload {
+                phase_title,
                 title,
                 progress,
-                description,
+                title_params,
             },
         };
         if let Err(e) = app_handle.emit(PROGRESS_TRACKER_UPDATE, event) {
@@ -114,17 +117,6 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit CriticalProblem event: {:?}", e);
-        }
-    }
-
-    pub async fn emit_setup_status(app_handle: &AppHandle, payload: SetupStatusPayload) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::SetupStatus,
-            payload,
-        };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit SetupStatus event: {:?}", e);
         }
     }
 

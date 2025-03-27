@@ -17,7 +17,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const isSettingUp = useSetupStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.miningUnlocked);
     const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
 

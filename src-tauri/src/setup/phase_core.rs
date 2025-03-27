@@ -26,8 +26,7 @@ use std::{
 };
 
 use log::{error, info};
-use serde_json::json;
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, Mutex};
 
@@ -35,7 +34,6 @@ use crate::{
     auto_launcher::AutoLauncher,
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events::SetupStatusPayload,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
@@ -79,19 +77,22 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
     fn new() -> Self {
         Self {
-            progress_stepper: Mutex::new(Self::create_progress_stepper()),
+            progress_stepper: Mutex::new(ProgressStepper::new()),
             app_configuration: CoreSetupPhaseAppConfiguration::default(),
             session_configuration: CoreSetupPhaseSessionConfiguration::default(),
         }
     }
 
-    fn create_progress_stepper() -> ProgressStepper {
-        let progress_tracker = ProgressStepperBuilder::new()
+    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
+        let progress_stepper = ProgressStepperBuilder::new()
             .add_step(ProgressPlans::SetupCore(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
             .add_step(ProgressPlans::SetupCore(
                 ProgressSetupCorePlan::InitializeApplicationModules,
+            ))
+            .add_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::NetworkSpeedTest,
             ))
             .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor))
             .add_step(ProgressPlans::SetupCore(
@@ -112,9 +113,11 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .add_step(ProgressPlans::SetupCore(
                 ProgressSetupCorePlan::BinariesP2pool,
             ))
+            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
             .calculate_percentage_steps()
-            .build();
-        progress_tracker
+            .build(app_handle);
+
+        *self.progress_stepper.lock().await = progress_stepper;
     }
 
     async fn load_configuration(
@@ -179,22 +182,11 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         &self,
         app_handle: tauri::AppHandle,
     ) -> Result<Option<CoreSetupPhasePayload>, anyhow::Error> {
+        let mut progress_stepper = self.progress_stepper.lock().await;
         let state = app_handle.state::<UniverseAppState>();
         state
             .events_manager
             .handle_app_config_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_setup_status(
-                &app_handle,
-                SetupStatusPayload {
-                    event_type: "setup_status".to_string(),
-                    title: "starting-up".to_string(),
-                    title_params: None,
-                    progress: 0.0,
-                },
-            )
             .await;
 
         // TODO Remove once not needed
@@ -202,14 +194,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
 
         PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::PlatformPrequisites),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::PlatformPrequisites,
+            ))
             .await;
 
         state
@@ -256,8 +244,6 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .await
             .init(app_version.to_string(), telemetry_id.clone())
             .await?;
-        let telemetry_service = state.telemetry_service.clone();
-        let telemetry_service = &telemetry_service.read().await;
 
         let mut binary_resolver = BinaryResolver::current().write().await;
         let should_check_for_update = now
@@ -269,51 +255,25 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .unwrap_or(Duration::from_secs(0))
             .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::InitializeApplicationModules),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::InitializeApplicationModules,
+            ))
             .await;
-
-        telemetry_service
-            .send(
-                "benchmarking-network".to_string(),
-                json!({
-                    "service": "speedtest",
-                    "percentage": 0,
-                }),
-            )
-            .await?;
 
         NetworkStatus::current()
             .run_speed_test_with_timeout(&app_handle)
             .await;
 
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::NetworkSpeedTest),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::NetworkSpeedTest,
+            ))
             .await;
 
+        info!(target: LOG_TARGET, "Dupa1");
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            telemetry_service
-                .send(
-                    "checking-latest-version-tor".to_string(),
-                    json!({
-                        "service": "tor_manager",
-                        "percentage": 5,
-                    }),
-                )
-                .await?;
-
+            info!(target: LOG_TARGET, "Dupa2");
             binary_resolver
                 .initialize_binary_timeout(
                     Binaries::Tor,
@@ -322,32 +282,15 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                     rx.clone(),
                 )
                 .await?;
-            let _unused = self
-                .progress_stepper
-                .lock()
-                .await
-                .resolve_step(
-                    Some(app_handle.clone()),
-                    ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor),
-                )
+            let _unused = progress_stepper
+                .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor))
                 .await;
         } else {
-            let _unused = self
-                .progress_stepper
-                .lock()
-                .await
+            info!(target: LOG_TARGET, "Dupa3");
+            let _unused = progress_stepper
                 .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
-        }
+        };
 
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-node".to_string(),
-                json!({
-                    "service": "node_manager",
-                    "percentage": 10,
-                }),
-            )
-            .await;
         binary_resolver
             .initialize_binary_timeout(
                 Binaries::MinotariNode,
@@ -356,25 +299,12 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesNode),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesNode,
+            ))
             .await;
 
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-mmproxy".to_string(),
-                json!({
-                    "service": "mmproxy",
-                    "percentage": 15,
-                }),
-            )
-            .await;
         binary_resolver
             .initialize_binary_timeout(
                 Binaries::MergeMiningProxy,
@@ -383,24 +313,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesMergeMiningProxy),
-            )
-            .await;
-
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-wallet".to_string(),
-                json!({
-                    "service": "wallet",
-                    "percentage": 20,
-                }),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesMergeMiningProxy,
+            ))
             .await;
 
         binary_resolver
@@ -411,25 +327,12 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesWallet),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesWallet,
+            ))
             .await;
 
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-gpuminer".to_string(),
-                json!({
-                    "service": "gpuminer",
-                    "percentage":25,
-                }),
-            )
-            .await;
         binary_resolver
             .initialize_binary_timeout(
                 Binaries::GpuMiner,
@@ -438,33 +341,16 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesGpuMiner),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesGpuMiner,
+            ))
             .await;
 
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-xmrig".to_string(),
-                json!({
-                    "service": "xmrig",
-                    "percentage":30,
-                }),
-            )
-            .await;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesCpuMiner),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesCpuMiner,
+            ))
             .await;
         binary_resolver
             .initialize_binary_timeout(
@@ -475,15 +361,6 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
 
-        let _unused = telemetry_service
-            .send(
-                "checking-latest-version-sha-p2pool".to_string(),
-                json!({
-                    "service": "sha_p2pool",
-                    "percentage":35,
-                }),
-            )
-            .await;
         binary_resolver
             .initialize_binary_timeout(
                 Binaries::ShaP2pool,
@@ -492,14 +369,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 rx.clone(),
             )
             .await?;
-        let _unused = self
-            .progress_stepper
-            .lock()
-            .await
-            .resolve_step(
-                Some(app_handle.clone()),
-                ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesP2pool),
-            )
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(
+                ProgressSetupCorePlan::BinariesP2pool,
+            ))
             .await;
 
         if should_check_for_update {
@@ -513,6 +386,24 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
         //drop binary resolver to release the lock
         drop(binary_resolver);
+
+        let _uunused = progress_stepper
+            .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
+            .await;
+
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
+
+        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            state
+                .tor_manager
+                .ensure_started(
+                    state.shutdown.to_signal(),
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                )
+                .await?;
+        }
 
         Ok(None)
     }

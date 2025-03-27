@@ -22,11 +22,7 @@
 
 use std::sync::{atomic::AtomicBool, Arc};
 
-use async_trait::async_trait;
-use minotari_node_grpc_client::grpc::Peer;
-use tari_shutdown::ShutdownSignal;
-
-use crate::progress_tracker_old::ProgressTracker;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::{
     node_adapter::{
         MinotariNodeAdapter, MinotariNodeClient, MinotariNodeStatusMonitor,
@@ -37,6 +33,9 @@ use crate::{
     remote_node_adapter::RemoteNodeAdapter,
     BaseNodeStatus,
 };
+use async_trait::async_trait;
+use minotari_node_grpc_client::grpc::Peer;
+use tari_shutdown::ShutdownSignal;
 
 pub(crate) struct RemoteUntilSyncedNodeAdapter {
     pub(crate) node: MinotariNodeAdapter,
@@ -212,7 +211,7 @@ impl NodeClient for WrappedNodeClient {
 
     async fn wait_synced(
         &self,
-        progress_tracker: ProgressTracker,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError> {
         if self.is_synced().await {

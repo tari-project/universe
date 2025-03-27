@@ -7,7 +7,7 @@ import Sync from '@app/containers/main/Sync/Sync.tsx';
 
 export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const isSettingUp = useSetupStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
     return (
         <DashboardContainer $disableBackground={isSettingUp}>
             {!visualMode && !isSettingUp && <Background />}

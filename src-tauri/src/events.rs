@@ -42,7 +42,6 @@ pub enum EventType {
     CloseSplashscreen,
     DetectedDevices,
     DetectedAvailableGpuEngines,
-    SetupStatus,
     ResumingAllProcesses,
     ShowReleaseNotes,
     #[cfg(target_os = "macos")]
@@ -60,14 +59,27 @@ pub enum EventType {
     UnlockApp,
     UnlockWallet,
     UnlockMining,
-    // ProgressTrackerResume,
-    ProgressTrackerStartup,
+}
+
+#[derive(Clone, Debug, Serialize)]
+pub enum ProgressEvents {
+    Core,
+    #[allow(dead_code)]
+    Wallet,
+    #[allow(dead_code)]
+    Hardware,
+    #[allow(dead_code)]
+    RemoteNode,
+    LocalNode,
+    #[allow(dead_code)]
+    Unknown,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
+    pub phase_title: String,
     pub title: String,
     pub progress: f64,
-    pub description: Option<String>,
+    pub title_params: Option<HashMap<String, String>>,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -76,14 +88,6 @@ pub struct NetworkStatusPayload {
     pub upload_speed: f64,
     pub latency: f64,
     pub is_too_low: bool,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct SetupStatusPayload {
-    pub event_type: String,
-    pub title: String,
-    pub title_params: Option<HashMap<String, String>>,
-    pub progress: f64,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -106,8 +110,8 @@ pub struct DetectedDevicesPayload {
 }
 
 #[derive(Clone, Debug, Serialize)]
-pub struct Event<T> {
-    pub event_type: EventType,
+pub struct Event<T, E> {
+    pub event_type: E,
     pub payload: T,
 }
 

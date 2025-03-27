@@ -42,7 +42,7 @@ use crate::node_adapter::{BaseNodeStatus, MinotariNodeStatusMonitorError};
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
-use crate::ProgressTracker;
+use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
@@ -73,7 +73,7 @@ pub(crate) trait NodeAdapter: ProcessAdapter {
 pub(crate) trait NodeClient {
     async fn wait_synced(
         &self,
-        progress_tracker: ProgressTracker,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError>;
     async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error>;
@@ -213,7 +213,7 @@ impl<T: NodeAdapter> NodeManager<T> {
 
     pub async fn wait_synced(
         &self,
-        progress_tracker: ProgressTracker,
+        progress_trackers: Vec<Option<ChanneledStepUpdate>>,
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
         let status_monitor = self
@@ -225,7 +225,7 @@ impl<T: NodeAdapter> NodeManager<T> {
             .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         loop {
             match status_monitor
-                .wait_synced(progress_tracker.clone(), self.shutdown.clone())
+                .wait_synced(progress_trackers.clone(), self.shutdown.clone())
                 .await
             {
                 Ok(_) => return Ok(()),

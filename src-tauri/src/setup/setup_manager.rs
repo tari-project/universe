@@ -34,7 +34,6 @@ use tokio::{
 };
 
 use crate::{
-    events::SetupStatusPayload,
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTracker,
@@ -99,6 +98,9 @@ impl SetupManager {
         let _unused = core_phase_setup
             .load_configuration(CoreSetupPhaseSessionConfiguration {})
             .await;
+        core_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
+            .await;
         let core_phase_setup = Arc::new(core_phase_setup);
         core_phase_setup.setup(app_handle.clone()).await;
     }
@@ -108,12 +110,16 @@ impl SetupManager {
         let _unused = hardware_phase_setup
             .load_configuration(HardwareSetupPhaseSessionConfiguration {})
             .await;
+        hardware_phase_setup.create_progress_stepper(None).await;
         let hardware_phase_setup = Arc::new(hardware_phase_setup);
         hardware_phase_setup.setup(app_handle.clone()).await;
 
         let mut local_node_phase_setup = LocalNodeSetupPhase::new();
         let _unused = local_node_phase_setup
             .load_configuration(LocalNodeSetupPhaseSessionConfiguration {})
+            .await;
+        local_node_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
             .await;
         let local_node_phase_setup = Arc::new(local_node_phase_setup);
         local_node_phase_setup.setup(app_handle.clone()).await;
@@ -131,6 +137,7 @@ impl SetupManager {
         let _unused = wallet_phase_setup
             .load_configuration(WalletSetupPhaseSessionConfiguration {})
             .await;
+        wallet_phase_setup.create_progress_stepper(None).await;
         let wallet_phase_setup = Arc::new(wallet_phase_setup);
         wallet_phase_setup.setup(app_handle.clone()).await;
 
@@ -145,6 +152,7 @@ impl SetupManager {
                 cpu_benchmarked_hashrate,
             })
             .await;
+        unknown_phase_setup.create_progress_stepper(None).await;
         let unknown_phase_setup = Arc::new(unknown_phase_setup);
         unknown_phase_setup.setup(app_handle.clone()).await;
     }
@@ -159,7 +167,6 @@ impl SetupManager {
 
         let core_phase_status = *self.phase_statuses.get(&SetupPhase::Core).unwrap_or(&false);
         if core_phase_status {
-            self.unlock_app(app_handle.clone()).await;
             self.spawn_first_batch_of_setup_phases(app_handle.clone())
                 .await;
         };
@@ -186,6 +193,10 @@ impl SetupManager {
             .get(&SetupPhase::RemoteNode)
             .unwrap_or(&false);
 
+        if local_node_phase_status || remote_node_phase_status {
+            self.unlock_app(app_handle.clone()).await;
+        }
+
         if hardware_phase_status && (local_node_phase_status || remote_node_phase_status) {
             self.spawn_second_batch_of_setup_phases(app_handle.clone())
                 .await;
@@ -209,26 +220,18 @@ impl SetupManager {
             .get(&SetupPhase::Unknown)
             .unwrap_or(&false);
 
-        if wallet_phase_status && unknown_phase_status {
+        if unknown_phase_status {
             self.unlock_mining(app_handle.clone()).await;
-            self.unlock_wallet(app_handle.clone()).await;
+        }
 
+        if wallet_phase_status {
+            self.unlock_wallet(app_handle.clone()).await;
+        }
+
+        if wallet_phase_status && unknown_phase_status {
             // todo move it out from here
             let state = app_handle.state::<UniverseAppState>();
             let _unused = initialize_frontend_updates(&app_handle).await;
-            // todo remove once its not needed
-            state
-                .events_manager
-                .handle_setup_status(
-                    &app_handle,
-                    SetupStatusPayload {
-                        event_type: "setup_status".to_string(),
-                        title: "application-started".to_string(),
-                        title_params: None,
-                        progress: 1.0,
-                    },
-                )
-                .await;
 
             let app_handle_clone: tauri::AppHandle = app_handle.clone();
             let mut shutdown_signal = state.shutdown.to_signal();
