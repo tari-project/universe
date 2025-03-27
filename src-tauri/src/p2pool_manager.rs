@@ -58,8 +58,8 @@ impl P2poolConfigBuilder {
         }
     }
 
-    pub fn with_base_node(&mut self, grpc_port: u16) -> &mut Self {
-        self.config.base_node_address = format!("http://127.0.0.1:{}", grpc_port);
+    pub fn with_base_node(&mut self, address: String) -> &mut Self {
+        self.config.base_node_address = address;
         self
     }
 

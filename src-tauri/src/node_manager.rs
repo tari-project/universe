@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use log::{error, info};
+use log::{error, info, warn};
 use minotari_node_grpc_client::grpc::Peer;
 use serde_json::json;
 use tari_common::configuration::Network;
@@ -35,13 +35,15 @@ use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::RwLock;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
-use crate::node_adapter::{BaseNodeStatus, MinotariNodeAdapter, MinotariNodeStatusMonitorError};
+use crate::node_adapter::{BaseNodeStatus, MinotariNodeStatusMonitorError};
+use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::ProgressTracker;
+use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -57,22 +59,51 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-pub struct NodeManager {
-    watcher: Arc<RwLock<ProcessWatcher<MinotariNodeAdapter>>>,
+pub(crate) trait NodeAdapter: ProcessAdapter {
+    type NodeClient: NodeClient;
+    fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
+    fn grpc_address(&self) -> Option<&(String, u16)>;
+    fn tcp_rpc_port(&self) -> u16;
+    fn get_node_client(&self) -> Option<Self::NodeClient>;
+    fn use_tor(&mut self, use_tor: bool);
+    fn tor_control_port(&mut self, tor_control_port: Option<u16>);
 }
 
-impl Clone for NodeManager {
+#[async_trait]
+pub(crate) trait NodeClient {
+    async fn wait_synced(
+        &self,
+        progress_tracker: ProgressTracker,
+        shutdown_signal: ShutdownSignal,
+    ) -> Result<(), MinotariNodeStatusMonitorError>;
+    async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error>;
+    async fn get_network_state(&self) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError>;
+    async fn list_connected_peers(&self) -> Result<Vec<Peer>, anyhow::Error>;
+    async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, anyhow::Error>;
+}
+
+pub(crate) struct NodeManager<T: NodeAdapter> {
+    watcher: Arc<RwLock<ProcessWatcher<T>>>,
+    shutdown: ShutdownSignal,
+}
+
+impl<T: NodeAdapter> Clone for NodeManager<T> {
     fn clone(&self) -> Self {
         Self {
             watcher: self.watcher.clone(),
+            shutdown: self.shutdown.clone(),
         }
     }
 }
 
-impl NodeManager {
+impl<T: NodeAdapter> NodeManager<T> {
     pub fn new(
-        status_broadcast: watch::Sender<BaseNodeStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
+        node_adapter: T,
+        shutdown: ShutdownSignal,
     ) -> Self {
         // TODO: wire up to front end
         // let mut use_tor = true;
@@ -83,15 +114,20 @@ impl NodeManager {
         // use_tor = false;
         // }
 
-        let adapter = MinotariNodeAdapter::new(status_broadcast);
+        // let adapter = MinotariNodeAdapter::new(status_broadcast);
+        // let adapter = RemoteUntilSyncedNodeAdapter::new(
+        // MinotariNodeAdapter::new(status_broadcast.clone()),
+        // RemoteNodeAdapter::new(status_broadcast),
+        // );
         let mut process_watcher =
-            ProcessWatcher::new(adapter, stats_collector.take_minotari_node());
+            ProcessWatcher::new(node_adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
         process_watcher.expected_startup_time = Duration::from_secs(30);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            shutdown,
         }
     }
 
@@ -100,6 +136,7 @@ impl NodeManager {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
         app_shutdown: ShutdownSignal,
@@ -108,13 +145,19 @@ impl NodeManager {
         log_path: PathBuf,
         use_tor: bool,
         tor_control_port: Option<u16>,
+        remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         {
             let mut process_watcher = self.watcher.write().await;
 
-            process_watcher.adapter.use_tor = use_tor;
-            process_watcher.adapter.tor_control_port = tor_control_port;
+            process_watcher.adapter.use_tor(use_tor);
+            process_watcher.adapter.tor_control_port(tor_control_port);
             process_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
+            if let Some(remote_grpc_address) = remote_grpc_address {
+                process_watcher
+                    .adapter
+                    .set_grpc_address(remote_grpc_address)?;
+            }
             process_watcher
                 .start(
                     app_shutdown,
@@ -151,14 +194,21 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn get_grpc_port(&self) -> Result<u16, anyhow::Error> {
+    pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
         let lock = self.watcher.read().await;
-        Ok(lock.adapter.grpc_port)
+        if let Some((host, port)) = lock.adapter.grpc_address() {
+            if host.starts_with("http") {
+                return Ok(format!("{}:{}", host, port));
+            } else {
+                return Ok(format!("http://{}:{}", host, port));
+            }
+        }
+        Err(anyhow::anyhow!("grpc_address not set"))
     }
 
     pub async fn get_tcp_listener_port(&self) -> u16 {
         let lock = self.watcher.read().await;
-        lock.adapter.tcp_listener_port
+        lock.adapter.tcp_rpc_port()
     }
 
     pub async fn wait_synced(
@@ -166,13 +216,18 @@ impl NodeManager {
         progress_tracker: ProgressTracker,
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
-        let status_monitor_lock = self.watcher.read().await;
-        let status_monitor = status_monitor_lock
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("wait_synced: Node not started"))?;
+        let status_monitor = self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .get_node_client()
+            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         loop {
-            match status_monitor.wait_synced(progress_tracker.clone()).await {
+            match status_monitor
+                .wait_synced(progress_tracker.clone(), self.shutdown.clone())
+                .await
+            {
                 Ok(_) => return Ok(()),
                 Err(e) => match e {
                     MinotariNodeStatusMonitorError::NodeNotStarted => {
@@ -205,7 +260,10 @@ impl NodeManager {
 
             match self.get_identity().await {
                 Ok(_) => break,
-                Err(_) => tokio::time::sleep(tokio::time::Duration::from_secs(1)).await,
+                Err(_) => {
+                    warn!(target: LOG_TARGET, "Node did not return get_identity, waiting...");
+                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+                }
             }
         }
         Ok(())
@@ -218,23 +276,29 @@ impl NodeManager {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
-        let status_monitor_lock = self.watcher.read().await;
-        let status_monitor = status_monitor_lock
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("get_identity: Node not started"))?;
-        status_monitor.get_identity().await
+        let status_monitor = self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .get_node_client()
+            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
+        status_monitor.get_identity().await.inspect_err(|e| {
+            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
+        })
     }
 
     pub async fn check_if_is_orphan_chain(
         &self,
         report_to_sentry: bool,
     ) -> Result<bool, anyhow::Error> {
-        let status_monitor_lock = self.watcher.read().await;
-        let status_monitor = status_monitor_lock
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("check_if_is_orphan_chain: Node not started"))?;
+        let status_monitor = self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .get_node_client()
+            .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         let BaseNodeStatus {
             is_synced,
             block_height: local_tip,
@@ -303,10 +367,12 @@ impl NodeManager {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
-        let status_monitor_lock = self.watcher.read().await;
-        let status_monitor = status_monitor_lock
-            .status_monitor
-            .as_ref()
+        let status_monitor = self
+            .watcher
+            .read()
+            .await
+            .adapter
+            .get_node_client()
             .ok_or_else(|| anyhow::anyhow!("Node not started"))?;
         let peers_list = status_monitor
             .list_connected_peers()

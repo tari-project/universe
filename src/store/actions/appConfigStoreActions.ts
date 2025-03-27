@@ -1,20 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
-import {
-    AirdropTokens,
-    sidebarTowerOffset,
-    TOWER_CANVAS_ID,
-    useAppConfigStore,
-    useMiningMetricsStore,
-    useMiningStore,
-} from '../index.ts';
+import { AirdropTokens, useAppConfigStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
 import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
-import { GpuThreads } from '@app/types/app-status.ts';
+import { AppConfig, GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { loadTowerAnimation } from '@tari-project/tari-tower';
 
 interface SetModeProps {
     mode: modeType;
@@ -22,24 +14,14 @@ interface SetModeProps {
     customCpuLevels?: number;
 }
 
-export const fetchAppConfig = async () => {
+export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
     try {
-        const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
+        await changeLanguage(appConfig.application_language);
         const configTheme = appConfig.display_mode?.toLowerCase();
         if (configTheme) {
             setUITheme(configTheme as displayMode);
         }
-        if (appConfig.visual_mode) {
-            try {
-                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
-            } catch (e) {
-                console.error('Error at loadTowerAnimation:', e);
-                useAppConfigStore.setState({ visual_mode: false });
-            }
-        }
-
-        return appConfig;
     } catch (e) {
         console.error('Could not get app config:', e);
     }
@@ -235,26 +217,18 @@ export const setShowExperimentalSettings = async (showExperimentalSettings: bool
         useAppConfigStore.setState({ show_experimental_settings: !showExperimentalSettings });
     });
 };
-export const setTheme = async (themeArg: displayMode) => {
-    const display_mode = themeArg?.toLowerCase() as displayMode;
-    const prevTheme = useAppConfigStore.getState().display_mode;
 
-    setUITheme(themeArg);
-    useAppConfigStore.setState({ display_mode });
+export const setDisplayMode = async (displayMode: displayMode) => {
+    const previousDisplayMode = useAppConfigStore.getState().display_mode;
+    useAppConfigStore.setState({ display_mode: displayMode });
 
-    const shouldUpdateConfigTheme = display_mode !== prevTheme;
-
-    if (shouldUpdateConfigTheme) {
-        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-            console.error('Could not set theme', e);
-            setError('Could not change theme');
-            if (prevTheme) {
-                useAppConfigStore.setState({ display_mode: prevTheme });
-                setUITheme(prevTheme);
-            }
-        });
-    }
+    invoke('set_display_mode', { displayMode: displayMode as displayMode }).catch((e) => {
+        console.error('Could not set theme', e);
+        setError('Could not change theme');
+        useAppConfigStore.setState({ display_mode: previousDisplayMode });
+    });
 };
+
 export const setUseTor = async (useTor: boolean) => {
     useAppConfigStore.setState({ use_tor: useTor });
     invoke('set_use_tor', { useTor }).catch((e) => {

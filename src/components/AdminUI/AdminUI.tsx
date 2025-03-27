@@ -5,7 +5,6 @@ import { memo, useState } from 'react';
 import { ThemeGroup } from './groups/ThemeGroup';
 import { DialogsGroup } from './groups/DialogsGroup';
 import { GreenModalsGroup } from './groups/GreenModalsGroup';
-import { ToastsGroup } from './groups/ToastsGroup';
 import { OtherUIGroup } from './groups/OtherUIGroup';
 import { AnimatePresence } from 'motion/react';
 
@@ -39,7 +38,6 @@ const AdminUI = memo(function AdminUI() {
                             <ThemeGroup />
                             <DialogsGroup />
                             <GreenModalsGroup />
-                            <ToastsGroup />
                             <OtherUIGroup />
                         </MenuContent>
                     </MenuWrapper>

@@ -29,26 +29,19 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         cursor: inherit;
     }
 
-    ${({ $variant, $color, $disableColour, theme }) => {
+    ${({ $variant, $color, $disableColour, theme, $backgroundColor }) => {
         switch ($variant) {
             case 'outlined':
                 return css`
-                    color: ${convertHexToRGBA(
-                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
-                        0.9
-                    )};
-                    border: 1px solid
-                        ${convertHexToRGBA($color === 'transparent' ? '#fff' : $color || theme.palette.contrast, 0.2)};
-                    background-color: ${convertHexToRGBA(
-                        $color === 'transparent' ? '#fff' : $color || theme.palette.contrast,
-                        0.1
-                    )};
+                    color: ${theme.palette.text.primary};
+                    background-color: ${theme.palette.action.background};
+                    border: 1px solid ${theme.colorsAlpha.greyscaleAlpha[20]};
                 `;
             case 'gradient':
                 return css`
                     background-image: linear-gradient(86deg, #780eff -4.33%, #bf28ff 102.27%);
                     color: ${theme.palette.text.contrast};
-                    &:hover {
+                    &:hover:not(:disabled) {
                         background-image: linear-gradient(86deg, #780eff -24.33%, #bf28ff 78.27%);
                     }
                 `;
@@ -57,7 +50,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     box-shadow: 0 2px 20px -8px ${theme.palette.contrastAlpha};
                     background-color: ${theme.palette.background.paper};
                     color: ${theme.palette.action.text.main};
-                    &:hover {
+                    &:hover:not(:disabled) {
                         background-color: ${theme.palette.action.hover.accent};
                         box-shadow: none;
                     }
@@ -68,8 +61,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     color: ${$color
                         ? theme?.colors[$color ?? 'primary']?.[theme.mode == 'dark' ? 200 : 600]
                         : convertHexToRGBA(theme.palette.contrast, 0.7)};
-                    background-color: ${$disableColour ? 'transparent' : theme.palette.action.background.default};
-                    &:hover {
+                    background-color: ${$disableColour
+                        ? 'transparent'
+                        : $backgroundColor
+                          ? theme?.colors[$backgroundColor ?? 'grey']?.[theme.mode == 'dark' ? 700 : 100]
+                          : theme.palette.action.background.default};
+                    &:hover:not(:disabled) {
                         background-color: ${$disableColour
                             ? theme.palette.action.hover.accent
                             : theme.palette.action.hover.default};
@@ -78,7 +75,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
         }
     }}
 
-    ${({ $size }) => {
+    ${({ $size, $fluid }) => {
         switch ($size) {
             case 'xs':
                 return css`
@@ -93,13 +90,13 @@ export const StyledButton = styled.button<ButtonStyleProps>`
             case 'large':
                 return css`
                     height: 50px;
-                    width: 190px;
+                    width: ${$fluid ? '100%' : '190px'};
                 `;
             case 'medium':
             default:
                 return css`
                     height: 40px;
-                    width: min-content;
+                    width: ${$fluid ? '100%' : 'min-content'};
                 `;
         }
     }}
@@ -111,15 +108,24 @@ export const ChildrenWrapper = styled.div<{ $iconPosition?: IconPosition }>`
     position: relative;
     margin: 0 ${({ $iconPosition }) => ($iconPosition ? '1.5rem' : 0)};
 `;
-export const IconWrapper = styled.div<{ $position?: IconPosition }>`
+export const IconWrapper = styled.div<{ $position?: IconPosition; $isLoader?: boolean }>`
     display: flex;
+    align-items: center;
+    justify-content: center;
     position: absolute;
+
+    ${({ $isLoader }) =>
+        $isLoader &&
+        css`
+            height: 30px;
+            width: 30px;
+        `}
 
     ${({ $position }) => {
         switch ($position) {
             case 'start': {
                 return css`
-                    left: ${PADDING};
+                    left: 0.5rem;
                 `;
             }
             case 'hug': {

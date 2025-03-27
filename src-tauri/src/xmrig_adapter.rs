@@ -90,6 +90,7 @@ impl XmrigAdapter {
 
 impl ProcessAdapter for XmrigAdapter {
     type StatusMonitor = XmrigStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     fn spawn_inner(
         &self,

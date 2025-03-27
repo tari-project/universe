@@ -14,17 +14,14 @@ export function OtherUIGroup() {
         <>
             <CategoryLabel>Other UI</CategoryLabel>
             <ButtonGroup>
-                <Button onClick={() => setAdminShow('setup')} $isActive={adminShow === 'setup'}>
-                    Startup Screen
-                </Button>
-                <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
-                    SoS Widget
-                </Button>
                 <Button
                     onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
                     $isActive={adminShow === 'orphanChainWarning'}
                 >
                     Orphan chain warning
+                </Button>
+                <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
+                    SoS Widget
                 </Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>

@@ -45,13 +45,13 @@ export function DialogsGroup() {
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
                 >
-                    Auto Update Dialog
+                    Auto Update
                 </Button>
                 <Button
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
-                    External Dependencies
+                    External Deps
                 </Button>
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
@@ -65,7 +65,7 @@ export function DialogsGroup() {
                     }
                     $isActive={dialogToShow === 'ludicrousConfirmation'}
                 >
-                    Ludicrous Confirmation
+                    Ludicrous
                 </Button>
             </ButtonGroup>
         </>

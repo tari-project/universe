@@ -106,7 +106,20 @@ const grey = {
     900: '#1B1B1B',
     950: '#0c0c0e',
 };
-
+const greyscale = {
+    50: '#FFFFFF',
+    100: '#E4E4E4',
+    150: '#CACACA',
+    200: '#AFAFAF',
+    300: '#959595',
+    400: '#7A7A7A',
+    500: '#606060',
+    600: '#454545',
+    700: '#2B2B2B',
+    800: '#111111',
+    900: '#080808',
+    950: '#000000',
+};
 const tariPurple = {
     50: '#F9F4FF',
     100: '#F2E5FF',
@@ -242,6 +255,7 @@ export const colors = {
     gothic,
     tariPurple,
     grey,
+    greyscale,
     success,
     info,
     warning,

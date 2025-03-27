@@ -29,7 +29,7 @@ use regex::Regex;
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::download_file_with_retries, github, progress_tracker::ProgressTracker,
+    download_utils::download_file_with_retries, github, progress_tracker_old::ProgressTracker,
     APPLICATION_FOLDER_ID,
 };
 

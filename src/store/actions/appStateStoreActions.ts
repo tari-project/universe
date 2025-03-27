@@ -1,12 +1,14 @@
 import { invoke } from '@tauri-apps/api/core';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { startMining } from './miningStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
-import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
+import {
+    ResumingAllProcessesPayload,
+    SetupStatusPayload,
+    ShowReleaseNotesPayload,
+} from '@app/types/events-payloads.ts';
+import { setDialogToShow } from '../index.ts';
+import { setSetupComplete, setSetupProgress, setSetupTitle, setSetupTitleParams } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -41,6 +43,8 @@ export const fetchExternalDependencies = async () => {
         console.error('Error loading missing external dependencies', error);
     }
 };
+export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
+    useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
 export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
@@ -60,31 +64,7 @@ export const setIsAppUpdateAvailable = (isAppUpdateAvailable: boolean) =>
 export const setIsSettingsOpen = (value: boolean) => useAppStateStore.setState({ isSettingsOpen: value });
 export const setIssueReference = (issueReference: string) => useAppStateStore.setState({ issueReference });
 export const setReleaseNotes = (releaseNotes: string) => useAppStateStore.setState({ releaseNotes });
-export const setSetupComplete = async () => {
-    // Proceed with auto mining when enabled
-    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
-    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
-    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-    const visual_mode = useAppConfigStore.getState().visual_mode;
-    if (visual_mode) {
-        try {
-            setAnimationState('showVisual');
-        } catch (error) {
-            console.error('Failed to set animation state:', error);
-        }
-    }
-    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
-    }
-    useAppStateStore.setState({ setupComplete: true });
-};
-export const setSetupParams = (setupTitleParams: Record<string, string>) =>
-    useAppStateStore.setState((current) => {
-        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
-        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
-    });
-export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
-export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
+
 export const updateApplicationsVersions = async () => {
     try {
         await invoke('update_applications');
@@ -95,3 +75,21 @@ export const updateApplicationsVersions = async () => {
 };
 
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
+export const handleSetupStatus = async (payload: SetupStatusPayload) => {
+    if (payload.progress > 0) {
+        setSetupTitle(payload.title);
+        setSetupProgress(payload.progress);
+        if (payload.title_params) setSetupTitleParams(payload.title_params);
+    }
+    if (payload.progress >= 1) {
+        await setSetupComplete();
+        await fetchApplicationsVersionsWithRetry();
+    }
+};
+export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
+    setReleaseNotes(payload.release_notes || '');
+    setIsAppUpdateAvailable(payload.is_app_update_available);
+    if (payload.should_show_dialog) {
+        setDialogToShow('releaseNotes');
+    }
+};
