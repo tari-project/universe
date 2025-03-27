@@ -32,6 +32,7 @@ use crate::UniverseAppState;
 use anyhow::anyhow;
 
 use std::fmt::Display;
+use tauri::Manager;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
