@@ -1,6 +1,16 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 
+interface PendingTransaction {
+    tx_id: number;
+    amount: number;
+    dest_address: string;
+    payment_id: string;
+    direction: number;
+    status: number;
+    timestamp: number;
+}
+
 interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
@@ -8,6 +18,7 @@ interface WalletStoreState {
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
     transactions: TransactionInfo[];
+    pending_transactions: PendingTransaction[];
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
     has_more_transactions: boolean;
@@ -20,6 +31,7 @@ const initialState: WalletStoreState = {
     tari_address_emoji: '',
     coinbase_transactions: [],
     transactions: [],
+    pending_transactions: [],
     has_more_coinbase_transactions: true,
     has_more_transactions: true,
     is_reward_history_loading: false,
@@ -30,3 +42,36 @@ const initialState: WalletStoreState = {
 export const useWalletStore = create<WalletStoreState>()(() => ({
     ...initialState,
 }));
+
+// Temporary solution until we use excess_sig to track pending transactions
+export const addPendingTransaction = (payload: { amount: string; destination: string; paymentId: string }) => {
+    const transaction: PendingTransaction = {
+        tx_id: Date.now(),
+        amount: Number(payload.amount.replace(/[Tt]$/, '000000')),
+        dest_address: payload.destination,
+        payment_id: payload.paymentId,
+        direction: 2,
+        status: 1,
+        timestamp: Date.now(),
+    };
+
+    useWalletStore.setState((state) => ({
+        pending_transactions: [transaction, ...state.pending_transactions],
+    }));
+};
+
+export const refreshPendingTransactions = () => {
+    useWalletStore.setState((state) => {
+        // Filter out pending transactions that have matching confirmed transactions
+        const updatedPendingTransactions = state.pending_transactions.filter((pending) => {
+            const isConfirmed = state.transactions.some(
+                (tx) => tx.amount === pending.amount && tx.payment_id === pending.payment_id
+            );
+            return !isConfirmed;
+        });
+
+        return {
+            pending_transactions: updatedPendingTransactions,
+        };
+    });
+};

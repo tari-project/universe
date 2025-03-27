@@ -30,12 +30,24 @@ export const ContentWrapper = styled.div`
     place-items: stretch;
     justify-content: stretch;
     width: 100%;
-
     grid-template-areas:
-        'title . earnings'
-        'time . earnings';
+        'status title . earnings'
+        'status time . earnings';
+    grid-template-columns: auto 1fr auto 1fr;
 `;
-
+export const StatusWrapper = styled.div`
+    grid-area: status;
+    display: flex;
+    align-items: center;
+    margin-right: 8px;
+`;
+export const CircularProgressWrapper = styled.div`
+    height: 25px;
+    width: 25px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+`;
 export const TitleWrapper = styled(Typography)`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};

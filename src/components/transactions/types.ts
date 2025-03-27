@@ -13,5 +13,6 @@ export interface BaseItemProps {
     time: string;
     value: string;
     chip?: string;
+    status?: number;
     onClick?: () => void;
 }

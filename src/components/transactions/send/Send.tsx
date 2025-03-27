@@ -5,7 +5,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useForm } from 'react-hook-form';
 import { FaArrowDown } from 'react-icons/fa6';
 
-import { setError as setStoreError } from '@app/store';
+import { addPendingTransaction, setError as setStoreError } from '@app/store';
 
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
@@ -79,11 +79,14 @@ export function Send() {
     const handleSend = useCallback(
         async (data: SendInputs) => {
             try {
-                await invoke('send_one_sided_to_stealth_address', {
+                const payload = {
                     amount: data.amount,
                     destination: data.address,
                     paymentId: data.message,
-                });
+                };
+                await invoke('send_one_sided_to_stealth_address', payload);
+
+                addPendingTransaction(payload);
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {

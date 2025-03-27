@@ -14,17 +14,29 @@ import {
     ValueChangeWrapper,
     ValueWrapper,
     CurrencyText,
+    StatusWrapper,
+    CircularProgressWrapper,
 } from './ListItem.styles.ts';
 import { useUIStore } from '@app/store';
+import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
+import { TransactionStatus } from '@app/types/transactions.ts';
 
-const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
+const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
     const isPositiveValue = type !== 'sent';
+    const isPending = status === TransactionStatus.Broadcast;
     const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
+            <StatusWrapper>
+                {isPending && (
+                    <CircularProgressWrapper>
+                        <CircularProgress />
+                    </CircularProgressWrapper>
+                )}
+            </StatusWrapper>
             <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
             <TimeWrapper variant="p">{time}</TimeWrapper>
             <ValueWrapper>
@@ -82,7 +94,14 @@ const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemP
     }
 
     const baseItem = (
-        <BaseItem title={itemTitle} time={itemTime} value={earningsFormatted} type={itemType} onClick={handleTxClick} />
+        <BaseItem
+            title={itemTitle}
+            time={itemTime}
+            value={earningsFormatted}
+            type={itemType}
+            status={item?.status}
+            onClick={handleTxClick}
+        />
     );
     const itemHover = isMined ? <ItemHover item={item} /> : null;
     const itemExpand = !isMined ? <ItemExpand item={item} /> : null;

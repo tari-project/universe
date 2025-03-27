@@ -1,6 +1,8 @@
 // from tari.rpc.rs - only the enum members we use for now
 
 export enum TransactionStatus {
+    // This transaction has been broadcast to the base layer network and is currently in one or more base node mempools.
+    Broadcast = 1,
     /// This transaction is mined and confirmed at the current base node's height
     MinedConfirmed = 6,
     /// This is faux transaction mainly for one-sided transaction outputs or wallet recovery outputs have been found
