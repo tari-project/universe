@@ -4,7 +4,6 @@ import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/a
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { ResumingAllProcessesPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow } from '../index.ts';
-import { setSetupComplete, setSetupProgress, setSetupTitle, setSetupTitleParams } from './setupStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
