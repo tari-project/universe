@@ -14,11 +14,11 @@ export interface ProgressTrackerUpdatePayload {
 
 export type ProgressStateUpdateEvent =
     | {
-          event_type: 'CorePhaseUpdate';
+          event_type: 'Core';
           payload: ProgressTrackerUpdatePayload;
       }
     | {
-          event_type: 'LocalNodePhaseUpdate';
+          event_type: 'LocalNode';
           payload: ProgressTrackerUpdatePayload;
       };
 
@@ -42,10 +42,10 @@ export const useProgressEventsListener = () => {
             async ({ payload: event }: { payload: ProgressStateUpdateEvent }) => {
                 handleLogUpdate(event);
                 switch (event.event_type) {
-                    case 'CorePhaseUpdate':
+                    case 'Core':
                         updateCoreSetupPhaseInfo(event.payload);
                         break;
-                    case 'LocalNodePhaseUpdate':
+                    case 'LocalNode':
                         updateLocalNodeSetupPhaseInfo(event.payload);
                         break;
                     default:
