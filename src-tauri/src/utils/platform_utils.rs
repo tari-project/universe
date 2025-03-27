@@ -22,6 +22,15 @@
 
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
+
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::ExternalDependencies;
+
+#[cfg(not(target_os = "linux"))]
+use crate::UniverseAppState;
+#[cfg(not(target_os = "linux"))]
+use anyhow::anyhow;
+
 use std::fmt::Display;
 
 #[derive(Clone)]
