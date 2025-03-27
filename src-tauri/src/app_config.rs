@@ -445,7 +445,7 @@ impl AppConfig {
 
         if self.config_version <= 13 {
             if self.mmproxy_monero_nodes.len() == 1
-                && self.mmproxy_monero_nodes.get(0).map(|s| s.as_str())
+                && self.mmproxy_monero_nodes.first().map(|s| s.as_str())
                     == Some("https://xmr-01.tari.com")
             {
                 self.mmproxy_monero_nodes = default_monero_nodes();
