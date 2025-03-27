@@ -73,7 +73,7 @@ pub(crate) trait NodeAdapter: ProcessAdapter {
 pub(crate) trait NodeClient {
     async fn wait_synced(
         &self,
-        progress_tracker: &Vec<Option<ChanneledStepUpdate>>,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError>;
     async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error>;
@@ -225,7 +225,7 @@ impl<T: NodeAdapter> NodeManager<T> {
             .ok_or_else(|| NodeManagerError::NodeNotStarted)?;
         loop {
             match status_monitor
-                .wait_synced(&progress_trackers, self.shutdown.clone())
+                .wait_synced(progress_trackers.clone(), self.shutdown.clone())
                 .await
             {
                 Ok(_) => return Ok(()),

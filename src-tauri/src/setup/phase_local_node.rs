@@ -25,7 +25,6 @@ use std::time::Duration;
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
-    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupLocalNodePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -38,7 +37,7 @@ use anyhow::Error;
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{watch, Mutex};
+use tokio::sync::Mutex;
 
 use super::{
     setup_manager::{SetupManager, SetupPhase},

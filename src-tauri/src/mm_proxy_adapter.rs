@@ -161,7 +161,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             args.push(format!(
                 "merge_mining_proxy.p2pool_node_grpc_address={}",
                 "/dns4/grpc-p2pool.nextnet.tari.com/tcp/443"
-
             ));
         }
 

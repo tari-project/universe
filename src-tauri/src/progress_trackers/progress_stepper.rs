@@ -33,6 +33,7 @@ use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
 const LOG_TARGET: &str = "tari::universe::progress_tracker";
 
+#[derive(Clone)]
 pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
@@ -101,7 +102,7 @@ impl ProgressStepper {
                     app_state
                         .events_manager
                         .handle_progress_tracker_update(
-                            &app_handle,
+                            app_handle,
                             event.get_event_type(),
                             event.get_phase_title(),
                             event.get_title(),
@@ -139,7 +140,7 @@ impl ProgressStepper {
 
             if let Some(next_step) = next_step {
                 if let Some(next_index) = self.plan.iter().position(|x| x.eq(&next_step)) {
-                    let next_step_percentage = self.percentage_steps.get(next_index).cloned();
+                    let next_step_percentage = self.percentage_steps.get(next_index).copied();
                     let channel_step_update = ChanneledStepUpdate {
                         step: resolved_step.clone(),
                         step_percentage: resolved_percentage.clone(),

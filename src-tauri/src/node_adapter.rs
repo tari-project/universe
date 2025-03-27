@@ -448,7 +448,7 @@ impl NodeClient for MinotariNodeClient {
     #[allow(clippy::too_many_lines)]
     async fn wait_synced(
         &self,
-        progress_tracker: &Vec<Option<ChanneledStepUpdate>>,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
@@ -487,8 +487,8 @@ impl NodeClient for MinotariNodeClient {
 
             if sync_progress.state == SyncState::Startup as i32 {
                 let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage =
-                    sync_progress.initial_connected_peers as f64 / self.required_sync_peers as f64;
+                let percentage = sync_progress.initial_connected_peers as f64
+                    / f64::from(self.required_sync_peers);
                 progress_params.insert(
                     "initial_connected_peers".to_string(),
                     sync_progress.initial_connected_peers.to_string(),

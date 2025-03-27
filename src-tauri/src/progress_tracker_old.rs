@@ -70,7 +70,7 @@ impl ProgressTracker {
 }
 
 pub struct ProgressTrackerInner {
-    app_handle: AppHandle,
+    _app_handle: AppHandle,
     min: u64,
     next_max: u64,
     last_action_channel: Option<Sender<String>>,
@@ -79,7 +79,7 @@ pub struct ProgressTrackerInner {
 impl ProgressTrackerInner {
     pub fn new(app_handle: AppHandle, channel: Option<Sender<String>>) -> Self {
         Self {
-            app_handle: app_handle.clone(),
+            _app_handle: app_handle.clone(),
             min: 0,
             next_max: 0,
             last_action_channel: channel,

@@ -211,7 +211,7 @@ impl NodeClient for WrappedNodeClient {
 
     async fn wait_synced(
         &self,
-        progress_tracker: &Vec<Option<ChanneledStepUpdate>>,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), MinotariNodeStatusMonitorError> {
         if self.is_synced().await {

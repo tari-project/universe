@@ -34,7 +34,7 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{EventType, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
+    events::{ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,

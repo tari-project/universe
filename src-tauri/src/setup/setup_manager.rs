@@ -220,7 +220,7 @@ impl SetupManager {
             .get(&SetupPhase::Unknown)
             .unwrap_or(&false);
 
-        if wallet_phase_status && unknown_phase_status {
+        if unknown_phase_status {
             self.unlock_mining(app_handle.clone()).await;
         }
 

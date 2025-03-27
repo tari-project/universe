@@ -75,7 +75,7 @@ impl ProgressStep for ProgressSetupCorePlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
     fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::CorePhaseUpdate
+        ProgressEvents::Core
     }
 
     fn get_progress_weight(&self) -> u8 {
@@ -139,7 +139,7 @@ impl ProgressStep for ProgressSetupLocalNodePlan {
     type ChannelEvent = ProgressPlanEventPayload;
 
     fn get_event_type(&self) -> ProgressEvents {
-        ProgressEvents::LocalNodePhaseUpdate
+        ProgressEvents::LocalNode
     }
 
     fn get_progress_weight(&self) -> u8 {

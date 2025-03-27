@@ -63,12 +63,16 @@ pub enum EventType {
 
 #[derive(Clone, Debug, Serialize)]
 pub enum ProgressEvents {
-    CorePhaseUpdate,
-    WalletPhaseUpdate,
-    HardwarePhaseUpdate,
-    RemoteNodePhaseUpdate,
-    LocalNodePhaseUpdate,
-    UnknownPhaseUpdate,
+    Core,
+    #[allow(dead_code)]
+    Wallet,
+    #[allow(dead_code)]
+    Hardware,
+    #[allow(dead_code)]
+    RemoteNode,
+    LocalNode,
+    #[allow(dead_code)]
+    Unknown,
 }
 #[derive(Clone, Debug, Serialize)]
 pub struct ProgressTrackerUpdatePayload {
