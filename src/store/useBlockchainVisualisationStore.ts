@@ -8,6 +8,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
+import { setWin, SuccessLevel } from '@tari-project/tari-tower';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -39,12 +40,12 @@ type BlockchainVisualisationStoreState = State & Actions;
 const getSuccessTier = (earnings: number) => {
     const humanValue = earnings / 1_000_000;
     if (humanValue < 100) {
-        return 'success';
+        return SuccessLevel.ONE;
     }
     if (humanValue <= 1000) {
-        return 'success2';
+        return SuccessLevel.TWO;
     }
-    return 'success3';
+    return SuccessLevel.THREE;
 };
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
@@ -66,7 +67,8 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         setMiningControlsEnabled(false);
-        const _successTier = getSuccessTier(earnings);
+        const successTier = getSuccessTier(earnings);
+        setWin({ completeAnimationLevel: successTier });
 
         useBlockchainVisualisationStore.setState({ earnings });
         if (winTimeout) {
@@ -105,7 +107,8 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
 
 export const handleWinRecap = (recapData: Recap) => {
     setMiningControlsEnabled(false);
-    const _successTier = getSuccessTier(recapData.totalEarnings);
+    const successTier = getSuccessTier(recapData.totalEarnings);
+    setWin({ completeAnimationLevel: successTier });
     useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
     setTimeout(() => {
         setMiningControlsEnabled(true);
@@ -114,7 +117,8 @@ export const handleWinRecap = (recapData: Recap) => {
 };
 export const handleWinReplay = (txItem: TransactionInfo) => {
     const earnings = txItem.amount;
-    const _successTier = getSuccessTier(earnings);
+    const successTier = getSuccessTier(earnings);
+    setWin({ completeAnimationLevel: successTier, isReplay: true });
     useBlockchainVisualisationStore.setState({ replayItem: txItem });
     setTimeout(() => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });

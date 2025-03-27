@@ -1,4 +1,5 @@
 import { AdminShow, DialogType, useUIStore } from '@app/store/useUIStore.ts';
+import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
@@ -9,6 +10,8 @@ export const setUITheme = (theme: Theme | 'system') => {
     const initialPreferred = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     const uiTheme: Theme = theme === 'system' ? initialPreferred : theme;
 
+    setAnimationProperties(uiTheme === 'light' ? animationLightBg : animationDarkBg);
+
     useUIStore.setState({ theme: uiTheme });
 };
 export const setDialogToShow = (dialogToShow?: DialogType) => useUIStore.setState({ dialogToShow });
@@ -18,7 +21,7 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
 
-export const _animationLightBg = [
+export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },
     { property: 'neutralColor', value: '#ffffff' },
@@ -30,7 +33,7 @@ export const _animationLightBg = [
     { property: 'particlesOpacity', value: 0.75 },
     { property: 'particlesSize', value: 0.01 },
 ];
-export const _animationDarkBg = [
+export const animationDarkBg = [
     { property: 'bgColor1', value: '#212121' },
     { property: 'bgColor2', value: '#212121' },
     { property: 'neutralColor', value: '#040723' },
