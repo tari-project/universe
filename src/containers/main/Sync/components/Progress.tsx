@@ -21,14 +21,19 @@ const Label = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.default};
 `;
 export default function Progress() {
-    const { t } = useTranslation('setup-view');
+    const { t } = useTranslation('setup-progresses');
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
-    const phaseTitleParams = corePhaseInfoPayload?.title_params;
+    const setupPhaseTitle = corePhaseInfoPayload?.phase_title;
     const setupTitle = corePhaseInfoPayload?.title;
     const setupProgress = corePhaseInfoPayload?.progress;
-    const setupTitleParams = phaseTitleParams ? { ...phaseTitleParams } : {};
+    const setupParams = corePhaseInfoPayload?.title_params ? { ...corePhaseInfoPayload.title_params } : {};
 
-    const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
+    // const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
+
+    const setUpText =
+        setupTitle && setupPhaseTitle
+            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
+            : '';
     return (
         <Wrapper>
             <LinearProgress variant="large" value={setupProgress} />

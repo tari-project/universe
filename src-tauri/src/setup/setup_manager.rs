@@ -167,7 +167,6 @@ impl SetupManager {
 
         let core_phase_status = *self.phase_statuses.get(&SetupPhase::Core).unwrap_or(&false);
         if core_phase_status {
-            self.unlock_app(app_handle.clone()).await;
             self.spawn_first_batch_of_setup_phases(app_handle.clone())
                 .await;
         };
@@ -194,6 +193,10 @@ impl SetupManager {
             .get(&SetupPhase::RemoteNode)
             .unwrap_or(&false);
 
+        if local_node_phase_status || remote_node_phase_status {
+            self.unlock_app(app_handle.clone()).await;
+        }
+
         if hardware_phase_status && (local_node_phase_status || remote_node_phase_status) {
             self.spawn_second_batch_of_setup_phases(app_handle.clone())
                 .await;
@@ -219,8 +222,13 @@ impl SetupManager {
 
         if wallet_phase_status && unknown_phase_status {
             self.unlock_mining(app_handle.clone()).await;
-            self.unlock_wallet(app_handle.clone()).await;
+        }
 
+        if wallet_phase_status {
+            self.unlock_wallet(app_handle.clone()).await;
+        }
+
+        if wallet_phase_status && unknown_phase_status {
             // todo move it out from here
             let state = app_handle.state::<UniverseAppState>();
             let _unused = initialize_frontend_updates(&app_handle).await;

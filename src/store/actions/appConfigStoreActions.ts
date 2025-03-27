@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { changeLanguage } from 'i18next';
+import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import { AirdropTokens, useAppConfigStore, useMiningMetricsStore, useMiningStore } from '../index.ts';
 import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
@@ -17,7 +17,11 @@ interface SetModeProps {
 export const handleAppConfigLoaded = async (appConfig: AppConfig) => {
     try {
         useAppConfigStore.setState(appConfig);
-        await changeLanguage(appConfig.application_language);
+        if (i18next.language !== appConfig.application_language) {
+            console.log('Current language is', i18next.language);
+            console.log('Changing language to', appConfig.application_language);
+            await changeLanguage(appConfig.application_language);
+        }
         const configTheme = appConfig.display_mode?.toLowerCase();
         if (configTheme) {
             setUITheme(configTheme as displayMode);
