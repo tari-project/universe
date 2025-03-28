@@ -442,6 +442,7 @@ impl NodeClient for MinotariNodeClient {
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
                 .map_err(|e| anyhow!(e.to_string()))?,
+            public_address: res.public_addresses,
         })
     }
 

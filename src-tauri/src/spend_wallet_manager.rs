@@ -77,10 +77,9 @@ impl SpendWalletManager<RemoteUntilSyncedNodeAdapter> {
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
-        let base_node_tcp_port = self.node_manager.get_tcp_listener_port().await;
 
         self.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        self.adapter.base_node_address = Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
+        self.adapter.base_node_address = Some(node_identity.public_address[0].clone());
         self.adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id)
             .await

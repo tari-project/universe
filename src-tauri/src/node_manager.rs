@@ -410,4 +410,5 @@ impl<T: NodeAdapter> NodeManager<T> {
 
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
+    pub public_address: Vec<String>,
 }
