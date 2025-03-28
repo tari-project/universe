@@ -31,9 +31,7 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::{
-    app_config::AppConfig, tasks_tracker::TasksTracker, utils::system_status::SystemStatus,
-};
+use crate::{app_config::AppConfig, utils::system_status::SystemStatus};
 use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
@@ -94,20 +92,16 @@ impl UpdatesManager {
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let app_clone = app.clone();
         let self_clone = self.clone();
-        let mut interval = time::interval(Duration::from_secs(3600));
-        let mut shutdown_signal = self_clone.app_shutdown.clone();
-        TasksTracker::current().spawn(async move {
+        tauri::async_runtime::spawn(async move {
+            let mut interval = time::interval(Duration::from_secs(3600));
             loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                            error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
-                        }
-                    },
-                    _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
-                        break;
-                    }
+                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
+                {
+                    break;
+                };
+                interval.tick().await;
+                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                 }
             }
         });
