@@ -3,7 +3,6 @@ import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import { startMining } from './miningStoreActions.ts';
 import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
-import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
@@ -65,14 +64,7 @@ export const setSetupComplete = async () => {
     const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
     const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
     const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-    const visual_mode = useAppConfigStore.getState().visual_mode;
-    if (visual_mode) {
-        try {
-            setAnimationState('showVisual');
-        } catch (error) {
-            console.error('Failed to set animation state:', error);
-        }
-    }
+
     if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }

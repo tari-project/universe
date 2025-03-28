@@ -2,7 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { useBlockchainVisualisationStore } from '../useBlockchainVisualisationStore.ts';
 import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
-
+import { setStart, setStop } from '@tari-project/tari-tower';
 import { useMiningStore } from '../useMiningStore.ts';
 import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
@@ -123,6 +123,10 @@ export const setMiningNetwork = async () => {
 export const startMining = async () => {
     console.info('Mining starting....');
     useMiningStore.setState({ miningInitiated: true });
+
+    if (useAppConfigStore.getState().visual_mode) {
+        setStart();
+    }
     useBlockchainVisualisationStore
         .getState()
         .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
@@ -141,6 +145,7 @@ export const stopMining = async () => {
     try {
         await invoke('stop_mining', {});
         console.info('Mining stopped.');
+        setStop();
     } catch (e) {
         console.error('Failed to stop mining: ', e);
         setError(e as string);
