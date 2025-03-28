@@ -177,6 +177,10 @@ export const setUserPoints = (userPoints: UserPoints) => {
     useAirdropStore.setState({ userPoints });
 };
 
+export const setXSpaceEvent = (xSpaceEvent: XSpaceEvent | null) => {
+    useAirdropStore.setState({ latestXSpaceEvent: xSpaceEvent });
+};
+
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
