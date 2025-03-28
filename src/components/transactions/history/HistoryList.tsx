@@ -7,16 +7,20 @@ import { HistoryListItem } from './ListItem.tsx';
 import { initialFetchTxs, fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { TransactionInfo } from '@app/types/app-status.ts';
 
 const HistoryList = () => {
     const { t } = useTranslation('wallet', { useSuspense: false });
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const transactions = useWalletStore((s) => s.transactions);
+    const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
 
     useEffect(() => {
         initialFetchTxs();
     }, []);
+
+    const combinedTransactions = [...pendingTransactions, ...transactions] as TransactionInfo[];
 
     const handleNext = useCallback(async () => {
         if (!is_transactions_history_loading) {
@@ -26,18 +30,18 @@ const HistoryList = () => {
 
     return (
         <ListWrapper id="list">
-            {!is_transactions_history_loading && !transactions?.length && (
+            {!is_transactions_history_loading && !combinedTransactions?.length && (
                 <Typography variant="h6">{t('empty-tx')}</Typography>
             )}
             <InfiniteScroll
-                dataLength={transactions?.length || 0}
+                dataLength={combinedTransactions?.length || 0}
                 next={handleNext}
                 hasMore={hasMore}
                 loader={<CircularProgress />}
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {transactions.map((tx, index) => (
+                    {combinedTransactions.map((tx, index) => (
                         <HistoryListItem key={tx.tx_id} item={tx} index={index} />
                     ))}
                 </ListItemWrapper>
