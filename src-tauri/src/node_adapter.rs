@@ -237,10 +237,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
         add_firewall_rule("minotari_node.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
                     args,
@@ -248,7 +247,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-            },
+            ),
             MinotariNodeStatusMonitor {
                 grpc_port: self.grpc_port,
                 required_sync_peers: self.required_initial_peers,

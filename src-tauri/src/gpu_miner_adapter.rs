@@ -219,9 +219,9 @@ impl ProcessAdapter for GpuMinerAdapter {
         add_firewall_rule("glytex.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: Some(envs),
                     args,
@@ -229,8 +229,7 @@ impl ProcessAdapter for GpuMinerAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-                handle: None,
-            },
+            ),
             GpuMinerStatusMonitor {
                 http_api_port,
                 start_time: Instant::now(),

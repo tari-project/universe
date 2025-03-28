@@ -181,10 +181,9 @@ impl ProcessAdapter for WalletAdapter {
         )?;
 
         Ok((
-            ProcessInstance {
-                shutdown: inner_shutdown,
-                handle: None,
-                startup_spec: ProcessStartupSpec {
+            ProcessInstance::new(
+                inner_shutdown,
+                ProcessStartupSpec {
                     file_path: binary_version_path,
                     envs: None,
                     args,
@@ -192,7 +191,7 @@ impl ProcessAdapter for WalletAdapter {
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
-            },
+            ),
             WalletStatusMonitor {
                 grpc_port: self.grpc_port,
                 state_broadcast: self.state_broadcast.clone(),

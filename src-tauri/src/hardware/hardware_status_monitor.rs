@@ -102,19 +102,19 @@ struct GpuStatusFileEntry {
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
-pub struct DeviceParameters {
+pub(crate) struct DeviceParameters {
     pub usage_percentage: f32,
     pub current_temperature: f32,
     pub max_temperature: f32,
 }
 #[derive(Debug, Serialize, Clone, Default)]
-pub struct DeviceStatus {
+pub(crate) struct DeviceStatus {
     pub is_available: bool,
     pub is_reader_implemented: bool,
 }
 
 #[derive(Debug, Serialize, Clone, Default)]
-pub struct PublicDeviceProperties {
+pub(crate) struct PublicDeviceProperties {
     pub vendor: HardwareVendor,
     pub name: String,
     pub status: DeviceStatus,
@@ -122,26 +122,26 @@ pub struct PublicDeviceProperties {
 }
 
 #[derive(Clone)]
-pub struct PrivateCpuDeviceProperties {
+pub(crate) struct PrivateCpuDeviceProperties {
     pub device_reader: Box<dyn CpuParametersReader>,
 }
 #[derive(Clone)]
-pub struct PrivateGpuDeviceProperties {
+pub(crate) struct PrivateGpuDeviceProperties {
     pub device_reader: Box<dyn GpuParametersReader>,
 }
 
 #[derive(Clone)]
-pub struct CpuDeviceProperties {
+pub(crate) struct CpuDeviceProperties {
     pub public_properties: PublicDeviceProperties,
     pub private_properties: PrivateCpuDeviceProperties,
 }
 #[derive(Clone)]
-pub struct GpuDeviceProperties {
+pub(crate) struct GpuDeviceProperties {
     pub public_properties: PublicDeviceProperties,
     pub private_properties: PrivateGpuDeviceProperties,
 }
 
-pub struct HardwareStatusMonitor {
+pub(crate) struct HardwareStatusMonitor {
     gpu_devices: RwLock<Vec<GpuDeviceProperties>>,
     cpu_devices: RwLock<Vec<CpuDeviceProperties>>,
 }
@@ -240,8 +240,9 @@ impl HardwareStatusMonitor {
     }
 
     async fn initialize_cpu_devices(&self) -> Result<Vec<CpuDeviceProperties>, Error> {
-        let system =
-            System::new_with_specifics(RefreshKind::new().with_cpu(CpuRefreshKind::everything()));
+        let system = System::new_with_specifics(
+            RefreshKind::nothing().with_cpu(CpuRefreshKind::everything()),
+        );
 
         let mut cpu_devices = vec![];
 
