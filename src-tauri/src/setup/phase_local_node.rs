@@ -79,21 +79,19 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
         let progress_stepper = ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::SetupLocalNode(
+            .add_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::StartingLocalNode,
             ))
-            .add_step(ProgressPlans::SetupLocalNode(
+            .add_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::WaitingForInitialSync,
             ))
-            .add_step(ProgressPlans::SetupLocalNode(
+            .add_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::WaitingForHeaderSync,
             ))
-            .add_step(ProgressPlans::SetupLocalNode(
+            .add_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::WaitingForBlockSync,
             ))
-            .add_step(ProgressPlans::SetupLocalNode(
-                ProgressSetupLocalNodePlan::Done,
-            ))
+            .add_step(ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::Done))
             .calculate_percentage_steps()
             .build(app_handle.clone());
 
@@ -161,7 +159,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupLocalNode(
+            .resolve_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::StartingLocalNode,
             ))
             .await;
@@ -198,21 +196,21 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         }
 
         let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForInitialSync),
-            Some(ProgressPlans::SetupLocalNode(
+            ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::WaitingForInitialSync),
+            Some(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::WaitingForHeaderSync,
             )),
         );
 
         let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForHeaderSync),
-            Some(ProgressPlans::SetupLocalNode(
+            ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::WaitingForHeaderSync),
+            Some(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::WaitingForBlockSync,
             )),
         );
 
         let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
-            ProgressPlans::SetupLocalNode(ProgressSetupLocalNodePlan::WaitingForBlockSync),
+            ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::WaitingForBlockSync),
             None,
         );
 
@@ -243,9 +241,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::SetupLocalNode(
-                ProgressSetupLocalNodePlan::Done,
-            ))
+            .resolve_step(ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

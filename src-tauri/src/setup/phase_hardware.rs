@@ -81,15 +81,13 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
         let progress_stepper = ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::SetupHardware(
+            .add_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
-            .add_step(ProgressPlans::SetupHardware(
+            .add_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::RunCpuBenchmark,
             ))
-            .add_step(ProgressPlans::SetupHardware(
-                ProgressSetupHardwarePlan::Done,
-            ))
+            .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .calculate_percentage_steps()
             .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
@@ -149,7 +147,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         let state = app_handle.state::<UniverseAppState>();
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupHardware(
+            .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
             .await;
@@ -169,7 +167,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         HardwareStatusMonitor::current().initialize().await?;
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupHardware(
+            .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::RunCpuBenchmark,
             ))
             .await;
@@ -206,9 +204,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::SetupHardware(
-                ProgressSetupHardwarePlan::Done,
-            ))
+            .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

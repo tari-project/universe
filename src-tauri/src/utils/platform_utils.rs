@@ -30,9 +30,10 @@ use crate::external_dependencies::ExternalDependencies;
 use crate::UniverseAppState;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
+#[cfg(not(target_os = "linux"))]
+use tauri::Manager;
 
 use std::fmt::Display;
-use tauri::Manager;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {

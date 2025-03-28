@@ -85,36 +85,24 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
         let progress_stepper = ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::SetupCore(
+            .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
-            .add_step(ProgressPlans::SetupCore(
+            .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::NetworkSpeedTest,
-            ))
-            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesNode,
-            ))
-            .add_step(ProgressPlans::SetupCore(
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
+            .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::BinariesMergeMiningProxy,
             ))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesWallet,
-            ))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesGpuMiner,
-            ))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesCpuMiner,
-            ))
-            .add_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesP2pool,
-            ))
-            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
-            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::Done))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .calculate_percentage_steps()
             .build(app_handle);
 
@@ -196,7 +184,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
         PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
+            .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
             .await;
@@ -257,7 +245,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
+            .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .await;
@@ -267,9 +255,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .await;
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::NetworkSpeedTest,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
@@ -282,11 +268,11 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 )
                 .await?;
             let _unused = progress_stepper
-                .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor))
+                .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
                 .await;
         } else {
-            let _unused = progress_stepper
-                .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
+            let _unused =
+                progress_stepper.skip_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor));
         };
 
         binary_resolver
@@ -298,9 +284,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesNode,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
             .await;
 
         binary_resolver
@@ -312,7 +296,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
+            .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::BinariesMergeMiningProxy,
             ))
             .await;
@@ -326,9 +310,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesWallet,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
             .await;
 
         binary_resolver
@@ -340,15 +322,11 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesGpuMiner,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
             .await;
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesCpuMiner,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
             .await;
         binary_resolver
             .initialize_binary_timeout(
@@ -368,9 +346,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             )
             .await?;
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(
-                ProgressSetupCorePlan::BinariesP2pool,
-            ))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
             .await;
 
         if should_check_for_update {
@@ -386,7 +362,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
         drop(binary_resolver);
 
         let _uunused = progress_stepper
-            .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .await;
 
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
@@ -421,7 +397,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::Done))
+            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

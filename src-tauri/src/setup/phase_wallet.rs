@@ -75,13 +75,11 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
         let progress_stepper = ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::SetupWallet(
-                ProgressSetupWalletPlan::StartWallet,
-            ))
-            .add_step(ProgressPlans::SetupWallet(
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
+            .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
-            .add_step(ProgressPlans::SetupWallet(ProgressSetupWalletPlan::Done))
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .calculate_percentage_steps()
             .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
@@ -133,9 +131,7 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         let state = app_handle.state::<UniverseAppState>();
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupWallet(
-                ProgressSetupWalletPlan::StartWallet,
-            ))
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
         state
@@ -149,7 +145,7 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
             .await?;
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupWallet(
+            .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
             .await;
@@ -183,7 +179,7 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
             .progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::SetupWallet(ProgressSetupWalletPlan::Done))
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

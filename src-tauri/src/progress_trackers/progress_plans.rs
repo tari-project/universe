@@ -285,21 +285,21 @@ impl ProgressStep for ProgressSetupUnknownPlan {
 #[allow(dead_code)]
 #[derive(Clone, PartialEq)]
 pub enum ProgressPlans {
-    SetupCore(ProgressSetupCorePlan),
-    SetupLocalNode(ProgressSetupLocalNodePlan),
-    SetupHardware(ProgressSetupHardwarePlan),
-    SetupWallet(ProgressSetupWalletPlan),
-    SetupUnknown(ProgressSetupUnknownPlan),
+    Core(ProgressSetupCorePlan),
+    LocalNode(ProgressSetupLocalNodePlan),
+    Hardware(ProgressSetupHardwarePlan),
+    Wallet(ProgressSetupWalletPlan),
+    Unknown(ProgressSetupUnknownPlan),
 }
 #[allow(dead_code)]
 impl ProgressPlans {
     fn get_event_type(&self) -> ProgressEvents {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
-            ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),
-            ProgressPlans::SetupHardware(plan) => plan.get_event_type(),
-            ProgressPlans::SetupWallet(plan) => plan.get_event_type(),
-            ProgressPlans::SetupUnknown(plan) => plan.get_event_type(),
+            ProgressPlans::Core(plan) => plan.get_event_type(),
+            ProgressPlans::LocalNode(plan) => plan.get_event_type(),
+            ProgressPlans::Hardware(plan) => plan.get_event_type(),
+            ProgressPlans::Wallet(plan) => plan.get_event_type(),
+            ProgressPlans::Unknown(plan) => plan.get_event_type(),
         }
     }
 }
@@ -309,41 +309,41 @@ impl ProgressStep for ProgressPlans {
 
     fn get_event_type(&self) -> ProgressEvents {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_event_type(),
-            ProgressPlans::SetupLocalNode(plan) => plan.get_event_type(),
-            ProgressPlans::SetupHardware(plan) => plan.get_event_type(),
-            ProgressPlans::SetupWallet(plan) => plan.get_event_type(),
-            ProgressPlans::SetupUnknown(plan) => plan.get_event_type(),
+            ProgressPlans::Core(plan) => plan.get_event_type(),
+            ProgressPlans::LocalNode(plan) => plan.get_event_type(),
+            ProgressPlans::Hardware(plan) => plan.get_event_type(),
+            ProgressPlans::Wallet(plan) => plan.get_event_type(),
+            ProgressPlans::Unknown(plan) => plan.get_event_type(),
         }
     }
 
     fn get_title(&self) -> String {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_title(),
-            ProgressPlans::SetupLocalNode(plan) => plan.get_title(),
-            ProgressPlans::SetupHardware(plan) => plan.get_title(),
-            ProgressPlans::SetupWallet(plan) => plan.get_title(),
-            ProgressPlans::SetupUnknown(plan) => plan.get_title(),
+            ProgressPlans::Core(plan) => plan.get_title(),
+            ProgressPlans::LocalNode(plan) => plan.get_title(),
+            ProgressPlans::Hardware(plan) => plan.get_title(),
+            ProgressPlans::Wallet(plan) => plan.get_title(),
+            ProgressPlans::Unknown(plan) => plan.get_title(),
         }
     }
 
     fn resolve_to_event(&self) -> Self::ChannelEvent {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.resolve_to_event(),
-            ProgressPlans::SetupLocalNode(plan) => plan.resolve_to_event(),
-            ProgressPlans::SetupHardware(plan) => plan.resolve_to_event(),
-            ProgressPlans::SetupWallet(plan) => plan.resolve_to_event(),
-            ProgressPlans::SetupUnknown(plan) => plan.resolve_to_event(),
+            ProgressPlans::Core(plan) => plan.resolve_to_event(),
+            ProgressPlans::LocalNode(plan) => plan.resolve_to_event(),
+            ProgressPlans::Hardware(plan) => plan.resolve_to_event(),
+            ProgressPlans::Wallet(plan) => plan.resolve_to_event(),
+            ProgressPlans::Unknown(plan) => plan.resolve_to_event(),
         }
     }
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressPlans::SetupCore(plan) => plan.get_progress_weight(),
-            ProgressPlans::SetupLocalNode(plan) => plan.get_progress_weight(),
-            ProgressPlans::SetupHardware(plan) => plan.get_progress_weight(),
-            ProgressPlans::SetupWallet(plan) => plan.get_progress_weight(),
-            ProgressPlans::SetupUnknown(plan) => plan.get_progress_weight(),
+            ProgressPlans::Core(plan) => plan.get_progress_weight(),
+            ProgressPlans::LocalNode(plan) => plan.get_progress_weight(),
+            ProgressPlans::Hardware(plan) => plan.get_progress_weight(),
+            ProgressPlans::Wallet(plan) => plan.get_progress_weight(),
+            ProgressPlans::Unknown(plan) => plan.get_progress_weight(),
         }
     }
 }
@@ -351,31 +351,31 @@ impl ProgressStep for ProgressPlans {
 impl ProgressPlans {
     pub fn get_phase_title(&self) -> String {
         match self {
-            ProgressPlans::SetupCore(_) => "setup-core".to_string(),
-            ProgressPlans::SetupLocalNode(_) => "setup-local-node".to_string(),
-            ProgressPlans::SetupHardware(_) => "setup-hardware".to_string(),
-            ProgressPlans::SetupWallet(_) => "setup-wallet".to_string(),
-            ProgressPlans::SetupUnknown(_) => "setup-unknown".to_string(),
+            ProgressPlans::Core(_) => "setup-core".to_string(),
+            ProgressPlans::LocalNode(_) => "setup-local-node".to_string(),
+            ProgressPlans::Hardware(_) => "setup-hardware".to_string(),
+            ProgressPlans::Wallet(_) => "setup-wallet".to_string(),
+            ProgressPlans::Unknown(_) => "setup-unknown".to_string(),
         }
     }
 
     pub fn get_phase_percentage_multiplyer(&self) -> f64 {
         match self {
-            ProgressPlans::SetupCore(_) => 0.2,
-            ProgressPlans::SetupLocalNode(_) => 0.1,
-            ProgressPlans::SetupHardware(_) => 0.3,
-            ProgressPlans::SetupWallet(_) => 0.1,
-            ProgressPlans::SetupUnknown(_) => 0.3,
+            ProgressPlans::Core(_) => 0.2,
+            ProgressPlans::LocalNode(_) => 0.1,
+            ProgressPlans::Hardware(_) => 0.3,
+            ProgressPlans::Wallet(_) => 0.1,
+            ProgressPlans::Unknown(_) => 0.3,
         }
     }
 
     pub fn get_phase_base_percentage(&self) -> f64 {
         match self {
-            ProgressPlans::SetupCore(_) => 0.0,
-            ProgressPlans::SetupLocalNode(_) => 20.0,
-            ProgressPlans::SetupHardware(_) => 30.0,
-            ProgressPlans::SetupWallet(_) => 60.0,
-            ProgressPlans::SetupUnknown(_) => 70.0,
+            ProgressPlans::Core(_) => 0.0,
+            ProgressPlans::LocalNode(_) => 20.0,
+            ProgressPlans::Hardware(_) => 30.0,
+            ProgressPlans::Wallet(_) => 60.0,
+            ProgressPlans::Unknown(_) => 70.0,
         }
     }
 }

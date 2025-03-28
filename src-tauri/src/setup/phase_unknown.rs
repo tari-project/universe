@@ -79,13 +79,9 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
         let progress_stepper = ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::SetupUnknown(
-                ProgressSetupUnknownPlan::P2Pool,
-            ))
-            .add_step(ProgressPlans::SetupUnknown(
-                ProgressSetupUnknownPlan::MMProxy,
-            ))
-            .add_step(ProgressPlans::SetupUnknown(ProgressSetupUnknownPlan::Done))
+            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
+            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
+            .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
             .calculate_percentage_steps()
             .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
@@ -153,9 +149,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
 
         if self.app_configuration.p2pool_enabled {
             let _unused = progress_stepper
-                .resolve_step(ProgressPlans::SetupUnknown(
-                    ProgressSetupUnknownPlan::P2Pool,
-                ))
+                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
                 .await;
 
             let base_node_grpc = state.node_manager.get_grpc_address().await?;
@@ -178,15 +172,12 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
                 )
                 .await?;
         } else {
-            let _unused = progress_stepper.skip_step(ProgressPlans::SetupUnknown(
-                ProgressSetupUnknownPlan::P2Pool,
-            ));
+            let _unused = progress_stepper
+                .skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
         }
 
         let _unused = progress_stepper
-            .resolve_step(ProgressPlans::SetupUnknown(
-                ProgressSetupUnknownPlan::MMProxy,
-            ))
+            .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
@@ -229,7 +220,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .progress_stepper
             .lock()
             .await
-            .resolve_step(ProgressPlans::SetupUnknown(ProgressSetupUnknownPlan::Done))
+            .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();
