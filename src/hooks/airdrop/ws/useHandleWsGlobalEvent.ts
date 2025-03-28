@@ -1,8 +1,9 @@
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { WebsocketEventNames, WebsocketGlobalEvent } from '@app/types/ws';
+import { useCallback } from 'react';
 
 export const useHandleWsGlobalEvent = () => {
-    return (event: string) => {
+    return useCallback((event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketGlobalEvent;
         switch (eventParsed.name) {
             case WebsocketEventNames.X_SPACE_EVENT:
@@ -11,5 +12,5 @@ export const useHandleWsGlobalEvent = () => {
             default:
                 console.warn('Unknown global event', eventParsed);
         }
-    };
+    }, []);
 };
