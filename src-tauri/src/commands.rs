@@ -131,7 +131,6 @@ impl Default for CpuMinerStatus {
         }
     }
 }
-
 #[derive(Debug, Serialize, Clone, Default)]
 pub struct CpuMinerConnectionStatus {
     pub is_connected: bool,
