@@ -28,19 +28,19 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
     if (isTokenExpired) {
         if (retryCount >= MAX_RETRIES) {
-            throw Error('Failed to refresh tokens');
+            throw Error('Failed to refresh tokens from handleAirdropRequest');
         }
         try {
             const res = await handleRefreshAirdropTokens();
-            if (res) {
-                retryCount = 0;
-            } else {
+            if (!res) {
                 await retryHandler('Refresh retry failed');
             }
         } catch (err) {
             const e = err as Error;
             await retryHandler(e.message ?? 'Caught error: Refresh retry failed');
         }
+    } else {
+        retryCount = 0;
     }
 
     if (!headers && !headers && (!baseUrl || !airdropToken)) return;

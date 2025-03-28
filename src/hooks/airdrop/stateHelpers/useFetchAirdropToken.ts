@@ -33,7 +33,7 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                             }
                         }
                     } catch (e) {
-                        console.error('fetch airdrop token error: ', e);
+                        console.error('Airdrop auth error in useFetchAirdropToken: ', e);
                     }
                 }
             }, 2000);

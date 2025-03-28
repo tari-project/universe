@@ -25,7 +25,6 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
-use crate::tasks_tracker::TasksTracker;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -250,12 +249,17 @@ impl CpuMiner {
         lock.is_running()
     }
 
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
+    }
+
     async fn initialize_status_updates(&self, mut app_shutdown: ShutdownSignal) {
         let cpu_miner_status_watch_tx = self.cpu_miner_status_watch_tx.clone();
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        TasksTracker::current().spawn(async move {
+        tauri::async_runtime::spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {
