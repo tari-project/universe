@@ -110,7 +110,9 @@ impl SetupManager {
         let _unused = hardware_phase_setup
             .load_configuration(HardwareSetupPhaseSessionConfiguration {})
             .await;
-        hardware_phase_setup.create_progress_stepper(None).await;
+        hardware_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
+            .await;
         let hardware_phase_setup = Arc::new(hardware_phase_setup);
         hardware_phase_setup.setup(app_handle.clone()).await;
 
@@ -137,7 +139,9 @@ impl SetupManager {
         let _unused = wallet_phase_setup
             .load_configuration(WalletSetupPhaseSessionConfiguration {})
             .await;
-        wallet_phase_setup.create_progress_stepper(None).await;
+        wallet_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
+            .await;
         let wallet_phase_setup = Arc::new(wallet_phase_setup);
         wallet_phase_setup.setup(app_handle.clone()).await;
 
@@ -152,7 +156,9 @@ impl SetupManager {
                 cpu_benchmarked_hashrate,
             })
             .await;
-        unknown_phase_setup.create_progress_stepper(None).await;
+        unknown_phase_setup
+            .create_progress_stepper(Some(app_handle.clone()))
+            .await;
         let unknown_phase_setup = Arc::new(unknown_phase_setup);
         unknown_phase_setup.setup(app_handle.clone()).await;
     }
@@ -194,7 +200,7 @@ impl SetupManager {
             .unwrap_or(&false);
 
         if local_node_phase_status || remote_node_phase_status {
-            self.unlock_app(app_handle.clone()).await;
+            // self.unlock_app(app_handle.clone()).await;
         }
 
         if hardware_phase_status && (local_node_phase_status || remote_node_phase_status) {
@@ -221,6 +227,7 @@ impl SetupManager {
             .unwrap_or(&false);
 
         if unknown_phase_status {
+            self.unlock_app(app_handle.clone()).await;
             self.unlock_mining(app_handle.clone()).await;
         }
 

@@ -20,7 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    ops::{Add, Mul},
+};
 
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
@@ -58,6 +61,7 @@ impl ChanneledStepUpdate {
                     self.step.get_title(),
                     resolved_percentage,
                     Some(params),
+                    false,
                 )
                 .await;
         }
@@ -96,6 +100,8 @@ impl ProgressStepper {
 
             let event = resolved_step.resolve_to_event();
 
+            let is_completed = self.plan.is_empty();
+
             match &self.app_handle {
                 Some(app_handle) => {
                     let app_state = app_handle.state::<UniverseAppState>();
@@ -104,10 +110,11 @@ impl ProgressStepper {
                         .handle_progress_tracker_update(
                             app_handle,
                             event.get_event_type(),
-                            event.get_phase_title(),
+                            resolved_step.get_phase_title(),
                             event.get_title(),
                             resolved_percentage,
                             None,
+                            is_completed,
                         )
                         .await;
                 }
@@ -215,8 +222,14 @@ impl ProgressStepperBuilder {
             let percentage =
                 (f64::from(step.get_progress_weight()) / f64::from(total_weight)) * 100.0;
             current_percentage += percentage;
-            self.percentage_steps
-                .push(current_percentage.min(100.0).round());
+            self.percentage_steps.push(
+                current_percentage
+                    .min(100.0)
+                    .round()
+                    .mul(step.get_phase_percentage_multiplyer())
+                    .add(step.get_phase_base_percentage())
+                    .round(),
+            );
         }
         self
     }

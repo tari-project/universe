@@ -91,6 +91,9 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .add_step(ProgressPlans::SetupLocalNode(
                 ProgressSetupLocalNodePlan::WaitingForBlockSync,
             ))
+            .add_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::Done,
+            ))
             .calculate_percentage_steps()
             .build(app_handle.clone());
 
@@ -234,6 +237,15 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .lock()
             .await
             .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::LocalNode, true)
+            .await;
+
+        let _unused = self
+            .progress_stepper
+            .lock()
+            .await
+            .resolve_step(ProgressPlans::SetupLocalNode(
+                ProgressSetupLocalNodePlan::Done,
+            ))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

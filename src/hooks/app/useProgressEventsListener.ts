@@ -1,4 +1,9 @@
-import { updateCoreSetupPhaseInfo, updateLocalNodeSetupPhaseInfo } from '@app/store/actions/setupStoreActions';
+import {
+    updateCoreSetupPhaseInfo,
+    updateHardwareSetupPhaseInfo,
+    updateLocalNodeSetupPhaseInfo,
+    updateUnknownSetupPhaseInfo,
+} from '@app/store/actions/setupStoreActions';
 import { deepEqual } from '@app/utils/objectDeepEqual';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect, useRef } from 'react';
@@ -10,6 +15,7 @@ export interface ProgressTrackerUpdatePayload {
     title: string;
     progress: number;
     title_params: Record<string, string>;
+    is_complete: boolean;
 }
 
 export type ProgressStateUpdateEvent =
@@ -20,9 +26,17 @@ export type ProgressStateUpdateEvent =
     | {
           event_type: 'LocalNode';
           payload: ProgressTrackerUpdatePayload;
+      }
+    | {
+          event_type: 'Hardware';
+          payload: ProgressTrackerUpdatePayload;
+      }
+    | {
+          event_type: 'Unknown';
+          payload: ProgressTrackerUpdatePayload;
       };
 
-const LOG_EVENT_TYPES = ['ProgressTrackerStartup'];
+const LOG_EVENT_TYPES = ['Core', 'LocalNode', 'Hardware', 'Unknown'];
 
 export const useProgressEventsListener = () => {
     const eventRef = useRef<ProgressStateUpdateEvent | null>(null);
@@ -47,6 +61,12 @@ export const useProgressEventsListener = () => {
                         break;
                     case 'LocalNode':
                         updateLocalNodeSetupPhaseInfo(event.payload);
+                        break;
+                    case 'Hardware':
+                        updateHardwareSetupPhaseInfo(event.payload);
+                        break;
+                    case 'Unknown':
+                        updateUnknownSetupPhaseInfo(event.payload);
                         break;
                     default:
                         break;

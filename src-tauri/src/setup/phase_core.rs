@@ -114,6 +114,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 ProgressSetupCorePlan::BinariesP2pool,
             ))
             .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::StartTor))
+            .add_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::Done))
             .calculate_percentage_steps()
             .build(app_handle);
 
@@ -271,9 +272,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             ))
             .await;
 
-        info!(target: LOG_TARGET, "Dupa1");
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            info!(target: LOG_TARGET, "Dupa2");
             binary_resolver
                 .initialize_binary_timeout(
                     Binaries::Tor,
@@ -286,7 +285,6 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                 .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor))
                 .await;
         } else {
-            info!(target: LOG_TARGET, "Dupa3");
             let _unused = progress_stepper
                 .skip_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::BinariesTor));
         };
@@ -417,6 +415,13 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .lock()
             .await
             .handle_start_setup_callbacks(app_handle.clone(), SetupPhase::Core, true)
+            .await;
+
+        let _unused = self
+            .progress_stepper
+            .lock()
+            .await
+            .resolve_step(ProgressPlans::SetupCore(ProgressSetupCorePlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

@@ -25,7 +25,11 @@ use std::time::Duration;
 use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     p2pool_manager::P2poolConfig,
-    progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
+    progress_trackers::{
+        progress_plans::{ProgressPlans, ProgressSetupUnknownPlan},
+        progress_stepper::ProgressStepperBuilder,
+        ProgressStepper,
+    },
     tasks_tracker::TasksTracker,
     StartConfig, UniverseAppState,
 };
@@ -74,7 +78,16 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
     }
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new().build(app_handle.clone());
+        let progress_stepper = ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::SetupUnknown(
+                ProgressSetupUnknownPlan::P2Pool,
+            ))
+            .add_step(ProgressPlans::SetupUnknown(
+                ProgressSetupUnknownPlan::MMProxy,
+            ))
+            .add_step(ProgressPlans::SetupUnknown(ProgressSetupUnknownPlan::Done))
+            .calculate_percentage_steps()
+            .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
     }
 
@@ -127,6 +140,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
         &self,
         app_handle: AppHandle,
     ) -> Result<Option<UnknownSetupPhasePayload>, Error> {
+        let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
         let state = app_handle.state::<UniverseAppState>();
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
@@ -138,6 +152,12 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .await;
 
         if self.app_configuration.p2pool_enabled {
+            let _unused = progress_stepper
+                .resolve_step(ProgressPlans::SetupUnknown(
+                    ProgressSetupUnknownPlan::P2Pool,
+                ))
+                .await;
+
             let base_node_grpc = state.node_manager.get_grpc_address().await?;
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
@@ -157,7 +177,18 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
                     log_dir.clone(),
                 )
                 .await?;
+        } else {
+            let _unused = progress_stepper.skip_step(ProgressPlans::SetupUnknown(
+                ProgressSetupUnknownPlan::P2Pool,
+            ));
         }
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::SetupUnknown(
+                ProgressSetupUnknownPlan::MMProxy,
+            ))
+            .await;
+
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
         let config = state.config.read().await;
@@ -192,6 +223,13 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .lock()
             .await
             .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Unknown, true)
+            .await;
+
+        let _unused = self
+            .progress_stepper
+            .lock()
+            .await
+            .resolve_step(ProgressPlans::SetupUnknown(ProgressSetupUnknownPlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

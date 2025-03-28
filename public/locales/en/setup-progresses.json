@@ -1,7 +1,10 @@
 {
     "phase-title": {
         "setup-core": "Setting up the Tari App",
-        "setup-local-node": "Setting up the Tari Node"
+        "setup-local-node": "Setting up the Tari Node",
+        "setup-hardware": "Setting up the Hardware",
+        "setup-wallet": "Setting up the Wallet",
+        "setup-unknown": "Setting up extra utilities"
     },
     "title": {
         "platform-prequisites": "Initializing Platform Prerequisites",
@@ -18,6 +21,13 @@
         "starting-local-node": "Starting Local Node",
         "waiting-for-initial-sync": "Connecting to network peers {{initial_connected_peers}}/{{required_peers}}",
         "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
-        "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced."
+        "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
+        "detect-gpu": "Detecting GPU's",
+        "run-cpu-benchmark": "Running CPU Benchmark",
+        "start-wallet": "Starting Wallet",
+        "initialize-spending-wallet": "Initializing Spending Wallet",
+        "p2pool": "Starting P2Pool",
+        "mm-proxy": "Starting Merge Mining Proxy",
+        "done": "Done"
     }
 }
