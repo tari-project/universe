@@ -126,6 +126,7 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
 };
 
 let newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
+const BLOCK_DEBOUNCE_DELAY = 200;
 let latestBlockPayload:
     | {
           block_height: number;
@@ -171,5 +172,5 @@ export const handleNewBlock = async (payload: {
             latestBlockPayload = undefined;
         }
         newBlockDebounceTimeout = undefined;
-    }, 200);
+    }, BLOCK_DEBOUNCE_DELAY);
 };

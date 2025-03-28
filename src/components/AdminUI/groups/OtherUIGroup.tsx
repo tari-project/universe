@@ -20,8 +20,8 @@ export function OtherUIGroup() {
             pending_outgoing_balance: 0,
         },
     };
-    const addDummyBlocks = () => {
-        for (let i = 0; i < 1000; i++) {
+    const addDummyBlocks = (count = 1000) => {
+        for (let i = 0; i < count; i++) {
             handleNewBlock({
                 ...dummyNewBlock,
                 block_height: dummyNewBlock.block_height + i,
@@ -39,7 +39,7 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
-                <Button onClick={addDummyBlocks}>Add New Dummy Blocks</Button>
+                <Button onClick={() => addDummyBlocks()}>Add New Dummy Blocks</Button>
                 <Button
                     onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
                     $isActive={adminShow === 'orphanChainWarning'}
