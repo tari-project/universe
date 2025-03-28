@@ -4,11 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-<<<<<<< HEAD
 version = "0.9.836"
-=======
-version = "0.9.829"
->>>>>>> 8dd2eebc (chore(release): v0.9.829)
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
