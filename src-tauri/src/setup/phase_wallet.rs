@@ -23,7 +23,11 @@
 use std::time::Duration;
 
 use crate::{
-    progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
+    progress_trackers::{
+        progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
+        progress_stepper::ProgressStepperBuilder,
+        ProgressStepper,
+    },
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -70,7 +74,14 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
     }
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new().build(app_handle.clone());
+        let progress_stepper = ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
+            .add_step(ProgressPlans::Wallet(
+                ProgressSetupWalletPlan::InitializeSpendingWallet,
+            ))
+            .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
+            .calculate_percentage_steps()
+            .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
     }
 
@@ -115,8 +126,13 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         &self,
         app_handle: AppHandle,
     ) -> Result<Option<WalletSetupPhasePayload>, Error> {
+        let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
         let state = app_handle.state::<UniverseAppState>();
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
+            .await;
 
         state
             .wallet_manager
@@ -127,6 +143,12 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
                 log_dir.clone(),
             )
             .await?;
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Wallet(
+                ProgressSetupWalletPlan::InitializeSpendingWallet,
+            ))
+            .await;
 
         let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
         spend_wallet_manager
@@ -151,6 +173,13 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
             .lock()
             .await
             .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Wallet, true)
+            .await;
+
+        let _unsed = self
+            .progress_stepper
+            .lock()
+            .await
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

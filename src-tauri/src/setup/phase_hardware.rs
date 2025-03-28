@@ -26,7 +26,11 @@ use crate::{
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
-    progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
+    progress_trackers::{
+        progress_plans::{ProgressPlans, ProgressSetupHardwarePlan},
+        progress_stepper::ProgressStepperBuilder,
+        ProgressStepper,
+    },
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -76,7 +80,16 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
     }
 
     async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new().build(app_handle.clone());
+        let progress_stepper = ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::DetectGPU,
+            ))
+            .add_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::RunCpuBenchmark,
+            ))
+            .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
+            .calculate_percentage_steps()
+            .build(app_handle.clone());
         *self.progress_stepper.lock().await = progress_stepper;
     }
 
@@ -129,8 +142,15 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         &self,
         app_handle: AppHandle,
     ) -> Result<Option<HardwareSetupPhasePayload>, Error> {
+        let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
         let state = app_handle.state::<UniverseAppState>();
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::DetectGPU,
+            ))
+            .await;
 
         let _unused = state
             .gpu_miner
@@ -145,6 +165,12 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .inspect_err(|e| error!(target: LOG_TARGET, "Could not detect gpu miner: {:?}", e));
 
         HardwareStatusMonitor::current().initialize().await?;
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::RunCpuBenchmark,
+            ))
+            .await;
 
         let mut cpu_miner = state.cpu_miner.write().await;
         let benchmarked_hashrate = cpu_miner
@@ -172,6 +198,13 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .lock()
             .await
             .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::Hardware, true)
+            .await;
+
+        let _unused = self
+            .progress_stepper
+            .lock()
+            .await
+            .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .await;
 
         let state = app_handle.state::<UniverseAppState>();

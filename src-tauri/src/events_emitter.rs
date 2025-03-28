@@ -56,6 +56,7 @@ impl EventsEmitter {
         title: String,
         progress: f64,
         title_params: Option<HashMap<String, String>>,
+        is_complete: bool,
     ) {
         let event = Event {
             event_type,
@@ -64,6 +65,7 @@ impl EventsEmitter {
                 title,
                 progress,
                 title_params,
+                is_complete,
             },
         };
         if let Err(e) = app_handle.emit(PROGRESS_TRACKER_UPDATE, event) {

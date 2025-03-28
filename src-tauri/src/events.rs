@@ -64,14 +64,11 @@ pub enum EventType {
 #[derive(Clone, Debug, Serialize)]
 pub enum ProgressEvents {
     Core,
-    #[allow(dead_code)]
     Wallet,
-    #[allow(dead_code)]
     Hardware,
     #[allow(dead_code)]
     RemoteNode,
     LocalNode,
-    #[allow(dead_code)]
     Unknown,
 }
 #[derive(Clone, Debug, Serialize)]
@@ -80,6 +77,7 @@ pub struct ProgressTrackerUpdatePayload {
     pub title: String,
     pub progress: f64,
     pub title_params: Option<HashMap<String, String>>,
+    pub is_complete: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]

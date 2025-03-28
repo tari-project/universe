@@ -250,6 +250,7 @@ impl EventsManager {
         title: String,
         progress: f64,
         title_params: Option<HashMap<String, String>>,
+        is_complete: bool,
     ) {
         EventsEmitter::emit_progress_tracker_update(
             app,
@@ -258,6 +259,7 @@ impl EventsManager {
             title,
             progress,
             title_params,
+            is_complete,
         )
         .await;
     }
