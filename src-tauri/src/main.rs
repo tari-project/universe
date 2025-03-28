@@ -46,6 +46,7 @@ use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
+use websocket::WebsocketManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -411,6 +412,14 @@ async fn setup_inner(
             }),
         )
         .await?;
+
+    let mut websocket_manager_write = state.websocket_manager.write().await;
+    websocket_manager_write.set_app_handle(app.clone());
+    websocket_manager_write
+        .connect()
+        .await
+        .expect("error with websocket communication");
+
     progress.set_max(5).await;
     progress
         .update("benchmarking-network".to_string(), None, 0)
@@ -959,6 +968,7 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
+    websocket_manager: Arc<RwLock<WebsocketManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1086,6 +1096,9 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
+        websocket_manager: Arc::new(RwLock::new(WebsocketManager::new(
+            app_in_memory_config.clone(),
+        ))),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1365,6 +1378,8 @@ fn main() {
         let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
             error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
         });
+
+
 
         match event {
         tauri::RunEvent::Ready  => {

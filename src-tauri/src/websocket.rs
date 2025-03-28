@@ -29,7 +29,16 @@ pub enum WebsocketError {
     Other(#[from] anyhow::Error),
 
     #[error("Websocket error: {0}")]
-    WebsocketError(#[from] tungstenite::Error),
+    WsError(#[from] tungstenite::Error),
+
+    #[error("serde error: {0}")]
+    SerdeError(#[from] serde_json::Error),
+
+    #[error("tauri error: {0}")]
+    TauriError(#[from] tauri::Error),
+
+    #[error("Missing app handle error")]
+    MissingAppHandle,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -38,28 +47,33 @@ pub struct WebsocketStoredMessage {
     pub data: serde_json::Value,
 }
 
-pub struct Websocket {
+pub struct WebsocketManager {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     ws_stream: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
     cancellation_token: CancellationToken,
-    lastMessages: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
-    app: AppHandle,
+    message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
+    app: Option<AppHandle>,
 }
 
-impl Websocket {
-    pub fn new(
-        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-        cancellation_token: CancellationToken,
-        app: AppHandle,
-    ) -> Self {
-        Websocket {
+impl WebsocketManager {
+    pub fn new(app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
+        WebsocketManager {
             app_in_memory_config,
             ws_stream: Arc::new(RwLock::new(None)),
-            cancellation_token,
-            lastMessages: Arc::new(RwLock::new(HashMap::new())),
-            app,
+            cancellation_token: CancellationToken::new(),
+            message_cache: Arc::new(RwLock::new(HashMap::new())),
+            app: None,
         }
     }
+
+    pub fn set_app_handle(&mut self, app: AppHandle) {
+        self.app = Some(app);
+    }
+
+    pub fn close(&self) {
+        self.cancellation_token.cancel();
+    }
+
     async fn connect_to_url(
         config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
         stream_cloned: &Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>>,
@@ -78,8 +92,8 @@ impl Websocket {
         let cancellation = self.cancellation_token.clone();
         let stream_cloned: Arc<RwLock<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>>> =
             self.ws_stream.clone();
-        let message_cache = self.lastMessages.clone();
-        let app_cloned = self.app.clone();
+        let message_cache = self.message_cache.clone();
+        let app_cloned = self.app.clone().ok_or(WebsocketError::MissingAppHandle)?;
         tauri::async_runtime::spawn(async move {
             tokio::select! {
                 res = async {
@@ -90,8 +104,10 @@ impl Websocket {
                                 sleep(Duration::from_millis(5000)).await;
                             }
                             None => {
-                                Websocket::connect_to_url(&config_cloned, &stream_cloned).await?;
-                                Websocket::handle_ws_events(app_cloned.clone(),stream_cloned.clone(),cancellation.clone(),message_cache.clone()).await?;
+                                let res = WebsocketManager::connect_to_url(&config_cloned, &stream_cloned).await.inspect_err(|e|{error!(target:LOG_TARGET,"failed to connect to websocket due to{}",e.to_string())});
+                                if res.is_ok() {
+                                    WebsocketManager::handle_ws_events(app_cloned.clone(),stream_cloned.clone(),cancellation.clone(),message_cache.clone()).await.inspect_err(|e|{error!(target:LOG_TARGET,"Websocket: event handler error:{}",e.to_string())});
+                                }
                             }
                         }
                     }
@@ -114,41 +130,32 @@ impl Websocket {
         message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     ) -> Result<(), WebsocketError> {
         let mut stream_locked = stream.write().await;
-        let result = if let Some(stream) = stream_locked.as_mut() {
-            let (write_stream, mut read_stream) = stream.split();
-            tokio::select! {
-                Some(res)=read_stream.next()=>{
-                    match res {
-                        Result::Ok(message)=>{
-                            match message {
-                                Message::Text(text)=>{
-                                    let message_as_str = text.as_str();
-                                    let messsage_value:Value = serde_json::from_str(message_as_str)?;
-                                    cache_msg(message_cache, &messsage_value).await;
-                                    app.emit("ws", messsage_value);
-                                },
-                                _=>{
-                                    error!(target: LOG_TARGET,"Not supported message type.");
-                                }
-                            }
-                            Result::<(), WebsocketError>::Ok(())
-                        },
-                        Result::Err(_e)=>{
-                            // return Err(e.map(|e|anyhow::));
-                        //    WebsocketError(e)
-                        Result::<(), WebsocketError>::Ok(())
-                        }
-                    }
-                },
-                _=cancellation_token.cancelled()=>{
-                    Result::<(), WebsocketError>::Ok(())
-                }
-            }
-        } else {
-            Result::<(), WebsocketError>::Ok(())
+        let Some(stream) = stream_locked.as_mut() else {
+            return Result::<(), WebsocketError>::Ok(());
         };
 
-        Result::<(), WebsocketError>::Ok(())
+        let (_write_stream, mut read_stream) = stream.split();
+        loop {
+            tokio::select! {
+                Some(res)=read_stream.next()=>{
+                    let message = res.map_err(WebsocketError::WsError)?;
+                    match message{
+                            Message::Text(text)=>{
+                                let message_as_str = text.as_str();
+                                let messsage_value:Value = serde_json::from_str(message_as_str)?;
+                                cache_msg(message_cache.clone(), &messsage_value).await?;
+                                app.emit("ws", messsage_value)?;
+                            },
+                            _=>{
+                                error!(target: LOG_TARGET,"Not supported message type.");
+                            }
+                    }
+
+                },
+                _=cancellation_token.cancelled()=>{
+                }
+            }
+        }
     }
 }
 
@@ -165,7 +172,7 @@ async fn cache_msg(
     cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     value: &Value,
 ) -> Result<(), WebsocketError> {
-    let message_name = check_message_type_if_exists(&value);
+    let message_name = check_message_type_if_exists(value);
 
     let mut cache_write = cache.write().await;
     let key = message_name.unwrap_or(OTHER_MESSAGE_NAME.into());
@@ -190,10 +197,10 @@ async fn cache_msg(
         .or_insert_with(|| {
             let mut new_set: HashSet<WebsocketStoredMessage> = HashSet::new();
             new_set.insert(new_message.clone());
-            return new_set;
+            new_set
         });
 
-    return Result::<(), WebsocketError>::Ok(());
+    Result::<(), WebsocketError>::Ok(())
 }
 
 // tokio::select! {
