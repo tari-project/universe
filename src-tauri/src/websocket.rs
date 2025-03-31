@@ -203,13 +203,16 @@ impl WebsocketManager {
 
             let mut receiver_channel_guard = receiver_channel.write().await;
             let sender_task = async {
-                info!(target:LOG_TARGET,"sending websocket events...");
+                info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
                 while let Some(msg) = receiver_channel_guard.recv().await {
-                    if let Err(e) = write_stream.send(Message::Text(Utf8Bytes::from(msg))).await {
+                    if let Err(e) = write_stream
+                        .send(Message::Text(Utf8Bytes::from(msg.clone())))
+                        .await
+                    {
                         error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
                         continue;
                     }
-                    info!(target:LOG_TARGET,"websocket event sent...");
+                    info!(target:LOG_TARGET,"websocket event sent to airdrop {}", msg);
                 }
             };
             tokio::select! {
