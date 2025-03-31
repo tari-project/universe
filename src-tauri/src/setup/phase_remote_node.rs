@@ -24,6 +24,7 @@ use std::time::Duration;
 
 use crate::{
     progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -84,29 +85,29 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
-        info!(target: LOG_TARGET, "[ Remote Node Phase ] Starting setup");
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::RemoteNode);
 
         TasksTracker::current().spawn(async move {
-            for subscriber in flow_subscribers.iter_mut() {
-                subscriber.wait_for(|value| value.is_success()).await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
 
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Remote Node Phase ] Setup timed out");
-                    let error_message = "[ Remote Node Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::RemoteNode);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::RemoteNode);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Remote Node Phase ] Setup completed successfully");
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::RemoteNode);
                             let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Remote Node Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Remote Node Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::RemoteNode,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::RemoteNode,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }

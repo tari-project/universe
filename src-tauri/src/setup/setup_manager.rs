@@ -44,7 +44,7 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
-static INSTANCE: LazyLock<SetupManager> = LazyLock::new(|| SetupManager::new());
+static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum SetupPhase {
@@ -69,6 +69,7 @@ impl Display for SetupPhase {
     }
 }
 
+#[allow(dead_code)]
 pub enum PhaseStatus {
     None,
     Initialized,
@@ -114,6 +115,7 @@ pub struct SetupManager {
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     local_node_phase_status: Sender<PhaseStatus>,
+    #[allow(dead_code)]
     remote_node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,

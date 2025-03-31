@@ -63,6 +63,7 @@ pub(crate) trait NodeAdapter: ProcessAdapter {
     type NodeClient: NodeClient;
     fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn grpc_address(&self) -> Option<&(String, u16)>;
+    #[allow(dead_code)]
     fn tcp_rpc_port(&self) -> u16;
     fn get_node_client(&self) -> Option<Self::NodeClient>;
     fn use_tor(&mut self, use_tor: bool);
@@ -206,6 +207,7 @@ impl<T: NodeAdapter> NodeManager<T> {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
+    #[allow(dead_code)]
     pub async fn get_tcp_listener_port(&self) -> u16 {
         let lock = self.watcher.read().await;
         lock.adapter.tcp_rpc_port()

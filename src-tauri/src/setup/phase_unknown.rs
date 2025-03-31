@@ -30,6 +30,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     StartConfig, UniverseAppState,
 };
@@ -43,7 +44,7 @@ use tokio::sync::{
 };
 
 use super::{
-    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
+    setup_manager::{PhaseStatus, SetupManager},
     trait_setup_phase::SetupPhaseImpl,
 };
 
@@ -121,29 +122,29 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
-        info!(target: LOG_TARGET, "[ Unknown Phase ] Starting setup");
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
         TasksTracker::current().spawn(async move {
-            for subscriber in flow_subscribers.iter_mut() {
-                subscriber.wait_for(|value| value.is_success()).await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
 
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Unknown Phase ] Setup timed out");
-                    let error_message = "[ Unknown Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Unknown Phase ] Setup completed successfully");
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Unknown);
                             let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Unknown Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Unknown Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }

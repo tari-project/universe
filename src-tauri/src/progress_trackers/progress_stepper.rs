@@ -72,14 +72,6 @@ pub struct ProgressStepper {
 }
 
 impl ProgressStepper {
-    pub fn new(app_handle: AppHandle) -> Self {
-        ProgressStepper {
-            plan: Vec::new(),
-            percentage_steps: Vec::new(),
-            app_handle,
-        }
-    }
-
     pub async fn resolve_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
         info!(
             target: LOG_TARGET,

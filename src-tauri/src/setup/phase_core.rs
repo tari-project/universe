@@ -42,6 +42,7 @@ use crate::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     utils::{
         network_status::NetworkStatus, platform_utils::PlatformUtils,
@@ -50,10 +51,7 @@ use crate::{
     UniverseAppState,
 };
 
-use super::{
-    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
-    trait_setup_phase::SetupPhaseImpl,
-};
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
 const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6);
@@ -143,29 +141,29 @@ impl SetupPhaseImpl for CoreSetupPhase {
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
-        info!(target: LOG_TARGET, "[ Core Phase ] Starting setup");
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
 
         TasksTracker::current().spawn(async move {
-            for subscriber in flow_subscribers.iter_mut() {
-                subscriber.wait_for(|value| value.is_success()).await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
 
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Core Phase ] Setup timed out");
-                    let error_message = "[ Core Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Core);
                             let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Core Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }

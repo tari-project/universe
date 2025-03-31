@@ -28,6 +28,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -54,6 +55,7 @@ pub struct WalletSetupPhaseAppConfiguration {}
 pub struct WalletSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
+    #[allow(dead_code)]
     app_configuration: WalletSetupPhaseAppConfiguration,
 }
 
@@ -92,29 +94,29 @@ impl SetupPhaseImpl for WalletSetupPhase {
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
-        info!(target: LOG_TARGET, "[ Wallet Phase ] Starting setup");
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
 
         TasksTracker::current().spawn(async move {
-            for subscriber in flow_subscribers.iter_mut() {
-                subscriber.wait_for(|value| value.is_success()).await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
 
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Wallet Phase ] Setup timed out");
-                    let error_message = "[ Wallet Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
                 result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Wallet Phase ] Setup completed successfully");
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
                             let _unused = self.finalize_setup(status_sender, payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Wallet Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Wallet Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
