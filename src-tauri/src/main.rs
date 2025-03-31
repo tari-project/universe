@@ -59,7 +59,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Listener, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
 use tokio::sync::{Mutex, RwLock};
@@ -419,6 +419,25 @@ async fn setup_inner(
         .connect()
         .await
         .expect("error with websocket communication");
+    drop(websocket_manager_write);
+
+    let ws_cloned = state.websocket_manager.clone();
+    let webview = app.get_webview_window("main").unwrap();
+    webview.listen("ws", move |event| {
+        let event_cloned = event.clone();
+
+        let ws_manager = ws_cloned.clone();
+        tauri::async_runtime::spawn(async move {
+            let message = event_cloned.payload();
+            if let Ok(read) = ws_manager.try_read() {
+                if let Err(e) = read.send_ws_message(message.clone()).await {
+                    warn!(target: LOG_TARGET, "ws: websocket_manager send error: {:?}", e);
+                } else {
+                    info!(target:LOG_TARGET, "ws: payload sent to websocket_manager");
+                }
+            }
+        });
+    });
 
     progress.set_max(5).await;
     progress
