@@ -32,6 +32,7 @@ use tokio::time::sleep;
 
 use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
+use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 
@@ -156,12 +157,21 @@ impl MmProxyManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
-        // TODO: I'm ready when the http health service says so
-        self.watcher.read().await.wait_ready().await?;
-        // TODO: Currently the mmproxy takes a long time to connect to all the monero daemons. This should be changed to waiting for the http or grpc service to
-        // say it is online
-        sleep(std::time::Duration::from_secs(20)).await;
-        Ok(())
+        let lock = self.watcher.read().await;
+        for i in 0..20 {
+            if lock.is_running() {
+                if let Some(status) = lock.status_monitor.as_ref() {
+                    if status.check_health().await == HealthStatus::Healthy {
+                        return Ok(());
+                    } else {
+                        info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/20", i + 1);
+                    }
+                }
+            }
+            info!(target: LOG_TARGET, "Waiting for mmproxy to start... {}/20", i + 1);
+            sleep(std::time::Duration::from_secs(1)).await;
+        }
+        Err(anyhow!("MM proxy did not start in time"))
     }
 
     pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
