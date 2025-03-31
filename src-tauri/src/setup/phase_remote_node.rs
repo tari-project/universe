@@ -31,10 +31,13 @@ use anyhow::Error;
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
+};
 
 use super::{
-    setup_manager::{SetupManager, SetupPhase},
+    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
     trait_setup_phase::SetupPhaseImpl,
 };
 
@@ -51,6 +54,7 @@ pub struct RemoteNodeSetupPhaseSessionConfiguration {}
 pub struct RemoteNodeSetupPhaseAppConfiguration {}
 
 pub struct RemoteNodeSetupPhase {
+    app_handle: AppHandle,
     #[allow(dead_code)]
     progress_stepper: Mutex<ProgressStepper>,
     #[allow(dead_code)]
@@ -59,34 +63,42 @@ pub struct RemoteNodeSetupPhase {
 }
 
 impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
-    type Configuration = RemoteNodeSetupPhaseSessionConfiguration;
+    type AppConfiguration = RemoteNodeSetupPhaseAppConfiguration;
+    type SessionConfiguration = RemoteNodeSetupPhaseSessionConfiguration;
 
-    fn new() -> Self {
+    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
         RemoteNodeSetupPhase {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: RemoteNodeSetupPhaseAppConfiguration::default(),
-            session_configuration: RemoteNodeSetupPhaseSessionConfiguration::default(),
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
+            session_configuration,
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new().build(app_handle.clone());
-        *self.progress_stepper.lock().await = progress_stepper;
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), Error> {
-        self.session_configuration = configuration;
-
-        Ok(())
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new().build(app_handle)
     }
 
-    async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
+        Ok(RemoteNodeSetupPhaseAppConfiguration::default())
+    }
+
+    async fn setup(
+        self: std::sync::Arc<Self>,
+        sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
         info!(target: LOG_TARGET, "[ Remote Node Phase ] Starting setup");
 
         TasksTracker::current().spawn(async move {
+            for subscriber in flow_subscribers.iter_mut() {
+                subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
@@ -94,11 +106,11 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
                     let error_message = "[ Remote Node Phase ] Setup timed out";
                     sentry::capture_message(error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Remote Node Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(app_handle.clone(),payload).await;
+                            let _unused = self.finalize_setup(sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Remote Node Phase ] Setup failed with error: {:?}", error);
@@ -111,28 +123,20 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
         });
     }
 
-    async fn setup_inner(
-        &self,
-        _app_handle: AppHandle,
-    ) -> Result<Option<RemoteNodeSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<RemoteNodeSetupPhasePayload>, Error> {
         todo!()
     }
 
     async fn finalize_setup(
         &self,
-        app_handle: AppHandle,
+        sender: Sender<PhaseStatus>,
         _payload: Option<RemoteNodeSetupPhasePayload>,
     ) -> Result<(), Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::RemoteNode, true)
-            .await;
-
-        let state = app_handle.state::<UniverseAppState>();
+        sender.send(PhaseStatus::Success).ok();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_remote_node_phase_finished(&app_handle, true)
+            .handle_remote_node_phase_finished(&self.app_handle, true)
             .await;
 
         Ok(())

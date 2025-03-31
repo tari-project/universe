@@ -24,27 +24,44 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
+use tokio::sync::watch::{Receiver, Sender};
+
+use crate::progress_trackers::ProgressStepper;
+
+use super::setup_manager::PhaseStatus;
 
 pub trait SetupPhaseImpl<T> {
-    type Configuration: Clone + Default;
+    type SessionConfiguration: Clone + Default;
+    type AppConfiguration: Clone + Default;
 
-    fn new() -> Self;
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>);
-    async fn load_configuration(&mut self, configuration: Self::Configuration)
-        -> Result<(), Error>;
-    async fn setup(self: Arc<Self>, app_handle: AppHandle);
-    async fn setup_inner(&self, app_handle: AppHandle) -> Result<Option<T>, Error>;
-    async fn finalize_setup(&self, app_handle: AppHandle, payload: Option<T>) -> Result<(), Error>;
-    fn get_app_dirs(&self, app_handle: &AppHandle) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
-        let data_dir = app_handle
+    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self;
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
+    async fn setup(
+        self: Arc<Self>,
+        sender: Sender<PhaseStatus>,
+        flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    );
+    async fn setup_inner(&self) -> Result<Option<T>, Error>;
+    async fn finalize_setup(
+        &self,
+        sender: Sender<PhaseStatus>,
+        payload: Option<T>,
+    ) -> Result<(), Error>;
+    fn get_app_handle(&self) -> &AppHandle;
+    fn get_app_dirs(&self) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
+        let data_dir = self
+            .get_app_handle()
             .path()
             .app_local_data_dir()
             .expect("Could not get data dir");
-        let config_dir = app_handle
+        let config_dir = self
+            .get_app_handle()
             .path()
             .app_config_dir()
             .expect("Could not get config dir");
-        let log_dir = app_handle
+        let log_dir = self
+            .get_app_handle()
             .path()
             .app_log_dir()
             .expect("Could not get log dir");

@@ -41,44 +41,42 @@ pub struct ChanneledStepUpdate {
     step: ProgressPlans,
     step_percentage: f64,
     next_step_percentage: Option<f64>,
-    app_handle: Option<AppHandle>,
+    app_handle: AppHandle,
 }
 
 impl ChanneledStepUpdate {
     pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
-        if let Some(app_handle) = &self.app_handle {
-            let app_state = app_handle.state::<UniverseAppState>();
-            let resolved_percentage = self.step_percentage
-                + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
-                    * current_step_percentage;
+        let app_state = self.app_handle.state::<UniverseAppState>();
+        let resolved_percentage = self.step_percentage
+            + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
+                * current_step_percentage;
 
-            app_state
-                .events_manager
-                .handle_progress_tracker_update(
-                    app_handle,
-                    self.step.get_event_type(),
-                    self.step.get_phase_title(),
-                    self.step.get_title(),
-                    resolved_percentage,
-                    Some(params),
-                    false,
-                )
-                .await;
-        }
+        app_state
+            .events_manager
+            .handle_progress_tracker_update(
+                &self.app_handle,
+                self.step.get_event_type(),
+                self.step.get_phase_title(),
+                self.step.get_title(),
+                resolved_percentage,
+                Some(params),
+                false,
+            )
+            .await;
     }
 }
 pub struct ProgressStepper {
     plan: Vec<ProgressPlans>,
     percentage_steps: Vec<f64>,
-    app_handle: Option<AppHandle>,
+    app_handle: AppHandle,
 }
 
 impl ProgressStepper {
-    pub fn new() -> Self {
+    pub fn new(app_handle: AppHandle) -> Self {
         ProgressStepper {
             plan: Vec::new(),
             percentage_steps: Vec::new(),
-            app_handle: None,
+            app_handle,
         }
     }
 
@@ -102,29 +100,19 @@ impl ProgressStepper {
 
             let is_completed = self.plan.is_empty();
 
-            match &self.app_handle {
-                Some(app_handle) => {
-                    let app_state = app_handle.state::<UniverseAppState>();
-                    app_state
-                        .events_manager
-                        .handle_progress_tracker_update(
-                            app_handle,
-                            event.get_event_type(),
-                            resolved_step.get_phase_title(),
-                            event.get_title(),
-                            resolved_percentage,
-                            None,
-                            is_completed,
-                        )
-                        .await;
-                }
-                None => {
-                    warn!(
-                        target: LOG_TARGET,
-                        "No app handle provided, skipping progress tracker update"
-                    );
-                }
-            }
+            let app_state = self.app_handle.state::<UniverseAppState>();
+            app_state
+                .events_manager
+                .handle_progress_tracker_update(
+                    &self.app_handle,
+                    event.get_event_type(),
+                    resolved_step.get_phase_title(),
+                    event.get_title(),
+                    resolved_percentage,
+                    None,
+                    is_completed,
+                )
+                .await;
         } else {
             warn!(
                 target: LOG_TARGET,
@@ -234,7 +222,7 @@ impl ProgressStepperBuilder {
         self
     }
 
-    pub fn build(&self, app_handle: Option<AppHandle>) -> ProgressStepper {
+    pub fn build(&self, app_handle: AppHandle) -> ProgressStepper {
         ProgressStepper {
             plan: self.plan.clone().into_iter().rev().collect(),
             percentage_steps: self.percentage_steps.clone().into_iter().rev().collect(),

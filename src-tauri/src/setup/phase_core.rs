@@ -28,7 +28,10 @@ use std::{
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{watch, Mutex};
+use tokio::sync::{
+    watch::{self, Receiver, Sender},
+    Mutex,
+};
 
 use crate::{
     auto_launcher::AutoLauncher,
@@ -40,12 +43,15 @@ use crate::{
         ProgressSetupCorePlan, ProgressStepper,
     },
     tasks_tracker::TasksTracker,
-    utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
+    utils::{
+        network_status::NetworkStatus, platform_utils::PlatformUtils,
+        shutdown_utils::resume_all_processes, system_status::SystemStatus,
+    },
     UniverseAppState,
 };
 
 use super::{
-    setup_manager::{SetupManager, SetupPhase},
+    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
     trait_setup_phase::SetupPhaseImpl,
 };
 
@@ -67,24 +73,33 @@ pub struct CoreSetupPhaseAppConfiguration {
 }
 
 pub struct CoreSetupPhase {
+    app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
     session_configuration: CoreSetupPhaseSessionConfiguration,
 }
 
 impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
-    type Configuration = CoreSetupPhaseSessionConfiguration;
+    type SessionConfiguration = CoreSetupPhaseSessionConfiguration;
+    type AppConfiguration = CoreSetupPhaseAppConfiguration;
 
-    fn new() -> Self {
+    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
         Self {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: CoreSetupPhaseAppConfiguration::default(),
-            session_configuration: CoreSetupPhaseSessionConfiguration::default(),
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(app_handle)),
+            app_configuration: CoreSetupPhase::load_app_configuration()
+                .await
+                .unwrap_or_default(),
+            session_configuration,
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new()
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
+    }
+
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
@@ -104,17 +119,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .calculate_percentage_steps()
-            .build(app_handle);
-
-        *self.progress_stepper.lock().await = progress_stepper;
+            .build(app_handle)
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), anyhow::Error> {
-        self.session_configuration = configuration;
-
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
         let is_auto_launcher_enabled = *ConfigCore::current()
             .lock()
             .await
@@ -129,19 +137,25 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
         let use_tor = *ConfigCore::current().lock().await.get_content().use_tor();
 
-        self.app_configuration = CoreSetupPhaseAppConfiguration {
+        Ok(CoreSetupPhaseAppConfiguration {
             is_auto_launcher_enabled,
             last_binaries_update_timestamp,
             use_tor,
-        };
-
-        Ok(())
+        })
     }
 
-    async fn setup(self: Arc<Self>, app_handle: tauri::AppHandle) {
+    async fn setup(
+        self: Arc<Self>,
+        sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
         info!(target: LOG_TARGET, "[ Core Phase ] Starting setup");
 
         TasksTracker::current().spawn(async move {
+            for subscriber in flow_subscribers.iter_mut() {
+                subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
@@ -149,11 +163,11 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                     let error_message = "[ Core Phase ] Setup timed out";
                     sentry::capture_message(error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(app_handle.clone(),payload).await;
+                            let _unused = self.finalize_setup(sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
@@ -167,22 +181,19 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn setup_inner(
-        &self,
-        app_handle: tauri::AppHandle,
-    ) -> Result<Option<CoreSetupPhasePayload>, anyhow::Error> {
+    async fn setup_inner(&self) -> Result<Option<CoreSetupPhasePayload>, anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_app_config_loaded(&app_handle)
+            .handle_app_config_loaded(&self.app_handle)
             .await;
 
         // TODO Remove once not needed
         let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
-        PlatformUtils::initialize_preqesities(app_handle.clone()).await?;
+        PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
@@ -191,14 +202,14 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
         state
             .updates_manager
-            .init_periodic_updates(app_handle.clone())
+            .init_periodic_updates(self.app_handle.clone())
             .await?;
 
         let _unused = state
             .systemtray_manager
             .write()
             .await
-            .initialize_tray(app_handle.clone());
+            .initialize_tray(self.app_handle.clone());
 
         let _unused = AutoLauncher::current()
             .initialize_auto_launcher(self.app_configuration.is_auto_launcher_enabled)
@@ -213,7 +224,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .telemetry_manager
             .write()
             .await
-            .initialize(app_handle.clone())
+            .initialize(self.app_handle.clone())
             .await?;
 
         let mut telemetry_id = state
@@ -226,7 +237,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             telemetry_id = "unknown_miner_tari_universe".to_string();
         }
 
-        let app_version = app_handle.package_info().version.clone();
+        let app_version = self.app_handle.package_info().version.clone();
         state
             .telemetry_service
             .write()
@@ -251,7 +262,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .await;
 
         NetworkStatus::current()
-            .run_speed_test_with_timeout(&app_handle)
+            .run_speed_test_with_timeout(&self.app_handle)
             .await;
 
         let _unused = progress_stepper
@@ -365,7 +376,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .await;
 
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             state
@@ -384,14 +395,10 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
     async fn finalize_setup(
         &self,
-        app_handle: tauri::AppHandle,
+        sender: Sender<PhaseStatus>,
         _payload: Option<CoreSetupPhasePayload>,
     ) -> Result<(), anyhow::Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_start_setup_callbacks(app_handle.clone(), SetupPhase::Core, true)
-            .await;
+        sender.send(PhaseStatus::Success).ok();
 
         let _unused = self
             .progress_stepper
@@ -400,11 +407,36 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_core_phase_finished(&app_handle, true)
+            .handle_core_phase_finished(&self.app_handle, true)
             .await;
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
+        TasksTracker::current().spawn(async move {
+            let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+            let mut last_state = *receiver.borrow();
+            loop {
+                if receiver.changed().await.is_ok() {
+                    let current_state = *receiver.borrow();
+
+                    if last_state && !current_state {
+                        info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                        let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                    }
+
+                    if !last_state && current_state {
+                        info!(target: LOG_TARGET, "System entered sleep mode");
+                        TasksTracker::stop_all_processes(app_handle_clone.clone()).await;
+                    }
+
+                    last_state = current_state;
+                } else {
+                    error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+                }
+            }
+        });
 
         Ok(())
     }

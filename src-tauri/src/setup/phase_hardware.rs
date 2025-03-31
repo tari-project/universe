@@ -38,10 +38,13 @@ use anyhow::Error;
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
+};
 
 use super::{
-    setup_manager::{SetupManager, SetupPhase},
+    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
     trait_setup_phase::SetupPhaseImpl,
 };
 
@@ -62,25 +65,31 @@ pub struct HardwareSetupPhaseAppConfiguration {
 }
 
 pub struct HardwareSetupPhase {
-    #[allow(dead_code)]
+    app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: HardwareSetupPhaseAppConfiguration,
     session_configuration: HardwareSetupPhaseSessionConfiguration,
 }
 
 impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
-    type Configuration = HardwareSetupPhaseSessionConfiguration;
+    type AppConfiguration = HardwareSetupPhaseAppConfiguration;
+    type SessionConfiguration = HardwareSetupPhaseSessionConfiguration;
 
-    fn new() -> Self {
-        HardwareSetupPhase {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: HardwareSetupPhaseAppConfiguration::default(),
-            session_configuration: HardwareSetupPhaseSessionConfiguration::default(),
+    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
+        Self {
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
+            session_configuration,
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new()
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
+    }
+
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
@@ -89,31 +98,32 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             ))
             .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .calculate_percentage_steps()
-            .build(app_handle.clone());
-        *self.progress_stepper.lock().await = progress_stepper;
+            .build(app_handle.clone())
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), Error> {
-        self.session_configuration = configuration;
-
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let gpu_engine = ConfigMining::current()
             .lock()
             .await
             .get_content()
             .gpu_engine()
             .clone();
-        self.app_configuration = HardwareSetupPhaseAppConfiguration { gpu_engine };
 
-        Ok(())
+        Ok(HardwareSetupPhaseAppConfiguration { gpu_engine })
     }
 
-    async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
+    async fn setup(
+        self: std::sync::Arc<Self>,
+        sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
         info!(target: LOG_TARGET, "[ Hardware Phase ] Starting setup");
 
         TasksTracker::current().spawn(async move {
+            for subscriber in flow_subscribers.iter_mut() {
+                subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
@@ -121,11 +131,11 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
                     let error_message = "[ Hardware Phase ] Setup timed out";
                     sentry::capture_message(error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Hardware Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(app_handle.clone(), payload).await;
+                            let _unused = self.finalize_setup(sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Hardware Phase ] Setup failed with error: {:?}", error);
@@ -138,13 +148,10 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         });
     }
 
-    async fn setup_inner(
-        &self,
-        app_handle: AppHandle,
-    ) -> Result<Option<HardwareSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<HardwareSetupPhasePayload>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
-        let state = app_handle.state::<UniverseAppState>();
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let state = self.app_handle.state::<UniverseAppState>();
 
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Hardware(
@@ -157,7 +164,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .write()
             .await
             .detect(
-                app_handle.clone(),
+                self.app_handle.clone(),
                 config_dir.clone(),
                 self.app_configuration.gpu_engine.clone(),
             )
@@ -191,15 +198,10 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
 
     async fn finalize_setup(
         &self,
-        app_handle: AppHandle,
+        sender: Sender<PhaseStatus>,
         payload: Option<HardwareSetupPhasePayload>,
     ) -> Result<(), Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::Hardware, true)
-            .await;
-
+        sender.send(PhaseStatus::Success).ok();
         let _unused = self
             .progress_stepper
             .lock()
@@ -207,16 +209,16 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_hardware_phase_finished(&app_handle, true)
+            .handle_hardware_phase_finished(&self.app_handle, true)
             .await;
 
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .set_hardware_status_output(payload);
+        // SetupManager::get_instance()
+        //     .lock()
+        //     .await
+        //     .set_hardware_status_output(payload);
         Ok(())
     }
 }
