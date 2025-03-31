@@ -383,6 +383,7 @@ impl MinotariNodeClient {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
+        dbg!(&res);
         let metadata = match res.metadata {
             Some(metadata) => metadata,
             None => {
