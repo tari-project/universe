@@ -34,6 +34,7 @@ use std::path::PathBuf;
 
 pub(crate) struct RemoteNodeAdapter {
     grpc_address: Option<(String, u16)>,
+    #[allow(dead_code)]
     tcp_rpc_port: u16,
     status_broadcast: watch::Sender<BaseNodeStatus>,
 }
@@ -71,6 +72,7 @@ impl RemoteNodeAdapter {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn tcp_rpc_port(&self) -> u16 {
         self.tcp_rpc_port
     }

@@ -30,6 +30,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     StartConfig, UniverseAppState,
 };
@@ -37,10 +38,13 @@ use anyhow::Error;
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::Mutex;
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
+};
 
 use super::{
-    setup_manager::{SetupManager, SetupPhase},
+    setup_manager::{PhaseStatus, SetupManager},
     trait_setup_phase::SetupPhaseImpl,
 };
 
@@ -48,7 +52,7 @@ static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhasePayload {}
+pub struct UnknownSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseSessionConfiguration {
     pub cpu_benchmarked_hashrate: u64,
@@ -60,70 +64,87 @@ pub struct UnknownSetupPhaseAppConfiguration {
 }
 
 pub struct UnknownSetupPhase {
-    #[allow(dead_code)]
+    app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: UnknownSetupPhaseAppConfiguration,
-    session_configuration: UnknownSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
-    type Configuration = UnknownSetupPhaseSessionConfiguration;
+impl UnknownSetupPhase {
+    pub fn load_session_configuration() -> UnknownSetupPhaseSessionConfiguration {
+        let hardware_phase_output = SetupManager::get_instance()
+            .hardware_phase_output
+            .subscribe()
+            .borrow()
+            .clone();
 
-    fn new() -> Self {
-        UnknownSetupPhase {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: UnknownSetupPhaseAppConfiguration::default(),
-            session_configuration: UnknownSetupPhaseSessionConfiguration::default(),
+        UnknownSetupPhaseSessionConfiguration {
+            cpu_benchmarked_hashrate: hardware_phase_output.cpu_benchmarked_hashrate,
+        }
+    }
+}
+
+impl SetupPhaseImpl for UnknownSetupPhase {
+    type AppConfiguration = UnknownSetupPhaseAppConfiguration;
+    type SetupOutput = UnknownSetupPhaseOutput;
+
+    async fn new(app_handle: AppHandle) -> Self {
+        Self {
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new()
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
+    }
+
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
-            .calculate_percentage_steps()
-            .build(app_handle.clone());
-        *self.progress_stepper.lock().await = progress_stepper;
+            .build(app_handle.clone())
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), Error> {
-        self.session_configuration = configuration;
-
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let p2pool_enabled = *ConfigCore::current()
             .lock()
             .await
             .get_content()
             .is_p2pool_enabled();
 
-        self.app_configuration = UnknownSetupPhaseAppConfiguration { p2pool_enabled };
-
-        Ok(())
+        Ok(UnknownSetupPhaseAppConfiguration { p2pool_enabled })
     }
 
-    async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "[ Unknown Phase ] Starting setup");
+    async fn setup(
+        self: std::sync::Arc<Self>,
+        status_sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
         TasksTracker::current().spawn(async move {
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Unknown Phase ] Setup timed out");
-                    let error_message = "[ Unknown Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Unknown Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(app_handle.clone(),payload).await;
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Unknown);
+                            let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Unknown Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Unknown Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
@@ -132,13 +153,11 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
         });
     }
 
-    async fn setup_inner(
-        &self,
-        app_handle: AppHandle,
-    ) -> Result<Option<UnknownSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
+        let session_configuration = Self::load_session_configuration();
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
-        let state = app_handle.state::<UniverseAppState>();
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let state = self.app_handle.state::<UniverseAppState>();
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
@@ -156,9 +175,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
                 .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
-                .with_cpu_benchmark_hashrate(Some(
-                    self.session_configuration.cpu_benchmarked_hashrate,
-                ))
+                .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
                 .build()?;
 
             state
@@ -207,15 +224,10 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
 
     async fn finalize_setup(
         &self,
-        app_handle: AppHandle,
-        _payload: Option<UnknownSetupPhasePayload>,
+        sender: Sender<PhaseStatus>,
+        _payload: Option<UnknownSetupPhaseOutput>,
     ) -> Result<(), Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Unknown, true)
-            .await;
-
+        sender.send(PhaseStatus::Success).ok();
         let _unused = self
             .progress_stepper
             .lock()
@@ -223,10 +235,10 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_unknown_phase_finished(&app_handle, true)
+            .handle_unknown_phase_finished(&self.app_handle, true)
             .await;
 
         Ok(())

@@ -28,6 +28,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -35,85 +36,87 @@ use anyhow::Error;
 use log::{error, info};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::Mutex;
-
-use super::{
-    setup_manager::{SetupManager, SetupPhase},
-    trait_setup_phase::SetupPhaseImpl,
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
+
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhasePayload {}
-
-#[derive(Clone, Default)]
-pub struct WalletSetupPhaseSessionConfiguration {}
+pub struct WalletSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {}
 
 pub struct WalletSetupPhase {
-    #[allow(dead_code)]
+    app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     #[allow(dead_code)]
     app_configuration: WalletSetupPhaseAppConfiguration,
-    session_configuration: WalletSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
-    type Configuration = WalletSetupPhaseSessionConfiguration;
+impl SetupPhaseImpl for WalletSetupPhase {
+    type AppConfiguration = WalletSetupPhaseAppConfiguration;
+    type SetupOutput = WalletSetupPhaseOutput;
 
-    fn new() -> Self {
-        WalletSetupPhase {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: WalletSetupPhaseAppConfiguration::default(),
-            session_configuration: WalletSetupPhaseSessionConfiguration::default(),
+    async fn new(app_handle: AppHandle) -> Self {
+        Self {
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
+            app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new()
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
+    }
+
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new()
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
-            .calculate_percentage_steps()
-            .build(app_handle.clone());
-        *self.progress_stepper.lock().await = progress_stepper;
+            .build(app_handle)
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), Error> {
-        self.session_configuration = configuration;
-
-        Ok(())
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
+        Ok(WalletSetupPhaseAppConfiguration::default())
     }
 
-    async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "[ Wallet Phase ] Starting setup");
+    async fn setup(
+        self: std::sync::Arc<Self>,
+        status_sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
 
         TasksTracker::current().spawn(async move {
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Wallet Phase ] Setup timed out");
-                    let error_message = "[ Wallet Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Wallet Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(app_handle.clone(), payload).await;
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
+                            let _unused = self.finalize_setup(status_sender, payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Wallet Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Wallet Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
@@ -122,13 +125,10 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
         });
     }
 
-    async fn setup_inner(
-        &self,
-        app_handle: AppHandle,
-    ) -> Result<Option<WalletSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<WalletSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
-        let state = app_handle.state::<UniverseAppState>();
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let state = self.app_handle.state::<UniverseAppState>();
 
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
@@ -166,15 +166,10 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
 
     async fn finalize_setup(
         &self,
-        app_handle: AppHandle,
-        _payload: Option<WalletSetupPhasePayload>,
+        sender: Sender<PhaseStatus>,
+        _payload: Option<WalletSetupPhaseOutput>,
     ) -> Result<(), Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_second_batch_callbacks(app_handle.clone(), SetupPhase::Wallet, true)
-            .await;
-
+        sender.send(PhaseStatus::Success).ok();
         let _unsed = self
             .progress_stepper
             .lock()
@@ -182,10 +177,10 @@ impl SetupPhaseImpl<WalletSetupPhasePayload> for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_wallet_phase_finished(&app_handle, true)
+            .handle_wallet_phase_finished(&self.app_handle, true)
             .await;
 
         Ok(())

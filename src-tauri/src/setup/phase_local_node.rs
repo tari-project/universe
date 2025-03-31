@@ -30,6 +30,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTracker,
     UniverseAppState,
 };
@@ -37,21 +38,21 @@ use anyhow::Error;
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::Mutex;
-
-use super::{
-    setup_manager::{SetupManager, SetupPhase},
-    trait_setup_phase::SetupPhaseImpl,
+use tokio::{
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+    time::{interval, Interval},
 };
+
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct LocalNodeSetupPhasePayload {}
-
-#[derive(Clone, Default)]
-pub struct LocalNodeSetupPhaseSessionConfiguration {}
+pub struct LocalNodeSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct LocalNodeSetupPhaseAppConfiguration {
@@ -60,25 +61,29 @@ pub struct LocalNodeSetupPhaseAppConfiguration {
 }
 
 pub struct LocalNodeSetupPhase {
-    #[allow(dead_code)]
+    app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: LocalNodeSetupPhaseAppConfiguration,
-    session_configuration: LocalNodeSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
-    type Configuration = LocalNodeSetupPhaseSessionConfiguration;
+impl SetupPhaseImpl for LocalNodeSetupPhase {
+    type AppConfiguration = LocalNodeSetupPhaseAppConfiguration;
+    type SetupOutput = LocalNodeSetupPhaseOutput;
 
-    fn new() -> Self {
-        LocalNodeSetupPhase {
-            progress_stepper: Mutex::new(ProgressStepper::new()),
-            app_configuration: LocalNodeSetupPhaseAppConfiguration::default(),
-            session_configuration: LocalNodeSetupPhaseSessionConfiguration::default(),
+    async fn new(app_handle: AppHandle) -> Self {
+        Self {
+            app_handle: app_handle.clone(),
+            progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle)),
+            app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
         }
     }
 
-    async fn create_progress_stepper(&mut self, app_handle: Option<AppHandle>) {
-        let progress_stepper = ProgressStepperBuilder::new()
+    fn get_app_handle(&self) -> &AppHandle {
+        &self.app_handle
+    }
+
+    fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
+        ProgressStepperBuilder::new()
             .add_step(ProgressPlans::LocalNode(
                 ProgressSetupLocalNodePlan::StartingLocalNode,
             ))
@@ -92,18 +97,10 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                 ProgressSetupLocalNodePlan::WaitingForBlockSync,
             ))
             .add_step(ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::Done))
-            .calculate_percentage_steps()
-            .build(app_handle.clone());
-
-        *self.progress_stepper.lock().await = progress_stepper;
+            .build(app_handle.clone())
     }
 
-    async fn load_configuration(
-        &mut self,
-        configuration: Self::Configuration,
-    ) -> Result<(), Error> {
-        self.session_configuration = configuration;
-
+    async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let use_tor = *ConfigCore::current().lock().await.get_content().use_tor();
         let base_node_grpc_address = ConfigCore::current()
             .lock()
@@ -111,34 +108,41 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .get_content()
             .remote_base_node_address()
             .clone();
-        self.app_configuration = LocalNodeSetupPhaseAppConfiguration {
+
+        Ok(LocalNodeSetupPhaseAppConfiguration {
             use_tor,
             base_node_grpc_address,
-        };
-
-        Ok(())
+        })
     }
 
-    async fn setup(self: std::sync::Arc<Self>, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "[ Local Node Phase ] Starting setup");
+    async fn setup(
+        self: std::sync::Arc<Self>,
+        status_sender: Sender<PhaseStatus>,
+        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
+    ) {
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::LocalNode);
 
         TasksTracker::current().spawn(async move {
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                let _unused = subscriber.wait_for(|value| value.is_success()).await;
+            };
+
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ Local Node Phase ] Setup timed out");
-                    let error_message = "[ Local Node Phase ] Setup timed out";
-                    sentry::capture_message(error_message, sentry::Level::Error);
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::LocalNode);
+                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::LocalNode);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
                 }
-                result = self.setup_inner(app_handle.clone()) => {
+                result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ Local Node Phase ] Setup completed successfully");
-                            let __unused = self.finalize_setup(app_handle.clone(), payload).await;
+                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::LocalNode);
+                            let __unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ Local Node Phase ] Setup failed with error: {:?}", error);
-                            let error_message = format!("[ Local Node Phase ] Setup failed with error: {:?}", error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::LocalNode,error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::LocalNode,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
@@ -147,13 +151,10 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
         });
     }
 
-    async fn setup_inner(
-        &self,
-        app_handle: AppHandle,
-    ) -> Result<Option<LocalNodeSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<LocalNodeSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs(&app_handle)?;
-        let state = app_handle.state::<UniverseAppState>();
+        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
+        let state = self.app_handle.state::<UniverseAppState>();
 
         info!(target: LOG_TARGET, "Starting node manager with base node address: {}", self.app_configuration.base_node_grpc_address);
 
@@ -189,7 +190,7 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
                     }
                     error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
 
-                    app_handle.exit(-1);
+                    self.app_handle.exit(-1);
                     return Err(e.into());
                 }
             }
@@ -228,15 +229,10 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
 
     async fn finalize_setup(
         &self,
-        app_handle: AppHandle,
-        _payload: Option<LocalNodeSetupPhasePayload>,
+        sender: Sender<PhaseStatus>,
+        _payload: Option<LocalNodeSetupPhaseOutput>,
     ) -> Result<(), Error> {
-        SetupManager::get_instance()
-            .lock()
-            .await
-            .handle_first_batch_callbacks(app_handle.clone(), SetupPhase::LocalNode, true)
-            .await;
-
+        sender.send(PhaseStatus::Success).ok();
         let _unused = self
             .progress_stepper
             .lock()
@@ -244,11 +240,53 @@ impl SetupPhaseImpl<LocalNodeSetupPhasePayload> for LocalNodeSetupPhase {
             .resolve_step(ProgressPlans::LocalNode(ProgressSetupLocalNodePlan::Done))
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
+        let state = self.app_handle.state::<UniverseAppState>();
         state
             .events_manager
-            .handle_local_node_phase_finished(&app_handle, true)
+            .handle_local_node_phase_finished(&self.app_handle, true)
             .await;
+
+        let state = self.app_handle.state::<UniverseAppState>();
+
+        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
+        let mut shutdown_signal = state.shutdown.to_signal();
+        TasksTracker::current().spawn(async move {
+            let mut interval: Interval = interval(Duration::from_secs(30));
+            let mut has_send_error = false;
+
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        let state = app_handle_clone.state::<UniverseAppState>().inner();
+                        let check_if_orphan = state
+                            .node_manager
+                            .check_if_is_orphan_chain(!has_send_error)
+                            .await;
+                        match check_if_orphan {
+                            Ok(is_stuck) => {
+                                if is_stuck {
+                                    error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
+                                }
+                                if is_stuck && !has_send_error {
+                                    has_send_error = true;
+                                }
+                                state
+                            .events_manager
+                            .handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
+                            .await;
+                            }
+                            Err(ref e) => {
+                                error!(target: LOG_TARGET, "{}", e);
+                            }
+                        }
+                    },
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Stopping periodic orphan chain checks");
+                        break;
+                    }
+                }
+            }
+        });
 
         Ok(())
     }
