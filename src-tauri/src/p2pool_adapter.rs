@@ -28,6 +28,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use tari_utilities::epoch_time::EpochTime;
 use tokio::sync::watch;
 
 use crate::p2pool;
@@ -110,7 +111,7 @@ impl ProcessAdapter for P2poolAdapter {
 
         args.push("--squad-prefix".to_string());
         let mut squad_prefix = "default";
-        let mut num_squads = 10;
+        let mut num_squads = 3;
         if let Some(benchmark) = config.cpu_benchmark_hashrate {
             if benchmark < 4000 {
                 squad_prefix = "mini";
@@ -188,26 +189,11 @@ impl StatusMonitor for P2poolStatusMonitor {
     async fn check_health(&self) -> HealthStatus {
         match self.stats_client.stats().await {
             Ok(stats) => {
-                // if stats
-                //     .connection_info
-                //     .network_info
-                //     .connection_counters
-                //     .established_outgoing
-                //     + stats
-                //         .connection_info
-                //         .network_info
-                //         .connection_counters
-                //         .established_incoming
-                //     < 1
-                // {
-                //     warn!(target: LOG_TARGET, "P2pool has no connections, health check warning");
-                //     return HealthStatus::Warning;
-                // }
+                if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 * 10 {
+                    warn!(target: LOG_TARGET, "P2pool last gossip message was more than 10 minutes ago, health check failed");
+                    return HealthStatus::Unhealthy;
+                }
 
-                // if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 {
-                //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
-                //     return HealthStatus::Warning;
-                // }
                 let _unused = self.latest_status_broadcast.send(Some(stats));
 
                 HealthStatus::Healthy
