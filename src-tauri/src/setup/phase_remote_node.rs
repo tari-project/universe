@@ -36,19 +36,13 @@ use tokio::sync::{
     Mutex,
 };
 
-use super::{
-    setup_manager::{PhaseStatus, SetupManager, SetupPhase},
-    trait_setup_phase::SetupPhaseImpl,
-};
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct RemoteNodeSetupPhasePayload {}
-
-#[derive(Clone, Default)]
-pub struct RemoteNodeSetupPhaseSessionConfiguration {}
+pub struct RemoteNodeSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct RemoteNodeSetupPhaseAppConfiguration {}
@@ -59,19 +53,17 @@ pub struct RemoteNodeSetupPhase {
     progress_stepper: Mutex<ProgressStepper>,
     #[allow(dead_code)]
     app_configuration: RemoteNodeSetupPhaseAppConfiguration,
-    session_configuration: RemoteNodeSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
+impl SetupPhaseImpl for RemoteNodeSetupPhase {
     type AppConfiguration = RemoteNodeSetupPhaseAppConfiguration;
-    type SessionConfiguration = RemoteNodeSetupPhaseSessionConfiguration;
+    type SetupOutput = RemoteNodeSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
+    async fn new(app_handle: AppHandle) -> Self {
         RemoteNodeSetupPhase {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
-            session_configuration,
         }
     }
 
@@ -89,7 +81,7 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
 
     async fn setup(
         self: std::sync::Arc<Self>,
-        sender: Sender<PhaseStatus>,
+        status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ Remote Node Phase ] Starting setup");
@@ -110,7 +102,7 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Remote Node Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Remote Node Phase ] Setup failed with error: {:?}", error);
@@ -123,14 +115,14 @@ impl SetupPhaseImpl<RemoteNodeSetupPhasePayload> for RemoteNodeSetupPhase {
         });
     }
 
-    async fn setup_inner(&self) -> Result<Option<RemoteNodeSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<RemoteNodeSetupPhaseOutput>, Error> {
         todo!()
     }
 
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        _payload: Option<RemoteNodeSetupPhasePayload>,
+        _payload: Option<RemoteNodeSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
         let state = self.app_handle.state::<UniverseAppState>();

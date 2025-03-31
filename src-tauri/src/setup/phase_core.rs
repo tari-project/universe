@@ -60,10 +60,7 @@ const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6)
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct CoreSetupPhasePayload {}
-
-#[derive(Clone, Default)]
-pub struct CoreSetupPhaseSessionConfiguration {}
+pub struct CoreSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
@@ -76,21 +73,19 @@ pub struct CoreSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
-    session_configuration: CoreSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
-    type SessionConfiguration = CoreSetupPhaseSessionConfiguration;
+impl SetupPhaseImpl for CoreSetupPhase {
     type AppConfiguration = CoreSetupPhaseAppConfiguration;
+    type SetupOutput = CoreSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
+    async fn new(app_handle: AppHandle) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(app_handle)),
             app_configuration: CoreSetupPhase::load_app_configuration()
                 .await
                 .unwrap_or_default(),
-            session_configuration,
         }
     }
 
@@ -118,7 +113,6 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
-            .calculate_percentage_steps()
             .build(app_handle)
     }
 
@@ -146,7 +140,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
 
     async fn setup(
         self: Arc<Self>,
-        sender: Sender<PhaseStatus>,
+        status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ Core Phase ] Starting setup");
@@ -167,7 +161,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Core Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Core Phase ] Setup failed with error: {:?}", error);
@@ -181,7 +175,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn setup_inner(&self) -> Result<Option<CoreSetupPhasePayload>, anyhow::Error> {
+    async fn setup_inner(&self) -> Result<Option<CoreSetupPhaseOutput>, anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
         state
@@ -396,7 +390,7 @@ impl SetupPhaseImpl<CoreSetupPhasePayload> for CoreSetupPhase {
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        _payload: Option<CoreSetupPhasePayload>,
+        _payload: Option<CoreSetupPhaseOutput>,
     ) -> Result<(), anyhow::Error> {
         sender.send(PhaseStatus::Success).ok();
 

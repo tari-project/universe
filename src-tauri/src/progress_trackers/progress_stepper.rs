@@ -199,7 +199,7 @@ impl ProgressStepperBuilder {
         self
     }
 
-    pub fn calculate_percentage_steps(&mut self) -> &mut Self {
+    fn calculate_percentage_steps(&mut self) -> &mut Self {
         let total_weight: u8 = self
             .plan
             .iter()
@@ -222,7 +222,8 @@ impl ProgressStepperBuilder {
         self
     }
 
-    pub fn build(&self, app_handle: AppHandle) -> ProgressStepper {
+    pub fn build(&mut self, app_handle: AppHandle) -> ProgressStepper {
+        self.calculate_percentage_steps();
         ProgressStepper {
             plan: self.plan.clone().into_iter().rev().collect(),
             percentage_steps: self.percentage_steps.clone().into_iter().rev().collect(),

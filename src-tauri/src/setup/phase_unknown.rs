@@ -51,7 +51,7 @@ static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhasePayload {}
+pub struct UnknownSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseSessionConfiguration {
     pub cpu_benchmarked_hashrate: u64,
@@ -66,19 +66,17 @@ pub struct UnknownSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: UnknownSetupPhaseAppConfiguration,
-    session_configuration: UnknownSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
+impl SetupPhaseImpl for UnknownSetupPhase {
     type AppConfiguration = UnknownSetupPhaseAppConfiguration;
-    type SessionConfiguration = UnknownSetupPhaseSessionConfiguration;
+    type SetupOutput = UnknownSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
+    async fn new(app_handle: AppHandle) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
-            session_configuration,
         }
     }
 
@@ -91,7 +89,6 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
-            .calculate_percentage_steps()
             .build(app_handle.clone())
     }
 
@@ -107,7 +104,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
 
     async fn setup(
         self: std::sync::Arc<Self>,
-        sender: Sender<PhaseStatus>,
+        status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ Unknown Phase ] Starting setup");
@@ -128,7 +125,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Unknown Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Unknown Phase ] Setup failed with error: {:?}", error);
@@ -141,7 +138,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
         });
     }
 
-    async fn setup_inner(&self) -> Result<Option<UnknownSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -214,7 +211,7 @@ impl SetupPhaseImpl<UnknownSetupPhasePayload> for UnknownSetupPhase {
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        _payload: Option<UnknownSetupPhasePayload>,
+        _payload: Option<UnknownSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
         let _unused = self

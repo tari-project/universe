@@ -52,12 +52,9 @@ static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhasePayload {
+pub struct HardwareSetupPhaseOutput {
     pub cpu_benchmarked_hashrate: u64,
 }
-
-#[derive(Clone, Default)]
-pub struct HardwareSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhaseAppConfiguration {
@@ -68,19 +65,17 @@ pub struct HardwareSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: HardwareSetupPhaseAppConfiguration,
-    session_configuration: HardwareSetupPhaseSessionConfiguration,
 }
 
-impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
+impl SetupPhaseImpl for HardwareSetupPhase {
     type AppConfiguration = HardwareSetupPhaseAppConfiguration;
-    type SessionConfiguration = HardwareSetupPhaseSessionConfiguration;
+    type SetupOutput = HardwareSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self {
+    async fn new(app_handle: AppHandle) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
-            session_configuration,
         }
     }
 
@@ -97,7 +92,6 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
                 ProgressSetupHardwarePlan::RunCpuBenchmark,
             ))
             .add_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
-            .calculate_percentage_steps()
             .build(app_handle.clone())
     }
 
@@ -114,7 +108,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
 
     async fn setup(
         self: std::sync::Arc<Self>,
-        sender: Sender<PhaseStatus>,
+        status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ Hardware Phase ] Starting setup");
@@ -135,7 +129,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ Hardware Phase ] Setup completed successfully");
-                            let _unused = self.finalize_setup(sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender,payload).await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ Hardware Phase ] Setup failed with error: {:?}", error);
@@ -148,7 +142,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
         });
     }
 
-    async fn setup_inner(&self) -> Result<Option<HardwareSetupPhasePayload>, Error> {
+    async fn setup_inner(&self) -> Result<Option<HardwareSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -191,7 +185,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .await?;
         drop(cpu_miner);
 
-        Ok(Some(HardwareSetupPhasePayload {
+        Ok(Some(HardwareSetupPhaseOutput {
             cpu_benchmarked_hashrate: benchmarked_hashrate,
         }))
     }
@@ -199,7 +193,7 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        payload: Option<HardwareSetupPhasePayload>,
+        payload: Option<HardwareSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
         let _unused = self
@@ -215,10 +209,13 @@ impl SetupPhaseImpl<HardwareSetupPhasePayload> for HardwareSetupPhase {
             .handle_hardware_phase_finished(&self.app_handle, true)
             .await;
 
-        // SetupManager::get_instance()
-        //     .lock()
-        //     .await
-        //     .set_hardware_status_output(payload);
+        if let Some(payload) = payload {
+            SetupManager::get_instance()
+                .lock()
+                .await
+                .hardware_phase_output
+                .send(payload);
+        }
         Ok(())
     }
 }

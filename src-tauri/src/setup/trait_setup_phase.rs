@@ -30,23 +30,23 @@ use crate::progress_trackers::ProgressStepper;
 
 use super::setup_manager::PhaseStatus;
 
-pub trait SetupPhaseImpl<T> {
-    type SessionConfiguration: Clone + Default;
+pub trait SetupPhaseImpl {
     type AppConfiguration: Clone + Default;
+    type SetupOutput: Clone + Default;
 
-    async fn new(app_handle: AppHandle, session_configuration: Self::SessionConfiguration) -> Self;
+    async fn new(app_handle: AppHandle) -> Self;
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
     async fn setup(
         self: Arc<Self>,
-        sender: Sender<PhaseStatus>,
+        status_sender: Sender<PhaseStatus>,
         flow_subscribers: Vec<Receiver<PhaseStatus>>,
     );
-    async fn setup_inner(&self) -> Result<Option<T>, Error>;
+    async fn setup_inner(&self) -> Result<Option<Self::SetupOutput>, Error>;
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        payload: Option<T>,
+        payload: Option<Self::SetupOutput>,
     ) -> Result<(), Error>;
     fn get_app_handle(&self) -> &AppHandle;
     fn get_app_dirs(&self) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
