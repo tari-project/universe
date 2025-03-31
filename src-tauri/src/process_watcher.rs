@@ -24,8 +24,10 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
+use std::alloc::System;
 use std::path::PathBuf;
 use std::time::{Duration, Instant};
+use sysinfo::{MemoryRefreshKind, Pid, RefreshKind};
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tauri::async_runtime::JoinHandle;
 use tokio::select;
@@ -44,6 +46,8 @@ pub(crate) struct ProcessWatcherStats {
     pub num_restarts: u64,
     pub max_health_check_duration: Duration,
     pub total_health_check_duration: Duration,
+    pub memory_usage: u64,
+    pub virtual_memory_usage: u64,
 }
 
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
@@ -128,6 +132,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
+            let (process_mem, process_vmem) = get_memory_stats(&child);
             let mut stats = ProcessWatcherStats {
                 current_uptime: Duration::from_secs(0),
                 total_health_checks: 0,
@@ -136,6 +141,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                 num_restarts: 0,
                 max_health_check_duration: Duration::from_secs(0),
                 total_health_check_duration: Duration::from_secs(0),
+                memory_usage: process_mem,
+                virtual_memory_usage: process_vmem,
             };
             // sleep(Duration::from_secs(10)).await;
             info!(target: LOG_TARGET, "Starting process watcher for {}", name);
@@ -214,6 +221,23 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
     }
 }
 
+fn get_memory_stats(child: &ProcessInstance) -> (u64, u64) {
+    let mut process_mem = 0;
+    let mut process_vmem = 0;
+    if let Some(pid) = child.pid() {
+        // let s = sysinfo::System::new_with_specifics(
+        // RefreshKind::nothing().with_memory(MemoryRefreshKind::everything()),
+        // );
+        let mut s = sysinfo::System::new_all();
+        s.refresh_all();
+        if let Some(process) = s.process(Pid::from_u32(pid)) {
+            process_mem = process.memory();
+            process_vmem = process.virtual_memory();
+        }
+    }
+    (process_mem, process_vmem)
+}
+
 #[allow(clippy::too_many_arguments)]
 async fn do_health_check<T: StatusMonitor>(
     child: &mut ProcessInstance,
@@ -252,6 +276,9 @@ async fn do_health_check<T: StatusMonitor>(
                 HealthStatus::Healthy => {
                     *warning_count = 0;
                     is_healthy = true;
+                    let (mem, vmem) = get_memory_stats(child);
+                    stats.memory_usage = mem;
+                    stats.virtual_memory_usage = vmem;
                 }
                 HealthStatus::Warning => {
                     stats.num_warnings += 1;
@@ -262,6 +289,9 @@ async fn do_health_check<T: StatusMonitor>(
                     } else {
                         is_healthy = true;
                     }
+                    let (mem, vmem) = get_memory_stats(child);
+                    stats.memory_usage = mem;
+                    stats.virtual_memory_usage = vmem;
                 }
                 HealthStatus::Unhealthy => {
                     warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
