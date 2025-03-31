@@ -18,44 +18,48 @@ export function useSetUp() {
         await setSetupComplete();
         await fetchApplicationsVersionsWithRetry();
         await airdropSetup();
-    }, []);
+    }, [setSetupComplete, fetchApplicationsVersionsWithRetry, airdropSetup]);
 
     useEffect(() => {
         if (adminShow === 'setup') return;
-        const unlistenPromise = listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
-            console.log('Received tauri event: ', { e, p });
-            switch (p.event_type) {
-                case 'setup_status':
-                    if (p.progress >= 0) {
-                        setSetupTitle(p.title);
-                        setSetupParams(p.title_params);
-                        setSetupProgress(p.progress);
-                    }
-                    if (p.progress >= 1) {
-                        await handlePostSetup();
-                    }
-                    break;
-                default:
-                    console.warn('Unknown tauri event: ', { e, p });
-                    break;
-            }
-        });
+
+        let unlisten: () => void;
+
+        (async () => {
+            unlisten = await listen('setup_message', async ({ event: e, payload: p }: TauriEvent) => {
+                console.log('Received tauri event: ', { e, p });
+                switch (p.event_type) {
+                    case 'setup_status':
+                        if (p.progress >= 0) {
+                            setSetupTitle(p.title);
+                            setSetupParams(p.title_params);
+                            setSetupProgress(p.progress);
+                        }
+                        if (p.progress >= 1) {
+                            await handlePostSetup();
+                        }
+                        break;
+                    default:
+                        console.warn('Unknown tauri event: ', { e, p });
+                        break;
+                }
+            });
+        })();
 
         if (!isInitializingRef.current) {
-            function clearStorage() {
-                // clear all storage except airdrop data
+            isInitializingRef.current = true;
+            const clearStorage = () => {
                 const airdropStorage = localStorage.getItem('airdrop-store');
                 localStorage.clear();
                 if (airdropStorage) {
                     localStorage.setItem('airdrop-store', airdropStorage);
                 }
-            }
-            isInitializingRef.current = true;
+            };
             clearStorage();
         }
 
         return () => {
-            unlistenPromise.then((unlisten) => unlisten());
+            if (unlisten) unlisten();
         };
     }, [adminShow, handlePostSetup]);
 }
