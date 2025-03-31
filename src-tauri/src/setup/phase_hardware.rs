@@ -211,8 +211,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
         if let Some(payload) = payload {
             SetupManager::get_instance()
-                .lock()
-                .await
                 .hardware_phase_output
                 .send(payload);
         }

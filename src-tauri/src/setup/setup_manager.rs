@@ -20,44 +20,31 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use getset::{Getters, Setters};
-use log::{error, info};
+use crate::{
+    initialize_frontend_updates, release_notes::ReleaseNotes, tasks_tracker::TasksTracker,
+    UniverseAppState,
+};
+use log::info;
 use std::{
-    collections::HashMap,
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
     time::Duration,
 };
 use tauri::{AppHandle, Manager};
-use tokio::{
-    sync::{watch::Sender, Mutex},
-    time::{interval, Interval},
-};
-use tokio_util::task::TaskTracker;
-
-use crate::{
-    initialize_frontend_updates,
-    release_notes::ReleaseNotes,
-    tasks_tracker::TasksTracker,
-    utils::{shutdown_utils::resume_all_processes, system_status::SystemStatus},
-    UniverseAppState,
-};
+use tokio::sync::{watch::Sender, Mutex};
 
 use super::{
-    phase_core::{CoreSetupPhase, CoreSetupPhaseSessionConfiguration},
-    phase_hardware::{
-        HardwareSetupPhase, HardwareSetupPhaseOutput, HardwareSetupPhaseSessionConfiguration,
-    },
-    phase_local_node::{LocalNodeSetupPhase, LocalNodeSetupPhaseSessionConfiguration},
-    phase_remote_node::{RemoteNodeSetupPhase, RemoteNodeSetupPhaseSessionConfiguration},
-    phase_unknown::{UnknownSetupPhase, UnknownSetupPhaseSessionConfiguration},
-    phase_wallet::{WalletSetupPhase, WalletSetupPhaseSessionConfiguration},
+    phase_core::CoreSetupPhase,
+    phase_hardware::{HardwareSetupPhase, HardwareSetupPhaseOutput},
+    phase_local_node::LocalNodeSetupPhase,
+    phase_unknown::UnknownSetupPhase,
+    phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl,
 };
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
-static INSTANCE: LazyLock<Mutex<SetupManager>> = LazyLock::new(|| Mutex::new(SetupManager::new()));
+static INSTANCE: LazyLock<SetupManager> = LazyLock::new(|| SetupManager::new());
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub enum SetupPhase {
@@ -141,19 +128,11 @@ impl SetupManager {
         Self::default()
     }
 
-    pub fn get_instance() -> &'static LazyLock<Mutex<SetupManager>> {
+    pub fn get_instance() -> &'static LazyLock<SetupManager> {
         &INSTANCE
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
-        // UnknownSetupPhaseSessionConfiguration {
-        //     cpu_benchmarked_hashrate: self
-        //         .hardware_status_output
-        //         .clone()
-        //         .unwrap_or_default()
-        //         .cpu_benchmarked_hashrate,
-        // },
-
         let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
         let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
         let local_node_phase_setup = Arc::new(LocalNodeSetupPhase::new(app_handle.clone()).await);
@@ -206,14 +185,25 @@ impl SetupManager {
         let unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
 
         TasksTracker::current().spawn(async move {
-            let setup_manager = SetupManager::get_instance().lock().await;
             loop {
                 // Todo change it to use tokio stream and listien to changes on receivers
                 tokio::time::sleep(Duration::from_secs(1)).await;
                 info!(target: LOG_TARGET, "Waiting for unlock app conditions");
-                let is_app_unlocked = setup_manager.is_app_unlocked.lock().await.clone();
-                let is_wallet_unlocked = setup_manager.is_wallet_unlocked.lock().await.clone();
-                let is_mining_unlocked = setup_manager.is_mining_unlocked.lock().await.clone();
+                let is_app_unlocked = SetupManager::get_instance()
+                    .is_app_unlocked
+                    .lock()
+                    .await
+                    .clone();
+                let is_wallet_unlocked = SetupManager::get_instance()
+                    .is_wallet_unlocked
+                    .lock()
+                    .await
+                    .clone();
+                let is_mining_unlocked = SetupManager::get_instance()
+                    .is_mining_unlocked
+                    .lock()
+                    .await
+                    .clone();
 
                 let core_phase_status = core_phase_status_subscriber.borrow().is_success();
                 let hardware_phase_status = hardware_phase_status_subscriber.borrow().is_success();
@@ -228,7 +218,9 @@ impl SetupManager {
                     && unknown_phase_status
                     && !is_app_unlocked
                 {
-                    setup_manager.unlock_app(app_handle.clone()).await;
+                    SetupManager::get_instance()
+                        .unlock_app(app_handle.clone())
+                        .await;
                 }
 
                 if core_phase_status
@@ -237,7 +229,9 @@ impl SetupManager {
                     && unknown_phase_status
                     && !is_mining_unlocked
                 {
-                    setup_manager.unlock_mining(app_handle.clone()).await;
+                    SetupManager::get_instance()
+                        .unlock_mining(app_handle.clone())
+                        .await;
                 }
 
                 if core_phase_status
@@ -246,11 +240,13 @@ impl SetupManager {
                     && wallet_phase_status
                     && !is_wallet_unlocked
                 {
-                    setup_manager.unlock_wallet(app_handle.clone()).await;
+                    SetupManager::get_instance()
+                        .unlock_wallet(app_handle.clone())
+                        .await;
                 }
 
                 if is_app_unlocked && is_wallet_unlocked && is_mining_unlocked {
-                    setup_manager
+                    SetupManager::get_instance()
                         .handle_setup_finished(app_handle.clone())
                         .await;
                     break;
