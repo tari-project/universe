@@ -430,10 +430,8 @@ async fn setup_inner(
         tauri::async_runtime::spawn(async move {
             let message = event_cloned.payload();
             if let Ok(read) = ws_manager.try_read() {
-                if let Err(e) = read.send_ws_message(message.clone()).await {
+                if let Err(e) = read.send_ws_message(message).await {
                     warn!(target: LOG_TARGET, "ws: websocket_manager send error: {:?}", e);
-                } else {
-                    info!(target:LOG_TARGET, "ws: payload sent to websocket_manager");
                 }
             }
         });
