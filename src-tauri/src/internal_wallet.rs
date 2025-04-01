@@ -30,7 +30,6 @@ use std::str::FromStr;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
 use tari_common_types::types::CompressedPublicKey;
-use tari_crypto::keys::PublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
 use tari_key_manager::key_manager::KeyManager;
