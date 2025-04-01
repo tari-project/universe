@@ -21,6 +21,7 @@
   "loginButton": "Connecte-toi pour réclamer des gemmes",
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
+  "update-username": "Mettre à jour votre nom d'utilisateur",
   "permission": {
     "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
     "text": "Tari Universe aimerait utiliser des outils d'analyse pour améliorer ton expérience et te récompenser avec des gemmes pour le minage.",

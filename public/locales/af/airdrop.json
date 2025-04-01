@@ -21,6 +21,7 @@
   "loginButton": "Meld aan om edelstene te eis",
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
+  "update-username": "Werk gebruikersnaam op",
   "permission": {
     "setup": "Tari Universe wil graag analise gebruik om <strong>jou ervaring te verbeter.</strong>",
     "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter en u met edelstene vir mynbou te beloon.",

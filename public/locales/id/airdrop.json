@@ -21,6 +21,7 @@
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
+  "update-username": "Perbarui nama pengguna",
   "permission": {
     "setup": "Tari Universe ingin menggunakan analitik untuk <strong>meningkatkan pengalaman Anda.</strong>",
     "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah dengan permata untuk menambang.",

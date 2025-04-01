@@ -21,6 +21,7 @@
   "loginButton": "ログインしてジェムを獲得",
   "logout": "ログアウト",
   "nextTierBonus": "<strong>{{count}}人の友達</strong>を招待して、{{bonusGems}}ボーナスジェムを獲得",
+  "update-username": "ユーザー名を更新",
   "permission": {
     "setup": "Tari Universeは、<strong>あなたの体験を向上させるために</strong>分析を使用したいと考えています。",
     "text": "Tari Universeは、あなたの体験を向上させ、マイニングでジェムを報酬として提供するために分析を使用したいと考えています。",

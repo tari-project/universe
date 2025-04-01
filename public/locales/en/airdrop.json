@@ -20,6 +20,7 @@
   "loginButton": "Log in to claim gems",
   "logout": "Logout",
   "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
+  "update-username": "Update username",
   "permission": {
     "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining.",

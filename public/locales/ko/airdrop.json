@@ -21,6 +21,7 @@
   "loginButton": "로그인하여 보석 받기",
   "logout": "로그아웃",
   "nextTierBonus": "<strong>{{count}}명의 친구</strong>를 초대하고 {{bonusGems}}개의 보너스 보석을 받으세요",
+  "update-username": "사용자 이름 업데이트",
   "permission": {
     "setup": "타리 유니버스는 <strong>경험을 개선하기 위해</strong> 분석을 사용하고자 합니다.",
     "text": "Tari Universe는 귀하의 경험을 개선하고 채굴에 대한 보상으로 보석을 제공하기 위해 분석을 사용하고자 합니다.",
