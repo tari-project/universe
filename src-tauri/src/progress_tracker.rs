@@ -112,17 +112,17 @@ impl ProgressTrackerInner {
             + (((self.next_max - self.min) as f64) * ((progress as f64) / 100.0)))
             / 100.0;
         if let Some(channel) = &self.last_action_channel {
-            channel
+            let _unused = channel
                 .send(format!(
                     "last action: {} at progress: {}",
                     title.clone(),
                     progress_percentage
                 ))
-                .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e))
-                .ok();
+                .inspect_err(|e| error!(target: LOG_TARGET, "Could not send last action: {:?}", e));
         }
 
-        self.app_handle
+        let _unused = self
+            .app_handle
             .emit(
                 "setup_message",
                 SetupStatusEvent {
@@ -134,7 +134,6 @@ impl ProgressTrackerInner {
             )
             .inspect_err(
                 |e| error!(target: LOG_TARGET, "Could not emit event 'setup_message': {:?}", e),
-            )
-            .ok();
+            );
     }
 }

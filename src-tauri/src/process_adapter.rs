@@ -103,6 +103,7 @@ pub(crate) trait ProcessAdapter {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HealthStatus {
     Healthy,
     Warning,
