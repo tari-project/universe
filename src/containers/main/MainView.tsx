@@ -6,8 +6,9 @@ import { useUIStore } from '@app/store';
 
 export default function MainView() {
     const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const isReconnecting = useUIStore((s) => s.isReconnecting);
-    const styling = isReconnecting ? { backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)' } : {};
+    const connectionStatus = useUIStore((s) => s.connectionStatus);
+    const styling =
+        connectionStatus !== 'connected' ? { backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)' } : {};
     return (
         <DashboardContainer $visualModeOff={!visualMode} style={styling}>
             <SideBar />

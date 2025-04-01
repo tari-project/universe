@@ -1,7 +1,7 @@
 import { useUIStore } from '@app/store';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import disconnectedImage from '/assets/img/disconnected.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
@@ -10,9 +10,9 @@ import { Title } from '@app/containers/floating/StagedSecurity/styles';
 
 const Disconnected: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
-    const isReconnecting = useUIStore((s) => s.isReconnecting);
+    const connectionStatus = useUIStore((s) => s.connectionStatus);
     return (
-        <Wrapper style={{ display: isReconnecting ? 'block' : 'none' }}>
+        <Wrapper style={{ display: connectionStatus === 'disconnected' ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
                 <HeaderImg src={disconnectedImage} alt="Disconnected" style={{ width: 'min(60px, 66vh);' }} />
                 <TextWrapper>
@@ -23,7 +23,9 @@ const Disconnected: React.FC = () => {
                     <RetryButton onClick={() => console.info('Clicked primary button')}>
                         {t('auto-reconnect')}
                     </RetryButton>
-                    <SecondaryButton onClick={() => setIsReconnecting(false)}>{t('connect-now')}</SecondaryButton>
+                    <SecondaryButton onClick={() => setConnectionStatus('connected')}>
+                        {t('connect-now')}
+                    </SecondaryButton>
                 </Stack>
             </Stack>
         </Wrapper>

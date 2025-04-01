@@ -1,4 +1,4 @@
-import { AdminShow, DialogType, useUIStore } from '@app/store/useUIStore.ts';
+import { AdminShow, CONNECTION_STATUS, DialogType, useUIStore } from '@app/store/useUIStore.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
@@ -20,7 +20,7 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useUIStore.setState({ isWebglNotSupported });
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
-export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setState({ isReconnecting });
+export const setConnectionStatus = (connectionStatus: CONNECTION_STATUS) => useUIStore.setState({ connectionStatus });
 
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },

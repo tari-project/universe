@@ -1,7 +1,7 @@
 import { useUIStore } from '@app/store';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
 import telegramLogo from '/assets/img/telegram_logo.png';
 import { Stack } from '@app/components/elements/Stack';
@@ -11,9 +11,9 @@ import { Title } from '@app/containers/floating/StagedSecurity/styles';
 
 const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
-    const isReconnecting = useUIStore((s) => s.isReconnecting);
+    const connectionStatus = useUIStore((s) => s.connectionStatus);
     return (
-        <Wrapper style={{ display: !isReconnecting ? 'block' : 'none' }}>
+        <Wrapper style={{ display: connectionStatus === 'disconnected-severe' ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
                 <HeaderImgSevere
                     src={disconnectedSevereImage}
@@ -29,12 +29,16 @@ const DisconnectedSevere: React.FC = () => {
                         {t('auto-reconnect')}
                     </RetryButton>
                     <Stack direction="row" gap={30}>
-                        <SecondaryButton onClick={() => setIsReconnecting(false)}>{t('connect-now')}</SecondaryButton>
+                        <SecondaryButton onClick={() => setConnectionStatus('connected')}>
+                            {t('connect-now')}
+                        </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <SecondaryButton onClick={() => setIsReconnecting(false)}>{t('restart-app')}</SecondaryButton>
+                        <SecondaryButton onClick={() => setConnectionStatus('connected')}>
+                            {t('restart-app')}
+                        </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
                         <Stack alignItems="center" direction="row">
-                            <SecondaryButton onClick={() => setIsReconnecting(false)}>
+                            <SecondaryButton onClick={() => setConnectionStatus('connected')}>
                                 <Typography>{t('go-to-telegram')}</Typography>
                             </SecondaryButton>
                             <TelegramLogo src={telegramLogo} alt="Telegram" />
