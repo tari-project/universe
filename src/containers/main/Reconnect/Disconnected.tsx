@@ -1,16 +1,27 @@
 import { useUIStore } from '@app/store';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import disconnectedImage from '/assets/img/disconnected.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { RetryButton, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
+import { useCountdown } from '@app/hooks';
+import { invoke } from '@tauri-apps/api/core';
+
+const ConnectionAttemptIntervalsInSecs = [60, 120, 240];
 
 const Disconnected: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const connectionStatus = useUIStore((s) => s.connectionStatus);
+    const [attempt, setAttempt] = React.useState(0);
+
+    const autoReconnect = useCallback(() => {
+        invoke('reconnect');
+        setAttempt(Math.min(attempt + 1, 2));
+    }, [setAttempt, attempt]);
+    const countdown = useCountdown(ConnectionAttemptIntervalsInSecs[attempt], autoReconnect);
+
     return (
         <Wrapper style={{ display: connectionStatus === 'disconnected' ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
@@ -20,12 +31,10 @@ const Disconnected: React.FC = () => {
                     <Typography>{t('disconnect-subtitle')}</Typography>
                 </TextWrapper>
                 <Stack gap={36}>
-                    <RetryButton onClick={() => console.info('Clicked primary button')}>
-                        {t('auto-reconnect')}
+                    <RetryButton>
+                        {t('auto-reconnect')} {countdown.seconds}
                     </RetryButton>
-                    <SecondaryButton onClick={() => setConnectionStatus('connected')}>
-                        {t('connect-now')}
-                    </SecondaryButton>
+                    <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>
                 </Stack>
             </Stack>
         </Wrapper>

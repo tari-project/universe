@@ -2,6 +2,7 @@ import { Typography } from '@app/components/elements/Typography';
 import styled from 'styled-components';
 
 export const Wrapper = styled.div`
+    pointer-events: all;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -45,7 +46,7 @@ export const TelegramLogo = styled.img`
 `;
 
 export const RetryButton = styled.div`
-    max-width: 306px;
+    display: inline-block;
     border-radius: 50px;
     padding-top: 15px;
     padding-right: 30px;
@@ -66,6 +67,8 @@ export const TextWrapper = styled.div`
 `;
 
 export const SecondaryButton = styled(Typography)`
+    display: inline-block;
+    cursor: pointer;
     color: black;
     font-family: Poppins;
     font-weight: 600;
