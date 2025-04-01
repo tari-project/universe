@@ -47,6 +47,7 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
+use tari_utilities::epoch_time::EpochTime;
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
 use tokio::time::timeout;
@@ -383,7 +384,6 @@ impl MinotariNodeClient {
             .await
             .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
         let res = res.into_inner();
-        dbg!(&res);
         let metadata = match res.metadata {
             Some(metadata) => metadata,
             None => {
