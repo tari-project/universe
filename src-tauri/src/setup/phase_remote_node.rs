@@ -25,7 +25,7 @@ use std::time::Duration;
 use crate::{
     progress_trackers::{progress_stepper::ProgressStepperBuilder, ProgressStepper},
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -87,7 +87,7 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::RemoteNode);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };

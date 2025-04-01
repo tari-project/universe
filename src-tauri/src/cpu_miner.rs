@@ -25,7 +25,7 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
-use crate::tasks_tracker::TasksTracker;
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -37,6 +37,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
+use tauri::async_runtime::block_on;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};
@@ -59,7 +60,14 @@ impl CpuMiner {
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
-        let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner());
+        let global_shutdown_signal = block_on(TasksTrackers::current().hardware_phase.get_signal());
+        let task_tracker = TasksTrackers::current().hardware_phase.get_task_tracker();
+        let process_watcher = ProcessWatcher::new(
+            xmrig_adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_cpu_miner(),
+        );
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             cpu_miner_status_watch_tx,
@@ -130,7 +138,6 @@ impl CpuMiner {
             };
 
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
@@ -166,7 +173,6 @@ impl CpuMiner {
             lock.adapter.extra_options = vec![];
 
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
@@ -255,7 +261,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().hardware_phase.get_task_tracker().spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {

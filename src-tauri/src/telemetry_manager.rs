@@ -31,7 +31,7 @@ use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
 use crate::utils::network_status::NetworkStatus;
-use crate::TasksTracker;
+use crate::TasksTrackers;
 use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
 use base64::prelude::*;
@@ -307,7 +307,7 @@ impl TelemetryManager {
         let mut app_shutdown = state.shutdown.to_signal();
         let mut interval = time::interval(timeout);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {

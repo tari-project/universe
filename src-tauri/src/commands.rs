@@ -36,7 +36,7 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
-use crate::tasks_tracker::TasksTracker;
+use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
@@ -188,15 +188,18 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 pub async fn frontend_ready(app: tauri::AppHandle) {
     let app_handle = app.clone();
     FrontendReadyChannel::current().set_ready();
-    TasksTracker::current().spawn(async move {
-        let app_state = app_handle.state::<UniverseAppState>();
-        // Give the splash screen a few seconds to show before closing it
-        sleep(Duration::from_secs(3));
-        app_state
-            .events_manager
-            .handle_close_splash_screen(&app_handle)
-            .await;
-    });
+    TasksTrackers::current()
+        .common
+        .get_task_tracker()
+        .spawn(async move {
+            let app_state = app_handle.state::<UniverseAppState>();
+            // Give the splash screen a few seconds to show before closing it
+            sleep(Duration::from_secs(3));
+            app_state
+                .events_manager
+                .handle_close_splash_screen(&app_handle)
+                .await;
+        });
 }
 
 #[tauri::command]
@@ -227,7 +230,7 @@ pub async fn download_and_start_installer(
 
 #[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
-    TasksTracker::stop_all_processes(app.clone()).await;
+    TasksTrackers::current().stop_all_processes().await;
 
     app.exit(0);
     Ok(())
@@ -703,7 +706,7 @@ pub async fn import_seed_words(
 
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
-            TasksTracker::stop_all_processes(app.clone()).await;
+            TasksTrackers::current().stop_all_processes().await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -747,7 +750,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    TasksTracker::stop_all_processes(app.clone()).await;
+    TasksTrackers::current().stop_all_processes().await;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -857,7 +860,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        TasksTracker::stop_all_processes(app.clone()).await;
+        TasksTrackers::current().stop_all_processes().await;
     }
 
     app.restart();

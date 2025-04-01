@@ -27,6 +27,7 @@ use std::time::Duration;
 use futures_util::future::FusedFuture;
 use log::warn;
 use tari_shutdown::ShutdownSignal;
+use tauri::async_runtime::block_on;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
@@ -35,6 +36,7 @@ use crate::p2pool_adapter::P2poolAdapter;
 use crate::port_allocator::PortAllocator;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 // const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
@@ -126,7 +128,14 @@ impl P2poolManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool());
+        let global_shutdown_signal = block_on(TasksTrackers::current().unknown_phase.get_signal());
+        let task_tracker = TasksTrackers::current().unknown_phase.get_task_tracker();
+        let mut process_watcher = ProcessWatcher::new(
+            adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_p2pool(),
+        );
         process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {
@@ -145,7 +154,6 @@ impl P2poolManager {
 
     pub async fn ensure_started(
         &self,
-        app_shutdown: ShutdownSignal,
         config: P2poolConfig,
         base_path: PathBuf,
         config_path: PathBuf,
@@ -158,7 +166,6 @@ impl P2poolManager {
         process_watcher.poll_time = Duration::from_secs(30);
         process_watcher
             .start(
-                app_shutdown.clone(),
                 base_path,
                 config_path,
                 log_path,
@@ -166,9 +173,10 @@ impl P2poolManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
+        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
         if let Some(status_monitor) = &process_watcher.status_monitor {
             loop {
-                if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+                if shutdown_signal.is_terminated() || shutdown_signal.is_triggered() {
                     break;
                 }
                 sleep(Duration::from_secs(5)).await;

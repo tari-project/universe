@@ -43,7 +43,7 @@ use crate::{
         ProgressSetupCorePlan, ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     utils::{
         network_status::NetworkStatus, platform_utils::PlatformUtils,
         shutdown_utils::resume_all_processes, system_status::SystemStatus,
@@ -143,7 +143,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().core_phase.get_task_tracker().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
@@ -168,6 +168,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
                         }
                     }
                 }
+                _ = TasksTrackers::current().core_phase.get_signal().await => {
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                    let error_message = format!("[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
+                } 
             };
         });
     }
@@ -374,7 +379,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
             state
                 .tor_manager
                 .ensure_started(
-                    state.shutdown.to_signal(),
                     data_dir.clone(),
                     config_dir.clone(),
                     log_dir.clone(),
@@ -406,7 +410,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await;
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
             let mut last_state = *receiver.borrow();
             loop {
@@ -420,7 +424,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
                     if !last_state && current_state {
                         info!(target: LOG_TARGET, "System entered sleep mode");
-                        TasksTracker::stop_all_processes(app_handle_clone.clone()).await;
+                        TasksTrackers::current().stop_all_processes().await;
                     }
 
                     last_state = current_state;

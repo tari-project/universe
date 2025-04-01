@@ -35,7 +35,7 @@ use crate::{
     app_in_memory_config::AppInMemoryConfig,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
@@ -110,7 +110,7 @@ impl TelemetryService {
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             let system_info = SystemInfo {
                 version,
                 user_id: user,

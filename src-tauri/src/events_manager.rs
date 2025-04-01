@@ -39,7 +39,7 @@ use crate::{
     events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
@@ -70,7 +70,7 @@ impl EventsManager {
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
         let events_service = self.events_service.clone();
         let app = app.clone();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             match events_service
                 .wait_for_wallet_scan(block_height, 1200)
                 .await
@@ -91,7 +91,7 @@ impl EventsManager {
     pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
         let events_service = self.events_service.clone();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {

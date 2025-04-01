@@ -33,7 +33,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     app_config::AppConfig,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
 use tari_shutdown::ShutdownSignal;
@@ -99,7 +99,7 @@ impl UpdatesManager {
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = self_clone.app_shutdown.clone();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {

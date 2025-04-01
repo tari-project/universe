@@ -31,7 +31,7 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
 use anyhow::Error;
@@ -124,7 +124,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().unknown_phase.get_task_tracker().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
@@ -181,7 +181,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             state
                 .p2pool_manager
                 .ensure_started(
-                    state.shutdown.to_signal(),
                     p2pool_config,
                     data_dir.clone(),
                     config_dir.clone(),
@@ -206,7 +205,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .start(StartConfig {
                 base_node_grpc_address,
                 p2pool_port,
-                app_shutdown: state.shutdown.to_signal().clone(),
                 base_path: data_dir.clone(),
                 config_path: config_dir.clone(),
                 log_path: log_dir.clone(),

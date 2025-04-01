@@ -31,7 +31,7 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -122,7 +122,7 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::LocalNode);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
@@ -169,7 +169,6 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
             match state
                 .node_manager
                 .ensure_started(
-                    state.shutdown.to_signal(),
                     data_dir.clone(),
                     config_dir.clone(),
                     log_dir.clone(),
@@ -250,7 +249,7 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = state.shutdown.to_signal();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
             let mut has_send_error = false;
 

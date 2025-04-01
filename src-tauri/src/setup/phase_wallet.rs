@@ -29,7 +29,7 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -96,7 +96,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
 
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().wallet_phase.get_task_tracker().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };

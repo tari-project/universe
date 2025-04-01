@@ -23,7 +23,6 @@
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::ProcessInstanceTrait;
 use crate::process_adapter::{HealthStatus, ProcessAdapter, StatusMonitor};
-use crate::tasks_tracker::TasksTracker;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
@@ -34,6 +33,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
+use tokio_util::task::{task_tracker, TaskTracker};
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 
@@ -51,6 +51,8 @@ pub(crate) struct ProcessWatcherStats {
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
+    task_tracker: TaskTracker,
+    global_shutdown_signal: ShutdownSignal,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     /// Health timeout should always be less than poll time otherwise you will have overlapping calls
@@ -62,10 +64,17 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-    pub fn new(adapter: TAdapter, stats_broadcast: watch::Sender<ProcessWatcherStats>) -> Self {
+    pub fn new(
+        adapter: TAdapter,
+        global_shutdown_signal: ShutdownSignal,
+        task_tracker: TaskTracker,
+        stats_broadcast: watch::Sender<ProcessWatcherStats>,
+    ) -> Self {
         Self {
             adapter,
             watcher_task: None,
+            global_shutdown_signal,
+            task_tracker,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
@@ -88,13 +97,13 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub async fn start(
         &mut self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
         binary: Binaries,
     ) -> Result<(), anyhow::Error> {
-        if app_shutdown.is_terminated() || app_shutdown.is_triggered() {
+        if self.global_shutdown_signal.is_terminated() || self.global_shutdown_signal.is_triggered()
+        {
             return Ok(());
         }
 
@@ -124,11 +133,12 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.status_monitor = Some(status_monitor);
 
         let expected_startup_time = self.expected_startup_time;
-        let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
+        let mut global_shutdown_signal: ShutdownSignal = self.global_shutdown_signal.clone();
+        let task_tracker = self.task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(TasksTracker::current().spawn(async move {
-            child.start().await?;
+        self.watcher_task = Some(self.task_tracker.spawn(async move {
+            child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
                 current_uptime: Duration::from_secs(0),
@@ -157,7 +167,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                             &mut uptime,
                             expected_startup_time,
                             health_timeout,
-                            app_shutdown.clone(),
+                            global_shutdown_signal.clone(),
+                            task_tracker.clone(),
                             inner_shutdown.clone(),
                             &mut warning_count,
                             &stop_on_exit_codes,
@@ -170,7 +181,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
                         return child.stop().await;
 
                     },
-                    _ = app_shutdown.wait() => {
+                    _ = global_shutdown_signal.wait() => {
                         return child.stop().await;
                     }
                 }
@@ -220,7 +231,8 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     uptime: &mut Instant,
     expected_startup_time: Duration,
     health_timeout: Duration,
-    app_shutdown: ShutdownSignal,
+    global_shutdown_signal: ShutdownSignal,
+    task_tracker: TaskTracker,
     inner_shutdown: ShutdownSignal,
     warning_count: &mut u32,
     stop_on_exit_codes: &[i32],
@@ -233,7 +245,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
     let health_timer = Instant::now();
     if child.ping() {
         let mut inner_shutdown2 = inner_shutdown.clone();
-        let mut app_shutdown2 = app_shutdown.clone();
+        let mut app_shutdown2 = global_shutdown_signal.clone();
         if let Ok(inner) = timeout(health_timeout, async {
             select! {
                 r = status_monitor3.check_health() => r,
@@ -278,7 +290,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
 
     if !is_healthy
         && !child.is_shutdown_triggered()
-        && !app_shutdown.is_triggered()
+        && !global_shutdown_signal.is_triggered()
         && !inner_shutdown.is_triggered()
     {
         stats.num_failures += 1;
@@ -309,7 +321,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             *uptime = Instant::now();
             stats.num_restarts += 1;
             stats.current_uptime = uptime.elapsed();
-            child.start().await?;
+            child.start(task_tracker).await?;
             // Wait for a bit before checking health again
             // sleep(Duration::from_secs(10)).await;
         }

@@ -24,6 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     ProcessAdapter, ProcessInstance, ProcessInstanceTrait, ProcessStartupSpec, StatusMonitor,
 };
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
@@ -137,7 +138,9 @@ impl SpendWalletAdapter {
                 .get_or_insert_with(HashMap::new)
                 .extend(command.extra_envs);
 
-            instance.start().await?;
+            instance
+                .start(TasksTrackers::current().wallet_phase.get_task_tracker())
+                .await?;
             let exit_code = instance.wait().await?;
 
             if exit_code != 0 {

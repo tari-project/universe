@@ -22,6 +22,7 @@
 
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
+use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
@@ -140,7 +141,7 @@ impl ProcessInstanceTrait for NullProcessInstance {
     fn ping(&self) -> bool {
         true
     }
-    async fn start(&mut self) -> Result<(), anyhow::Error> {
+    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
         Ok(())
     }
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {

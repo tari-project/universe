@@ -32,6 +32,7 @@ use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
+use tauri::async_runtime::block_on;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::fs;
@@ -43,6 +44,7 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::tasks_tracker::TasksTrackers;
 use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
@@ -120,8 +122,14 @@ impl<T: NodeAdapter> NodeManager<T> {
         // MinotariNodeAdapter::new(status_broadcast.clone()),
         // RemoteNodeAdapter::new(status_broadcast),
         // );
-        let mut process_watcher =
-            ProcessWatcher::new(node_adapter, stats_collector.take_minotari_node());
+        let global_shutdown_signal = block_on(TasksTrackers::current().node_phase.get_signal());
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker();
+        let mut process_watcher = ProcessWatcher::new(
+            node_adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_minotari_node(),
+        );
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
         process_watcher.expected_startup_time = Duration::from_secs(30);
@@ -140,7 +148,6 @@ impl<T: NodeAdapter> NodeManager<T> {
     #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -161,7 +168,6 @@ impl<T: NodeAdapter> NodeManager<T> {
             }
             process_watcher
                 .start(
-                    app_shutdown,
                     base_path,
                     config_path,
                     log_path,
@@ -176,7 +182,6 @@ impl<T: NodeAdapter> NodeManager<T> {
     #[allow(dead_code)]
     pub async fn start(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -184,7 +189,6 @@ impl<T: NodeAdapter> NodeManager<T> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
             .start(
-                app_shutdown,
                 base_path,
                 config_path,
                 log_path,
