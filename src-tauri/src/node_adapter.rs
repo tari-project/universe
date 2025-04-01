@@ -40,6 +40,9 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -112,6 +115,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let status_shutdown = inner_shutdown.to_signal();
@@ -255,6 +259,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 required_sync_peers: self.required_initial_peers,
                 shutdown_signal: status_shutdown,
                 status_broadcast: self.status_broadcast.clone(),
+                last_block_time: Arc::new(AtomicU64::new(0)),
             },
         ))
     }
@@ -307,11 +312,12 @@ pub struct MinotariNodeStatusMonitor {
     required_sync_peers: u32,
     shutdown_signal: ShutdownSignal,
     status_broadcast: watch::Sender<BaseNodeStatus>,
+    last_block_time: Arc<AtomicU64>,
 }
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration) -> HealthStatus {
         let duration = std::time::Duration::from_secs(1);
         match timeout(duration, self.get_network_state()).await {
             Ok(res) => match res {
@@ -320,14 +326,24 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
                     if status.num_connections == 0 {
                         return HealthStatus::Warning;
                     }
-                    if EpochTime::now()
-                        .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
-                        .unwrap_or(EpochTime::from(0))
-                        .as_u64()
-                        > 1200
+                    if self
+                        .last_block_time
+                        .load(std::sync::atomic::Ordering::SeqCst)
+                        == status.block_time
                     {
-                        warn!(target: LOG_TARGET, "Base node height has not changed in twenty minutes");
-                        return HealthStatus::Warning;
+                        if uptime.as_secs() > 1200
+                            && EpochTime::now()
+                                .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
+                                .unwrap_or(EpochTime::from(0))
+                                .as_u64()
+                                > 1200
+                        {
+                            warn!(target: LOG_TARGET, "Base node height has not changed in twenty minutes");
+                            return HealthStatus::Warning;
+                        }
+                    } else {
+                        self.last_block_time
+                            .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
                     }
                     HealthStatus::Healthy
                 }

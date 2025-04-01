@@ -36,6 +36,7 @@ use minotari_node_grpc_client::grpc::{
 };
 use serde::Serialize;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError};
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -88,6 +89,7 @@ impl ProcessAdapter for WalletAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         // TODO: This was copied from node_adapter. This should be DRY'ed up
         let inner_shutdown = Shutdown::new();
@@ -238,7 +240,7 @@ impl Clone for WalletStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         match self.get_status().await {
             Ok(s) => {
                 let _result = self.state_broadcast.send(Some(s));
