@@ -53,7 +53,11 @@ pub(crate) trait ProcessAdapter {
         log_folder: PathBuf,
         binary_version_path: PathBuf,
         is_first_start: bool,
+<<<<<<< HEAD
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error>;
+=======
+    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
+>>>>>>> f6dcfbca (feat: add start up clearing of files and better base node stuck fix)
     fn name(&self) -> &str;
 
     fn spawn(
@@ -124,6 +128,7 @@ pub enum HealthStatus {
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
     async fn check_health(&self, uptime: Duration) -> HealthStatus;
+<<<<<<< HEAD
 }
 
 // TODO: Rename to ProcessInstance
@@ -134,6 +139,8 @@ pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
     async fn wait(&mut self) -> Result<i32, anyhow::Error>;
+=======
+>>>>>>> f6dcfbca (feat: add start up clearing of files and better base node stuck fix)
 }
 
 #[derive(Clone)]
