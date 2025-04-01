@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -81,6 +82,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_verison_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -178,7 +180,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
-                start_time: std::time::Instant::now(),
             },
         ))
     }
@@ -195,12 +196,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 #[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {
     json_rpc_port: u16,
-    start_time: std::time::Instant,
 }
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         if self
             .get_version()
             .await
@@ -211,11 +211,6 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
         {
             HealthStatus::Healthy
         } else {
-            if self.start_time.elapsed().as_secs() < 30 {
-                return HealthStatus::Healthy;
-            }
-            // HealthStatus::Unhealthy
-            // This can return a bad error from time to time, especially on startup
             HealthStatus::Warning
         }
     }

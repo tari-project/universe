@@ -33,7 +33,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -124,6 +124,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
@@ -233,7 +234,6 @@ impl ProcessAdapter for GpuMinerAdapter {
             },
             GpuMinerStatusMonitor {
                 http_api_port,
-                start_time: Instant::now(),
                 gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),
             },
         ))
@@ -251,17 +251,16 @@ impl ProcessAdapter for GpuMinerAdapter {
 #[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
-    start_time: Instant,
     gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration) -> HealthStatus {
         if let Ok(status) = self.status().await {
             let _result = self.gpu_raw_status_broadcast.send(Some(status.clone()));
             // GPU returns 0 for first 10 seconds until it has an average
-            if status.hash_rate > 0.0 || self.start_time.elapsed().as_secs() < 11 {
+            if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
                 HealthStatus::Healthy
             } else {
                 HealthStatus::Warning
