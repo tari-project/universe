@@ -22,6 +22,7 @@
 
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Instant;
 
 use anyhow::anyhow;
 use log::info;
@@ -158,10 +159,11 @@ impl MmProxyManager {
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         let lock = self.watcher.read().await;
+        let start_time = Instant::now();
         for i in 0..20 {
             if lock.is_running() {
                 if let Some(status) = lock.status_monitor.as_ref() {
-                    if status.check_health().await == HealthStatus::Healthy {
+                    if status.check_health(start_time.elapsed()).await == HealthStatus::Healthy {
                         return Ok(());
                     } else {
                         info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/20", i + 1);
