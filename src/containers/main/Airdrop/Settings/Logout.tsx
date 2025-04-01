@@ -29,7 +29,6 @@ export default function AirdropLogout() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await handleUsernameChange(username, async (response: any) => {
             const res = await response?.json();
-            console.error('Error updating username', res);
             setError(res?.message || '');
         });
         setLoading(false);
