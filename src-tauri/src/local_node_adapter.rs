@@ -144,7 +144,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        _is_first_start: bool,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -303,7 +303,6 @@ impl ProcessAdapter for LocalNodeAdapter {
                     name: self.name().to_string(),
                 },
             },
-<<<<<<< HEAD:src-tauri/src/local_node_adapter.rs
             MinotariNodeStatusMonitor::new(
                 NodeType::Local,
                 MinotariNodeClient::new(
@@ -313,15 +312,6 @@ impl ProcessAdapter for LocalNodeAdapter {
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
             ),
-=======
-            MinotariNodeStatusMonitor {
-                grpc_port: self.grpc_port,
-                required_sync_peers: self.required_initial_peers,
-                shutdown_signal: status_shutdown,
-                status_broadcast: self.status_broadcast.clone(),
-                last_block_time: Arc::new(AtomicU64::new(0)),
-            },
->>>>>>> f6dcfbca (feat: add start up clearing of files and better base node stuck fix):src-tauri/src/node_adapter.rs
         ))
     }
 
