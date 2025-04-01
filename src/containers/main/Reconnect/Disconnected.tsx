@@ -5,7 +5,7 @@ import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
 import disconnectedImage from '/assets/img/disconnected.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
-import { ButtonWrapper, ConnectedButton, HeaderImg, TextWrapper, Wrapper } from './styles';
+import { RetryButton, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 
 const Disconnected: React.FC = () => {
@@ -14,16 +14,16 @@ const Disconnected: React.FC = () => {
     return (
         <Wrapper style={{ display: isReconnecting ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
-                <HeaderImg src={disconnectedImage} alt="Disconnected" />
+                <HeaderImg src={disconnectedImage} alt="Disconnected" style={{ width: 'min(60px, 66vh);' }} />
                 <TextWrapper>
                     <Title>{t('disconnect-title')}</Title>
                     <Typography>{t('disconnect-subtitle')}</Typography>
                 </TextWrapper>
                 <Stack gap={36}>
-                    <ButtonWrapper onClick={() => console.info('Clicked primary button')}>
+                    <RetryButton onClick={() => console.info('Clicked primary button')}>
                         {t('auto-reconnect')}
-                    </ButtonWrapper>
-                    <ConnectedButton onClick={() => setIsReconnecting(false)}>{t('cancel')}</ConnectedButton>
+                    </RetryButton>
+                    <SecondaryButton onClick={() => setIsReconnecting(false)}>{t('connect-now')}</SecondaryButton>
                 </Stack>
             </Stack>
         </Wrapper>

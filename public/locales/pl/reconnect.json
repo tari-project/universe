@@ -2,7 +2,7 @@
   "auto-reconnect": "Attempting to reconnect in:",
   "connect-now": "Connect Now",
   "disconnect-severe-subtitle": "We’ll keep trying to connect you to the Tari network. You can also try restarting your miner, or reaching out for support on Telegram if the issue persists.",
-  "disconnect-severe-title": "We’re having \\ntrouble getting you connected",
+  "disconnect-severe-title": "We’re having trouble getting you connected",
   "disconnect-subtitle": "Hang tight while we attempt to reconnect you to the network.",
   "disconnect-title": "Uh oh, you're not connected to the Tari network",
   "go-to-telegram": "Get Help on Telegram",

@@ -17,15 +17,35 @@ export const Wrapper = styled.div`
     align-items: center;
 `;
 
+export const SubTitle = styled(Typography)`
+    font-family: Poppins;
+    max-width: 700px;
+    font-weight: 400;
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: 0%;
+    text-align: center;
+`;
+
+export const HeaderImgSevere = styled.img`
+    width: min(660px, 100vh);
+    max-width: 100%;
+`;
+
 export const HeaderImg = styled.img`
     width: min(460px, 100vh);
     max-width: 100%;
 `;
 
-export const ButtonWrapper = styled.div`
-    width: 406;
-    height: 70;
-    gap: 10px;
+export const TelegramLogo = styled.img`
+    width: 18;
+    height: 15;
+    angle: -0 deg;
+    opacity: 0.5;
+`;
+
+export const RetryButton = styled.div`
+    max-width: 306px;
     border-radius: 50px;
     padding-top: 15px;
     padding-right: 30px;
@@ -42,9 +62,10 @@ export const TextWrapper = styled.div`
     gap: 20px;
     color: black;
     margin-bottom: 20px;
+    align-items: center;
 `;
 
-export const ConnectedButton = styled(Typography)`
+export const SecondaryButton = styled(Typography)`
     color: black;
     font-family: Poppins;
     font-weight: 600;
@@ -53,4 +74,8 @@ export const ConnectedButton = styled(Typography)`
     letter-spacing: 0%;
     text-align: center;
     opacity: 0.5;
+`;
+
+export const Separator = styled.div`
+    border: 1px solid rgba(0, 0, 0, 0.25);
 `;
