@@ -115,7 +115,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        _is_first_start: bool,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
         let status_shutdown = inner_shutdown.to_signal();
@@ -134,12 +134,24 @@ impl ProcessAdapter for MinotariNodeAdapter {
             info!(target: LOG_TARGET, "Node migration v1: removing peer db at {:?}", peer_db_dir);
 
             if peer_db_dir.exists() {
-                fs::remove_dir_all(peer_db_dir)?;
+                let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
+                    warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+                });
             }
             info!(target: LOG_TARGET, "Node Migration v1 complete");
             migration_info.version = 1;
         }
         migration_info.save(&migration_file)?;
+
+        if is_first_start {
+            let peer_db_dir = network_dir.join("peer_db");
+            if peer_db_dir.exists() {
+                info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+                let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
+                    warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+                });
+            }
+        }
 
         let config_dir = log_dir
             .clone()
@@ -178,6 +190,10 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.grpc_server_allow_methods=\"list_connected_peers, get_blocks\"".to_string(),
             "-p".to_string(),
             "base_node.p2p.allow_test_addresses=true".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
+            "-p".to_string(),
+            "base_node.p2p.dht.minimize_connections=true".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -204,7 +220,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
                 self.tcp_listener_port
             ));
             args.push("-p".to_string());
-            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+            args.push(
+                "base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string(),
+            );
             if let Some(mut tor_control_port) = self.tor_control_port {
                 // macos uses libtor, so will be 9051
                 if cfg!(target_os = "macos") {
