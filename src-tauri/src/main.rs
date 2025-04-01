@@ -136,6 +136,7 @@ mod telemetry_manager;
 mod telemetry_service;
 mod tests;
 mod tor_adapter;
+mod tor_control_client;
 mod tor_manager;
 mod updates_manager;
 mod utils;
@@ -1039,7 +1040,8 @@ fn main() {
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let tor_manager = TorManager::new(&mut stats_collector);
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(None);
+    let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
@@ -1050,6 +1052,7 @@ fn main() {
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
+        tor_watch_rx.clone(),
         stats_collector.build(),
     );
     let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());

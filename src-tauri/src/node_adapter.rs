@@ -44,6 +44,7 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
+use tari_utilities::epoch_time::EpochTime;
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
 use tokio::time::timeout;
@@ -283,6 +284,7 @@ pub(crate) struct BaseNodeStatus {
     pub block_height: u64,
     pub block_time: u64,
     pub is_synced: bool,
+    pub num_connections: u64,
 }
 
 impl Default for BaseNodeStatus {
@@ -294,6 +296,7 @@ impl Default for BaseNodeStatus {
             block_height: 0,
             block_time: 0,
             is_synced: false,
+            num_connections: 0,
         }
     }
 }
@@ -314,6 +317,18 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status.clone());
+                    if status.num_connections == 0 {
+                        return HealthStatus::Warning;
+                    }
+                    if EpochTime::now()
+                        .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
+                        .unwrap_or(EpochTime::from(0))
+                        .as_u64()
+                        > 1200
+                    {
+                        warn!(target: LOG_TARGET, "Base node height has not changed in twenty minutes");
+                        return HealthStatus::Warning;
+                    }
                     HealthStatus::Healthy
                 }
                 Err(e) => {
@@ -367,6 +382,7 @@ impl MinotariNodeStatusMonitor {
             block_height: metadata.best_block_height,
             block_time: metadata.timestamp,
             is_synced: res.initial_sync_achieved,
+            num_connections: res.num_connections,
         })
     }
 
