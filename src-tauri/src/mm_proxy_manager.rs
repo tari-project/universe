@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::os::windows::process;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Instant;
@@ -91,6 +92,7 @@ impl MmProxyManager {
             ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
+        process_watcher.expected_startup_time = std::time::Duration::from_secs(120);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
