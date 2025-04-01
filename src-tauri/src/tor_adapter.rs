@@ -321,6 +321,7 @@ impl StatusMonitor for TorStatusMonitor {
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
+                    warn!(target: LOG_TARGET, "Tor is not bootstrapped or network is unreachable: {:?}", status);
                     HealthStatus::Warning
                 }
             }
