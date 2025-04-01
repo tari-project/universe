@@ -38,7 +38,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::utils::shutdown_utils::stop_all_processes;
+use crate::utils::shutdown_utils::{resume_all_processes, stop_all_processes};
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -1830,5 +1830,13 @@ pub async fn set_selected_engine(
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+    resume_all_processes(app_handle)
+        .await
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
