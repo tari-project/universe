@@ -37,6 +37,7 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
+use tauri::async_runtime::block_on;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};
@@ -59,7 +60,14 @@ impl CpuMiner {
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
-        let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner());
+        let global_shutdown_signal = block_on(TasksTrackers::current().hardware_phase.get_signal());
+        let task_tracker = TasksTrackers::current().hardware_phase.get_task_tracker();
+        let process_watcher = ProcessWatcher::new(
+            xmrig_adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_cpu_miner(),
+        );
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             cpu_miner_status_watch_tx,

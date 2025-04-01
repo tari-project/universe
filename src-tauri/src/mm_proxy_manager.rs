@@ -86,8 +86,14 @@ impl Clone for MmProxyManager {
 impl MmProxyManager {
     pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
-        let mut process_watcher =
-            ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
+        let global_shutdown_signal = block_on(TasksTrackers::current().unknown_phase.get_signal());
+        let task_tracker = TasksTrackers::current().unknown_phase.get_task_tracker();
+        let mut process_watcher = ProcessWatcher::new(
+            sidecar_adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_mm_proxy(),
+        );
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
         process_watcher.expected_startup_time = std::time::Duration::from_secs(120);

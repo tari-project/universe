@@ -126,7 +126,14 @@ impl P2poolManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool());
+        let global_shutdown_signal = block_on(TasksTrackers::current().unknown_phase.get_signal());
+        let task_tracker = TasksTrackers::current().unknown_phase.get_task_tracker();
+        let mut process_watcher = ProcessWatcher::new(
+            adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_p2pool(),
+        );
         process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {

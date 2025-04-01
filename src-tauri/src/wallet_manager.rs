@@ -32,6 +32,7 @@ use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
+use tauri::async_runtime::block_on;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
 
@@ -69,7 +70,14 @@ impl WalletManager {
         let use_tor = false;
 
         let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
-        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
+        let global_shutdown_signal = block_on(TasksTrackers::current().wallet_phase.get_signal());
+        let task_tracker = TasksTrackers::current().wallet_phase.get_task_tracker();
+        let process_watcher = ProcessWatcher::new(
+            adapter,
+            global_shutdown_signal,
+            task_tracker,
+            stats_collector.take_wallet(),
+        );
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
