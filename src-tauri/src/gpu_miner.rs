@@ -39,6 +39,7 @@ use crate::binaries::{Binaries, BinaryResolver};
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::{
     app_config::MiningMode,
@@ -119,7 +120,6 @@ impl GpuMiner {
     #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
-        app_shutdown: ShutdownSignal,
         tari_address: TariAddress,
         node_source: GpuNodeSource,
         base_path: PathBuf,
@@ -129,6 +129,12 @@ impl GpuMiner {
         coinbase_extra: String,
         custom_gpu_grid_size: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
@@ -140,16 +146,17 @@ impl GpuMiner {
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
             .start(
-                app_shutdown.clone(),
                 base_path,
                 config_path,
                 log_path,
                 Binaries::GpuMiner,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
-        self.initialize_status_updates(app_shutdown).await;
+        self.initialize_status_updates(shutdown_signal).await;
 
         Ok(())
     }

@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
-use tokio::sync::watch::Receiver;
+use tokio::{select, sync::watch::Receiver};
 
 #[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
@@ -39,7 +39,7 @@ use crate::{
     events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
@@ -70,19 +70,25 @@ impl EventsManager {
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
         let events_service = self.events_service.clone();
         let app = app.clone();
-        TasksTracker::current().spawn(async move {
-            match events_service
-                .wait_for_wallet_scan(block_height, 1200)
-                .await
-            {
-                Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
-                    Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
-                    None => {
-                        error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
-                    }
-                },
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+
+            select! {
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
+                }
+                result = events_service.wait_for_wallet_scan(block_height, 1200) => {
+                    match result {
+                        Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
+                            Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
+                            None => {
+                                error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                            }
+                        },
+                        Err(e) => {
+                            error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+                        }
+                    };
                 }
             };
         });
@@ -91,7 +97,7 @@ impl EventsManager {
     pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
         let events_service = self.events_service.clone();
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             match events_service.wait_for_wallet_scan(block_height, 20).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
@@ -292,5 +298,12 @@ impl EventsManager {
 
     pub async fn handle_unlock_mining(&self, app: &AppHandle) {
         EventsEmitter::emit_unlock_mining(app).await;
+    }
+    pub async fn handle_lock_wallet(&self, app: &AppHandle) {
+        EventsEmitter::emit_lock_wallet(app).await;
+    }
+
+    pub async fn handle_lock_mining(&self, app: &AppHandle) {
+        EventsEmitter::emit_lock_mining(app).await;
     }
 }

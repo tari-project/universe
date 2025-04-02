@@ -35,7 +35,7 @@ use crate::{
     app_in_memory_config::AppInMemoryConfig,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 
@@ -97,6 +97,7 @@ impl TelemetryService {
         user: String,
     ) -> Result<(), TelemetryServiceError> {
         let os = PlatformUtils::detect_current_os();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         self.version = app_version;
         let mut cancellation_token = self.cancellation_token.clone();
@@ -110,7 +111,7 @@ impl TelemetryService {
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
-        TasksTracker::current().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             let system_info = SystemInfo {
                 version,
                 user_id: user,
@@ -143,6 +144,10 @@ impl TelemetryService {
                         }
                     },
                     _ = cancellation_token.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                        break;
+                    }
+                    _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
                         break;
                     }

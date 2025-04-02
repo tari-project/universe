@@ -31,16 +31,19 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info};
+use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{
-    watch::{Receiver, Sender},
-    Mutex,
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
 };
 
 use super::{
@@ -124,12 +127,18 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
-        TasksTracker::current().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
-
+        TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Unknown);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
@@ -149,15 +158,20 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                         }
                     }
                 }
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                }
             };
         });
     }
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
         let session_configuration = Self::load_session_configuration();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "[ {} Phase ] Check1", SetupPhase::Unknown);
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
@@ -166,6 +180,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .get_unique_string()
             .await;
 
+        info!(target: LOG_TARGET, "[ {} Phase ] Check2", SetupPhase::Unknown);
         if self.app_configuration.p2pool_enabled {
             let _unused = progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
@@ -177,11 +192,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
                 .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
                 .build()?;
-
+            info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
             state
                 .p2pool_manager
                 .ensure_started(
-                    state.shutdown.to_signal(),
                     p2pool_config,
                     data_dir.clone(),
                     config_dir.clone(),
@@ -197,6 +211,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
+        info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
+
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
         let config = state.config.read().await;
@@ -206,7 +222,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .start(StartConfig {
                 base_node_grpc_address,
                 p2pool_port,
-                app_shutdown: state.shutdown.to_signal().clone(),
                 base_path: data_dir.clone(),
                 config_path: config_dir.clone(),
                 log_path: log_dir.clone(),
@@ -217,6 +232,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 use_monero_fail: config.mmproxy_use_monero_fail(),
             })
             .await?;
+        info!(target: LOG_TARGET, "[ {} Phase ] Check5", SetupPhase::Unknown);
+
         state.mm_proxy_manager.wait_ready().await?;
 
         Ok(None)

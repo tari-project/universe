@@ -400,4 +400,26 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit UnlockMining event: {:?}", e);
         }
     }
+
+    pub async fn emit_lock_wallet(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::LockWallet,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit LockWallet event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_lock_mining(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::LockMining,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit LockMining event: {:?}", e);
+        }
+    }
 }

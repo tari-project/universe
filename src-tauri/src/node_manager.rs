@@ -49,6 +49,8 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::{LocalNodeAdapter, RemoteNodeAdapter};
+use crate::tasks_tracker::TasksTrackers;
+use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -137,7 +139,6 @@ impl NodeManager {
     #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -147,6 +148,8 @@ impl NodeManager {
     ) -> Result<(), NodeManagerError> {
         println!("------------------------ensure_started start");
         let node_type = self.node_type.read().await;
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         match &*node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
@@ -159,11 +162,12 @@ impl NodeManager {
                     local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
                     local_node_watcher
                         .start(
-                            app_shutdown.clone(),
                             base_path.clone(),
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -179,11 +183,12 @@ impl NodeManager {
                     }
                     remote_node_watcher
                         .start(
-                            app_shutdown,
                             base_path,
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -201,11 +206,12 @@ impl NodeManager {
                     }
                     remote_node_watcher
                         .start(
-                            app_shutdown.clone(),
                             base_path.clone(),
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -217,11 +223,12 @@ impl NodeManager {
                     local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
                     local_node_watcher
                         .start(
-                            app_shutdown,
                             base_path,
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -237,12 +244,14 @@ impl NodeManager {
     #[allow(dead_code)]
     pub async fn start(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         println!("------------------------start - start");
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
         let node_type = self.node_type.read().await;
         match &*node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
@@ -250,11 +259,12 @@ impl NodeManager {
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
                     local_node_watcher
                         .start(
-                            app_shutdown.clone(),
                             base_path.clone(),
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -264,11 +274,12 @@ impl NodeManager {
                 if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
                     remote_node_watcher
                         .start(
-                            app_shutdown,
                             base_path,
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -278,11 +289,12 @@ impl NodeManager {
                 if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
                     remote_node_watcher
                         .start(
-                            app_shutdown.clone(),
                             base_path.clone(),
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }
@@ -291,11 +303,12 @@ impl NodeManager {
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
                     local_node_watcher
                         .start(
-                            app_shutdown,
                             base_path,
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
+                            shutdown_signal,
+                            task_tracker,
                         )
                         .await?;
                 }

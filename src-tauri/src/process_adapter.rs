@@ -33,10 +33,10 @@ use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+use tokio_util::task::TaskTracker;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
-use crate::tasks_tracker::TasksTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -114,7 +114,7 @@ pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
 #[async_trait]
 pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
     fn ping(&self) -> bool;
-    async fn start(&mut self) -> Result<(), anyhow::Error>;
+    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
     async fn stop(&mut self) -> Result<i32, anyhow::Error>;
     fn is_shutdown_triggered(&self) -> bool;
     async fn wait(&mut self) -> Result<i32, anyhow::Error>;
@@ -145,7 +145,7 @@ impl ProcessInstanceTrait for ProcessInstance {
             .unwrap_or_else(|| false)
     }
 
-    async fn start(&mut self) -> Result<(), anyhow::Error> {
+    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
         if self.handle.is_some() {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
@@ -161,7 +161,7 @@ impl ProcessInstanceTrait for ProcessInstance {
             return Ok(());
         };
 
-        self.handle = Some(TasksTracker::current().spawn(async move {
+        self.handle = Some(task_tracker.spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
             info!(target: LOG_TARGET, "Launching process for: {}", spec.name);

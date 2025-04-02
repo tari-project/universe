@@ -26,7 +26,6 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::ShutdownSignal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 
@@ -34,12 +33,12 @@ use crate::mm_proxy_adapter::{MergeMiningProxyAdapter, MergeMiningProxyConfig};
 use crate::port_allocator::PortAllocator;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
 #[derive(Clone)]
 pub(crate) struct StartConfig {
-    pub app_shutdown: ShutdownSignal,
     pub base_path: PathBuf,
     pub config_path: PathBuf,
     pub log_path: PathBuf,
@@ -126,6 +125,12 @@ impl MmProxyManager {
     }
 
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .unknown_phase
+            .get_task_tracker()
+            .await;
+
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
@@ -144,11 +149,12 @@ impl MmProxyManager {
         info!(target: LOG_TARGET, "Starting mmproxy");
         process_watcher
             .start(
-                config.app_shutdown,
                 config.base_path,
                 config.config_path,
                 config.log_path,
                 crate::binaries::Binaries::MergeMiningProxy,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
 

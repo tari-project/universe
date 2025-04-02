@@ -31,7 +31,7 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -39,6 +39,7 @@ use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
+    select,
     sync::{
         watch::{Receiver, Sender},
         Mutex,
@@ -119,11 +120,19 @@ impl SetupPhaseImpl for NodeSetupPhase {
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
-        TasksTracker::current().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
+
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
@@ -143,6 +152,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         }
                     }
                 }
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
+                }
             };
         });
     }
@@ -157,10 +169,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
+
+        // Note: it starts 2 processes of node
+        // for _i in 0..2 {
         match state
             .node_manager
             .ensure_started(
-                state.shutdown.to_signal(),
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
@@ -176,6 +190,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     if STOP_ON_ERROR_CODES.contains(&code) {
                         warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
                         state.node_manager.clean_data_folder(&data_dir).await?;
+                        // continue;
                     }
                 }
                 error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
@@ -184,6 +199,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 return Err(e.into());
             }
         }
+        // }
 
         let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
@@ -235,11 +251,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .handle_node_phase_finished(&self.app_handle, true)
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        let mut shutdown_signal = state.shutdown.to_signal();
-        TasksTracker::current().spawn(async move {
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
             let mut has_send_error = false;
 

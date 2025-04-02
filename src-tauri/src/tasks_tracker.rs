@@ -20,27 +20,82 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.use crate::UniverseAppState;
 
+use log::info;
 use std::sync::LazyLock;
+use tari_shutdown::{Shutdown, ShutdownSignal};
+use tokio::sync::RwLock;
 use tokio_util::task::TaskTracker;
 
-use tauri::Manager;
+static LOG_TARGET: &str = "tari::universe::tasks_tracker";
+static INSTANCE: LazyLock<TasksTrackers> = LazyLock::new(TasksTrackers::new);
 
-use crate::UniverseAppState;
+pub struct TaskTrackerUtil {
+    name: &'static str,
+    shutdown: RwLock<Shutdown>,
+    task_tracker: RwLock<TaskTracker>,
+}
+impl TaskTrackerUtil {
+    pub fn new(name: &'static str) -> Self {
+        Self {
+            name,
+            shutdown: RwLock::new(Shutdown::new()),
+            task_tracker: RwLock::new(TaskTracker::new()),
+        }
+    }
 
-static INSTANCE: LazyLock<TaskTracker> = LazyLock::new(TaskTracker::new);
+    pub async fn get_signal(&self) -> ShutdownSignal {
+        self.shutdown.read().await.to_signal()
+    }
+    pub async fn get_task_tracker(&self) -> TaskTracker {
+        self.task_tracker.read().await.clone()
+    }
+    pub async fn close(&self) {
+        info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
+        self.shutdown.write().await.trigger();
+        info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
+        self.task_tracker.read().await.close();
+        info!(target: LOG_TARGET, "Waiting for {} processes to finish", self.name);
+        self.task_tracker.read().await.wait().await;
+        info!(target: LOG_TARGET, "{} processes have finished", self.name);
+    }
 
-pub struct TasksTracker {}
+    pub async fn replace(&self) {
+        *self.shutdown.write().await = Shutdown::new();
+        *self.task_tracker.write().await = TaskTracker::new();
+    }
+}
 
-impl TasksTracker {
-    pub fn current() -> &'static TaskTracker {
+pub struct TasksTrackers {
+    pub wallet_phase: TaskTrackerUtil,
+    pub hardware_phase: TaskTrackerUtil,
+    pub unknown_phase: TaskTrackerUtil,
+    pub node_phase: TaskTrackerUtil,
+    pub core_phase: TaskTrackerUtil,
+    pub common: TaskTrackerUtil,
+}
+
+impl TasksTrackers {
+    fn new() -> Self {
+        Self {
+            wallet_phase: TaskTrackerUtil::new("Wallet phase"),
+            hardware_phase: TaskTrackerUtil::new("Hardware phase"),
+            unknown_phase: TaskTrackerUtil::new("Unknown phase"),
+            node_phase: TaskTrackerUtil::new("Node phase"),
+            core_phase: TaskTrackerUtil::new("Core phase"),
+            common: TaskTrackerUtil::new("Common"),
+        }
+    }
+
+    pub fn current() -> &'static TasksTrackers {
         &INSTANCE
     }
 
-    pub async fn stop_all_processes(app_handle: tauri::AppHandle) {
-        let state = app_handle.state::<UniverseAppState>().inner();
-        state.shutdown.clone().trigger();
-        let tasks_tracker = Self::current();
-        tasks_tracker.close();
-        tasks_tracker.wait().await;
+    pub async fn stop_all_processes(&self) {
+        self.common.close().await;
+        self.core_phase.close().await;
+        self.wallet_phase.close().await;
+        self.hardware_phase.close().await;
+        self.unknown_phase.close().await;
+        self.node_phase.close().await;
     }
 }

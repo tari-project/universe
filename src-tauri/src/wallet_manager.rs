@@ -24,6 +24,7 @@ use crate::node_manager::NodeManager;
 use crate::node_manager::NodeManagerError;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
@@ -83,6 +84,12 @@ impl WalletManager {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
+        let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await;
+
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
 
@@ -100,11 +107,12 @@ impl WalletManager {
 
         process_watcher
             .start(
-                app_shutdown,
                 base_path,
                 config_path,
                 log_path,
                 crate::binaries::Binaries::Wallet,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;

@@ -24,16 +24,26 @@ import {
 } from '@app/store/actions/appStateStoreActions';
 import { setWalletAddress, setWalletBalance } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { handleAppUnlocked, handleMiningUnlocked, handleWalletUnlocked } from '@app/store/actions/setupStoreActions';
+import {
+    handleAppUnlocked,
+    handleMiningLocked,
+    handleMiningUnlocked,
+    handleWalletLocked,
+    handleWalletUnlocked,
+} from '@app/store/actions/setupStoreActions';
 
 const LOG_EVENT_TYPES = [
-    'ResumingAllProcesses',
-    'StuckOnOrphanChain',
-    'MissingApplications',
-    'CriticalProblem',
-    'DetectedDevices',
-    'DetectedAvailableGpuEngines',
-    'AppConfigLoaded',
+    // 'ResumingAllProcesses',
+    // 'StuckOnOrphanChain',
+    // 'MissingApplications',
+    // 'CriticalProblem',
+    // 'DetectedDevices',
+    // 'DetectedAvailableGpuEngines',
+    // 'AppConfigLoaded',
+    'LockMining',
+    'LockWallet',
+    'UnlockMining',
+    'UnlockWallet',
 ];
 
 const useTauriEventsListener = () => {
@@ -74,6 +84,12 @@ const useTauriEventsListener = () => {
                         break;
                     case 'UnlockMining':
                         handleMiningUnlocked();
+                        break;
+                    case 'LockMining':
+                        handleMiningLocked();
+                        break;
+                    case 'LockWallet':
+                        handleWalletLocked();
                         break;
                     case 'WalletAddressUpdate':
                         setWalletAddress(event.payload);

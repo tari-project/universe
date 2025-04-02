@@ -26,6 +26,7 @@ use crate::{
     events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
+    tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
 use log::{error, info, warn};
@@ -101,12 +102,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
 
         state
             .tor_manager
-            .ensure_started(
-                state.shutdown.to_signal(),
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-            )
+            .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
             .await?;
         tor_control_port = state.tor_manager.get_control_port().await?;
     }
@@ -129,7 +125,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         match state
             .node_manager
             .ensure_started(
-                state.shutdown.to_signal(),
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
@@ -174,7 +169,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     state
         .wallet_manager
         .ensure_started(
-            state.shutdown.to_signal(),
+            TasksTrackers::current().wallet_phase.get_signal().await,
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
@@ -201,7 +196,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner
         .start_benchmarking(
-            state.shutdown.to_signal(),
             Duration::from_secs(30),
             data_dir.clone(),
             config_dir.clone(),
@@ -235,7 +229,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         state
             .p2pool_manager
             .ensure_started(
-                state.shutdown.to_signal(),
                 p2pool_config,
                 data_dir.clone(),
                 config_dir.clone(),
@@ -265,7 +258,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .start(StartConfig {
             base_node_grpc_address,
             p2pool_port,
-            app_shutdown: state.shutdown.to_signal().clone(),
             base_path: data_dir.clone(),
             config_path: config_dir.clone(),
             log_path: log_dir.clone(),

@@ -33,10 +33,9 @@ use tokio::sync::RwLock;
 
 use crate::{
     app_config::AppConfig,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
-use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -81,15 +80,13 @@ pub struct AskForUpdatePayload {
 pub struct UpdatesManager {
     config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
-    app_shutdown: ShutdownSignal,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+    pub fn new(config: Arc<RwLock<AppConfig>>) -> Self {
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
-            app_shutdown,
         }
     }
 
@@ -98,8 +95,8 @@ impl UpdatesManager {
         let app_clone = app.clone();
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
-        let mut shutdown_signal = self_clone.app_shutdown.clone();
-        TasksTracker::current().spawn(async move {
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {
