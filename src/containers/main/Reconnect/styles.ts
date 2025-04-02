@@ -78,7 +78,3 @@ export const SecondaryButton = styled(Typography)`
     text-align: center;
     opacity: 0.5;
 `;
-
-export const Separator = styled.div`
-    border: 1px solid rgba(0, 0, 0, 0.25);
-`;

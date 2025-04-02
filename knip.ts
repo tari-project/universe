@@ -11,7 +11,7 @@ const config: KnipConfig = {
         duplicates: 'error',
     },
     ignoreBinaries: ['commitlint'],
-    ignoreDependencies: ['babel-plugin-styled-components'], // needed by plugins
+    ignoreDependencies: ['babel-plugin-styled-components', 'prettier-eslint'], // needed by plugins
     ignoreExportsUsedInFile: true,
 };
 
