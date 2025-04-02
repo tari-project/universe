@@ -1,5 +1,6 @@
 import { useUIStore } from '@app/store';
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
@@ -13,8 +14,21 @@ import { invoke } from '@tauri-apps/api/core';
 
 const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
+    const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const countdown = useCountdown(5, () => invoke('reconnect'));
+    const { seconds, startCountdown, stopCountdown } = useCountdown([300]);
+
+    useEffect(() => {
+        if (!isVisible && connectionStatus === 'disconnected-severe') {
+            setIsVisible(true);
+            startCountdown();
+        }
+        return () => {
+            setIsVisible(false);
+            stopCountdown();
+        };
+    }, [connectionStatus]);
+
     const openTelegram = () => {
         open('https://t.me/tariproject');
     };
@@ -33,7 +47,7 @@ const DisconnectedSevere: React.FC = () => {
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
                     <RetryButton>
-                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(countdown.seconds)}</b>
+                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
                     </RetryButton>
                     <Stack direction="row" gap={30}>
                         <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>

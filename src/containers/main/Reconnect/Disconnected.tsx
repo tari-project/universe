@@ -1,5 +1,5 @@
 import { useUIStore } from '@app/store';
-import React, { useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import disconnectedImage from '/assets/img/disconnected.png';
 import { Stack } from '@app/components/elements/Stack';
@@ -8,24 +8,25 @@ import { RetryButton, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from '.
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
-import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 
 const ConnectionAttemptIntervalsInSecs = [60, 120, 240];
 
 const Disconnected: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
+    const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const [attempt, setAttempt] = React.useState(0);
+    const { seconds, startCountdown, stopCountdown } = useCountdown(ConnectionAttemptIntervalsInSecs);
 
-    const autoReconnect = useCallback(() => {
-        invoke('reconnect');
-        const currentAttempt = Math.min(attempt + 1, 2);
-        if (currentAttempt === 2) {
-            setConnectionStatus('disconnected-severe');
+    useEffect(() => {
+        if (!isVisible && connectionStatus === 'disconnected') {
+            setIsVisible(true);
+            startCountdown();
         }
-        setAttempt(currentAttempt);
-    }, [setAttempt, attempt]);
-    const countdown = useCountdown(ConnectionAttemptIntervalsInSecs[attempt], autoReconnect);
+        return () => {
+            setIsVisible(false);
+            stopCountdown();
+        };
+    }, [connectionStatus]);
 
     return (
         <Wrapper style={{ display: connectionStatus === 'disconnected' ? 'block' : 'none' }}>
@@ -37,7 +38,7 @@ const Disconnected: React.FC = () => {
                 </TextWrapper>
                 <Stack gap={36}>
                     <RetryButton>
-                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(countdown.seconds)}</b>
+                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
                     </RetryButton>
                     <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>
                 </Stack>

@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
+import { invoke } from '@tauri-apps/api/core';
+import React from 'react';
+import { useCallback } from 'react';
 
-/**
- * Represents the state of the simple seconds countdown.
- */
 interface CountdownResult {
-    /** The number of seconds remaining in the countdown. */
     seconds: number;
-    /** Boolean indicating if the countdown has finished (reached zero). */
-    isFinished: boolean;
+    startCountdown: () => void;
+    stopCountdown: () => void;
 }
 
 /**
@@ -19,68 +18,68 @@ interface CountdownResult {
  * @returns An object containing the remaining seconds and a boolean
  *          indicating if the countdown has finished.
  */
-export const useCountdown = (initialSeconds: number, onFinish?: () => void): CountdownResult => {
-    // Ensure initialSeconds is a non-negative integer
-    const validInitialSeconds = Math.max(0, Math.floor(initialSeconds));
+export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
+    const [attempt, setAttempt] = React.useState(0);
+    const retryConnectionTimeout = React.useRef<NodeJS.Timeout | null>(null);
+    const countdownInterval = React.useRef<NodeJS.Timeout | null>(null);
+    const [countdown, setCoutdown] = React.useState(0);
 
-    const [timeLeft, setTimeLeft] = useState<CountdownResult>({
-        seconds: validInitialSeconds,
-        isFinished: validInitialSeconds <= 0,
-    });
-
-    // Effect for handling the countdown timer interval
-    useEffect(() => {
-        // Reset the countdown state if initialSeconds changes
-        setTimeLeft({
-            seconds: validInitialSeconds,
-            isFinished: validInitialSeconds <= 0,
-        });
-
-        // Don't start the interval if the countdown is already finished initially
-        if (validInitialSeconds <= 0) {
-            return; // No interval needed
+    const reconnect = useCallback(() => {
+        invoke('reconnect');
+        const currentAttempt = Math.min(attempt + 1, intervalsInSecs.length - 1);
+        if (currentAttempt === 2) {
+            setConnectionStatus('disconnected-severe');
         }
+        setAttempt(currentAttempt);
+    }, [setAttempt, attempt]);
 
-        // Set up the interval timer
-        const timer = setInterval(() => {
-            // Use functional update to get the latest state
-            setTimeLeft((prevTimeLeft) => {
-                // If for some reason the interval runs after finishing, stop it and return current state.
-                if (prevTimeLeft.isFinished) {
-                    clearInterval(timer);
-                    return prevTimeLeft;
+    const startConnectionRetry = useCallback(() => {
+        retryConnectionTimeout.current = setTimeout(() => {
+            reconnect();
+        }, intervalsInSecs[attempt] * 1000);
+    }, [attempt]);
+
+    const stopConnectionRetry = useCallback(() => {
+        if (retryConnectionTimeout.current) {
+            clearTimeout(retryConnectionTimeout.current);
+        }
+    }, []);
+
+    const startCountdown = useCallback(() => {
+        setCoutdown(intervalsInSecs[attempt]);
+        countdownInterval.current = setInterval(() => {
+            setCoutdown((prev) => {
+                if (prev === 0) {
+                    if (countdownInterval.current) {
+                        clearInterval(countdownInterval.current);
+                        countdownInterval.current = null;
+                    }
+                    return prev;
                 }
-
-                const newSeconds = prevTimeLeft.seconds - 1;
-                const isFinished = newSeconds <= 0;
-
-                // Clear interval inside the state setter to ensure
-                // it's cleared exactly when the state indicates finished.
-                if (isFinished) {
-                    clearInterval(timer);
-                }
-
-                return {
-                    seconds: newSeconds,
-                    isFinished: isFinished,
-                };
+                return prev - 1;
             });
-        }, 1000); // Update every second
+        }, 1000);
+    }, [attempt]);
 
-        // Cleanup function to clear the interval when the component unmounts
-        // or when the initialSeconds changes before the countdown finishes.
-        return () => clearInterval(timer);
-    }, [validInitialSeconds]); // Re-run the effect only if validInitialSeconds changes
-
-    // Effect for handling the onFinish callback trigger
-    useEffect(() => {
-        // Check if the countdown has finished and a callback is provided
-        if (timeLeft.isFinished && onFinish) {
-            onFinish();
+    const stopCountdown = useCallback(() => {
+        if (countdownInterval.current) {
+            clearInterval(countdownInterval.current);
         }
-        // This effect runs whenever the finished state changes or the callback identity changes.
-        // It ensures the callback is called if the state becomes finished.
-    }, [timeLeft.isFinished, onFinish]);
+    }, []);
 
-    return timeLeft;
+    const startRetry = useCallback(() => {
+        startConnectionRetry();
+        startCountdown();
+    }, [startConnectionRetry, startCountdown]);
+
+    const stopRetry = useCallback(() => {
+        stopConnectionRetry();
+        stopCountdown();
+    }, [stopConnectionRetry, stopCountdown]);
+
+    return {
+        seconds: countdown,
+        startCountdown,
+        stopCountdown,
+    };
 };
