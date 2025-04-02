@@ -53,7 +53,7 @@ export const updateRemoteNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePay
 };
 
 export const updateLocalNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
-    useSetupStore.setState({ local_node_phase_setup_payload: payload });
+    useSetupStore.setState({ node_phase_setup_payload: payload });
 };
 
 export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {

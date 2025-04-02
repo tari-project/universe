@@ -25,12 +25,12 @@ export default function Progress() {
     const { t } = useTranslation('setup-progresses');
     const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
-    const localNodePhaseInfoPayload = useSetupStore((state) => state.local_node_phase_setup_payload);
+    const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
 
     console.log('corePhaseInfoPayload', corePhaseInfoPayload);
     console.log('hardwarePhaseInfoPayload', hardwarePhaseInfoPayload);
-    console.log('localNodePhaseInfoPayload', localNodePhaseInfoPayload);
+    console.log('nodePhaseInfoPayload', nodePhaseInfoPayload);
     console.log('unknownPhaseInfoPayload', unknownPhaseInfoPayload);
 
     const currentPhaseToShow = useMemo(() => {
@@ -38,16 +38,16 @@ export default function Progress() {
             return unknownPhaseInfoPayload;
         }
 
-        if (localNodePhaseInfoPayload?.is_complete) {
+        if (nodePhaseInfoPayload?.is_complete) {
             return hardwarePhaseInfoPayload;
         }
 
         if (corePhaseInfoPayload?.is_complete) {
-            return localNodePhaseInfoPayload;
+            return nodePhaseInfoPayload;
         }
 
         return corePhaseInfoPayload;
-    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, localNodePhaseInfoPayload, unknownPhaseInfoPayload]);
+    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
 
     const setupPhaseTitle = currentPhaseToShow?.phase_title;
     const setupTitle = currentPhaseToShow?.title;
