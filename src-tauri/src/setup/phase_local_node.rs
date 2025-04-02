@@ -121,12 +121,10 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::LocalNode);
-
         TasksTracker::current().spawn(async move {
             for subscriber in &mut flow_subscribers.iter_mut() {
                 let _unused = subscriber.wait_for(|value| value.is_success()).await;
             };
-
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
@@ -155,7 +153,6 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-
         info!(target: LOG_TARGET, "Starting node manager with base node address: {}", self.app_configuration.base_node_grpc_address);
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
@@ -164,35 +161,31 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
                 ProgressSetupLocalNodePlan::StartingLocalNode,
             ))
             .await;
-
-        for _i in 0..2 {
-            match state
-                .node_manager
-                .ensure_started(
-                    state.shutdown.to_signal(),
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                    self.app_configuration.use_tor,
-                    tor_control_port,
-                    Some(self.app_configuration.base_node_grpc_address.clone()),
-                )
-                .await
-            {
-                Ok(_) => {}
-                Err(e) => {
-                    if let NodeManagerError::ExitCode(code) = e {
-                        if STOP_ON_ERROR_CODES.contains(&code) {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
-                            state.node_manager.clean_data_folder(&data_dir).await?;
-                            continue;
-                        }
+        match state
+            .node_manager
+            .ensure_started(
+                state.shutdown.to_signal(),
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+                self.app_configuration.use_tor,
+                tor_control_port,
+                Some(self.app_configuration.base_node_grpc_address.clone()),
+            )
+            .await
+        {
+            Ok(_) => {}
+            Err(e) => {
+                if let NodeManagerError::ExitCode(code) = e {
+                    if STOP_ON_ERROR_CODES.contains(&code) {
+                        warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                        state.node_manager.clean_data_folder(&data_dir).await?;
                     }
-                    error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
-
-                    self.app_handle.exit(-1);
-                    return Err(e.into());
                 }
+                error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
+
+                self.app_handle.exit(-1);
+                return Err(e.into());
             }
         }
 

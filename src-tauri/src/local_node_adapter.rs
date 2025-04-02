@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::node_manager::{NodeClient, NodeIdentity};
+use crate::node_manager::NodeIdentity;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -75,40 +75,60 @@ impl MinotariNodeMigrationInfo {
     }
 }
 
-pub(crate) struct MinotariNodeAdapter {
+#[derive(Clone)]
+pub(crate) struct LocalNodeAdapter {
+    pub(crate) grpc_address: Option<(String, u16)>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
+    //////////
     pub(crate) use_tor: bool,
-    pub(crate) grpc_port: u16,
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
-    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
-impl MinotariNodeAdapter {
+impl LocalNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
-        let port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            grpc_port: port,
+            grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
+            status_broadcast,
+            //////////
             tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
-            status_broadcast,
         }
     }
 
+    pub fn grpc_address(&self) -> Option<&(String, u16)> {
+        self.grpc_address.as_ref()
+    }
+
     pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
-        Some(MinotariNodeClient::new(
-            format!("http://127.0.0.1:{}", self.grpc_port),
-            self.required_initial_peers,
-        ))
+        if let Some(grpc_address) = self.grpc_address() {
+            Some(MinotariNodeClient::new(
+                format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                self.required_initial_peers,
+            ))
+        } else {
+            None
+        }
+    }
+
+    ///////////////////////////////////
+    pub fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    pub fn tor_control_port(&mut self, tor_control_port: Option<u16>) {
+        self.tor_control_port = tor_control_port;
     }
 }
 
-impl ProcessAdapter for MinotariNodeAdapter {
+impl ProcessAdapter for LocalNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
     type ProcessInstance = ProcessInstance;
 
@@ -155,6 +175,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
         )?;
         let working_dir_string = convert_to_string(working_dir)?;
         let config_dir_string = convert_to_string(config_dir)?;
+        let grpc_address = self
+            .grpc_address()
+            .expect("Local node grpc address not defined");
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -166,8 +189,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),
             format!(
-                "base_node.grpc_address=/ip4/127.0.0.1/tcp/{}",
-                self.grpc_port
+                "base_node.grpc_address=/ip4/{}/tcp/{}",
+                grpc_address.0,
+                grpc_address.1
             ),
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
@@ -258,7 +282,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             },
             MinotariNodeStatusMonitor::new(
                 MinotariNodeClient::new(
-                    format!("http://127.0.0.1:{}", self.grpc_port),
+                    format!("http://{}:{}", grpc_address.0, grpc_address.1),
                     self.required_initial_peers,
                 ),
                 self.status_broadcast.clone(),
@@ -274,6 +298,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
         "node_pid"
     }
 }
+
+//////////////////////////////////////////////////////
 
 #[derive(Debug, thiserror::Error)]
 pub enum MinotariNodeStatusMonitorError {
@@ -306,6 +332,7 @@ impl Default for BaseNodeStatus {
     }
 }
 
+// This one is ours top-level implementation / Wrapper - Facade
 #[derive(Debug, Clone)]
 pub(crate) struct MinotariNodeClient {
     grpc_address: String,
@@ -319,66 +346,10 @@ impl MinotariNodeClient {
             required_sync_peers,
         }
     }
-}
-
-#[derive(Clone)]
-pub(crate) struct MinotariNodeStatusMonitor {
-    node_client: MinotariNodeClient,
-    status_broadcast: watch::Sender<BaseNodeStatus>,
-}
-
-impl MinotariNodeStatusMonitor {
-    pub fn new(
-        node_client: MinotariNodeClient,
-        status_broadcast: watch::Sender<BaseNodeStatus>,
-    ) -> Self {
-        Self {
-            node_client,
-            status_broadcast,
-        }
-    }
 
     pub async fn get_network_state(
         &self,
     ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
-        self.node_client.get_network_state().await
-    }
-}
-
-#[async_trait]
-impl StatusMonitor for MinotariNodeStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
-        let duration = std::time::Duration::from_secs(5);
-        match timeout(duration, self.node_client.get_network_state()).await {
-            Ok(res) => match res {
-                Ok(status) => {
-                    let _res = self.status_broadcast.send(status.clone());
-                    HealthStatus::Healthy
-                }
-                Err(e) => {
-                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
-                    HealthStatus::Unhealthy
-                }
-            },
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
-                match self.node_client.get_identity().await {
-                    Ok(_) => {
-                        return HealthStatus::Healthy;
-                    }
-                    Err(e) => {
-                        warn!(target: LOG_TARGET, "Error checking base node identity: {:?}", e);
-                        return HealthStatus::Unhealthy;
-                    }
-                }
-            }
-        }
-    }
-}
-
-#[async_trait]
-impl NodeClient for MinotariNodeClient {
-    async fn get_network_state(&self) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
             .await
             .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
@@ -407,7 +378,10 @@ impl NodeClient for MinotariNodeClient {
         })
     }
 
-    async fn get_historical_blocks(&self, heights: Vec<u64>) -> Result<Vec<(u64, String)>, Error> {
+    pub async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, Error> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
 
         let mut res = client
@@ -433,7 +407,7 @@ impl NodeClient for MinotariNodeClient {
         Ok(blocks)
     }
 
-    async fn get_identity(&self) -> Result<NodeIdentity, Error> {
+    pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
 
         let id = client.identify(Empty {}).await?;
@@ -447,7 +421,7 @@ impl NodeClient for MinotariNodeClient {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn wait_synced(
+    pub async fn wait_synced(
         &self,
         progress_tracker: Vec<Option<ChanneledStepUpdate>>,
         shutdown_signal: ShutdownSignal,
@@ -460,6 +434,7 @@ impl NodeClient for MinotariNodeClient {
             if shutdown_signal.is_triggered() {
                 break Ok(());
             }
+
             let tip = client
                 .get_tip_info(Empty {})
                 .await
@@ -571,9 +546,58 @@ impl NodeClient for MinotariNodeClient {
         }
     }
 
-    async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
+    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
         let connected_peers = client.list_connected_peers(Empty {}).await?;
         Ok(connected_peers.into_inner().connected_peers)
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct MinotariNodeStatusMonitor {
+    node_client: MinotariNodeClient,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
+}
+
+impl MinotariNodeStatusMonitor {
+    pub fn new(
+        node_client: MinotariNodeClient,
+        status_broadcast: watch::Sender<BaseNodeStatus>,
+    ) -> Self {
+        Self {
+            node_client,
+            status_broadcast,
+        }
+    }
+}
+
+#[async_trait]
+impl StatusMonitor for MinotariNodeStatusMonitor {
+    async fn check_health(&self) -> HealthStatus {
+        let duration = std::time::Duration::from_secs(5);
+        match timeout(duration, self.node_client.get_network_state()).await {
+            Ok(res) => match res {
+                Ok(status) => {
+                    let _res = self.status_broadcast.send(status.clone());
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(e) => {
+                warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
+                match self.node_client.get_identity().await {
+                    Ok(_) => {
+                        return HealthStatus::Healthy;
+                    }
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Error checking base node identity: {:?}", e);
+                        return HealthStatus::Unhealthy;
+                    }
+                }
+            }
+        }
     }
 }
