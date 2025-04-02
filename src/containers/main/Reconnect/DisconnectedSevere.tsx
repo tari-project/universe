@@ -7,10 +7,11 @@ import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
 import telegramLogo from '/assets/img/telegram_logo.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
-import { RetryButton, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
+import { RetryTimer, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
+import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
 
 const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
@@ -33,6 +34,11 @@ const DisconnectedSevere: React.FC = () => {
         open('https://t.me/tariproject');
     };
 
+    const reconnect = () => {
+        invoke('reconnect');
+        setIsReconnecting(true);
+    };
+
     return (
         <Wrapper style={{ display: connectionStatus === 'disconnected-severe' ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
@@ -46,11 +52,11 @@ const DisconnectedSevere: React.FC = () => {
                     <SubTitle>{t('disconnect-severe-subtitle')}</SubTitle>
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
-                    <RetryButton>
+                    <RetryTimer>
                         {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
-                    </RetryButton>
+                    </RetryTimer>
                     <Stack direction="row" gap={30}>
-                        <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>
+                        <SecondaryButton onClick={reconnect}>{t('connect-now')}</SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
                         <SecondaryButton onClick={() => invoke('restart_application')}>
                             {t('restart-app')}

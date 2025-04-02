@@ -26,6 +26,7 @@ interface UIStoreState {
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
     connectionStatus?: CONNECTION_STATUS;
+    isReconnecting?: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -39,6 +40,7 @@ const initialState: UIStoreState = {
     showExperimental: false,
     showExternalDependenciesDialog: false,
     connectionStatus: 'connected',
+    isReconnecting: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

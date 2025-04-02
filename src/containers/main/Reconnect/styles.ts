@@ -43,13 +43,10 @@ export const TelegramLogo = styled.img`
     display: inline-block;
 `;
 
-export const RetryButton = styled.div`
+export const RetryTimer = styled.div`
     display: inline-block;
     border-radius: 50px;
-    padding-top: 15px;
-    padding-right: 30px;
-    padding-bottom: 15px;
-    padding-left: 30px;
+    padding: 15px 30px;
     background: linear-gradient(to right, #ffaf40, #ff825f);
     color: white;
     box-shadow: 0px 0px 34px 0px rgba(255, 213, 167, 0.75);
