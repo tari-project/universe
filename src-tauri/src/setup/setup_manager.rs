@@ -425,6 +425,21 @@ impl SetupManager {
         }
     }
 
+<<<<<<< HEAD
+=======
+    pub async fn handle_switch_to_local_node(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Switching to Local Node");
+        self.lock_mining(app_handle.clone()).await;
+        self.lock_wallet(app_handle.clone()).await;
+        info!(target: LOG_TARGET, "Restarting Phases");
+        self.restart_phases(
+            app_handle.clone(),
+            vec![SetupPhase::Wallet, SetupPhase::Unknown],
+        )
+        .await;
+    }
+
+>>>>>>> 7847d076 (move lock logic to seperate function)
     async fn unlock_app(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Unlocking App");
         *self.is_app_unlocked.lock().await = true;
@@ -452,14 +467,20 @@ impl SetupManager {
     }
 
     async fn lock_mining(&self, app_handle: AppHandle) {
+<<<<<<< HEAD
         info!(target: LOG_TARGET, "Locking Mining");
+=======
+>>>>>>> 7847d076 (move lock logic to seperate function)
         *self.is_mining_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_mining(&app_handle).await;
     }
 
     async fn lock_wallet(&self, app_handle: AppHandle) {
+<<<<<<< HEAD
         info!(target: LOG_TARGET, "Locking Wallet");
+=======
+>>>>>>> 7847d076 (move lock logic to seperate function)
         *self.is_wallet_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_wallet(&app_handle).await;
