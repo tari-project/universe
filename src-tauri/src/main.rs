@@ -426,6 +426,11 @@ async fn setup_inner(
         .expect("error with websocket communication");
     drop(websocket_manager_write);
 
+    websocket_events_manager_guard
+        .emit_interval_ws_events()
+        .await;
+    drop(websocket_events_manager_guard);
+
     let webview = app.get_webview_window("main").unwrap();
     let websocket_tx = state.websocket_message_tx.clone();
     webview.listen("ws", move |event: tauri::Event| {

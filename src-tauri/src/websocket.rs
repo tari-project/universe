@@ -235,12 +235,12 @@ async fn sender_task(
     while let Some(msg) = receiver.recv().await {
         let message_as_json = serde_json::to_string(&msg)?;
         write_stream
-            .send(Message::Text(Utf8Bytes::from(message_as_json)))
+            .send(Message::Text(Utf8Bytes::from(message_as_json.clone())))
             .await
             .inspect_err(|e| {
                 error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
             })?;
-        info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", msg);
+        info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
     }
     info!(target:LOG_TARGET, "exiting sender task");
     Result::Ok(())

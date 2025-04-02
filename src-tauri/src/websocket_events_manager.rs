@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use log::error;
+use log::{error, info};
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
@@ -84,15 +84,20 @@ impl WebsocketEventsManager {
                 let mut cloned_shutdown = shutdown.clone();
                 tokio::select! {
                   _= interval.tick() => {
+                        info!(target:LOG_TARGET, "jwt might exist");
                         if let Some(jwt)= jwt_token{
+                            info!(target:LOG_TARGET, "jwt exist");
+
                         if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                           cpu_miner_status_watch_rx.clone(),
                           gpu_latest_miner_stats.clone(),
                           node_latest_status.clone(),
-                          app_version.clone(),
                           app_id.clone(),
+                          app_version.clone(),
                           jwt,
                         ).await{
+                            info!(target:LOG_TARGET, "sending mining-status message: {:?}", message);
+
                             let _ = websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket channel due to {}",e);
                             });
@@ -134,7 +139,7 @@ impl WebsocketEventsManager {
                 sign_ws_data(signable_message).await
             {
                 let payload = serde_json::json!({
-                        "is_mining":is_mining_active,
+                        "isMining":is_mining_active,
                         "appId":app_id,
                         "blockHeight":block_height,
                         "version":app_version,
