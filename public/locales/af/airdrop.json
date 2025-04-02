@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!",
   "joinAirdrop": "Sluit aan by Airdrop",
   "loggedInTitle": "Airdrop Belonings",
-  "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien"
+  "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien",
+  "username-error": "Gebruikersnaam moet 3-20 karakters wees en slegs letters, nommers, onderstrepe of koppeltekens bevat",
+  "username-update-success": "Gebruikersnaam suksesvol opgedateer",
+  "success": "Sukses"
 }

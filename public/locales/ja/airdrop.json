@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "あなたの友達の一人があなたのギフトを受け取りました！",
   "joinAirdrop": "エアドロップに参加",
   "loggedInTitle": "エアドロップ報酬",
-  "loggedOutTitle": "マインして友達を招待し、ジェムを獲得"
+  "loggedOutTitle": "マインして友達を招待し、ジェムを獲得",
+  "username-error": "ユーザー名は3-20文字で、文字、数字、アンダースコア、ハイフンのみを含む必要があります",
+  "username-update-success": "ユーザー名が正常に更新されました",
+  "success": "成功"
 }

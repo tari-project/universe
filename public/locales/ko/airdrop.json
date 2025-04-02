@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!",
   "joinAirdrop": "에어드롭 참여",
   "loggedInTitle": "에어드롭 보상",
-  "loggedOutTitle": "채굴하고 친구를 초대하여 보석 획득"
+  "loggedOutTitle": "채굴하고 친구를 초대하여 보석 획득",
+  "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",
+  "username-update-success": "사용자 이름이 성공적으로 업데이트되었습니다",
+  "success": "성공"
 }

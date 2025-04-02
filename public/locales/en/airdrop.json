@@ -44,5 +44,8 @@
   "copyFailed": "Copy Failed",
   "rightClickToCopy": "Right-click to copy link",
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
-  "live":"live"
+  "live":"live",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
+  "success": "Success"
 }

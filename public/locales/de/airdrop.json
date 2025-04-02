@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!",
   "joinAirdrop": "Am Airdrop teilnehmen",
   "loggedInTitle": "Airdrop-Belohnungen",
-  "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen"
+  "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen",
+  "username-error": "Benutzername muss 3-20 Zeichen lang sein und darf nur Buchstaben, Zahlen, Unterstriche oder Bindestriche enthalten",
+  "username-update-success": "Benutzername erfolgreich aktualisiert",
+  "success": "Erfolg"
 }

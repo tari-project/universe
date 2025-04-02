@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！",
   "joinAirdrop": "加入空投",
   "loggedInTitle": "空投奖励",
-  "loggedOutTitle": "挖矿并邀请朋友赚取宝石"
+  "loggedOutTitle": "挖矿并邀请朋友赚取宝石",
+  "username-error": "用户名必须为3-20个字符，只能包含字母、数字、下划线或连字符",
+  "username-update-success": "用户名更新成功",
+  "success": "成功"
 }

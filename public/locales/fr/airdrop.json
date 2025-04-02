@@ -39,5 +39,8 @@
   "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
   "joinAirdrop": "Rejoindre l\"Airdrop",
   "loggedInTitle": "Récompenses Airdrop",
-  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes"
+  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes",
+  "username-error": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des tirets bas ou des traits d'union",
+  "username-update-success": "Nom d'utilisateur mis à jour avec succès",
+  "success": "Succès"
 }

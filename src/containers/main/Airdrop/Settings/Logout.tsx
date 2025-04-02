@@ -15,6 +15,8 @@ import { Input } from '@app/components/elements/inputs/Input';
 import { useState } from 'react';
 import { handleUsernameChange } from '@app/store/actions/airdropStoreActions';
 import { ErrorText, InputWrapper, UsernameContainer } from './styles';
+import { addToast } from '@app/components/ToastStack/useToastStore';
+import { setIsSettingsOpen } from '@app/store';
 
 export default function AirdropLogout() {
     const { t } = useTranslation(['common', 'airdrop'], { useSuspense: false });
@@ -23,13 +25,33 @@ export default function AirdropLogout() {
     const [loading, setLoading] = useState(false);
     const [username, setUsername] = useState(userDetails?.user.name || '');
     const [error, setError] = useState('');
+
     const handleUpdateUsername = async () => {
-        setLoading(true);
         if (!username) return;
+        setLoading(true);
+        // Basic validation - example pattern for alphanumeric + some special chars
+        const usernamePattern = /^[a-zA-Z0-9_-]{3,20}$/;
+        if (!usernamePattern.test(username)) {
+            setError(t('username-error', { ns: 'airdrop' }));
+            setLoading(false);
+
+            return;
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await handleUsernameChange(username, async (response: any) => {
             const res = await response?.json();
             setError(res?.message || '');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }).then((res: any) => {
+            if (res?.success) {
+                setIsSettingsOpen(false);
+                setError('');
+                addToast({
+                    title: t('success', { ns: 'airdrop' }),
+                    text: t('username-update-success', { ns: 'airdrop' }),
+                    type: 'success',
+                });
+            }
         });
         setLoading(false);
     };
