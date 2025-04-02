@@ -39,10 +39,8 @@ export const HeaderImg = styled.img`
 `;
 
 export const TelegramLogo = styled.img`
-    width: 18;
-    height: 15;
-    angle: -0 deg;
-    opacity: 0.5;
+    padding-left: 5px;
+    display: inline-block;
 `;
 
 export const RetryButton = styled.div`

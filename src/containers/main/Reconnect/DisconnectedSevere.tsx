@@ -1,5 +1,6 @@
 import { useUIStore } from '@app/store';
 import React from 'react';
+import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
 import telegramLogo from '/assets/img/telegram_logo.png';
@@ -14,6 +15,9 @@ const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const countdown = useCountdown(5, () => invoke('reconnect'));
+    const openTelegram = () => {
+        open('https://t.me/tariproject');
+    };
 
     return (
         <Wrapper style={{ display: connectionStatus === 'disconnected-severe' ? 'block' : 'none' }}>
@@ -38,12 +42,10 @@ const DisconnectedSevere: React.FC = () => {
                             {t('restart-app')}
                         </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <Stack alignItems="center" direction="row">
-                            <SecondaryButton onClick={() => console.info('Not implemented')}>
-                                <Typography>{t('go-to-telegram')}</Typography>
-                            </SecondaryButton>
+                        <SecondaryButton onClick={openTelegram}>
+                            <Typography>{t('go-to-telegram')}</Typography>
                             <TelegramLogo src={telegramLogo} alt="Telegram" />
-                        </Stack>
+                        </SecondaryButton>
                     </Stack>
                 </Stack>
             </Stack>
