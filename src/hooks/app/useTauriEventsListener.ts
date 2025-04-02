@@ -33,15 +33,17 @@ import {
 } from '@app/store/actions/setupStoreActions';
 
 const LOG_EVENT_TYPES = [
-    'ResumingAllProcesses',
-    'StuckOnOrphanChain',
-    'MissingApplications',
-    'CriticalProblem',
-    'DetectedDevices',
-    'DetectedAvailableGpuEngines',
-    'AppConfigLoaded',
+    // 'ResumingAllProcesses',
+    // 'StuckOnOrphanChain',
+    // 'MissingApplications',
+    // 'CriticalProblem',
+    // 'DetectedDevices',
+    // 'DetectedAvailableGpuEngines',
+    // 'AppConfigLoaded',
     'LockMining',
     'LockWallet',
+    'UnlockMining',
+    'UnlockWallet',
 ];
 
 const useTauriEventsListener = () => {

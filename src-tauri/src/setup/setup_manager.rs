@@ -201,7 +201,6 @@ impl SetupManager {
                             break;
                         }
                         _ = tokio::time::sleep(Duration::from_secs(1)) => {
-                            info!(target: LOG_TARGET, "Waiting for unlock app conditions");
                             let is_app_unlocked = SetupManager::get_instance()
                                 .is_app_unlocked
                                 .lock()
@@ -226,6 +225,17 @@ impl SetupManager {
                             let unknown_phase_status =
                                 unknown_phase_status_subscriber.borrow().is_success();
                             let wallet_phase_status = wallet_phase_status_subscriber.borrow().is_success();
+
+                            info!(target: LOG_TARGET, "Unlock conditions: app: {}, wallet: {}, mining: {}, core: {}, hardware: {}, local_node: {}, unknown: {}, wallet: {}",
+                                is_app_unlocked,
+                                is_wallet_unlocked,
+                                is_mining_unlocked,
+                                core_phase_status,
+                                hardware_phase_status,
+                                local_node_phase_status,
+                                unknown_phase_status,
+                                wallet_phase_status
+                            );
 
                             if core_phase_status
                                 && hardware_phase_status
@@ -278,34 +288,31 @@ impl SetupManager {
                 SetupPhase::Core => {
                     TasksTrackers::current().core_phase.close().await;
                     TasksTrackers::current().core_phase.replace().await;
-                    let _unused = self.core_phase_status.send(PhaseStatus::None);
+                    let _unused = self.core_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Hardware => {
                     TasksTrackers::current().hardware_phase.close().await;
                     TasksTrackers::current().hardware_phase.replace().await;
-                    let _unused = self.hardware_phase_status.send(PhaseStatus::None);
+                    let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::LocalNode => {
                     TasksTrackers::current().node_phase.close().await;
                     TasksTrackers::current().node_phase.replace().await;
-                    let _unused = self.local_node_phase_status.send(PhaseStatus::None);
+                    let _unused = self.local_node_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Wallet => {
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
-                    let _unused = self.wallet_phase_status.send(PhaseStatus::None);
+                    let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
-                    let _unused = self.unknown_phase_status.send(PhaseStatus::None);
+                    let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
                 }
                 _ => {}
             }
         }
-
-        info!(target: LOG_TARGET, "Spawning unlock conditions");
-        self.wait_for_unlock_conditions(app_handle.clone()).await;
 
         for phase in phases_queue {
             match phase {
@@ -365,6 +372,9 @@ impl SetupManager {
                 _ => {}
             }
         }
+
+        info!(target: LOG_TARGET, "Spawning unlock conditions");
+        self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
     pub async fn handle_switch_to_local_node(&self, app_handle: AppHandle) {
@@ -380,6 +390,7 @@ impl SetupManager {
     }
 
     async fn unlock_app(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Unlocking App");
         *self.is_app_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
         let _unused = ReleaseNotes::current()
@@ -391,30 +402,35 @@ impl SetupManager {
     }
 
     async fn unlock_wallet(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_unlock_wallet(&app_handle).await;
     }
 
     async fn unlock_mining(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_mining_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_unlock_mining(&app_handle).await;
     }
 
     async fn lock_mining(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Locking Mining");
         *self.is_mining_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_mining(&app_handle).await;
     }
 
     async fn lock_wallet(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Locking Wallet");
         *self.is_wallet_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_wallet(&app_handle).await;
     }
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Setup Finished");
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 }

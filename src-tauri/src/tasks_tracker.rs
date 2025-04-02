@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.use crate::UniverseAppState;
 
-use log::{info, warn};
+use log::info;
 use std::sync::LazyLock;
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tokio_util::task::TaskTracker;
 
 static LOG_TARGET: &str = "tari::universe::tasks_tracker";
@@ -31,37 +31,37 @@ static INSTANCE: LazyLock<TasksTrackers> = LazyLock::new(TasksTrackers::new);
 
 pub struct TaskTrackerUtil {
     name: &'static str,
-    shutdown: Mutex<Shutdown>,
-    task_tracker: Mutex<TaskTracker>,
+    shutdown: RwLock<Shutdown>,
+    task_tracker: RwLock<TaskTracker>,
 }
 impl TaskTrackerUtil {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
-            shutdown: Mutex::new(Shutdown::new()),
-            task_tracker: Mutex::new(TaskTracker::new()),
+            shutdown: RwLock::new(Shutdown::new()),
+            task_tracker: RwLock::new(TaskTracker::new()),
         }
     }
 
     pub async fn get_signal(&self) -> ShutdownSignal {
-        self.shutdown.lock().await.to_signal()
+        self.shutdown.read().await.to_signal()
     }
     pub async fn get_task_tracker(&self) -> TaskTracker {
-        self.task_tracker.lock().await.clone()
+        self.task_tracker.read().await.clone()
     }
     pub async fn close(&self) {
         info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
-        self.shutdown.lock().await.trigger();
+        self.shutdown.write().await.trigger();
         info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
-        self.task_tracker.lock().await.close();
+        self.task_tracker.read().await.close();
         info!(target: LOG_TARGET, "Waiting for {} processes to finish", self.name);
-        self.task_tracker.lock().await.wait().await;
+        self.task_tracker.read().await.wait().await;
         info!(target: LOG_TARGET, "{} processes have finished", self.name);
     }
 
     pub async fn replace(&self) {
-        *self.shutdown.lock().await = Shutdown::new();
-        *self.task_tracker.lock().await = TaskTracker::new();
+        *self.shutdown.write().await = Shutdown::new();
+        *self.task_tracker.write().await = TaskTracker::new();
     }
 }
 
