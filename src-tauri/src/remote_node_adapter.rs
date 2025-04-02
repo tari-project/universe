@@ -34,7 +34,7 @@ use std::path::PathBuf;
 
 #[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
-    grpc_address: Option<(String, u16)>,
+    pub grpc_address: Option<(String, u16)>,
     status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
@@ -46,8 +46,8 @@ impl RemoteNodeAdapter {
         }
     }
 
-    pub fn grpc_address(&self) -> Option<&(String, u16)> {
-        self.grpc_address.as_ref()
+    pub fn grpc_address(&self) -> Option<(String, u16)> {
+        self.grpc_address.clone()
     }
 
     pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
