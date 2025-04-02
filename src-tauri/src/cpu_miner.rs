@@ -37,7 +37,6 @@ use std::thread;
 use std::time::{Duration, Instant};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::async_runtime::block_on;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 use tokio::time::{sleep, timeout};

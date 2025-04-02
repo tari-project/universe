@@ -30,7 +30,6 @@ use std::{path::PathBuf, sync::Arc};
 use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
-use tauri::async_runtime::block_on;
 use tauri::{AppHandle, Manager};
 use tokio::select;
 use tokio::sync::{watch, RwLock};
