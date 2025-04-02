@@ -97,6 +97,7 @@ impl TelemetryService {
         user: String,
     ) -> Result<(), TelemetryServiceError> {
         let os = PlatformUtils::detect_current_os();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         self.version = app_version;
         let mut cancellation_token = self.cancellation_token.clone();
@@ -143,6 +144,10 @@ impl TelemetryService {
                         }
                     },
                     _ = cancellation_token.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                        break;
+                    }
+                    _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
                         break;
                     }

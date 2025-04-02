@@ -35,13 +35,13 @@ use crate::{
     StartConfig, UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info};
+use log::{error, info,warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{
+use tokio::{select, sync::{
     watch::{Receiver, Sender},
     Mutex,
-};
+}};
 
 use super::{
     setup_manager::{PhaseStatus, SetupManager},
@@ -125,11 +125,17 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
         TasksTrackers::current().unknown_phase.get_task_tracker().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
-
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Unknown);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
@@ -149,6 +155,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                         }
                     }
                 }
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                } 
             };
         });
     }

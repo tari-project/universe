@@ -25,7 +25,7 @@ use std::collections::HashMap;
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
-use tokio::sync::watch::Receiver;
+use tokio::{select, sync::watch::Receiver};
 
 #[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
@@ -68,21 +68,28 @@ impl EventsManager {
     }
 
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
+        error!(target: LOG_TARGET, "Waiting for initial wallet scan");
         let events_service = self.events_service.clone();
         let app = app.clone();
         TasksTrackers::current().common.get_task_tracker().spawn(async move {
-            match events_service
-                .wait_for_wallet_scan(block_height, 1200)
-                .await
-            {
-                Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
-                    Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
-                    None => {
-                        error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
-                    }
-                },
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+            error!(target: LOG_TARGET, "Waiting for initial wallet scan");
+            select! {
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
+                }
+                result = events_service.wait_for_wallet_scan(block_height, 1200) => {
+                    match result {
+                        Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
+                            Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
+                            None => {
+                                error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                            }
+                        },
+                        Err(e) => {
+                            error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+                        }
+                    };
                 }
             };
         });

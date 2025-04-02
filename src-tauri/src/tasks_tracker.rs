@@ -50,10 +50,13 @@ impl TaskTrackerUtil {
         self.task_tracker.clone()
     }
     pub async fn close(&self) {
-        info!(target: LOG_TARGET, "Closing {} processes", self.name);
+        info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
         self.shutdown.lock().await.trigger();
+        info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
         self.task_tracker.close();
+        info!(target: LOG_TARGET, "Waiting for {} processes to finish", self.name);
         self.task_tracker.wait().await;
+        info!(target: LOG_TARGET, "{} processes have finished", self.name);
     }
 }
 

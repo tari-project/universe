@@ -1508,7 +1508,7 @@ pub async fn start_mining<'r>(
             let mut cpu_miner = state.cpu_miner.write().await;
             let res = cpu_miner
                 .start(
-                    state.shutdown.to_signal(),
+                    TasksTrackers::current().hardware_phase.get_signal().await,
                     &cpu_miner_config,
                     monero_address.to_string(),
                     mm_proxy_port,
@@ -1582,7 +1582,7 @@ pub async fn start_mining<'r>(
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
-                state.shutdown.to_signal(),
+                TasksTrackers::current().hardware_phase.get_signal().await,
                 tari_address,
                 source,
                 app.path()

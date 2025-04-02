@@ -31,7 +31,10 @@ use std::{
     time::Duration,
 };
 use tauri::{AppHandle, Manager};
-use tokio::sync::{watch::Sender, Mutex};
+use tokio::{
+    select,
+    sync::{watch::Sender, Mutex},
+};
 
 use super::{
     phase_core::CoreSetupPhase,
@@ -190,73 +193,80 @@ impl SetupManager {
             .common
             .get_task_tracker()
             .spawn(async move {
-                loop {
                     // Todo change it to use tokio stream and listien to changes on receivers
-                    tokio::time::sleep(Duration::from_secs(1)).await;
-                    info!(target: LOG_TARGET, "Waiting for unlock app conditions");
-                    let is_app_unlocked = SetupManager::get_instance()
-                        .is_app_unlocked
-                        .lock()
-                        .await
-                        .clone();
-                    let is_wallet_unlocked = SetupManager::get_instance()
-                        .is_wallet_unlocked
-                        .lock()
-                        .await
-                        .clone();
-                    let is_mining_unlocked = SetupManager::get_instance()
-                        .is_mining_unlocked
-                        .lock()
-                        .await
-                        .clone();
+                let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+                loop {
+                    select! {
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        }
+                        _ = tokio::time::sleep(Duration::from_secs(1)) => {
+                            info!(target: LOG_TARGET, "Waiting for unlock app conditions");
+                            let is_app_unlocked = SetupManager::get_instance()
+                                .is_app_unlocked
+                                .lock()
+                                .await
+                                .clone();
+                            let is_wallet_unlocked = SetupManager::get_instance()
+                                .is_wallet_unlocked
+                                .lock()
+                                .await
+                                .clone();
+                            let is_mining_unlocked = SetupManager::get_instance()
+                                .is_mining_unlocked
+                                .lock()
+                                .await
+                                .clone();
 
-                    let core_phase_status = core_phase_status_subscriber.borrow().is_success();
-                    let hardware_phase_status =
-                        hardware_phase_status_subscriber.borrow().is_success();
-                    let local_node_phase_status =
-                        local_node_phase_status_subscriber.borrow().is_success();
-                    let unknown_phase_status =
-                        unknown_phase_status_subscriber.borrow().is_success();
-                    let wallet_phase_status = wallet_phase_status_subscriber.borrow().is_success();
+                            let core_phase_status = core_phase_status_subscriber.borrow().is_success();
+                            let hardware_phase_status =
+                                hardware_phase_status_subscriber.borrow().is_success();
+                            let local_node_phase_status =
+                                local_node_phase_status_subscriber.borrow().is_success();
+                            let unknown_phase_status =
+                                unknown_phase_status_subscriber.borrow().is_success();
+                            let wallet_phase_status = wallet_phase_status_subscriber.borrow().is_success();
 
-                    if core_phase_status
-                        && hardware_phase_status
-                        && local_node_phase_status
-                        && unknown_phase_status
-                        && !is_app_unlocked
-                    {
-                        SetupManager::get_instance()
-                            .unlock_app(app_handle.clone())
-                            .await;
-                    }
+                            if core_phase_status
+                                && hardware_phase_status
+                                && local_node_phase_status
+                                && unknown_phase_status
+                                && !is_app_unlocked
+                            {
+                                SetupManager::get_instance()
+                                    .unlock_app(app_handle.clone())
+                                    .await;
+                            }
 
-                    if core_phase_status
-                        && hardware_phase_status
-                        && local_node_phase_status
-                        && unknown_phase_status
-                        && !is_mining_unlocked
-                    {
-                        SetupManager::get_instance()
-                            .unlock_mining(app_handle.clone())
-                            .await;
-                    }
+                            if core_phase_status
+                                && hardware_phase_status
+                                && local_node_phase_status
+                                && unknown_phase_status
+                                && !is_mining_unlocked
+                            {
+                                SetupManager::get_instance()
+                                    .unlock_mining(app_handle.clone())
+                                    .await;
+                            }
 
-                    if core_phase_status
-                        && local_node_phase_status
-                        && unknown_phase_status
-                        && wallet_phase_status
-                        && !is_wallet_unlocked
-                    {
-                        SetupManager::get_instance()
-                            .unlock_wallet(app_handle.clone())
-                            .await;
-                    }
+                            if core_phase_status
+                                && local_node_phase_status
+                                && unknown_phase_status
+                                && wallet_phase_status
+                                && !is_wallet_unlocked
+                            {
+                                SetupManager::get_instance()
+                                    .unlock_wallet(app_handle.clone())
+                                    .await;
+                            }
 
-                    if is_app_unlocked && is_wallet_unlocked && is_mining_unlocked {
-                        SetupManager::get_instance()
-                            .handle_setup_finished(app_handle.clone())
-                            .await;
-                        break;
+                            if is_app_unlocked && is_wallet_unlocked && is_mining_unlocked {
+                                SetupManager::get_instance()
+                                    .handle_setup_finished(app_handle.clone())
+                                    .await;
+                                break;
+                            }
+                        }
                     }
                 }
             });

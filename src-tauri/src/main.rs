@@ -197,7 +197,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
-        let mut shutdown_signal = app_state.shutdown.to_signal();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let current_block_height = node_status_watch_rx.borrow().block_height;
         let _ = &app_state
@@ -259,7 +259,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     TasksTrackers::current().common.get_task_tracker().spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = app_state.shutdown.to_signal();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
@@ -715,7 +715,7 @@ async fn setup_inner(
     state
         .wallet_manager
         .ensure_started(
-            state.shutdown.to_signal(),
+            TasksTrackers::current().common.get_signal().await,
             data_dir.clone(),
             config_dir.clone(),
             log_dir.clone(),
@@ -774,7 +774,7 @@ async fn setup_inner(
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner
         .start_benchmarking(
-            state.shutdown.to_signal(),
+            TasksTrackers::current().common.get_signal().await,
             Duration::from_secs(30),
             data_dir.clone(),
             config_dir.clone(),
@@ -854,7 +854,7 @@ async fn setup_inner(
     let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
     spend_wallet_manager
         .init(
-            state.shutdown.to_signal().clone(),
+            TasksTrackers::current().common.get_signal().await,
             data_dir,
             config_dir,
             log_dir,
@@ -876,7 +876,7 @@ async fn setup_inner(
     initialize_frontend_updates(&app).await?;
 
     let app_handle_clone: tauri::AppHandle = app.clone();
-    let mut shutdown_signal = state.shutdown.to_signal();
+    let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
     TasksTrackers::current()
         .common
         .get_task_tracker()
@@ -966,7 +966,6 @@ struct UniverseAppState {
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    shutdown: Shutdown,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -1099,7 +1098,7 @@ fn main() {
         app_in_memory_config.clone(),
         shutdown.to_signal(),
     );
-    let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
+    let updates_manager = UpdatesManager::new(app_config.clone());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
@@ -1116,7 +1115,6 @@ fn main() {
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
         config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
-        shutdown: shutdown.clone(),
         tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
         gpu_miner: gpu_miner.clone(),

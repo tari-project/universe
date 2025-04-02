@@ -303,8 +303,7 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-        let state = app_handle.state::<UniverseAppState>();
-        let mut app_shutdown = state.shutdown.to_signal();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = time::interval(timeout);
 
         TasksTrackers::current().common.get_task_tracker().spawn(async move {
@@ -326,7 +325,7 @@ impl TelemetryManager {
                         info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
                         break;
                     }
-                    _ = app_shutdown.wait() => {
+                    _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
                         break;
                     }

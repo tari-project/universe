@@ -36,13 +36,13 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info};
+use log::{error, info,warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{
+use tokio::{select, sync::{
     watch::{Receiver, Sender},
     Mutex,
-};
+}};
 
 use super::{
     setup_manager::{PhaseStatus, SetupManager},
@@ -115,11 +115,17 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Hardware);
 
         TasksTrackers::current().hardware_phase.get_task_tracker().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
-
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Hardware);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
@@ -139,6 +145,9 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                         }
                     }
                 }
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                } 
             };
         });
     }
@@ -177,7 +186,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let mut cpu_miner = state.cpu_miner.write().await;
         let benchmarked_hashrate = cpu_miner
             .start_benchmarking(
-                state.shutdown.to_signal(),
+                TasksTrackers::current().hardware_phase.get_signal().await,
                 Duration::from_secs(30),
                 data_dir.clone(),
                 config_dir.clone(),

@@ -25,13 +25,13 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use log::{error, info};
+use log::{error, info,warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::sync::{
+use tokio::{select, sync::{
     watch::{self, Receiver, Sender},
     Mutex,
-};
+}};
 
 use crate::{
     auto_launcher::AutoLauncher,
@@ -142,13 +142,18 @@ impl SetupPhaseImpl for CoreSetupPhase {
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
-
         TasksTrackers::current().core_phase.get_task_tracker().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
-
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
@@ -168,10 +173,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
                         }
                     }
                 }
-                _ = TasksTrackers::current().core_phase.get_signal().await => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                    let error_message = format!("[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 } 
             };
         });
@@ -413,25 +416,47 @@ impl SetupPhaseImpl for CoreSetupPhase {
         TasksTrackers::current().common.get_task_tracker().spawn(async move {
             let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
             let mut last_state = *receiver.borrow();
+            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
             loop {
-                if receiver.changed().await.is_ok() {
-                    let current_state = *receiver.borrow();
-
-                    if last_state && !current_state {
-                        info!(target: LOG_TARGET, "System is no longer in sleep mode");
-                        let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                select! {
+                    _ = receiver.changed() => {
+                        let current_state = *receiver.borrow();
+                        if last_state && !current_state {
+                            info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                            let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                        }
+                        if !last_state && current_state {
+                            info!(target: LOG_TARGET, "System entered sleep mode");
+                            TasksTrackers::current().stop_all_processes().await;
+                        }
+                        last_state = current_state;
                     }
-
-                    if !last_state && current_state {
-                        info!(target: LOG_TARGET, "System entered sleep mode");
-                        TasksTrackers::current().stop_all_processes().await;
-                    }
-
-                    last_state = current_state;
-                } else {
-                    error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+                    _ = shutdown_signal.wait() => {
+                    break;
                 }
             }
+
+            }
+
+            // loop {
+            //     if receiver.changed().await.is_ok() {
+            //         let current_state = *receiver.borrow();
+
+            //         if last_state && !current_state {
+            //             info!(target: LOG_TARGET, "System is no longer in sleep mode");
+            //             let _unused = resume_all_processes(app_handle_clone.clone()).await;
+            //         }
+
+            //         if !last_state && current_state {
+            //             info!(target: LOG_TARGET, "System entered sleep mode");
+            //             TasksTrackers::current().stop_all_processes().await;
+            //         }
+
+            //         last_state = current_state;
+            //     } else {
+            //         error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+            //     }
+            // }
         });
 
         Ok(())

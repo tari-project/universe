@@ -81,15 +81,13 @@ pub struct AskForUpdatePayload {
 pub struct UpdatesManager {
     config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
-    app_shutdown: ShutdownSignal,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+    pub fn new(config: Arc<RwLock<AppConfig>>) -> Self {
         Self {
             config,
             update: Arc::new(RwLock::new(None)),
-            app_shutdown,
         }
     }
 
@@ -98,7 +96,7 @@ impl UpdatesManager {
         let app_clone = app.clone();
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
-        let mut shutdown_signal = self_clone.app_shutdown.clone();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         TasksTrackers::current().common.get_task_tracker().spawn(async move {
             loop {
                 tokio::select! {
