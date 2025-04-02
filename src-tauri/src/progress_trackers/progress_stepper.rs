@@ -28,7 +28,7 @@ use std::{
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
 
-use log::{info, warn};
+use log::warn;
 
 use crate::UniverseAppState;
 
@@ -73,16 +73,11 @@ pub struct ProgressStepper {
 
 impl ProgressStepper {
     pub async fn resolve_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
-        info!(
-            target: LOG_TARGET,
-            "Resolving step: {}",
-            step.get_title(),
-        );
-
-        info!(target: LOG_TARGET, "Current plan:");
-        self.plan.iter().for_each(|x| {
-            info!(target: LOG_TARGET, "Step: {}", x.get_title());
-        });
+        // info!(
+        //     target: LOG_TARGET,
+        //     "Resolving step: {}",
+        //     step.get_title(),
+        // );
 
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let resolved_step = self.plan.remove(index);
@@ -154,14 +149,8 @@ impl ProgressStepper {
 
     pub fn skip_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
-            let removed_step = self.plan.remove(index);
-            let removed_percentage = self.percentage_steps.remove(index);
-            info!(
-                target: LOG_TARGET,
-                "Skipping step: {} with percentage: {}",
-                removed_step.get_title(),
-                removed_percentage
-            );
+            let _removed_step = self.plan.remove(index);
+            let _removed_percentage = self.percentage_steps.remove(index);
         } else {
             warn!(
                 target: LOG_TARGET,

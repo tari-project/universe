@@ -31,7 +31,7 @@ use crate::{
         ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTracker,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use anyhow::Error;
@@ -39,6 +39,7 @@ use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
+    select,
     sync::{
         watch::{Receiver, Sender},
         Mutex,
@@ -122,12 +123,18 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::LocalNode);
 
-        TasksTracker::current().spawn(async move {
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                let _unused = subscriber.wait_for(|value| value.is_success()).await;
-            };
-
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+            for subscriber in &mut flow_subscribers.iter_mut() {
+                select! {
+                    _ = subscriber.wait_for(|value| value.is_success()) => {}
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::LocalNode);
+                        return;
+                    }
+                }
+            };
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::LocalNode);
@@ -146,6 +153,9 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
                             sentry::capture_message(&error_message, sentry::Level::Error);
                         }
                     }
+                }
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
             };
         });
@@ -169,7 +179,6 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
             match state
                 .node_manager
                 .ensure_started(
-                    state.shutdown.to_signal(),
                     data_dir.clone(),
                     config_dir.clone(),
                     log_dir.clone(),
@@ -246,11 +255,9 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
             .handle_local_node_phase_finished(&self.app_handle, true)
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        let mut shutdown_signal = state.shutdown.to_signal();
-        TasksTracker::current().spawn(async move {
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
             let mut has_send_error = false;
 

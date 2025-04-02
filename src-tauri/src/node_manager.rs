@@ -43,6 +43,7 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::tasks_tracker::TasksTrackers;
 use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
@@ -140,7 +141,6 @@ impl<T: NodeAdapter> NodeManager<T> {
     #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
@@ -149,6 +149,9 @@ impl<T: NodeAdapter> NodeManager<T> {
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         {
+            let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
             let mut process_watcher = self.watcher.write().await;
 
             process_watcher.adapter.use_tor(use_tor);
@@ -161,11 +164,12 @@ impl<T: NodeAdapter> NodeManager<T> {
             }
             process_watcher
                 .start(
-                    app_shutdown,
                     base_path,
                     config_path,
                     log_path,
                     crate::binaries::Binaries::MinotariNode,
+                    shutdown_signal,
+                    task_tracker,
                 )
                 .await?;
         }
@@ -176,19 +180,22 @@ impl<T: NodeAdapter> NodeManager<T> {
     #[allow(dead_code)]
     pub async fn start(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher
             .start(
-                app_shutdown,
                 base_path,
                 config_path,
                 log_path,
                 crate::binaries::Binaries::MinotariNode,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
 

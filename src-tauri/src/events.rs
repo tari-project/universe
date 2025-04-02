@@ -59,6 +59,8 @@ pub enum EventType {
     UnlockApp,
     UnlockWallet,
     UnlockMining,
+    LockWallet,
+    LockMining,
 }
 
 #[derive(Clone, Debug, Serialize)]
