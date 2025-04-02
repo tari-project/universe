@@ -24,7 +24,7 @@ use crate::{
     initialize_frontend_updates, release_notes::ReleaseNotes, tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
-use log::info;
+use log::{info, error};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
@@ -124,6 +124,7 @@ pub struct SetupManager {
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
     pub hardware_phase_output: Sender<HardwareSetupPhaseOutput>,
+    app_handle: Mutex<Option<AppHandle>>,
 }
 
 impl SetupManager {
@@ -136,6 +137,8 @@ impl SetupManager {
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
+        *self.app_handle.lock().await = Some(app_handle.clone());
+
         let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
         let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
         let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
@@ -375,16 +378,45 @@ impl SetupManager {
         self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
-    pub async fn handle_switch_to_local_node(&self, app_handle: AppHandle) {
-        info!(target: LOG_TARGET, "Switching to Local Node");
-        self.lock_mining(app_handle.clone()).await;
-        self.lock_wallet(app_handle.clone()).await;
-        info!(target: LOG_TARGET, "Restarting Phases");
-        self.restart_phases(
-            app_handle.clone(),
-            vec![SetupPhase::Wallet, SetupPhase::Unknown],
-        )
-        .await;
+    pub async fn handle_switch_to_local_node(&self) {
+        if let Some(app_handle) = self.app_handle.lock().await.clone() {
+            info!(target: LOG_TARGET, "Switching to Local Node");
+            self.lock_mining(app_handle.clone()).await;
+            self.lock_wallet(app_handle.clone()).await;
+            info!(target: LOG_TARGET, "Restarting Phases");
+            // self.restart_phases(
+            //     app_handle.clone(),
+            //     vec![SetupPhase::Wallet, SetupPhase::Unknown],
+            // )
+            // .await;
+
+            let wallet_phase_setup =
+                Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
+            wallet_phase_setup
+                .setup(
+                    self.wallet_phase_status.clone(),
+                    vec![
+                        self.core_phase_status.subscribe(),
+                        self.node_phase_status.subscribe(),
+                    ],
+                )
+                .await;
+
+            let unknown_phase_setup =
+                Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
+            unknown_phase_setup
+                .setup(
+                    self.unknown_phase_status.clone(),
+                    vec![
+                        self.core_phase_status.subscribe(),
+                        self.node_phase_status.subscribe(),
+                        self.hardware_phase_status.subscribe(),
+                    ],
+                )
+                .await;
+        } else {
+            error!(target: LOG_TARGET, "Failed to switch to Local Node: app_handle not defined");
+        }
     }
 
     async fn unlock_app(&self, app_handle: AppHandle) {

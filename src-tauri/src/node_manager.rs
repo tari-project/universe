@@ -48,9 +48,9 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
+use crate::setup::setup_manager::SetupManager;
 use crate::{LocalNodeAdapter, RemoteNodeAdapter};
 use crate::tasks_tracker::TasksTrackers;
-use async_trait::async_trait;
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -210,8 +210,8 @@ impl NodeManager {
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
-                            task_tracker,
+                            shutdown_signal.clone(),
+                            task_tracker.clone(),
                         )
                         .await?;
                 }
@@ -232,7 +232,7 @@ impl NodeManager {
                         )
                         .await?;
                 }
-                self.clone().switch_to_local_after_remote().await?;
+                self.switch_to_local_after_remote().await?;
             }
         }
 
@@ -293,8 +293,8 @@ impl NodeManager {
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
-                            task_tracker,
+                            shutdown_signal.clone(),
+                            task_tracker.clone(),
                         )
                         .await?;
                 }
@@ -313,7 +313,7 @@ impl NodeManager {
                         .await?;
                 }
 
-                self.clone().switch_to_local_after_remote().await?;
+                self.switch_to_local_after_remote().await?;
             }
         }
 
@@ -380,7 +380,7 @@ impl NodeManager {
                     .await
                 {
                     Ok(_) => {
-                        println!("============= Local node synced, switching node type...");
+                        println!("============= SUCCESS::: Local node synced, switching node type...");
                         {
                             let mut node_type = node_type.write().await;
                             *node_type = NodeType::LocalAfterRemote;
@@ -394,6 +394,7 @@ impl NodeManager {
                                     error!("Failed to stop local node watcher: {}", e);
                                 }
                             }
+                            SetupManager::get_instance().handle_switch_to_local_node().await;
                         }
                         println!("============= Node switched to local.");
                     }
