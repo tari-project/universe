@@ -6,8 +6,8 @@ import { useEffect } from 'react';
 export const useConnectionStatusListener = () => {
     const connectionStatus = useUIStore((state) => state.connectionStatus);
     useEffect(() => {
-        const unlistenPromise = listen<boolean>('is_stuck', (_event) => {
-            if (connectionStatus === 'connected') setConnectionStatus('disconnected');
+        const unlistenPromise = listen<boolean>('is_stuck', (event) => {
+            if (connectionStatus === 'connected' && event.payload) setConnectionStatus('disconnected');
         });
         return () => {
             unlistenPromise.then((unlisten) => unlisten());

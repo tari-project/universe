@@ -1,14 +1,13 @@
 import { useUIStore } from '@app/store';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
 import telegramLogo from '/assets/img/telegram_logo.png';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { RetryButton, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
-import { useCountdown } from '@app/hooks';
+import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
 
 const DisconnectedSevere: React.FC = () => {
@@ -30,7 +29,7 @@ const DisconnectedSevere: React.FC = () => {
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
                     <RetryButton>
-                        {t('auto-reconnect')} {countdown.seconds}
+                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(countdown.seconds)}</b>
                     </RetryButton>
                     <Stack direction="row" gap={30}>
                         <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>

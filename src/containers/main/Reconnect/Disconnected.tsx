@@ -6,7 +6,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { RetryButton, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
-import { useCountdown } from '@app/hooks';
+import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 
@@ -37,7 +37,7 @@ const Disconnected: React.FC = () => {
                 </TextWrapper>
                 <Stack gap={36}>
                     <RetryButton>
-                        {t('auto-reconnect')} {countdown.seconds}
+                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(countdown.seconds)}</b>
                     </RetryButton>
                     <SecondaryButton onClick={() => invoke('reconnect')}>{t('connect-now')}</SecondaryButton>
                 </Stack>
