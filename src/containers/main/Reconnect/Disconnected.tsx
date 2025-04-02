@@ -8,6 +8,7 @@ import { RetryButton, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from '.
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 
 const ConnectionAttemptIntervalsInSecs = [60, 120, 240];
 
@@ -18,7 +19,11 @@ const Disconnected: React.FC = () => {
 
     const autoReconnect = useCallback(() => {
         invoke('reconnect');
-        setAttempt(Math.min(attempt + 1, 2));
+        const currentAttempt = Math.min(attempt + 1, 2);
+        if (currentAttempt === 2) {
+            setConnectionStatus('disconnected-severe');
+        }
+        setAttempt(currentAttempt);
     }, [setAttempt, attempt]);
     const countdown = useCountdown(ConnectionAttemptIntervalsInSecs[attempt], autoReconnect);
 

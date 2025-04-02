@@ -8,6 +8,7 @@ import { fetchAppConfig } from '../store/actions/appConfigStoreActions.ts';
 import { useListenForGpuEngines } from '../hooks/app/useListenForGpuEngines.ts';
 import { useListenForAppResuming } from '../hooks/app/useListenForAppResuming.ts';
 import {
+    useConnectionStatusListener,
     useDetectMode,
     useDisableRefresh,
     useLangaugeResolver,
@@ -39,6 +40,7 @@ export default function AppEffects() {
     useListenForAppUpdated({ triggerEffect: true });
     useListenForAppResuming();
     useListenForGpuEngines();
+    useConnectionStatusListener();
 
     return null;
 }
