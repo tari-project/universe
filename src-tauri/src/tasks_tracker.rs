@@ -58,6 +58,11 @@ impl TaskTrackerUtil {
         self.task_tracker.wait().await;
         info!(target: LOG_TARGET, "{} processes have finished", self.name);
     }
+
+    pub async fn replace(&self) {
+        *self.shutdown.lock().await = Shutdown::new();
+        self.task_tracker.reopen();
+    }
 }
 
 pub struct TasksTrackers {

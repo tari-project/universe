@@ -2,8 +2,14 @@ import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower'
 
 import { useAppConfigStore } from '../useAppConfigStore';
 import { useSetupStore } from '../useSetupStore';
-import { startMining } from './miningStoreActions';
-import { fetchApplicationsVersionsWithRetry, sidebarTowerOffset, TOWER_CANVAS_ID } from '@app/store';
+import { startMining, stopMining } from './miningStoreActions';
+import {
+    fetchApplicationsVersionsWithRetry,
+    sidebarTowerOffset,
+    TOWER_CANVAS_ID,
+    useMiningMetricsStore,
+    useMiningStore,
+} from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 export const handleAppUnlocked = async () => {
@@ -37,6 +43,19 @@ export const handleMiningUnlocked = async () => {
     const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
     if (mine_on_app_start && useSetupStore.getState().miningUnlocked && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
+    }
+};
+
+export const handleWalletLocked = () => {
+    useSetupStore.setState({ walletUnlocked: false });
+};
+
+export const handleMiningLocked = async () => {
+    useSetupStore.setState({ miningUnlocked: false });
+    const isMiningInitiated = useMiningStore.getState().miningInitiated;
+
+    if (isMiningInitiated) {
+        await stopMining();
     }
 };
 

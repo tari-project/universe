@@ -123,4 +123,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'UnlockMining';
           payload: undefined;
+      }
+    | {
+          event_type: 'LockWallet';
+          payload: undefined;
+      }
+    | {
+          event_type: 'LockMining';
+          payload: undefined;
       };

@@ -303,4 +303,11 @@ impl EventsManager {
     pub async fn handle_unlock_mining(&self, app: &AppHandle) {
         EventsEmitter::emit_unlock_mining(app).await;
     }
+    pub async fn handle_lock_wallet(&self, app: &AppHandle) {
+        EventsEmitter::emit_lock_wallet(app).await;
+    }
+
+    pub async fn handle_lock_mining(&self, app: &AppHandle) {
+        EventsEmitter::emit_unlock_mining(app).await;
+    }
 }

@@ -1416,7 +1416,9 @@ fn main() {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
-                SetupManager::get_instance().start_setup(handle_clone).await;
+                SetupManager::get_instance().start_setup(handle_clone.clone()).await;
+                tokio::time::sleep(Duration::from_secs(90)).await;
+                SetupManager::get_instance().handle_switch_to_local_node(handle_clone).await;
                 // let state = handle_clone.state::<UniverseAppState>().clone();
                 // let _res = setup_inner(state, handle_clone.clone())
                 //     .await
