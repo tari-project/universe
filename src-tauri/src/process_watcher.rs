@@ -33,7 +33,7 @@ use tokio::sync::watch;
 use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
-use tokio_util::task::{task_tracker, TaskTracker};
+use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
 

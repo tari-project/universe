@@ -26,8 +26,6 @@ use std::time::Duration;
 
 use futures_util::future::FusedFuture;
 use log::{info, warn};
-use tari_shutdown::ShutdownSignal;
-use tauri::async_runtime::block_on;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 

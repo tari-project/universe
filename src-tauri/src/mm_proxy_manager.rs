@@ -26,7 +26,6 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use log::info;
 use tari_common_types::tari_address::TariAddress;
-use tauri::async_runtime::block_on;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 

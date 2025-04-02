@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::airdrop;
 use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -32,7 +33,6 @@ use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
 use crate::utils::network_status::NetworkStatus;
 use crate::TasksTrackers;
-use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -50,7 +50,7 @@ use std::{sync::Arc, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio::time;
 use tokio_util::sync::CancellationToken;

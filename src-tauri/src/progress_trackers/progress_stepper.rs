@@ -28,7 +28,7 @@ use std::{
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
 
-use log::{info, warn};
+use log::warn;
 
 use crate::UniverseAppState;
 
@@ -149,8 +149,8 @@ impl ProgressStepper {
 
     pub fn skip_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
-            let removed_step = self.plan.remove(index);
-            let removed_percentage = self.percentage_steps.remove(index);
+            let _removed_step = self.plan.remove(index);
+            let _removed_percentage = self.percentage_steps.remove(index);
         } else {
             warn!(
                 target: LOG_TARGET,

@@ -141,7 +141,7 @@ impl ProcessInstanceTrait for NullProcessInstance {
     fn ping(&self) -> bool {
         true
     }
-    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
+    async fn start(&mut self, _task_trakcer: TaskTracker) -> Result<(), anyhow::Error> {
         Ok(())
     }
     async fn stop(&mut self) -> Result<i32, anyhow::Error> {

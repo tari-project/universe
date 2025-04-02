@@ -253,8 +253,6 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
             .handle_local_node_phase_finished(&self.app_handle, true)
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {

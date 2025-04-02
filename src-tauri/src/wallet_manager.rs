@@ -33,7 +33,6 @@ use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tari_shutdown::ShutdownSignal;
-use tauri::async_runtime::block_on;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
 

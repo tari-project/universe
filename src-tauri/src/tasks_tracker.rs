@@ -99,24 +99,3 @@ impl TasksTrackers {
         self.node_phase.close().await;
     }
 }
-
-// pub fn spawn_task_with_shutdown<F>(name: &'static str, f: F) -> TaskTracker
-// where
-//     F: Send + 'static + std::future::Future<Output = ()>,
-// {
-//     let task_tracker = TaskTracker::new();
-//     let shutdown = Shutdown::new();
-//     let shutdown_signal = shutdown.to_signal();
-//     tokio::spawn(async move {
-//         let _ = tokio::select! {
-//             _ = f => {
-//                 warn!(target: LOG_TARGET, "{} process has finished", name);
-//             },
-//             _ = shutdown_signal => {
-//                 warn!(target: LOG_TARGET, "{} process has been cancelled", name);
-//             }
-//         };
-//         task_tracker.close();
-//     });
-//     task_tracker
-// }

@@ -36,7 +36,6 @@ use crate::{
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
-use tari_shutdown::ShutdownSignal;
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
 #[derive(Clone, Debug, Serialize, Deserialize)]

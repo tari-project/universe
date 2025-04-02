@@ -26,8 +26,6 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
 use std::{path::PathBuf, sync::Arc};
-use tari_shutdown::ShutdownSignal;
-use tauri::async_runtime::block_on;
 use tokio::sync::{watch, RwLock};
 
 pub(crate) struct TorManager {
