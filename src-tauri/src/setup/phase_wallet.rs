@@ -33,13 +33,16 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info,warn};
+use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::{select, sync::{
-    watch::{Receiver, Sender},
-    Mutex,
-}};
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+};
 
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
@@ -130,7 +133,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                } 
+                }
             };
         });
     }
@@ -163,7 +166,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
         spend_wallet_manager
             .init(
-                TasksTrackers::current().wallet_phase.get_signal().await.clone(),
+                TasksTrackers::current()
+                    .wallet_phase
+                    .get_signal()
+                    .await
+                    .clone(),
                 data_dir,
                 config_dir,
                 log_dir,

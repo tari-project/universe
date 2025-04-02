@@ -25,13 +25,16 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use log::{error, info,warn};
+use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::{select, sync::{
-    watch::{self, Receiver, Sender},
-    Mutex,
-}};
+use tokio::{
+    select,
+    sync::{
+        watch::{self, Receiver, Sender},
+        Mutex,
+    },
+};
 
 use crate::{
     auto_launcher::AutoLauncher,
@@ -175,7 +178,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                } 
+                }
             };
         });
     }
@@ -381,11 +384,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             state
                 .tor_manager
-                .ensure_started(
-                    data_dir.clone(),
-                    config_dir.clone(),
-                    log_dir.clone(),
-                )
+                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
                 .await?;
         }
 

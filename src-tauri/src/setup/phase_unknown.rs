@@ -35,13 +35,16 @@ use crate::{
     StartConfig, UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info,warn};
+use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::{select, sync::{
-    watch::{Receiver, Sender},
-    Mutex,
-}};
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+};
 
 use super::{
     setup_manager::{PhaseStatus, SetupManager},
@@ -157,7 +160,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                } 
+                }
             };
         });
     }
@@ -177,7 +180,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .get_unique_string()
             .await;
 
-            info!(target: LOG_TARGET, "[ {} Phase ] Check2", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[ {} Phase ] Check2", SetupPhase::Unknown);
         if self.app_configuration.p2pool_enabled {
             let _unused = progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
@@ -189,7 +192,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
                 .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
                 .build()?;
-info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
+            info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
             state
                 .p2pool_manager
                 .ensure_started(
@@ -208,7 +211,7 @@ info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
-info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
@@ -229,7 +232,7 @@ info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
                 use_monero_fail: config.mmproxy_use_monero_fail(),
             })
             .await?;
-info!(target: LOG_TARGET, "[ {} Phase ] Check5", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[ {} Phase ] Check5", SetupPhase::Unknown);
 
         state.mm_proxy_manager.wait_ready().await?;
 

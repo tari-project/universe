@@ -39,10 +39,12 @@ use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
-    select, sync::{
+    select,
+    sync::{
         watch::{Receiver, Sender},
         Mutex,
-    }, time::{interval, Interval}
+    },
+    time::{interval, Interval},
 };
 
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
@@ -154,7 +156,7 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                } 
+                }
             };
         });
     }

@@ -36,13 +36,16 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info,warn};
+use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
-use tokio::{select, sync::{
-    watch::{Receiver, Sender},
-    Mutex,
-}};
+use tokio::{
+    select,
+    sync::{
+        watch::{Receiver, Sender},
+        Mutex,
+    },
+};
 
 use super::{
     setup_manager::{PhaseStatus, SetupManager},
@@ -147,7 +150,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                } 
+                }
             };
         });
     }
