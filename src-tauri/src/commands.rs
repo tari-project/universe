@@ -1593,7 +1593,6 @@ pub async fn start_mining<'r>(
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
-                TasksTrackers::current().hardware_phase.get_signal().await,
                 tari_address,
                 source,
                 app.path()

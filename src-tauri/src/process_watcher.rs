@@ -54,8 +54,6 @@ pub(crate) struct ProcessWatcherStats {
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
-    task_tracker: TaskTracker,
-    global_shutdown_signal: ShutdownSignal,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     /// Health timeout should always be less than poll time otherwise you will have overlapping calls
@@ -68,17 +66,10 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-    pub fn new(
-        adapter: TAdapter,
-        global_shutdown_signal: ShutdownSignal,
-        task_tracker: TaskTracker,
-        stats_broadcast: watch::Sender<ProcessWatcherStats>,
-    ) -> Self {
+    pub fn new(adapter: TAdapter, stats_broadcast: watch::Sender<ProcessWatcherStats>) -> Self {
         Self {
             adapter,
             watcher_task: None,
-            global_shutdown_signal,
-            task_tracker,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),

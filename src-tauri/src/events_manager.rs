@@ -68,7 +68,6 @@ impl EventsManager {
     }
 
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
-        error!(target: LOG_TARGET, "Waiting for initial wallet scan");
         let events_service = self.events_service.clone();
         let app = app.clone();
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
