@@ -346,25 +346,14 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_remote_node_phase_finished(app_handle: &AppHandle, status: bool) {
+    pub async fn emit_node_phase_finished(app_handle: &AppHandle, status: bool) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::RemoteNodePhaseFinished,
+            event_type: EventType::NodePhaseFinished,
             payload: status,
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit RemoteNodePhaseFinished event: {:?}", e);
-        }
-    }
-
-    pub async fn emit_local_node_phase_finished(app_handle: &AppHandle, status: bool) {
-        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
-        let event = Event {
-            event_type: EventType::LocalNodePhaseFinished,
-            payload: status,
-        };
-        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit LocalNodePhaseFinished event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit NodePhaseFinished event: {:?}", e);
         }
     }
 

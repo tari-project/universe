@@ -190,8 +190,7 @@ impl ProcessAdapter for LocalNodeAdapter {
             "-p".to_string(),
             format!(
                 "base_node.grpc_address=/ip4/{}/tcp/{}",
-                grpc_address.0,
-                grpc_address.1
+                grpc_address.0, grpc_address.1
             ),
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
@@ -451,7 +450,7 @@ impl MinotariNodeClient {
 
             let (initial_sync_tracker, header_sync_tracker, block_sync_tracker) =
                 match progress_tracker.as_slice() {
-                    [Some(initial_sync), Some(header_sync), Some(block_sync)] => {
+                    [initial_sync, header_sync, block_sync] => {
                         (initial_sync, header_sync, block_sync)
                     }
                     _ => {
@@ -473,9 +472,9 @@ impl MinotariNodeClient {
                     "required_peers".to_string(),
                     self.required_sync_peers.to_string(),
                 );
-                initial_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
+                if let Some(tracker) = initial_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
             } else if sync_progress.state == SyncState::Header as i32 {
                 let mut progress_params: HashMap<String, String> = HashMap::new();
                 let percentage =
@@ -502,9 +501,9 @@ impl MinotariNodeClient {
                     "tip_height".to_string(),
                     sync_progress.tip_height.to_string(),
                 );
-                header_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
+                if let Some(tracker) = header_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
             } else if sync_progress.state == SyncState::Block as i32 {
                 let mut progress_params: HashMap<String, String> = HashMap::new();
                 let percentage =
@@ -535,9 +534,9 @@ impl MinotariNodeClient {
                     sync_progress.tip_height.to_string(),
                 );
 
-                block_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
+                if let Some(tracker) = block_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
             } else {
                 // do nothing
             }

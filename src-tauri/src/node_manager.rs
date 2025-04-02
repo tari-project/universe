@@ -20,7 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::ops::{Deref, DerefMut};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -364,7 +363,7 @@ impl NodeManager {
             if let Some(local_node_client) = local_node_client {
                 println!("============= Local node client found, waiting for sync...");
                 match local_node_client
-                    .wait_synced(vec![], node_manager.shutdown.clone())
+                    .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
                     .await
                 {
                     Ok(_) => {
@@ -375,7 +374,8 @@ impl NodeManager {
                         }
                         {
                             println!("============= Stopping local node watcher...");
-                            let mut local_node_watcher = node_manager.local_node_watcher.write().await;
+                            let mut local_node_watcher =
+                                node_manager.local_node_watcher.write().await;
                             if let Some(local_node_watcher) = local_node_watcher.as_mut() {
                                 if let Err(e) = local_node_watcher.stop().await {
                                     error!("Failed to stop local node watcher: {}", e);

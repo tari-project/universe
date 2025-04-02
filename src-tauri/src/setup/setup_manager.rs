@@ -36,7 +36,7 @@ use tokio::sync::{watch::Sender, Mutex};
 use super::{
     phase_core::CoreSetupPhase,
     phase_hardware::{HardwareSetupPhase, HardwareSetupPhaseOutput},
-    phase_local_node::LocalNodeSetupPhase,
+    phase_node::NodeSetupPhase,
     phase_unknown::UnknownSetupPhase,
     phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl,
@@ -51,8 +51,7 @@ pub enum SetupPhase {
     Core,
     Wallet,
     Hardware,
-    LocalNode,
-    RemoteNode,
+    Node,
     Unknown,
 }
 
@@ -62,8 +61,7 @@ impl Display for SetupPhase {
             SetupPhase::Core => write!(f, "Core"),
             SetupPhase::Wallet => write!(f, "Wallet"),
             SetupPhase::Hardware => write!(f, "Hardware"),
-            SetupPhase::LocalNode => write!(f, "Local Node"),
-            SetupPhase::RemoteNode => write!(f, "Remote Node"),
+            SetupPhase::Node => write!(f, "Node"),
             SetupPhase::Unknown => write!(f, "Unknown"),
         }
     }
@@ -114,7 +112,7 @@ impl PhaseStatus {
 pub struct SetupManager {
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
-    local_node_phase_status: Sender<PhaseStatus>,
+    node_phase_status: Sender<PhaseStatus>,
     #[allow(dead_code)]
     remote_node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
@@ -137,7 +135,7 @@ impl SetupManager {
     pub async fn start_setup(&self, app_handle: AppHandle) {
         let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
         let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-        let local_node_phase_setup = Arc::new(LocalNodeSetupPhase::new(app_handle.clone()).await);
+        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
         let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
         let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
 
@@ -152,9 +150,9 @@ impl SetupManager {
                 vec![self.core_phase_status.subscribe()],
             )
             .await;
-        local_node_phase_setup
+        node_phase_setup
             .setup(
-                self.local_node_phase_status.clone(),
+                self.node_phase_status.clone(),
                 vec![self.core_phase_status.subscribe()],
             )
             .await;
@@ -163,7 +161,7 @@ impl SetupManager {
                 self.wallet_phase_status.clone(),
                 vec![
                     self.core_phase_status.subscribe(),
-                    self.local_node_phase_status.subscribe(),
+                    self.node_phase_status.subscribe(),
                 ],
             )
             .await;
@@ -172,7 +170,7 @@ impl SetupManager {
                 self.unknown_phase_status.clone(),
                 vec![
                     self.core_phase_status.subscribe(),
-                    self.local_node_phase_status.subscribe(),
+                    self.node_phase_status.subscribe(),
                     self.hardware_phase_status.subscribe(),
                 ],
             )
@@ -182,7 +180,7 @@ impl SetupManager {
     pub async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let core_phase_status_subscriber = self.core_phase_status.subscribe();
         let hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
-        let local_node_phase_status_subscriber = self.local_node_phase_status.subscribe();
+        let node_phase_status_subscriber = self.node_phase_status.subscribe();
         let wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
         let unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
 
@@ -209,14 +207,13 @@ impl SetupManager {
 
                 let core_phase_status = core_phase_status_subscriber.borrow().is_success();
                 let hardware_phase_status = hardware_phase_status_subscriber.borrow().is_success();
-                let local_node_phase_status =
-                    local_node_phase_status_subscriber.borrow().is_success();
+                let node_phase_status = node_phase_status_subscriber.borrow().is_success();
                 let unknown_phase_status = unknown_phase_status_subscriber.borrow().is_success();
                 let wallet_phase_status = wallet_phase_status_subscriber.borrow().is_success();
 
                 if core_phase_status
                     && hardware_phase_status
-                    && local_node_phase_status
+                    && node_phase_status
                     && unknown_phase_status
                     && !is_app_unlocked
                 {
@@ -227,7 +224,7 @@ impl SetupManager {
 
                 if core_phase_status
                     && hardware_phase_status
-                    && local_node_phase_status
+                    && node_phase_status
                     && unknown_phase_status
                     && !is_mining_unlocked
                 {
@@ -237,7 +234,7 @@ impl SetupManager {
                 }
 
                 if core_phase_status
-                    && local_node_phase_status
+                    && node_phase_status
                     && unknown_phase_status
                     && wallet_phase_status
                     && !is_wallet_unlocked
