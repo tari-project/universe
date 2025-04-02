@@ -40,14 +40,11 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
-use tari_utilities::epoch_time::EpochTime;
 use tari_utilities::ByteArray;
 use tokio::sync::watch;
 use tokio::time::timeout;
@@ -144,7 +141,7 @@ impl ProcessAdapter for LocalNodeAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
-        is_first_start: bool,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
