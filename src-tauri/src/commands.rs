@@ -134,8 +134,8 @@ pub struct CpuMinerConnectionStatus {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SignWsDataResponse {
-    signature: String,
-    pub_key: String,
+    pub signature: String,
+    pub pub_key: String,
 }
 
 #[tauri::command]

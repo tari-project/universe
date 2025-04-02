@@ -11,19 +11,22 @@ use log::{error, info};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use tari_common::configuration::Network;
+use tari_utilities::message_format::MessageFormat;
 use tauri::AppHandle;
 use tauri::Emitter;
+use tauri::Manager;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::error::TryRecvError;
 use tokio::sync::watch;
+use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::WebSocketStream;
 use tokio_util::sync::CancellationToken;
-use tokio_util::task::TaskTracker;
 use tungstenite::Message;
 use tungstenite::Utf8Bytes;
 
@@ -31,9 +34,11 @@ use crate::airdrop::decode_jwt_claims_without_exp;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::sign_ws_data;
 use crate::commands::CpuMinerStatus;
+use crate::commands::SignWsDataResponse;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::BaseNodeStatus;
 use crate::GpuMinerStatus;
+use crate::UniverseAppState;
 const LOG_TARGET: &str = "tari::universe::websocket";
 const OTHER_MESSAGE_NAME: &str = "other";
 
@@ -58,9 +63,14 @@ pub enum WebsocketError {
     MissingAppHandle,
 }
 #[derive(Serialize, Deserialize, Clone, Debug)]
-struct WebsocketMessage {
-    event: String,
-    data: serde_json::Value,
+#[serde(rename_all = "camelCase")]
+pub struct WebsocketMessage {
+    pub event: String,
+    pub data: serde_json::Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub signature: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub pub_key: Option<String>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -74,20 +84,20 @@ pub struct WebsocketManager {
     cancellation_token: CancellationToken,
     message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     app: Option<AppHandle>,
-    sender_channel: tokio::sync::mpsc::Sender<String>,
-    receiver_channel: Arc<RwLock<tokio::sync::mpsc::Receiver<String>>>,
+    receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
 }
 
 impl WebsocketManager {
-    pub fn new(app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
-        let (sender_channel, receiver_channel) = mpsc::channel::<String>(100);
+    pub fn new(
+        app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+        websocket_manager_rx: tokio::sync::mpsc::Receiver<WebsocketMessage>,
+    ) -> Self {
         WebsocketManager {
             app_in_memory_config,
             cancellation_token: CancellationToken::new(),
             message_cache: Arc::new(RwLock::new(HashMap::new())),
             app: None,
-            sender_channel,
-            receiver_channel: Arc::new(RwLock::new(receiver_channel)),
+            receiver_channel: Arc::new(Mutex::new(websocket_manager_rx)),
         }
     }
 
@@ -96,14 +106,14 @@ impl WebsocketManager {
         log::info!("websocket manager app handle set");
     }
 
-    pub async fn send_ws_message<'a>(&self, value: &'a str) -> Result<(), WebsocketError> {
-        //check if it is a json value
-        let message_content_result = serde_json::from_str::<WebsocketMessage>(value)
-            .inspect_err(|e| warn!(target:LOG_TARGET,"websocket message is not json"))?;
-        log::trace!("websocket message sent {:?}", message_content_result);
-        self.sender_channel.send(value.into()).await?;
-        Result::Ok(())
-    }
+    // pub async fn send_ws_message<'a>(&self, value: &'a str) -> Result<(), WebsocketError> {
+    //     //check if it is a json value
+    //     let message_content_result = serde_json::from_str::<WebsocketMessage>(value)
+    //         .inspect_err(|e| warn!(target:LOG_TARGET,"websocket message is not json"))?;
+    //     log::trace!("websocket message sent {:?}", message_content_result);
+    //     self.sender_channel.send(value.into()).await?;
+    //     Result::Ok(())
+    // }
 
     pub fn close(&self) {
         self.cancellation_token.cancel();
@@ -132,6 +142,9 @@ impl WebsocketManager {
             tokio::select! {
                 res = async {
                     loop {
+                        if cancellation.is_cancelled(){
+                            return Ok::<(),anyhow::Error>(());
+                        }
                         let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
                         if let Ok(connection) = connection_res {
@@ -141,7 +154,6 @@ impl WebsocketManager {
                             receiver_channel.clone()).await
                             .inspect_err(|e|{error!(target:LOG_TARGET,"Websocket: event handler error:{}",e.to_string())});
                         }
-                        info!(target:LOG_TARGET,"------------------Go to sleeep");
                         sleep(Duration::from_millis(5000)).await;
                     }
                 } => {
@@ -149,6 +161,7 @@ impl WebsocketManager {
                 },
                 _ = cancellation.cancelled() => {
                     info!(target: LOG_TARGET,"websocket service has been cancelled.");
+                    Ok::<(),anyhow::Error>(())
                 }
             }
         });
@@ -160,124 +173,118 @@ impl WebsocketManager {
         app: AppHandle,
         connection_cancellation_token: CancellationToken,
         message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
-        receiver_channel: Arc<RwLock<tokio::sync::mpsc::Receiver<String>>>,
+        receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
     ) -> Result<(), WebsocketError> {
         let (write_stream, read_stream) = connection_stream.split();
         info!(target:LOG_TARGET,"listening to websocket events");
 
-        let tracker = TaskTracker::new();
         let task_cancellation = CancellationToken::new();
         let task_cancellation_cloned = task_cancellation.clone();
         let task_cancellation_cloned2 = task_cancellation.clone();
 
         //receiver
-        tracker.spawn(async move {
+        let receiver_task = tauri::async_runtime::spawn(async move {
             tokio::select! {
-                _=receiver_task(app, message_cache, read_stream, task_cancellation_cloned.clone())=>{
-                    ()
+                _=receiver_task(app, message_cache, read_stream)=>{
                 },
                 _=task_cancellation_cloned.cancelled()=>{
                     info!(target:LOG_TARGET,"cancelling receiver task");
-                    ()
                 }
             }
         });
 
         //sender
-        tracker.spawn(async move {
+        let sender_task = tauri::async_runtime::spawn(async move {
             tokio::select! {
-                _=sender_task(receiver_channel, write_stream, task_cancellation_cloned2.clone())=>{
-                    ()
+                _=sender_task(receiver_channel, write_stream)=>{
                 },
                 _=task_cancellation_cloned2.cancelled()=>{
                     info!(target:LOG_TARGET,"cancelling sender task");
-                    ()
                 }
             }
         });
 
         tokio::select! {
-            _=tracker.wait()=>{
-                info!(target:LOG_TARGET,"both ws tasks cancelled");
+            _=receiver_task=>{
+                info!(target:LOG_TARGET,"receiver cancelled");
+                task_cancellation.cancel();
             },
-            _=task_cancellation.cancelled()=>{
-                tracker.close();
+            _=sender_task=>{
+                info!(target:LOG_TARGET,"sender cancelled");
+                task_cancellation.cancel();
             },
             _=connection_cancellation_token.cancelled()=>{
                 task_cancellation.cancel();
-                tracker.close();
             }
         }
-        info!(target:LOG_TARGET, "exiting listen function");
+        info!(target:LOG_TARGET, "websocket task closed");
 
         Result::Ok(())
     }
 }
 
 async fn sender_task(
-    receiver_channel: Arc<RwLock<mpsc::Receiver<String>>>,
+    receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
     mut write_stream: futures::stream::SplitSink<
         WebSocketStream<MaybeTlsStream<TcpStream>>,
         Message,
     >,
-    task_cancellation: CancellationToken,
-) -> () {
+) -> Result<(), WebsocketError> {
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
-    // loop {
-    let mut receiver_channel_guard = receiver_channel.write().await;
-    while let Some(msg) = receiver_channel_guard.recv().await {
-        if let Err(e) = write_stream
-            .send(Message::Text(Utf8Bytes::from(msg.clone())))
+    let mut receiver = receiver_channel.lock().await;
+    while let Some(msg) = receiver.recv().await {
+        let message_as_json = serde_json::to_string(&msg)?;
+        write_stream
+            .send(Message::Text(Utf8Bytes::from(message_as_json)))
             .await
-        {
-            error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
-            task_cancellation.cancel();
-        }
-        info!(target:LOG_TARGET,"websocket event sent to airdrop {}", msg);
+            .inspect_err(|e| {
+                error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
+            })?;
+        info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", msg);
     }
     info!(target:LOG_TARGET, "exiting sender task");
-    // }
+    Result::Ok(())
 }
 
 async fn receiver_task(
     app: AppHandle,
     message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     mut read_stream: futures::stream::SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
-    task_cancellation: CancellationToken,
-) -> () {
+) {
     info!(target:LOG_TARGET,"websocket_manager: rx loop initialized...");
-    // loop {
-    while let Some(Ok(msg)) = read_stream.next().await {
-        match msg {
-            Message::Text(text) => {
-                info!(target:LOG_TARGET,"websocket message received {}", text);
-                let message_as_str = text.as_str();
-                let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
-                            error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {}", e);
-                        }).ok();
+    while let Some(msg_or_error) = read_stream.next().await {
+        match msg_or_error {
+            Result::Ok(msg) => match msg {
+                Message::Text(text) => {
+                    info!(target:LOG_TARGET,"websocket message received {}", text);
+                    let message_as_str = text.as_str();
+                    let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
+                                    error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {}", e);
+                                }).ok();
 
-                if let Some(message) = messsage_value {
-                    let _ = cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
-                                error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
-                            });
-                    let _ = app.emit("ws", message).inspect_err(|e|{
-                                error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
-                            });
+                    if let Some(message) = messsage_value {
+                        let _ = cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
+                                        error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
+                                    });
+                        let _ = app.emit("ws", message).inspect_err(|e|{
+                                        error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
+                                    });
+                    }
                 }
-            }
-            Message::Close(_) => {
-                info!(target:LOG_TARGET, "webSocket closed.");
-                task_cancellation.clone().cancel();
-                break;
-            }
-            _ => {
-                error!(target: LOG_TARGET,"Not supported message type.");
+                Message::Close(_) => {
+                    info!(target:LOG_TARGET, "webSocket connection got closed.");
+                    return;
+                }
+                _ => {
+                    error!(target: LOG_TARGET,"Not supported message type.");
+                }
+            },
+            Result::Err(e) => {
+                error!(target: LOG_TARGET,"error at receiving websocket stream message {}",e);
             }
         }
     }
-    info!(target:LOG_TARGET, "exiting receiver task");
-
-    // }
+    info!(target:LOG_TARGET, "websocket receiving stream closed from server side");
 }
 
 fn check_message_conforms_to_event_format(value: &Value) -> Option<String> {
@@ -323,43 +330,3 @@ async fn cache_msg(
 
     Result::<(), WebsocketError>::Ok(())
 }
-
-// async fn send_mining_status(
-//     websocket_manager: WebsocketManager,
-//     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
-//     gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
-//     node_latest_status: watch::Receiver<BaseNodeStatus>,
-//     app_version: String,
-//     network: String,
-//     app_id: String,
-//     jwt: String,
-// ) -> Message {
-//     let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
-
-//     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
-//     let gpu_status = gpu_latest_miner_stats.borrow().clone();
-
-//     let gpu_hardware_parameters = HardwareStatusMonitor::current()
-//         .get_gpu_public_properties()
-//         .await
-//         .ok();
-//     let cpu_hardware_parameters = HardwareStatusMonitor::current()
-//         .get_cpu_public_properties()
-//         .await
-//         .ok();
-
-//     let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
-
-//     let claims = decode_jwt_claims_without_exp(&jwt).;
-//     claims.id
-//     //const transformedPayload = `${payload.userId},${payload.isMining},${payload.blockHeight}`;
-//     let signature = sign_ws_data(format!(
-//         "{},{},{},{},{},{},{}",
-//         app_version, network, app_id,
-//     ));
-//     let payload = serde_json::json!({
-//         "is_mining":is_mining_active,
-
-//     });
-//     return Message::Text(Utf8Bytes::from(payload.clone()));
-// }

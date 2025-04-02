@@ -46,7 +46,8 @@ use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
-use websocket::WebsocketManager;
+use websocket::{WebsocketError, WebsocketManager, WebsocketMessage};
+use websocket_events_manager::WebsocketEventsManager;
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -144,6 +145,7 @@ mod utils;
 mod wallet_adapter;
 mod wallet_manager;
 mod websocket;
+mod websocket_events_manager;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -413,6 +415,9 @@ async fn setup_inner(
         )
         .await?;
 
+    let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+    websocket_events_manager_guard.set_app_handle(app.clone());
+
     let mut websocket_manager_write = state.websocket_manager.write().await;
     websocket_manager_write.set_app_handle(app.clone());
     websocket_manager_write
@@ -421,17 +426,24 @@ async fn setup_inner(
         .expect("error with websocket communication");
     drop(websocket_manager_write);
 
-    let ws_cloned = state.websocket_manager.clone();
     let webview = app.get_webview_window("main").unwrap();
-    webview.listen("ws", move |event| {
+    let websocket_tx = state.websocket_message_tx.clone();
+    webview.listen("ws", move |event: tauri::Event| {
         let event_cloned = event.clone();
+        let websocket_tx_clone = websocket_tx.clone();
 
-        let ws_manager = ws_cloned.clone();
         tauri::async_runtime::spawn(async move {
             let message = event_cloned.payload();
-            if let Ok(read) = ws_manager.try_read() {
-                if let Err(e) = read.send_ws_message(message).await {
-                    warn!(target: LOG_TARGET, "ws: websocket_manager send error: {:?}", e);
+            if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                .inspect_err(|e| error!("websocket malformatted: {}", e))
+            {
+                if websocket_tx_clone
+                    .send(message.clone())
+                    .await
+                    .inspect_err(|e| error!("too many messages in websocket send queue {}", e))
+                    .is_ok()
+                {
+                    log::trace!("websocket message sent {:?}", message);
                 }
             }
         });
@@ -985,7 +997,9 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
+    websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
+    websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1019,6 +1033,8 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (websocket_message_tx, websocket_message_rx) =
+        tokio::sync::mpsc::channel::<WebsocketMessage>(500);
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
@@ -1082,6 +1098,17 @@ fn main() {
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    let app_id = app_config_raw.anon_id().to_string();
+
+    let websocket_events_manager = WebsocketEventsManager::new(
+        app_config.clone(),
+        app_id,
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        shutdown.to_signal(),
+        websocket_message_tx.clone(),
+    );
 
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
@@ -1089,6 +1116,7 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
+        websocket_message_tx: Arc::new(websocket_message_tx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
@@ -1115,7 +1143,9 @@ fn main() {
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
         websocket_manager: Arc::new(RwLock::new(WebsocketManager::new(
             app_in_memory_config.clone(),
+            websocket_message_rx,
         ))),
+        websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
