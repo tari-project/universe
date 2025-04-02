@@ -111,7 +111,7 @@ impl TelemetryService {
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
-        TasksTrackers::current().common.get_task_tracker().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             let system_info = SystemInfo {
                 version,
                 user_id: user,

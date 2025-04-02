@@ -85,14 +85,8 @@ impl Clone for MmProxyManager {
 impl MmProxyManager {
     pub fn new(stats_collector: &mut ProcessStatsCollectorBuilder) -> Self {
         let sidecar_adapter = MergeMiningProxyAdapter::new();
-        let global_shutdown_signal = block_on(TasksTrackers::current().unknown_phase.get_signal());
-        let task_tracker = TasksTrackers::current().unknown_phase.get_task_tracker();
-        let mut process_watcher = ProcessWatcher::new(
-            sidecar_adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_mm_proxy(),
-        );
+        let mut process_watcher =
+            ProcessWatcher::new(sidecar_adapter, stats_collector.take_mm_proxy());
         process_watcher.health_timeout = std::time::Duration::from_secs(28);
         process_watcher.poll_time = std::time::Duration::from_secs(30);
 
@@ -132,6 +126,12 @@ impl MmProxyManager {
     }
 
     pub async fn start(&self, config: StartConfig) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .unknown_phase
+            .get_task_tracker()
+            .await;
+
         let mut current_start_config = self.start_config.write().await;
         *current_start_config = Some(config.clone());
         let mut process_watcher = self.watcher.write().await;
@@ -154,6 +154,8 @@ impl MmProxyManager {
                 config.config_path,
                 config.log_path,
                 crate::binaries::Binaries::MergeMiningProxy,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
 

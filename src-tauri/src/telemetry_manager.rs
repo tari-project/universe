@@ -306,7 +306,7 @@ impl TelemetryManager {
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = time::interval(timeout);
 
-        TasksTrackers::current().common.get_task_tracker().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
                 tokio::select! {
                     _ = interval.tick() => {

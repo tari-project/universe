@@ -121,7 +121,7 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::LocalNode);
 
-        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
@@ -257,7 +257,7 @@ impl SetupPhaseImpl for LocalNodeSetupPhase {
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
             let mut has_send_error = false;
 

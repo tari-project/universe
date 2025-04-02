@@ -191,6 +191,7 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
     TasksTrackers::current()
         .common
         .get_task_tracker()
+        .await
         .spawn(async move {
             let app_state = app_handle.state::<UniverseAppState>();
             // Give the splash screen a few seconds to show before closing it
@@ -1582,7 +1583,6 @@ pub async fn start_mining<'r>(
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
-                TasksTrackers::current().hardware_phase.get_signal().await,
                 tari_address,
                 source,
                 app.path()

@@ -192,7 +192,7 @@ impl SetupManager {
         TasksTrackers::current()
             .common
             .get_task_tracker()
-            .spawn(async move {
+            .await.spawn(async move {
                     // Todo change it to use tokio stream and listien to changes on receivers
                 let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
                 loop {
@@ -278,22 +278,27 @@ impl SetupManager {
                 SetupPhase::Core => {
                     TasksTrackers::current().core_phase.close().await;
                     TasksTrackers::current().core_phase.replace().await;
+                    let _unused = self.core_phase_status.send(PhaseStatus::None);
                 }
                 SetupPhase::Hardware => {
                     TasksTrackers::current().hardware_phase.close().await;
                     TasksTrackers::current().hardware_phase.replace().await;
+                    let _unused = self.hardware_phase_status.send(PhaseStatus::None);
                 }
                 SetupPhase::LocalNode => {
                     TasksTrackers::current().node_phase.close().await;
                     TasksTrackers::current().node_phase.replace().await;
+                    let _unused = self.local_node_phase_status.send(PhaseStatus::None);
                 }
                 SetupPhase::Wallet => {
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
+                    let _unused = self.wallet_phase_status.send(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
+                    let _unused = self.unknown_phase_status.send(PhaseStatus::None);
                 }
                 _ => {}
             }

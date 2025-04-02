@@ -142,7 +142,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
-        TasksTrackers::current().core_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
@@ -413,7 +413,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await;
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTrackers::current().common.get_task_tracker().spawn(async move {
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
             let mut last_state = *receiver.borrow();
             let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;

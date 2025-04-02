@@ -40,6 +40,8 @@ const LOG_EVENT_TYPES = [
     'DetectedDevices',
     'DetectedAvailableGpuEngines',
     'AppConfigLoaded',
+    'LockMining',
+    'LockWallet',
 ];
 
 const useTauriEventsListener = () => {

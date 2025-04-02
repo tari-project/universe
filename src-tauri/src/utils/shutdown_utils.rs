@@ -196,7 +196,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner
         .start_benchmarking(
-            TasksTrackers::current().hardware_phase.get_signal().await,
             Duration::from_secs(30),
             data_dir.clone(),
             config_dir.clone(),

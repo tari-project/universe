@@ -87,7 +87,7 @@ impl SetupPhaseImpl for RemoteNodeSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::RemoteNode);
 
-        TasksTrackers::current().node_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {

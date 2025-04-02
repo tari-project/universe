@@ -51,8 +51,6 @@ pub(crate) struct ProcessWatcherStats {
 pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) adapter: TAdapter,
     watcher_task: Option<JoinHandle<Result<i32, anyhow::Error>>>,
-    task_tracker: TaskTracker,
-    global_shutdown_signal: ShutdownSignal,
     internal_shutdown: Shutdown,
     pub poll_time: tokio::time::Duration,
     /// Health timeout should always be less than poll time otherwise you will have overlapping calls
@@ -64,17 +62,10 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
-    pub fn new(
-        adapter: TAdapter,
-        global_shutdown_signal: ShutdownSignal,
-        task_tracker: TaskTracker,
-        stats_broadcast: watch::Sender<ProcessWatcherStats>,
-    ) -> Self {
+    pub fn new(adapter: TAdapter, stats_broadcast: watch::Sender<ProcessWatcherStats>) -> Self {
         Self {
             adapter,
             watcher_task: None,
-            global_shutdown_signal,
-            task_tracker,
             internal_shutdown: Shutdown::new(),
             poll_time: tokio::time::Duration::from_secs(5),
             health_timeout: tokio::time::Duration::from_secs(4),
@@ -101,16 +92,17 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         config_path: PathBuf,
         log_path: PathBuf,
         binary: Binaries,
+        global_shutdown_signal: ShutdownSignal,
+        task_tracker: TaskTracker,
     ) -> Result<(), anyhow::Error> {
-        if self.global_shutdown_signal.is_terminated() || self.global_shutdown_signal.is_triggered()
-        {
+        if global_shutdown_signal.is_terminated() || global_shutdown_signal.is_triggered() {
             return Ok(());
         }
 
         let name = self.adapter.name().to_string();
         if self.watcher_task.is_some() {
             warn!(target: LOG_TARGET, "Tried to start process watcher for {} twice", name);
-            return Ok(());
+            self.stop().await?;
         }
         info!(target: LOG_TARGET, "Starting process watcher for {}", name);
         self.kill_previous_instances(base_path.clone()).await?;
@@ -133,11 +125,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.status_monitor = Some(status_monitor);
 
         let expected_startup_time = self.expected_startup_time;
-        let mut global_shutdown_signal: ShutdownSignal = self.global_shutdown_signal.clone();
-        let task_tracker = self.task_tracker.clone();
+        let mut global_shutdown_signal: ShutdownSignal = global_shutdown_signal.clone();
+        let task_tracker = task_tracker.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(self.task_tracker.spawn(async move {
+        self.watcher_task = Some(task_tracker.clone().spawn(async move {
             child.start(task_tracker.clone()).await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
@@ -217,6 +209,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         self.internal_shutdown.trigger();
         if let Some(task) = self.watcher_task.take() {
             let exit_code = task.await??;
+            self.watcher_task = None;
             return Ok(exit_code);
         }
         Ok(0)

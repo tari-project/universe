@@ -181,6 +181,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
     TasksTrackers::current()
         .common
         .get_task_tracker()
+        .await
         .spawn(async move {
             let app_state = move_app.state::<UniverseAppState>().clone();
 
@@ -191,7 +192,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         });
 
     let move_app = app.clone();
-    TasksTrackers::current().common.get_task_tracker().spawn(async move {
+    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
@@ -257,7 +258,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TasksTrackers::current().common.get_task_tracker().spawn(async move {
+    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
@@ -774,7 +775,6 @@ async fn setup_inner(
     let mut cpu_miner = state.cpu_miner.write().await;
     let benchmarked_hashrate = cpu_miner
         .start_benchmarking(
-            TasksTrackers::current().common.get_signal().await,
             Duration::from_secs(30),
             data_dir.clone(),
             config_dir.clone(),
@@ -880,6 +880,7 @@ async fn setup_inner(
     TasksTrackers::current()
         .common
         .get_task_tracker()
+        .await
         .spawn(async move {
             let mut interval: time::Interval = time::interval(Duration::from_secs(30));
             let mut has_send_error = false;

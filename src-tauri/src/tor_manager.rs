@@ -48,14 +48,7 @@ impl TorManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = TorAdapter::new(status_broadcast);
-        let global_shutdown_signal = block_on(TasksTrackers::current().core_phase.get_signal());
-        let task_tracker = TasksTrackers::current().core_phase.get_task_tracker();
-        let process_watcher = ProcessWatcher::new(
-            adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_tor(),
-        );
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -69,6 +62,9 @@ impl TorManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         {
+            let shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current().core_phase.get_task_tracker().await;
+
             let mut process_watcher = self.watcher.write().await;
 
             process_watcher
@@ -81,6 +77,8 @@ impl TorManager {
                     config_path,
                     log_path,
                     crate::binaries::Binaries::Tor,
+                    shutdown_signal,
+                    task_tracker,
                 )
                 .await?;
         }

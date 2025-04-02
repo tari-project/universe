@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use futures_util::future::FusedFuture;
-use log::warn;
+use log::{info, warn};
 use tari_shutdown::ShutdownSignal;
 use tauri::async_runtime::block_on;
 use tokio::sync::{watch, RwLock};
@@ -128,14 +128,7 @@ impl P2poolManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = P2poolAdapter::new(stats_broadcast);
-        let global_shutdown_signal = block_on(TasksTrackers::current().unknown_phase.get_signal());
-        let task_tracker = TasksTrackers::current().unknown_phase.get_task_tracker();
-        let mut process_watcher = ProcessWatcher::new(
-            adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_p2pool(),
-        );
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_p2pool());
         process_watcher.expected_startup_time = Duration::from_secs(300);
 
         Self {
@@ -160,6 +153,14 @@ impl P2poolManager {
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
+        let shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .unknown_phase
+            .get_task_tracker()
+            .await;
+
+        info!(target: LOG_TARGET, "Starting P2pool, is_shutdown triggered: {} | is terminated: {}", shutdown_signal.is_triggered(),shutdown_signal.is_terminated());
+        info!(target: LOG_TARGET, "task tracker is closed: {}", task_tracker.is_closed());
 
         process_watcher.adapter.config = Some(config);
         process_watcher.health_timeout = Duration::from_secs(28);
@@ -170,6 +171,8 @@ impl P2poolManager {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::ShaP2pool,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;

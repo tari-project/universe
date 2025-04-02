@@ -71,14 +71,7 @@ impl<T: NodeAdapter> WalletManager<T> {
         let use_tor = false;
 
         let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
-        let global_shutdown_signal = block_on(TasksTrackers::current().wallet_phase.get_signal());
-        let task_tracker = TasksTrackers::current().wallet_phase.get_task_tracker();
-        let process_watcher = ProcessWatcher::new(
-            adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_wallet(),
-        );
+        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
@@ -93,6 +86,12 @@ impl<T: NodeAdapter> WalletManager<T> {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
+        let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await;
+
         self.node_manager.wait_ready().await?;
         let node_identity = self.node_manager.get_identity().await?;
 
@@ -114,6 +113,8 @@ impl<T: NodeAdapter> WalletManager<T> {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::Wallet,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;

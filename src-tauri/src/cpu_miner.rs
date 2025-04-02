@@ -60,14 +60,7 @@ impl CpuMiner {
     ) -> Self {
         let (summary_watch_tx, summary_watch_rx) = watch::channel::<Option<Summary>>(None);
         let xmrig_adapter = XmrigAdapter::new(summary_watch_tx);
-        let global_shutdown_signal = block_on(TasksTrackers::current().hardware_phase.get_signal());
-        let task_tracker = TasksTrackers::current().hardware_phase.get_task_tracker();
-        let process_watcher = ProcessWatcher::new(
-            xmrig_adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_cpu_miner(),
-        );
+        let process_watcher = ProcessWatcher::new(xmrig_adapter, stats_collector.take_cpu_miner());
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             cpu_miner_status_watch_tx,
@@ -137,11 +130,19 @@ impl CpuMiner {
                 MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
             };
 
+            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current()
+                .hardware_phase
+                .get_task_tracker()
+                .await;
+
             lock.start(
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         }
@@ -153,12 +154,17 @@ impl CpuMiner {
 
     pub async fn start_benchmarking(
         &mut self,
-        app_shutdown: ShutdownSignal,
         duration: Duration,
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
     ) -> Result<u64, anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
@@ -177,6 +183,8 @@ impl CpuMiner {
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         }
@@ -210,7 +218,7 @@ impl CpuMiner {
             let mut max_hashrate = 0f64;
 
             loop {
-                if app_shutdown.is_triggered() {
+                if shutdown_signal.is_triggered() {
                     break;
                 }
 
@@ -261,7 +269,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        TasksTrackers::current().hardware_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {

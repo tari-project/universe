@@ -103,14 +103,7 @@ impl GpuMiner {
     ) -> Self {
         let (gpu_raw_status_tx, gpu_raw_status_rx) = watch::channel(None);
         let adapter = GpuMinerAdapter::new(Vec::new(), gpu_raw_status_tx);
-        let global_shutdown_signal = block_on(TasksTrackers::current().hardware_phase.get_signal());
-        let task_tracker = TasksTrackers::current().hardware_phase.get_task_tracker();
-        let mut process_watcher = ProcessWatcher::new(
-            adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_gpu_miner(),
-        );
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner());
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
 
@@ -128,7 +121,6 @@ impl GpuMiner {
     #[allow(clippy::too_many_arguments)]
     pub async fn start(
         &mut self,
-        app_shutdown: ShutdownSignal,
         tari_address: TariAddress,
         node_source: GpuNodeSource,
         base_path: PathBuf,
@@ -138,6 +130,12 @@ impl GpuMiner {
         coinbase_extra: String,
         custom_gpu_grid_size: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.tari_address = tari_address;
         process_watcher.adapter.gpu_devices = self.gpu_devices.clone();
@@ -148,11 +146,18 @@ impl GpuMiner {
         process_watcher.adapter.coinbase_extra = coinbase_extra;
         info!(target: LOG_TARGET, "Starting xtrgpuminer");
         process_watcher
-            .start(base_path, config_path, log_path, Binaries::GpuMiner)
+            .start(
+                base_path,
+                config_path,
+                log_path,
+                Binaries::GpuMiner,
+                shutdown_signal.clone(),
+                task_tracker,
+            )
             .await?;
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
-        self.initialize_status_updates(app_shutdown).await;
+        self.initialize_status_updates(shutdown_signal).await;
 
         Ok(())
     }

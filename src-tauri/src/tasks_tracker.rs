@@ -32,36 +32,36 @@ static INSTANCE: LazyLock<TasksTrackers> = LazyLock::new(TasksTrackers::new);
 pub struct TaskTrackerUtil {
     name: &'static str,
     shutdown: Mutex<Shutdown>,
-    task_tracker: TaskTracker,
+    task_tracker: Mutex<TaskTracker>,
 }
 impl TaskTrackerUtil {
     pub fn new(name: &'static str) -> Self {
         Self {
             name,
             shutdown: Mutex::new(Shutdown::new()),
-            task_tracker: TaskTracker::new(),
+            task_tracker: Mutex::new(TaskTracker::new()),
         }
     }
 
     pub async fn get_signal(&self) -> ShutdownSignal {
         self.shutdown.lock().await.to_signal()
     }
-    pub fn get_task_tracker(&self) -> TaskTracker {
-        self.task_tracker.clone()
+    pub async fn get_task_tracker(&self) -> TaskTracker {
+        self.task_tracker.lock().await.clone()
     }
     pub async fn close(&self) {
         info!(target: LOG_TARGET, "Triggering shutdown for {} processes", self.name);
         self.shutdown.lock().await.trigger();
         info!(target: LOG_TARGET, "Triggering task close for {} processes", self.name);
-        self.task_tracker.close();
+        self.task_tracker.lock().await.close();
         info!(target: LOG_TARGET, "Waiting for {} processes to finish", self.name);
-        self.task_tracker.wait().await;
+        self.task_tracker.lock().await.wait().await;
         info!(target: LOG_TARGET, "{} processes have finished", self.name);
     }
 
     pub async fn replace(&self) {
         *self.shutdown.lock().await = Shutdown::new();
-        self.task_tracker.reopen();
+        *self.task_tracker.lock().await = TaskTracker::new();
     }
 }
 

@@ -122,14 +122,8 @@ impl<T: NodeAdapter> NodeManager<T> {
         // MinotariNodeAdapter::new(status_broadcast.clone()),
         // RemoteNodeAdapter::new(status_broadcast),
         // );
-        let global_shutdown_signal = block_on(TasksTrackers::current().node_phase.get_signal());
-        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker();
-        let mut process_watcher = ProcessWatcher::new(
-            node_adapter,
-            global_shutdown_signal,
-            task_tracker,
-            stats_collector.take_minotari_node(),
-        );
+        let mut process_watcher =
+            ProcessWatcher::new(node_adapter, stats_collector.take_minotari_node());
         process_watcher.poll_time = Duration::from_secs(5);
         process_watcher.health_timeout = Duration::from_secs(4);
         process_watcher.expected_startup_time = Duration::from_secs(30);
@@ -156,6 +150,9 @@ impl<T: NodeAdapter> NodeManager<T> {
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         {
+            let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
             let mut process_watcher = self.watcher.write().await;
 
             process_watcher.adapter.use_tor(use_tor);
@@ -172,6 +169,8 @@ impl<T: NodeAdapter> NodeManager<T> {
                     config_path,
                     log_path,
                     crate::binaries::Binaries::MinotariNode,
+                    shutdown_signal,
+                    task_tracker,
                 )
                 .await?;
         }
@@ -186,6 +185,9 @@ impl<T: NodeAdapter> NodeManager<T> {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher
             .start(
@@ -193,6 +195,8 @@ impl<T: NodeAdapter> NodeManager<T> {
                 config_path,
                 log_path,
                 crate::binaries::Binaries::MinotariNode,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
 

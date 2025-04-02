@@ -139,7 +139,12 @@ impl SpendWalletAdapter {
                 .extend(command.extra_envs);
 
             instance
-                .start(TasksTrackers::current().wallet_phase.get_task_tracker())
+                .start(
+                    TasksTrackers::current()
+                        .wallet_phase
+                        .get_task_tracker()
+                        .await,
+                )
                 .await?;
             let exit_code = instance.wait().await?;
 

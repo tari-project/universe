@@ -124,7 +124,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
-        TasksTrackers::current().unknown_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
@@ -163,10 +163,12 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
+        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
         let session_configuration = Self::load_session_configuration();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
+        info!(target: LOG_TARGET, "[ {} Phase ] Check1", SetupPhase::Unknown);
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
@@ -175,6 +177,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .get_unique_string()
             .await;
 
+            info!(target: LOG_TARGET, "[ {} Phase ] Check2", SetupPhase::Unknown);
         if self.app_configuration.p2pool_enabled {
             let _unused = progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
@@ -186,7 +189,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
                 .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
                 .build()?;
-
+info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
             state
                 .p2pool_manager
                 .ensure_started(
@@ -204,6 +207,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
+
+info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
@@ -224,6 +229,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 use_monero_fail: config.mmproxy_use_monero_fail(),
             })
             .await?;
+info!(target: LOG_TARGET, "[ {} Phase ] Check5", SetupPhase::Unknown);
+
         state.mm_proxy_manager.wait_ready().await?;
 
         Ok(None)

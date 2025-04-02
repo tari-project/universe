@@ -114,7 +114,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Hardware);
 
-        TasksTrackers::current().hardware_phase.get_task_tracker().spawn(async move {
+        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
@@ -186,7 +186,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let mut cpu_miner = state.cpu_miner.write().await;
         let benchmarked_hashrate = cpu_miner
             .start_benchmarking(
-                TasksTrackers::current().hardware_phase.get_signal().await,
                 Duration::from_secs(30),
                 data_dir.clone(),
                 config_dir.clone(),
