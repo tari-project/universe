@@ -66,6 +66,7 @@ export const TextWrapper = styled.div`
 
 export const SecondaryButton = styled(Typography)`
     display: inline-block;
+    width: fit-content;
     cursor: pointer;
     color: black;
     font-family: Poppins;

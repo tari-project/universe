@@ -5,19 +5,10 @@ import { useCallback } from 'react';
 
 interface CountdownResult {
     seconds: number;
-    startCountdown: () => void;
-    stopCountdown: () => void;
+    start: () => void;
+    stop: () => void;
 }
 
-/**
- * Custom hook for managing a simple countdown timer in seconds.
- *
- * @param initialSeconds The total number of seconds to count down from.
- *                       Must be a non-negative integer.
- * @param onFinish Optional callback function to execute when the countdown finishes.
- * @returns An object containing the remaining seconds and a boolean
- *          indicating if the countdown has finished.
- */
 export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
     const [attempt, setAttempt] = React.useState(0);
     const retryConnectionTimeout = React.useRef<NodeJS.Timeout | null>(null);
@@ -79,7 +70,7 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
 
     return {
         seconds: countdown,
-        startCountdown,
-        stopCountdown,
+        start: startRetry,
+        stop: stopRetry,
     };
 };

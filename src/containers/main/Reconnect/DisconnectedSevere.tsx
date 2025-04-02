@@ -16,7 +16,7 @@ const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const { seconds, startCountdown, stopCountdown } = useCountdown([300]);
+    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown([300]);
 
     useEffect(() => {
         if (!isVisible && connectionStatus === 'disconnected-severe') {
