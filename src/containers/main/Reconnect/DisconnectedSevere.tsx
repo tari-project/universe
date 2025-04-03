@@ -12,12 +12,27 @@ import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
 import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
+import { listen } from '@tauri-apps/api/event';
 
 const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown([300]);
+    const isReconnecting = useUIStore((s) => s.isReconnecting);
+
+    useEffect(() => {
+        const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
+            if (payload === 'Failed') {
+                stopCountdown();
+                startCountdown();
+            }
+        });
+
+        return () => {
+            reconnectingListener.then((unlisten) => unlisten());
+        };
+    }, []);
 
     useEffect(() => {
         if (!isVisible && connectionStatus === 'disconnected-severe') {
@@ -39,22 +54,28 @@ const DisconnectedSevere: React.FC = () => {
         setIsReconnecting(true);
     };
 
+    const retryText = isReconnecting ? (
+        <>{t('reconnect-in-progress')}</>
+    ) : (
+        <>
+            {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
+        </>
+    );
+
     return (
-        <Wrapper style={{ display: connectionStatus === 'disconnected-severe' ? 'block' : 'none' }}>
+        <Wrapper style={{ display: isVisible ? 'block' : 'none' }}>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
                 <HeaderImgSevere
                     src={disconnectedSevereImage}
                     alt="DisconnectedSevere"
-                    style={{ width: 'min(660px, 100vh);' }}
+                    style={{ width: 'min(660px, 100vh)' }}
                 />
                 <TextWrapper>
                     <Title>{t('disconnect-severe-title')}</Title>
                     <SubTitle>{t('disconnect-severe-subtitle')}</SubTitle>
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
-                    <RetryTimer>
-                        {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
-                    </RetryTimer>
+                    <RetryTimer>{retryText}</RetryTimer>
                     <Stack direction="row" gap={30}>
                         <SecondaryButton onClick={reconnect}>{t('connect-now')}</SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>

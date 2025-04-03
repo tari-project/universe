@@ -10,7 +10,6 @@ export const Wrapper = styled.div`
     background-color: rgba(0, 0, 0, 0);
     width: 100%;
     height: 100%;
-    z-index: 99999 !important;
     margin: auto;
     display: flex;
     flex-direction: column;

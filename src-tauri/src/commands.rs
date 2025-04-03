@@ -1833,10 +1833,27 @@ pub async fn set_selected_engine(
     Ok(())
 }
 
+#[derive(Serialize, Clone)]
+enum ReconnectStatus {
+    InProgress,
+    Succeed,
+    Failed,
+}
+
 #[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
-    resume_all_processes(app_handle)
+    let _ = app_handle.emit("reconnecting", ReconnectStatus::InProgress);
+    let resume_res = resume_all_processes(app_handle.clone())
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string());
+    match resume_res {
+        Ok(_) => {
+            let _ = app_handle.emit("reconnecting", ReconnectStatus::Succeed);
+        }
+        Err(e) => {
+            let _ = app_handle.emit("reconnecting", ReconnectStatus::Failed);
+            return Err(e.to_string());
+        }
+    }
     Ok(())
 }

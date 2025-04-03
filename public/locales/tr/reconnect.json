@@ -6,5 +6,6 @@
   "disconnect-subtitle": "Hang tight while we attempt to reconnect you to the network.",
   "disconnect-title": "Uh oh, you're not connected to the Tari network",
   "go-to-telegram": "Get Help on Telegram",
+  "reconnect-in-progress": "Reconnecting...",
   "restart-app": "Restart Tari Universe"
 }

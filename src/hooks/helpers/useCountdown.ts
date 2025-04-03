@@ -13,7 +13,7 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
     const [attempt, setAttempt] = React.useState(0);
     const retryConnectionTimeout = React.useRef<NodeJS.Timeout | null>(null);
     const countdownInterval = React.useRef<NodeJS.Timeout | null>(null);
-    const [countdown, setCoutdown] = React.useState(0);
+    const [countdown, setCountdown] = React.useState(0);
 
     const reconnect = useCallback(() => {
         setIsReconnecting(true);
@@ -38,9 +38,9 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
     }, []);
 
     const startCountdown = useCallback(() => {
-        setCoutdown(intervalsInSecs[attempt]);
+        setCountdown(intervalsInSecs[attempt]);
         countdownInterval.current = setInterval(() => {
-            setCoutdown((prev) => {
+            setCountdown((prev) => {
                 if (prev === 0) {
                     if (countdownInterval.current) {
                         clearInterval(countdownInterval.current);
