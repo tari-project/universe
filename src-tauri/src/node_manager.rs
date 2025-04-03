@@ -370,7 +370,7 @@ impl NodeManager {
         let node_manager = self.clone();
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             select! {
-                _ = shutdown_signal => {
+                _ = shutdown_signal.wait() => {
                     info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
                 }
                 _ = async {
@@ -383,46 +383,39 @@ impl NodeManager {
                         };
                         if local_node_client.is_some() {
                             break;
-                    }
-                }
-
-            if let Some(local_node_client) = local_node_client {
-                match local_node_client
-                    .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
-                    .await
-                {
-                    Ok(_) => {
-                        info!(target: LOG_TARGET, "Local node synced, switching node type...");
-                        {
-                            let mut node_type = node_type.write().await;
-                            *node_type = NodeType::LocalAfterRemote;
                         }
+                    }
+
+                    if let Some(local_node_client) = local_node_client {
+                        match local_node_client
+                            .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
+                            .await
                         {
-                            let mut remote_node_watcher =
-                                node_manager.remote_node_watcher.write().await;
-                            SetupManager::get_instance()
-                                .handle_switch_to_local_node()
-                                .await;
-                            if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
-                                if let Err(e) = remote_node_watcher.stop().await {
-                                    error!(target: LOG_TARGET, "Failed to stop local node watcher: {}", e);
+                            Ok(_) => {
+                                info!(target: LOG_TARGET, "Local node synced, switching node type...");
+                                {
+                                    let mut node_type = node_type.write().await;
+                                    *node_type = NodeType::LocalAfterRemote;
+                                }
+                                {
+                                    let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
+                                    SetupManager::get_instance().handle_switch_to_local_node().await;
+                                    if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
+                                        if let Err(e) = remote_node_watcher.stop().await {
+                                            error!(target: LOG_TARGET, "Failed to stop local node watcher: {}", e);
+                                        }
+                                    }
                                 }
                             }
+                            Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
+                            Err(e) => {
+                                error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
+                            }
                         }
+                    } else {
+                        error!(target: LOG_TARGET, "Local node client not found when switching nodes");
                     }
-                    Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
-                    Err(e) => {
-                        error!(target: LOG_TARGET,
-                            "NodeManagerError: {}",
-                            NodeManagerError::UnknownError(e.into())
-                        );
-                    }
-                }
-            } else {
-                error!(target: LOG_TARGET,
-                    "Local node client not found when switching nodes",
-                );
-            }} => {}
+                } => {}
             }
         });
 
