@@ -43,51 +43,50 @@ pub trait ConfigImpl {
 
     fn new() -> Self;
     fn current() -> &'static RwLock<Self>;
-    fn get_name() -> String;
-    fn get_content(&self) -> &Self::Config;
-    fn get_content_mut(&mut self) -> &mut Self::Config;
-    async fn get_current_content() -> Self::Config
-    where
-        Self: 'static,
-    {
-        Self::current().read().await.get_content().clone()
-    }
-    fn get_config_path() -> PathBuf {
+    fn _get_name() -> String;
+    fn _get_content(&self) -> &Self::Config;
+    fn _get_content_mut(&mut self) -> &mut Self::Config;
+    fn _get_config_path() -> PathBuf {
         let config_dir = config_dir().unwrap_or_else(|| {
             debug!("Failed to get config directory, using temp dir");
             temp_dir()
         });
         config_dir
             .join(APPLICATION_FOLDER_ID)
-            .join(Self::get_name())
+            .join(Self::_get_name())
     }
-    fn save_config(&self) -> Result<(), Error> {
-        let config_path = Self::get_config_path();
+    fn _save_config(&self) -> Result<(), Error> {
+        let config_path = Self::_get_config_path();
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let config_content = self.get_content();
+        let config_content = self._get_content();
         let config_content_serialized = serde_json::to_string_pretty(config_content)?;
         fs::write(config_path, config_content_serialized)?;
         Ok(())
     }
-    fn load_config(&self) -> Result<Self::Config, Error> {
-        let config_path = Self::get_config_path();
+    fn _load_config(&self) -> Result<Self::Config, Error> {
+        let config_path = Self::_get_config_path();
         println!("config_path: {:?}", config_path);
         let config_content_serialized = fs::read_to_string(config_path)?;
         let config_content: Self::Config = serde_json::from_str(&config_content_serialized)?;
         Ok(config_content)
     }
+    async fn content() -> Self::Config
+    where
+        Self: 'static,
+    {
+        Self::current().read().await._get_content().clone()
+    }
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), Error>;
-
     async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {
-        debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::get_name(), std::any::type_name::<F>(), value);
-        setter_callback(Self::current().write().await.get_content_mut(), value);
-        Self::current().write().await.save_config()?;
+        debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
+        setter_callback(Self::current().write().await._get_content_mut(), value);
+        Self::current().write().await._save_config()?;
         Ok(())
     }
 }

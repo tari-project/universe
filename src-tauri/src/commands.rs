@@ -26,7 +26,7 @@ use crate::app_in_memory_config::{
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
-use crate::configs::config_core::ConfigCore;
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
 use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
 use crate::configs::config_wallet::ConfigWallet;
@@ -398,10 +398,7 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if *ConfigWallet::get_current_content()
-        .await
-        .monero_address_is_generated()
-    {
+    if *ConfigWallet::content().await.monero_address_is_generated() {
         return Err(
             "Monero seed words are not available when a Monero address is provided".to_string(),
         );
@@ -491,20 +488,21 @@ pub async fn get_p2pool_connections(
 pub async fn set_p2pool_stats_server_port(
     port: Option<u16>,
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
     let telemetry_service = state.telemetry_service.read().await;
     let _res = telemetry_service
         .send("set_p2pool_stats_server_port".to_string(), json!(port))
         .await;
     drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_p2pool_stats_server_port(port)
-        .await
-        .map_err(|e| e.to_string())?;
+
+    if let Some(port) = port {
+        if port < 1024 || port > 65535 {
+            return Err("Port must be between 1024 and 65535".to_string());
+        }
+    };
+
+    ConfigCore::update_field(ConfigCoreContent::set_p2pool_stats_server_port, port).await?;
     Ok(())
 }
 

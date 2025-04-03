@@ -90,15 +90,15 @@ impl ConfigImpl for ConfigUI {
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "ui_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 

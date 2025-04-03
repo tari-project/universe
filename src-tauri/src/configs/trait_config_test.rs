@@ -97,15 +97,15 @@ impl ConfigImpl for TestConfig {
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "test_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 
@@ -128,8 +128,8 @@ mod tests {
     use std::fs;
 
     fn clear_config_file() {
-        if TestConfig::get_config_path().exists() {
-            std::fs::remove_file(TestConfig::get_config_path()).unwrap();
+        if TestConfig::_get_config_path().exists() {
+            std::fs::remove_file(TestConfig::_get_config_path()).unwrap();
         }
     }
 
@@ -142,9 +142,9 @@ mod tests {
         let config = TestConfig::current().read().await;
         before_each();
 
-        config.save_config().unwrap();
+        config._save_config().unwrap();
 
-        assert!(TestConfig::get_config_path().exists());
+        assert!(TestConfig::_get_config_path().exists());
     }
 
     #[tokio::test]
@@ -152,10 +152,10 @@ mod tests {
         let config = TestConfig::current().read().await;
         before_each();
 
-        config.save_config().unwrap();
+        config._save_config().unwrap();
 
-        let loaded_config = config.load_config().unwrap();
-        assert_eq!(config.get_content(), &loaded_config);
+        let loaded_config = config._load_config().unwrap();
+        assert_eq!(config._get_content(), &loaded_config);
     }
 
     #[tokio::test]
@@ -163,15 +163,15 @@ mod tests {
         let config = TestConfig::current().read().await;
         before_each();
 
-        let initial_value = *config.get_content().some_test_bool();
+        let initial_value = *config._get_content().some_test_bool();
         TestConfig::update_field(TestConfigContent::set_some_test_bool, !initial_value)
             .await
             .unwrap();
 
-        assert_eq!(!initial_value, *config.get_content().some_test_bool());
+        assert_eq!(!initial_value, *config._get_content().some_test_bool());
         assert_eq!(
             !initial_value,
-            *config.load_config().unwrap().some_test_bool()
+            *config._load_config().unwrap().some_test_bool()
         );
     }
     #[tokio::test]
@@ -188,13 +188,13 @@ mod tests {
 
         assert_eq!(
             &old_config.some_test_string,
-            config.get_content().some_test_string()
+            config._get_content().some_test_string()
         );
         assert_eq!(
             old_config.some_test_bool,
-            *config.get_content().some_test_bool()
+            *config._get_content().some_test_bool()
         );
-        assert_eq!(0, *config.get_content().some_test_int());
+        assert_eq!(0, *config._get_content().some_test_int());
     }
 
     #[tokio::test]
@@ -208,9 +208,9 @@ mod tests {
         };
 
         let not_full_config_serialized = serde_json::to_string_pretty(&not_full_config).unwrap();
-        fs::write(TestConfig::get_config_path(), not_full_config_serialized).unwrap();
+        fs::write(TestConfig::_get_config_path(), not_full_config_serialized).unwrap();
 
-        let loaded_config = config.load_config().unwrap();
+        let loaded_config = config._load_config().unwrap();
 
         assert_eq!(
             loaded_config.some_test_string,
