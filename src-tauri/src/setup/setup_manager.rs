@@ -24,7 +24,7 @@ use crate::{
     initialize_frontend_updates, release_notes::ReleaseNotes, tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
-use log::{info, error};
+use log::{error, info};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
@@ -390,8 +390,15 @@ impl SetupManager {
             // )
             // .await;
 
-            let wallet_phase_setup =
-                Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
+            TasksTrackers::current().wallet_phase.close().await;
+            TasksTrackers::current().wallet_phase.replace().await;
+            let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
+
+            TasksTrackers::current().unknown_phase.close().await;
+            TasksTrackers::current().unknown_phase.replace().await;
+            let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
+
+            let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
             wallet_phase_setup
                 .setup(
                     self.wallet_phase_status.clone(),
@@ -402,8 +409,7 @@ impl SetupManager {
                 )
                 .await;
 
-            let unknown_phase_setup =
-                Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
+            let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
             unknown_phase_setup
                 .setup(
                     self.unknown_phase_status.clone(),
