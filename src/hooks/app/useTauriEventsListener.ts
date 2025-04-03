@@ -70,7 +70,7 @@ const useTauriEventsListener = () => {
                         break;
                     case 'RemoteNodePhaseFinished':
                         break;
-                    case 'LocalNodePhaseFinished':
+                    case 'NodePhaseFinished':
                         break;
                     case 'UnknownPhaseFinished':
                         break;

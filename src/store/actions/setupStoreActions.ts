@@ -71,7 +71,7 @@ export const updateRemoteNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePay
     useSetupStore.setState({ remote_node_phase_setup_payload: payload });
 };
 
-export const updateLocalNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
     useSetupStore.setState({ node_phase_setup_payload: payload });
 };
 

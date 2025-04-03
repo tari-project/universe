@@ -1,7 +1,7 @@
 import {
     updateCoreSetupPhaseInfo,
     updateHardwareSetupPhaseInfo,
-    updateLocalNodeSetupPhaseInfo,
+    updateNodeSetupPhaseInfo,
     updateUnknownSetupPhaseInfo,
 } from '@app/store/actions/setupStoreActions';
 import { deepEqual } from '@app/utils/objectDeepEqual';
@@ -24,7 +24,7 @@ export type ProgressStateUpdateEvent =
           payload: ProgressTrackerUpdatePayload;
       }
     | {
-          event_type: 'LocalNode';
+          event_type: 'Node';
           payload: ProgressTrackerUpdatePayload;
       }
     | {
@@ -36,7 +36,7 @@ export type ProgressStateUpdateEvent =
           payload: ProgressTrackerUpdatePayload;
       };
 
-// const LOG_EVENT_TYPES = ['Core', 'LocalNode', 'Hardware', 'Unknown'];
+// const LOG_EVENT_TYPES = ['Core', 'Node', 'Hardware', 'Unknown'];
 const LOG_EVENT_TYPES = [''];
 
 export const useProgressEventsListener = () => {
@@ -60,8 +60,8 @@ export const useProgressEventsListener = () => {
                     case 'Core':
                         updateCoreSetupPhaseInfo(event.payload);
                         break;
-                    case 'LocalNode':
-                        updateLocalNodeSetupPhaseInfo(event.payload);
+                    case 'Node':
+                    updateNodeSetupPhaseInfo(event.payload);
                         break;
                     case 'Hardware':
                         updateHardwareSetupPhaseInfo(event.payload);
