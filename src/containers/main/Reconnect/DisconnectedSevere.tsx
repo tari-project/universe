@@ -20,6 +20,7 @@ const DisconnectedSevere: React.FC = () => {
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown([300]);
     const isReconnecting = useUIStore((s) => s.isReconnecting);
+    const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
 
     useEffect(() => {
         const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
@@ -52,6 +53,10 @@ const DisconnectedSevere: React.FC = () => {
     const reconnect = () => {
         invoke('reconnect');
         setIsReconnecting(true);
+        setIsReconnectOnCooldown(true);
+        setTimeout(() => {
+            setIsReconnectOnCooldown(false);
+        }, 1000 * 60);
     };
 
     const retryText = isReconnecting ? (
@@ -77,13 +82,15 @@ const DisconnectedSevere: React.FC = () => {
                 <Stack gap={36} alignItems="center">
                     <RetryTimer>{retryText}</RetryTimer>
                     <Stack direction="row" gap={30}>
-                        <SecondaryButton onClick={reconnect}>{t('connect-now')}</SecondaryButton>
+                        <SecondaryButton onClick={reconnect} isActive={!isReconnectOnCooldown && !isReconnecting}>
+                            {t('connect-now')}
+                        </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <SecondaryButton onClick={() => invoke('restart_application')}>
+                        <SecondaryButton onClick={() => invoke('restart_application')} isActive>
                             {t('restart-app')}
                         </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <SecondaryButton onClick={openTelegram}>
+                        <SecondaryButton onClick={openTelegram} isActive>
                             <Typography>{t('go-to-telegram')}</Typography>
                             <TelegramLogo src={telegramLogo} alt="Telegram" />
                         </SecondaryButton>

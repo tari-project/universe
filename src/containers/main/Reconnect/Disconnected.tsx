@@ -24,6 +24,7 @@ const Disconnected: React.FC = () => {
         restartAttempts,
     } = useCountdown(ConnectionAttemptIntervalsInSecs);
     const isReconnecting = useUIStore((s) => s.isReconnecting);
+    const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
 
     useEffect(() => {
         const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
@@ -54,6 +55,10 @@ const Disconnected: React.FC = () => {
     const reconnect = () => {
         invoke('reconnect');
         setIsReconnecting(true);
+        setIsReconnectOnCooldown(true);
+        setTimeout(() => {
+            setIsReconnectOnCooldown(false);
+        }, 1000 * 60);
     };
 
     useEffect(() => {
@@ -80,7 +85,9 @@ const Disconnected: React.FC = () => {
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
                     <RetryTimer>{retryText}</RetryTimer>
-                    <SecondaryButton onClick={reconnect}>{t('connect-now')}</SecondaryButton>
+                    <SecondaryButton onClick={reconnect} isActive={!isReconnectOnCooldown && !isReconnecting}>
+                        {t('connect-now')}
+                    </SecondaryButton>
                 </Stack>
             </Stack>
         </Wrapper>

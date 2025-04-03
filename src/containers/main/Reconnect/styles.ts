@@ -91,10 +91,10 @@ export const TextWrapper = styled.div`
     align-items: center;
 `;
 
-export const SecondaryButton = styled(Typography)`
+export const SecondaryButton = styled(Typography)<{ isActive?: boolean }>`
     display: inline-block;
     width: fit-content;
-    cursor: pointer;
+    cursor: ${(props) => (props.isActive ? 'pointer' : 'default')};
     color: black;
     font-family: Poppins;
     font-weight: 600;
@@ -102,5 +102,14 @@ export const SecondaryButton = styled(Typography)`
     line-height: 22px;
     letter-spacing: 0%;
     text-align: center;
-    opacity: 0.5;
+    opacity: ${(props) => (props.isActive ? 0.5 : 0.2)};
+    transition: opacity 0.2s ease-in-out; // Optional: add a smooth transition
+
+    ${(props) =>
+        props.isActive &&
+        `
+        &:hover {
+            opacity: 0.8; // Example hover effect for active state
+        }
+    `}
 `;
