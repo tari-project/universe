@@ -146,7 +146,7 @@ impl ProgressStep for ProgressSetupNodePlan {
 
     fn get_title(&self) -> String {
         match self {
-            ProgressSetupNodePlan::StartingNode => "starting-local-node".to_string(),
+            ProgressSetupNodePlan::StartingNode => "starting-node".to_string(),
             ProgressSetupNodePlan::WaitingForInitialSync => "waiting-for-initial-sync".to_string(),
             ProgressSetupNodePlan::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),
             ProgressSetupNodePlan::WaitingForBlockSync => "waiting-for-block-sync".to_string(),

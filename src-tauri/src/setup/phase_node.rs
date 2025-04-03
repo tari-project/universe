@@ -163,7 +163,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        info!(target: LOG_TARGET, "Starting node manager with base node address: {}", self.app_configuration.base_node_grpc_address);
+        info!(target: LOG_TARGET, "Starting node manager with base node grpc address: {}", self.app_configuration.base_node_grpc_address);
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
         let _unused = progress_stepper

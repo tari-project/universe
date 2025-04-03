@@ -310,7 +310,6 @@ impl SetupManager {
                     TasksTrackers::current().unknown_phase.replace().await;
                     let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
                 }
-                _ => {}
             }
         }
 
@@ -369,7 +368,6 @@ impl SetupManager {
                         )
                         .await;
                 }
-                _ => {}
             }
         }
 

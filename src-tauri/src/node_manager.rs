@@ -73,7 +73,9 @@ pub struct NodeIdentity {
 
 #[derive(Clone)]
 pub enum NodeType {
+    #[allow(dead_code)]
     Local,
+    #[allow(dead_code)]
     Remote,
     RemoteUntilLocal,
     LocalAfterRemote,
@@ -147,7 +149,7 @@ impl NodeManager {
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         let node_type = self.node_type.read().await;
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         match &*node_type {
@@ -247,7 +249,7 @@ impl NodeManager {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         let node_type = self.node_type.read().await;
@@ -412,14 +414,16 @@ impl NodeManager {
             }
         });
 
-        tokio::select! {
-            _ = t => {
-                info!(target: LOG_TARGET, "Successfully switched to the local node");
-            },
-            _ = shutdown_signal.wait() => {
-                info!(target: LOG_TARGET, "Shutdown Signal: switching to the local node terminated");
-            },
-        }
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            tokio::select! {
+                _ = t => {
+                    info!(target: LOG_TARGET, "Successfully switched to the local node");
+                },
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown Signal: switching to the local node terminated");
+                },
+            }
+        });
 
         Ok(())
     }
