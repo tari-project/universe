@@ -67,12 +67,8 @@ export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePaylo
     useSetupStore.setState({ hardware_phase_setup_payload: payload });
 };
 
-export const updateRemoteNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
-    useSetupStore.setState({ remote_node_phase_setup_payload: payload });
-};
-
-export const updateLocalNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
-    useSetupStore.setState({ local_node_phase_setup_payload: payload });
+export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+    useSetupStore.setState({ node_phase_setup_payload: payload });
 };
 
 export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {

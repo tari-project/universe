@@ -15,7 +15,7 @@
         "binaries-p2pool": "Preapering P2Pool Binary",
         "binaries-merge-mining-proxy": "Preapering Merge Mining Proxy Binary",
         "start-tor": "Starting Tor",
-        "starting-local-node": "Starting Local Node",
+        "starting-node": "Starting Minotari Node",
         "waiting-for-initial-sync": "Connecting to network peers {{initial_connected_peers}}/{{required_peers}}",
         "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
         "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced."

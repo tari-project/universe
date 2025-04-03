@@ -9,7 +9,7 @@ export interface SetupState {
     core_phase_setup_payload?: ProgressTrackerUpdatePayload;
     hardware_phase_setup_payload?: ProgressTrackerUpdatePayload;
     remote_node_phase_setup_payload?: ProgressTrackerUpdatePayload;
-    local_node_phase_setup_payload?: ProgressTrackerUpdatePayload;
+    node_phase_setup_payload?: ProgressTrackerUpdatePayload;
     wallet_phase_setup_payload?: ProgressTrackerUpdatePayload;
     unknown_phase_setup_payload?: ProgressTrackerUpdatePayload;
 }

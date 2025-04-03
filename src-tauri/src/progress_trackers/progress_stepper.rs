@@ -58,7 +58,7 @@ impl ChanneledStepUpdate {
                 self.step.get_event_type(),
                 self.step.get_phase_title(),
                 self.step.get_title(),
-                resolved_percentage,
+                resolved_percentage.round(),
                 Some(params),
                 false,
             )

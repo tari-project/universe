@@ -282,11 +282,8 @@ impl EventsManager {
         EventsEmitter::emit_hardware_phase_finished(app, status).await;
     }
 
-    pub async fn handle_remote_node_phase_finished(&self, app: &AppHandle, status: bool) {
-        EventsEmitter::emit_remote_node_phase_finished(app, status).await;
-    }
-    pub async fn handle_local_node_phase_finished(&self, app: &AppHandle, status: bool) {
-        EventsEmitter::emit_local_node_phase_finished(app, status).await;
+    pub async fn handle_node_phase_finished(&self, app: &AppHandle, status: bool) {
+        EventsEmitter::emit_node_phase_finished(app, status).await;
     }
     pub async fn handle_unknown_phase_finished(&self, app: &AppHandle, status: bool) {
         EventsEmitter::emit_unknown_phase_finished(app, status).await;

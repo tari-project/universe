@@ -26,7 +26,6 @@ use std::sync::Arc;
 use crate::{
     wallet_adapter::{TransactionInfo, WalletState},
     wallet_manager::WalletManager,
-    NodeAdapter,
 };
 use tokio::sync::watch::Receiver;
 
@@ -76,9 +75,9 @@ impl EventsService {
         ))
     }
 
-    pub async fn get_coinbase_transaction_for_last_mined_block<T: NodeAdapter>(
+    pub async fn get_coinbase_transaction_for_last_mined_block(
         &self,
-        wallet_manager: &WalletManager<T>,
+        wallet_manager: &WalletManager,
         current_block_height: u64,
     ) -> Option<TransactionInfo> {
         match wallet_manager

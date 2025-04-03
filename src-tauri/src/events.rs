@@ -53,8 +53,7 @@ pub enum EventType {
     CorePhaseFinished,
     WalletPhaseFinished,
     HardwarePhaseFinished,
-    RemoteNodePhaseFinished,
-    LocalNodePhaseFinished,
+    NodePhaseFinished,
     UnknownPhaseFinished,
     UnlockApp,
     UnlockWallet,
@@ -68,9 +67,7 @@ pub enum ProgressEvents {
     Core,
     Wallet,
     Hardware,
-    #[allow(dead_code)]
-    RemoteNode,
-    LocalNode,
+    Node,
     Unknown,
 }
 #[derive(Clone, Debug, Serialize)]

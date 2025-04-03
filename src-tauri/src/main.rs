@@ -28,13 +28,13 @@ use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
+use local_node_adapter::{BaseNodeStatus, LocalNodeAdapter};
 use log::{error, info, warn};
-use node_adapter::{BaseNodeStatus, MinotariNodeAdapter};
+use node_manager::{NodeManagerError, NodeType};
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 use release_notes::ReleaseNotes;
 use remote_node_adapter::RemoteNodeAdapter;
-use remote_until_synced_node_adapter::RemoteUntilSyncedNodeAdapter;
 use serde_json::json;
 use setup::setup_manager::SetupManager;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
@@ -71,7 +71,6 @@ use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
 use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
-use node_manager::{NodeAdapter, NodeManagerError};
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
 
@@ -117,10 +116,10 @@ mod gpu_miner_adapter;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod local_node_adapter;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
-mod node_adapter;
 mod node_manager;
 mod p2pool;
 mod p2pool_adapter;
@@ -135,7 +134,6 @@ mod progress_tracker_old;
 mod progress_trackers;
 mod release_notes;
 mod remote_node_adapter;
-mod remote_until_synced_node_adapter;
 mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
@@ -972,9 +970,9 @@ struct UniverseAppState {
     gpu_miner: Arc<RwLock<GpuMiner>>,
     cpu_miner_config: Arc<RwLock<CpuMinerConfig>>,
     mm_proxy_manager: MmProxyManager,
-    node_manager: NodeManager<RemoteUntilSyncedNodeAdapter>,
-    wallet_manager: WalletManager<RemoteUntilSyncedNodeAdapter>,
-    spend_wallet_manager: Arc<RwLock<SpendWalletManager<RemoteUntilSyncedNodeAdapter>>>,
+    node_manager: NodeManager,
+    wallet_manager: WalletManager,
+    spend_wallet_manager: Arc<RwLock<SpendWalletManager>>,
     telemetry_manager: Arc<RwLock<TelemetryManager>>,
     telemetry_service: Arc<RwLock<TelemetryService>>,
     feedback: Arc<RwLock<Feedback>>,
@@ -1026,11 +1024,11 @@ fn main() {
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let node_manager = NodeManager::new(
         &mut stats_collector,
-        RemoteUntilSyncedNodeAdapter::new(
-            MinotariNodeAdapter::new(base_node_watch_tx.clone()),
-            RemoteNodeAdapter::new(base_node_watch_tx.clone()),
-        ),
+        LocalNodeAdapter::new(base_node_watch_tx.clone()),
+        RemoteNodeAdapter::new(base_node_watch_tx.clone()),
         shutdown.to_signal(),
+        // TODO: Decide who and how controls it
+        NodeType::RemoteUntilLocal,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
@@ -1419,7 +1417,6 @@ fn main() {
             tauri::async_runtime::spawn(async move {
                 SetupManager::get_instance().start_setup(handle_clone.clone()).await;
                 tokio::time::sleep(Duration::from_secs(90)).await;
-                SetupManager::get_instance().handle_switch_to_local_node(handle_clone).await;
                 // let state = handle_clone.state::<UniverseAppState>().clone();
                 // let _res = setup_inner(state, handle_clone.clone())
                 //     .await

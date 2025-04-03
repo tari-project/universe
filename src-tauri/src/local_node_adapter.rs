@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::node_manager::{NodeClient, NodeIdentity};
+use crate::node_manager::NodeIdentity;
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -75,40 +75,61 @@ impl MinotariNodeMigrationInfo {
     }
 }
 
-pub(crate) struct MinotariNodeAdapter {
+#[derive(Clone)]
+pub(crate) struct LocalNodeAdapter {
+    pub(crate) grpc_address: Option<(String, u16)>,
+    status_broadcast: watch::Sender<BaseNodeStatus>,
     pub(crate) use_tor: bool,
-    pub(crate) grpc_port: u16,
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
-    status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
-impl MinotariNodeAdapter {
+impl LocalNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
-        let port = PortAllocator::new().assign_port_with_fallback();
+        let grpc_port = PortAllocator::new().assign_port_with_fallback();
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            grpc_port: port,
+            grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
+            status_broadcast,
             tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
-            status_broadcast,
         }
     }
 
+    pub fn grpc_address(&self) -> Option<(String, u16)> {
+        self.grpc_address.clone()
+    }
+
+    pub fn tcp_address(&self) -> String {
+        format!("/ip4/127.0.0.1/tcp/{}", self.tcp_listener_port)
+    }
+
     pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
-        Some(MinotariNodeClient::new(
-            format!("http://127.0.0.1:{}", self.grpc_port),
-            self.required_initial_peers,
-        ))
+        if let Some(grpc_address) = self.grpc_address() {
+            Some(MinotariNodeClient::new(
+                format!("http://{}:{}", grpc_address.0, grpc_address.1),
+                self.required_initial_peers,
+            ))
+        } else {
+            None
+        }
+    }
+
+    pub fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    pub fn tor_control_port(&mut self, tor_control_port: Option<u16>) {
+        self.tor_control_port = tor_control_port;
     }
 }
 
-impl ProcessAdapter for MinotariNodeAdapter {
+impl ProcessAdapter for LocalNodeAdapter {
     type StatusMonitor = MinotariNodeStatusMonitor;
     type ProcessInstance = ProcessInstance;
 
@@ -155,6 +176,9 @@ impl ProcessAdapter for MinotariNodeAdapter {
         )?;
         let working_dir_string = convert_to_string(working_dir)?;
         let config_dir_string = convert_to_string(config_dir)?;
+        let grpc_address = self
+            .grpc_address()
+            .expect("Local node grpc address not defined");
 
         let mut args: Vec<String> = vec![
             "-b".to_string(),
@@ -166,8 +190,8 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "base_node.grpc_enabled=true".to_string(),
             "-p".to_string(),
             format!(
-                "base_node.grpc_address=/ip4/127.0.0.1/tcp/{}",
-                self.grpc_port
+                "base_node.grpc_address=/ip4/{}/tcp/{}",
+                grpc_address.0, grpc_address.1
             ),
             "-p".to_string(),
             "base_node.report_grpc_error=true".to_string(),
@@ -258,7 +282,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             },
             MinotariNodeStatusMonitor::new(
                 MinotariNodeClient::new(
-                    format!("http://127.0.0.1:{}", self.grpc_port),
+                    format!("http://{}:{}", grpc_address.0, grpc_address.1),
                     self.required_initial_peers,
                 ),
                 self.status_broadcast.clone(),
@@ -306,6 +330,7 @@ impl Default for BaseNodeStatus {
     }
 }
 
+// This one is ours top-level implementation / Wrapper - Facade
 #[derive(Debug, Clone)]
 pub(crate) struct MinotariNodeClient {
     grpc_address: String,
@@ -318,6 +343,211 @@ impl MinotariNodeClient {
             grpc_address,
             required_sync_peers,
         }
+    }
+
+    pub async fn get_network_state(
+        &self,
+    ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+            .await
+            .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
+
+        let res = client
+            .get_network_state(GetNetworkStateRequest {})
+            .await
+            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
+        let res = res.into_inner();
+        let metadata = match res.metadata {
+            Some(metadata) => metadata,
+            None => {
+                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                    "No metadata found"
+                )));
+            }
+        };
+
+        Ok(BaseNodeStatus {
+            sha_network_hashrate: res.sha3x_estimated_hash_rate,
+            randomx_network_hashrate: res.randomx_estimated_hash_rate,
+            block_reward: MicroMinotari(res.reward),
+            block_height: metadata.best_block_height,
+            block_time: metadata.timestamp,
+            is_synced: res.initial_sync_achieved,
+        })
+    }
+
+    pub async fn get_historical_blocks(
+        &self,
+        heights: Vec<u64>,
+    ) -> Result<Vec<(u64, String)>, Error> {
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+
+        let mut res = client
+            .get_blocks(GetBlocksRequest { heights })
+            .await?
+            .into_inner();
+
+        let mut blocks: Vec<(u64, String)> = Vec::new();
+        while let Some(block) = res.message().await? {
+            let BlockHeader { height, hash, .. } = block
+                .block
+                .clone()
+                .expect("Failed to get block data")
+                .header
+                .expect("Failed to get block header data");
+            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
+                write!(acc, "{:02x}", x).expect("Unable to write");
+                acc
+            });
+
+            blocks.push((height, hash));
+        }
+        Ok(blocks)
+    }
+
+    pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+
+        let id = client.identify(Empty {}).await?;
+        let res = id.into_inner();
+
+        Ok(NodeIdentity {
+            public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
+                .map_err(|e| anyhow!(e.to_string()))?,
+            public_address: res.public_addresses,
+        })
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub async fn wait_synced(
+        &self,
+        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
+        shutdown_signal: ShutdownSignal,
+    ) -> Result<(), MinotariNodeStatusMonitorError> {
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+            .await
+            .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
+
+        loop {
+            if shutdown_signal.is_triggered() {
+                break Ok(());
+            }
+
+            let tip = client
+                .get_tip_info(Empty {})
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
+            let sync_progress = client
+                .get_sync_progress(Empty {})
+                .await
+                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
+            let tip_res = tip.into_inner();
+            let sync_progress = sync_progress.into_inner();
+            if tip_res.initial_sync_achieved {
+                break Ok(());
+            }
+
+            let (initial_sync_tracker, header_sync_tracker, block_sync_tracker) =
+                match progress_tracker.as_slice() {
+                    [initial_sync, header_sync, block_sync] => {
+                        (initial_sync, header_sync, block_sync)
+                    }
+                    _ => {
+                        return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
+                            "Progress tracker not set up correctly"
+                        )));
+                    }
+                };
+
+            if sync_progress.state == SyncState::Startup as i32 {
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage = sync_progress.initial_connected_peers as f64
+                    / f64::from(self.required_sync_peers);
+                progress_params.insert(
+                    "initial_connected_peers".to_string(),
+                    sync_progress.initial_connected_peers.to_string(),
+                );
+                progress_params.insert(
+                    "required_peers".to_string(),
+                    self.required_sync_peers.to_string(),
+                );
+                if let Some(tracker) = initial_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
+            } else if sync_progress.state == SyncState::Header as i32 {
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage =
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert(
+                    "local_header_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert("local_block_height".to_string(), "0".to_string());
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                // Keep these fields for old translations that have not been updated
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                if let Some(tracker) = header_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
+            } else if sync_progress.state == SyncState::Block as i32 {
+                let mut progress_params: HashMap<String, String> = HashMap::new();
+                let percentage =
+                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert(
+                    "local_header_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_header_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                progress_params.insert(
+                    "local_block_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_block_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+                // Keep these fields for old translations that have not been updated
+                progress_params.insert(
+                    "local_height".to_string(),
+                    sync_progress.local_height.to_string(),
+                );
+                progress_params.insert(
+                    "tip_height".to_string(),
+                    sync_progress.tip_height.to_string(),
+                );
+
+                if let Some(tracker) = block_sync_tracker {
+                    tracker.send_update(progress_params, percentage).await;
+                }
+            } else {
+                // do nothing
+            }
+
+            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        }
+    }
+
+    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
+        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+        let connected_peers = client.list_connected_peers(Empty {}).await?;
+        Ok(connected_peers.into_inner().connected_peers)
     }
 }
 
@@ -336,12 +566,6 @@ impl MinotariNodeStatusMonitor {
             node_client,
             status_broadcast,
         }
-    }
-
-    pub async fn get_network_state(
-        &self,
-    ) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
-        self.node_client.get_network_state().await
     }
 }
 
@@ -373,207 +597,5 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
                 }
             }
         }
-    }
-}
-
-#[async_trait]
-impl NodeClient for MinotariNodeClient {
-    async fn get_network_state(&self) -> Result<BaseNodeStatus, MinotariNodeStatusMonitorError> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
-            .await
-            .map_err(|_| MinotariNodeStatusMonitorError::NodeNotStarted)?;
-
-        let res = client
-            .get_network_state(GetNetworkStateRequest {})
-            .await
-            .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-        let res = res.into_inner();
-        let metadata = match res.metadata {
-            Some(metadata) => metadata,
-            None => {
-                return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
-                    "No metadata found"
-                )));
-            }
-        };
-
-        Ok(BaseNodeStatus {
-            sha_network_hashrate: res.sha3x_estimated_hash_rate,
-            randomx_network_hashrate: res.randomx_estimated_hash_rate,
-            block_reward: MicroMinotari(res.reward),
-            block_height: metadata.best_block_height,
-            block_time: metadata.timestamp,
-            is_synced: res.initial_sync_achieved,
-        })
-    }
-
-    async fn get_historical_blocks(&self, heights: Vec<u64>) -> Result<Vec<(u64, String)>, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
-
-        let mut res = client
-            .get_blocks(GetBlocksRequest { heights })
-            .await?
-            .into_inner();
-
-        let mut blocks: Vec<(u64, String)> = Vec::new();
-        while let Some(block) = res.message().await? {
-            let BlockHeader { height, hash, .. } = block
-                .block
-                .clone()
-                .expect("Failed to get block data")
-                .header
-                .expect("Failed to get block header data");
-            let hash: String = hash.iter().fold(String::new(), |mut acc, x| {
-                write!(acc, "{:02x}", x).expect("Unable to write");
-                acc
-            });
-
-            blocks.push((height, hash));
-        }
-        Ok(blocks)
-    }
-
-    async fn get_identity(&self) -> Result<NodeIdentity, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
-
-        let id = client.identify(Empty {}).await?;
-        let res = id.into_inner();
-
-        Ok(NodeIdentity {
-            public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
-                .map_err(|e| anyhow!(e.to_string()))?,
-            public_address: res.public_addresses,
-        })
-    }
-
-    #[allow(clippy::too_many_lines)]
-    async fn wait_synced(
-        &self,
-        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
-        shutdown_signal: ShutdownSignal,
-    ) -> Result<(), MinotariNodeStatusMonitorError> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
-            .await
-            .map_err(|_e| MinotariNodeStatusMonitorError::NodeNotStarted)?;
-
-        loop {
-            if shutdown_signal.is_triggered() {
-                break Ok(());
-            }
-            let tip = client
-                .get_tip_info(Empty {})
-                .await
-                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-            let sync_progress = client
-                .get_sync_progress(Empty {})
-                .await
-                .map_err(|e| MinotariNodeStatusMonitorError::UnknownError(e.into()))?;
-            let tip_res = tip.into_inner();
-            let sync_progress = sync_progress.into_inner();
-            if tip_res.initial_sync_achieved {
-                break Ok(());
-            }
-
-            let (initial_sync_tracker, header_sync_tracker, block_sync_tracker) =
-                match progress_tracker.as_slice() {
-                    [Some(initial_sync), Some(header_sync), Some(block_sync)] => {
-                        (initial_sync, header_sync, block_sync)
-                    }
-                    _ => {
-                        return Err(MinotariNodeStatusMonitorError::UnknownError(anyhow!(
-                            "Progress tracker not set up correctly"
-                        )));
-                    }
-                };
-
-            if sync_progress.state == SyncState::Startup as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage = sync_progress.initial_connected_peers as f64
-                    / f64::from(self.required_sync_peers);
-                progress_params.insert(
-                    "initial_connected_peers".to_string(),
-                    sync_progress.initial_connected_peers.to_string(),
-                );
-                progress_params.insert(
-                    "required_peers".to_string(),
-                    self.required_sync_peers.to_string(),
-                );
-                initial_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
-            } else if sync_progress.state == SyncState::Header as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage =
-                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
-                progress_params.insert(
-                    "local_header_height".to_string(),
-                    sync_progress.local_height.to_string(),
-                );
-                progress_params.insert(
-                    "tip_header_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-                progress_params.insert("local_block_height".to_string(), "0".to_string());
-                progress_params.insert(
-                    "tip_block_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-                // Keep these fields for old translations that have not been updated
-                progress_params.insert(
-                    "local_height".to_string(),
-                    sync_progress.local_height.to_string(),
-                );
-                progress_params.insert(
-                    "tip_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-                header_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
-            } else if sync_progress.state == SyncState::Block as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage =
-                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
-                progress_params.insert(
-                    "local_header_height".to_string(),
-                    sync_progress.local_height.to_string(),
-                );
-                progress_params.insert(
-                    "tip_header_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-                progress_params.insert(
-                    "local_block_height".to_string(),
-                    sync_progress.local_height.to_string(),
-                );
-                progress_params.insert(
-                    "tip_block_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-                // Keep these fields for old translations that have not been updated
-                progress_params.insert(
-                    "local_height".to_string(),
-                    sync_progress.local_height.to_string(),
-                );
-                progress_params.insert(
-                    "tip_height".to_string(),
-                    sync_progress.tip_height.to_string(),
-                );
-
-                block_sync_tracker
-                    .send_update(progress_params, percentage)
-                    .await;
-            } else {
-                // do nothing
-            }
-
-            tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        }
-    }
-
-    async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
-        let connected_peers = client.list_connected_peers(Empty {}).await?;
-        Ok(connected_peers.into_inner().connected_peers)
     }
 }

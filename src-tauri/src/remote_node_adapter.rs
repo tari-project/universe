@@ -26,17 +26,16 @@ use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
-    node_adapter::{MinotariNodeClient, MinotariNodeStatusMonitor},
+    local_node_adapter::{MinotariNodeClient, MinotariNodeStatusMonitor},
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
     BaseNodeStatus,
 };
 use anyhow::Error;
 use std::path::PathBuf;
 
+#[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
-    grpc_address: Option<(String, u16)>,
-    #[allow(dead_code)]
-    tcp_rpc_port: u16,
+    pub grpc_address: Option<(String, u16)>,
     status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
@@ -44,13 +43,25 @@ impl RemoteNodeAdapter {
     pub fn new(status_broadcast: watch::Sender<BaseNodeStatus>) -> Self {
         Self {
             grpc_address: None,
-            tcp_rpc_port: 0,
             status_broadcast,
         }
     }
 
-    pub fn grpc_address(&self) -> Option<&(String, u16)> {
-        self.grpc_address.as_ref()
+    pub fn grpc_address(&self) -> Option<(String, u16)> {
+        self.grpc_address.clone()
+    }
+
+    pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
+        if let Some(grpc_address) = self.grpc_address() {
+            let address = if grpc_address.0.starts_with("http") {
+                format!("{}:{}", grpc_address.0, grpc_address.1)
+            } else {
+                format!("http://{}:{}", grpc_address.0, grpc_address.1)
+            };
+            Some(MinotariNodeClient::new(address, 1))
+        } else {
+            None
+        }
     }
 
     // Expected format currently: https://grpc.esmeralda.tari.com:443
@@ -71,24 +82,6 @@ impl RemoteNodeAdapter {
         let parts = grpc_address.split(':').collect::<Vec<&str>>();
         self.grpc_address = Some((format!("{}:{}", parts[0], parts[1]), parts[2].parse()?));
         Ok(())
-    }
-
-    #[allow(dead_code)]
-    pub fn tcp_rpc_port(&self) -> u16 {
-        self.tcp_rpc_port
-    }
-
-    pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
-        if let Some(grpc_address) = self.grpc_address() {
-            let address = if grpc_address.0.starts_with("http") {
-                format!("{}:{}", grpc_address.0, grpc_address.1)
-            } else {
-                format!("http://{}:{}", grpc_address.0, grpc_address.1)
-            };
-            Some(MinotariNodeClient::new(address, 1))
-        } else {
-            None
-        }
     }
 }
 
@@ -128,7 +121,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
     }
 
     fn pid_file_name(&self) -> &str {
-        "remote_pid"
+        "remote_node_pid"
     }
 }
 
