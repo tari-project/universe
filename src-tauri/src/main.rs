@@ -46,8 +46,8 @@ use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
-use websocket::{WebsocketError, WebsocketManager, WebsocketMessage};
 use websocket_events_manager::WebsocketEventsManager;
+use websocket_manager::{WebsocketManager, WebsocketMessage};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -144,8 +144,8 @@ mod updates_manager;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
-mod websocket;
 mod websocket_events_manager;
+mod websocket_manager;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -433,7 +433,7 @@ async fn setup_inner(
 
     let webview = app.get_webview_window("main").unwrap();
     let websocket_tx = state.websocket_message_tx.clone();
-    webview.listen("ws", move |event: tauri::Event| {
+    webview.listen("ws-tx", move |event: tauri::Event| {
         let event_cloned = event.clone();
         let websocket_tx_clone = websocket_tx.clone();
 

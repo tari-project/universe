@@ -251,7 +251,7 @@ async fn receiver_task(
                         let _ = cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
                                         error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
                                     });
-                        let _ = app.emit("ws", message).inspect_err(|e|{
+                        let _ = app.emit("ws-rx", message).inspect_err(|e|{
                                         error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
                                     });
                     }

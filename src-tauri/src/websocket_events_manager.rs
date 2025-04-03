@@ -12,8 +12,7 @@ use tokio::{
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
-    tasks_tracker::TasksTracker,
-    websocket::WebsocketMessage,
+    websocket_manager::WebsocketMessage,
     AppConfig, BaseNodeStatus, GpuMinerStatus,
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
@@ -57,7 +56,6 @@ impl WebsocketEventsManager {
     }
 
     pub async fn emit_interval_ws_events(&mut self) {
-        let task_tracker = TasksTracker::current();
         let mut interval = time::interval(INTERVAL_DURATION);
         let shutdown = self.shutdown_signal.clone();
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
@@ -73,7 +71,7 @@ impl WebsocketEventsManager {
         let app_config_clone = self.app_config.clone();
         let websocket_tx_channel_clone = self.websocket_tx_channel.clone();
 
-        task_tracker.spawn(async move {
+        tokio::spawn(async move {
             loop {
                 let jwt_token = app_config_clone
                     .read()
