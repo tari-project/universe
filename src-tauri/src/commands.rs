@@ -1842,16 +1842,16 @@ enum ReconnectStatus {
 
 #[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
-    let _ = app_handle.emit("reconnecting", ReconnectStatus::InProgress);
+    drop(app_handle.emit("reconnecting", ReconnectStatus::InProgress));
     let resume_res = resume_all_processes(app_handle.clone())
         .await
         .map_err(|e| e.to_string());
     match resume_res {
         Ok(_) => {
-            let _ = app_handle.emit("reconnecting", ReconnectStatus::Succeed);
+            drop(app_handle.emit("reconnecting", ReconnectStatus::Succeed));
         }
         Err(e) => {
-            let _ = app_handle.emit("reconnecting", ReconnectStatus::Failed);
+            drop(app_handle.emit("reconnecting", ReconnectStatus::Failed));
             return Err(e.to_string());
         }
     }
