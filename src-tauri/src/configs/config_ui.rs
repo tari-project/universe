@@ -26,15 +26,15 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigUI>> = LazyLock::new(|| Mutex::new(ConfigUI::new()));
+static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
@@ -43,8 +43,6 @@ pub struct ConfigUIContent {
     created_at: SystemTime,
     display_mode: DisplayMode,
     mine_on_app_start: bool,
-    gpu_mining_enabled: bool,
-    cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
@@ -61,8 +59,6 @@ impl Default for ConfigUIContent {
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
             mine_on_app_start: false,
-            gpu_mining_enabled: false,
-            cpu_mining_enabled: false,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: "en".to_string(),
@@ -84,7 +80,7 @@ impl ConfigImpl for ConfigUI {
     type Config = ConfigUIContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
@@ -111,8 +107,7 @@ impl ConfigImpl for ConfigUI {
             created_at: SystemTime::now(),
             display_mode: old_config.display_mode(),
             mine_on_app_start: old_config.mine_on_app_start(),
-            gpu_mining_enabled: old_config.gpu_mining_enabled(),
-            cpu_mining_enabled: old_config.cpu_mining_enabled(),
+
             has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
             should_always_use_system_language: old_config.should_always_use_system_language(),
             application_language: old_config.application_language().to_string(),

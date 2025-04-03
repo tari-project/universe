@@ -24,15 +24,16 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigWallet>> = LazyLock::new(|| Mutex::new(ConfigWallet::new()));
+static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
+    LazyLock::new(|| RwLock::new(ConfigWallet::new()));
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
@@ -65,7 +66,7 @@ impl ConfigImpl for ConfigWallet {
     type Config = ConfigWalletContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 

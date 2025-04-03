@@ -26,12 +26,12 @@ use anyhow::Error;
 use dirs::config_dir;
 use log::debug;
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::APPLICATION_FOLDER_ID;
 
 #[allow(dead_code)]
-pub trait ConfigContentImpl: Default + Serialize + for<'de> Deserialize<'de> {}
+pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
 
 #[allow(dead_code)]
 static LOG_TARGET: &str = "config_trait";
@@ -42,10 +42,16 @@ pub trait ConfigImpl {
     type OldConfig: Any;
 
     fn new() -> Self;
-    fn current() -> &'static Mutex<Self>;
+    fn current() -> &'static RwLock<Self>;
     fn get_name() -> String;
     fn get_content(&self) -> &Self::Config;
     fn get_content_mut(&mut self) -> &mut Self::Config;
+    async fn get_current_content() -> Self::Config
+    where
+        Self: 'static,
+    {
+        Self::current().read().await.get_content().clone()
+    }
     fn get_config_path() -> PathBuf {
         let config_dir = config_dir().unwrap_or_else(|| {
             debug!("Failed to get config directory, using temp dir");
@@ -74,14 +80,14 @@ pub trait ConfigImpl {
     }
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), Error>;
 
-    fn update_field<F, I: Debug>(&mut self, setter_callback: F, value: I) -> Result<(), Error>
+    async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
+        Self: 'static,
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::get_name(), std::any::type_name::<F>(), value);
-        let content = self.get_content_mut();
-        setter_callback(content, value);
-        self.save_config()?;
+        setter_callback(Self::current().write().await.get_content_mut(), value);
+        Self::current().write().await.save_config()?;
         Ok(())
     }
 }

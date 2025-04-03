@@ -28,15 +28,16 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigMining>> = LazyLock::new(|| Mutex::new(ConfigMining::new()));
+static INSTANCE: LazyLock<RwLock<ConfigMining>> =
+    LazyLock::new(|| RwLock::new(ConfigMining::new()));
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
@@ -51,6 +52,8 @@ pub struct ConfigMiningContent {
     custom_mode_cpu_options: Vec<String>,
     custom_max_cpu_usage: Option<u32>,
     custom_max_gpu_usage: Vec<GpuThreads>,
+    gpu_mining_enabled: bool,
+    cpu_mining_enabled: bool,
     gpu_engine: EngineType,
 }
 
@@ -66,6 +69,8 @@ impl Default for ConfigMiningContent {
             custom_mode_cpu_options: vec![],
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: vec![],
+            gpu_mining_enabled: false,
+            cpu_mining_enabled: false,
             gpu_engine: EngineType::OpenCL,
         }
     }
@@ -80,7 +85,7 @@ impl ConfigImpl for ConfigMining {
     type Config = ConfigMiningContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
@@ -113,6 +118,8 @@ impl ConfigImpl for ConfigMining {
             eco_mode_cpu_threads: old_config.eco_mode_cpu_threads(),
             gpu_engine: old_config.gpu_engine(),
             ludicrous_mode_cpu_options: old_config.ludicrous_mode_cpu_options().clone(),
+            gpu_mining_enabled: old_config.gpu_mining_enabled(),
+            cpu_mining_enabled: old_config.cpu_mining_enabled(),
             ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
         };
         Ok(())

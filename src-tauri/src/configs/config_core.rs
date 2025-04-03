@@ -23,15 +23,15 @@
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use std::{sync::LazyLock, time::SystemTime};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::{app_config::AirdropTokens, AppConfig};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigCore>> = LazyLock::new(|| Mutex::new(ConfigCore::new()));
+static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(ConfigCore::new()));
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
@@ -85,7 +85,7 @@ impl ConfigImpl for ConfigCore {
     type Config = ConfigCoreContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 

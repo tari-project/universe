@@ -26,6 +26,11 @@ use crate::app_in_memory_config::{
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::configs::config_core::ConfigCore;
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
+use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
+use crate::configs::config_wallet::ConfigWallet;
+use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
@@ -56,6 +61,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
+use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 
@@ -389,13 +395,13 @@ pub async fn get_network(
 }
 
 #[tauri::command]
-pub async fn get_monero_seed_words(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<Vec<String>, String> {
+pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if !state.config.read().await.monero_address_is_generated() {
+    if *ConfigWallet::get_current_content()
+        .await
+        .monero_address_is_generated()
+    {
         return Err(
             "Monero seed words are not available when a Monero address is provided".to_string(),
         );
@@ -525,20 +531,27 @@ pub async fn get_paper_wallet_details(
         .borrow()
         .clone()
         .and_then(|state| state.balance);
-    let anon_id = state.config.read().await.anon_id().to_string();
+
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
 
     warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
-    let result = internal_wallet
-        .get_paper_wallet_details(anon_id, balance, auth_uuid)
-        .await
-        .map_err(|e| e.to_string())?;
+
+    let result: PaperWalletConfig;
+    if let Some(anon_id) = ConfigCore::get_current_content().await.anon_id() {
+        result = internal_wallet
+            .get_paper_wallet_details(anon_id.clone(), balance, auth_uuid)
+            .await
+            .map_err(|e| e.to_string())?;
+    } else {
+        return Err("Anon ID not found".to_string());
+    };
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
-    }
+    };
+
     Ok(result)
 }
 
@@ -608,11 +621,13 @@ pub async fn get_tor_entry_guards(
 #[tauri::command]
 pub async fn get_airdrop_tokens(
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<Option<AirdropTokens>, String> {
     let timer = Instant::now();
-    let airdrop_access_token = state.config.read().await.airdrop_tokens();
+    let airdrop_access_token = ConfigCore::get_current_content()
+        .await
+        .airdrop_tokens()
+        .clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
@@ -942,13 +957,13 @@ pub async fn set_application_language(
         )
         .await;
     drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_application_language(application_language)
-        .await
-        .map_err(|e| e.to_string())?;
+    ConfigUI::update_field(
+        ConfigUIContent::set_application_language,
+        application_language,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
@@ -956,7 +971,7 @@ pub async fn set_application_language(
 pub async fn set_auto_update(
     auto_update: bool,
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
     let telemetry_service = state.telemetry_service.read().await;
@@ -973,8 +988,7 @@ pub async fn set_auto_update(
         .await
         .set_auto_update(auto_update)
         .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
-        .map_err(|e| e.to_string())?;
+        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e));
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
@@ -995,12 +1009,8 @@ pub async fn set_cpu_mining_enabled<'r>(
         .send("set_cpu_mining_enabled".to_string(), json!(enabled))
         .await;
     drop(telemetry_service);
-    let mut config = state.config.write().await;
-    config
-        .set_cpu_mining_enabled(enabled)
-        .await
-        .inspect_err(|e| error!("error at set_cpu_mining_enabled {:?}", e))
-        .map_err(|e| e.to_string())?;
+    ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_cpu_mining_enabled took too long: {:?}",
