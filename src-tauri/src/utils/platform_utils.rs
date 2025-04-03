@@ -123,10 +123,11 @@ impl PlatformUtils {
             if is_missing {
                 state
                     .events_manager
-                    .handle_critical_problem(
+                    .handle_missing_application_files(
                         &app_handle,
-                        None,
-                        Some("missing-required-dependencies".to_string()),
+                        ExternalDependencies::current()
+                            .get_external_dependencies()
+                            .await,
                     )
                     .await;
                 return Err(anyhow!("Missing required dependencies"));

@@ -147,7 +147,7 @@ impl NodeManager {
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
         let node_type = self.node_type.read().await;
-        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         match &*node_type {
@@ -165,7 +165,7 @@ impl NodeManager {
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
@@ -186,7 +186,7 @@ impl NodeManager {
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
@@ -226,12 +226,13 @@ impl NodeManager {
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
                 }
-                self.switch_to_local_after_remote().await?;
+
+                self.switch_to_local_after_remote(shutdown_signal).await?;
             }
         }
 
@@ -246,7 +247,7 @@ impl NodeManager {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
-        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         let node_type = self.node_type.read().await;
@@ -260,7 +261,7 @@ impl NodeManager {
                             config_path.clone(),
                             log_path.clone(),
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
@@ -275,7 +276,7 @@ impl NodeManager {
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
@@ -304,13 +305,13 @@ impl NodeManager {
                             config_path,
                             log_path,
                             crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal,
+                            shutdown_signal.clone(),
                             task_tracker,
                         )
                         .await?;
                 }
 
-                self.switch_to_local_after_remote().await?;
+                self.switch_to_local_after_remote(shutdown_signal).await?;
             }
         }
 
@@ -353,19 +354,24 @@ impl NodeManager {
         .ok_or_else(|| anyhow::anyhow!("Node not started"))
     }
 
-    async fn switch_to_local_after_remote(&self) -> Result<(), anyhow::Error> {
+    async fn switch_to_local_after_remote(
+        &self,
+        mut shutdown_signal: ShutdownSignal,
+    ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
-        tokio::spawn(async move {
-            tokio::time::sleep(Duration::from_secs(2)).await;
-            let local_node_client = {
-                let local_node_watcher = node_manager.local_node_watcher.read().await;
-                if let Some(local_node_watcher) = local_node_watcher.as_ref() {
-                    local_node_watcher.adapter.get_node_client()
-                } else {
-                    None
+        let t = TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            let mut local_node_client = None;
+            for _ in 0..10 {
+                tokio::time::sleep(Duration::from_secs(2)).await;
+                local_node_client = {
+                    let local_node_watcher = node_manager.local_node_watcher.read().await;
+                    local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
+                };
+                if local_node_client.is_some() {
+                    break;
                 }
-            };
+            }
 
             if let Some(local_node_client) = local_node_client {
                 match local_node_client
@@ -405,6 +411,16 @@ impl NodeManager {
                 );
             }
         });
+
+        tokio::select! {
+            _ = t => {
+                info!(target: LOG_TARGET, "Successfully switched to the local node");
+            },
+            _ = shutdown_signal.wait() => {
+                info!(target: LOG_TARGET, "Shutdown Signal: switching to the local node terminated");
+            },
+        }
+
         Ok(())
     }
 

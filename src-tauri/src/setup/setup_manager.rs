@@ -275,7 +275,6 @@ impl SetupManager {
                                 SetupManager::get_instance()
                                     .handle_setup_finished(app_handle.clone())
                                     .await;
-                                break;
                             }
                         }
                     }
@@ -380,7 +379,7 @@ impl SetupManager {
 
     pub async fn handle_switch_to_local_node(&self) {
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
-            info!(target: LOG_TARGET, "Switching to Local Node");
+            info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
             self.lock_mining(app_handle.clone()).await;
             self.lock_wallet(app_handle.clone()).await;
             info!(target: LOG_TARGET, "Restarting Phases");
@@ -421,7 +420,7 @@ impl SetupManager {
                 )
                 .await;
         } else {
-            error!(target: LOG_TARGET, "Failed to switch to Local Node: app_handle not defined");
+            error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
     }
 
