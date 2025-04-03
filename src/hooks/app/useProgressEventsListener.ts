@@ -61,7 +61,7 @@ export const useProgressEventsListener = () => {
                         updateCoreSetupPhaseInfo(event.payload);
                         break;
                     case 'Node':
-                    updateNodeSetupPhaseInfo(event.payload);
+                        updateNodeSetupPhaseInfo(event.payload);
                         break;
                     case 'Hardware':
                         updateHardwareSetupPhaseInfo(event.payload);
