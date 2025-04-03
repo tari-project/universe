@@ -64,8 +64,6 @@ impl RemoteNodeAdapter {
         }
     }
 
-    /////////////////////////////////////////////////////////////////
-
     // Expected format currently: https://grpc.esmeralda.tari.com:443
     pub fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error> {
         let has_scheme = grpc_address.starts_with("http");

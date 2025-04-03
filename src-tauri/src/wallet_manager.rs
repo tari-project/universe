@@ -91,7 +91,6 @@ impl WalletManager {
             .await;
 
         self.node_manager.wait_ready().await?;
-        let node_identity = self.node_manager.get_identity().await?;
 
         let mut process_watcher = self.watcher.write().await;
 
@@ -102,8 +101,10 @@ impl WalletManager {
             return Ok(());
         }
 
+        let node_identity = self.node_manager.get_identity().await?;
+        let node_connection_address = self.node_manager.get_connection_address().await?;
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address = Some(node_identity.public_address[0].clone());
+        process_watcher.adapter.base_node_address = Some(node_connection_address);
 
         process_watcher
             .start(

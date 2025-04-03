@@ -101,10 +101,6 @@ export type BackendStateUpdateEvent =
           payload: boolean;
       }
     | {
-          event_type: 'RemoteNodePhaseFinished';
-          payload: boolean;
-      }
-    | {
           event_type: 'NodePhaseFinished';
           payload: boolean;
       }

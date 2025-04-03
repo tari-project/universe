@@ -79,7 +79,6 @@ impl MinotariNodeMigrationInfo {
 pub(crate) struct LocalNodeAdapter {
     pub(crate) grpc_address: Option<(String, u16)>,
     status_broadcast: watch::Sender<BaseNodeStatus>,
-    //////////
     pub(crate) use_tor: bool,
     pub(crate) tcp_listener_port: u16,
     pub(crate) use_pruned_mode: bool,
@@ -94,7 +93,6 @@ impl LocalNodeAdapter {
         Self {
             grpc_address: Some(("127.0.0.1".to_string(), grpc_port)),
             status_broadcast,
-            //////////
             tcp_listener_port,
             use_pruned_mode: false,
             required_initial_peers: 3,
@@ -105,6 +103,10 @@ impl LocalNodeAdapter {
 
     pub fn grpc_address(&self) -> Option<(String, u16)> {
         self.grpc_address.clone()
+    }
+
+    pub fn tcp_address(&self) -> String {
+        format!("/ip4/127.0.0.1/tcp/{}", self.tcp_listener_port)
     }
 
     pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
@@ -118,7 +120,6 @@ impl LocalNodeAdapter {
         }
     }
 
-    ///////////////////////////////////
     pub fn use_tor(&mut self, use_tor: bool) {
         self.use_tor = use_tor;
     }
@@ -297,8 +298,6 @@ impl ProcessAdapter for LocalNodeAdapter {
         "node_pid"
     }
 }
-
-//////////////////////////////////////////////////////
 
 #[derive(Debug, thiserror::Error)]
 pub enum MinotariNodeStatusMonitorError {
