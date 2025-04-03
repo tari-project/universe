@@ -282,6 +282,7 @@ impl SetupManager {
             });
     }
 
+    #[allow(dead_code)]
     async fn restart_phases(&self, app_handle: AppHandle, phases_queue: Vec<SetupPhase>) {
         for phase in phases_queue.clone() {
             match phase {
