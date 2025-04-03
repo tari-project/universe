@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
+use crate::airdrop;
 use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -46,13 +47,12 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
-use tokio::time;
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -349,7 +349,12 @@ async fn get_telemetry_data(
     started: Instant,
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+    let BaseNodeStatus {
+        block_height,
+        is_synced,
+        num_connections,
+        ..
+    } = node_latest_status.borrow().clone();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
@@ -521,7 +526,11 @@ async fn get_telemetry_data(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
     );
-
+    extra_data.insert("node_is_synced".to_string(), is_synced.to_string());
+    extra_data.insert(
+        "node_num_connections".to_string(),
+        num_connections.to_string(),
+    );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
 
     add_process_stats(
@@ -557,10 +566,9 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    let (download_speed, upload_speed, latency) = NetworkStatus::current()
+    let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
-        .borrow()
-        .clone();
+        .borrow();
 
     let data = TelemetryData {
         app_id: config_guard.anon_id().to_string(),

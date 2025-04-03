@@ -96,21 +96,23 @@ impl UpdatesManager {
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                            error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
-                        }
-                    },
-                    _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    if self_clone.app_shutdown.is_triggered()
+                        && self_clone.app_shutdown.is_triggered()
+                    {
                         break;
+                    };
+                    interval.tick().await;
+                    if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                        error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                     }
                 }
-            }
-        });
+            });
 
         Ok(())
     }

@@ -24,6 +24,7 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::warn;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -98,6 +99,7 @@ impl ProcessAdapter for XmrigAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let xmrig_shutdown = Shutdown::new();
         let mut args = self
@@ -188,7 +190,7 @@ pub struct XmrigStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         match self.summary().await {
             Ok(s) => {
                 let _result = self.summary_broadcast.send(Some(s));

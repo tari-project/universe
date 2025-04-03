@@ -59,7 +59,7 @@ pub struct GpuDevice {
     pub settings: GpuSettings,
 }
 
-#[derive(serde::Deserialize, Default, serde::Serialize, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Default)]
 pub struct GpuStatusFile {
     pub gpu_devices: Vec<GpuDevice>,
 }
