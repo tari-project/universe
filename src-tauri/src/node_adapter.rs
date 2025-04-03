@@ -190,7 +190,7 @@ impl ProcessAdapter for MinotariNodeAdapter {
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
             "-p".to_string(),
-            "base_node.p2p.dht.minimize_connections=true".to_string(),
+            "base_node.p2p.dht.minimize_connections=false".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
