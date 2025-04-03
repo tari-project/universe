@@ -1,5 +1,5 @@
 import { Typography } from '@app/components/elements/Typography';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
 export const Wrapper = styled.div`
     pointer-events: all;
@@ -42,6 +42,16 @@ export const TelegramLogo = styled.img`
     display: inline-block;
 `;
 
+// Define the keyframes for the shine animation
+const shine = keyframes`
+  0% {
+    transform: translateX(-100%) skewX(-25deg); // Start off screen left, skewed
+  }
+  100% {
+    transform: translateX(200%) skewX(-25deg); // Move across and off screen right, skewed
+  }
+`;
+
 export const RetryTimer = styled.div`
     display: inline-block;
     border-radius: 50px;
@@ -49,6 +59,27 @@ export const RetryTimer = styled.div`
     background: linear-gradient(to right, #ffaf40, #ff825f);
     color: white;
     box-shadow: 0px 0px 34px 0px rgba(255, 213, 167, 0.75);
+    position: relative; // Needed for pseudo-element positioning
+    overflow: hidden; // Needed to clip the shine effect
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 50%; // Width of the shine element
+        height: 100%;
+        background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0) 0%,
+            // Transparent start
+            rgba(255, 255, 255, 0.4) 50%,
+            // White shine in the middle
+            rgba(255, 255, 255, 0) 100% // Transparent end
+        );
+        transform: translateX(-100%) skewX(-25deg); // Initial position off-screen left
+        animation: ${shine} 2s infinite linear; // Apply the animation
+    }
 `;
 
 export const TextWrapper = styled.div`
