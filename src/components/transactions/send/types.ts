@@ -4,6 +4,3 @@ export interface SendInputs {
     amount: string;
 }
 export type InputName = keyof SendInputs;
-export interface TabItemContentProps {
-    setCurrentIndex: (index: number) => void;
-}

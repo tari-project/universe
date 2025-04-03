@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { PropsWithChildren } from 'react';
 import { TabItem } from './types.ts';
 import { ItemWrapper, Track, SB_CONTENT_WIDTH, GUTTER } from './tab.styles';
 import { SB_WIDTH } from '@app/theme/styles.ts';
@@ -6,11 +6,10 @@ import React from 'react';
 
 const SPRING_OPTIONS = { type: 'spring', stiffness: 300, damping: 30 };
 
-interface TabItemProps {
-    children: ReactNode;
+export interface TabItemProps {
     setCurrentIndex: (index: number) => void;
 }
-function Item({ children, ...props }: TabItemProps) {
+function Item({ children, ...props }: PropsWithChildren<TabItemProps>) {
     return (
         <ItemWrapper
             style={{

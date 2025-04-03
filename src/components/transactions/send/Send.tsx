@@ -12,14 +12,18 @@ import { CircularProgress } from '@app/components/elements/CircularProgress.tsx'
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-import type { SendInputs, InputName, TabItemContentProps } from './types.ts';
+import type { SendInputs, InputName } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, DividerIcon, ErrorMessageWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 
 const defaultValues = { message: '', address: '', amount: '' };
-export function Send({ setCurrentIndex }: TabItemContentProps) {
+export function Send({
+    setCurrentIndex = (_i: number) => {
+        /* void */
+    },
+}) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -88,7 +92,7 @@ export function Send({ setCurrentIndex }: TabItemContentProps) {
 
                 addPendingTransaction(payload);
                 // Back to tx history
-                setCurrentIndex(0);
+                setCurrentIndex?.(0);
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {
