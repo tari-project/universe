@@ -71,7 +71,9 @@ impl Display for SetupPhase {
 }
 
 #[allow(dead_code)]
+#[derive(Default)]
 pub enum PhaseStatus {
+    #[default]
     None,
     Initialized,
     AwaitingStart,
@@ -79,12 +81,6 @@ pub enum PhaseStatus {
     Failed,
     Success,
     SuccessWithWarnings,
-}
-
-impl Default for PhaseStatus {
-    fn default() -> Self {
-        PhaseStatus::None
-    }
 }
 
 impl Display for PhaseStatus {
@@ -202,21 +198,18 @@ impl SetupManager {
                             break;
                         }
                         _ = tokio::time::sleep(Duration::from_secs(1)) => {
-                            let is_app_unlocked = SetupManager::get_instance()
+                            let is_app_unlocked = *SetupManager::get_instance()
                                 .is_app_unlocked
                                 .lock()
-                                .await
-                                .clone();
-                            let is_wallet_unlocked = SetupManager::get_instance()
+                                .await;
+                            let is_wallet_unlocked = *SetupManager::get_instance()
                                 .is_wallet_unlocked
                                 .lock()
-                                .await
-                                .clone();
-                            let is_mining_unlocked = SetupManager::get_instance()
+                                .await;
+                            let is_mining_unlocked = *SetupManager::get_instance()
                                 .is_mining_unlocked
                                 .lock()
-                                .await
-                                .clone();
+                                .await;
 
                             let core_phase_status = core_phase_status_subscriber.borrow().is_success();
                             let hardware_phase_status =

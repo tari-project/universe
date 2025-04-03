@@ -75,12 +75,6 @@ pub(crate) trait ProcessAdapter {
 
     fn pid_file_name(&self) -> &str;
 
-    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
-        std::path::Path::new(&base_folder)
-            .join(self.pid_file_name())
-            .exists()
-    }
-
     async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
         match fs::read_to_string(base_folder.join(self.pid_file_name())) {
@@ -124,16 +118,6 @@ pub enum HealthStatus {
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
     async fn check_health(&self, uptime: Duration) -> HealthStatus;
-}
-
-// TODO: Rename to ProcessInstance
-#[async_trait]
-pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
-    fn ping(&self) -> bool;
-    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
-    async fn stop(&mut self) -> Result<i32, anyhow::Error>;
-    fn is_shutdown_triggered(&self) -> bool;
-    async fn wait(&mut self) -> Result<i32, anyhow::Error>;
 }
 
 // TODO: Rename to ProcessInstance

@@ -32,6 +32,7 @@ use anyhow::Error;
 use log::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
@@ -129,6 +130,8 @@ impl SpendWalletAdapter {
                 self.get_config_dir(),
                 self.get_log_dir(),
                 self.get_wallet_binary(),
+                // TODO: Check if this is correct
+                false,
             )?;
 
             instance.startup_spec.args.extend(command.extra_args);
@@ -251,7 +254,7 @@ pub struct DummyStatusMonitor;
 #[async_trait]
 impl StatusMonitor for DummyStatusMonitor {
     // Question: What actually should be here?
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         HealthStatus::Healthy
     }
 }
@@ -266,6 +269,7 @@ impl ProcessAdapter for SpendWalletAdapter {
         _config_folder: PathBuf,
         _log_folder: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let shared_args = self.get_shared_args()?;
         let envs = HashMap::from([(

@@ -34,7 +34,7 @@ use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
-use tokio::fs;
+use tokio::{fs, select};
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
 
@@ -362,14 +362,20 @@ impl NodeManager {
         .ok_or_else(|| anyhow::anyhow!("Node not started"))
     }
 
+
     async fn switch_to_local_after_remote(
         &self,
         mut shutdown_signal: ShutdownSignal,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
-        let t = TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let mut local_node_client = None;
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            select! {
+                _ = shutdown_signal => {
+                    info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
+                    return;
+                }
+                _ = async {            let mut local_node_client = None;
             for _ in 0..10 {
                 tokio::time::sleep(Duration::from_secs(2)).await;
                 local_node_client = {
@@ -417,17 +423,8 @@ impl NodeManager {
                 error!(target: LOG_TARGET,
                     "Local node client not found when switching nodes",
                 );
-            }
-        });
-
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            tokio::select! {
-                _ = t => {
-                    info!(target: LOG_TARGET, "Successfully switched to the local node");
-                },
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown Signal: switching to the local node terminated");
-                },
+            }} => {}
+                
             }
         });
 
@@ -516,22 +513,6 @@ impl NodeManager {
                 },
             }
         }
-    }
-
-    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        let exit_code = process_watcher.stop().await?;
-        Ok(exit_code)
-    }
-
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn check_if_is_orphan_chain(

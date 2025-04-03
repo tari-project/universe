@@ -40,6 +40,8 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -579,6 +581,7 @@ impl MinotariNodeClient {
 pub(crate) struct MinotariNodeStatusMonitor {
     node_client: MinotariNodeClient,
     status_broadcast: watch::Sender<BaseNodeStatus>,
+    #[allow(dead_code)]
     last_block_time: Arc<AtomicU64>,
 }
 
@@ -598,7 +601,7 @@ impl MinotariNodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         let duration = std::time::Duration::from_secs(5);
         match timeout(duration, self.node_client.get_network_state()).await {
             Ok(res) => match res {

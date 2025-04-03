@@ -31,7 +31,10 @@ use crate::{
     BaseNodeStatus,
 };
 use anyhow::Error;
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    sync::{atomic::AtomicU64, Arc},
+};
 
 #[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
@@ -95,6 +98,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
         _config_folder: PathBuf,
         _log_folder: PathBuf,
         _binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
         let grpc_address = self
@@ -112,6 +116,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
             MinotariNodeStatusMonitor::new(
                 MinotariNodeClient::new(address, 1),
                 self.status_broadcast.clone(),
+                Arc::new(AtomicU64::new(0)),
             ),
         ))
     }

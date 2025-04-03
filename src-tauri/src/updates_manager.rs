@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use tokio::time;
+use tokio::{select, time};
 
 use anyhow::anyhow;
 use log::{error, info, warn};
@@ -102,14 +102,17 @@ impl UpdatesManager {
             .await
             .spawn(async move {
                 loop {
-                    if self_clone.app_shutdown.is_triggered()
-                        && self_clone.app_shutdown.is_triggered()
-                    {
-                        break;
-                    };
-                    interval.tick().await;
-                    if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                        error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                    select! {
+                        _ = shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                            break;
+                        }
+                        _ = interval.tick() => {
+                            info!(target: LOG_TARGET, "Periodic update check triggered.");
+                            if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                                error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                            }
+                        }
                     }
                 }
             });

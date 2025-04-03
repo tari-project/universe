@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
-use crate::airdrop;
 use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -47,12 +46,13 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, thread::sleep, time::Duration};
+use std::{sync::Arc, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
+use tokio::time::interval;
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -304,7 +304,7 @@ impl TelemetryManager {
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let mut interval = time::interval(timeout);
+        let mut interval = interval(timeout);
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {

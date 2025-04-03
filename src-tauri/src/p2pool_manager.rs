@@ -143,16 +143,6 @@ impl P2poolManager {
         }
     }
 
-    pub async fn is_running(&self) -> bool {
-        let process_watcher = self.watcher.read().await;
-        process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
-    }
-
     pub async fn ensure_started(
         &self,
         config: P2poolConfig,
@@ -200,15 +190,6 @@ impl P2poolManager {
             } // wait until we have stats from p2pool, so its started
         }
         Ok(())
-    }
-
-    pub async fn stop(&self) -> Result<i32, anyhow::Error> {
-        let mut process_watcher = self.watcher.write().await;
-        let exit_code = process_watcher.stop().await?;
-        if exit_code != 0 {
-            warn!(target: LOG_TARGET, "P2pool process exited with code {}", exit_code);
-        }
-        Ok(exit_code)
     }
 
     pub async fn grpc_port(&self) -> u16 {

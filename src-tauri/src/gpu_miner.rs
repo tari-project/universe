@@ -50,17 +50,12 @@ use crate::{process_utils, BaseNodeStatus, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum EngineType {
-    Cuda,
+    #[default]
     OpenCL,
+    Cuda,
     Metal,
-}
-
-impl Default for EngineType {
-    fn default() -> Self {
-        EngineType::OpenCL
-    }
 }
 
 impl Display for EngineType {
@@ -176,11 +171,6 @@ impl GpuMiner {
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
-    }
-
-    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
-        let lock = self.watcher.read().await;
-        lock.is_pid_file_exists(base_path)
     }
 
     pub async fn detect(
