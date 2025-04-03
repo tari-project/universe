@@ -66,12 +66,13 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
+#[derive(Clone, Debug)]
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
     pub public_address: Vec<String>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum NodeType {
     #[allow(dead_code)]
     Local,
@@ -326,10 +327,15 @@ impl NodeManager {
         Ok(())
     }
 
+    pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
+        let node_type = self.node_type.read().await;
+        Ok(node_type.clone())
+    }
+
     pub async fn get_current_node_client(&self) -> Result<MinotariNodeClient, anyhow::Error> {
         let node_type = self.node_type.read().await;
         match &*node_type {
-            NodeType::Local => {
+            NodeType::Local | NodeType::LocalAfterRemote => {
                 let local_node_watcher = self.local_node_watcher.read().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_ref() {
                     local_node_watcher.adapter.get_node_client()
@@ -337,25 +343,12 @@ impl NodeManager {
                     None
                 }
             }
-            NodeType::Remote => {
+            NodeType::Remote | NodeType::RemoteUntilLocal => {
                 let remote_node_watcher = self.remote_node_watcher.read().await;
                 if let Some(remote_node_watcher) = remote_node_watcher.as_ref() {
                     remote_node_watcher.adapter.get_node_client()
                 } else {
                     None
-                }
-            }
-            NodeType::RemoteUntilLocal | NodeType::LocalAfterRemote => {
-                let remote_node_watcher = self.remote_node_watcher.read().await;
-                if let Some(remote_node_watcher) = remote_node_watcher.as_ref() {
-                    remote_node_watcher.adapter.get_node_client()
-                } else {
-                    let local_node_watcher = self.local_node_watcher.read().await;
-                    if let Some(local_node_watcher) = local_node_watcher.as_ref() {
-                        local_node_watcher.adapter.get_node_client()
-                    } else {
-                        None
-                    }
                 }
             }
         }
