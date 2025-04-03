@@ -34,9 +34,9 @@ use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
-use tokio::{fs, select};
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
+use tokio::{fs, select};
 
 use crate::process_watcher::ProcessWatcherStats;
 
@@ -362,7 +362,6 @@ impl NodeManager {
         .ok_or_else(|| anyhow::anyhow!("Node not started"))
     }
 
-
     async fn switch_to_local_after_remote(
         &self,
         mut shutdown_signal: ShutdownSignal,
@@ -424,7 +423,6 @@ impl NodeManager {
                     "Local node client not found when switching nodes",
                 );
             }} => {}
-                
             }
         });
 
