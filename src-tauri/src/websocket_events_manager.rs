@@ -8,7 +8,6 @@ use tokio::{
     sync::{watch, RwLock},
     time,
 };
-use tungstenite::{Message, Utf8Bytes};
 
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
