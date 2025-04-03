@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::node_manager::NodeIdentity;
+use crate::node_manager::{NodeIdentity, NodeType};
 use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -303,6 +303,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 },
             },
             MinotariNodeStatusMonitor::new(
+                NodeType::Local,
                 MinotariNodeClient::new(
                     format!("http://{}:{}", grpc_address.0, grpc_address.1),
                     self.required_initial_peers,
@@ -314,7 +315,7 @@ impl ProcessAdapter for LocalNodeAdapter {
     }
 
     fn name(&self) -> &str {
-        "minotari_node"
+        "local_minotari_node"
     }
 
     fn pid_file_name(&self) -> &str {
@@ -579,6 +580,7 @@ impl MinotariNodeClient {
 
 #[derive(Clone)]
 pub(crate) struct MinotariNodeStatusMonitor {
+    node_type: NodeType,
     node_client: MinotariNodeClient,
     status_broadcast: watch::Sender<BaseNodeStatus>,
     #[allow(dead_code)]
@@ -587,18 +589,19 @@ pub(crate) struct MinotariNodeStatusMonitor {
 
 impl MinotariNodeStatusMonitor {
     pub fn new(
+        node_type: NodeType,
         node_client: MinotariNodeClient,
         status_broadcast: watch::Sender<BaseNodeStatus>,
         last_block_time: Arc<AtomicU64>,
     ) -> Self {
         Self {
+            node_type,
             node_client,
             status_broadcast,
             last_block_time,
         }
     }
 }
-
 #[async_trait]
 impl StatusMonitor for MinotariNodeStatusMonitor {
     async fn check_health(&self, _uptime: Duration) -> HealthStatus {
@@ -607,7 +610,12 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status.clone());
-                    if status.num_connections == 0 {
+                    // Remote Node always returns 0 connections
+                    if status.num_connections == 0 && self.node_type != NodeType::Remote {
+                        warn!(
+                            "{:?} Node Health Check Warning: No connections",
+                            self.node_type
+                        );
                         return HealthStatus::Warning;
                     }
                     // if self
@@ -632,18 +640,25 @@ impl StatusMonitor for MinotariNodeStatusMonitor {
                     HealthStatus::Healthy
                 }
                 Err(e) => {
-                    warn!(target: LOG_TARGET, "Error checking base node status: {:?}", e);
+                    warn!(
+                        "{:?} Node Health Check Error: checking base node status: {:?}",
+                        self.node_type, e
+                    );
                     HealthStatus::Unhealthy
                 }
             },
             Err(e) => {
-                warn!(target: LOG_TARGET, "Base node template check timed out. {:?}", e);
+                warn!("{:?} Node Health Check Error. {:?}", self.node_type, e);
                 match self.node_client.get_identity().await {
                     Ok(_) => {
+                        info!(target: LOG_TARGET, "{:?} Node identity: {:?}", self.node_type, self.node_client.get_identity().await.unwrap());
                         return HealthStatus::Healthy;
                     }
                     Err(e) => {
-                        warn!(target: LOG_TARGET, "Error checking base node identity: {:?}", e);
+                        warn!(
+                            "{:?} Node Health Check Error: checking base node identity: {:?}",
+                            self.node_type, e
+                        );
                         return HealthStatus::Unhealthy;
                     }
                 }

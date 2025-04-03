@@ -81,7 +81,7 @@ export function Tabs({ tabItems }: TabsProps) {
         <Wrapper>
             {tabNav}
             <TabsWrapper>
-                <TabContent items={tabItems} currentIndex={currentIndex} />
+                <TabContent items={tabItems} currentIndex={currentIndex} setCurrentIndex={setCurrentIndex} />
             </TabsWrapper>
             {bottomNavMarkup}
         </Wrapper>
