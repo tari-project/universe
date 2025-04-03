@@ -2,8 +2,6 @@ import { useUIStore } from '@app/store';
 import { setConnectionStatus, setIsReconnecting } from '@app/store/actions/uiStoreActions';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
-import { ResumingAllProcessesPayload } from './useListenForAppResuming';
-
 export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
 
 export const useConnectionStatusListener = () => {
@@ -18,14 +16,6 @@ export const useConnectionStatusListener = () => {
     }, [connectionStatus]);
 
     useEffect(() => {
-        const resumingProcessesListener = listen(
-            'resuming-all-processes',
-            ({ payload }: { payload: ResumingAllProcessesPayload }) => {
-                if (!payload.is_resuming) {
-                    setConnectionStatus('connected');
-                }
-            }
-        );
         const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
             if (payload === 'InProgress') {
                 setIsReconnecting(true);
@@ -38,7 +28,6 @@ export const useConnectionStatusListener = () => {
         });
 
         return () => {
-            resumingProcessesListener.then((unlisten) => unlisten());
             reconnectingListener.then((unlisten) => unlisten());
         };
     }, []);

@@ -11,7 +11,6 @@ import { RetryTimer, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, Header
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
-import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
 import { listen } from '@tauri-apps/api/event';
 
 const DisconnectedSevere: React.FC = () => {
@@ -27,6 +26,9 @@ const DisconnectedSevere: React.FC = () => {
             if (payload === 'Failed') {
                 stopCountdown();
                 startCountdown();
+            } else if (payload === 'Succeed') {
+                restartAttempts();
+                stopCountdown();
             }
         });
 
@@ -52,7 +54,6 @@ const DisconnectedSevere: React.FC = () => {
 
     const reconnect = () => {
         invoke('reconnect');
-        setIsReconnecting(true);
         setIsReconnectOnCooldown(true);
         setTimeout(() => {
             setIsReconnectOnCooldown(false);

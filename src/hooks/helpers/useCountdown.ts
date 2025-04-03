@@ -1,4 +1,4 @@
-import { setConnectionStatus, setIsReconnecting } from '@app/store/actions/uiStoreActions';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import React from 'react';
 import { useCallback } from 'react';
@@ -17,7 +17,6 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
     const [countdown, setCountdown] = React.useState(0);
 
     const reconnect = useCallback(() => {
-        setIsReconnecting(true);
         invoke('reconnect');
         const currentAttempt = Math.min(attempt + 1, intervalsInSecs.length - 1);
         if (currentAttempt === 2) {

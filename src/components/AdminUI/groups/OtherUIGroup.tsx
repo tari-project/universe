@@ -11,7 +11,7 @@ export function OtherUIGroup() {
     const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
 
-    const rotateConnectionStatus = () => {
+    const shiftConnectionStatus = () => {
         if (connectionStatus === 'connected') {
             setConnectionStatus('disconnected');
         } else if (connectionStatus === 'disconnected') {
@@ -31,7 +31,7 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
-                <Button onClick={rotateConnectionStatus}>Change connection status</Button>
+                <Button onClick={shiftConnectionStatus}>Change connection status</Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}

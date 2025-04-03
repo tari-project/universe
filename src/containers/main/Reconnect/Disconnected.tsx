@@ -8,7 +8,6 @@ import { RetryTimer, SecondaryButton, HeaderImg, TextWrapper, Wrapper } from './
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
-import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
 import { listen } from '@tauri-apps/api/event';
 
 const ConnectionAttemptIntervalsInSecs = [60, 120, 240];
@@ -33,6 +32,7 @@ const Disconnected: React.FC = () => {
                 startCountdown();
             } else if (payload === 'Succeed') {
                 restartAttempts();
+                stopCountdown();
             }
         });
 
@@ -54,18 +54,11 @@ const Disconnected: React.FC = () => {
 
     const reconnect = () => {
         invoke('reconnect');
-        setIsReconnecting(true);
         setIsReconnectOnCooldown(true);
         setTimeout(() => {
             setIsReconnectOnCooldown(false);
         }, 1000 * 60);
     };
-
-    useEffect(() => {
-        if (isReconnecting) {
-            stopCountdown();
-        }
-    }, [isReconnecting]);
 
     const retryText = isReconnecting ? (
         <>{t('reconnect-in-progress')}</>
