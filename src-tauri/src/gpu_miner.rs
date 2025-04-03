@@ -50,17 +50,12 @@ use crate::{process_utils, BaseNodeStatus, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
-#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize, Default)]
 pub enum EngineType {
-    Cuda,
+    #[default]
     OpenCL,
+    Cuda,
     Metal,
-}
-
-impl Default for EngineType {
-    fn default() -> Self {
-        EngineType::OpenCL
-    }
 }
 
 impl Display for EngineType {

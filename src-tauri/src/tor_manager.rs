@@ -25,6 +25,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
+use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tokio::sync::{watch, RwLock};
 
@@ -46,7 +47,9 @@ impl TorManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = TorAdapter::new(status_broadcast);
-        let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
+        let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
+        process_watcher.expected_startup_time = Duration::from_secs(120);
+        process_watcher.health_timeout = Duration::from_secs(14);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),

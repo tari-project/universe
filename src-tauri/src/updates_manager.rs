@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use tokio::time;
+use tokio::{select, time};
 
 use anyhow::anyhow;
 use log::{error, info, warn};
@@ -96,21 +96,26 @@ impl UpdatesManager {
         let self_clone = self.clone();
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                            error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    select! {
+                        _ = shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                            break;
                         }
-                    },
-                    _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET,"UpdateManager::init_periodic_updates been cancelled");
-                        break;
+                        _ = interval.tick() => {
+                            info!(target: LOG_TARGET, "Periodic update check triggered.");
+                            if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                                error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                            }
+                        }
                     }
                 }
-            }
-        });
+            });
 
         Ok(())
     }

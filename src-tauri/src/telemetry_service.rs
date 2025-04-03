@@ -24,11 +24,11 @@ use log::{debug, error, info, warn};
 use serde::Serialize;
 use serde_json::Value;
 use std::{sync::Arc, time::SystemTime};
-use tari_shutdown::ShutdownSignal;
 use tokio::sync::{
     mpsc::{self, Sender},
     RwLock,
 };
+use tokio_util::sync::CancellationToken;
 
 use crate::{
     app_config::AppConfig,
@@ -72,7 +72,7 @@ pub enum TelemetryServiceError {
 pub struct TelemetryService {
     version: String,
     tx_channel: Option<Sender<TelemetryData>>,
-    cancellation_token: ShutdownSignal,
+    cancellation_token: CancellationToken,
     config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
@@ -81,8 +81,8 @@ impl TelemetryService {
     pub fn new(
         config: Arc<RwLock<AppConfig>>,
         in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-        cancellation_token: ShutdownSignal,
     ) -> Self {
+        let cancellation_token = CancellationToken::new();
         TelemetryService {
             version: "0.0.0".to_string(),
             tx_channel: None,
@@ -100,7 +100,7 @@ impl TelemetryService {
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         self.version = app_version;
-        let mut cancellation_token = self.cancellation_token.clone();
+        let cancellation_token = self.cancellation_token.clone();
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let telemetry_api_url = in_memory_config_cloned
@@ -111,49 +111,49 @@ impl TelemetryService {
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            let system_info = SystemInfo {
-                version,
-                user_id: user,
-                os,
-            };
-            loop {
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                let system_info = SystemInfo {
+                    version,
+                    user_id: user,
+                    os,
+                };
                 tokio::select! {
-                    Some(telemetry_data) = rx.recv() => {
-                        info!(target: LOG_TARGET, "TelemetryService::init has  been started");
-                        let config_guard = config_cloned.read().await;
-                        info!(target: LOG_TARGET, "TelemetryService processing telemetry event data");
-                        let telemetry_collection_enabled = config_guard.allow_telemetry();
-                        let app_id = config_guard.anon_id().to_string();
-                        info!(target: LOG_TARGET, "TelemetryService: event_name={}, telemetry_enabled={}", telemetry_data.event_name, telemetry_collection_enabled);
-                        if telemetry_collection_enabled {
-                            drop(retry_with_backoff(
-                                || {
-                                    Box::pin(send_telemetry_data(
-                                        telemetry_data.clone(),
-                                        telemetry_api_url.clone(),
-                                        system_info.clone(),
-                                        app_id.clone(),
-                                    ))
-                                },
-                                3,
-                                2,
-                                "send_telemetry_data",
-                            )
-                            .await);
+                    _ = async {
+                        debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
+                        while let Some(telemetry_data) = rx.recv().await {
+                            let config_guard = config_cloned.read().await;
+                            let telemetry_collection_enabled = config_guard.allow_telemetry();
+                            let app_id = config_guard.anon_id().to_string();
+                            if telemetry_collection_enabled {
+                                drop(retry_with_backoff(
+                                    || {
+                                        Box::pin(send_telemetry_data(
+                                            telemetry_data.clone(),
+                                            telemetry_api_url.clone(),
+                                            system_info.clone(),
+                                            app_id.clone(),
+                                        ))
+                                    },
+                                    3,
+                                    2,
+                                    "send_telemetry_data",
+                                )
+                                .await);
+                            }
                         }
-                    },
-                    _ = cancellation_token.wait() => {
-                        info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
-                        break;
-                    }
-                    _ = shutdown_signal.wait() => {
-                        info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
-                        break;
-                    }
+                        } => {}
+                        _ = shutdown_signal.wait() => {
+                            info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                        }
+                        _ = cancellation_token.cancelled() => {
+                            info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");
+                        }
                 }
-            }
-        });
+            });
         Ok(())
     }
 

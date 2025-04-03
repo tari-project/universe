@@ -29,7 +29,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::{TariAddress, TariAddressError, TariAddressFeatures};
-use tari_crypto::keys::PublicKey;
+use tari_common_types::types::CompressedPublicKey;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_key_manager::cipher_seed::CipherSeed;
 use tari_key_manager::key_manager::KeyManager;
@@ -39,7 +39,7 @@ use tari_utilities::SafePassword;
 use tokio::fs;
 use urlencoding::encode;
 
-use tari_core::transactions::key_manager::{
+use tari_core::transactions::transaction_key_manager::{
     create_memory_db_key_manager_from_seed, SecretTransactionKeyManagerInterface,
     TransactionKeyManagerInterface,
 };
@@ -254,7 +254,7 @@ impl InternalWallet {
             .derive_key(0)
             .map_err(|e| anyhow!(e.to_string()))?
             .key;
-        let comms_pub_key = RistrettoPublicKey::from_secret_key(&comms_key);
+        let comms_pub_key = CompressedPublicKey::from_secret_key(&comms_key);
         let network = Network::default();
 
         let tx_key_manager = create_memory_db_key_manager_from_seed(seed.clone(), 64)?;

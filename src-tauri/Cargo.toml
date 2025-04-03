@@ -4,7 +4,7 @@ description = "Tari Universe"
 edition = "2021"
 name = "tari-universe"
 repository = "https://github.com/tari-project/universe"
-version = "0.9.825"
+version = "0.9.836"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -39,8 +39,8 @@ libsqlite3-sys = { version = "0.25.1", features = [
 ] } # Required for tari_wallet
 log = "0.4.22"
 log4rs = "1.3.0"
-minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
-minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
+minotari_node_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
+minotari_wallet_grpc_client = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
 monero-address-creator = { git = "https://github.com/tari-project/monero-address-creator.git", rev = "6129ca0" }
 nix = { version = "0.29.0", features = ["signal"] }
 nvml-wrapper = "0.10.0"
@@ -59,15 +59,15 @@ sha2 = "0.10.8"
 sys-locale = "0.3.1"
 sysinfo = "0.31.2"
 tar = "0.4.26"
-tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
-tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
-tari_core = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0", features = [
+tari_common = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
+tari_common_types = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
+tari_core = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0", features = [
   "transactions",
 ] }
 tauri-plugin-single-instance = '2'
-tari_crypto = "0.21.0"
-tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
-tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v1.11.0-pre.0" }
+tari_crypto = "0.22.0"
+tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
+tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v1.13.1-rc.0" }
 tari_utilities = "0.8.0"
 tauri = { version = "2", features = [
   "isolation",
@@ -84,7 +84,7 @@ tauri-plugin-shell = "2"
 tauri-plugin-updater = "2"
 thiserror = "2.0.10"
 tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7.11", features = ["compat", "rt"] }
+tokio-util = { version = "0.7.14", features = ["compat", "rt"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"
@@ -101,7 +101,6 @@ psp = { git = "https://github.com/tari-project/psp.git", rev = "ddef0c6" }
 urlencoding = "2.1.3"
 reqwest-middleware = "0.4.0"
 reqwest-retry = "0.7.0"
-console-subscriber = "0.4.1"
 cfspeedtest = "1.3.1"
 getset = "0.1.5"
 

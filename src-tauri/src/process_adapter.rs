@@ -28,6 +28,7 @@ use sentry::protocol::Event;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -51,6 +52,7 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
@@ -60,8 +62,15 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, config_folder, log_folder, binary_version_path)
+        self.spawn_inner(
+            base_folder,
+            config_folder,
+            log_folder,
+            binary_version_path,
+            is_first_start,
+        )
     }
 
     fn pid_file_name(&self) -> &str;
@@ -99,6 +108,7 @@ pub(crate) trait ProcessAdapter {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HealthStatus {
     Healthy,
     Warning,
@@ -107,7 +117,7 @@ pub enum HealthStatus {
 
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
-    async fn check_health(&self) -> HealthStatus;
+    async fn check_health(&self, uptime: Duration) -> HealthStatus;
 }
 
 // TODO: Rename to ProcessInstance

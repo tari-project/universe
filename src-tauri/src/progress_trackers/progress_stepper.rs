@@ -125,7 +125,7 @@ impl ProgressStepper {
                     let next_step_percentage = self.percentage_steps.get(next_index).copied();
                     let channel_step_update = ChanneledStepUpdate {
                         step: resolved_step.clone(),
-                        step_percentage: resolved_percentage.clone(),
+                        step_percentage: resolved_percentage,
                         next_step_percentage,
                         app_handle: self.app_handle.clone(),
                     };
@@ -135,7 +135,7 @@ impl ProgressStepper {
             } else {
                 let channel_step_update = ChanneledStepUpdate {
                     step: resolved_step.clone(),
-                    step_percentage: resolved_percentage.clone(),
+                    step_percentage: resolved_percentage,
                     app_handle: self.app_handle.clone(),
                     next_step_percentage: None,
                 };

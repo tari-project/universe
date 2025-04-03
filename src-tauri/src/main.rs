@@ -991,16 +991,6 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
-    #[cfg(debug_assertions)]
-    {
-        if cfg!(tokio_unstable) {
-            console_subscriber::init();
-        } else {
-            println!(
-                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
-            );
-        }
-    }
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
@@ -1092,12 +1082,9 @@ fn main() {
         tor_watch_rx.clone(),
         stats_collector.build(),
     );
-    let telemetry_service = TelemetryService::new(
-        app_config.clone(),
-        app_in_memory_config.clone(),
-        shutdown.to_signal(),
-    );
+
     let updates_manager = UpdatesManager::new(app_config.clone());
+    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
@@ -1133,6 +1120,7 @@ fn main() {
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
     };
     let app_state_clone = app_state.clone();
+    #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())

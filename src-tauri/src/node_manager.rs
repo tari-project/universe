@@ -34,9 +34,9 @@ use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
-use tokio::fs;
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
+use tokio::{fs, select};
 
 use crate::process_watcher::ProcessWatcherStats;
 
@@ -134,7 +134,13 @@ impl NodeManager {
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
-        fs::remove_dir_all(base_path.join("node")).await?;
+        fs::remove_dir_all(
+            base_path
+                .join("node")
+                .join(Network::get_current().to_string().to_lowercase())
+                .join("data"),
+        )
+        .await?;
         Ok(())
     }
 
@@ -362,66 +368,54 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
-        let t = TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let mut local_node_client = None;
-            for _ in 0..10 {
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                local_node_client = {
-                    let local_node_watcher = node_manager.local_node_watcher.read().await;
-                    local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
-                };
-                if local_node_client.is_some() {
-                    break;
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            select! {
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
                 }
-            }
-
-            if let Some(local_node_client) = local_node_client {
-                match local_node_client
-                    .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
-                    .await
-                {
-                    Ok(_) => {
-                        info!(target: LOG_TARGET, "Local node synced, switching node type...");
-                        {
-                            let mut node_type = node_type.write().await;
-                            *node_type = NodeType::LocalAfterRemote;
+                _ = async {
+                    let mut local_node_client = None;
+                    for _ in 0..10 {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        local_node_client = {
+                            let local_node_watcher = node_manager.local_node_watcher.read().await;
+                            local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
+                        };
+                        if local_node_client.is_some() {
+                            break;
                         }
+                    }
+
+                    if let Some(local_node_client) = local_node_client {
+                        match local_node_client
+                            .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
+                            .await
                         {
-                            let mut remote_node_watcher =
-                                node_manager.remote_node_watcher.write().await;
-                            SetupManager::get_instance()
-                                .handle_switch_to_local_node()
-                                .await;
-                            if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
-                                if let Err(e) = remote_node_watcher.stop().await {
-                                    error!(target: LOG_TARGET, "Failed to stop local node watcher: {}", e);
+                            Ok(_) => {
+                                info!(target: LOG_TARGET, "Local node synced, switching node type...");
+                                {
+                                    let mut node_type = node_type.write().await;
+                                    *node_type = NodeType::LocalAfterRemote;
+                                }
+                                {
+                                    let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
+                                    SetupManager::get_instance().handle_switch_to_local_node().await;
+                                    if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
+                                        if let Err(e) = remote_node_watcher.stop().await {
+                                            error!(target: LOG_TARGET, "Failed to stop local node watcher: {}", e);
+                                        }
+                                    }
                                 }
                             }
+                            Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
+                            Err(e) => {
+                                error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
+                            }
                         }
+                    } else {
+                        error!(target: LOG_TARGET, "Local node client not found when switching nodes");
                     }
-                    Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
-                    Err(e) => {
-                        error!(target: LOG_TARGET,
-                            "NodeManagerError: {}",
-                            NodeManagerError::UnknownError(e.into())
-                        );
-                    }
-                }
-            } else {
-                error!(target: LOG_TARGET,
-                    "Local node client not found when switching nodes",
-                );
-            }
-        });
-
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            tokio::select! {
-                _ = t => {
-                    info!(target: LOG_TARGET, "Successfully switched to the local node");
-                },
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown Signal: switching to the local node terminated");
-                },
+                } => {}
             }
         });
 

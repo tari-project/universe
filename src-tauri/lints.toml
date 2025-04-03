@@ -7,15 +7,20 @@ deny = [
   # TODO: enable lint-reasons feature
   #    'clippy::allow_attributes_without_reason',
 
+  'deprecated',
   # Common mistakes
   'clippy::await_holding_lock',
+  'clippy::derivable_impls',
   'unused_variables',
   'unused_imports',
   'dead_code',
   'unused_extern_crates',
   'unused_must_use',
   'unreachable_patterns',
+  'unreachable_code',
+  'unexpected_cfgs',
   'clippy::cloned_instead_of_copied',
+  'clippy::clone_on_copy',
   'clippy::unwrap_used',
   'clippy::create_dir',
   'clippy::dbg_macro',
@@ -56,6 +61,7 @@ deny = [
   'clippy::needless_question_mark',
   # dbg! macro is intended as a debugging tool. It should not be in version control.
   'clippy::dbg_macro',
+  'clippy::to_string_in_format_args',
 ]
 
 allow = [
