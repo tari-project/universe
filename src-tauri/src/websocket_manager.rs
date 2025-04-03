@@ -10,9 +10,14 @@ use log::{error, info};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
+use tari_shutdown::Shutdown;
 use tauri::AppHandle;
 use tauri::Emitter;
+use tauri::Manager;
 use tokio::net::TcpStream;
+use tokio::sync::broadcast;
+use tokio::sync::mpsc;
+use tokio::sync::watch;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -42,7 +47,7 @@ pub enum WebsocketError {
     TauriError(#[from] tauri::Error),
 
     #[error("channel send error: {0}")]
-    ChannelSendError(#[from] tokio::sync::mpsc::error::SendError<String>),
+    ChannelSendError(#[from] mpsc::error::SendError<String>),
 
     #[error("Missing app handle error")]
     MissingAppHandle,
@@ -51,11 +56,19 @@ pub enum WebsocketError {
 #[serde(rename_all = "camelCase")]
 pub struct WebsocketMessage {
     pub event: String,
-    pub data: serde_json::Value,
+    pub data: Option<serde_json::Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub signature: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub pub_key: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+pub enum WebsocketManagerStatusMessage {
+    Connected,
+    Reconnecting,
+    Stopped,
+    Error(String),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -66,87 +79,128 @@ pub struct WebsocketStoredMessage {
 
 pub struct WebsocketManager {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    cancellation_token: CancellationToken,
     message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     app: Option<AppHandle>,
-    receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
+    message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
+    shutdown: Shutdown,
+    status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
+    status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
+    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    close_channel_rx: tokio::sync::broadcast::Receiver<bool>,
 }
 
 impl WebsocketManager {
     pub fn new(
         app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-        websocket_manager_rx: tokio::sync::mpsc::Receiver<WebsocketMessage>,
+        websocket_manager_rx: mpsc::Receiver<WebsocketMessage>,
+        shutdown: Shutdown,
+        status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
+        status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     ) -> Self {
+        let (close_channel_tx, close_channel_rx) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketManager {
             app_in_memory_config,
-            cancellation_token: CancellationToken::new(),
             message_cache: Arc::new(RwLock::new(HashMap::new())),
             app: None,
-            receiver_channel: Arc::new(Mutex::new(websocket_manager_rx)),
+            message_receiver_channel: Arc::new(Mutex::new(websocket_manager_rx)),
+            shutdown,
+            status_update_channel_tx,
+            status_update_channel_rx,
+            close_channel_tx,
+            close_channel_rx,
         }
     }
 
     pub fn set_app_handle(&mut self, app: AppHandle) {
-        self.app = Some(app);
+        self.app = Some(app.clone());
         log::info!("websocket manager app handle set");
-    }
+        let mut status_channel_rx = self.status_update_channel_rx.clone();
+        let main_window = app
+            .get_webview_window("main")
+            .expect("main window must exist");
 
-    // pub async fn send_ws_message<'a>(&self, value: &'a str) -> Result<(), WebsocketError> {
-    //     //check if it is a json value
-    //     let message_content_result = serde_json::from_str::<WebsocketMessage>(value)
-    //         .inspect_err(|e| warn!(target:LOG_TARGET,"websocket message is not json"))?;
-    //     log::trace!("websocket message sent {:?}", message_content_result);
-    //     self.sender_channel.send(value.into()).await?;
-    //     Result::Ok(())
-    // }
-
-    pub fn close(&self) {
-        self.cancellation_token.cancel();
+        tokio::spawn(async move {
+            while let Ok(_) = status_channel_rx.changed().await {
+                let new_state = status_channel_rx.borrow();
+                let _ = main_window
+                    .clone()
+                    .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
+                        error!(target:LOG_TARGET,"could not send ws-status-change event: {:?}",new_state);
+                    });
+            }
+        });
     }
 
     async fn connect_to_url(
         config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
+        status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket...");
         let config_read = config_cloned.read().await;
         let adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
+        let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
         info!(target:LOG_TARGET,"websocket connection established...");
 
         Ok(ws_stream)
     }
 
+    pub async fn close_connection(&self) {
+        match self.close_channel_tx.send(true) {
+            Ok(_) => loop {
+                let actual_state = self.status_update_channel_rx.borrow();
+                if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
+                    break;
+                }
+            },
+            Err(_) => {
+                info!(target: LOG_TARGET,"websocket connection has already been closed.");
+            }
+        }
+    }
+
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
-        let cancellation = self.cancellation_token.clone();
         let message_cache = self.message_cache.clone();
         let app_cloned = self.app.clone().ok_or(WebsocketError::MissingAppHandle)?;
-        let receiver_channel = self.receiver_channel.clone();
+        let receiver_channel = self.message_receiver_channel.clone();
+        let shutdown = self.shutdown.clone();
+        let mut shutdown_signal = shutdown.to_signal();
+        let status_update_channel_tx = self.status_update_channel_tx.clone();
+        let status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
+            self.status_update_channel_rx.clone();
+        let close_channel_tx = self.close_channel_tx.clone();
+
         tauri::async_runtime::spawn(async move {
-            tokio::select! {
-                res = async {
-                    loop {
-                        if cancellation.is_cancelled(){
-                            return Ok::<(),anyhow::Error>(());
-                        }
-                        let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
+            loop {
+                tokio::select! {
+                    _ = async {
+                        let connection_res = WebsocketManager::connect_to_url(&config_cloned, status_update_channel_tx.clone()).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
                         if let Ok(connection) = connection_res {
                             _= WebsocketManager::listen(connection,app_cloned.clone(),
-                            cancellation.clone(),
-                            message_cache.clone(),
-                            receiver_channel.clone()).await
-                            .inspect_err(|e|{error!(target:LOG_TARGET,"Websocket: event handler error:{}",e.to_string())});
+                                shutdown.clone(),
+                                message_cache.clone(),
+                                receiver_channel.clone(),
+                                status_update_channel_tx.clone(),
+                                close_channel_tx.clone()).await
+                                .inspect_err(|e|{error!(target:LOG_TARGET,"Websocket: event handler error:{}",e.to_string())});
                         }
                         sleep(Duration::from_millis(5000)).await;
+                        Ok::<(),anyhow::Error>(())
+                    } => {},
+                    _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
+                        let _ = status_update_channel_tx
+                        .send(WebsocketManagerStatusMessage::Stopped);
+                        info!(target: LOG_TARGET,"websocket service has been cancelled.");
+                        return Ok::<(),anyhow::Error>(());
                     }
-                } => {
-                    res
-                },
-                _ = cancellation.cancelled() => {
-                    info!(target: LOG_TARGET,"websocket service has been cancelled.");
-                    Ok::<(),anyhow::Error>(())
+                    _= shutdown_signal.wait()=>{
+                        let _ = status_update_channel_tx
+                        .send(WebsocketManagerStatusMessage::Stopped);
+                        return Ok::<(),anyhow::Error>(());
+                    }
                 }
             }
         });
@@ -156,9 +210,11 @@ impl WebsocketManager {
     pub async fn listen(
         connection_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
         app: AppHandle,
-        connection_cancellation_token: CancellationToken,
+        shutdown: Shutdown,
         message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
-        receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
+        message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
+        status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
+        close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     ) -> Result<(), WebsocketError> {
         let (write_stream, read_stream) = connection_stream.split();
         info!(target:LOG_TARGET,"listening to websocket events");
@@ -166,7 +222,7 @@ impl WebsocketManager {
         let task_cancellation = CancellationToken::new();
         let task_cancellation_cloned = task_cancellation.clone();
         let task_cancellation_cloned2 = task_cancellation.clone();
-
+        let mut shutdown_signal = shutdown.to_signal();
         //receiver
         let receiver_task = tauri::async_runtime::spawn(async move {
             tokio::select! {
@@ -181,7 +237,7 @@ impl WebsocketManager {
         //sender
         let sender_task = tauri::async_runtime::spawn(async move {
             tokio::select! {
-                _=sender_task(receiver_channel, write_stream)=>{
+                _=sender_task(message_receiver_channel, write_stream)=>{
                 },
                 _=task_cancellation_cloned2.cancelled()=>{
                     info!(target:LOG_TARGET,"cancelling sender task");
@@ -192,15 +248,20 @@ impl WebsocketManager {
         tokio::select! {
             _=receiver_task=>{
                 info!(target:LOG_TARGET,"receiver cancelled");
+                let _ = status_update_channel_tx
+                .send(WebsocketManagerStatusMessage::Reconnecting);
                 task_cancellation.cancel();
             },
             _=sender_task=>{
                 info!(target:LOG_TARGET,"sender cancelled");
+                let _ = status_update_channel_tx
+                .send(WebsocketManagerStatusMessage::Reconnecting);
                 task_cancellation.cancel();
             },
-            _=connection_cancellation_token.cancelled()=>{
+            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 task_cancellation.cancel();
             }
+            _=shutdown_signal.wait()=>{}
         }
         info!(target:LOG_TARGET, "websocket task closed");
 
@@ -209,7 +270,7 @@ impl WebsocketManager {
 }
 
 async fn sender_task(
-    receiver_channel: Arc<Mutex<tokio::sync::mpsc::Receiver<WebsocketMessage>>>,
+    receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
     mut write_stream: futures::stream::SplitSink<
         WebSocketStream<MaybeTlsStream<TcpStream>>,
         Message,
@@ -229,6 +290,21 @@ async fn sender_task(
     }
     info!(target:LOG_TARGET, "exiting sender task");
     Result::Ok(())
+}
+
+async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
+    loop {
+        match channel.recv().await {
+            Ok(val) => {
+                if val == true {
+                    return;
+                }
+            }
+            Err(_) => {
+                return;
+            }
+        }
+    }
 }
 
 async fn receiver_task(

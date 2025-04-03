@@ -2,7 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use log::{error, info};
 use tari_common::configuration::Network;
-use tari_shutdown::ShutdownSignal;
+use tari_shutdown::Shutdown;
 use tauri::AppHandle;
 use tokio::{
     sync::{watch, RwLock},
@@ -24,7 +24,7 @@ pub struct WebsocketEventsManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
     node_latest_status: watch::Receiver<BaseNodeStatus>,
-    shutdown_signal: ShutdownSignal,
+    shutdown: Shutdown,
     app_id: String,
     websocket_tx_channel: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
 }
@@ -36,14 +36,14 @@ impl WebsocketEventsManager {
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
         node_latest_status: watch::Receiver<BaseNodeStatus>,
-        shutdown_signal: ShutdownSignal,
+        shutdown: Shutdown,
         websocket_tx_channel: tokio::sync::mpsc::Sender<WebsocketMessage>,
     ) -> Self {
         WebsocketEventsManager {
             cpu_miner_status_watch_rx,
             gpu_latest_miner_stats,
             node_latest_status,
-            shutdown_signal,
+            shutdown,
             app_id,
             websocket_tx_channel: Arc::new(websocket_tx_channel),
             app: None,
@@ -57,7 +57,7 @@ impl WebsocketEventsManager {
 
     pub async fn emit_interval_ws_events(&mut self) {
         let mut interval = time::interval(INTERVAL_DURATION);
-        let shutdown = self.shutdown_signal.clone();
+        let shutdown = self.shutdown.clone();
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
@@ -78,7 +78,7 @@ impl WebsocketEventsManager {
                     .await
                     .airdrop_tokens()
                     .map(|tokens| tokens.token);
-                let mut cloned_shutdown = shutdown.clone();
+                let mut shutdown_signal = shutdown.clone().to_signal();
                 tokio::select! {
                   _= interval.tick() => {
                         info!(target:LOG_TARGET, "jwt might exist");
@@ -100,7 +100,8 @@ impl WebsocketEventsManager {
                             });
                         }}
                   },
-                  _= cloned_shutdown.wait()=>{
+                  _= shutdown_signal.wait()=>{
+                    info!(target:LOG_TARGET, "websocket events manager closed");
                     return;
                   }
                 }
@@ -146,7 +147,7 @@ impl WebsocketEventsManager {
 
                 return Some(WebsocketMessage {
                     event: "mining-status".into(),
-                    data: payload,
+                    data: Some(payload),
                     signature: Some(signature),
                     pub_key: Some(pub_key),
                 });
