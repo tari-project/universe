@@ -4,7 +4,6 @@ import Heading from './components/Heading';
 import LostConnectionAlert from './components/LostConnectionAlert';
 import MiningButton from './components/MiningButton/MiningButton';
 import Miner from './Miner/Miner';
-import OrphanChainAlert from './components/OrphanChainAlert/OrphanChainAlert.tsx';
 import { Bottom, Scroll, SideBarContainer, SidebarTop, Top } from './styles';
 
 export default function SideBar() {
@@ -14,7 +13,7 @@ export default function SideBar() {
                 <Heading />
                 <MiningButton />
                 <LostConnectionAlert />
-                <OrphanChainAlert />
+                {/* <OrphanChainAlert /> */}
             </SidebarTop>
             <Scroll>
                 <Top>
