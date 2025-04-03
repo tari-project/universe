@@ -236,16 +236,16 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                             + gpu_status.estimated_earnings) as f64,
                     };
 
-                    // match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                    //     Ok(mut sm) => {
-                    //         sm.update_tray(systray_data);
-                    //     },
-                    //     Err(e) => {
-                    //         let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
-                    //         error!(target: LOG_TARGET, "{}", err_msg);
-                    //         sentry::capture_message(&err_msg, sentry::Level::Error);
-                    //     }
-                    // }
+                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                        Ok(mut sm) => {
+                            sm.update_tray(systray_data);
+                        },
+                        Err(e) => {
+                            let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                            error!(target: LOG_TARGET, "{}", err_msg);
+                            sentry::capture_message(&err_msg, sentry::Level::Error);
+                        }
+                    }
                 }
                 _ = shutdown_signal.wait() => {
                     break;

@@ -372,19 +372,19 @@ impl NodeManager {
             select! {
                 _ = shutdown_signal => {
                     info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
-                    return;
                 }
-                _ = async {            let mut local_node_client = None;
-            for _ in 0..10 {
-                tokio::time::sleep(Duration::from_secs(2)).await;
-                local_node_client = {
-                    let local_node_watcher = node_manager.local_node_watcher.read().await;
-                    local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
-                };
-                if local_node_client.is_some() {
-                    break;
+                _ = async {
+                    let mut local_node_client = None;
+                    for _ in 0..10 {
+                        tokio::time::sleep(Duration::from_secs(2)).await;
+                        local_node_client = {
+                            let local_node_watcher = node_manager.local_node_watcher.read().await;
+                            local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
+                        };
+                        if local_node_client.is_some() {
+                            break;
+                    }
                 }
-            }
 
             if let Some(local_node_client) = local_node_client {
                 match local_node_client
