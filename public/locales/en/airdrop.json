@@ -42,5 +42,6 @@
   "copied": "Copied!",
   "copyFailed": "Copy Failed",
   "rightClickToCopy": "Right-click to copy link",
-  "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link"
+  "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
+  "live":"live"
 }

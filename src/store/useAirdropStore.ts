@@ -1,3 +1,4 @@
+import { XSpaceEvent } from '@app/types/ws';
 import { create } from './create';
 
 export const GIFT_GEMS = 5000;
@@ -78,10 +79,7 @@ export interface BackendInMemoryConfig {
     airdropTwitterAuthUrl: string;
 }
 export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
-export interface ReferralQuestPoints {
-    pointsPerReferral: number;
-    pointsForClaimingReferral: number;
-}
+
 interface MiningPoint {
     blockHeight: string;
     reward: number;
@@ -93,12 +91,11 @@ export interface AirdropStoreState {
     airdropTokens?: AirdropTokens;
     userDetails?: UserDetails;
     userPoints?: UserPoints;
-    referralCount?: ReferralCount;
     backendInMemoryConfig?: BackendInMemoryConfig;
     flareAnimationType?: AnimationType;
     bonusTiers?: BonusTier[];
-    referralQuestPoints?: ReferralQuestPoints;
     miningRewardPoints?: MiningPoint;
+    latestXSpaceEvent?: XSpaceEvent | null;
 }
 
 const initialState: AirdropStoreState = {
@@ -107,9 +104,9 @@ const initialState: AirdropStoreState = {
     miningRewardPoints: undefined,
     userDetails: undefined,
     userPoints: undefined,
-    referralQuestPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    latestXSpaceEvent: null,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

@@ -59,17 +59,9 @@ pub struct GpuDevice {
     pub settings: GpuSettings,
 }
 
-#[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+#[derive(serde::Deserialize, serde::Serialize, Debug, Clone, Default)]
 pub struct GpuStatusFile {
     pub gpu_devices: Vec<GpuDevice>,
-}
-
-impl Default for GpuStatusFile {
-    fn default() -> Self {
-        Self {
-            gpu_devices: Vec::new(),
-        }
-    }
 }
 
 impl GpuStatusFile {

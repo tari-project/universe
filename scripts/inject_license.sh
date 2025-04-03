@@ -1,4 +1,8 @@
-// Copyright 2024. The Tari Project
+#!/bin/bash
+
+# Define the block of text to be added (multiline)
+BLOCK=$(cat <<'EOF'
+// Copyright 2025. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
 // following conditions are met:
@@ -20,40 +24,35 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-fn main() {
-    // Allow the use of unstable features in tokio
-    println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
-    if cfg!(target_os = "windows") {
-        let mut windows = tauri_build::WindowsAttributes::new();
-        // Require Administrator permissions to handle Firewall prompts
-        windows = windows.app_manifest(
-            r#"
-      <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
-        <dependency>
-          <dependentAssembly>
-            <assemblyIdentity
-              type="win32"
-              name="Microsoft.Windows.Common-Controls"
-              version="6.0.0.0"
-              processorArchitecture="*"
-              publicKeyToken="6595b64144ccf1df"
-              language="*"
-            />
-          </dependentAssembly>
-        </dependency>
-        <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
-          <security>
-              <requestedPrivileges>
-                  <requestedExecutionLevel level="requireAdministrator" uiAccess="false" />
-              </requestedPrivileges>
-          </security>
-        </trustInfo>
-      </assembly>
-    "#,
-        );
-        let attrs = tauri_build::Attributes::new().windows_attributes(windows);
-        tauri_build::try_build(attrs).expect("failed to run build script")
-    } else {
-        tauri_build::build()
-    }
+
+EOF
+)
+
+# Define the directory containing the files
+DIRECTORY="./src-tauri/src/"
+
+# Function to process files in a directory recursively
+process_directory() {
+    local DIR="$1"
+
+    # Loop through all files and directories in the current directory
+    for ITEM in "$DIR"/*; do
+        if [ -d "$ITEM" ]; then
+            # If it's a directory, recurse into it
+            process_directory "$ITEM"
+        elif [ -f "$ITEM" ]; then
+            # If it's a regular file, check and prepend the block
+            if ! grep -Fxq "$BLOCK" "$ITEM"; then
+                echo "Adding block to $ITEM"
+                { printf "%s\n" "$BLOCK"; cat "$ITEM"; } > "$ITEM.tmp" && mv "$ITEM.tmp" "$ITEM"
+            else
+                echo "Block already exists in $ITEM, skipping."
+            fi
+        fi
+    done
 }
+
+# Start processing the specified directory
+process_directory "$DIRECTORY"
+
+echo "Script completed."
