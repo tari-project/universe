@@ -32,12 +32,6 @@ export function OtherUIGroup() {
                     SoS Widget
                 </Button>
                 <Button onClick={rotateConnectionStatus}>Change connection status</Button>
-                <Button
-                    onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
-                    $isActive={adminShow === 'orphanChainWarning'}
-                >
-                    Orphan chain warning
-                </Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}

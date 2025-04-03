@@ -13,7 +13,6 @@ export default function SideBar() {
                 <Heading />
                 <MiningButton />
                 <LostConnectionAlert />
-                {/* <OrphanChainAlert /> */}
             </SidebarTop>
             <Scroll>
                 <Top>
