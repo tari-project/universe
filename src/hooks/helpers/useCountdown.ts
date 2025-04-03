@@ -7,6 +7,7 @@ interface CountdownResult {
     seconds: number;
     start: () => void;
     stop: () => void;
+    restartAttempts: () => void;
 }
 
 export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
@@ -69,9 +70,14 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
         stopCountdown();
     }, [stopConnectionRetry, stopCountdown]);
 
+    const restartAttempts = useCallback(() => {
+        setAttempt(0);
+    }, [setAttempt]);
+
     return {
         seconds: countdown,
         start: startRetry,
         stop: stopRetry,
+        restartAttempts,
     };
 };

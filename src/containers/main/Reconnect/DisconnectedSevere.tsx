@@ -9,7 +9,7 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { RetryTimer, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
-import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
+import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
 import { setIsReconnecting } from '@app/store/actions/uiStoreActions';
 import { listen } from '@tauri-apps/api/event';

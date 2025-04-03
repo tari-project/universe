@@ -17,7 +17,12 @@ const Disconnected: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown(ConnectionAttemptIntervalsInSecs);
+    const {
+        seconds,
+        start: startCountdown,
+        stop: stopCountdown,
+        restartAttempts,
+    } = useCountdown(ConnectionAttemptIntervalsInSecs);
     const isReconnecting = useUIStore((s) => s.isReconnecting);
 
     useEffect(() => {
@@ -25,6 +30,8 @@ const Disconnected: React.FC = () => {
             if (payload === 'Failed') {
                 stopCountdown();
                 startCountdown();
+            } else if (payload === 'Succeed') {
+                restartAttempts();
             }
         });
 
