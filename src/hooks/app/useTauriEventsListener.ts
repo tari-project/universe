@@ -158,7 +158,6 @@ const useTauriEventsListener = () => {
                         setNetworkStatus(event.payload);
                         break;
                     case `NodeTypeUpdate`:
-                        console.log('XXX', event.payload);
                         setNodeStoreState(event.payload);
                         break;
                     default:
