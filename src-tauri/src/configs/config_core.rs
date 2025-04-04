@@ -38,6 +38,7 @@ static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(Con
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     is_p2pool_enabled: bool,
     use_tor: bool,
@@ -58,6 +59,7 @@ pub struct ConfigCoreContent {
 impl Default for ConfigCoreContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             is_p2pool_enabled: true,
             use_tor: true,
@@ -92,7 +94,7 @@ impl ConfigImpl for ConfigCore {
 
     fn new() -> Self {
         Self {
-            content: ConfigCoreContent::default(),
+            content: ConfigCore::_load_config().unwrap_or_default(),
         }
     }
 
@@ -109,7 +111,12 @@ impl ConfigImpl for ConfigCore {
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigCoreContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             is_p2pool_enabled: old_config.p2pool_enabled(),
             use_tor: old_config.use_tor(),

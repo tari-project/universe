@@ -154,7 +154,7 @@ mod tests {
 
         config._save_config().unwrap();
 
-        let loaded_config = config._load_config().unwrap();
+        let loaded_config = TestConfig::_load_config().unwrap();
         assert_eq!(config._get_content(), &loaded_config);
     }
 
@@ -171,7 +171,7 @@ mod tests {
         assert_eq!(!initial_value, *config._get_content().some_test_bool());
         assert_eq!(
             !initial_value,
-            *config._load_config().unwrap().some_test_bool()
+            *TestConfig::_load_config().unwrap().some_test_bool()
         );
     }
     #[tokio::test]
@@ -210,7 +210,7 @@ mod tests {
         let not_full_config_serialized = serde_json::to_string_pretty(&not_full_config).unwrap();
         fs::write(TestConfig::_get_config_path(), not_full_config_serialized).unwrap();
 
-        let loaded_config = config._load_config().unwrap();
+        let loaded_config = TestConfig::_load_config().unwrap();
 
         assert_eq!(
             loaded_config.some_test_string,

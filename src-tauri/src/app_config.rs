@@ -468,6 +468,10 @@ impl AppConfig {
         &self.ludicrous_mode_cpu_options
     }
 
+    pub fn created_at(&self) -> Option<DateTime<Utc>> {
+        self.created_at
+    }
+
     pub fn custom_mode_cpu_options(&self) -> &Vec<String> {
         &self.custom_mode_cpu_options
     }

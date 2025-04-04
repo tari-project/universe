@@ -43,6 +43,7 @@ static INSTANCE: LazyLock<RwLock<ConfigMining>> =
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigMiningContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     mode: MiningMode,
     eco_mode_cpu_threads: Option<u32>,
@@ -61,6 +62,7 @@ pub struct ConfigMiningContent {
 impl Default for ConfigMiningContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             mode: MiningMode::Eco,
             eco_mode_cpu_threads: None,
@@ -93,7 +95,7 @@ impl ConfigImpl for ConfigMining {
 
     fn new() -> Self {
         Self {
-            content: ConfigMiningContent::default(),
+            content: ConfigMining::_load_config().unwrap_or_default(),
         }
     }
 
@@ -110,7 +112,12 @@ impl ConfigImpl for ConfigMining {
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigMiningContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             mode: old_config.mode(),
             custom_max_cpu_usage: old_config.custom_cpu_usage(),

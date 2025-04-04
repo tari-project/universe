@@ -41,6 +41,7 @@ static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(Confi
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigUIContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     display_mode: DisplayMode,
     has_system_language_been_proposed: bool,
@@ -56,6 +57,7 @@ pub struct ConfigUIContent {
 impl Default for ConfigUIContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
             has_system_language_been_proposed: false,
@@ -97,7 +99,7 @@ impl ConfigImpl for ConfigUI {
 
     fn new() -> Self {
         Self {
-            content: ConfigUIContent::default(),
+            content: ConfigUI::_load_config().unwrap_or_default(),
         }
     }
 
@@ -114,7 +116,12 @@ impl ConfigImpl for ConfigUI {
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigUIContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             display_mode: old_config.display_mode(),
             has_system_language_been_proposed: old_config.has_system_language_been_proposed(),

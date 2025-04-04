@@ -39,6 +39,7 @@ static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigWalletContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     monero_address: String,
     monero_address_is_generated: bool,
@@ -48,6 +49,7 @@ pub struct ConfigWalletContent {
 impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             monero_address: "".to_string(),
             monero_address_is_generated: false,
@@ -72,7 +74,7 @@ impl ConfigImpl for ConfigWallet {
 
     fn new() -> Self {
         Self {
-            content: ConfigWalletContent::default(),
+            content: ConfigWallet::_load_config().unwrap_or_default(),
         }
     }
 
@@ -89,7 +91,12 @@ impl ConfigImpl for ConfigWallet {
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigWalletContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             keyring_accessed: old_config.keyring_accessed(),
             monero_address: old_config.monero_address().to_string(),

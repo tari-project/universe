@@ -65,7 +65,7 @@ pub trait ConfigImpl {
         fs::write(config_path, config_content_serialized)?;
         Ok(())
     }
-    fn _load_config(&self) -> Result<Self::Config, Error> {
+    fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();
         println!("config_path: {:?}", config_path);
         let config_content_serialized = fs::read_to_string(config_path)?;

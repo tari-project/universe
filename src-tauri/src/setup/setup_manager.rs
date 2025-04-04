@@ -34,7 +34,7 @@ use log::{error, info};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
-    time::Duration,
+    time::{Duration, SystemTime, SystemTimeError},
 };
 use tauri::{AppHandle, Manager};
 use tokio::{
