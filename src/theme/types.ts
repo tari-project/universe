@@ -21,8 +21,10 @@ const _COLOUR_TYPES = [
 type ColourTuple = typeof _COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
 
+type GraidentKey = 'setupBg' | 'radialBg' | 'miningButtonStarted' | 'miningButtonHover' | ColourKey;
+
 type Colour = Partial<Record<ColourKey, string>>;
-type Gradients = Partial<Record<ColourKey, string>>;
+type Gradients = Partial<Record<GraidentKey, string>>;
 
 export interface ThemePalette {
     mode: Theme;

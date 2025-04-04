@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { TauriEvent } from '../../types.ts';
 import {
-    airdropSetup,
     fetchApplicationsVersionsWithRetry,
     setSetupComplete,
     setSetupParams,
@@ -24,7 +23,6 @@ export function useSetUp() {
                     if (p.progress >= 1) {
                         await setSetupComplete();
                         await fetchApplicationsVersionsWithRetry();
-                        await airdropSetup();
                     }
                     break;
                 default:

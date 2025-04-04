@@ -28,7 +28,6 @@ use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
-use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::watch;
