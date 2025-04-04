@@ -93,7 +93,6 @@ impl WalletManager {
         self.node_manager.wait_ready().await?;
 
         let mut process_watcher = self.watcher.write().await;
-
         if process_watcher.is_running()
             || app_shutdown.is_terminated()
             || app_shutdown.is_triggered()

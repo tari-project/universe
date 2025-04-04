@@ -27,6 +27,7 @@ use tonic::async_trait;
 
 use crate::{
     local_node_adapter::{MinotariNodeClient, MinotariNodeStatusMonitor},
+    node_manager::NodeType,
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
     BaseNodeStatus,
 };
@@ -114,6 +115,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
                 shutdown: inner_shutdown,
             },
             MinotariNodeStatusMonitor::new(
+                NodeType::Remote,
                 MinotariNodeClient::new(address, 1),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
@@ -122,7 +124,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
     }
 
     fn name(&self) -> &str {
-        "remote minotari node"
+        "remote_minotari_node"
     }
 
     fn pid_file_name(&self) -> &str {

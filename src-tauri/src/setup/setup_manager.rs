@@ -225,17 +225,6 @@ impl SetupManager {
                                 unknown_phase_status_subscriber.borrow().is_success();
                             let wallet_phase_status = wallet_phase_status_subscriber.borrow().is_success();
 
-                            info!(target: LOG_TARGET, "Unlock conditions: app: {}, wallet: {}, mining: {}, core: {}, hardware: {}, node: {}, unknown: {}, wallet: {}",
-                                is_app_unlocked,
-                                is_wallet_unlocked,
-                                is_mining_unlocked,
-                                core_phase_status,
-                                hardware_phase_status,
-                                node_phase_status,
-                                unknown_phase_status,
-                                wallet_phase_status
-                            );
-
                             if core_phase_status
                                 && hardware_phase_status
                                 && node_phase_status
