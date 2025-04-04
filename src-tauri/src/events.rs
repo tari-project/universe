@@ -143,14 +143,6 @@ pub struct CriticalProblemPayload {
     pub description: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize)]
-pub struct NetworkStatus {
-    pub download_speed: f64,
-    pub upload_speed: f64,
-    pub latency: f64,
-    pub is_too_low: bool,
-}
-
 #[derive(Debug, Serialize, Clone)]
 pub struct NodeTypeUpdatePayload {
     pub node_type: Option<NodeType>,
