@@ -183,7 +183,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
             )
             .await
         {
-            Ok(_) => {}
+            Ok(_) => {
+                let events_manager = &self.app_handle.state::<UniverseAppState>().events_manager;
+                events_manager
+                    .handle_node_type_update(&self.app_handle)
+                    .await;
+            }
             Err(e) => {
                 if let NodeManagerError::ExitCode(code) = e {
                     if STOP_ON_ERROR_CODES.contains(&code) {

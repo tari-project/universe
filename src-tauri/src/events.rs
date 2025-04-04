@@ -25,6 +25,7 @@ use std::collections::HashMap;
 
 use crate::{
     gpu_status_file::GpuDevice,
+    node_manager::{NodeIdentity, NodeType},
     wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
@@ -60,6 +61,7 @@ pub enum EventType {
     UnlockMining,
     LockWallet,
     LockMining,
+    NodeTypeUpdate,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -144,4 +146,11 @@ pub struct NetworkStatus {
     pub upload_speed: f64,
     pub latency: f64,
     pub is_too_low: bool,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct NodeTypeUpdatePayload {
+    pub node_type: Option<NodeType>,
+    pub node_identity: Option<NodeIdentity>,
+    pub node_connection_address: Option<String>,
 }
