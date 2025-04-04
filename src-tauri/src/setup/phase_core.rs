@@ -183,9 +183,22 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn setup_inner(&self) -> Result<Option<CoreSetupPhaseOutput>, anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
+
         state
             .events_manager
-            .handle_app_config_loaded(&self.app_handle)
+            .handle_config_core_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_mining_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_ui_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&self.app_handle)
             .await;
 
         // TODO Remove once not needed

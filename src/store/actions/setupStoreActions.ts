@@ -1,20 +1,20 @@
 import { loadTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 
-import { useAppConfigStore } from '../useAppConfigStore';
 import { useSetupStore } from '../useSetupStore';
 import { startMining, stopMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     sidebarTowerOffset,
     TOWER_CANVAS_ID,
-    useMiningMetricsStore,
+    useConfigMiningStore,
+    useConfigUIStore,
     useMiningStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
-    const visual_mode = useAppConfigStore.getState().visual_mode;
+    const visual_mode = useConfigUIStore.getState().visual_mode;
     if (visual_mode) {
         try {
             console.info('Loading tower animation');
@@ -26,7 +26,7 @@ export const handleAppUnlocked = async () => {
             }
         } catch (e) {
             console.error('Error at loadTowerAnimation:', e);
-            useAppConfigStore.setState({ visual_mode: false });
+            useConfigUIStore.setState({ visual_mode: false });
         }
     }
     // todo move it to event
@@ -38,9 +38,9 @@ export const handleWalletUnlocked = () => {
 export const handleMiningUnlocked = async () => {
     useSetupStore.setState({ miningUnlocked: true });
     // Proceed with auto mining when enabled
-    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
-    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
-    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
+    const mine_on_app_start = useConfigMiningStore.getState().mine_on_app_start;
+    const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
+    const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
     if (mine_on_app_start && useSetupStore.getState().miningUnlocked && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }

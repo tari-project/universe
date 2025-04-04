@@ -38,7 +38,6 @@ pub enum EventType {
     GpuMiningUpdate,
     ConnectedPeersUpdate,
     NewBlockHeight,
-    AppConfigLoaded,
     CloseSplashscreen,
     DetectedDevices,
     DetectedAvailableGpuEngines,
@@ -60,6 +59,10 @@ pub enum EventType {
     UnlockMining,
     LockWallet,
     LockMining,
+    ConfigCoreLoaded,
+    ConfigUILoaded,
+    ConfigWalletLoaded,
+    ConfigMiningLoaded,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -136,12 +139,4 @@ pub struct ShowReleaseNotesPayload {
 pub struct CriticalProblemPayload {
     pub title: Option<String>,
     pub description: Option<String>,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct NetworkStatus {
-    pub download_speed: f64,
-    pub upload_speed: f64,
-    pub latency: f64,
-    pub is_too_low: bool,
 }

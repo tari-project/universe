@@ -34,11 +34,19 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
+    configs::{
+        config_core::ConfigCore,
+        config_mining::ConfigMining,
+        config_ui::{ConfigUI, ConfigUIContent},
+        config_wallet::ConfigWallet,
+        trait_config::ConfigImpl,
+    },
     events::{ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,
+    internal_wallet::WalletConfig,
     tasks_tracker::TasksTrackers,
     wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
@@ -165,22 +173,6 @@ impl EventsManager {
         EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
 
-    pub async fn handle_app_config_loaded(&self, app: &AppHandle) {
-        info!(target: LOG_TARGET, "Loading app config");
-        let app_state: tauri::State<'_, UniverseAppState> = app.state::<UniverseAppState>();
-        info!(target: LOG_TARGET, "Proposing system language");
-        let _unused = app_state
-            .config
-            .write()
-            .await
-            .propose_system_language()
-            .await;
-        info!(target: LOG_TARGET, "Reading app config");
-        let app_config = app_state.config.read().await.clone();
-        info!(target: LOG_TARGET, "Emitting app config loaded event");
-        EventsEmitter::emit_app_config_loaded(app, app_config).await;
-    }
-
     pub async fn handle_close_splash_screen(&self, app: &AppHandle) {
         EventsEmitter::emit_close_splashscreen(app).await;
     }
@@ -305,5 +297,30 @@ impl EventsManager {
 
     pub async fn handle_lock_mining(&self, app: &AppHandle) {
         EventsEmitter::emit_lock_mining(app).await;
+    }
+
+    pub async fn handle_config_core_loaded(&self, app: &AppHandle) {
+        let payload = ConfigCore::content().await;
+        EventsEmitter::emit_core_config_loaded(app, payload).await;
+    }
+
+    pub async fn handle_config_ui_loaded(&self, app: &AppHandle) {
+        let payload = ConfigUI::content().await;
+        EventsEmitter::emit_ui_config_loaded(app, payload).await;
+        let _unused = ConfigUI::update_field(
+            ConfigUIContent::propose_system_language,
+            "en-US".to_string(),
+        )
+        .await;
+    }
+
+    pub async fn handle_config_mining_loaded(&self, app: &AppHandle) {
+        let payload = ConfigMining::content().await;
+        EventsEmitter::emit_mining_config_loaded(app, payload).await;
+    }
+
+    pub async fn handle_config_wallet_loaded(&self, app: &AppHandle) {
+        let payload = ConfigWallet::content().await;
+        EventsEmitter::emit_wallet_config_loaded(app, payload).await;
     }
 }

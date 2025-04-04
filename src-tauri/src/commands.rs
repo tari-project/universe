@@ -1128,7 +1128,11 @@ pub async fn set_mine_on_app_start(
 }
 
 #[tauri::command]
-pub async fn set_mode(mode: String) -> Result<(), InvokeError> {
+pub async fn set_mode(
+    mode: String,
+    custom_cpu_usage: Option<u32>,
+    custom_gpu_usage: Vec<GpuThreads>,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
     if let Some(mode) = MiningMode::from_str(&mode) {
@@ -1138,6 +1142,20 @@ pub async fn set_mode(mode: String) -> Result<(), InvokeError> {
     } else {
         return Err(InvokeError::from("Invalid mode".to_string()));
     }
+
+    ConfigMining::update_field(
+        ConfigMiningContent::set_custom_max_cpu_usage,
+        custom_cpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    ConfigMining::update_field(
+        ConfigMiningContent::set_custom_max_gpu_usage,
+        custom_gpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());

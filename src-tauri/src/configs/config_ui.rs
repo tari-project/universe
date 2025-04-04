@@ -72,14 +72,14 @@ impl Default for ConfigUIContent {
 impl ConfigContentImpl for ConfigUIContent {}
 
 impl ConfigUIContent {
-    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+    pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
         if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
-            Ok(())
+            return self;
         } else {
-            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            let system_language = get_locale().unwrap_or_else(|| fallback_language);
             self.application_language = system_language;
             self.has_system_language_been_proposed = true;
-            Ok(())
+            return self;
         }
     }
 }

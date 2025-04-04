@@ -67,7 +67,7 @@ impl Default for ConfigCoreContent {
             should_auto_launch: false,
             mmproxy_use_monero_failover: false,
             mmproxy_monero_nodes: vec![],
-            auto_update: true,
+            auto_update: false,
             p2pool_stats_server_port: None,
             pre_release: false,
             last_changelog_version: Version::new(0, 0, 0),

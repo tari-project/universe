@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-import { useAppConfigStore, useMiningStore } from '@app/store';
+import { useConfigCoreStore, useMiningStore } from '@app/store';
 
 type DisconnectDescription =
     | Error
@@ -19,7 +19,7 @@ export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
 const version = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
 
 const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
-    const appId = useAppConfigStore.getState().anon_id;
+    const appId = useConfigCoreStore.getState().anon_id;
     const miningNetwork = useMiningStore.getState().network;
     const wsOptions = {
         auth: {

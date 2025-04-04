@@ -8,7 +8,7 @@ import {
     BonusTier,
     setAirdropTokensInConfig,
     useAirdropStore,
-    useAppConfigStore,
+    useConfigCoreStore,
     UserDetails,
     UserEntryPoints,
     UserPoints,
@@ -85,7 +85,7 @@ const fetchBackendInMemoryConfig = async () => {
 const getExistingTokens = async () => {
     const localStorageTokens = localStorage.getItem('airdrop-store');
     const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-    const storedTokens = useAppConfigStore.getState().airdrop_tokens || parsedStorageTokens;
+    const storedTokens = useConfigCoreStore.getState().airdrop_tokens || parsedStorageTokens;
     if (storedTokens) {
         try {
             if (!storedTokens?.token || !storedTokens?.refreshToken) {
