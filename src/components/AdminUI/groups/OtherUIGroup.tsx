@@ -2,13 +2,24 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { useShellOfSecretsStore } from '../../../store/useShellOfSecretsStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import { setAdminShow, setFlareAnimationType } from '@app/store';
 
 export function OtherUIGroup() {
     const adminShow = useUIStore((s) => s.adminShow);
     const showWidget = useShellOfSecretsStore((s) => s.showWidget);
     const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
+    const connectionStatus = useUIStore((s) => s.connectionStatus);
+
+    const shiftConnectionStatus = () => {
+        if (connectionStatus === 'connected') {
+            setConnectionStatus('disconnected');
+        } else if (connectionStatus === 'disconnected') {
+            setConnectionStatus('disconnected-severe');
+        } else {
+            setConnectionStatus('connected');
+        }
+    };
 
     return (
         <>
@@ -20,12 +31,7 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
-                <Button
-                    onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
-                    $isActive={adminShow === 'orphanChainWarning'}
-                >
-                    Orphan chain warning
-                </Button>
+                <Button onClick={shiftConnectionStatus}>Change connection status</Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}

@@ -38,7 +38,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker::ProgressTracker;
 use crate::tor_adapter::TorConfig;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::utils::shutdown_utils::stop_all_processes;
+use crate::utils::shutdown_utils::{resume_all_processes, stop_all_processes};
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -1830,5 +1830,30 @@ pub async fn set_selected_engine(
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
+    Ok(())
+}
+
+#[derive(Serialize, Clone)]
+enum ReconnectStatus {
+    InProgress,
+    Succeed,
+    Failed,
+}
+
+#[tauri::command]
+pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+    drop(app_handle.emit("reconnecting", ReconnectStatus::InProgress));
+    let resume_res = resume_all_processes(app_handle.clone())
+        .await
+        .map_err(|e| e.to_string());
+    match resume_res {
+        Ok(_) => {
+            drop(app_handle.emit("reconnecting", ReconnectStatus::Succeed));
+        }
+        Err(e) => {
+            drop(app_handle.emit("reconnecting", ReconnectStatus::Failed));
+            return Err(e.to_string());
+        }
+    }
     Ok(())
 }

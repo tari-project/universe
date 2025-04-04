@@ -1345,7 +1345,8 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::reconnect
         ])
         .build(tauri::generate_context!())
         .inspect_err(

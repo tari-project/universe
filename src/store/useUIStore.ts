@@ -11,7 +11,8 @@ const sideBarPaddingBuffer = 20;
 export const sidebarTowerOffset = sideBarWidth + sideBarPaddingBuffer;
 export const TOWER_CANVAS_ID = 'tower-canvas';
 
-export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
+export type AdminShow = 'setup' | 'main' | 'shutdown' | null;
+export type CONNECTION_STATUS = 'connected' | 'disconnected' | 'disconnected-severe';
 
 interface UIStoreState {
     theme: Theme;
@@ -24,6 +25,8 @@ interface UIStoreState {
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
+    connectionStatus?: CONNECTION_STATUS;
+    isReconnecting?: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -36,6 +39,8 @@ const initialState: UIStoreState = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    connectionStatus: 'connected',
+    isReconnecting: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({
