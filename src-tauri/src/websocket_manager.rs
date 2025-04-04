@@ -133,7 +133,8 @@ impl WebsocketManager {
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket...");
         let config_read = config_cloned.read().await;
-        let adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
+        let mut adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
+        adjusted_ws_url.push_str(&format!("/new-wss",));
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
         info!(target:LOG_TARGET,"websocket connection established...");
 
