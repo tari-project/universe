@@ -42,6 +42,7 @@ static INSTANCE: LazyLock<RwLock<ConfigMining>> =
 #[serde(default)]
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
+#[allow(clippy::struct_excessive_bools)]
 pub struct ConfigMiningContent {
     was_config_migrated: bool,
     created_at: SystemTime,

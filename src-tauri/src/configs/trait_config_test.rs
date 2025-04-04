@@ -199,7 +199,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_if_loading_with_missing_files_is_handled() {
-        let config = TestConfig::current().read().await;
         before_each();
 
         let not_full_config = NotFullConfigContent {
