@@ -64,7 +64,7 @@ impl Default for ConfigUIContent {
             paper_wallet_enabled: false,
             custom_power_levels_enabled: false,
             sharing_enabled: false,
-            visual_mode: false,
+            visual_mode: true,
             show_experimental_settings: false,
         }
     }
