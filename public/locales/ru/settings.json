@@ -157,5 +157,10 @@
   "visual-mode": "Визуальный режим",
   "yes": "Да",
   "your-feedback": "Пожалуйста, опишите Вашу проблему",
-  "your-reference": "Ваша ссылка"
+  "your-reference": "Ваша ссылка",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

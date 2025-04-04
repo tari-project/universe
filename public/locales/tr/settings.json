@@ -157,5 +157,10 @@
   "visual-mode": "Görsel mod",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",
-  "your-reference": "Referansınız"
+  "your-reference": "Referansınız",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

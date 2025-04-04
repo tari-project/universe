@@ -157,5 +157,10 @@
   "visual-mode": "Visueller Modus",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
-  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

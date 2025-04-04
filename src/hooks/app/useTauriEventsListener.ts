@@ -31,6 +31,7 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
 } from '@app/store/actions/setupStoreActions';
+import { setNodeStoreState } from '@app/store/useNodeStore';
 
 const LOG_EVENT_TYPES = [
     // 'ResumingAllProcesses',
@@ -141,6 +142,10 @@ const useTauriEventsListener = () => {
                         break;
                     case `NetworkStatus`:
                         setNetworkStatus(event.payload);
+                        break;
+                    case `NodeTypeUpdate`:
+                        console.log('XXX', event.payload);
+                        setNodeStoreState(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

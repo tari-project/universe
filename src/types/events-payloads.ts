@@ -39,3 +39,12 @@ export interface ShowReleaseNotesPayload {
 }
 
 export type ConnectedPeersUpdatePayload = string[];
+
+export interface NodeTypeUpdatePayload {
+    node_type?: 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
+    node_identity?: {
+        public_key: string;
+        public_address: string[];
+    };
+    node_connection_address?: string;
+}

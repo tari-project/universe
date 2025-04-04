@@ -4,6 +4,7 @@ import {
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
     NewBlockHeightPayload,
+    NodeTypeUpdatePayload,
     ResumingAllProcessesPayload,
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
@@ -127,4 +128,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'LockMining';
           payload: undefined;
+      }
+    | {
+          event_type: 'NodeTypeUpdate';
+          payload: NodeTypeUpdatePayload;
       };
