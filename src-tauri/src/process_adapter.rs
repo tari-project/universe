@@ -28,6 +28,7 @@ use sentry::protocol::Event;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_shutdown::Shutdown;
 use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
@@ -36,7 +37,6 @@ use tokio::task::JoinHandle;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
-use crate::tasks_tracker::TasksTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_adapter";
 
@@ -50,6 +50,7 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
@@ -59,11 +60,24 @@ pub(crate) trait ProcessAdapter {
         config_folder: PathBuf,
         log_folder: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
-        self.spawn_inner(base_folder, config_folder, log_folder, binary_version_path)
+        self.spawn_inner(
+            base_folder,
+            config_folder,
+            log_folder,
+            binary_version_path,
+            is_first_start,
+        )
     }
 
     fn pid_file_name(&self) -> &str;
+
+    fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
+        std::path::Path::new(&base_folder)
+            .join(self.pid_file_name())
+            .exists()
+    }
 
     async fn kill_previous_instances(&self, base_folder: PathBuf) -> Result<(), Error> {
         info!(target: LOG_TARGET, "Killing previous instances of {}", self.name());
@@ -98,6 +112,7 @@ pub(crate) trait ProcessAdapter {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum HealthStatus {
     Healthy,
     Warning,
@@ -106,7 +121,7 @@ pub enum HealthStatus {
 
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
-    async fn check_health(&self) -> HealthStatus;
+    async fn check_health(&self, uptime: Duration) -> HealthStatus;
 }
 
 #[derive(Clone)]
@@ -149,7 +164,7 @@ impl ProcessInstance {
             return Ok(());
         };
 
-        self.handle = Some(TasksTracker::current().spawn(async move {
+        self.handle = Some(tokio::spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
             info!(target: LOG_TARGET, "Launching {} node", spec.name);

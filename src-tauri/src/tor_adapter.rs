@@ -21,9 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
-
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
-use tokio::net::TcpStream;
+use std::time::Duration;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -31,6 +29,8 @@ use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
 use tokio::fs;
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::net::TcpStream;
 use tokio::sync::watch;
 use tokio::time::timeout;
 
@@ -73,7 +73,7 @@ impl TorAdapter {
 
         if file.exists() {
             debug!(target: LOG_TARGET, "Loading tor config from file: {:?}", file);
-            let config = fs::read_to_string(&file).await?;
+            let config = tokio::fs::read_to_string(&file).await?;
             self.apply_loaded_config(config);
         } else {
             info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
@@ -101,7 +101,7 @@ impl TorAdapter {
 
         let config = serde_json::to_string(&self.config)?;
         debug!(target: LOG_TARGET, "Updating tor config file: {:?} {:?}", file, self.config.clone());
-        fs::write(file, config).await?;
+        tokio::fs::write(file, config).await?;
 
         Ok(())
     }
@@ -206,6 +206,7 @@ impl ProcessAdapter for TorAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -225,6 +226,17 @@ impl ProcessAdapter for TorAdapter {
         let mut control_port = self.config.control_port;
         if control_port == 0 {
             control_port = PortAllocator::new().assign_port_with_fallback();
+        }
+        if is_first_start {
+            info!(target: LOG_TARGET, "Clearing tor data directory on first start");
+            if std::fs::exists(data_dir.join("tor-data"))? {
+                match std::fs::remove_dir_all(data_dir.join("tor-data")) {
+                    Ok(_) => info!(target: LOG_TARGET, "Removed tor data directory"),
+                    Err(e) => {
+                        warn!(target: LOG_TARGET, "Failed to remove tor data directory: {}", e);
+                    }
+                }
+            }
         }
 
         let mut args: Vec<String> = vec![
@@ -302,14 +314,15 @@ pub(crate) struct TorStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         let client = TorControlClient::new(self.control_port);
-        match timeout(std::time::Duration::from_secs(1), client.get_info()).await {
+        match timeout(std::time::Duration::from_secs(5), client.get_info()).await {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(Some(status.clone()));
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
+                    warn!(target: LOG_TARGET, "Tor is not bootstrapped or network is unreachable: {:?}", status);
                     HealthStatus::Warning
                 }
             }

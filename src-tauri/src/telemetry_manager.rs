@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::airdrop;
 use crate::app_config::{AppConfig, MiningMode};
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -31,8 +32,6 @@ use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
 use crate::utils::network_status::NetworkStatus;
-use crate::TasksTracker;
-use crate::{airdrop, UniverseAppState};
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -46,13 +45,12 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, time::Duration};
+use std::{sync::Arc, thread::sleep, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
-use tauri::{Emitter, Manager};
+use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
-use tokio::time;
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -302,15 +300,11 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-        let state = app_handle.state::<UniverseAppState>();
-        let mut app_shutdown = state.shutdown.to_signal();
-        let mut interval = time::interval(timeout);
-
-        TasksTracker::current().spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = interval.tick() => {
-                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+        tokio::spawn(async move {
+            tokio::select! {
+                _ = async {
+                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                    loop {
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
                         if telemetry_collection_enabled {
@@ -320,15 +314,11 @@ impl TelemetryManager {
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
-                    },
-                    _ = cancellation_token.cancelled() => {
-                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
-                        break;
+                        sleep(timeout);
                     }
-                    _ = app_shutdown.wait() => {
-                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
-                        break;
-                    }
+                } => {},
+                _ = cancellation_token.cancelled() => {
+                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
                 }
             }
         });
@@ -348,7 +338,12 @@ async fn get_telemetry_data(
     started: Instant,
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+    let BaseNodeStatus {
+        block_height,
+        is_synced,
+        num_connections,
+        ..
+    } = node_latest_status.borrow().clone();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
@@ -520,7 +515,11 @@ async fn get_telemetry_data(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
     );
-
+    extra_data.insert("node_is_synced".to_string(), is_synced.to_string());
+    extra_data.insert(
+        "node_num_connections".to_string(),
+        num_connections.to_string(),
+    );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
 
     add_process_stats(
@@ -556,10 +555,9 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    let (download_speed, upload_speed, latency) = NetworkStatus::current()
+    let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
-        .borrow()
-        .clone();
+        .borrow();
 
     let data = TelemetryData {
         app_id: config_guard.anon_id().to_string(),
