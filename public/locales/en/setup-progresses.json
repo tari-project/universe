@@ -1,4 +1,7 @@
 {
+    "any_moment_now": "Any moment now",
+    "seconds_remaining": "seconds remaining",
+    "second_remaining": "second remaining",
     "phase-title": {
         "setup-core": "Setting up the Tari App",
         "setup-local-node": "Setting up the Tari Node",
