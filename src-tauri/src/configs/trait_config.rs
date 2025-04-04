@@ -67,7 +67,6 @@ pub trait ConfigImpl {
     }
     fn _load_config() -> Result<Self::Config, Error> {
         let config_path = Self::_get_config_path();
-        println!("config_path: {:?}", config_path);
         let config_content_serialized = fs::read_to_string(config_path)?;
         let config_content: Self::Config = serde_json::from_str(&config_content_serialized)?;
         Ok(config_content)
