@@ -34,15 +34,15 @@ use crate::external_dependencies::RequiredExternalDependency;
 
 use crate::{
     commands::CpuMinerStatus,
-    events::{
-        NodeTypeUpdatePayload, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
-    },
     configs::{
         config_core::ConfigCore,
         config_mining::ConfigMining,
         config_ui::{ConfigUI, ConfigUIContent},
         config_wallet::ConfigWallet,
         trait_config::ConfigImpl,
+    },
+    events::{
+        NodeTypeUpdatePayload, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
     },
     events_emitter::EventsEmitter,
     events_service::EventsService,
