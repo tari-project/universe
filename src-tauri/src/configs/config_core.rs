@@ -131,7 +131,7 @@ impl ConfigImpl for ConfigCore {
             pre_release: old_config.pre_release(),
             last_changelog_version: Version::from_str(old_config.last_changelog_version())?,
             airdrop_tokens: old_config.airdrop_tokens(),
-            remote_base_node_address: old_config.remote_base_node_address().unwrap_or_default(),
+            ..Default::default()
         };
         Ok(())
     }

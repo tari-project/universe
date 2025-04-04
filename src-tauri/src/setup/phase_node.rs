@@ -168,6 +168,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
+        info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
+
         // Note: it starts 2 processes of node
         // for _i in 0..2 {
         match state
