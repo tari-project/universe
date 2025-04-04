@@ -21,6 +21,7 @@
   "loginButton": "Zaloguj się, aby odebrać klejnoty",
   "logout": "Wyloguj się",
   "nextTierBonus": "Zaproś <strong>{{count}} znajomych</strong> i zdobądź {{bonusGems}} dodatkowych klejnotów",
+  "update-username": "Zaktualizuj nazwę użytkownika",
   "permission": {
     "setup": "Tari Universe chciałoby używać analityki, aby <strong>poprawić twoje doświadczenia.</strong>",
     "text": "Tari Universe chciałby używać analityki, aby poprawić Twoje doświadczenia i nagrodzić Cię klejnotami za kopanie.",

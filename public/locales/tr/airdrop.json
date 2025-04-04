@@ -21,6 +21,7 @@
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",
+  "update-username": "Kullanıcı adını güncelle",
   "permission": {
     "setup": "Tari Universe, deneyiminizi <strong>iyileştirmek</strong> için analizleri kullanmak istiyor.",
     "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor.",

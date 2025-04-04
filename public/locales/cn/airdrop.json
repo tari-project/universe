@@ -21,6 +21,7 @@
   "loginButton": "登录以领取宝石",
   "logout": "登出",
   "nextTierBonus": "邀请<strong>{{count}}位朋友</strong>并赚取{{bonusGems}}个奖励宝石",
+  "update-username": "更新用户名",
   "permission": {
     "setup": "Tari Universe希望使用分析来<strong>改善您的体验。</strong>",
     "text": "Tari Universe 希望使用分析数据来改善您的体验，并通过挖矿奖励您宝石。",
@@ -38,5 +39,8 @@
   "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！",
   "joinAirdrop": "加入空投",
   "loggedInTitle": "空投奖励",
-  "loggedOutTitle": "挖矿并邀请朋友赚取宝石"
+  "loggedOutTitle": "挖矿并邀请朋友赚取宝石",
+  "username-error": "用户名必须为3-20个字符，只能包含字母、数字、下划线或连字符",
+  "username-update-success": "用户名更新成功",
+  "success": "成功"
 }

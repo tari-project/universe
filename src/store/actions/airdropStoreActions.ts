@@ -177,6 +177,22 @@ export const setUserPoints = (userPoints: UserPoints) => {
     useAirdropStore.setState({ userPoints });
 };
 
+export const handleUsernameChange = async (username: string, onError?: (e: unknown) => void) => {
+    return handleAirdropRequest<{ success: boolean; message?: string }>({
+        path: '/user/username',
+        method: 'POST',
+        body: {
+            username,
+        },
+        onError,
+    }).then((r) => {
+        if (r?.success) {
+            fetchAllUserData();
+        }
+        return r;
+    });
+};
+
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
