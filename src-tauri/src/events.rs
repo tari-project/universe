@@ -39,7 +39,6 @@ pub enum EventType {
     GpuMiningUpdate,
     ConnectedPeersUpdate,
     NewBlockHeight,
-    AppConfigLoaded,
     CloseSplashscreen,
     DetectedDevices,
     DetectedAvailableGpuEngines,
@@ -62,6 +61,10 @@ pub enum EventType {
     LockWallet,
     LockMining,
     NodeTypeUpdate,
+    ConfigCoreLoaded,
+    ConfigUILoaded,
+    ConfigWalletLoaded,
+    ConfigMiningLoaded,
 }
 
 #[derive(Clone, Debug, Serialize)]

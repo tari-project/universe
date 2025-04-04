@@ -2,7 +2,6 @@ import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TransactionInfo } from '@app/types/app-status.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { GIFT_GEMS, useAirdropStore } from '@app/store/useAirdropStore.ts';
 import { useShareRewardStore } from '@app/store/useShareRewardStore.ts';
 
@@ -10,10 +9,11 @@ import gemImage from '@app/assets/images/gem.png';
 import { handleWinReplay } from '@app/store/useBlockchainVisualisationStore.ts';
 import { ReplaySVG } from '@app/assets/icons/replay.tsx';
 import { ButtonWrapper, FlexButton, GemImage, GemPill, HoverWrapper, ReplayButton } from './ListItem.styles.ts';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const ItemHover = memo(function ItemHover({ item }: { item: TransactionInfo }) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
-    const sharingEnabled = useAppConfigStore((s) => s.sharing_enabled);
+    const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
     const { setShowModal, setItemData } = useShareRewardStore((s) => s);
 

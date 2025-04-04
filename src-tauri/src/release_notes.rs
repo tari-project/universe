@@ -37,7 +37,14 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 use tokio::sync::RwLock;
 
-use crate::{events::ShowReleaseNotesPayload, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{
+    configs::{
+        config_core::{ConfigCore, ConfigCoreContent},
+        trait_config::ConfigImpl,
+    },
+    events::ShowReleaseNotesPayload,
+    UniverseAppState, APPLICATION_FOLDER_ID,
+};
 
 const LOG_TARGET: &str = "tari::universe::release_notes";
 const CHANGELOG_URL: &str = "https://cdn-universe.tari.com/tari-project/universe/CHANGELOG.md";
@@ -249,11 +256,8 @@ impl ReleaseNotes {
     ) -> Result<(), Error> {
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit]");
 
-        let config_lock = state.config.read().await;
-        let last_release_notes_version_shown = config_lock.last_changelog_version().to_string();
-        let last_release_notes_version_shown = Version::parse(&last_release_notes_version_shown)?;
-        drop(config_lock);
-
+        let last_release_notes_version_shown =
+            ConfigCore::content().await.last_changelog_version().clone();
         let release_notes = ReleaseNotes::current().get_release_notes().await?;
 
         let release_notes_version = Version::parse(&release_notes.version)?;
@@ -298,12 +302,11 @@ impl ReleaseNotes {
 
         if should_show_release_notes {
             debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Setting last changelog version to {}", release_notes.version);
-            state
-                .config
-                .write()
-                .await
-                .set_last_changelog_version(release_notes.version)
-                .await?;
+            ConfigCore::update_field(
+                ConfigCoreContent::set_last_changelog_version,
+                release_notes_version,
+            )
+            .await?;
         }
 
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Done");

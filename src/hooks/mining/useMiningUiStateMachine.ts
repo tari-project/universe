@@ -4,9 +4,8 @@ import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { useBlockchainVisualisationStore } from '@app/store';
+import { useBlockchainVisualisationStore, useConfigUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
@@ -15,8 +14,8 @@ export const useUiMiningStateMachine = () => {
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
     const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
 
     const stateTrigger = animationStatus;

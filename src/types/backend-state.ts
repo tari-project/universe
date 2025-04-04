@@ -10,7 +10,6 @@ import {
     WalletAddressUpdatePayload,
 } from './events-payloads.ts';
 import {
-    AppConfig,
     BaseNodeStatus,
     CpuMinerStatus,
     ExternalDependency,
@@ -18,6 +17,7 @@ import {
     NetworkStatus,
     WalletBalance,
 } from './app-status.ts';
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
@@ -48,10 +48,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'NewBlockHeight';
           payload: NewBlockHeightPayload;
-      }
-    | {
-          event_type: 'AppConfigLoaded';
-          payload: AppConfig;
       }
     | {
           event_type: 'CloseSplashscreen';
@@ -132,4 +128,20 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'NodeTypeUpdate';
           payload: NodeTypeUpdatePayload;
+      }
+    | {
+          event_type: 'ConfigCoreLoaded';
+          payload: ConfigCore;
+      }
+    | {
+          event_type: 'ConfigUILoaded';
+          payload: ConfigUI;
+      }
+    | {
+          event_type: 'ConfigWalletLoaded';
+          payload: ConfigWallet;
+      }
+    | {
+          event_type: 'ConfigMiningLoaded';
+          payload: ConfigMining;
       };

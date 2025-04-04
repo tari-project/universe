@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { modeType } from '@app/store/types';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
@@ -16,6 +15,7 @@ import fire from '@app/assets/icons/emoji/fire.png';
 import custom from '@app/assets/icons/emoji/custom.png';
 
 import { TileItem } from '../styles';
+import { useConfigMiningStore, useConfigUIStore } from '@app/store';
 
 interface ModeSelectProps {
     variant?: 'primary' | 'minimal';
@@ -24,7 +24,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
     const { t } = useTranslation('common', { useSuspense: false });
     const isSettingUp = useSetupStore((s) => !s.appUnlocked);
     const isMiningUnlocked = useSetupStore((s) => s.miningUnlocked);
-    const mode = useAppConfigStore((s) => s.mode);
+    const mode = useConfigMiningStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
@@ -34,7 +34,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
     const isMining = isCPUMining || isGPUMining;
 
     const isMiningLoading = isMiningInitiated ? !isMining : isMining;
-    const custom_power_levels_enabled = useAppConfigStore((s) => s.custom_power_levels_enabled);
+    const custom_power_levels_enabled = useConfigUIStore((s) => s.custom_power_levels_enabled);
 
     const handleChange = useCallback(async (newMode: string) => {
         if (newMode === 'Custom') {

@@ -26,25 +26,24 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use sys_locale::get_locale;
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigUI>> = LazyLock::new(|| Mutex::new(ConfigUI::new()));
+static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigUIContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     display_mode: DisplayMode,
-    mine_on_app_start: bool,
-    gpu_mining_enabled: bool,
-    cpu_mining_enabled: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
@@ -58,24 +57,34 @@ pub struct ConfigUIContent {
 impl Default for ConfigUIContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
-            mine_on_app_start: false,
-            gpu_mining_enabled: false,
-            cpu_mining_enabled: false,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: "en".to_string(),
             paper_wallet_enabled: false,
             custom_power_levels_enabled: false,
             sharing_enabled: false,
-            visual_mode: false,
+            visual_mode: true,
             show_experimental_settings: false,
         }
     }
 }
 impl ConfigContentImpl for ConfigUIContent {}
 
+impl ConfigUIContent {
+    pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
+        if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
+            self
+        } else {
+            let system_language = get_locale().unwrap_or(fallback_language);
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            self
+        }
+    }
+}
 pub struct ConfigUI {
     content: ConfigUIContent,
 }
@@ -84,35 +93,37 @@ impl ConfigImpl for ConfigUI {
     type Config = ConfigUIContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
     fn new() -> Self {
         Self {
-            content: ConfigUIContent::default(),
+            content: ConfigUI::_load_config().unwrap_or_default(),
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "ui_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigUIContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             display_mode: old_config.display_mode(),
-            mine_on_app_start: old_config.mine_on_app_start(),
-            gpu_mining_enabled: old_config.gpu_mining_enabled(),
-            cpu_mining_enabled: old_config.cpu_mining_enabled(),
             has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
             should_always_use_system_language: old_config.should_always_use_system_language(),
             application_language: old_config.application_language().to_string(),

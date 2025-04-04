@@ -24,11 +24,11 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<TestConfig>> = LazyLock::new(|| Mutex::new(TestConfig::new()));
+static INSTANCE: LazyLock<RwLock<TestConfig>> = LazyLock::new(|| RwLock::new(TestConfig::new()));
 
 #[derive(Clone)]
 struct TestOldConfig {
@@ -54,7 +54,7 @@ impl Default for NotFullConfigContent {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Debug, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
@@ -87,7 +87,7 @@ impl ConfigImpl for TestConfig {
     type Config = TestConfigContent;
     type OldConfig = TestOldConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
@@ -97,15 +97,15 @@ impl ConfigImpl for TestConfig {
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "test_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 
@@ -128,8 +128,8 @@ mod tests {
     use std::fs;
 
     fn clear_config_file() {
-        if TestConfig::get_config_path().exists() {
-            std::fs::remove_file(TestConfig::get_config_path()).unwrap();
+        if TestConfig::_get_config_path().exists() {
+            std::fs::remove_file(TestConfig::_get_config_path()).unwrap();
         }
     }
 
@@ -139,44 +139,44 @@ mod tests {
 
     #[tokio::test]
     async fn test_saving_to_file() {
-        let config = TestConfig::current().lock().await;
+        let config = TestConfig::current().read().await;
         before_each();
 
-        config.save_config().unwrap();
+        config._save_config().unwrap();
 
-        assert!(TestConfig::get_config_path().exists());
+        assert!(TestConfig::_get_config_path().exists());
     }
 
     #[tokio::test]
     async fn test_loading_from_file() {
-        let config = TestConfig::current().lock().await;
+        let config = TestConfig::current().read().await;
         before_each();
 
-        config.save_config().unwrap();
+        config._save_config().unwrap();
 
-        let loaded_config = config.load_config().unwrap();
-        assert_eq!(config.get_content(), &loaded_config);
+        let loaded_config = TestConfig::_load_config().unwrap();
+        assert_eq!(config._get_content(), &loaded_config);
     }
 
     #[tokio::test]
     async fn test_update_field() {
-        let mut config = TestConfig::current().lock().await;
+        let config = TestConfig::current().read().await;
         before_each();
 
-        let initial_value = *config.get_content().some_test_bool();
-        config
-            .update_field(TestConfigContent::set_some_test_bool, !initial_value)
+        let initial_value = *config._get_content().some_test_bool();
+        TestConfig::update_field(TestConfigContent::set_some_test_bool, !initial_value)
+            .await
             .unwrap();
 
-        assert_eq!(!initial_value, *config.get_content().some_test_bool());
+        assert_eq!(!initial_value, *config._get_content().some_test_bool());
         assert_eq!(
             !initial_value,
-            *config.load_config().unwrap().some_test_bool()
+            *TestConfig::_load_config().unwrap().some_test_bool()
         );
     }
     #[tokio::test]
     async fn test_migrate_old_config() {
-        let mut config = TestConfig::current().lock().await;
+        let mut config = TestConfig::current().write().await;
         before_each();
 
         let old_config = TestOldConfig {
@@ -188,18 +188,17 @@ mod tests {
 
         assert_eq!(
             &old_config.some_test_string,
-            config.get_content().some_test_string()
+            config._get_content().some_test_string()
         );
         assert_eq!(
             old_config.some_test_bool,
-            *config.get_content().some_test_bool()
+            *config._get_content().some_test_bool()
         );
-        assert_eq!(0, *config.get_content().some_test_int());
+        assert_eq!(0, *config._get_content().some_test_int());
     }
 
     #[tokio::test]
     async fn test_if_loading_with_missing_files_is_handled() {
-        let config = TestConfig::current().lock().await;
         before_each();
 
         let not_full_config = NotFullConfigContent {
@@ -208,9 +207,9 @@ mod tests {
         };
 
         let not_full_config_serialized = serde_json::to_string_pretty(&not_full_config).unwrap();
-        fs::write(TestConfig::get_config_path(), not_full_config_serialized).unwrap();
+        fs::write(TestConfig::_get_config_path(), not_full_config_serialized).unwrap();
 
-        let loaded_config = config.load_config().unwrap();
+        let loaded_config = TestConfig::_load_config().unwrap();
 
         assert_eq!(
             loaded_config.some_test_string,

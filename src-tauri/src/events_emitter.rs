@@ -27,6 +27,10 @@ use crate::events::CriticalProblemPayload;
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{
     commands::CpuMinerStatus,
+    configs::{
+        config_core::ConfigCoreContent, config_mining::ConfigMiningContent,
+        config_ui::ConfigUIContent, config_wallet::ConfigWalletContent,
+    },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
@@ -37,9 +41,9 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
-    AppConfig, BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus, GpuMinerStatus,
 };
-use log::{error, info};
+use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 
@@ -197,16 +201,60 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit NetworkStatus event: {:?}", e);
         }
     }
-    pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
+    // pub async fn emit_app_config_loaded(app_handle: &AppHandle, app_config: AppConfig) {
+    //     let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+    //     let event = Event {
+    //         event_type: EventType::AppConfigLoaded,
+    //         payload: app_config,
+    //     };
+    //     if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+    //         error!(target: LOG_TARGET, "Failed to emit AppConfigLoaded event: {:?}", e);
+    //     }
+    //     info!(target: LOG_TARGET, "AppConfigLoaded event emitted");
+    // }
+
+    pub async fn emit_core_config_loaded(app_handle: &AppHandle, payload: ConfigCoreContent) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::AppConfigLoaded,
-            payload: app_config,
+            event_type: EventType::ConfigCoreLoaded,
+            payload,
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit AppConfigLoaded event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit CoreConfigLoaded event: {:?}", e);
         }
-        info!(target: LOG_TARGET, "AppConfigLoaded event emitted");
+    }
+
+    pub async fn emit_ui_config_loaded(app_handle: &AppHandle, payload: ConfigUIContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigUILoaded,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit UIConfigLoaded event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_wallet_config_loaded(app_handle: &AppHandle, payload: ConfigWalletContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigWalletLoaded,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit WalletConfigLoaded event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_mining_config_loaded(app_handle: &AppHandle, payload: ConfigMiningContent) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ConfigMiningLoaded,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit MiningConfigLoaded event: {:?}", e);
+        }
     }
 
     pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {

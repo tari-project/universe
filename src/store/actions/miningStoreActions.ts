@@ -6,10 +6,10 @@ import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
 import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useConfigMiningStore } from '../useAppConfigStore.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -104,8 +104,8 @@ export const setEngine = async (engine) => {
 
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
-        const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-        const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+        const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
+        const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
         return {
             miningControlsEnabled:
                 state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled) ? false : miningControlsEnabled,

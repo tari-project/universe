@@ -21,35 +21,37 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{sync::LazyLock, time::SystemTime};
-use tokio::sync::Mutex;
+use std::{str::FromStr, sync::LazyLock, time::SystemTime};
+use tokio::sync::RwLock;
 
-use crate::{app_config::AirdropTokens, AppConfig};
+use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigCore>> = LazyLock::new(|| Mutex::new(ConfigCore::new()));
+static INSTANCE: LazyLock<RwLock<ConfigCore>> = LazyLock::new(|| RwLock::new(ConfigCore::new()));
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigCoreContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     is_p2pool_enabled: bool,
     use_tor: bool,
     allow_telemetry: bool,
     last_binaries_update_timestamp: Option<SystemTime>,
-    anon_id: Option<String>,
+    anon_id: String,
     should_auto_launch: bool,
     mmproxy_use_monero_failover: bool,
     mmproxy_monero_nodes: Vec<String>,
     auto_update: bool,
     p2pool_stats_server_port: Option<u16>,
     pre_release: bool,
-    last_changelog_version: Option<String>,
+    last_changelog_version: Version,
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
 }
@@ -57,19 +59,20 @@ pub struct ConfigCoreContent {
 impl Default for ConfigCoreContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             is_p2pool_enabled: true,
             use_tor: true,
             allow_telemetry: true,
             last_binaries_update_timestamp: None,
-            anon_id: None,
+            anon_id: generate_password(20),
             should_auto_launch: false,
             mmproxy_use_monero_failover: false,
             mmproxy_monero_nodes: vec![],
-            auto_update: true,
+            auto_update: false,
             p2pool_stats_server_port: None,
             pre_release: false,
-            last_changelog_version: None,
+            last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address: "https://grpc.esmeralda.tari.com:443".to_string(),
         }
@@ -85,45 +88,50 @@ impl ConfigImpl for ConfigCore {
     type Config = ConfigCoreContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
     fn new() -> Self {
         Self {
-            content: ConfigCoreContent::default(),
+            content: ConfigCore::_load_config().unwrap_or_default(),
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "core_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigCoreContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             is_p2pool_enabled: old_config.p2pool_enabled(),
             use_tor: old_config.use_tor(),
             allow_telemetry: old_config.allow_telemetry(),
             last_binaries_update_timestamp: Some(old_config.last_binaries_update_timestamp()),
-            anon_id: Some(old_config.anon_id().to_string()),
+            anon_id: old_config.anon_id().to_string(),
             should_auto_launch: old_config.should_auto_launch(),
             mmproxy_use_monero_failover: old_config.mmproxy_use_monero_fail(),
             mmproxy_monero_nodes: old_config.mmproxy_monero_nodes().to_vec(),
             auto_update: old_config.auto_update(),
             p2pool_stats_server_port: old_config.p2pool_stats_server_port(),
             pre_release: old_config.pre_release(),
-            last_changelog_version: Some(old_config.last_changelog_version().to_string()),
+            last_changelog_version: Version::from_str(old_config.last_changelog_version())?,
             airdrop_tokens: old_config.airdrop_tokens(),
-            remote_base_node_address: old_config.remote_base_node_address().unwrap_or_default(),
+            ..Default::default()
         };
         Ok(())
     }

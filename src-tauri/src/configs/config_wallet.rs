@@ -24,20 +24,22 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
-static INSTANCE: LazyLock<Mutex<ConfigWallet>> = LazyLock::new(|| Mutex::new(ConfigWallet::new()));
+static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
+    LazyLock::new(|| RwLock::new(ConfigWallet::new()));
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigWalletContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     monero_address: String,
     monero_address_is_generated: bool,
@@ -47,6 +49,7 @@ pub struct ConfigWalletContent {
 impl Default for ConfigWalletContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             monero_address: "".to_string(),
             monero_address_is_generated: false,
@@ -65,30 +68,35 @@ impl ConfigImpl for ConfigWallet {
     type Config = ConfigWalletContent;
     type OldConfig = AppConfig;
 
-    fn current() -> &'static Mutex<Self> {
+    fn current() -> &'static RwLock<Self> {
         &INSTANCE
     }
 
     fn new() -> Self {
         Self {
-            content: ConfigWalletContent::default(),
+            content: ConfigWallet::_load_config().unwrap_or_default(),
         }
     }
 
-    fn get_name() -> String {
+    fn _get_name() -> String {
         "wallet_config".to_string()
     }
 
-    fn get_content(&self) -> &Self::Config {
+    fn _get_content(&self) -> &Self::Config {
         &self.content
     }
 
-    fn get_content_mut(&mut self) -> &mut Self::Config {
+    fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
     }
 
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+        if self.content.was_config_migrated {
+            return Ok(());
+        }
+
         self.content = ConfigWalletContent {
+            was_config_migrated: true,
             created_at: SystemTime::now(),
             keyring_accessed: old_config.keyring_accessed(),
             monero_address: old_config.monero_address().to_string(),

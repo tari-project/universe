@@ -3,7 +3,6 @@ import { useMiningStore } from '@app/store/useMiningStore';
 import { useCallback, useEffect, useState } from 'react';
 import { GpuThreads, MaxConsumptionLevels } from '@app/types/app-status';
 import { RangeInputComponent } from './RangeInput';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
     CustomLevelsHeader,
     CustomLevelsContent,
@@ -18,6 +17,7 @@ import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { modeType } from '@app/store/types.ts';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { changeMiningMode } from '@app/store/actions/miningStoreActions.ts';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 enum FormFields {
     CPU = 'cpu',
@@ -80,9 +80,9 @@ export function CustomPowerLevelsDialog({ maxAvailableThreads, handleClose }: Cu
     const { t } = useTranslation('settings', { useSuspense: false });
     const [saved, setSaved] = useState(false);
 
-    const mode = useAppConfigStore((s) => s.mode);
-    const configCpuLevels = useAppConfigStore((s) => s.custom_max_cpu_usage);
-    const configGpuLevels = useAppConfigStore((s) => s.custom_max_gpu_usage);
+    const mode = useConfigMiningStore((s) => s.mode);
+    const configCpuLevels = useConfigMiningStore((s) => s.custom_max_cpu_usage);
+    const configGpuLevels = useConfigMiningStore((s) => s.custom_max_gpu_usage);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
 
     const { control, handleSubmit, setValue } = useForm<FormValues>({

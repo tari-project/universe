@@ -1,6 +1,5 @@
 import { memo, useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
 import { getItemTitle, getItemType } from './helpers.ts';
@@ -17,7 +16,7 @@ import {
     StatusWrapper,
     CircularProgressWrapper,
 } from './ListItem.styles.ts';
-import { useUIStore } from '@app/store';
+import { useConfigUIStore, useUIStore } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { TransactionStatus } from '@app/types/transactions.ts';
 
@@ -53,8 +52,8 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status
 
 const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemProps) {
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
-    const appLanguage = useAppConfigStore((s) => s.application_language);
-    const systemLang = useAppConfigStore((s) => s.should_always_use_system_language);
+    const appLanguage = useConfigUIStore((s) => s.application_language);
+    const systemLang = useConfigUIStore((s) => s.should_always_use_system_language);
 
     const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);

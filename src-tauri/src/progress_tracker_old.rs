@@ -40,6 +40,7 @@ impl Clone for ProgressTracker {
     }
 }
 
+#[allow(dead_code)]
 impl ProgressTracker {
     pub fn new(app_handle: AppHandle, channel: Option<Sender<String>>) -> Self {
         Self {
