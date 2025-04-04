@@ -3,7 +3,8 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useProgressCountdown } from './useProgressCountdown';
 
 const Wrapper = styled.div`
     display: flex;
@@ -27,11 +28,7 @@ export default function Progress() {
     const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
-
-    console.log('corePhaseInfoPayload', corePhaseInfoPayload);
-    console.log('hardwarePhaseInfoPayload', hardwarePhaseInfoPayload);
-    console.log('nodePhaseInfoPayload', nodePhaseInfoPayload);
-    console.log('unknownPhaseInfoPayload', unknownPhaseInfoPayload);
+    const { countdown } = useProgressCountdown(120);
 
     const currentPhaseToShow = useMemo(() => {
         if (hardwarePhaseInfoPayload?.is_complete) {
@@ -49,17 +46,25 @@ export default function Progress() {
         return corePhaseInfoPayload;
     }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
 
-    const setupPhaseTitle = currentPhaseToShow?.phase_title;
-    const setupTitle = currentPhaseToShow?.title;
     const setupProgress = currentPhaseToShow?.progress;
-    const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
+    // const setupPhaseTitle = currentPhaseToShow?.phase_title;
+    // const setupTitle = currentPhaseToShow?.title;
+    // const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
 
     // const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
 
+    // const setUpText =
+    //     setupTitle && setupPhaseTitle
+    //         ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
+    //         : '';
+
     const setUpText =
-        setupTitle && setupPhaseTitle
-            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
-            : '';
+        countdown === 1
+            ? `${countdown} ${t('second_remaining')}`
+            : countdown > 1
+              ? `${countdown} ${t('seconds_remaining')}`
+              : t('any_moment_now');
+
     return (
         <Wrapper>
             <LinearProgress variant="large" value={setupProgress} />
