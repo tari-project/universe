@@ -168,8 +168,9 @@ impl Default for AppConfigFromFile {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum DisplayMode {
+    #[default]
     System,
     Dark,
     Light,

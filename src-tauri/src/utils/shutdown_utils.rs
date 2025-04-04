@@ -23,6 +23,7 @@
 use std::time::Duration;
 
 use crate::{
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
@@ -35,6 +36,7 @@ use tauri::Manager;
 static LOG_TARGET: &str = "tari::universe::shutdown_utils";
 
 #[allow(clippy::too_many_lines)]
+// TODO: To be removed
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app_handle.state::<UniverseAppState>().inner();
 
@@ -51,11 +53,12 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .app_log_dir()
         .expect("Could not get log dir");
 
-    let config = state.config.read().await;
-    let use_tor = config.use_tor();
-    let p2pool_enabled = config.p2pool_enabled();
-    let remote_node_grpc_address = config.remote_base_node_address();
-    drop(config);
+    let use_tor = *ConfigCore::content().await.use_tor();
+    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+    let remote_node_grpc_address = ConfigCore::content()
+        .await
+        .remote_base_node_address()
+        .clone();
 
     let mut stage_total = 5;
     let mut stage_progress = 0;
@@ -130,7 +133,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
                 log_dir.clone(),
                 use_tor,
                 tor_control_port,
-                remote_node_grpc_address.clone(),
+                Some(remote_node_grpc_address.clone()),
             )
             .await
         {
@@ -222,7 +225,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         let base_node_grpc = state.node_manager.get_grpc_address().await?;
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
-            .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
+            .with_stats_server_port(*ConfigCore::content().await.p2pool_stats_server_port())
             .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
             .build()?;
 
@@ -252,7 +255,6 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .await;
     stage_progress += 1;
 
-    let config = state.config.read().await;
     let p2pool_port = state.p2pool_manager.grpc_port().await;
     mm_proxy_manager
         .start(StartConfig {
@@ -264,12 +266,11 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
             tari_address: cpu_miner_config.tari_address.clone(),
             coinbase_extra: "".to_string(),
             p2pool_enabled,
-            monero_nodes: config.mmproxy_monero_nodes().clone(),
-            use_monero_fail: config.mmproxy_use_monero_fail(),
+            monero_nodes: ConfigCore::content().await.mmproxy_monero_nodes().clone(),
+            use_monero_fail: *ConfigCore::content().await.mmproxy_use_monero_failover(),
         })
         .await?;
     mm_proxy_manager.wait_ready().await?;
-    drop(config);
 
     state
         .events_manager

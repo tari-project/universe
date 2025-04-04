@@ -86,7 +86,9 @@ pub trait ConfigImpl {
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
         setter_callback(Self::current().write().await._get_content_mut(), value);
-        Self::current().write().await._save_config()?;
+        Self::current().write().await._save_config().inspect_err(|error|
+            debug!(target: LOG_TARGET, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
+        )?;
         Ok(())
     }
 }

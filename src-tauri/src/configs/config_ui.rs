@@ -26,6 +26,7 @@ use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use sys_locale::get_locale;
 use tokio::sync::RwLock;
 
 use crate::AppConfig;
@@ -42,7 +43,6 @@ static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(Confi
 pub struct ConfigUIContent {
     created_at: SystemTime,
     display_mode: DisplayMode,
-    mine_on_app_start: bool,
     has_system_language_been_proposed: bool,
     should_always_use_system_language: bool,
     application_language: String,
@@ -58,7 +58,6 @@ impl Default for ConfigUIContent {
         Self {
             created_at: SystemTime::now(),
             display_mode: DisplayMode::System,
-            mine_on_app_start: false,
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: "en".to_string(),
@@ -72,6 +71,18 @@ impl Default for ConfigUIContent {
 }
 impl ConfigContentImpl for ConfigUIContent {}
 
+impl ConfigUIContent {
+    pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
+            Ok(())
+        } else {
+            let system_language = get_locale().unwrap_or_else(|| String::from("en-US"));
+            self.application_language = system_language;
+            self.has_system_language_been_proposed = true;
+            Ok(())
+        }
+    }
+}
 pub struct ConfigUI {
     content: ConfigUIContent,
 }
@@ -106,8 +117,6 @@ impl ConfigImpl for ConfigUI {
         self.content = ConfigUIContent {
             created_at: SystemTime::now(),
             display_mode: old_config.display_mode(),
-            mine_on_app_start: old_config.mine_on_app_start(),
-
             has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
             should_always_use_system_language: old_config.should_always_use_system_language(),
             application_language: old_config.application_language().to_string(),
