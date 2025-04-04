@@ -41,6 +41,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
+use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
@@ -1837,5 +1838,78 @@ pub async fn set_selected_engine(
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn websocket_connect(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+    info!(target: LOG_TARGET, "websocket_connect command accepted");
+
+    if matches!(
+        last_state,
+        WebsocketManagerStatusMessage::Connected | WebsocketManagerStatusMessage::Reconnecting
+    ) {
+        return Ok(());
+    }
+
+    state
+        .websocket_manager
+        .write()
+        .await
+        .connect()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .emit_interval_ws_events()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_connect command finished");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn websocket_close(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "websocket_close command started");
+
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+
+    if matches!(last_state, WebsocketManagerStatusMessage::Stopped) {
+        return Ok(());
+    }
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .stop_emitting_message()
+        .await;
+
+    state
+        .websocket_manager
+        .write()
+        .await
+        .close_connection()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_close took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_close command finished");
     Ok(())
 }

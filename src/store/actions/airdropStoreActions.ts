@@ -146,7 +146,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
         const authToken = airdropTokens?.token;
 
         if (airdropApiUrl && authToken) {
-            initialiseSocket(airdropApiUrl, authToken);
+            initialiseSocket();
         }
     } else {
         // User not connected

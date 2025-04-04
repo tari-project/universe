@@ -417,19 +417,11 @@ async fn setup_inner(
 
     let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
     websocket_events_manager_guard.set_app_handle(app.clone());
+    drop(websocket_events_manager_guard);
 
     let mut websocket_manager_write = state.websocket_manager.write().await;
     websocket_manager_write.set_app_handle(app.clone());
-    websocket_manager_write
-        .connect()
-        .await
-        .expect("error with websocket communication");
     drop(websocket_manager_write);
-
-    websocket_events_manager_guard
-        .emit_interval_ws_events()
-        .await;
-    drop(websocket_events_manager_guard);
 
     let webview = app.get_webview_window("main").unwrap();
     let websocket_tx = state.websocket_message_tx.clone();
@@ -1416,7 +1408,9 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::websocket_connect,
+            commands::websocket_close
         ])
         .build(tauri::generate_context!())
         .inspect_err(

@@ -1,46 +1,30 @@
-import { io } from 'socket.io-client';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
-import { useAppConfigStore, useMiningStore } from '@app/store';
-
-type DisconnectDescription =
-    | Error
-    | {
-          description: string;
-          context?: unknown;
-      };
-
-interface OnDisconnectEventMessage {
-    reason: string;
-    details?: DisconnectDescription;
-}
-
-let socket: ReturnType<typeof io> | null = null;
+let socketInitialised: boolean = false;
 export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
-const version = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
 
-const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
-    const appId = useAppConfigStore.getState().anon_id;
-    const miningNetwork = useMiningStore.getState().network;
-    const wsOptions = {
-        auth: {
-            token: airdropToken,
-            appId,
-            network: miningNetwork,
-            version,
-        },
-        transports: ['websocket', 'polling'],
-        secure: true,
-    };
+listen<string>('ws-status-change', (event) => {
+    if (event.payload === 'Connected' || event.payload === 'Reconnecting') {
+        socketInitialised = true;
+    }
+    if (event.payload === 'Stopped') {
+        socketInitialised = false;
+    }
+    console.info(`websocket status changed: event.payload`);
+});
 
-    socket = io(airdropApiUrl, wsOptions);
-    console.info('Socket initialised');
-    socket.connect();
-    return socket;
+const initialiseSocket = () => {
+    if (!socketInitialised) {
+        console.info(`connecting to websocket`);
+        invoke('websocket_connect').catch(console.error);
+    }
 };
 
 function removeSocket() {
-    socket?.disconnect();
-    socket = null;
-    console.info('Socket removed');
+    if (socketInitialised) {
+        console.info(`closing websocket connection`);
+        invoke('websocket_close').catch(console.error);
+    }
 }
-export { socket, initialiseSocket, removeSocket, type OnDisconnectEventMessage };
+export { socketInitialised, initialiseSocket, removeSocket };

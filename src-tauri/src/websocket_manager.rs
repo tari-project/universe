@@ -68,7 +68,6 @@ pub enum WebsocketManagerStatusMessage {
     Connected,
     Reconnecting,
     Stopped,
-    Error(String),
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -86,7 +85,6 @@ pub struct WebsocketManager {
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
-    close_channel_rx: tokio::sync::broadcast::Receiver<bool>,
 }
 
 impl WebsocketManager {
@@ -97,7 +95,7 @@ impl WebsocketManager {
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     ) -> Self {
-        let (close_channel_tx, close_channel_rx) = tokio::sync::broadcast::channel::<bool>(1);
+        let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketManager {
             app_in_memory_config,
             message_cache: Arc::new(RwLock::new(HashMap::new())),
@@ -107,7 +105,6 @@ impl WebsocketManager {
             status_update_channel_tx,
             status_update_channel_rx,
             close_channel_tx,
-            close_channel_rx,
         }
     }
 
@@ -120,12 +117,12 @@ impl WebsocketManager {
             .expect("main window must exist");
 
         tokio::spawn(async move {
-            while let Ok(_) = status_channel_rx.changed().await {
+            while status_channel_rx.changed().await.is_ok() {
                 let new_state = status_channel_rx.borrow();
                 let _ = main_window
                     .clone()
                     .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
-                        error!(target:LOG_TARGET,"could not send ws-status-change event: {:?}",new_state);
+                        error!(target:LOG_TARGET,"could not send ws-status-change event: {:?} error: {}",new_state, e.to_string());
                     });
             }
         });
@@ -133,30 +130,43 @@ impl WebsocketManager {
 
     async fn connect_to_url(
         config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
-        status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket...");
         let config_read = config_cloned.read().await;
         let adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
-        let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
         info!(target:LOG_TARGET,"websocket connection established...");
 
         Ok(ws_stream)
     }
 
     pub async fn close_connection(&self) {
+        info!(target:LOG_TARGET,"websocket start to close...");
+
         match self.close_channel_tx.send(true) {
             Ok(_) => loop {
-                let actual_state = self.status_update_channel_rx.borrow();
-                if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
-                    break;
+                if self
+                    .status_update_channel_rx
+                    .clone()
+                    .changed()
+                    .await
+                    .is_ok()
+                {
+                    let actual_state = self.status_update_channel_rx.borrow();
+                    if actual_state.clone() == WebsocketManagerStatusMessage::Stopped {
+                        info!(target:LOG_TARGET,"websocket stopped");
+
+                        return;
+                    }
+                } else {
+                    return;
                 }
             },
             Err(_) => {
                 info!(target: LOG_TARGET,"websocket connection has already been closed.");
             }
-        }
+        };
+        info!(target: LOG_TARGET,"websocket connection closed");
     }
 
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
@@ -168,15 +178,17 @@ impl WebsocketManager {
         let shutdown = self.shutdown.clone();
         let mut shutdown_signal = shutdown.to_signal();
         let status_update_channel_tx = self.status_update_channel_tx.clone();
-        let status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
+        let mut status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
             self.status_update_channel_rx.clone();
         let close_channel_tx = self.close_channel_tx.clone();
 
+        //we don't want to receive previous messages
+        status_update_channel_rx.mark_unchanged();
         tauri::async_runtime::spawn(async move {
             loop {
                 tokio::select! {
                     _ = async {
-                        let connection_res = WebsocketManager::connect_to_url(&config_cloned, status_update_channel_tx.clone()).await.inspect_err(|e|{
+                        let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
                         if let Ok(connection) = connection_res {
                             _= WebsocketManager::listen(connection,app_cloned.clone(),
@@ -204,6 +216,20 @@ impl WebsocketManager {
                 }
             }
         });
+
+        info!(target:LOG_TARGET,"waiting for websocket startup");
+        if status_update_channel_rx.changed().await.is_ok() {
+            let value = status_update_channel_rx.borrow().clone();
+            if value == WebsocketManagerStatusMessage::Connected {
+                return Ok(());
+            } else {
+                return Err(anyhow::anyhow!(
+                    "Websocket could not connect to backend as its status is {:?}",
+                    value
+                ));
+            }
+        };
+
         Ok(())
     }
 
@@ -244,6 +270,8 @@ impl WebsocketManager {
                 }
             }
         });
+
+        let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
 
         tokio::select! {
             _=receiver_task=>{
@@ -293,16 +321,12 @@ async fn sender_task(
 }
 
 async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
-    loop {
-        match channel.recv().await {
-            Ok(val) => {
-                if val == true {
-                    return;
-                }
-            }
-            Err(_) => {
-                return;
-            }
+    match channel.recv().await {
+        Ok(_) => {
+            info!(target:LOG_TARGET,"received stop signal");
+        }
+        Err(_) => {
+            info!(target:LOG_TARGET,"received stop signal");
         }
     }
 }

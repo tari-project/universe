@@ -24,6 +24,26 @@ export default function useAirdropWebsocket() {
     const sendWsMessage = useSendWsMessage();
 
     useEffect(() => {
+        listen('ws-status-change', (event) => {
+            if ((event.payload as string) === 'Connected') {
+                if (airdropToken) {
+                    const authMessage = {
+                        event: AUTH_EVENT,
+                        data: airdropToken,
+                    };
+                    sendWsMessage(authMessage);
+                    const subscribeToGemUpdatesMessage = {
+                        event: SUBSCRIBE_EVENT,
+                        data: undefined,
+                    };
+                    sendWsMessage(subscribeToGemUpdatesMessage);
+                }
+            }
+            console.log(`websocket status changed: ${event}`);
+        });
+    }, [airdropToken, sendWsMessage]);
+
+    useEffect(() => {
         if (airdropToken) {
             const authMessage = {
                 event: AUTH_EVENT,

@@ -5,7 +5,7 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri::AppHandle;
 use tokio::{
-    sync::{watch, RwLock},
+    sync::{broadcast, watch, RwLock},
     time,
 };
 
@@ -27,6 +27,7 @@ pub struct WebsocketEventsManager {
     shutdown: Shutdown,
     app_id: String,
     websocket_tx_channel: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
+    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
 }
 
 impl WebsocketEventsManager {
@@ -39,6 +40,7 @@ impl WebsocketEventsManager {
         shutdown: Shutdown,
         websocket_tx_channel: tokio::sync::mpsc::Sender<WebsocketMessage>,
     ) -> Self {
+        let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketEventsManager {
             cpu_miner_status_watch_rx,
             gpu_latest_miner_stats,
@@ -48,11 +50,24 @@ impl WebsocketEventsManager {
             websocket_tx_channel: Arc::new(websocket_tx_channel),
             app: None,
             app_config,
+            close_channel_tx,
         }
     }
 
     pub fn set_app_handle(&mut self, app: AppHandle) {
         self.app = Some(app);
+    }
+
+    pub async fn stop_emitting_message(&self) {
+        info!(target:LOG_TARGET,"stop websocket_events_manager");
+
+        match self.close_channel_tx.send(true) {
+            Ok(_) => {}
+            Err(_) => {
+                info!(target: LOG_TARGET,"websocket_events_manager has already been closed.");
+            }
+        };
+        info!(target: LOG_TARGET,"stopped emitting messages from websocket_events_manager");
     }
 
     pub async fn emit_interval_ws_events(&mut self) {
@@ -70,6 +85,7 @@ impl WebsocketEventsManager {
             .to_string();
         let app_config_clone = self.app_config.clone();
         let websocket_tx_channel_clone = self.websocket_tx_channel.clone();
+        let close_channel_tx = self.close_channel_tx.clone();
 
         tokio::spawn(async move {
             loop {
@@ -104,6 +120,7 @@ impl WebsocketEventsManager {
                     info!(target:LOG_TARGET, "websocket events manager closed");
                     return;
                   }
+                  _=wait_for_close_signal(close_channel_tx.subscribe())=>{}
                 }
             }
         });
@@ -154,5 +171,16 @@ impl WebsocketEventsManager {
             }
         }
         None
+    }
+}
+
+async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
+    match channel.recv().await {
+        Ok(_) => {
+            info!(target:LOG_TARGET,"received stop signal");
+        }
+        Err(_) => {
+            info!(target:LOG_TARGET,"received stop signal");
+        }
     }
 }
