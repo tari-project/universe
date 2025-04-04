@@ -2,7 +2,6 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
@@ -12,7 +11,7 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
-import { setVisualMode } from '@app/store';
+import { setVisualMode, useConfigUIStore } from '@app/store';
 
 import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
@@ -22,9 +21,9 @@ const ErrorTypography = styled(Typography)(({ theme }) => ({
 }));
 
 function VisualMode() {
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
     const setupComplete = useSetupStore((s) => s.appUnlocked);
-    const visualModeToggleLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
+    const visualModeToggleLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
     const { t } = useTranslation('settings', { useSuspense: false });
 

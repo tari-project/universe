@@ -168,8 +168,9 @@ impl Default for AppConfigFromFile {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum DisplayMode {
+    #[default]
     System,
     Dark,
     Light,
@@ -287,6 +288,7 @@ pub struct AppConfig {
     remote_base_node_address: Option<String>,
 }
 
+#[allow(dead_code)]
 impl AppConfig {
     pub fn new() -> Self {
         Self {
@@ -464,6 +466,10 @@ impl AppConfig {
 
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
         &self.ludicrous_mode_cpu_options
+    }
+
+    pub fn created_at(&self) -> Option<DateTime<Utc>> {
+        self.created_at
     }
 
     pub fn custom_mode_cpu_options(&self) -> &Vec<String> {

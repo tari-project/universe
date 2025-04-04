@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { Typography } from '@app/components/elements/Typography';
 import { Input } from '@app/components/elements/inputs/Input';
@@ -17,7 +15,7 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
-import { setCustomStatsServerPort, setDialogToShow } from '@app/store';
+import { setCustomStatsServerPort, setDialogToShow, useConfigCoreStore } from '@app/store';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -31,7 +29,7 @@ const hasStatsServerPortError = (cp: number) => {
 
 const P2poolMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const customStatsServerPort = useAppConfigStore((s) => s.p2pool_stats_server_port);
+    const customStatsServerPort = useConfigCoreStore((s) => s.p2pool_stats_server_port);
     const [editedCustomStatsServerPort, setEditedCustomStatsServerPort] = useState(customStatsServerPort);
     const [isRandomStatsServerPort, setIsRandomStatsServerPort] = useState(!customStatsServerPort);
     const [currentStatsServerPort, setCurrentStatsServerPort] = useState(customStatsServerPort);
@@ -41,7 +39,7 @@ const P2poolMarkup = () => {
 
     const onSave = useCallback(async () => {
         if (isRandomStatsServerPort) {
-            await setCustomStatsServerPort(null);
+            await setCustomStatsServerPort(undefined);
         } else if (editedCustomStatsServerPort) {
             await setCustomStatsServerPort(editedCustomStatsServerPort);
         } else {

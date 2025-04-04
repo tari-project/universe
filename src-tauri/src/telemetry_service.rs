@@ -31,8 +31,8 @@ use tokio::sync::{
 use tokio_util::sync::CancellationToken;
 
 use crate::{
-    app_config::AppConfig,
     app_in_memory_config::AppInMemoryConfig,
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
     tasks_tracker::TasksTrackers,
@@ -73,21 +73,16 @@ pub struct TelemetryService {
     version: String,
     tx_channel: Option<Sender<TelemetryData>>,
     cancellation_token: CancellationToken,
-    config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
 }
 
 impl TelemetryService {
-    pub fn new(
-        config: Arc<RwLock<AppConfig>>,
-        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    ) -> Self {
+    pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
         let cancellation_token = CancellationToken::new();
         TelemetryService {
             version: "0.0.0".to_string(),
             tx_channel: None,
             cancellation_token,
-            config,
             in_memory_config,
         }
     }
@@ -100,8 +95,7 @@ impl TelemetryService {
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         self.version = app_version;
-        let cancellation_token = self.cancellation_token.clone();
-        let config_cloned = self.config.clone();
+        let mut cancellation_token = self.cancellation_token.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let telemetry_api_url = in_memory_config_cloned
             .read()
@@ -125,17 +119,19 @@ impl TelemetryService {
                     _ = async {
                         debug!(target: LOG_TARGET, "TelemetryService::init has  been started");
                         while let Some(telemetry_data) = rx.recv().await {
-                            let config_guard = config_cloned.read().await;
-                            let telemetry_collection_enabled = config_guard.allow_telemetry();
-                            let app_id = config_guard.anon_id().to_string();
-                            if telemetry_collection_enabled {
-                                drop(retry_with_backoff(
+                                let telemetry_collection_enabled = *ConfigCore::content().await.allow_telemetry();
+                                if !telemetry_collection_enabled {
+                                info!(target: LOG_TARGET, "TelemetryService::init telemetry collection is disabled");
+                            return;
+                        }
+                        let anon_id = ConfigCore::content().await.anon_id().clone();
+                            drop(retry_with_backoff(
                                     || {
                                         Box::pin(send_telemetry_data(
                                             telemetry_data.clone(),
                                             telemetry_api_url.clone(),
                                             system_info.clone(),
-                                            app_id.clone(),
+                                            anon_id.clone(),
                                         ))
                                     },
                                     3,
@@ -144,7 +140,6 @@ impl TelemetryService {
                                 )
                                 .await);
                             }
-                        }
                         } => {}
                         _ = shutdown_signal.wait() => {
                             info!(target: LOG_TARGET,"TelemetryService::init has been cancelled");

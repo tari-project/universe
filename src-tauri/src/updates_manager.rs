@@ -32,7 +32,7 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AppConfig,
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
 };
@@ -78,14 +78,12 @@ pub struct AskForUpdatePayload {
 
 #[derive(Clone)]
 pub struct UpdatesManager {
-    config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            config,
             update: Arc::new(RwLock::new(None)),
         }
     }
@@ -131,8 +129,7 @@ impl UpdatesManager {
                 let version = update.version.clone();
                 info!(target: LOG_TARGET, "try_update: Update available: {:?}", version);
                 *self.update.write().await = Some(update);
-                let is_auto_update = self.config.read().await.auto_update();
-
+                let is_auto_update = *ConfigCore::content().await.auto_update();
                 let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
 
                 if is_screen_locked && is_auto_update {
@@ -172,7 +169,7 @@ impl UpdatesManager {
         app: tauri::AppHandle,
         enable_downgrade: bool,
     ) -> Result<Option<Update>, anyhow::Error> {
-        let is_pre_release = self.config.read().await.pre_release();
+        let is_pre_release = *ConfigCore::content().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
         let builder = app

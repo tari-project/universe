@@ -11,7 +11,6 @@ import {
     setGpuDevices,
     setGpuMiningStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
-import { handleAppConfigLoaded } from '@app/store/actions/appConfigStoreActions';
 import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
@@ -31,6 +30,12 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
 } from '@app/store/actions/setupStoreActions';
+import {
+    handleConfigCoreLoaded,
+    handleConfigMiningLoaded,
+    handleConfigUILoaded,
+    handleConfigWalletLoaded,
+} from '@app/store/actions/appConfigStoreActions';
 
 const LOG_EVENT_TYPES = [
     // 'ResumingAllProcesses',
@@ -75,16 +80,16 @@ const useTauriEventsListener = () => {
                     case 'WalletPhaseFinished':
                         break;
                     case 'UnlockApp':
-                        handleAppUnlocked();
+                        await handleAppUnlocked();
                         break;
                     case 'UnlockWallet':
                         handleWalletUnlocked();
                         break;
                     case 'UnlockMining':
-                        handleMiningUnlocked();
+                        await handleMiningUnlocked();
                         break;
                     case 'LockMining':
-                        handleMiningLocked();
+                        await handleMiningLocked();
                         break;
                     case 'LockWallet':
                         handleWalletLocked();
@@ -110,8 +115,17 @@ const useTauriEventsListener = () => {
                     case 'NewBlockHeight':
                         await handleNewBlock(event.payload);
                         break;
-                    case 'AppConfigLoaded':
-                        await handleAppConfigLoaded(event.payload);
+                    case 'ConfigCoreLoaded':
+                        handleConfigCoreLoaded(event.payload);
+                        break;
+                    case 'ConfigWalletLoaded':
+                        handleConfigWalletLoaded(event.payload);
+                        break;
+                    case 'ConfigMiningLoaded':
+                        handleConfigMiningLoaded(event.payload);
+                        break;
+                    case 'ConfigUILoaded':
+                        await handleConfigUILoaded(event.payload);
                         break;
                     case 'CloseSplashscreen':
                         handleCloseSplashscreen();

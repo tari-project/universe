@@ -2,7 +2,6 @@ import { useTheme } from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 
 import { formatHashrate, formatNumber, FormatPreset } from '@app/utils/formatters.ts';
@@ -14,14 +13,15 @@ import Tile from './components/Tile.tsx';
 import { ExpandableTile } from './components/ExpandableTile.tsx';
 import { ExpandableTileItem, ExpandedContentTile } from './components/ExpandableTile.styles.ts';
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 export default function Miner() {
     const theme = useTheme();
     const { t } = useTranslation('mining-view', { useSuspense: false });
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isCpuMiningEnabled = useAppConfigStore((s) => s.cpu_mining_enabled);
-    const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
+    const isCpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
+    const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const cpu_estimated_earnings = useMiningMetricsStore((s) => s.cpu_mining_status.estimated_earnings);
     const cpu_hash_rate = useMiningMetricsStore((s) => s.cpu_mining_status.hash_rate);
     const cpu_is_mining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);

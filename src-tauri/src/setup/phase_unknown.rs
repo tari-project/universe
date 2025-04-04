@@ -64,6 +64,9 @@ pub struct UnknownSetupPhaseSessionConfiguration {
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseAppConfiguration {
     p2pool_enabled: bool,
+    p2pool_stats_server_port: Option<u16>,
+    mmproxy_monero_nodes: Vec<String>,
+    mmproxy_use_monero_fail: bool,
 }
 
 pub struct UnknownSetupPhase {
@@ -111,13 +114,17 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let p2pool_enabled = *ConfigCore::current()
-            .lock()
-            .await
-            .get_content()
-            .is_p2pool_enabled();
+        let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+        let p2pool_stats_server_port = *ConfigCore::content().await.p2pool_stats_server_port();
+        let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
+        let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
 
-        Ok(UnknownSetupPhaseAppConfiguration { p2pool_enabled })
+        Ok(UnknownSetupPhaseAppConfiguration {
+            p2pool_enabled,
+            mmproxy_use_monero_fail,
+            mmproxy_monero_nodes,
+            p2pool_stats_server_port,
+        })
     }
 
     async fn setup(
@@ -171,7 +178,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
-        info!(target: LOG_TARGET, "[ {} Phase ] Check1", SetupPhase::Unknown);
         let tari_address = state.cpu_miner_config.read().await.tari_address.clone();
         let telemetry_id = state
             .telemetry_manager
@@ -180,7 +186,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .get_unique_string()
             .await;
 
-        info!(target: LOG_TARGET, "[ {} Phase ] Check2", SetupPhase::Unknown);
         if self.app_configuration.p2pool_enabled {
             let _unused = progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
@@ -189,10 +194,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             let base_node_grpc = state.node_manager.get_grpc_address().await?;
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
-                .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
+                .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
                 .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
                 .build()?;
-            info!(target: LOG_TARGET, "[ {} Phase ] Check3", SetupPhase::Unknown);
             state
                 .p2pool_manager
                 .ensure_started(
@@ -211,11 +215,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
-        info!(target: LOG_TARGET, "[ {} Phase ] Check4", SetupPhase::Unknown);
-
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
 
-        let config = state.config.read().await;
         let p2pool_port = state.p2pool_manager.grpc_port().await;
         state
             .mm_proxy_manager
@@ -228,11 +229,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 tari_address,
                 coinbase_extra: telemetry_id,
                 p2pool_enabled: self.app_configuration.p2pool_enabled,
-                monero_nodes: config.mmproxy_monero_nodes().clone(),
-                use_monero_fail: config.mmproxy_use_monero_fail(),
+                monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
+                use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
             })
             .await?;
-        info!(target: LOG_TARGET, "[ {} Phase ] Check5", SetupPhase::Unknown);
 
         state.mm_proxy_manager.wait_ready().await?;
 

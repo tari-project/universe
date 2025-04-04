@@ -4,8 +4,6 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
-
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -13,7 +11,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setDialogToShow, setP2poolEnabled } from '@app/store';
+import { setDialogToShow, setP2poolEnabled, useConfigCoreStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 interface P2pMarkupProps {
@@ -22,7 +20,7 @@ interface P2pMarkupProps {
 
 const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const isP2poolEnabled = useAppConfigStore((state) => state.p2pool_enabled);
+    const isP2poolEnabled = useConfigCoreStore((state) => state.is_p2pool_enabled);
     const miningAllowed = useSetupStore((s) => s.miningUnlocked);
 
     const isDisabled = !miningAllowed;

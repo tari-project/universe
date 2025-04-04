@@ -21,7 +21,13 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::{
-    initialize_frontend_updates, release_notes::ReleaseNotes, tasks_tracker::TasksTrackers,
+    configs::{
+        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
+        config_wallet::ConfigWallet, trait_config::ConfigImpl,
+    },
+    initialize_frontend_updates,
+    release_notes::ReleaseNotes,
+    tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
 use log::{error, info};
@@ -133,7 +139,64 @@ impl SetupManager {
         &INSTANCE
     }
 
+    async fn pre_setup(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Pre Setup");
+        let state = app_handle.state::<UniverseAppState>();
+        let old_config = state.config.read().await;
+
+        let _unused = ConfigCore::current()
+            .write()
+            .await
+            .migrate_old_config(old_config.clone())
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
+            });
+
+        let _unused = ConfigWallet::current()
+            .write()
+            .await
+            .migrate_old_config(old_config.clone())
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
+            });
+
+        let _unused = ConfigMining::current()
+            .write()
+            .await
+            .migrate_old_config(old_config.clone())
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
+            });
+
+        let _unused = ConfigUI::current()
+            .write()
+            .await
+            .migrate_old_config(old_config.clone())
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET, "Failed to save config: {:?}", e);
+            });
+
+        state
+            .events_manager
+            .handle_config_core_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_mining_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_ui_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&app_handle)
+            .await;
+        info!(target: LOG_TARGET, "Pre Setup Finished");
+    }
+
     pub async fn start_setup(&self, app_handle: AppHandle) {
+        self.pre_setup(app_handle.clone()).await;
         *self.app_handle.lock().await = Some(app_handle.clone());
 
         let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
@@ -442,6 +505,7 @@ impl SetupManager {
 
     async fn lock_mining(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Locking Mining");
+
         *self.is_mining_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_mining(&app_handle).await;
@@ -449,6 +513,7 @@ impl SetupManager {
 
     async fn lock_wallet(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Locking Wallet");
+
         *self.is_wallet_unlocked.lock().await = false;
         let state = app_handle.state::<UniverseAppState>();
         state.events_manager.handle_lock_wallet(&app_handle).await;

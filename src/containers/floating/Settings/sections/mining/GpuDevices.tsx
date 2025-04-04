@@ -11,12 +11,12 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { Stack } from '@app/components/elements/Stack';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { GpuDevice } from '@app/types/app-status.ts';
 import { toggleDeviceExclusion } from '@app/store/actions/miningStoreActions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
@@ -25,7 +25,7 @@ const GpuDevices = memo(function GpuDevices() {
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
-    const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
+    const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
     const isDisabled = isExcludingGpuDevices || isGPUMining || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
 

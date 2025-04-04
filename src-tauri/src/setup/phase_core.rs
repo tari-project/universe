@@ -39,7 +39,10 @@ use tokio::{
 use crate::{
     auto_launcher::AutoLauncher,
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{
+        config_core::{ConfigCore, ConfigCoreContent},
+        trait_config::ConfigImpl,
+    },
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
@@ -118,19 +121,12 @@ impl SetupPhaseImpl for CoreSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
-        let is_auto_launcher_enabled = *ConfigCore::current()
-            .lock()
-            .await
-            .get_content()
-            .should_auto_launch();
+        let is_auto_launcher_enabled = *ConfigCore::content().await.should_auto_launch();
 
-        let last_binaries_update_timestamp = *ConfigCore::current()
-            .lock()
-            .await
-            .get_content()
-            .last_binaries_update_timestamp();
+        let last_binaries_update_timestamp =
+            *ConfigCore::content().await.last_binaries_update_timestamp();
 
-        let use_tor = *ConfigCore::current().lock().await.get_content().use_tor();
+        let use_tor = *ConfigCore::content().await.use_tor();
 
         Ok(CoreSetupPhaseAppConfiguration {
             is_auto_launcher_enabled,
@@ -187,9 +183,22 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn setup_inner(&self) -> Result<Option<CoreSetupPhaseOutput>, anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
+
         state
             .events_manager
-            .handle_app_config_loaded(&self.app_handle)
+            .handle_config_core_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_mining_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_ui_loaded(&self.app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&self.app_handle)
             .await;
 
         // TODO Remove once not needed
@@ -364,12 +373,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await;
 
         if should_check_for_update {
-            state
-                .config
-                .write()
-                .await
-                .set_last_binaries_update_timestamp(now)
-                .await?;
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_last_binaries_update_timestamp,
+                Some(now),
+            )
+            .await;
         }
 
         //drop binary resolver to release the lock

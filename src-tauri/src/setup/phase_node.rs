@@ -100,11 +100,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let use_tor = *ConfigCore::current().lock().await.get_content().use_tor();
-        let base_node_grpc_address = ConfigCore::current()
-            .lock()
+        let use_tor = *ConfigCore::content().await.use_tor();
+        let base_node_grpc_address = ConfigCore::content()
             .await
-            .get_content()
             .remote_base_node_address()
             .clone();
 
@@ -168,6 +166,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
+
+        info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
 
         // Note: it starts 2 processes of node
         // for _i in 0..2 {

@@ -1,7 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
@@ -23,7 +22,7 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
-import { setDialogToShow, setUseTor } from '@app/store';
+import { setDialogToShow, setUseTor, useConfigCoreStore } from '@app/store';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value
@@ -43,7 +42,7 @@ const hasControlPortError = (cp: number) => {
 
 export const TorMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const defaultUseTor = useAppConfigStore((s) => s.use_tor);
+    const defaultUseTor = useConfigCoreStore((s) => s.use_tor);
     const [hasCheckedOs, setHasCheckedOs] = useState(false);
     const [defaultTorConfig, setDefaultTorConfig] = useState<TorConfig>();
     const [isMac, setIsMac] = useState(false);
