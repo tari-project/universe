@@ -157,5 +157,10 @@
   "visual-mode": "Visuele modus",
   "yes": "Yes",
   "your-feedback": "Beskryf asseblief u probleem",
-  "your-reference": "U verwysing"
+  "your-reference": "U verwysing",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

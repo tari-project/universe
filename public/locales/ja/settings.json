@@ -157,5 +157,10 @@
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",
-  "your-reference": "あなたの参照"
+  "your-reference": "あなたの参照",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

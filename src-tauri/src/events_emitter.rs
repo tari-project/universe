@@ -33,8 +33,9 @@ use crate::{
     },
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
-        NetworkStatusPayload, NewBlockHeightPayload, ProgressEvents, ProgressTrackerUpdatePayload,
-        ResumingAllProcessesPayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
+        NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
+        ProgressTrackerUpdatePayload, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
+        WalletAddressUpdatePayload,
     },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
@@ -468,6 +469,17 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit LockMining event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_node_type_update(app_handle: &AppHandle, payload: NodeTypeUpdatePayload) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::NodeTypeUpdate,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit NodeTypeUpdate event: {:?}", e);
         }
     }
 }

@@ -433,6 +433,9 @@ impl SetupManager {
     pub async fn handle_switch_to_local_node(&self) {
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
+            let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
+            events_manager.handle_node_type_update(&app_handle).await;
+
             self.lock_mining(app_handle.clone()).await;
             self.lock_wallet(app_handle.clone()).await;
             info!(target: LOG_TARGET, "Restarting Phases");

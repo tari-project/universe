@@ -30,6 +30,7 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
 } from '@app/store/actions/setupStoreActions';
+import { setNodeStoreState } from '@app/store/useNodeStore';
 import {
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
@@ -155,6 +156,9 @@ const useTauriEventsListener = () => {
                         break;
                     case `NetworkStatus`:
                         setNetworkStatus(event.payload);
+                        break;
+                    case `NodeTypeUpdate`:
+                        setNodeStoreState(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

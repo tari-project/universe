@@ -157,5 +157,10 @@
   "visual-mode": "시각 모드",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",
-  "your-reference": "귀하의 참조"
+  "your-reference": "귀하의 참조",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

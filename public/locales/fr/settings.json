@@ -157,5 +157,10 @@
   "visual-mode": "Mode visuel",
   "yes": "Yes",
   "your-feedback": "Veuillez décrire votre problème",
-  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>"
+  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

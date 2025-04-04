@@ -157,5 +157,10 @@
   "visual-mode": "Mode visual",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",
-  "your-reference": "Referensi Anda"
+  "your-reference": "Referensi Anda",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

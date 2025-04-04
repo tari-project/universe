@@ -159,5 +159,10 @@
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
-  "your-reference": "Twoje odniesienie"
+  "your-reference": "Twoje odniesienie",
+  "minotari-node": "Minotari Node",
+  "node-type": "Type",
+  "node-public-key": "Public key",
+  "node-public-address": "Public address",
+  "node-connection-address": "Connection address"
 }

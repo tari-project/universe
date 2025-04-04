@@ -27,6 +27,7 @@ use std::time::{Duration, SystemTime};
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
 use minotari_node_grpc_client::grpc::Peer;
+use serde::Serialize;
 use serde_json::json;
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -66,13 +67,13 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
     pub public_address: Vec<String>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum NodeType {
     #[allow(dead_code)]
     Local,

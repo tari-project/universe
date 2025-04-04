@@ -41,7 +41,9 @@ use crate::{
         config_wallet::ConfigWallet,
         trait_config::ConfigImpl,
     },
-    events::{ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload},
+    events::{
+        NodeTypeUpdatePayload, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
+    },
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
@@ -296,6 +298,20 @@ impl EventsManager {
 
     pub async fn handle_lock_mining(&self, app: &AppHandle) {
         EventsEmitter::emit_lock_mining(app).await;
+    }
+
+    pub async fn handle_node_type_update(&self, app: &AppHandle) {
+        let node_manager = &app.state::<UniverseAppState>().node_manager;
+        let node_type = node_manager.get_node_type().await.ok();
+        let node_identity = node_manager.get_identity().await.ok();
+        let node_connection_address = node_manager.get_connection_address().await.ok();
+        let payload = NodeTypeUpdatePayload {
+            node_type,
+            node_identity,
+            node_connection_address,
+        };
+
+        EventsEmitter::emit_node_type_update(app, payload).await;
     }
 
     pub async fn handle_config_core_loaded(&self, app: &AppHandle) {
