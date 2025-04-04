@@ -338,7 +338,12 @@ async fn get_telemetry_data(
     started: Instant,
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+    let BaseNodeStatus {
+        block_height,
+        is_synced,
+        num_connections,
+        ..
+    } = node_latest_status.borrow().clone();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
@@ -510,7 +515,11 @@ async fn get_telemetry_data(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
     );
-
+    extra_data.insert("node_is_synced".to_string(), is_synced.to_string());
+    extra_data.insert(
+        "node_num_connections".to_string(),
+        num_connections.to_string(),
+    );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
 
     add_process_stats(

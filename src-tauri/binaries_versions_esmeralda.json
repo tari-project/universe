@@ -1,10 +1,10 @@
 {
     "binaries": {
         "xmrig": "=6.22.0",
-        "mmproxy": "=1.13.0-pre.0",
-        "minotari_node": "=1.13.0-pre.0",
-        "wallet": "=1.13.0-pre.0",
-        "sha-p2pool": "=0.23.2",
+        "mmproxy": "=1.13.3-pre.0",
+        "minotari_node": "=1.13.3-pre.0",
+        "wallet": "=1.13.3-pre.0",
+        "sha-p2pool": "=0.22.3",
         "glytex": "=0.2.18",
         "tor": "=13.5.7"
     }
