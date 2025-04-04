@@ -191,13 +191,14 @@ impl SetupManager {
             .await
             .spawn(async move {
                 let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-                let mut is_core_phase_succeeded: bool = false;
-                let mut is_hardware_phase_succeeded: bool = false;
-                let mut is_node_phase_succeeded: bool = false;
-                let mut is_unknown_phase_succeeded: bool = false;
-                let mut is_wallet_phase_succeeded: bool = false;
 
                 loop {
+                    let is_core_phase_succeeded = core_phase_status_subscriber.borrow().is_success();
+                    let is_hardware_phase_succeeded = hardware_phase_status_subscriber.borrow().is_success();
+                    let is_node_phase_succeeded = node_phase_status_subscriber.borrow().is_success();
+                    let is_wallet_phase_succeeded = wallet_phase_status_subscriber.borrow().is_success();
+                    let is_unknown_phase_succeeded = unknown_phase_status_subscriber.borrow().is_success();
+
                     info!(target: LOG_TARGET, "Checking unlock conditions: Core: {}, Hardware: {}, Node: {}, Wallet: {}, Unknown: {}",
                         is_core_phase_succeeded,
                         is_hardware_phase_succeeded,
@@ -271,24 +272,12 @@ impl SetupManager {
                     }
 
                         select! {
-                        _ = shutdown_signal.wait() => {
-                            break;
-                        }
-                        _ = core_phase_status_subscriber.changed() => {
-                            is_core_phase_succeeded = core_phase_status_subscriber.borrow().is_success();
-                        }
-                        _ = hardware_phase_status_subscriber.changed() => {
-                            is_hardware_phase_succeeded = hardware_phase_status_subscriber.borrow().is_success();
-                        }
-                        _ = node_phase_status_subscriber.changed() => {
-                            is_node_phase_succeeded = node_phase_status_subscriber.borrow().is_success();
-                        }
-                        _ = wallet_phase_status_subscriber.changed() => {
-                            is_wallet_phase_succeeded = wallet_phase_status_subscriber.borrow().is_success();
-                        }
-                        _ = unknown_phase_status_subscriber.changed() => {
-                            is_unknown_phase_succeeded = unknown_phase_status_subscriber.borrow().is_success();
-                        }
+                        _ = shutdown_signal.wait() => { break; }
+                        _ = core_phase_status_subscriber.changed() => { continue; }
+                        _ = hardware_phase_status_subscriber.changed() => { continue; }
+                        _ = node_phase_status_subscriber.changed() => { continue; }
+                        _ = wallet_phase_status_subscriber.changed() => { continue; }
+                        _ = unknown_phase_status_subscriber.changed() => { continue; }
                     };
                 }
             });
