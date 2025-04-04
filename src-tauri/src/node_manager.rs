@@ -402,7 +402,7 @@ impl NodeManager {
                                     error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                                 }
                             };
-                        } else {}
+                        }
 
                         tokio::time::sleep(Duration::from_secs(2)).await;
                     }
