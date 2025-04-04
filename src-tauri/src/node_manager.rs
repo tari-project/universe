@@ -155,11 +155,11 @@ impl NodeManager {
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
     ) -> Result<(), NodeManagerError> {
-        let node_type = self.node_type.read().await;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+        let node_type = self.get_node_type().await?;
 
-        match &*node_type {
+        match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let mut local_node_watcher = self.local_node_watcher.write().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
@@ -241,6 +241,7 @@ impl NodeManager {
                         )
                         .await?;
                 }
+                drop(local_node_watcher);
                 self.switch_to_local_after_remote(shutdown_signal).await?;
             }
         }
@@ -258,9 +259,9 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
+        let node_type = self.get_node_type().await?;
 
-        let node_type = self.node_type.read().await;
-        match &*node_type {
+        match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let mut local_node_watcher = self.local_node_watcher.write().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
@@ -333,8 +334,8 @@ impl NodeManager {
     }
 
     pub async fn get_current_node_client(&self) -> Result<MinotariNodeClient, anyhow::Error> {
-        let node_type = self.node_type.read().await;
-        match &*node_type {
+        let node_type = self.get_node_type().await?;
+        match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let local_node_watcher = self.local_node_watcher.read().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_ref() {
@@ -383,18 +384,17 @@ impl NodeManager {
                                     {
                                         let mut node_type = node_type.write().await;
                                         *node_type = NodeType::LocalAfterRemote;
-                                        info!(target: LOG_TARGET, "Local Node successfully switched");
                                     }
+                                    info!(target: LOG_TARGET, "Local Node successfully switched");
                                     {
-                                        let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
                                         SetupManager::get_instance().handle_switch_to_local_node().await;
+                                        let mut remote_node_watcher = node_manager.remote_node_watcher.write().await;
                                         if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
                                             if let Err(e) = remote_node_watcher.stop().await {
                                                 error!(target: LOG_TARGET, "Failed to stop local node watcher: {}", e);
                                             }
                                         }
                                     }
-
                                     break;
                                 }
                                 Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
@@ -422,8 +422,8 @@ impl NodeManager {
     }
 
     pub async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        let node_type = self.node_type.read().await;
-        match &*node_type {
+        let node_type = self.get_node_type().await?;
+        match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let process_watcher = self.local_node_watcher.read().await;
                 let local_tcp_address = match process_watcher
@@ -444,9 +444,8 @@ impl NodeManager {
     }
 
     pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
-        let node_type = self.node_type.read().await;
-
-        let grpc_address = match &*node_type {
+        let node_type = self.get_node_type().await?;
+        let grpc_address = match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let process_watcher = self.local_node_watcher.read().await;
                 process_watcher
@@ -571,9 +570,9 @@ impl NodeManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
-        let node_type = self.node_type.read().await;
+        let node_type = self.get_node_type().await?;
         loop {
-            match &*node_type {
+            match node_type {
                 NodeType::Local | NodeType::LocalAfterRemote => {
                     let local_node_watcher = self.local_node_watcher.read().await;
                     if let Some(local_node_watcher) = local_node_watcher.as_ref() {
