@@ -74,12 +74,12 @@ impl ConfigContentImpl for ConfigUIContent {}
 impl ConfigUIContent {
     pub fn propose_system_language(&mut self, fallback_language: String) -> &mut Self {
         if self.has_system_language_been_proposed() | !self.should_always_use_system_language() {
-            return self;
+            self
         } else {
-            let system_language = get_locale().unwrap_or_else(|| fallback_language);
+            let system_language = get_locale().unwrap_or(fallback_language);
             self.application_language = system_language;
             self.has_system_language_been_proposed = true;
-            return self;
+            self
         }
     }
 }

@@ -55,7 +55,6 @@ use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use std::clone;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::sync::atomic::Ordering;
@@ -498,7 +497,7 @@ pub async fn set_p2pool_stats_server_port(
     drop(telemetry_service);
 
     if let Some(port) = port {
-        if port < 1024 || port > 65535 {
+        if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
         }
     };
@@ -988,7 +987,8 @@ pub async fn set_cpu_mining_enabled<'r>(
         .send("set_cpu_mining_enabled".to_string(), json!(enabled))
         .await;
     drop(telemetry_service);
-    ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+    let _unused =
+        ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
@@ -1772,7 +1772,7 @@ pub async fn set_selected_engine(
         .gpu_miner
         .write()
         .await
-        .set_selected_engine(engine_type, config, app)
+        .set_selected_engine(engine_type.clone(), config, app)
         .await
         .map_err(|e| e.to_string())?;
 

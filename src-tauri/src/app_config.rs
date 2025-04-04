@@ -288,6 +288,7 @@ pub struct AppConfig {
     remote_base_node_address: Option<String>,
 }
 
+#[allow(dead_code)]
 impl AppConfig {
     pub fn new() -> Self {
         Self {

@@ -32,7 +32,6 @@ use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AppConfig,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     tasks_tracker::TasksTrackers,
     utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
@@ -79,14 +78,12 @@ pub struct AskForUpdatePayload {
 
 #[derive(Clone)]
 pub struct UpdatesManager {
-    config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            config,
             update: Arc::new(RwLock::new(None)),
         }
     }

@@ -373,7 +373,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await;
 
         if should_check_for_update {
-            ConfigCore::update_field(
+            let _unused = ConfigCore::update_field(
                 ConfigCoreContent::set_last_binaries_update_timestamp,
                 Some(now),
             )

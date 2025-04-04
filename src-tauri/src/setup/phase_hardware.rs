@@ -100,7 +100,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        let gpu_engine = *ConfigMining::content().await.gpu_engine();
+        let gpu_engine = ConfigMining::content().await.gpu_engine().clone();
 
         Ok(HardwareSetupPhaseAppConfiguration { gpu_engine })
     }

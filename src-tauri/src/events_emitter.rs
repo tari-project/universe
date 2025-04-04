@@ -40,9 +40,9 @@ use crate::{
     hardware::hardware_status_monitor::PublicDeviceProperties,
     utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
-    AppConfig, BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus, GpuMinerStatus,
 };
-use log::{error, info};
+use log::error;
 use tari_common_types::tari_address::TariAddress;
 use tauri::{AppHandle, Emitter};
 

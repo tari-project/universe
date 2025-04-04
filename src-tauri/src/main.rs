@@ -23,19 +23,17 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use auto_launcher::AutoLauncher;
 use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
-use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use local_node_adapter::{BaseNodeStatus, LocalNodeAdapter};
 use log::{error, info, warn};
-use node_manager::{NodeManagerError, NodeType};
+use node_manager::NodeType;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
-use release_notes::ReleaseNotes;
+
 use remote_node_adapter::RemoteNodeAdapter;
-use serde_json::json;
+
 use setup::setup_manager::SetupManager;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
 use std::path::Path;
@@ -46,7 +44,6 @@ use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
-use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
@@ -54,8 +51,7 @@ use log4rs::config::RawConfig;
 use std::fs;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -69,7 +65,6 @@ use utils::logging_utils::setup_logging;
 
 use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
-use binaries::{binaries_list::Binaries, binaries_resolver::BinaryResolver};
 
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
@@ -83,15 +78,14 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::{NodeManager, STOP_ON_ERROR_CODES};
+use crate::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
-use crate::p2pool_manager::{P2poolConfig, P2poolManager};
+use crate::p2pool_manager::P2poolManager;
 use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::resume_all_processes;
 
 mod airdrop;
 mod app_config;
@@ -963,7 +957,7 @@ struct UniverseAppState {
     is_getting_coinbase_history: Arc<AtomicBool>,
     #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
-    // config: Arc<RwLock<AppConfig>>,
+    config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -1083,8 +1077,8 @@ fn main() {
         stats_collector.build(),
     );
 
-    let updates_manager = UpdatesManager::new(app_config.clone());
-    let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
+    let updates_manager = UpdatesManager::new();
+    let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
@@ -1099,7 +1093,7 @@ fn main() {
         is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
-        // config: app_config.clone(),
+        config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
