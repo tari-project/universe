@@ -33,7 +33,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     padding: 16px 0;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.5)};
     background-image: ${({ $hasStarted, theme }) =>
-        $hasStarted ? theme.gradients.miningButton.started : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
+        $hasStarted ? theme.gradients.miningButtonStarted : 'linear-gradient(90deg, #046937 0%, #188750 92.49%)'};
 
     color: #fff;
     box-shadow: 0 0 3px 0 ${({ theme }) => convertHexToRGBA(theme.palette.base, 0.58)} inset;
@@ -42,7 +42,7 @@ export const StyledButton = styled(Button)<{ $hasStarted: boolean; $isLoading?: 
     &:hover {
         background-image: ${({ $hasStarted, theme }) =>
             $hasStarted
-                ? theme.gradients.miningButton.hover
+                ? theme.gradients.miningButtonHover
                 : 'linear-gradient(90deg, #046937 0%, rgba(17, 110, 64, 0.96) 92.49%)'};
     }
 
