@@ -34,6 +34,7 @@ use tari_utilities::hex::Hex;
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
 use tokio::{fs, select};
+use tokio_util::task::TaskTracker;
 
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
@@ -156,82 +157,112 @@ impl NodeManager {
 
         match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
-                let mut local_node_watcher = self.local_node_watcher.write().await;
-                if let Some(local_node_watcher) = local_node_watcher.as_mut() {
-                    self.configure_local_adapter(true, use_tor, tor_control_port)
-                        .await?;
-                    local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    local_node_watcher
-                        .start(
-                            base_path.clone(),
-                            config_path.clone(),
-                            log_path.clone(),
-                            crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal.clone(),
-                            task_tracker,
-                        )
-                        .await?;
-                }
+                self.start_local_watcher(
+                    base_path.clone(),
+                    config_path.clone(),
+                    log_path.clone(),
+                    use_tor,
+                    tor_control_port,
+                    shutdown_signal.clone(),
+                    task_tracker,
+                )
+                .await?;
             }
             NodeType::Remote => {
-                self.configure_remote_adapter(true, remote_grpc_address.clone())
-                    .await?;
-                let mut remote_node_watcher = self.remote_node_watcher.write().await;
-                if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
-                    remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    remote_node_watcher
-                        .start(
-                            base_path,
-                            config_path,
-                            log_path,
-                            crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal.clone(),
-                            task_tracker,
-                        )
-                        .await?;
-                }
+                self.start_remote_watcher(
+                    base_path,
+                    config_path,
+                    log_path,
+                    remote_grpc_address,
+                    shutdown_signal.clone(),
+                    task_tracker,
+                )
+                .await?;
             }
             NodeType::RemoteUntilLocal => {
-                self.configure_remote_adapter(true, remote_grpc_address)
-                    .await?;
-                let mut remote_node_watcher = self.remote_node_watcher.write().await;
-                if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
-                    remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    remote_node_watcher
-                        .start(
-                            base_path.clone(),
-                            config_path.clone(),
-                            log_path.clone(),
-                            crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal.clone(),
-                            task_tracker.clone(),
-                        )
-                        .await?;
-                }
-                drop(remote_node_watcher);
+                self.start_remote_watcher(
+                    base_path.clone(),
+                    config_path.clone(),
+                    log_path.clone(),
+                    remote_grpc_address,
+                    shutdown_signal.clone(),
+                    task_tracker.clone(),
+                )
+                .await?;
 
-                self.configure_local_adapter(false, use_tor, tor_control_port)
-                    .await?;
-                let mut local_node_watcher = self.local_node_watcher.write().await;
-                if let Some(local_node_watcher) = local_node_watcher.as_mut() {
-                    local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    local_node_watcher
-                        .start(
-                            base_path,
-                            config_path,
-                            log_path,
-                            crate::binaries::Binaries::MinotariNode,
-                            shutdown_signal.clone(),
-                            task_tracker,
-                        )
-                        .await?;
-                }
-                drop(local_node_watcher);
+                self.start_local_watcher(
+                    base_path,
+                    config_path,
+                    log_path,
+                    use_tor,
+                    tor_control_port,
+                    shutdown_signal.clone(),
+                    task_tracker,
+                )
+                .await?;
+
                 self.switch_to_local_after_remote(shutdown_signal).await?;
             }
         }
 
         self.wait_ready().await?;
+        Ok(())
+    }
+
+    async fn start_local_watcher(
+        &self,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_path: PathBuf,
+        use_tor: bool,
+        tor_control_port: Option<u16>,
+        shutdown_signal: ShutdownSignal,
+        task_tracker: TaskTracker,
+    ) -> Result<(), NodeManagerError> {
+        let mut local_node_watcher = self.local_node_watcher.write().await;
+        if let Some(local_node_watcher) = local_node_watcher.as_mut() {
+            self.configure_local_adapter(true, use_tor, tor_control_port)
+                .await?;
+            local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
+            local_node_watcher
+                .start(
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::MinotariNode,
+                    shutdown_signal,
+                    task_tracker,
+                )
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn start_remote_watcher(
+        &self,
+        base_path: PathBuf,
+        config_path: PathBuf,
+        log_path: PathBuf,
+        remote_grpc_address: Option<String>,
+        shutdown_signal: ShutdownSignal,
+        task_tracker: TaskTracker,
+    ) -> Result<(), NodeManagerError> {
+        self.configure_remote_adapter(true, remote_grpc_address)
+            .await?;
+        let mut remote_node_watcher = self.remote_node_watcher.write().await;
+        if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
+            remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
+            remote_node_watcher
+                .start(
+                    base_path,
+                    config_path,
+                    log_path,
+                    crate::binaries::Binaries::MinotariNode,
+                    shutdown_signal,
+                    task_tracker,
+                )
+                .await?;
+        }
         Ok(())
     }
 
