@@ -28,19 +28,15 @@ use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
 use minotari_node_grpc_client::grpc::Peer;
 use serde::Serialize;
-use serde_json::json;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
 use tokio::{fs, select};
 
-use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
 use crate::node::node_adapter::{
-    BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
+    NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
 };
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
@@ -59,8 +55,6 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
-    #[error("Node not started")]
-    NodeNotStarted,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
@@ -485,72 +479,9 @@ impl NodeManager {
         report_to_sentry: bool,
     ) -> Result<bool, anyhow::Error> {
         let current_service = self.get_current_service().await?;
-        let BaseNodeStatus {
-            is_synced,
-            block_height: local_tip,
-            ..
-        } = current_service.get_network_state().await.map_err(|e| {
-            if matches!(e, NodeStatusMonitorError::NodeNotStarted) {
-                NodeManagerError::NodeNotStarted
-            } else {
-                NodeManagerError::UnknownError(e.into())
-            }
-        })?;
-        if !is_synced {
-            info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
-            return Ok(false);
-        }
-
-        let network = Network::get_current_or_user_setting_or_default();
-        let block_scan_tip = get_best_block_from_block_scan(network).await?;
-        let heights: Vec<u64> = vec![
-            block_scan_tip.saturating_sub(50),
-            block_scan_tip.saturating_sub(100),
-            block_scan_tip.saturating_sub(200),
-        ];
-        let mut block_scan_blocks: Vec<(u64, String)> = vec![];
-
-        for height in &heights {
-            let block_scan_block = get_block_info_from_block_scan(network, height).await?;
-            block_scan_blocks.push(block_scan_block);
-        }
-
-        let local_blocks = current_service.get_historical_blocks(heights).await?;
-        for block_scan_block in &block_scan_blocks {
-            if !local_blocks
-                .iter()
-                .any(|local_block| block_scan_block.1 == local_block.1)
-            {
-                if report_to_sentry {
-                    let error_msg = "Orphan chain detected".to_string();
-                    let extra = vec![
-                        (
-                            "block_scan_block_height".to_string(),
-                            json!(block_scan_block.0.to_string()),
-                        ),
-                        (
-                            "block_scan_block_hash".to_string(),
-                            json!(block_scan_block.1.clone()),
-                        ),
-                        (
-                            "block_scan_tip_height".to_string(),
-                            json!(block_scan_tip.to_string()),
-                        ),
-                        ("local_tip_height".to_string(), json!(local_tip.to_string())),
-                    ];
-                    sentry::capture_event(Event {
-                        message: Some(error_msg),
-                        level: sentry::Level::Error,
-                        culprit: Some("orphan-chain".to_string()),
-                        extra: extra.into_iter().collect(),
-                        ..Default::default()
-                    });
-                }
-                return Ok(true);
-            }
-        }
-
-        Ok(false)
+        current_service
+            .check_if_is_orphan_chain(report_to_sentry)
+            .await
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
