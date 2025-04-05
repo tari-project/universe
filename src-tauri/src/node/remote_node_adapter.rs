@@ -26,7 +26,10 @@ use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
-    node::node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor}, node::node_manager::NodeType, process_adapter::{ProcessAdapter, ProcessInstanceTrait}, BaseNodeStatus
+    node::node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
+    node::node_manager::NodeType,
+    process_adapter::{ProcessAdapter, ProcessInstanceTrait},
+    BaseNodeStatus,
 };
 use anyhow::Error;
 use std::{
@@ -97,14 +100,13 @@ impl NodeAdapter for RemoteNodeAdapter {
     }
 
     async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        if let Some((host, port)) = self.get_grpc_address() {
-            if host.starts_with("http") {
-                Ok(format!("{}:{}", host, port))
-            } else {
-                Ok(format!("http://{}:{}", host, port))
-            }
+        let node_service = self.get_service();
+        if let Some(node_service) = node_service {
+            let node_identity = node_service.get_identity().await?;
+            let public_tcp_address = node_identity.public_address[0].clone();
+            Ok(public_tcp_address)
         } else {
-            Err(anyhow::anyhow!("GRPC address not set"))
+            Err(anyhow::anyhow!("Remote node service is not available"))
         }
     }
 }

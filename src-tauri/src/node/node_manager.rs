@@ -22,15 +22,12 @@
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 
-use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
-use minotari_node_grpc_client::grpc::Peer;
 use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tari_utilities::hex::Hex;
 use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
 use tokio::{fs, select};
@@ -100,14 +97,12 @@ impl NodeManager {
         node_type: NodeType,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
-
         let local_node_watcher = match node_type {
             NodeType::Local | NodeType::RemoteUntilLocal | NodeType::LocalAfterRemote => Some(
                 construct_process_watcher(stats_broadcast.clone(), local_node_adapter.clone()),
             ),
             NodeType::Remote => None,
         };
-
         let remote_node_watcher = match node_type {
             NodeType::Remote | NodeType::RemoteUntilLocal => Some(construct_process_watcher(
                 stats_broadcast,
@@ -130,17 +125,6 @@ impl NodeManager {
         }
     }
 
-    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
-        fs::remove_dir_all(
-            base_path
-                .join("node")
-                .join(Network::get_current().to_string().to_lowercase())
-                .join("data"),
-        )
-        .await?;
-        Ok(())
-    }
-
     #[allow(clippy::too_many_arguments)]
     pub async fn ensure_started(
         &self,
@@ -157,45 +141,46 @@ impl NodeManager {
 
         match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => {
+                self.configure_local_adapter(true, use_tor, tor_control_port)
+                    .await?;
                 self.start_local_watcher(
                     base_path.clone(),
                     config_path.clone(),
                     log_path.clone(),
-                    use_tor,
-                    tor_control_port,
                     shutdown_signal.clone(),
                     task_tracker,
                 )
                 .await?;
             }
             NodeType::Remote => {
+                self.configure_remote_adapter(true, remote_grpc_address)
+                    .await?;
                 self.start_remote_watcher(
                     base_path,
                     config_path,
                     log_path,
-                    remote_grpc_address,
                     shutdown_signal.clone(),
                     task_tracker,
                 )
                 .await?;
             }
             NodeType::RemoteUntilLocal => {
+                self.configure_remote_adapter(true, remote_grpc_address)
+                    .await?;
                 self.start_remote_watcher(
                     base_path.clone(),
                     config_path.clone(),
                     log_path.clone(),
-                    remote_grpc_address,
                     shutdown_signal.clone(),
                     task_tracker.clone(),
                 )
                 .await?;
-
+                self.configure_local_adapter(false, use_tor, tor_control_port)
+                    .await?;
                 self.start_local_watcher(
                     base_path,
                     config_path,
                     log_path,
-                    use_tor,
-                    tor_control_port,
                     shutdown_signal.clone(),
                     task_tracker,
                 )
@@ -204,7 +189,7 @@ impl NodeManager {
                 self.switch_to_local_after_remote(shutdown_signal).await?;
             }
         }
-
+        // println!("====== grpc: {:?}", self.get_grpc_address().await);
         self.wait_ready().await?;
         Ok(())
     }
@@ -214,15 +199,11 @@ impl NodeManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        use_tor: bool,
-        tor_control_port: Option<u16>,
         shutdown_signal: ShutdownSignal,
         task_tracker: TaskTracker,
     ) -> Result<(), NodeManagerError> {
         let mut local_node_watcher = self.local_node_watcher.write().await;
         if let Some(local_node_watcher) = local_node_watcher.as_mut() {
-            self.configure_local_adapter(true, use_tor, tor_control_port)
-                .await?;
             local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
             local_node_watcher
                 .start(
@@ -243,12 +224,9 @@ impl NodeManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
-        remote_grpc_address: Option<String>,
         shutdown_signal: ShutdownSignal,
         task_tracker: TaskTracker,
     ) -> Result<(), NodeManagerError> {
-        self.configure_remote_adapter(true, remote_grpc_address)
-            .await?;
         let mut remote_node_watcher = self.remote_node_watcher.write().await;
         if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
             remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
@@ -384,23 +362,12 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
-        let node_type = self.node_type.read().await;
-        Ok(node_type.clone())
-    }
-
-    pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
-        let current_adapter = self.current_adapter.read().await;
-        current_adapter
-            .get_service()
-            .ok_or_else(|| anyhow::anyhow!("Node not started"))
-    }
-
     async fn switch_to_local_after_remote(
         &self,
         mut shutdown_signal: ShutdownSignal,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
+        let current_adapter = self.current_adapter.clone();
         let node_manager = self.clone();
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             select! {
@@ -425,6 +392,14 @@ impl NodeManager {
                                         let mut node_type = node_type.write().await;
                                         *node_type = NodeType::LocalAfterRemote;
                                     }
+                                    {
+                                        println!("PODMIANIA current adaptera");
+                                        let local_node_watcher = node_manager.local_node_watcher.read().await;
+                                        if let Some(local_node_watcher) = &*local_node_watcher {
+                                            let mut current_adapter = node_manager.current_adapter.write().await;
+                                            *current_adapter = Box::new(local_node_watcher.adapter.clone());
+                                        }
+                                    };
                                     info!(target: LOG_TARGET, "Local Node successfully switched");
                                     {
                                         SetupManager::get_instance().handle_switch_to_local_node().await;
@@ -453,32 +428,6 @@ impl NodeManager {
         Ok(())
     }
 
-    pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
-        let current_service = self.get_current_service().await?;
-        current_service.get_identity().await.inspect_err(|e| {
-            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
-        })
-    }
-
-    pub async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        let current_adapter = self.current_adapter.read().await;
-        current_adapter.get_connection_address().await
-    }
-
-    pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
-        let current_adapter = self.current_adapter.read().await;
-        let grpc_address = current_adapter.get_grpc_address();
-
-        if let Some((host, port)) = grpc_address {
-            if host.starts_with("http") {
-                return Ok(format!("{}:{}", host, port));
-            } else {
-                return Ok(format!("http://{}:{}", host, port));
-            }
-        }
-        Err(anyhow::anyhow!("grpc_address not set"))
-    }
-
     pub async fn wait_synced(
         &self,
         progress_trackers: Vec<Option<ChanneledStepUpdate>>,
@@ -503,16 +452,6 @@ impl NodeManager {
                 },
             }
         }
-    }
-
-    pub async fn check_if_is_orphan_chain(
-        &self,
-        report_to_sentry: bool,
-    ) -> Result<bool, anyhow::Error> {
-        let current_service = self.get_current_service().await?;
-        current_service
-            .check_if_is_orphan_chain(report_to_sentry)
-            .await
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
@@ -569,37 +508,67 @@ impl NodeManager {
         Ok(())
     }
 
+    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(
+            base_path
+                .join("node")
+                .join(Network::get_current().to_string().to_lowercase())
+                .join("data"),
+        )
+        .await?;
+        Ok(())
+    }
+
+    pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
+        let node_type = self.node_type.read().await;
+        Ok(node_type.clone())
+    }
+
+    pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        current_adapter
+            .get_service()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))
+    }
+
+    pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
+        let current_service = self.get_current_service().await?;
+        current_service.get_identity().await.inspect_err(|e| {
+            error!(target: LOG_TARGET, "Error getting node identity: {}", e);
+        })
+    }
+
+    pub async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        current_adapter.get_connection_address().await
+    }
+
+    pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        let grpc_address = current_adapter.get_grpc_address();
+
+        if let Some((host, port)) = grpc_address {
+            if host.starts_with("http") {
+                return Ok(format!("{}:{}", host, port));
+            } else {
+                return Ok(format!("http://{}:{}", host, port));
+            }
+        }
+        Err(anyhow::anyhow!("grpc_address not set"))
+    }
+
+    pub async fn check_if_is_orphan_chain(
+        &self,
+        report_to_sentry: bool,
+    ) -> Result<bool, anyhow::Error> {
+        let current_service = self.get_current_service().await?;
+        current_service
+            .check_if_is_orphan_chain(report_to_sentry)
+            .await
+    }
+
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
         let current_service = self.get_current_service().await?;
-        let peers_list = current_service
-            .list_connected_peers()
-            .await
-            .unwrap_or_else(|e| {
-                error!(target: LOG_TARGET, "Error list_connected_peers: {}", e);
-                Vec::<Peer>::new()
-            });
-        let connected_peers = peers_list
-            .iter()
-            .filter(|peer| {
-                let since = match NaiveDateTime::parse_from_str(
-                    peer.addresses[0].last_seen.as_str(),
-                    "%Y-%m-%d %H:%M:%S%.f",
-                ) {
-                    Ok(datetime) => datetime,
-                    Err(_e) => {
-                        return false;
-                    }
-                };
-                let since = Utc.from_utc_datetime(&since);
-                let duration = SystemTime::now()
-                    .duration_since(since.into())
-                    .unwrap_or_default();
-                duration.as_secs() < 60
-            })
-            .cloned()
-            .map(|peer| peer.addresses[0].address.to_hex())
-            .collect::<Vec<String>>();
-
-        Ok(connected_peers)
+        current_service.list_connected_peers().await
     }
 }

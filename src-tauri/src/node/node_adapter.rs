@@ -25,30 +25,32 @@ use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{info, warn};
 use minotari_node_grpc_client::grpc::{
-    BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, Peer, SyncState,
+    BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, SyncState,
 };
+use std::time::{Duration, SystemTime};
+
+use log::{error, info, warn};
+use chrono::{NaiveDateTime, TimeZone, Utc};
+use tari_utilities::hex::Hex;
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use serde::Serialize;
+use serde_json::json;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
-use std::time::Duration;
+use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::ByteArray;
-use tokio::sync::watch;
-use tokio::time::timeout;
-use serde_json::json;
-use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;
+use tokio::sync::watch;
+use tokio::time::timeout;
 
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
-
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 
@@ -271,10 +273,38 @@ impl NodeAdapterService {
         }
     }
 
-    pub async fn list_connected_peers(&self) -> Result<Vec<Peer>, Error> {
+    pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
-        let connected_peers = client.list_connected_peers(Empty {}).await?;
-        Ok(connected_peers.into_inner().connected_peers)
+        let peers_list = client
+            .list_connected_peers(Empty {})
+            .await
+            .map_err(|e| anyhow::anyhow!("Error list_connected_peers: {}", e))?
+            .into_inner()
+            .connected_peers;
+
+        let connected_peers = peers_list
+            .iter()
+            .filter(|peer| {
+                let since = match NaiveDateTime::parse_from_str(
+                    peer.addresses[0].last_seen.as_str(),
+                    "%Y-%m-%d %H:%M:%S%.f",
+                ) {
+                    Ok(datetime) => datetime,
+                    Err(_e) => {
+                        return false;
+                    }
+                };
+                let since = Utc.from_utc_datetime(&since);
+                let duration = SystemTime::now()
+                    .duration_since(since.into())
+                    .unwrap_or_default();
+                duration.as_secs() < 60
+            })
+            .cloned()
+            .map(|peer| peer.addresses[0].address.to_hex())
+            .collect::<Vec<String>>();
+
+        Ok(connected_peers)
     }
 
     pub async fn check_if_is_orphan_chain(
