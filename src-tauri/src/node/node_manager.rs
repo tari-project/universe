@@ -114,10 +114,11 @@ impl NodeManager {
         };
 
         let remote_node_watcher = match node_type {
-            NodeType::Remote | NodeType::RemoteUntilLocal | NodeType::LocalAfterRemote => Some(
-                construct_process_watcher(stats_broadcast, remote_node_adapter.clone()),
-            ),
-            NodeType::Local => None,
+            NodeType::Remote | NodeType::RemoteUntilLocal => Some(construct_process_watcher(
+                stats_broadcast,
+                remote_node_adapter.clone(),
+            )),
+            NodeType::Local | NodeType::LocalAfterRemote => None,
         };
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
@@ -163,10 +164,8 @@ impl NodeManager {
             NodeType::Local | NodeType::LocalAfterRemote => {
                 let mut local_node_watcher = self.local_node_watcher.write().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
-                    local_node_watcher.adapter.use_tor(use_tor);
-                    local_node_watcher
-                        .adapter
-                        .tor_control_port(tor_control_port);
+                    self.configure_local_adapter(true, use_tor, tor_control_port)
+                        .await?;
                     local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
                     local_node_watcher
                         .start(
@@ -181,14 +180,11 @@ impl NodeManager {
                 }
             }
             NodeType::Remote => {
+                self.configure_remote_adapter(true, remote_grpc_address.clone())
+                    .await?;
                 let mut remote_node_watcher = self.remote_node_watcher.write().await;
                 if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
                     remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    if let Some(remote_grpc_address) = remote_grpc_address {
-                        remote_node_watcher
-                            .adapter
-                            .set_grpc_address(remote_grpc_address)?;
-                    }
                     remote_node_watcher
                         .start(
                             base_path,
@@ -202,14 +198,11 @@ impl NodeManager {
                 }
             }
             NodeType::RemoteUntilLocal => {
+                self.configure_remote_adapter(true, remote_grpc_address)
+                    .await?;
                 let mut remote_node_watcher = self.remote_node_watcher.write().await;
                 if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
                     remote_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
-                    if let Some(remote_grpc_address) = remote_grpc_address {
-                        remote_node_watcher
-                            .adapter
-                            .set_grpc_address(remote_grpc_address)?;
-                    }
                     remote_node_watcher
                         .start(
                             base_path.clone(),
@@ -223,12 +216,10 @@ impl NodeManager {
                 }
                 drop(remote_node_watcher);
 
+                self.configure_local_adapter(false, use_tor, tor_control_port)
+                    .await?;
                 let mut local_node_watcher = self.local_node_watcher.write().await;
                 if let Some(local_node_watcher) = local_node_watcher.as_mut() {
-                    local_node_watcher.adapter.use_tor(use_tor);
-                    local_node_watcher
-                        .adapter
-                        .tor_control_port(tor_control_port);
                     local_node_watcher.stop_on_exit_codes = STOP_ON_ERROR_CODES.to_vec();
                     local_node_watcher
                         .start(
@@ -247,6 +238,46 @@ impl NodeManager {
         }
 
         self.wait_ready().await?;
+        Ok(())
+    }
+
+    async fn configure_local_adapter(
+        &self,
+        is_current: bool,
+        use_tor: bool,
+        tor_control_port: Option<u16>,
+    ) -> Result<(), anyhow::Error> {
+        let mut local_node_watcher = self.local_node_watcher.write().await;
+        if let Some(local_node_watcher) = local_node_watcher.as_mut() {
+            local_node_watcher.adapter.use_tor(use_tor);
+            local_node_watcher
+                .adapter
+                .set_tor_control_port(tor_control_port);
+            if is_current {
+                let mut current_adapter = self.current_adapter.write().await;
+                *current_adapter = Box::new(local_node_watcher.adapter.clone());
+            }
+        }
+        Ok(())
+    }
+
+    async fn configure_remote_adapter(
+        &self,
+        is_current: bool,
+        remote_grpc_address: Option<String>,
+    ) -> Result<(), anyhow::Error> {
+        let mut remote_node_watcher = self.remote_node_watcher.write().await;
+        if let Some(remote_node_watcher) = remote_node_watcher.as_mut() {
+            if let Some(remote_grpc_address) = remote_grpc_address {
+                remote_node_watcher
+                    .adapter
+                    .set_grpc_address(remote_grpc_address)?;
+            }
+            if is_current {
+                let mut current_adapter = self.current_adapter.write().await;
+                *current_adapter = Box::new(remote_node_watcher.adapter.clone());
+            }
+        }
         Ok(())
     }
 
@@ -523,8 +554,8 @@ impl NodeManager {
     }
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
-        let node_type = self.get_node_type().await?;
         loop {
+            let node_type = self.get_node_type().await?;
             match node_type {
                 NodeType::Local | NodeType::LocalAfterRemote => {
                     let local_node_watcher = self.local_node_watcher.read().await;

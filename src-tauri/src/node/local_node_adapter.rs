@@ -115,7 +115,7 @@ impl LocalNodeAdapter {
         self.use_tor = use_tor;
     }
 
-    pub fn tor_control_port(&mut self, tor_control_port: Option<u16>) {
+    pub fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
         self.tor_control_port = tor_control_port;
     }
 }
