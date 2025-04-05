@@ -30,7 +30,6 @@ use minotari_node_grpc_client::grpc::Peer;
 use serde::Serialize;
 use serde_json::json;
 use tari_common::configuration::Network;
-use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tauri_plugin_sentry::sentry;
@@ -39,15 +38,14 @@ use tokio::sync::watch::Sender;
 use tokio::sync::RwLock;
 use tokio::{fs, select};
 
-use crate::process_watcher::ProcessWatcherStats;
-
-use crate::local_node_adapter::{
-    BaseNodeStatus, MinotariNodeClient, MinotariNodeStatusMonitorError,
-};
 use crate::network_utils::{get_best_block_from_block_scan, get_block_info_from_block_scan};
+use crate::node::node_adapter::{
+    BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
+};
 use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::process_watcher::ProcessWatcherStats;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
@@ -67,12 +65,6 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, Serialize)]
-pub struct NodeIdentity {
-    pub public_key: RistrettoPublicKey,
-    pub public_address: Vec<String>,
-}
-
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub enum NodeType {
     #[allow(dead_code)]
@@ -88,10 +80,11 @@ pub struct NodeManager {
     node_type: Arc<RwLock<NodeType>>,
     local_node_watcher: Arc<RwLock<Option<ProcessWatcher<LocalNodeAdapter>>>>,
     remote_node_watcher: Arc<RwLock<Option<ProcessWatcher<RemoteNodeAdapter>>>>,
+    current_adapter: Arc<RwLock<Box<dyn NodeAdapter + Send + Sync>>>,
     shutdown: ShutdownSignal,
 }
 
-fn construct_process_watcher<T: ProcessAdapter>(
+fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'static>(
     stats_broadcast: Sender<ProcessWatcherStats>,
     node_adapter: T,
 ) -> ProcessWatcher<T> {
@@ -115,22 +108,28 @@ impl NodeManager {
 
         let local_node_watcher = match node_type {
             NodeType::Local | NodeType::RemoteUntilLocal | NodeType::LocalAfterRemote => Some(
-                construct_process_watcher(stats_broadcast.clone(), local_node_adapter),
+                construct_process_watcher(stats_broadcast.clone(), local_node_adapter.clone()),
             ),
             NodeType::Remote => None,
         };
 
         let remote_node_watcher = match node_type {
             NodeType::Remote | NodeType::RemoteUntilLocal | NodeType::LocalAfterRemote => Some(
-                construct_process_watcher(stats_broadcast, remote_node_adapter),
+                construct_process_watcher(stats_broadcast, remote_node_adapter.clone()),
             ),
             NodeType::Local => None,
+        };
+
+        let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
+            NodeType::Local | NodeType::LocalAfterRemote => Box::new(local_node_adapter),
+            NodeType::Remote | NodeType::RemoteUntilLocal => Box::new(remote_node_adapter),
         };
 
         Self {
             node_type: Arc::new(RwLock::new(node_type)),
             local_node_watcher: Arc::new(RwLock::new(local_node_watcher)),
             remote_node_watcher: Arc::new(RwLock::new(remote_node_watcher)),
+            current_adapter: Arc::new(RwLock::new(current_adapter)),
             shutdown,
         }
     }
@@ -334,27 +333,11 @@ impl NodeManager {
         Ok(node_type.clone())
     }
 
-    pub async fn get_current_node_client(&self) -> Result<MinotariNodeClient, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        match node_type {
-            NodeType::Local | NodeType::LocalAfterRemote => {
-                let local_node_watcher = self.local_node_watcher.read().await;
-                if let Some(local_node_watcher) = local_node_watcher.as_ref() {
-                    local_node_watcher.adapter.get_node_client()
-                } else {
-                    None
-                }
-            }
-            NodeType::Remote | NodeType::RemoteUntilLocal => {
-                let remote_node_watcher = self.remote_node_watcher.read().await;
-                if let Some(remote_node_watcher) = remote_node_watcher.as_ref() {
-                    remote_node_watcher.adapter.get_node_client()
-                } else {
-                    None
-                }
-            }
-        }
-        .ok_or_else(|| anyhow::anyhow!("Node not started"))
+    pub async fn get_current_service(&self) -> Result<NodeAdapterService, anyhow::Error> {
+        let current_adapter = self.current_adapter.read().await;
+        current_adapter
+            .get_service()
+            .ok_or_else(|| anyhow::anyhow!("Node not started"))
     }
 
     async fn switch_to_local_after_remote(
@@ -370,13 +353,13 @@ impl NodeManager {
                 }
                 _ = async {
                     for _ in 0..100 {
-                        let local_node_client = {
+                        let local_current_service = {
                             let local_node_watcher = node_manager.local_node_watcher.read().await;
-                            local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_node_client())
+                            local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_service())
                         };
 
-                        if let Some(local_node_client) = local_node_client {
-                            match local_node_client
+                        if let Some(local_current_service) = local_current_service {
+                            match local_current_service
                                 .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
                                 .await
                             {
@@ -398,7 +381,7 @@ impl NodeManager {
                                     }
                                     break;
                                 }
-                                Err(MinotariNodeStatusMonitorError::NodeNotStarted) => {}
+                                Err(NodeStatusMonitorError::NodeNotStarted) => {}
                                 Err(e) => {
                                     error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                                 }
@@ -415,51 +398,20 @@ impl NodeManager {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, anyhow::Error> {
-        let node_client = self.get_current_node_client().await?;
-
-        node_client.get_identity().await.inspect_err(|e| {
+        let current_service = self.get_current_service().await?;
+        current_service.get_identity().await.inspect_err(|e| {
             error!(target: LOG_TARGET, "Error getting node identity: {}", e);
         })
     }
 
     pub async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        match node_type {
-            NodeType::Local | NodeType::LocalAfterRemote => {
-                let process_watcher = self.local_node_watcher.read().await;
-                let local_tcp_address = match process_watcher
-                    .as_ref()
-                    .and_then(|local_node_watcher| Some(local_node_watcher.adapter.tcp_address()))
-                {
-                    Some(address) => address,
-                    None => return Err(anyhow::anyhow!("Local Node tcp address not set")),
-                };
-                Ok(local_tcp_address)
-            }
-            NodeType::Remote | NodeType::RemoteUntilLocal => {
-                let node_identity = self.get_identity().await?;
-                let public_tcp_address = node_identity.public_address[0].clone();
-                Ok(public_tcp_address)
-            }
-        }
+        let current_adapter = self.current_adapter.read().await;
+        current_adapter.get_connection_address().await
     }
 
     pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {
-        let node_type = self.get_node_type().await?;
-        let grpc_address = match node_type {
-            NodeType::Local | NodeType::LocalAfterRemote => {
-                let process_watcher = self.local_node_watcher.read().await;
-                process_watcher
-                    .as_ref()
-                    .and_then(|local_node_watcher| local_node_watcher.adapter.grpc_address())
-            }
-            NodeType::Remote | NodeType::RemoteUntilLocal => {
-                let process_watcher = self.remote_node_watcher.read().await;
-                process_watcher
-                    .as_ref()
-                    .and_then(|remote_node_watcher| remote_node_watcher.adapter.grpc_address())
-            }
-        };
+        let current_adapter = self.current_adapter.read().await;
+        let grpc_address = current_adapter.get_grpc_address();
 
         if let Some((host, port)) = grpc_address {
             if host.starts_with("http") {
@@ -477,8 +429,8 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
         loop {
-            let node_client = self.get_current_node_client().await?;
-            match node_client
+            let current_service = self.get_current_service().await?;
+            match current_service
                 .wait_synced(progress_trackers.clone(), self.shutdown.clone())
                 .await
             {
@@ -486,7 +438,7 @@ impl NodeManager {
                     return Ok(());
                 }
                 Err(e) => match e {
-                    MinotariNodeStatusMonitorError::NodeNotStarted => {
+                    NodeStatusMonitorError::NodeNotStarted => {
                         continue;
                     }
                     _ => {
@@ -501,13 +453,13 @@ impl NodeManager {
         &self,
         report_to_sentry: bool,
     ) -> Result<bool, anyhow::Error> {
-        let node_client = self.get_current_node_client().await?;
+        let current_service = self.get_current_service().await?;
         let BaseNodeStatus {
             is_synced,
             block_height: local_tip,
             ..
-        } = node_client.get_network_state().await.map_err(|e| {
-            if matches!(e, MinotariNodeStatusMonitorError::NodeNotStarted) {
+        } = current_service.get_network_state().await.map_err(|e| {
+            if matches!(e, NodeStatusMonitorError::NodeNotStarted) {
                 NodeManagerError::NodeNotStarted
             } else {
                 NodeManagerError::UnknownError(e.into())
@@ -532,7 +484,7 @@ impl NodeManager {
             block_scan_blocks.push(block_scan_block);
         }
 
-        let local_blocks = node_client.get_historical_blocks(heights).await?;
+        let local_blocks = current_service.get_historical_blocks(heights).await?;
         for block_scan_block in &block_scan_blocks {
             if !local_blocks
                 .iter()
@@ -615,8 +567,8 @@ impl NodeManager {
 
             match self.get_identity().await {
                 Ok(_) => break,
-                Err(_) => {
-                    warn!(target: LOG_TARGET, "Node did not return get_identity, waiting...");
+                Err(err) => {
+                    warn!(target: LOG_TARGET, "Node did not return get_identity, waiting.. | {}",err);
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                 }
             }
@@ -625,8 +577,8 @@ impl NodeManager {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
-        let node_client = self.get_current_node_client().await?;
-        let peers_list = node_client
+        let current_service = self.get_current_service().await?;
+        let peers_list = current_service
             .list_connected_peers()
             .await
             .unwrap_or_else(|e| {

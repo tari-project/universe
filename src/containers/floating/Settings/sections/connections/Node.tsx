@@ -3,8 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 
-import ConnectionStatus from '../connections/ConnectionStatus.tsx';
-
 import {
     SettingsGroup,
     SettingsGroupContent,
