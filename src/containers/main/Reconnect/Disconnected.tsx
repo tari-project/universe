@@ -9,19 +9,16 @@ import { Title } from '@app/containers/floating/StagedSecurity/styles';
 import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 
-const ConnectionAttemptIntervalsInSecs = [60, 120, 240];
+const retryBackoff = [60, 120, 240];
 
 const Disconnected: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const {
-        seconds,
-        start: startCountdown,
-        stop: stopCountdown,
-        restartAttempts,
-    } = useCountdown(ConnectionAttemptIntervalsInSecs);
+    const [attempt, setAttempt] = React.useState(0);
+    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown();
     const isReconnecting = useUIStore((s) => s.isReconnecting);
     const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
 
@@ -29,9 +26,14 @@ const Disconnected: React.FC = () => {
         const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
             if (payload === 'Failed') {
                 stopCountdown();
-                startCountdown();
+                const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
+                if (currentAttempt === retryBackoff.length) {
+                    setConnectionStatus('disconnected-severe');
+                    return;
+                }
+                setAttempt(currentAttempt);
+                startCountdown(retryBackoff[currentAttempt]);
             } else if (payload === 'Succeed') {
-                restartAttempts();
                 stopCountdown();
             }
         });
@@ -39,12 +41,12 @@ const Disconnected: React.FC = () => {
         return () => {
             reconnectingListener.then((unlisten) => unlisten());
         };
-    }, []);
+    }, [attempt, setAttempt, startCountdown, stopCountdown]);
 
     useEffect(() => {
         if (!isVisible && connectionStatus === 'disconnected') {
             setIsVisible(true);
-            startCountdown();
+            startCountdown(retryBackoff[attempt]);
         }
         return () => {
             setIsVisible(false);

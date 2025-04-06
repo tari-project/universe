@@ -1,35 +1,23 @@
-import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import React from 'react';
 import { useCallback } from 'react';
 
 interface CountdownResult {
     seconds: number;
-    start: () => void;
+    start: (timeout: number) => void;
     stop: () => void;
-    restartAttempts: () => void;
 }
 
-export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
-    const [attempt, setAttempt] = React.useState(0);
+export const useCountdown = (): CountdownResult => {
     const retryConnectionTimeout = React.useRef<NodeJS.Timeout | null>(null);
     const countdownInterval = React.useRef<NodeJS.Timeout | null>(null);
     const [countdown, setCountdown] = React.useState(0);
 
-    const reconnect = useCallback(() => {
-        invoke('reconnect');
-        const currentAttempt = Math.min(attempt + 1, intervalsInSecs.length - 1);
-        if (currentAttempt === 2) {
-            setConnectionStatus('disconnected-severe');
-        }
-        setAttempt(currentAttempt);
-    }, [setAttempt, attempt]);
-
-    const startConnectionRetry = useCallback(() => {
+    const startConnectionRetry = useCallback((timeout: number) => {
         retryConnectionTimeout.current = setTimeout(() => {
-            reconnect();
-        }, intervalsInSecs[attempt] * 1000);
-    }, [attempt]);
+            invoke('reconnect');
+        }, timeout * 1000);
+    }, []);
 
     const stopConnectionRetry = useCallback(() => {
         if (retryConnectionTimeout.current) {
@@ -37,8 +25,8 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
         }
     }, []);
 
-    const startCountdown = useCallback(() => {
-        setCountdown(intervalsInSecs[attempt]);
+    const startCountdown = useCallback((duration: number) => {
+        setCountdown(duration);
         countdownInterval.current = setInterval(() => {
             setCountdown((prev) => {
                 if (prev === 0) {
@@ -51,7 +39,7 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
                 return prev - 1;
             });
         }, 1000);
-    }, [attempt]);
+    }, []);
 
     const stopCountdown = useCallback(() => {
         if (countdownInterval.current) {
@@ -59,24 +47,22 @@ export const useCountdown = (intervalsInSecs: number[]): CountdownResult => {
         }
     }, []);
 
-    const startRetry = useCallback(() => {
-        startConnectionRetry();
-        startCountdown();
-    }, [startConnectionRetry, startCountdown]);
+    const startRetry = useCallback(
+        (timeout: number) => {
+            startConnectionRetry(timeout);
+            startCountdown(timeout);
+        },
+        [startConnectionRetry, startCountdown]
+    );
 
     const stopRetry = useCallback(() => {
         stopConnectionRetry();
         stopCountdown();
     }, [stopConnectionRetry, stopCountdown]);
 
-    const restartAttempts = useCallback(() => {
-        setAttempt(0);
-    }, [setAttempt]);
-
     return {
         seconds: countdown,
         start: startRetry,
         stop: stopRetry,
-        restartAttempts,
     };
 };

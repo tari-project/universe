@@ -17,7 +17,7 @@ const DisconnectedSevere: React.FC = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown([300]);
+    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown();
     const isReconnecting = useUIStore((s) => s.isReconnecting);
     const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
 
@@ -25,9 +25,8 @@ const DisconnectedSevere: React.FC = () => {
         const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
             if (payload === 'Failed') {
                 stopCountdown();
-                startCountdown();
+                startCountdown(300);
             } else if (payload === 'Succeed') {
-                restartAttempts();
                 stopCountdown();
             }
         });
@@ -40,7 +39,7 @@ const DisconnectedSevere: React.FC = () => {
     useEffect(() => {
         if (!isVisible && connectionStatus === 'disconnected-severe') {
             setIsVisible(true);
-            startCountdown();
+            startCountdown(300);
         }
         return () => {
             setIsVisible(false);
