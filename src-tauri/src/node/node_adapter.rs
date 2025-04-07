@@ -407,8 +407,11 @@ impl StatusMonitor for NodeStatusMonitor {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status.clone());
-                    // Remote Node always returns 0 connections
-                    if status.num_connections == 0 && self.node_type != NodeType::Remote {
+                    if status.num_connections == 0
+                        // Remote Node always returns 0 connections
+                        && self.node_type != NodeType::Remote
+                        && self.node_type != NodeType::RemoteUntilLocal
+                    {
                         warn!(
                             "{:?} Node Health Check Warning: No connections",
                             self.node_type
