@@ -135,8 +135,29 @@ pub async fn stop_all_processes(
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+    match inner_resume_all_processes(app_handle.clone()).await {
+        Ok(_) => Ok(()),
+        Err(e) => {
+            error!(target: LOG_TARGET, "Failed to resume processes: {:?}", e);
+            if let Err(emit_err) = app_handle.emit(
+                "resuming-all-processes",
+                ResumingAllProcessesPayload {
+                    title: "resume-failure".to_string(),
+                    stage_progress: 0,
+                    stage_total: 0,
+                    is_resuming: false,
+                },
+            ) {
+                error!(target: LOG_TARGET, "Failed to emit resume-failure event: {:?}", emit_err);
+            }
+            Err(e)
+        }
+    }
+}
+
+#[allow(clippy::too_many_lines)]
+async fn inner_resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app_handle.state::<UniverseAppState>().inner();
     let (tx, _rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app_handle.clone(), Some(tx));
