@@ -1105,7 +1105,7 @@ fn main() {
 
     let websocket_events_manager = WebsocketEventsManager::new(
         app_config.clone(),
-        app_id,
+        app_id.clone(),
         cpu_miner_status_watch_rx.clone(),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
@@ -1151,6 +1151,8 @@ fn main() {
             shutdown.clone(),
             websocket_manager_status_tx.clone(),
             websocket_manager_status_rx.clone(),
+            app_config.clone(),
+            app_id.clone(),
         ))),
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };

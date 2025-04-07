@@ -27,8 +27,10 @@ use tokio_tungstenite::WebSocketStream;
 use tokio_util::sync::CancellationToken;
 use tungstenite::Message;
 use tungstenite::Utf8Bytes;
+use urlencoding::encode;
 
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::AppConfig;
 const LOG_TARGET: &str = "tari::universe::websocket";
 const OTHER_MESSAGE_NAME: &str = "other";
 
@@ -85,6 +87,8 @@ pub struct WebsocketManager {
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    app_config: Arc<RwLock<AppConfig>>,
+    app_id: String,
 }
 
 impl WebsocketManager {
@@ -94,6 +98,8 @@ impl WebsocketManager {
         shutdown: Shutdown,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
+        app_config: Arc<RwLock<AppConfig>>,
+        app_id: String,
     ) -> Self {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketManager {
@@ -105,6 +111,8 @@ impl WebsocketManager {
             status_update_channel_tx,
             status_update_channel_rx,
             close_channel_tx,
+            app_config,
+            app_id,
         }
     }
 
@@ -129,12 +137,27 @@ impl WebsocketManager {
     }
 
     async fn connect_to_url(
-        config_cloned: &Arc<RwLock<AppInMemoryConfig>>,
+        app_id: String,
+        app_config: Arc<RwLock<AppConfig>>,
+        in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket...");
-        let config_read = config_cloned.read().await;
+        let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
-        adjusted_ws_url.push_str(&format!("/new-wss",));
+        adjusted_ws_url.push_str(&format!("/new-wss?app_id={}", encode(&app_id)));
+
+        let token = app_config
+            .read()
+            .await
+            .airdrop_tokens()
+            .map(|tokens| tokens.token);
+        // .and_then(|token| decode_jwt_claims_without_exp(&token));
+
+        if let Some(jwt) = token {
+            adjusted_ws_url.push_str(&format!("&token={}", encode(&jwt)));
+        }
+
+        // adjusted_ws_url.push_str(&format!("/new-wss"))
         let (ws_stream, _) = connect_async(adjusted_ws_url).await?;
         info!(target:LOG_TARGET,"websocket connection established...");
 
@@ -171,6 +194,12 @@ impl WebsocketManager {
     }
 
     pub async fn connect(&mut self) -> Result<(), anyhow::Error> {
+        if self.status_update_channel_rx.borrow().clone() != WebsocketManagerStatusMessage::Stopped
+        {
+            info!(target:LOG_TARGET,"websocket already connected");
+            return Ok(());
+        }
+
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
         let message_cache = self.message_cache.clone();
@@ -182,14 +211,15 @@ impl WebsocketManager {
         let mut status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
             self.status_update_channel_rx.clone();
         let close_channel_tx = self.close_channel_tx.clone();
-
+        let app_config = self.app_config.clone();
+        let app_id = self.app_id.clone();
         //we don't want to receive previous messages
         status_update_channel_rx.mark_unchanged();
         tauri::async_runtime::spawn(async move {
             loop {
                 tokio::select! {
                     _ = async {
-                        let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
+                        let connection_res = WebsocketManager::connect_to_url(app_id.clone(), app_config.clone(), &config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
                         if let Ok(connection) = connection_res {
                             _= WebsocketManager::listen(connection,app_cloned.clone(),
