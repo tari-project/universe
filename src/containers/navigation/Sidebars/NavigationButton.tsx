@@ -1,4 +1,4 @@
-import { memo, ReactNode, useEffect } from 'react';
+import { memo, ReactNode, useEffect, useState } from 'react';
 import { IoChevronForwardOutline } from 'react-icons/io5';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 
@@ -15,6 +15,7 @@ import {
     StyledIconButton,
 } from './SidebarMini.styles.ts';
 import ConnectedPulse from '@app/containers/navigation/components/VersionChip/ConnectedPulse/ConnectedPulse.tsx';
+import { AnimatePresence } from 'motion/react';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -22,34 +23,36 @@ interface NavButtonProps {
     onClick?: () => void;
 }
 
-const transition = { rotate: { type: 'spring' }, opacity: { delay: 0.05 } };
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
-    const rotate = sidebarOpen ? '180deg' : '0deg';
-    const showArrow = sidebarOpen ? isActive : true;
-    const expandIcon = showArrow ? (
-        <>
-            <HoverIconWrapper
-                whileHover={{ opacity: 1 }}
-                animate={{ rotate, transition }}
-                style={{
-                    opacity: 0,
-                    rotate,
-                }}
-            >
-                <IoChevronForwardOutline size={28} />
-            </HoverIconWrapper>
-        </>
-    ) : null;
+    const [showArrow, setShowArrow] = useState(isActive);
+
+    const scaleX = sidebarOpen ? -1 : 1;
+
     return (
         <StyledIconButton
             onClick={onClick}
             active={isActive}
             aria-pressed={isActive}
             aria-label={isActive ? 'Active sidebar section' : 'Inactive sidebar section'}
+            onMouseEnter={() => setShowArrow(true)}
+            onMouseLeave={() => setShowArrow(false)}
         >
-            {expandIcon}
-            <NavIconWrapper>{children}</NavIconWrapper>
+            <AnimatePresence mode="popLayout">
+                {showArrow ? (
+                    <HoverIconWrapper
+                        initial={{ opacity: 0, scaleX }}
+                        exit={{ opacity: 0, scaleX }}
+                        animate={{ opacity: 1, scaleX }}
+                    >
+                        <IoChevronForwardOutline size={28} />
+                    </HoverIconWrapper>
+                ) : (
+                    <NavIconWrapper initial={{ opacity: 0 }} exit={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                        {children}
+                    </NavIconWrapper>
+                )}
+            </AnimatePresence>
         </StyledIconButton>
     );
 });
