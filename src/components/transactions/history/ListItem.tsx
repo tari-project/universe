@@ -109,8 +109,8 @@ const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemP
         <ItemWrapper
             ref={ref}
             data-index={index}
-            initial={{ scale: 0.7, opacity: 0 }}
-            animate={inView || expanded ? { scale: 1, opacity: 1 } : { scale: 0.7, opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={inView || expanded ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 0.2 }}
             style={{ height: !isMined && expanded ? 'auto' : 48 }}
             onMouseEnter={() => setHovering(true)}

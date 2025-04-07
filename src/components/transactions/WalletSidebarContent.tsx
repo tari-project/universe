@@ -1,32 +1,40 @@
-import { TabItem } from './components/Tabs/types';
-import { Tabs } from './components/Tabs/Tabs';
 import { Send } from './send/Send';
 import { Receive } from './receive/Receive';
 import Wallet from './wallet/Wallet';
-import { WalletTabWrapper } from './WalletSidebarContent.styles.ts';
+import { SectionAnimation, WalletGreyBox, WalletSections } from './WalletSidebarContent.styles.ts';
+import { useState } from 'react';
+import { AnimatePresence } from 'motion/react';
 
-const tabItems: TabItem[] = [
-    {
-        id: 'history',
-        titleTransaltionKey: 'my_tari',
-        content: <Wallet />,
-    },
-    {
-        id: 'send',
-        titleTransaltionKey: 'tabs.send',
-        content: <Send />,
-    },
-    {
-        id: 'receive',
-        titleTransaltionKey: 'tabs.receive',
-        content: <Receive />,
-    },
-];
+const sectionAnimation = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    exit: { opacity: 0 },
+};
 
 export function WalletSidebarContent() {
+    const [section, setSection] = useState('history');
+
     return (
-        <WalletTabWrapper>
-            <Tabs tabItems={tabItems} />
-        </WalletTabWrapper>
+        <WalletSections>
+            <WalletGreyBox>
+                <AnimatePresence mode="popLayout">
+                    {section === 'history' && (
+                        <SectionAnimation key="history" {...sectionAnimation}>
+                            <Wallet section={section} setSection={setSection} />
+                        </SectionAnimation>
+                    )}
+                    {section === 'send' && (
+                        <SectionAnimation key="send" {...sectionAnimation}>
+                            <Send section={section} setSection={setSection} />
+                        </SectionAnimation>
+                    )}
+                    {section === 'receive' && (
+                        <SectionAnimation key="receive" {...sectionAnimation}>
+                            <Receive section={section} setSection={setSection} />
+                        </SectionAnimation>
+                    )}
+                </AnimatePresence>
+            </WalletGreyBox>
+        </WalletSections>
     );
 }
