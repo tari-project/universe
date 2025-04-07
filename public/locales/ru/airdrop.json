@@ -21,6 +21,7 @@
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
+  "update-username": "Обновить имя пользователя",
   "permission": {
     "setup": "Tari Universe хотел бы использовать аналитику для <strong>улучшения Вашего опыта.</strong>",
     "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта и вознаграждать Вас гемами за майнинг.",
@@ -35,5 +36,8 @@
   "topTooltipTitle": "Награды Testnet",
   "unclaimedGems": "Неполученные гемы",
   "you-reached-your-giftinh-goal": "Вы достигли своей цели по подаркам!",
-  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!"
+  "your-friend-accepted-gift": "Один из Ваших друзей принял Ваш подарок!",
+  "joinAirdrop": "Присоединиться к Airdrop",
+  "loggedInTitle": "Награды Airdrop",
+  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы"
 }

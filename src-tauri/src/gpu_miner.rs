@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use log::{info, warn};
-use std::collections::HashMap;
 use std::fmt::Display;
 use std::fs::read_dir;
 use std::path::Path;
@@ -81,7 +80,7 @@ impl EngineType {
 pub(crate) struct GpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<GpuMinerAdapter>>>,
     is_available: bool,
-    gpu_devices: HashMap<String, GpuDevice>,
+    gpu_devices: Vec<GpuDevice>,
     curent_selected_engine: EngineType,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     gpu_raw_status_rx: watch::Receiver<Option<GpuMinerStatus>>,
@@ -95,7 +94,7 @@ impl GpuMiner {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let (gpu_raw_status_tx, gpu_raw_status_rx) = watch::channel(None);
-        let adapter = GpuMinerAdapter::new(HashMap::new(), gpu_raw_status_tx);
+        let adapter = GpuMinerAdapter::new(Vec::new(), gpu_raw_status_tx);
         let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_gpu_miner());
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
@@ -103,7 +102,7 @@ impl GpuMiner {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             is_available: false,
-            gpu_devices: HashMap::new(),
+            gpu_devices: Vec::new(),
             curent_selected_engine: EngineType::OpenCL,
             status_broadcast,
             node_status_watch_rx,
@@ -210,10 +209,7 @@ impl GpuMiner {
         let output = child.wait_with_output().await?;
         info!(target: LOG_TARGET, "Gpu detect exit code: {:?}", output.status.code().unwrap_or_default());
 
-        let gpu_status_file_name = format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        );
+        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
         let gpu_status_file_path =
             get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
         let gpu_status_file = GpuStatusFile::load(&gpu_status_file_path)?;
@@ -237,7 +233,7 @@ impl GpuMiner {
                 app.emit(
                     "detected-devices",
                     DetectedDevices {
-                        devices: self.gpu_devices.values().cloned().collect(),
+                        devices: self.gpu_devices.clone(),
                     },
                 )?;
 
@@ -345,16 +341,14 @@ impl GpuMiner {
         let device = self
             .gpu_devices
             .iter_mut()
-            .find(|(_, device_content)| device_content.device_index == device_index);
+            .find(|gpu_device| gpu_device.device_index == device_index);
 
-        if let Some((_, device_content)) = device {
-            device_content.settings.is_excluded = excluded;
+        if let Some(gpu_device) = device {
+            gpu_device.settings.is_excluded = excluded;
         }
 
-        let path = get_gpu_engines_statuses_path(&config_dir).join(format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        ));
+        let path = get_gpu_engines_statuses_path(&config_dir)
+            .join(format!("{}_gpu_status.json", self.curent_selected_engine));
         GpuStatusFile::save(
             GpuStatusFile {
                 gpu_devices: self.gpu_devices.clone(),
@@ -375,10 +369,7 @@ impl GpuMiner {
         let mut process_watcher = self.watcher.write().await;
         process_watcher.adapter.curent_selected_engine = engine;
 
-        let gpu_status_file_name = format!(
-            "{}_gpu_status.json",
-            self.curent_selected_engine.to_string()
-        );
+        let gpu_status_file_name = format!("{}_gpu_status.json", self.curent_selected_engine);
         let gpu_status_file_path =
             get_gpu_engines_statuses_path(&config_dir).join(gpu_status_file_name);
         let gpu_settings = GpuStatusFile::load(&gpu_status_file_path)?;
@@ -388,7 +379,7 @@ impl GpuMiner {
         app.emit(
             "detected-devices",
             DetectedDevices {
-                devices: self.gpu_devices.values().cloned().collect(),
+                devices: self.gpu_devices.clone(),
             },
         )?;
 
@@ -396,7 +387,7 @@ impl GpuMiner {
     }
 
     pub async fn get_gpu_devices(&self) -> Result<Vec<GpuDevice>, anyhow::Error> {
-        Ok(self.gpu_devices.values().cloned().collect())
+        Ok(self.gpu_devices.clone())
     }
 }
 

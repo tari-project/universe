@@ -12,7 +12,7 @@ import {
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
-import { AirdropTokens } from '@app/store/useAirdropStore';
+import { SignData } from '@app/types/ws.ts';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -74,7 +74,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'check_for_updates'): Promise<string | undefined>;
     function invoke(
         param: 'set_airdrop_tokens',
-        airdropTokens: Pick<AirdropTokens, 'refreshToken' | 'token'>
+        airdropTokens: { token: string; refresh_token: string }
     ): Promise<void>;
     function invoke(param: 'get_airdrop_tokens'): Promise<{ refresh_token: string; token: string }>;
     function invoke(param: 'try_update', payload?: { force?: boolean }): Promise<void>;
@@ -97,4 +97,5 @@ declare module '@tauri-apps/api/core' {
         param: 'log_web_message',
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
+    function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
 }

@@ -21,6 +21,7 @@
   "loginButton": "Meld aan om edelstene te eis",
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",
+  "update-username": "Werk gebruikersnaam op",
   "permission": {
     "setup": "Tari Universe wil graag analise gebruik om <strong>jou ervaring te verbeter.</strong>",
     "text": "Tari Heelal wil graag analise gebruik om u ervaring te verbeter en u met edelstene vir mynbou te beloon.",
@@ -35,5 +36,11 @@
   "topTooltipTitle": "Testnet Belonings",
   "unclaimedGems": "Ongeëisde Edelstene",
   "you-reached-your-giftinh-goal": "Jy het jou geskenkdoelwit bereik!",
-  "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!"
+  "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!",
+  "joinAirdrop": "Sluit aan by Airdrop",
+  "loggedInTitle": "Airdrop Belonings",
+  "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien",
+  "username-error": "Gebruikersnaam moet 3-20 karakters wees en slegs letters, nommers, onderstrepe of koppeltekens bevat",
+  "username-update-success": "Gebruikersnaam suksesvol opgedateer",
+  "success": "Sukses"
 }

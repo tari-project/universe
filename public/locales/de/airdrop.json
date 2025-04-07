@@ -21,6 +21,7 @@
   "loginButton": "Einloggen, um Edelsteine zu beanspruchen",
   "logout": "Ausloggen",
   "nextTierBonus": "Lade <strong>{{count}} Freunde</strong> ein und erhalte {{bonusGems}} Bonus-Edelsteine",
+  "update-username": "Benutzernamen aktualisieren",
   "permission": {
     "setup": "Tari Universe möchte Analysen verwenden, um <strong>Ihr Erlebnis zu verbessern.</strong>",
     "text": "Tari Universe möchte Analysen verwenden, um deine Erfahrung zu verbessern und dich mit Edelsteinen für das Mining zu belohnen.",
@@ -35,5 +36,11 @@
   "topTooltipTitle": "Testnet Belohnungen",
   "unclaimedGems": "Nicht beanspruchte Edelsteine",
   "you-reached-your-giftinh-goal": "Sie haben Ihr Geschenkziel erreicht!",
-  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!"
+  "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!",
+  "joinAirdrop": "Am Airdrop teilnehmen",
+  "loggedInTitle": "Airdrop-Belohnungen",
+  "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen",
+  "username-error": "Benutzername muss 3-20 Zeichen lang sein und darf nur Buchstaben, Zahlen, Unterstriche oder Bindestriche enthalten",
+  "username-update-success": "Benutzername erfolgreich aktualisiert",
+  "success": "Erfolg"
 }

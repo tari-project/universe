@@ -25,9 +25,12 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use std::collections::HashMap;
+use std::fs;
 use std::path::PathBuf;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
+use tari_utilities::epoch_time::EpochTime;
 use tokio::sync::watch;
 
 use crate::p2pool;
@@ -72,6 +75,7 @@ impl ProcessAdapter for P2poolAdapter {
         _config_dir: PathBuf,
         log_path: PathBuf,
         binary_version_path: PathBuf,
+        is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -91,6 +95,23 @@ impl ProcessAdapter for P2poolAdapter {
             .ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
         let log_path_string = convert_to_string(log_path.join("sha-p2pool"))?;
 
+        if is_first_start {
+            info!(target: LOG_TARGET, "Clearing block cache on first start for P2Pool");
+            if fs::exists(data_dir.join("block_cache"))? {
+                let _unused = fs::remove_dir_all(data_dir.join("block_cache")).inspect_err(
+                    |e| warn!(target: LOG_TARGET, "Failed to remove block cache directory: {}", e),
+                ).inspect(|_| {
+                    info!(target: LOG_TARGET, "Removed block cache directory");
+                });
+            }
+            if fs::exists(data_dir.join("block_cache_backup"))? {
+                let _unused = fs::remove_file(data_dir.join("block_cache_backup")).inspect_err(
+                    |e| warn!(target: LOG_TARGET, "Failed to remove block cache backup file: {}", e),
+                ).inspect(|_| {
+                    info!(target: LOG_TARGET, "Removed block cache backup file");
+                });
+            }
+        }
         let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
@@ -112,7 +133,7 @@ impl ProcessAdapter for P2poolAdapter {
         let mut squad_prefix = "default";
         let mut num_squads = 3;
         if let Some(benchmark) = config.cpu_benchmark_hashrate {
-            if benchmark < 3000 {
+            if benchmark < 4000 {
                 squad_prefix = "mini";
                 num_squads = 1;
             }
@@ -185,29 +206,14 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         match self.stats_client.stats().await {
             Ok(stats) => {
-                // if stats
-                //     .connection_info
-                //     .network_info
-                //     .connection_counters
-                //     .established_outgoing
-                //     + stats
-                //         .connection_info
-                //         .network_info
-                //         .connection_counters
-                //         .established_incoming
-                //     < 1
-                // {
-                //     warn!(target: LOG_TARGET, "P2pool has no connections, health check warning");
-                //     return HealthStatus::Warning;
-                // }
+                if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 * 10 {
+                    warn!(target: LOG_TARGET, "P2pool last gossip message was more than 10 minutes ago, health check failed");
+                    return HealthStatus::Unhealthy;
+                }
 
-                // if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 {
-                //     warn!(target: LOG_TARGET, "P2pool last gossip message was more than 60 seconds ago, health check warning");
-                //     return HealthStatus::Warning;
-                // }
                 let _unused = self.latest_status_broadcast.send(Some(stats));
 
                 HealthStatus::Healthy

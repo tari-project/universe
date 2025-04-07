@@ -33,7 +33,7 @@ use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::time::Instant;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
@@ -60,24 +60,23 @@ pub(crate) struct GpuMinerAdapter {
     pub(crate) gpu_grid_size: Vec<GpuThreads>,
     pub(crate) node_source: Option<GpuNodeSource>,
     pub(crate) coinbase_extra: String,
-    pub(crate) gpu_devices: HashMap<String, GpuDevice>,
+    pub(crate) gpu_devices: Vec<GpuDevice>,
     pub(crate) gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     pub(crate) curent_selected_engine: EngineType,
 }
 
 impl GpuMinerAdapter {
     pub fn new(
-        gpu_devices: HashMap<String, GpuDevice>,
+        gpu_devices: Vec<GpuDevice>,
         gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
     ) -> Self {
         Self {
             tari_address: TariAddress::default(),
             gpu_grid_size: gpu_devices
-                .clone()
                 .iter()
-                .map(|(name, content)| GpuThreads {
-                    gpu_name: name.to_string(),
-                    max_gpu_threads: content.status.max_grid_size,
+                .map(|gpu_device| GpuThreads {
+                    gpu_name: gpu_device.device_name.clone(),
+                    max_gpu_threads: gpu_device.status.max_grid_size,
                 })
                 .collect(),
             node_source: None,
@@ -94,8 +93,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
-                        gpu_name: gpu_name.clone(),
+                    .map(|gpu_device| GpuThreads {
+                        gpu_name: gpu_device.device_name.clone(),
                         max_gpu_threads: 2,
                     })
                     .collect()
@@ -104,8 +103,8 @@ impl GpuMinerAdapter {
                 self.gpu_grid_size = self
                     .gpu_devices
                     .iter()
-                    .map(|(gpu_name, _)| GpuThreads {
-                        gpu_name: gpu_name.clone(),
+                    .map(|gpu_device| GpuThreads {
+                        gpu_name: gpu_device.device_name.clone(),
                         max_gpu_threads: 1024,
                     })
                     .collect()
@@ -125,6 +124,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         config_dir: PathBuf,
         log_dir: PathBuf,
         binary_version_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         info!(target: LOG_TARGET, "Gpu miner spawn inner");
         let inner_shutdown = Shutdown::new();
@@ -217,7 +217,7 @@ impl ProcessAdapter for GpuMinerAdapter {
         }
 
         #[cfg(target_os = "windows")]
-        add_firewall_rule("xtrgpuminer.exe".to_string(), binary_version_path.clone())?;
+        add_firewall_rule("glytex.exe".to_string(), binary_version_path.clone())?;
 
         Ok((
             ProcessInstance {
@@ -234,35 +234,33 @@ impl ProcessAdapter for GpuMinerAdapter {
             },
             GpuMinerStatusMonitor {
                 http_api_port,
-                start_time: Instant::now(),
                 gpu_raw_status_broadcast: self.gpu_raw_status_broadcast.clone(),
             },
         ))
     }
 
     fn name(&self) -> &str {
-        "xtrgpuminer"
+        "glytex"
     }
 
     fn pid_file_name(&self) -> &str {
-        "xtrgpuminer_pid"
+        "glytex_pid"
     }
 }
 
 #[derive(Clone)]
 pub struct GpuMinerStatusMonitor {
     http_api_port: u16,
-    start_time: Instant,
     gpu_raw_status_broadcast: watch::Sender<Option<GpuMinerStatus>>,
 }
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration) -> HealthStatus {
         if let Ok(status) = self.status().await {
             let _result = self.gpu_raw_status_broadcast.send(Some(status.clone()));
             // GPU returns 0 for first 10 seconds until it has an average
-            if status.hash_rate > 0.0 || self.start_time.elapsed().as_secs() < 11 {
+            if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
                 HealthStatus::Healthy
             } else {
                 HealthStatus::Warning

@@ -7,6 +7,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from './useWalletStore.ts';
+import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -64,7 +65,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
-        useMiningStore.getState().setMiningControlsEnabled(false);
+        setMiningControlsEnabled(false);
         const successTier = getSuccessTier(earnings);
 
         setAnimationState(successTier);
@@ -76,7 +77,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
             useWalletStore.getState().setWalletBalance(balance);
             useWalletStore.getState().refreshCoinbaseTransactions();
-            useMiningStore.getState().setMiningControlsEnabled(true);
+            setMiningControlsEnabled(true);
         }, 2000);
     } else {
         await useWalletStore.getState().refreshCoinbaseTransactions();
@@ -89,7 +90,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     if (canAnimate) {
-        useMiningStore.getState().setMiningControlsEnabled(false);
+        setMiningControlsEnabled(false);
         setAnimationState('fail');
         if (failTimeout) {
             clearTimeout(failTimeout);
@@ -97,7 +98,7 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
         failTimeout = setTimeout(() => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
             useWalletStore.getState().setWalletBalance(balance);
-            useMiningStore.getState().setMiningControlsEnabled(true);
+            setMiningControlsEnabled(true);
         }, 1000);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
@@ -105,12 +106,12 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
 };
 
 export const handleWinRecap = (recapData: Recap) => {
-    useMiningStore.getState().setMiningControlsEnabled(false);
+    setMiningControlsEnabled(false);
     const successTier = getSuccessTier(recapData.totalEarnings);
     setAnimationState(successTier);
     useBlockchainVisualisationStore.setState({ recapData, recapCount: recapData.count });
     setTimeout(() => {
-        useMiningStore.getState().setMiningControlsEnabled(true);
+        setMiningControlsEnabled(true);
         useBlockchainVisualisationStore.setState({ recapData: undefined, recapIds: [] });
     }, 2000);
 };
@@ -123,11 +124,22 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (payload: {
+
+let newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
+const BLOCK_DEBOUNCE_DELAY = 200;
+let latestBlockPayload:
+    | {
+          block_height: number;
+          coinbase_transaction?: TransactionInfo;
+          balance: WalletBalance;
+      }
+    | undefined = undefined;
+
+async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
-}) => {
+}) {
     if (useMiningStore.getState().miningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
@@ -140,5 +152,25 @@ export const handleNewBlock = async (payload: {
         }
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
+        console.info('Mining not initiated. Block height updated.');
     }
+}
+
+export const handleNewBlock = async (payload: {
+    block_height: number;
+    coinbase_transaction?: TransactionInfo;
+    balance: WalletBalance;
+}) => {
+    latestBlockPayload = payload;
+
+    if (newBlockDebounceTimeout) {
+        clearTimeout(newBlockDebounceTimeout);
+    }
+    newBlockDebounceTimeout = setTimeout(async () => {
+        if (latestBlockPayload) {
+            await processNewBlock(latestBlockPayload);
+            latestBlockPayload = undefined;
+        }
+        newBlockDebounceTimeout = undefined;
+    }, BLOCK_DEBOUNCE_DELAY);
 };

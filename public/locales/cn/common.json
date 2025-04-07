@@ -1,5 +1,6 @@
 {
   "cancel": "取消",
+  "close": "关闭",
   "close-tari-universe": "关闭Tari Universe",
   "connection": "连接",
   "continue": "继续",
@@ -25,6 +26,7 @@
   "testnet": "测试网",
   "unknown": "未知",
   "unminimize": "取消最小化",
+  "update": "更新",
   "usage": "使用",
   "utilization": "利用率",
   "version": "版本",

@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
@@ -81,6 +82,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         _config_dir: PathBuf,
         log_dir: PathBuf,
         binary_verison_path: PathBuf,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 
@@ -116,7 +118,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "-p".to_string(),
             // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
-                "merge_mining_proxy.base_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
+                "merge_mining_proxy.base_node_grpc_address=http://127.0.0.1:{}",
                 config.base_node_grpc_port
             ),
             "-p".to_string(),
@@ -137,6 +139,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
             "-p".to_string(),
             "merge_mining_proxy.wait_for_initial_sync_at_startup=false".to_string(),
+            // Difficulty is checked in p2pool; no need to check it in the merge mining proxy as well.
+            "-p".to_string(),
+            "merge_mining_proxy.check_tari_difficulty_before_submit=false".to_string(),
             "-p".to_string(),
             format!(
                 "merge_mining_proxy.use_dynamic_fail_data={}",
@@ -155,7 +160,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
             args.push("-p".to_string());
             args.push(format!(
-                "merge_mining_proxy.p2pool_node_grpc_address=/ip4/127.0.0.1/tcp/{}",
+                "merge_mining_proxy.p2pool_node_grpc_address=http://127.0.0.1:{}",
                 config.p2pool_grpc_port
             ));
         }
@@ -175,7 +180,6 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             },
             MergeMiningProxyStatusMonitor {
                 json_rpc_port: config.port,
-                start_time: std::time::Instant::now(),
             },
         ))
     }
@@ -192,12 +196,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 #[derive(Clone)]
 pub struct MergeMiningProxyStatusMonitor {
     json_rpc_port: u16,
-    start_time: std::time::Instant,
 }
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         if self
             .get_version()
             .await
@@ -208,11 +211,6 @@ impl StatusMonitor for MergeMiningProxyStatusMonitor {
         {
             HealthStatus::Healthy
         } else {
-            if self.start_time.elapsed().as_secs() < 30 {
-                return HealthStatus::Healthy;
-            }
-            // HealthStatus::Unhealthy
-            // This can return a bad error from time to time, especially on startup
             HealthStatus::Warning
         }
     }

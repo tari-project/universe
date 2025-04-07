@@ -20,6 +20,7 @@
   "loginButton": "Log in to claim gems",
   "logout": "Logout",
   "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
+  "update-username": "Update username",
   "permission": {
     "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
     "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining.",
@@ -37,5 +38,14 @@
   "your-friend-accepted-gift": "One of your friends accepted your gift!",
   "joinAirdrop": "Join Airdrop",
   "loggedInTitle": "Airdrop Rewards",
-  "loggedOutTitle": "Mine & Invite Friends to Earn Gems"
+  "loggedOutTitle": "Mine & Invite Friends to Earn Gems",
+  "copying": "Copying...",
+  "copied": "Copied!",
+  "copyFailed": "Copy Failed",
+  "rightClickToCopy": "Right-click to copy link",
+  "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
+  "live":"live",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
+  "success": "Success"
 }

@@ -30,6 +30,8 @@ use crate::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
+use crate::tor_control_client::TorStatus;
+use crate::utils::network_status::NetworkStatus;
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -185,6 +187,9 @@ pub struct TelemetryData {
     pub gpu_tribe_id: Option<String>,
     pub extra_data: HashMap<String, String>,
     pub current_os: String,
+    pub download_speed: f64,
+    pub upload_speed: f64,
+    pub latency: f64,
 }
 
 pub struct TelemetryManager {
@@ -196,6 +201,7 @@ pub struct TelemetryManager {
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
     p2pool_status: watch::Receiver<Option<P2poolStats>>,
+    tor_status: watch::Receiver<Option<TorStatus>>,
     process_stats_collector: ProcessStatsCollector,
 }
 
@@ -208,6 +214,7 @@ impl TelemetryManager {
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
         p2pool_status: watch::Receiver<Option<P2poolStats>>,
+        tor_status: watch::Receiver<Option<TorStatus>>,
         process_stats_collector: ProcessStatsCollector,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
@@ -220,6 +227,7 @@ impl TelemetryManager {
             gpu_status,
             node_status,
             p2pool_status,
+            tor_status,
             process_stats_collector,
         }
     }
@@ -285,6 +293,7 @@ impl TelemetryManager {
         let gpu_status = self.gpu_status.clone();
         let node_status = self.node_status.clone();
         let p2pool_status = self.p2pool_status.clone();
+        let tor_status = self.tor_status.clone();
         let config = self.config.clone();
         let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
@@ -300,7 +309,8 @@ impl TelemetryManager {
                         let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
                         if telemetry_collection_enabled {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status, &config, network, uptime, &stats_collector).await;
+                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
+                                &tor_status, &config, network, uptime, &stats_collector).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
@@ -322,12 +332,18 @@ async fn get_telemetry_data(
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
+    tor_latest_status: &watch::Receiver<Option<TorStatus>>,
     config: &RwLock<AppConfig>,
     network: Option<Network>,
     started: Instant,
     stats_collector: &ProcessStatsCollector,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+    let BaseNodeStatus {
+        block_height,
+        is_synced,
+        num_connections,
+        ..
+    } = node_latest_status.borrow().clone();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
@@ -342,6 +358,7 @@ async fn get_telemetry_data(
         .ok();
 
     let p2pool_stats = p2pool_latest_status.borrow().clone();
+    let tor_status = tor_latest_status.borrow().clone();
 
     let config_guard = config.read().await;
     let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
@@ -450,6 +467,22 @@ async fn get_telemetry_data(
         squad = Some(stats.squad.clone());
     }
 
+    if let Some(stats) = tor_status.as_ref() {
+        extra_data.insert(
+            "tor_bootstrap_phase".to_string(),
+            stats.bootstrap_phase.to_string(),
+        );
+        extra_data.insert(
+            "tor_is_bootstrapped".to_string(),
+            stats.is_bootstrapped.to_string(),
+        );
+        extra_data.insert(
+            "tor_network_liveness".to_string(),
+            stats.network_liveness.to_string(),
+        );
+        extra_data.insert("tor_circuit_ok".to_string(), stats.circuit_ok.to_string());
+    }
+
     if !all_cpus.is_empty() {
         extra_data.insert("all_cpus".to_string(), all_cpus.join(","));
     }
@@ -482,7 +515,11 @@ async fn get_telemetry_data(
         "uptime".to_string(),
         started.elapsed().as_secs().to_string(),
     );
-
+    extra_data.insert("node_is_synced".to_string(), is_synced.to_string());
+    extra_data.insert(
+        "node_num_connections".to_string(),
+        num_connections.to_string(),
+    );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
 
     add_process_stats(
@@ -518,7 +555,11 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    Ok(TelemetryData {
+    let (download_speed, upload_speed, latency) = *NetworkStatus::current()
+        .get_network_speeds_receiver()
+        .borrow();
+
+    let data = TelemetryData {
         app_id: config_guard.anon_id().to_string(),
         block_height,
         is_mining_active,
@@ -539,7 +580,12 @@ async fn get_telemetry_data(
         gpu_tribe_id: None,
         extra_data,
         current_os: std::env::consts::OS.to_string(),
-    })
+        download_speed,
+        upload_speed,
+        latency,
+    };
+    // info!(target: LOG_TARGET,"Telemetry data collected: {:?}", &data);
+    Ok(data)
 }
 
 fn add_process_stats(

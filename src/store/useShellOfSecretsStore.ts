@@ -2,7 +2,6 @@ import { CrewMember } from '@app/types/ws.ts';
 import { create } from './create.ts';
 
 const SOS_GAME_ENDING_DATE = new Date('2025-01-30');
-export const MINING_EVENT_INTERVAL_MS = 15000;
 
 // Type for the response structure
 export interface ReferralsResponse {
@@ -41,7 +40,6 @@ interface Actions {
     setShowWidget: (showWidget: boolean) => void;
     setTotalBonusTimeMs: (totalTimeBonusUpdate: number) => void;
     registerWsConnectionEvent: (event: WsConnectionEvent) => void;
-    getTimeRemaining: () => { days: number; hours: number; totalRemainingMs: number };
 }
 
 const initialState: State = {
@@ -54,7 +52,7 @@ const initialState: State = {
     },
 };
 
-export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
+export const useShellOfSecretsStore = create<State & Actions>()((set) => ({
     ...initialState,
     setReferrals: (referrals) => set({ referrals }),
     setShowWidget: (showWidget) => set({ showWidget }),
@@ -84,13 +82,15 @@ export const useShellOfSecretsStore = create<State & Actions>()((set, get) => ({
             }
             return { wsConnectionState };
         }),
-    getTimeRemaining: () => {
-        const now = new Date();
-        const targetDateBroughtForwardByTimeBonus = get().revealDate.getTime() - get().totalBonusTimeMs;
-        const remainingMs = targetDateBroughtForwardByTimeBonus - now.getTime();
-
-        const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        return { days, hours, totalRemainingMs: remainingMs };
-    },
 }));
+
+export const getSOSTimeRemaining = () => {
+    const now = new Date();
+    const targetDateBroughtForwardByTimeBonus =
+        useShellOfSecretsStore.getState().revealDate.getTime() - useShellOfSecretsStore.getState().totalBonusTimeMs;
+    const remainingMs = targetDateBroughtForwardByTimeBonus - now.getTime();
+
+    const days = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((remainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    return { days, hours, totalRemainingMs: remainingMs };
+};

@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
-
-import { useDetectMode, useDisableRefresh, useLangaugeResolver, useListenForExternalDependencies } from '@app/hooks';
-
-import { fetchAppConfig } from '../store/useAppConfigStore.ts';
 import setupLogger from '../utils/shared-logger.ts';
-import useListenForCriticalProblem from '@app/hooks/useListenForCriticalProblem.tsx';
-import { setMiningNetwork } from '@app/store/miningStoreActions.ts';
-import useTauriEventsListener from '@app/hooks/app/useTauriEventsListener.ts';
-import { useListenForAppUpdated } from '@app/hooks/app/useListenForAppUpdated.ts';
-import { useListenForGpuEngines } from '@app/hooks/app/useListenForGpuEngines.ts';
-
+import useTauriEventsListener from '../hooks/app/useTauriEventsListener.ts';
+import useListenForCriticalProblem from '../hooks/useListenForCriticalProblem.tsx';
+import { useListenForAppUpdated } from '../hooks/app/useListenForAppUpdated.ts';
+import { setMiningNetwork } from '../store/actions/miningStoreActions.ts';
+import { fetchAppConfig } from '../store/actions/appConfigStoreActions.ts';
+import { useListenForGpuEngines } from '../hooks/app/useListenForGpuEngines.ts';
+import { useListenForAppResuming } from '../hooks/app/useListenForAppResuming.ts';
+import {
+    useDetectMode,
+    useDisableRefresh,
+    useLangaugeResolver,
+    useListenForExternalDependencies,
+    useSetUp,
+} from '../hooks';
+import { airdropSetup } from '@app/store';
 // This component is used to initialise the app and listen for any events that need to be listened to
 // Created as separate component to avoid cluttering the main App component and unwanted re-renders
 
@@ -19,10 +24,12 @@ export default function AppEffects() {
         async function initialize() {
             await fetchAppConfig();
             await setMiningNetwork();
+            await airdropSetup();
         }
         void initialize();
     }, []);
 
+    useSetUp();
     useDetectMode();
     useDisableRefresh();
     useLangaugeResolver();
@@ -30,6 +37,7 @@ export default function AppEffects() {
     useListenForCriticalProblem();
     useTauriEventsListener();
     useListenForAppUpdated({ triggerEffect: true });
+    useListenForAppResuming();
     useListenForGpuEngines();
 
     return null;

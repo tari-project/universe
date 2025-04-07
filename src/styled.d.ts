@@ -7,5 +7,7 @@ declare module 'styled-components' {
         mode: ThemePalette['mode'];
         palette: ThemePalette['palette'];
         colors: ThemePalette['colors'];
+        colorsAlpha: ThemePalette['colorsAlpha'];
+        gradients: ThemePalette['gradients'];
     }
 }

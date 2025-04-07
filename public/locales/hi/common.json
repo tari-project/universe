@@ -1,5 +1,6 @@
 {
   "cancel": "रद्द करें",
+  "close": "बंद करें",
   "close-tari-universe": "Tari Universe बंद करें",
   "connection": "कनेक्शन",
   "continue": "जारी रखें",
@@ -25,6 +26,7 @@
   "testnet": "टेस्टनेट",
   "unknown": "अज्ञात",
   "unminimize": "अनमिनिमाइज़",
+  "update": "अपडेट",
   "usage": "उपयोग",
   "utilization": "उपयोग",
   "version": "संस्करण",

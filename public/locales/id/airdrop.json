@@ -21,6 +21,7 @@
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
+  "update-username": "Perbarui nama pengguna",
   "permission": {
     "setup": "Tari Universe ingin menggunakan analitik untuk <strong>meningkatkan pengalaman Anda.</strong>",
     "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah dengan permata untuk menambang.",
@@ -35,5 +36,11 @@
   "topTooltipTitle": "Hadiah Testnet",
   "unclaimedGems": "Permata yang Belum Diklaim",
   "you-reached-your-giftinh-goal": "Anda mencapai tujuan pemberian hadiah Anda!",
-  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!"
+  "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!",
+  "joinAirdrop": "Ikuti Airdrop",
+  "loggedInTitle": "Hadiah Airdrop",
+  "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata",
+  "username-error": "Nama pengguna harus 3-20 karakter dan hanya berisi huruf, angka, garis bawah, atau tanda hubung",
+  "username-update-success": "Nama pengguna berhasil diperbarui",
+  "success": "Berhasil"
 }

@@ -4,11 +4,11 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Button } from '@app/components/elements/buttons/Button';
 import RadioButton from '@app/components/elements/inputs/RadioButton.tsx';
 import styled from 'styled-components';
+import { setError } from '@app/store';
 
 const OptionContainer = styled.div`
     display: flex;
@@ -38,7 +38,6 @@ interface ResetSettingsDialogProps {
 }
 export default function ResetSettingsDialog({ isOpen, onOpenChange }: ResetSettingsDialogProps) {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const setError = useAppStateStore((state) => state.setError);
     const [selectedItem, setSelectedItem] = useState<string | undefined>();
     const [loading, setLoading] = useState(false);
 

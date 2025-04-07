@@ -1,5 +1,6 @@
 {
   "cancel": "Batal",
+  "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
   "connection": "Koneksi",
   "continue": "Lanjutkan",
@@ -25,6 +26,7 @@
   "testnet": "Testnet",
   "unknown": "Tidak diketahui",
   "unminimize": "Maksimalkan",
+  "update": "Perbarui",
   "usage": "Penggunaan",
   "utilization": "Pemanfaatan",
   "version": "Versi",

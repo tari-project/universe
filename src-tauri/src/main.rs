@@ -41,7 +41,10 @@ use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
+use utils::app_flow_utils::FrontendReadyChannel;
 use utils::locks_utils::try_write_with_retry;
+use utils::network_status::NetworkStatus;
+use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
@@ -88,7 +91,7 @@ use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
-use utils::shutdown_utils::stop_all_processes;
+use utils::shutdown_utils::{resume_all_processes, stop_all_processes};
 
 mod airdrop;
 mod app_config;
@@ -133,6 +136,7 @@ mod telemetry_manager;
 mod telemetry_service;
 mod tests;
 mod tor_adapter;
+mod tor_control_client;
 mod tor_manager;
 mod updates_manager;
 mod utils;
@@ -281,6 +285,7 @@ async fn setup_inner(
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
 ) -> Result<(), anyhow::Error> {
+    FrontendReadyChannel::current().wait_for_ready().await?;
     app.emit(
         "setup_message",
         SetupStatusEvent {
@@ -348,9 +353,11 @@ async fn setup_inner(
 
     let cpu_miner_config = state.cpu_miner_config.read().await;
     let app_config = state.config.read().await;
+
     let use_tor = app_config.use_tor();
     let p2pool_enabled = app_config.p2pool_enabled();
     drop(app_config);
+
     let mm_proxy_manager = state.mm_proxy_manager.clone();
 
     let is_auto_launcher_enabled = state.config.read().await.should_auto_launch();
@@ -361,6 +368,7 @@ async fn setup_inner(
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));
+    progress.set_max(1).await;
 
     let last_binaries_update_timestamp = state.config.read().await.last_binaries_update_timestamp();
     let now = SystemTime::now();
@@ -398,17 +406,35 @@ async fn setup_inner(
         .unwrap_or(Duration::from_secs(0))
         > Duration::from_secs(60 * 60 * 6);
 
+    telemetry_service
+        .send(
+            "benchmarking-network".to_string(),
+            json!({
+                "service": "speedtest",
+                "percentage": 0,
+            }),
+        )
+        .await?;
+    progress.set_max(5).await;
+    progress
+        .update("benchmarking-network".to_string(), None, 0)
+        .await;
+
+    NetworkStatus::current()
+        .run_speed_test_with_timeout(&app)
+        .await;
+
     if use_tor && !cfg!(target_os = "macos") {
         telemetry_service
             .send(
                 "checking-latest-version-tor".to_string(),
                 json!({
                     "service": "tor_manager",
-                    "percentage": 0,
+                    "percentage": 5,
                 }),
             )
             .await?;
-        progress.set_max(5).await;
+        progress.set_max(10).await;
         progress
             .update("checking-latest-version-tor".to_string(), None, 0)
             .await;
@@ -428,11 +454,11 @@ async fn setup_inner(
             "checking-latest-version-node".to_string(),
             json!({
                 "service": "node_manager",
-                "percentage": 5,
+                "percentage": 10,
             }),
         )
         .await;
-    progress.set_max(10).await;
+    progress.set_max(15).await;
     progress
         .update("checking-latest-version-node".to_string(), None, 0)
         .await;
@@ -451,11 +477,11 @@ async fn setup_inner(
             "checking-latest-version-mmproxy".to_string(),
             json!({
                 "service": "mmproxy",
-                "percentage": 10,
+                "percentage": 15,
             }),
         )
         .await;
-    progress.set_max(15).await;
+    progress.set_max(20).await;
     progress
         .update("checking-latest-version-mmproxy".to_string(), None, 0)
         .await;
@@ -474,11 +500,11 @@ async fn setup_inner(
             "checking-latest-version-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage": 15,
+                "percentage": 20,
             }),
         )
         .await;
-    progress.set_max(20).await;
+    progress.set_max(25).await;
     progress
         .update("checking-latest-version-wallet".to_string(), None, 0)
         .await;
@@ -497,11 +523,11 @@ async fn setup_inner(
             "checking-latest-version-gpuminer".to_string(),
             json!({
                 "service": "gpuminer",
-                "percentage":20,
+                "percentage":25,
             }),
         )
         .await;
-    progress.set_max(25).await;
+    progress.set_max(30).await;
     progress
         .update("checking-latest-version-gpuminer".to_string(), None, 0)
         .await;
@@ -520,11 +546,11 @@ async fn setup_inner(
             "checking-latest-version-xmrig".to_string(),
             json!({
                 "service": "xmrig",
-                "percentage":25,
+                "percentage":30,
             }),
         )
         .await;
-    progress.set_max(30).await;
+    progress.set_max(35).await;
     progress
         .update("checking-latest-version-xmrig".to_string(), None, 0)
         .await;
@@ -543,11 +569,11 @@ async fn setup_inner(
             "checking-latest-version-sha-p2pool".to_string(),
             json!({
                 "service": "sha_p2pool",
-                "percentage":30,
+                "percentage":35,
             }),
         )
         .await;
-    progress.set_max(35).await;
+    progress.set_max(40).await;
     progress
         .update("checking-latest-version-sha-p2pool".to_string(), None, 0)
         .await;
@@ -605,11 +631,11 @@ async fn setup_inner(
             "waiting-for-minotari-node-to-start".to_string(),
             json!({
                 "service": "minotari_node",
-                "percentage":35,
+                "percentage":40,
             }),
         )
         .await;
-    progress.set_max(37).await;
+    progress.set_max(45).await;
     progress
         .update("waiting-for-minotari-node-to-start".to_string(), None, 0)
         .await;
@@ -637,11 +663,11 @@ async fn setup_inner(
                                 "resetting-minotari-node-database".to_string(),
                                 json!({
                                     "service": "minotari_node",
-                                    "percentage":37,
+                                    "percentage":45,
                                 }),
                             )
                             .await;
-                        progress.set_max(38).await;
+                        progress.set_max(50).await;
                         progress
                             .update("minotari-node-restarting".to_string(), None, 0)
                             .await;
@@ -662,11 +688,11 @@ async fn setup_inner(
             "waiting-for-wallet".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":35,
+                "percentage":50,
             }),
         )
         .await;
-    progress.set_max(40).await;
+    progress.set_max(55).await;
     progress
         .update("waiting-for-wallet".to_string(), None, 0)
         .await;
@@ -685,11 +711,11 @@ async fn setup_inner(
             "wallet-started".to_string(),
             json!({
                 "service": "wallet",
-                "percentage":40,
+                "percentage":55,
             }),
         )
         .await;
-    progress.set_max(45).await;
+    progress.set_max(60).await;
     progress.update("wallet-started".to_string(), None, 0).await;
     progress
         .update("waiting-for-node".to_string(), None, 0)
@@ -699,7 +725,7 @@ async fn setup_inner(
             "preparing-for-initial-sync".to_string(),
             json!({
                 "service": "initial_sync",
-                "percentage":45,
+                "percentage":60,
             }),
         )
         .await;
@@ -873,6 +899,31 @@ async fn setup_inner(
         }
     });
 
+    let app_handle_clone: tauri::AppHandle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+        let mut last_state = *receiver.borrow();
+        loop {
+            if receiver.changed().await.is_ok() {
+                let current_state = *receiver.borrow();
+
+                if last_state && !current_state {
+                    info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                    let _unused = resume_all_processes(app_handle_clone.clone()).await;
+                }
+
+                if !last_state && current_state {
+                    info!(target: LOG_TARGET, "System entered sleep mode");
+                    let _unused = stop_all_processes(app_handle_clone.clone(), false).await;
+                }
+
+                last_state = current_state;
+            } else {
+                error!(target: LOG_TARGET, "Failed to receive sleep mode change");
+            }
+        }
+    });
+
     let _unused = ReleaseNotes::current()
         .handle_release_notes_event_emit(state.clone(), app)
         .await;
@@ -989,7 +1040,8 @@ fn main() {
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let tor_manager = TorManager::new(&mut stats_collector);
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(None);
+    let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
@@ -1000,6 +1052,7 @@ fn main() {
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
         p2pool_stats_rx.clone(),
+        tor_watch_rx.clone(),
         stats_collector.build(),
     );
     let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
@@ -1039,6 +1092,7 @@ fn main() {
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
     };
     let app_state_clone = app_state.clone();
+    #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_process::init())
@@ -1305,10 +1359,18 @@ fn main() {
         app.package_info().version
     );
 
+    let power_monitor = SystemStatus::current().start_listener();
+
     let is_restart_requested = Arc::new(AtomicBool::new(false));
     let is_restart_requested_clone = is_restart_requested.clone();
 
-    app.run(move |app_handle, event| match event {
+    app.run(move |app_handle, event| {
+        // We can only receive system events from the event loop so this needs to be here
+        let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
+            error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
+        });
+
+        match event {
         tauri::RunEvent::Ready  => {
             info!(target: LOG_TARGET, "RunEvent Ready");
             let handle_clone = app_handle.clone();
@@ -1344,5 +1406,6 @@ fn main() {
             // no need to handle
         }
         _ => {}
+    };
     });
 }

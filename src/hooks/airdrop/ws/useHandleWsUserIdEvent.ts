@@ -1,61 +1,34 @@
-import { useAirdropStore } from '@app/store/useAirdropStore';
-import { useShellOfSecretsStore } from '@app/store/useShellOfSecretsStore';
 import { WebsocketEventNames, WebsocketUserEvent } from '@app/types/ws';
-import { useGetSosReferrals } from '../stateHelpers/useGetSosReferrals';
+import { setFlareAnimationType, setUserPoints } from '@app/store';
+import { useCallback } from 'react';
+import { setLatestXSpaceEvent } from '@app/store/actions/airdropStoreActions.ts';
 
-export const useHandleWsUserIdEvent = () => {
-    const setTotalBonusTimeMs = useShellOfSecretsStore((state) => state.setTotalBonusTimeMs);
-    const referrals = useShellOfSecretsStore((state) => state.referrals);
-    const setReferrals = useShellOfSecretsStore((state) => state.setReferrals);
-    const setUserGems = useAirdropStore((state) => state.setUserGems);
-    const setFlare = useAirdropStore((state) => state.setFlareAnimationType);
-    const { fetchCrewMemberDetails } = useGetSosReferrals();
-
-    return (event: string) => {
+export function useHandleWsUserIdEvent() {
+    return useCallback((event: string) => {
         const eventParsed = JSON.parse(event) as WebsocketUserEvent;
         switch (eventParsed.name) {
             case WebsocketEventNames.REFERRAL_INSTALL_REWARD:
-                setFlare('FriendAccepted');
+                setFlareAnimationType('FriendAccepted');
                 break;
             case WebsocketEventNames.USER_SCORE_UPDATE:
-                if (eventParsed.data.userPoints?.gems) {
-                    setUserGems(eventParsed.data.userPoints.gems);
+                if (eventParsed.data.userPoints) {
+                    setUserPoints({
+                        base: eventParsed.data.userPoints,
+                    });
                 }
                 break;
             case WebsocketEventNames.COMPLETED_QUEST:
-                if (eventParsed.data.userPoints?.gems) {
-                    setUserGems(eventParsed.data.userPoints.gems);
-                }
-                break;
-            case WebsocketEventNames.MINING_STATUS_CREW_UPDATE: {
-                fetchCrewMemberDetails(eventParsed.data.crewMember.id);
-                setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
-                break;
-            }
-
-            case WebsocketEventNames.MINING_STATUS_CREW_DISCONNECTED:
-                if (referrals?.activeReferrals) {
-                    const totalActiveReferrals = (referrals?.totalActiveReferrals || 1) - 1;
-                    const referralsUpdated = referrals?.activeReferrals.map((x) => {
-                        if (x.id === eventParsed.data.crewMemberId) {
-                            return { ...x, active: false };
-                        }
-                        return x;
-                    });
-
-                    setReferrals({
-                        ...referrals,
-                        totalActiveReferrals,
-                        activeReferrals: referralsUpdated,
+                if (eventParsed.data.userPoints) {
+                    setUserPoints({
+                        base: eventParsed.data.userPoints,
                     });
                 }
                 break;
-            case WebsocketEventNames.MINING_STATUS_USER_UPDATE:
-                setTotalBonusTimeMs(eventParsed.data.totalTimeBonusMs);
+            case WebsocketEventNames.X_SPACE_EVENT:
+                setLatestXSpaceEvent(eventParsed.data);
                 break;
             default:
-                // eslint-disable-next-line no-console
-                console.log('Unknown event', eventParsed);
+                console.warn('Unknown event', eventParsed);
         }
-    };
-};
+    }, []);
+}

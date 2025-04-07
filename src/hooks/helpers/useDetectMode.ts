@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
-import { setUITheme } from '@app/store/useUIStore.ts';
 import { Theme } from '@app/theme/types.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { setUITheme } from '@app/store';
 
 export function useDetectMode() {
     const configTheme = useAppConfigStore((s) => s.display_mode);

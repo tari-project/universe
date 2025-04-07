@@ -21,6 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 fn main() {
+    // Allow the use of unstable features in tokio
+    println!("cargo::rustc-check-cfg=cfg(tokio_unstable)");
     if cfg!(target_os = "windows") {
         let mut windows = tauri_build::WindowsAttributes::new();
         // Require Administrator permissions to handle Firewall prompts

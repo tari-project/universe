@@ -2,13 +2,33 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { useShellOfSecretsStore } from '../../../store/useShellOfSecretsStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { useAirdropStore } from '@app/store/useAirdropStore.ts';
+
+import { handleNewBlock, setAdminShow, setFlareAnimationType, useBlockchainVisualisationStore } from '@app/store';
 
 export function OtherUIGroup() {
-    const setAdminShow = useUIStore((s) => s.setAdminShow); // prevent messing up the actual setup progress value
     const adminShow = useUIStore((s) => s.adminShow);
-    const { showWidget, setShowWidget } = useShellOfSecretsStore();
-    const setFlare = useAirdropStore((s) => s.setFlareAnimationType);
+    const showWidget = useShellOfSecretsStore((s) => s.showWidget);
+    const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const dummyNewBlock = {
+        block_height: height || 4000,
+        coinbase_transaction: undefined,
+        balance: {
+            available_balance: 333748143307,
+            timelocked_balance: 13904199881,
+            pending_incoming_balance: 0,
+            pending_outgoing_balance: 0,
+        },
+    };
+    const addDummyBlocks = (count = 1000) => {
+        for (let i = 0; i < count; i++) {
+            handleNewBlock({
+                ...dummyNewBlock,
+                block_height: dummyNewBlock.block_height + i,
+            });
+        }
+    };
+
     return (
         <>
             <CategoryLabel>Other UI</CategoryLabel>
@@ -19,6 +39,7 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
+                <Button onClick={() => addDummyBlocks()}>Add New Dummy Blocks</Button>
                 <Button
                     onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
                     $isActive={adminShow === 'orphanChainWarning'}
@@ -29,9 +50,9 @@ export function OtherUIGroup() {
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}
             <ButtonGroup>
-                <Button onClick={() => setFlare('FriendAccepted')}>FriendAccepted</Button>
-                <Button onClick={() => setFlare('GoalComplete')}>GoalComplete</Button>
-                <Button onClick={() => setFlare('BonusGems')}>BonusGems</Button>
+                <Button onClick={() => setFlareAnimationType('FriendAccepted')}>FriendAccepted</Button>
+                <Button onClick={() => setFlareAnimationType('GoalComplete')}>GoalComplete</Button>
+                <Button onClick={() => setFlareAnimationType('BonusGems')}>BonusGems</Button>
             </ButtonGroup>
         </>
     );
