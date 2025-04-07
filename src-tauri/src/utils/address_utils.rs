@@ -71,14 +71,14 @@ mod tests {
     fn test_verify_tari_address_invalid_format() {
         let result = verify_tari_address("invalid_address");
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), "Invalid address format");
+        assert_eq!(result.unwrap_err(), "Invalid address format");
     }
 
     #[test]
     fn test_verify_tari_address_invalid_network() {
         let result = verify_tari_address(NEXTNET_ONE_SIDED_ADDRESSS);
         assert!(result.is_err());
-        assert_eq!(result.err().unwrap(), "Invalid network");
+        assert_eq!(result.unwrap_err(), "Invalid network");
     }
 
     #[test]
@@ -121,7 +121,7 @@ mod tests {
         let result = verify_send(ESME_ONE_SIDED_ADDRESS.to_string(), sending_method);
         assert!(result.is_err());
         assert_eq!(
-            result.err().unwrap(),
+            result.unwrap_err(),
             "Address does not support feature Interactive,"
         );
     }
