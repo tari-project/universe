@@ -127,6 +127,7 @@ impl EventsEmitter {
         }
     }
 
+    #[allow(dead_code)]
     pub async fn emit_resuming_all_processes(
         app_handle: &AppHandle,
         payload: ResumingAllProcessesPayload,

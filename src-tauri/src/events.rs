@@ -42,6 +42,7 @@ pub enum EventType {
     CloseSplashscreen,
     DetectedDevices,
     DetectedAvailableGpuEngines,
+    #[allow(dead_code)]
     ResumingAllProcesses,
     ShowReleaseNotes,
     #[cfg(target_os = "macos")]

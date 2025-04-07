@@ -28,14 +28,14 @@ use log::{error, info, warn};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
 
 use tokio::select;
 use tokio::sync::watch;
-use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
+use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
@@ -203,6 +203,11 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         } else {
             false
         }
+    }
+
+    #[allow(dead_code)]
+    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        self.adapter.pid_file_exisits(base_path)
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {

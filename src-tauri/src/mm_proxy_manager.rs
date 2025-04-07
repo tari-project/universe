@@ -190,4 +190,20 @@ impl MmProxyManager {
             None => Err(anyhow!("MM proxy not started")),
         }
     }
+    #[allow(dead_code)]
+    pub async fn stop(&self) -> Result<(), anyhow::Error> {
+        let mut process_watcher = self.watcher.write().await;
+        process_watcher.stop().await?;
+        Ok(())
+    }
+    #[allow(dead_code)]
+    pub async fn is_running(&self) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_running()
+    }
+    #[allow(dead_code)]
+    pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        let lock = self.watcher.read().await;
+        lock.is_pid_file_exists(base_path)
+    }
 }
