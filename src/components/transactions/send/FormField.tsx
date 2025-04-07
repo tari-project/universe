@@ -12,8 +12,18 @@ interface FormFieldProps {
     accent?: ReactNode;
     required?: boolean;
     autoFocus?: boolean;
+    truncateOnBlur?: boolean;
 }
-export function FormField({ control, name, handleChange, icon, required = false, accent, autoFocus }: FormFieldProps) {
+export function FormField({
+    control,
+    name,
+    handleChange,
+    icon,
+    required = false,
+    accent,
+    autoFocus,
+    truncateOnBlur,
+}: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
     const placeholderT = t(`send.placeholder`, { context: name });
@@ -45,6 +55,8 @@ export function FormField({ control, name, handleChange, icon, required = false,
                         accent={accent}
                         errorMessage={fieldState.error?.message}
                         autoFocus={autoFocus}
+                        truncateOnBlur={truncateOnBlur}
+                        truncateText={truncateOnBlur && rest.value ? String(rest.value) : undefined}
                     />
                 );
             }}

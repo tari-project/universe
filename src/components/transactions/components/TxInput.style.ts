@@ -1,7 +1,7 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-export const Wrapper = styled.div`
+export const Wrapper = styled.div<{ $hasError?: boolean }>`
     display: flex;
     flex-direction: column;
     position: relative;
@@ -10,6 +10,14 @@ export const Wrapper = styled.div`
     border-radius: 20px;
 
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
+
+    border: 1px solid ${({ theme }) => theme.palette.divider};
+
+    ${({ $hasError, theme }) =>
+        $hasError &&
+        css`
+            background-color: ${theme.mode === 'dark' ? '#3A2A2A' : '#FFF3F3'};
+        `}
 `;
 
 export const AccentWrapper = styled.div`

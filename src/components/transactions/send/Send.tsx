@@ -101,7 +101,14 @@ export function Send({ setSection }: Props) {
             <Wrapper $isLoading={isSubmitting}>
                 <StyledForm onSubmit={handleSubmit(handleSend)}>
                     <FormFieldsWrapper>
-                        <FormField control={control} name="address" handleChange={handleChange} required autoFocus />
+                        <FormField
+                            control={control}
+                            name="address"
+                            handleChange={handleChange}
+                            required
+                            autoFocus
+                            truncateOnBlur
+                        />
 
                         <FormField control={control} name="message" handleChange={handleChange} />
 
