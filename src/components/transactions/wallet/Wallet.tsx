@@ -49,8 +49,8 @@ export default function Wallet({ section, setSection }: Props) {
             <BottomNavWrapper>
                 <NavButton
                     onClick={() => setSection('send')}
-                    $isActive={section == 'send'}
-                    aria-selected={section == 'send'}
+                    $isActive={section === 'send'}
+                    aria-selected={section === 'send'}
                 >
                     <NavButtonContent>
                         <SendSVG />
