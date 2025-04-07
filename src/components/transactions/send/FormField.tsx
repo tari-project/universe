@@ -7,7 +7,7 @@ import { TxInput } from '@app/components/transactions/components/TxInput.tsx';
 interface FormFieldProps {
     name: string;
     control: Control<SendInputs>;
-    handleChange: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
+    handleChange?: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
     icon?: ReactNode;
     accent?: ReactNode;
     required?: boolean;
@@ -33,7 +33,12 @@ export function FormField({ control, name, handleChange, icon, required = false,
                     <TxInput
                         {...rest}
                         name={name}
-                        onChange={(e) => handleChange(e, name)}
+                        onChange={(e) => {
+                            rest.onChange(e);
+                            if (handleChange) {
+                                handleChange(e, name as InputName);
+                            }
+                        }}
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}

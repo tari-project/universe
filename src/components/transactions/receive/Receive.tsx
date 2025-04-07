@@ -16,7 +16,7 @@ export function Receive({ setSection }: Props) {
 
     return (
         <>
-            <TabHeader $bordered>
+            <TabHeader>
                 <HeaderLabel>{`${t('tabs.receive')}  ${t('tari')}`}</HeaderLabel>
                 <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
                     {t('common:back')}
