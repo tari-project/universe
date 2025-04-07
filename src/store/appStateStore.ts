@@ -1,6 +1,5 @@
 import { ApplicationsVersions, CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status';
 import { create } from './create';
-import { ResumingAllProcessesPayload } from '@app/types/events-payloads';
 
 interface AppState {
     error?: string;
@@ -14,7 +13,6 @@ interface AppState {
     releaseNotes: string;
     isAppUpdateAvailable: boolean;
     networkStatus?: NetworkStatus;
-    appResumePayload?: ResumingAllProcessesPayload;
     isStuckOnOrphanChain: boolean;
 }
 
@@ -24,7 +22,6 @@ const initialstate: AppState = {
     missingExternalDependencies: [],
     releaseNotes: '',
     isAppUpdateAvailable: false,
-    appResumePayload: undefined,
     isStuckOnOrphanChain: false,
 };
 

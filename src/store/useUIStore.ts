@@ -27,6 +27,7 @@ interface UIStoreState {
     adminShow?: AdminShow;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
+    showResumeAppModal: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -41,6 +42,7 @@ const initialState: UIStoreState = {
     showExternalDependenciesDialog: false,
     showSplashscreen: true,
     hideWalletBalance: false,
+    showResumeAppModal: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({
