@@ -2,8 +2,9 @@ import { useAirdropStore } from '@app/store';
 import { listen } from '@tauri-apps/api/event';
 import { useEffect } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
-import { WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
+import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@app/types/ws';
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
+import './useSendWsMessage'; // dummy import to bypass knip
 
 export interface WebsocketEventType {
     event: string;
@@ -28,7 +29,7 @@ export default function useAirdropWebsocket() {
             const payload: WebsocketEventType = event.payload as WebsocketEventType;
             const data = JSON.parse(payload?.data as string);
             switch (payload.event) {
-                case 'global-event': {
+                case GLOBAL_EVENT_NAME: {
                     const data = payload.data;
                     globalEventHandler(data as WebsocketGlobalEvent);
                     break;

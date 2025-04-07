@@ -2,7 +2,6 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
 let socketInitialised = false;
-export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
 
 listen<string>('ws-status-change', (event) => {
     if (event.payload === 'Connected' || event.payload === 'Reconnecting') {
