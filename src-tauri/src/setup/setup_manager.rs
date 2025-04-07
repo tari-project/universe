@@ -262,11 +262,11 @@ impl SetupManager {
     }
 
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
-        let core_phase_status_subscriber = self.core_phase_status.subscribe();
-        let hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
-        let node_phase_status_subscriber = self.node_phase_status.subscribe();
-        let wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
-        let unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+        let mut core_phase_status_subscriber = self.core_phase_status.subscribe();
+        let mut hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
+        let mut node_phase_status_subscriber = self.node_phase_status.subscribe();
+        let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
+        let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
 
         TasksTrackers::current()
             .common
