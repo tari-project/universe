@@ -1,21 +1,12 @@
 /* eslint-disable i18next/no-literal-string */
 import { useUIStore } from '@app/store/useUIStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
-import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
+
 import { handleNewBlock, setFlareAnimationType, useBlockchainVisualisationStore } from '@app/store';
+import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 
 export function OtherUIGroup() {
     const connectionStatus = useUIStore((s) => s.connectionStatus);
-
-    const shiftConnectionStatus = () => {
-        if (connectionStatus === 'connected') {
-            setConnectionStatus('disconnected');
-        } else if (connectionStatus === 'disconnected') {
-            setConnectionStatus('disconnected-severe');
-        } else {
-            setConnectionStatus('connected');
-        }
-    };
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const dummyNewBlock = {
         block_height: height || 4000,
@@ -27,6 +18,16 @@ export function OtherUIGroup() {
             pending_outgoing_balance: 0,
         },
     };
+    const shiftConnectionStatus = () => {
+        if (connectionStatus === 'connected') {
+            setConnectionStatus('disconnected');
+        } else if (connectionStatus === 'disconnected') {
+            setConnectionStatus('disconnected-severe');
+        } else {
+            setConnectionStatus('connected');
+        }
+    };
+
     const addDummyBlocks = (count = 1000) => {
         for (let i = 0; i < count; i++) {
             handleNewBlock({
