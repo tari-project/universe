@@ -555,10 +555,9 @@ async fn get_telemetry_data(
         "wallet",
     );
 
-    let (download_speed, upload_speed, latency) = NetworkStatus::current()
+    let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
-        .borrow()
-        .clone();
+        .borrow();
 
     let data = TelemetryData {
         app_id: config_guard.anon_id().to_string(),

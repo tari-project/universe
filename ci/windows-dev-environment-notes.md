@@ -269,14 +269,14 @@ found 0 vulnerabilities
 
 # Install Cargo tools - tauri-cli
 ```Pow/universe
-cargo install tauri-cli --version "2.1.0"
+cargo install tauri-cli --version "2.4.0"
 ```
 sample output:
 ```
-PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.1.0"
+PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.4.0"
 >>
     Updating crates.io index
-  Installing tauri-cli v2.1.0
+  Installing tauri-cli v2.4.0
     Updating crates.io index
        Fetch [===========>                     ] 48 complete; 1 pending
 ```
@@ -290,14 +290,14 @@ PS C:\Users\leet\src\universe> cargo install tauri-cli --version "2.1.0"
     Building [=======================> ] 491/492: cargo-tauri(bin)
     Finished `release` profile [optimized] target(s) in 13m 14s
   Installing C:\Users\leet\.cargo\bin\cargo-tauri.exe
-   Installed package `tauri-cli v2.1.0` (executable `cargo-tauri.exe`)
+   Installed package `tauri-cli v2.4.0` (executable `cargo-tauri.exe`)
 ```
 ```PowerShell
 cargo tauri --version
 ```
 sample output:
 ```
-  tauri-cli 2.1.0
+  tauri-cli 2.4.0
 ```
 
 # Build from source for ```Tari Universe Alpha```
