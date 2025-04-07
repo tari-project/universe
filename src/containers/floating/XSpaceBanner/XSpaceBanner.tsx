@@ -1,14 +1,13 @@
-// import { X } from 'lucide-react';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import {
     BannerContent,
-    IconContainer,
     FlexWrapper,
+    IconContainer,
     LiveBadgePoint,
-    TimeBadge,
-    Title,
     LiveBadgeText,
     LiveBadgeWrapper,
+    TimeBadge,
+    Title,
     TitleContainer,
 } from './XSpaceBanner.style';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -37,10 +36,9 @@ const XSpaceEventBanner = () => {
 
             if (!latestXSpaceEvent.goingLive || latestXSpaceEvent.type !== XSpaceEventType.event) return;
             const currentDate = new Date();
-            setIsLive(
-                new Date(latestXSpaceEvent.visibilityEnd) >= currentDate &&
-                    new Date(latestXSpaceEvent.goingLive) <= currentDate
-            );
+            const visibilityDate = new Date(latestXSpaceEvent.visibilityEnd);
+            const goLiveDate = new Date(latestXSpaceEvent.goingLive);
+            setIsLive(visibilityDate >= currentDate && goLiveDate <= currentDate);
         };
 
         checkVisibility();
@@ -61,7 +59,7 @@ const XSpaceEventBanner = () => {
         if (!latestXSpaceEvent || isLive || !latestXSpaceEvent.goingLive) {
             return undefined;
         }
-        const dateFormatted = new Date(latestXSpaceEvent.goingLive)
+        return new Date(latestXSpaceEvent.goingLive)
             .toLocaleString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -71,7 +69,6 @@ const XSpaceEventBanner = () => {
             })
             .replace(', ', ' @')
             .toUpperCase();
-        return dateFormatted;
     }, [latestXSpaceEvent, isLive]);
 
     if (!latestXSpaceEvent || !isVisible) {

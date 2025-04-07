@@ -1,6 +1,8 @@
 import * as m from 'motion/react-m';
 import styled from 'styled-components';
 
+// don't need theming for this file as the colours are the same in dark/light mode (black and white)
+
 export const BannerContent = styled(m.div)`
     position: fixed;
     top: 16px;
@@ -12,7 +14,7 @@ export const BannerContent = styled(m.div)`
     border-radius: 9999px;
     max-width: 30rem;
     background-color: #000;
-    color: ${({ theme }) => theme.palette.background.default};
+    color: #fff;
     cursor: pointer;
     pointer-events: all;
     &:hover {
