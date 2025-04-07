@@ -30,7 +30,6 @@ export default function useAirdropWebsocket() {
             const data = JSON.parse(payload?.data as string);
             switch (payload.event) {
                 case GLOBAL_EVENT_NAME: {
-                    const data = payload.data;
                     globalEventHandler(data as WebsocketGlobalEvent);
                     break;
                 }
