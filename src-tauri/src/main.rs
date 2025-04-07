@@ -1368,6 +1368,7 @@ fn main() {
             commands::set_selected_engine,
             commands::frontend_ready,
             commands::send_one_sided_to_stealth_address,
+            commands::verify_address_for_send,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

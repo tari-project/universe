@@ -43,6 +43,7 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
+use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
@@ -61,6 +62,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
+use tari_common_types::tari_address::TariAddressFeatures;
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
@@ -1804,4 +1806,14 @@ pub async fn send_one_sided_to_stealth_address(
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
+}
+
+#[tauri::command]
+pub fn verify_address_for_send(
+    address: String,
+    sending_method: Option<TariAddressFeatures>,
+) -> Result<(), String> {
+    let sending_method = sending_method.unwrap_or(TariAddressFeatures::ONE_SIDED);
+
+    verify_send(address, sending_method)
 }
