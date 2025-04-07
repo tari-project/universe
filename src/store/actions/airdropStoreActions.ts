@@ -177,6 +177,10 @@ export const setUserPoints = (userPoints: UserPoints) => {
     useAirdropStore.setState({ userPoints });
 };
 
+export const setXSpaceEvent = (xSpaceEvent: XSpaceEvent | null) => {
+    useAirdropStore.setState({ latestXSpaceEvent: xSpaceEvent });
+};
+
 export const handleUsernameChange = async (username: string, onError?: (e: unknown) => void) => {
     return handleAirdropRequest<{ success: boolean; message?: string }>({
         path: '/user/username',
