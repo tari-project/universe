@@ -30,6 +30,7 @@
   "loginButton": "로그인하여 보석 받기",
   "logout": "로그아웃",
   "nextTierBonus": "<strong>{{count}}명의 친구</strong>를 초대하고 {{bonusGems}}개의 보너스 보석을 받으세요",
+  "update-username": "사용자 이름 업데이트",
   "permission": {
     "setup": "타리 유니버스는 <strong>경험을 개선하기 위해</strong> 분석을 사용하고자 합니다.",
     "text": "Tari Universe는 귀하의 경험을 개선하고 채굴에 대한 보상으로 보석을 제공하기 위해 분석을 사용하고자 합니다.",
@@ -45,5 +46,8 @@
   "topTooltipTitle": "테스트넷 보상",
   "unclaimedGems": "미수령 보석",
   "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
-  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!"
+  "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!",
+  "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",
+  "username-update-success": "사용자 이름이 성공적으로 업데이트되었습니다",
+  "success": "성공"
 }

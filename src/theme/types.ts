@@ -23,7 +23,8 @@ type ColourKey = ColourTuple[number];
 
 type StandardColour = Record<ColourKey, string>;
 type Colour = Partial<Record<ColourKey, string>>;
-type Gradients = Partial<Record<ColourKey, string>>;
+type GraidentKey = 'setupBg' | 'radialBg' | 'miningButtonStarted' | 'miningButtonHover' | ColourKey;
+type Gradients = Partial<Record<GraidentKey, string>>;
 
 export interface ThemePalette {
     mode: Theme;

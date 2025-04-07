@@ -30,6 +30,7 @@
   "loginButton": "Einloggen, um Edelsteine zu beanspruchen",
   "logout": "Ausloggen",
   "nextTierBonus": "Lade <strong>{{count}} Freunde</strong> ein und erhalte {{bonusGems}} Bonus-Edelsteine",
+  "update-username": "Benutzernamen aktualisieren",
   "permission": {
     "setup": "Tari Universe möchte Analysen verwenden, um <strong>Ihr Erlebnis zu verbessern.</strong>",
     "text": "Tari Universe möchte Analysen verwenden, um deine Erfahrung zu verbessern und dich mit Edelsteinen für das Mining zu belohnen.",
@@ -41,6 +42,7 @@
   },
   "referral": "Freund einladen",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Erfolg",
   "topTooltipText": "Erhalte einen Tari Airdrop, indem du Edelsteine sammelst. Je mehr Edelsteine du verdienst, desto größer ist dein Airdrop.",
   "topTooltipTitle": "Testnet Belohnungen",
   "unclaimedGems": "Nicht beanspruchte Edelsteine",
