@@ -21,6 +21,7 @@
   "loginButton": "Connecte-toi pour réclamer des gemmes",
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
+  "update-username": "Mettre à jour votre nom d'utilisateur",
   "permission": {
     "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
     "text": "Tari Universe aimerait utiliser des outils d'analyse pour améliorer ton expérience et te récompenser avec des gemmes pour le minage.",
@@ -38,5 +39,8 @@
   "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !",
   "joinAirdrop": "Rejoindre l\"Airdrop",
   "loggedInTitle": "Récompenses Airdrop",
-  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes"
+  "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes",
+  "username-error": "Le nom d'utilisateur doit comporter entre 3 et 20 caractères et ne contenir que des lettres, des chiffres, des tirets bas ou des traits d'union",
+  "username-update-success": "Nom d'utilisateur mis à jour avec succès",
+  "success": "Succès"
 }
