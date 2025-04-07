@@ -24,8 +24,8 @@ export default function useAirdropWebsocket() {
     }, []);
 
     useEffect(() => {
-        listen<any>('ws-rx', (event) => {
-            const payload: WebsocketEventType = event.payload;
+        listen<unknown>('ws-rx', (event) => {
+            const payload: WebsocketEventType = event.payload as WebsocketEventType;
             const data = JSON.parse(payload?.data as string);
             switch (payload.event) {
                 case 'global-event': {
