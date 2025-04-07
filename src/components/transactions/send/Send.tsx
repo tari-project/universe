@@ -74,8 +74,8 @@ export function Send({
 
     const fieldMarkup = (
         <FormFieldsWrapper>
-            {paymentIdField}
             {addressField}
+            {paymentIdField}
             {amountField}
         </FormFieldsWrapper>
     );

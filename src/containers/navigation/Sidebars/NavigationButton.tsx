@@ -25,7 +25,7 @@ interface NavButtonProps {
 
 const NavButton = memo(function NavButton({ children, isActive, onClick }: NavButtonProps) {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
-    const [showArrow, setShowArrow] = useState(isActive);
+    const [showArrow, setShowArrow] = useState(false);
 
     const scaleX = sidebarOpen ? -1 : 1;
 
