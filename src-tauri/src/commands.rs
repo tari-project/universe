@@ -712,8 +712,6 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), false).await?;
-
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
             TasksTrackers::current().stop_all_processes().await;

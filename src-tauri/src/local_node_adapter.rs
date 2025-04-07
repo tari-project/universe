@@ -41,6 +41,7 @@ use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
+use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -307,6 +308,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                     self.required_initial_peers,
                 ),
                 self.status_broadcast.clone(),
+                // last_block_time: Arc::new(AtomicU64::new(0)),
                 Arc::new(AtomicU64::new(0)),
             ),
         ))

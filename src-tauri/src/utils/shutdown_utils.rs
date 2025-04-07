@@ -27,13 +27,8 @@ use crate::{
     events::ResumingAllProcessesPayload,
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     p2pool_manager::P2poolConfig,
-<<<<<<< HEAD
     tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
-=======
-    progress_tracker::ProgressTracker,
-    StartConfig, UniverseAppState, APPLICATION_FOLDER_ID,
->>>>>>> 8a7ba06c (Revert "fix: shutdown deadlock (#1549)")
 };
 use log::{error, info, warn};
 use tauri::Manager;

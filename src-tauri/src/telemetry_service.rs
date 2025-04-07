@@ -35,7 +35,7 @@ use crate::{
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     process_utils::retry_with_backoff,
-    tasks_tracker::TasksTrackers,
+    tasks_tracker::TasksTracker,
     utils::platform_utils::{CurrentOperatingSystem, PlatformUtils},
 };
 

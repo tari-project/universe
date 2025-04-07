@@ -27,6 +27,8 @@ use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
