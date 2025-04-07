@@ -1,15 +1,15 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
     width: 100%;
-    padding: 20px 10px 10px;
-    border-radius: 10px;
-    box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.3)} 0 0 4px -3px inset`};
+    padding: 20px 20px 10px 20px;
+    border-radius: 20px;
+
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
 `;
 
 export const AccentWrapper = styled.div`

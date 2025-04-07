@@ -14,7 +14,7 @@ export const ItemWrapper = styled(m.div)`
     position: relative;
     box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
 
-    background-color: ${({ theme }) => theme.palette.background.accent};
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
 `;
 
 export const HoverWrapper = styled(m.div)`
