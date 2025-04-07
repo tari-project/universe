@@ -28,9 +28,11 @@ use crate::{
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
+    utils::system_status::SystemStatus,
     UniverseAppState,
 };
-use log::{error, info};
+use log::{debug, error, info};
+use serde::Serialize;
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
@@ -55,7 +57,7 @@ static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize)]
 pub enum SetupPhase {
     Core,
     Wallet,
@@ -73,6 +75,18 @@ impl Display for SetupPhase {
             SetupPhase::Node => write!(f, "Node"),
             SetupPhase::Unknown => write!(f, "Unknown"),
         }
+    }
+}
+
+impl SetupPhase {
+    pub fn all() -> Vec<SetupPhase> {
+        vec![
+            SetupPhase::Core,
+            SetupPhase::Hardware,
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Unknown,
+        ]
     }
 }
 
@@ -195,33 +209,35 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
-    pub async fn start_setup(&self, app_handle: AppHandle) {
-        self.pre_setup(app_handle.clone()).await;
-        *self.app_handle.lock().await = Some(app_handle.clone());
-
+    async fn setup_core_phase(&self, app_handle: AppHandle) {
         let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
-        let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
-        let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-        let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-
-        self.wait_for_unlock_conditions(app_handle.clone()).await;
-
         core_phase_setup
             .setup(self.core_phase_status.clone(), vec![])
             .await;
+    }
+
+    async fn setup_hardware_phase(&self, app_handle: AppHandle) {
+        let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
         hardware_phase_setup
             .setup(
                 self.hardware_phase_status.clone(),
                 vec![self.core_phase_status.subscribe()],
             )
             .await;
+    }
+
+    async fn setup_node_phase(&self, app_handle: AppHandle) {
+        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
         node_phase_setup
             .setup(
                 self.node_phase_status.clone(),
                 vec![self.core_phase_status.subscribe()],
             )
             .await;
+    }
+
+    async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
         wallet_phase_setup
             .setup(
                 self.wallet_phase_status.clone(),
@@ -231,6 +247,10 @@ impl SetupManager {
                 ],
             )
             .await;
+    }
+
+    async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+        let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
         unknown_phase_setup
             .setup(
                 self.unknown_phase_status.clone(),
@@ -243,7 +263,7 @@ impl SetupManager {
             .await;
     }
 
-    pub async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
+    async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let core_phase_status_subscriber = self.core_phase_status.subscribe();
         let hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
         let node_phase_status_subscriber = self.node_phase_status.subscribe();
@@ -336,151 +356,81 @@ impl SetupManager {
             });
     }
 
-    #[allow(dead_code)]
-    async fn restart_phases(&self, app_handle: AppHandle, phases_queue: Vec<SetupPhase>) {
-        for phase in phases_queue.clone() {
+    async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        for phase in phases {
             match phase {
                 SetupPhase::Core => {
+                    self.lock_mining(app_handle.clone()).await;
+                    self.lock_wallet(app_handle.clone()).await;
                     TasksTrackers::current().core_phase.close().await;
                     TasksTrackers::current().core_phase.replace().await;
                     let _unused = self.core_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Hardware => {
+                    self.lock_mining(app_handle.clone()).await;
                     TasksTrackers::current().hardware_phase.close().await;
                     TasksTrackers::current().hardware_phase.replace().await;
                     let _unused = self.hardware_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Node => {
+                    self.lock_mining(app_handle.clone()).await;
+                    self.lock_wallet(app_handle.clone()).await;
                     TasksTrackers::current().node_phase.close().await;
                     TasksTrackers::current().node_phase.replace().await;
                     let _unused = self.node_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Wallet => {
+                    self.lock_wallet(app_handle.clone()).await;
                     TasksTrackers::current().wallet_phase.close().await;
                     TasksTrackers::current().wallet_phase.replace().await;
                     let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
                 }
                 SetupPhase::Unknown => {
+                    self.lock_mining(app_handle.clone()).await;
                     TasksTrackers::current().unknown_phase.close().await;
                     TasksTrackers::current().unknown_phase.replace().await;
                     let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
                 }
             }
         }
-
-        for phase in phases_queue {
-            match phase {
-                SetupPhase::Core => {
-                    let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
-                    core_phase_setup
-                        .setup(self.core_phase_status.clone(), vec![])
-                        .await;
-                }
-                SetupPhase::Hardware => {
-                    let hardware_phase_setup =
-                        Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-                    hardware_phase_setup
-                        .setup(
-                            self.hardware_phase_status.clone(),
-                            vec![self.core_phase_status.subscribe()],
-                        )
-                        .await;
-                }
-                SetupPhase::Node => {
-                    let local_node_phase_setup =
-                        Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
-                    local_node_phase_setup
-                        .setup(
-                            self.node_phase_status.clone(),
-                            vec![self.core_phase_status.subscribe()],
-                        )
-                        .await;
-                }
-                SetupPhase::Wallet => {
-                    let wallet_phase_setup =
-                        Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-                    wallet_phase_setup
-                        .setup(
-                            self.wallet_phase_status.clone(),
-                            vec![
-                                self.core_phase_status.subscribe(),
-                                self.node_phase_status.subscribe(),
-                            ],
-                        )
-                        .await;
-                }
-                SetupPhase::Unknown => {
-                    let unknown_phase_setup =
-                        Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-                    unknown_phase_setup
-                        .setup(
-                            self.unknown_phase_status.clone(),
-                            vec![
-                                self.core_phase_status.subscribe(),
-                                self.node_phase_status.subscribe(),
-                                self.hardware_phase_status.subscribe(),
-                            ],
-                        )
-                        .await;
-                }
-            }
-        }
-
-        info!(target: LOG_TARGET, "Spawning unlock conditions");
-        self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
-    pub async fn handle_switch_to_local_node(&self) {
-        if let Some(app_handle) = self.app_handle.lock().await.clone() {
-            info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
-            let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
-            events_manager.handle_node_type_update(&app_handle).await;
-
-            self.lock_mining(app_handle.clone()).await;
-            self.lock_wallet(app_handle.clone()).await;
-            info!(target: LOG_TARGET, "Restarting Phases");
-            // self.restart_phases(
-            //     app_handle.clone(),
-            //     vec![SetupPhase::Wallet, SetupPhase::Unknown],
-            // )
-            // .await;
-
-            TasksTrackers::current().wallet_phase.close().await;
-            TasksTrackers::current().wallet_phase.replace().await;
-            let _unused = self.wallet_phase_status.send_replace(PhaseStatus::None);
-
-            TasksTrackers::current().unknown_phase.close().await;
-            TasksTrackers::current().unknown_phase.replace().await;
-            let _unused = self.unknown_phase_status.send_replace(PhaseStatus::None);
-
-            let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-            wallet_phase_setup
-                .setup(
-                    self.wallet_phase_status.clone(),
-                    vec![
-                        self.core_phase_status.subscribe(),
-                        self.node_phase_status.subscribe(),
-                    ],
-                )
+    async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        if !phases.is_empty() {
+            let state = app_handle.state::<UniverseAppState>();
+            state
+                .events_manager
+                .handle_restarting_phases(&app_handle, phases.clone())
                 .await;
+        }
 
-            let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-            unknown_phase_setup
-                .setup(
-                    self.unknown_phase_status.clone(),
-                    vec![
-                        self.core_phase_status.subscribe(),
-                        self.node_phase_status.subscribe(),
-                        self.hardware_phase_status.subscribe(),
-                    ],
-                )
-                .await;
-        } else {
-            error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
+        for phase in phases {
+            match phase {
+                SetupPhase::Core => {
+                    self.setup_core_phase(app_handle.clone()).await;
+                }
+                SetupPhase::Hardware => {
+                    self.setup_hardware_phase(app_handle.clone()).await;
+                }
+                SetupPhase::Node => {
+                    self.setup_node_phase(app_handle.clone()).await;
+                }
+                SetupPhase::Wallet => {
+                    self.setup_wallet_phase(app_handle.clone()).await;
+                }
+                SetupPhase::Unknown => {
+                    self.setup_unknown_phase(app_handle.clone()).await;
+                }
+            }
         }
     }
 
     async fn unlock_app(&self, app_handle: AppHandle) {
+        if *self.is_app_unlocked.lock().await {
+            debug!(target: LOG_TARGET, "App is already unlocked");
+            return;
+        }
+
         info!(target: LOG_TARGET, "Unlocking App");
         *self.is_app_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
@@ -493,6 +443,11 @@ impl SetupManager {
     }
 
     async fn unlock_wallet(&self, app_handle: AppHandle) {
+        if *self.is_wallet_unlocked.lock().await {
+            debug!(target: LOG_TARGET, "Wallet is already unlocked");
+            return;
+        }
+
         info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
@@ -500,6 +455,10 @@ impl SetupManager {
     }
 
     async fn unlock_mining(&self, app_handle: AppHandle) {
+        if *self.is_mining_unlocked.lock().await {
+            debug!(target: LOG_TARGET, "Mining is already unlocked");
+            return;
+        }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_mining_unlocked.lock().await = true;
         let state = app_handle.state::<UniverseAppState>();
@@ -507,6 +466,11 @@ impl SetupManager {
     }
 
     async fn lock_mining(&self, app_handle: AppHandle) {
+        if !*self.is_mining_unlocked.lock().await {
+            debug!(target: LOG_TARGET, "Mining is already locked");
+            return;
+        }
+
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_mining_unlocked.lock().await = false;
@@ -515,6 +479,10 @@ impl SetupManager {
     }
 
     async fn lock_wallet(&self, app_handle: AppHandle) {
+        if !*self.is_wallet_unlocked.lock().await {
+            debug!(target: LOG_TARGET, "Wallet is already locked");
+            return;
+        }
         info!(target: LOG_TARGET, "Locking Wallet");
 
         *self.is_wallet_unlocked.lock().await = false;
@@ -525,5 +493,71 @@ impl SetupManager {
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Setup Finished");
         let _unused = initialize_frontend_updates(&app_handle).await;
+    }
+
+    pub async fn start_setup(&self, app_handle: AppHandle) {
+        self.pre_setup(app_handle.clone()).await;
+        *self.app_handle.lock().await = Some(app_handle.clone());
+
+        self.wait_for_unlock_conditions(app_handle.clone()).await;
+
+        self.setup_core_phase(app_handle.clone()).await;
+        self.setup_hardware_phase(app_handle.clone()).await;
+        self.setup_node_phase(app_handle.clone()).await;
+        self.setup_wallet_phase(app_handle.clone()).await;
+        self.setup_unknown_phase(app_handle.clone()).await;
+    }
+
+    pub async fn handle_switch_to_local_node(&self) {
+        if let Some(app_handle) = self.app_handle.lock().await.clone() {
+            info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
+            let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
+            events_manager.handle_node_type_update(&app_handle).await;
+
+            info!(target: LOG_TARGET, "Restarting Phases");
+            self.shutdown_phases(
+                app_handle.clone(),
+                vec![SetupPhase::Wallet, SetupPhase::Unknown],
+            )
+            .await;
+
+            self.setup_wallet_phase(app_handle.clone()).await;
+            self.setup_unknown_phase(app_handle.clone()).await;
+        } else {
+            error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
+        }
+    }
+
+    pub async fn spawn_sleep_mode_handler(app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Spawning Sleep Mode Handler");
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+            let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+            let mut last_state = *receiver.borrow();
+            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+            loop {
+                select! {
+                    _ = receiver.changed() => {
+                        info!(target: LOG_TARGET, "Sleep mode changed");
+                        let current_state = *receiver.borrow();
+                        info!(target: LOG_TARGET, "Current state: {}", current_state);
+                        info!(target: LOG_TARGET, "Last state: {}", last_state);
+                        if last_state && !current_state {
+                            info!(target: LOG_TARGET, "System is no longer in sleep mode");
+                            SetupManager::get_instance().resume_phases(app_handle.clone(), SetupPhase::all()).await;
+                        }
+                        if !last_state && current_state {
+                            info!(target: LOG_TARGET, "System entered sleep mode");
+                            SetupManager::get_instance().shutdown_phases(app_handle.clone(),SetupPhase::all()).await;
+                        }
+                        last_state = current_state;
+                    }
+                    _ = shutdown_signal.wait() => {
+                    break;
+                }
+            }
+
+            }
+
+        });
     }
 }

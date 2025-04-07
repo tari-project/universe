@@ -42,8 +42,7 @@ pub enum EventType {
     CloseSplashscreen,
     DetectedDevices,
     DetectedAvailableGpuEngines,
-    #[allow(dead_code)]
-    ResumingAllProcesses,
+    RestartingPhases,
     ShowReleaseNotes,
     #[cfg(target_os = "macos")]
     CriticalProblem,
@@ -91,14 +90,6 @@ pub struct NetworkStatusPayload {
     pub upload_speed: f64,
     pub latency: f64,
     pub is_too_low: bool,
-}
-
-#[derive(Clone, Debug, Serialize)]
-pub struct ResumingAllProcessesPayload {
-    pub title: String,
-    pub stage_progress: u32,
-    pub stage_total: u32,
-    pub is_resuming: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]
