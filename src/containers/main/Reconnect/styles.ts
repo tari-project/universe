@@ -1,5 +1,5 @@
 import { Typography } from '@app/components/elements/Typography';
-import styled, { keyframes } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 
 export const Wrapper = styled.div`
     pointer-events: all;
@@ -88,30 +88,30 @@ export const TextWrapper = styled.div`
     display: flex;
     flex-direction: column;
     gap: 20px;
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     margin-bottom: 20px;
     align-items: center;
 `;
 
-export const SecondaryButton = styled(Typography)<{ isActive?: boolean }>`
+export const SecondaryButton = styled(Typography)<{ $isActive?: boolean }>`
     display: inline-block;
     width: fit-content;
-    cursor: ${(props) => (props.isActive ? 'pointer' : 'default')};
-    color: black;
+    cursor: ${(props) => (props.$isActive ? 'pointer' : 'default')};
+    color: ${({ theme }) => theme.palette.text.primary};
 
     font-weight: 600;
     font-size: 18px;
     line-height: 22px;
 
     text-align: center;
-    opacity: ${(props) => (props.isActive ? 0.5 : 0.2)};
+    opacity: ${(props) => (props.$isActive ? 0.5 : 0.2)};
     transition: opacity 0.2s ease-in-out; // Optional: add a smooth transition
 
     ${(props) =>
-        props.isActive &&
-        `
-        &:hover {
-            opacity: 0.8; // Example hover effect for active state
-        }
-    `}
+        props.$isActive &&
+        css`
+            &:hover {
+                opacity: 0.8; // Example hover effect for active state
+            }
+        `}
 `;

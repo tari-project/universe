@@ -1,5 +1,5 @@
 import './i18initializer';
-import { StrictMode } from 'react';
+import { StrictMode, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import AppWrapper from './App/AppWrapper.tsx';
 
@@ -12,6 +12,8 @@ document.addEventListener('DOMContentLoaded', () => {
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
     <StrictMode>
-        <AppWrapper />
+        <Suspense fallback={<div />}>
+            <AppWrapper />
+        </Suspense>
     </StrictMode>
 );

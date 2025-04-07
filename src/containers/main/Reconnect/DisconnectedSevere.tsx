@@ -1,6 +1,6 @@
 import { useUIStore } from '@app/store';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { open } from '@tauri-apps/plugin-shell';
 import { useTranslation } from 'react-i18next';
 import disconnectedSevereImage from '/assets/img/disconnected_severe.png';
@@ -9,63 +9,21 @@ import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { RetryTimer, SecondaryButton, TelegramLogo, TextWrapper, Wrapper, HeaderImgSevere, SubTitle } from './styles';
 import { Title } from '@app/containers/floating/StagedSecurity/styles';
-import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 
-const DisconnectedSevere = () => {
+interface DisconnectedSevereProps {
+    countdownText?: React.ReactNode;
+    reconnectOnCooldown?: boolean;
+    onReconnectClick: () => void;
+}
+
+const DisconnectedSevere = ({ onReconnectClick, countdownText, reconnectOnCooldown }: DisconnectedSevereProps) => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
-    const [isVisible, setIsVisible] = React.useState(false);
-    const connectionStatus = useUIStore((s) => s.connectionStatus);
-    const { seconds, start: startCountdown, stop: stopCountdown } = useCountdown();
     const isReconnecting = useUIStore((s) => s.isReconnecting);
-    const [isReconnectOnCooldown, setIsReconnectOnCooldown] = React.useState(false);
-
-    useEffect(() => {
-        const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
-            if (payload === 'Failed') {
-                stopCountdown();
-                startCountdown(300);
-            } else if (payload === 'Succeed') {
-                stopCountdown();
-            }
-        });
-
-        return () => {
-            reconnectingListener.then((unlisten) => unlisten());
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!isVisible && connectionStatus === 'disconnected-severe') {
-            setIsVisible(true);
-            startCountdown(300);
-        }
-        return () => {
-            setIsVisible(false);
-            stopCountdown();
-        };
-    }, [connectionStatus]);
 
     const openTelegram = () => {
         open('https://t.me/tariproject');
     };
-
-    const reconnect = () => {
-        invoke('reconnect');
-        setIsReconnectOnCooldown(true);
-        setTimeout(() => {
-            setIsReconnectOnCooldown(false);
-        }, 1000 * 60);
-    };
-
-    const retryText = isReconnecting ? (
-        <>{t('reconnect-in-progress')}</>
-    ) : (
-        <>
-            {t('auto-reconnect')} <b>{formatSecondsToMmSs(seconds)}</b>
-        </>
-    );
 
     return (
         <Wrapper>
@@ -80,17 +38,17 @@ const DisconnectedSevere = () => {
                     <SubTitle>{t('disconnect-severe-subtitle')}</SubTitle>
                 </TextWrapper>
                 <Stack gap={36} alignItems="center">
-                    <RetryTimer>{retryText}</RetryTimer>
+                    <RetryTimer>{countdownText}</RetryTimer>
                     <Stack direction="row" gap={30}>
-                        <SecondaryButton onClick={reconnect} isActive={!isReconnectOnCooldown && !isReconnecting}>
+                        <SecondaryButton onClick={onReconnectClick} $isActive={!reconnectOnCooldown && !isReconnecting}>
                             {t('connect-now')}
                         </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <SecondaryButton onClick={() => invoke('restart_application')} isActive>
+                        <SecondaryButton onClick={() => invoke('restart_application')} $isActive>
                             {t('restart-app')}
                         </SecondaryButton>
                         <Typography opacity={0.5}>{' | '}</Typography>
-                        <SecondaryButton onClick={openTelegram} isActive>
+                        <SecondaryButton onClick={openTelegram} $isActive>
                             <Typography>{t('go-to-telegram')}</Typography>
                             <TelegramLogo src={telegramLogo} alt="Telegram" />
                         </SecondaryButton>
