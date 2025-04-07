@@ -24,7 +24,10 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 use crate::{
-    gpu_status_file::GpuDevice, node::node_adapter::NodeIdentity, node::node_manager::NodeType, wallet_adapter::{TransactionInfo, WalletBalance}
+    gpu_status_file::GpuDevice,
+    node::node_adapter::NodeIdentity,
+    node::node_manager::NodeType,
+    wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
 #[derive(Clone, Debug, Serialize)]

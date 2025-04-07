@@ -30,9 +30,8 @@ use minotari_node_grpc_client::grpc::{
 };
 use std::time::{Duration, SystemTime};
 
-use log::{error, info, warn};
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use tari_utilities::hex::Hex;
+use log::{error, info, warn};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use serde::Serialize;
 use serde_json::json;
@@ -44,6 +43,7 @@ use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
+use tari_utilities::hex::Hex;
 use tari_utilities::ByteArray;
 use tauri_plugin_sentry::sentry;
 use tauri_plugin_sentry::sentry::protocol::Event;

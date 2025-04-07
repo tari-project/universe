@@ -26,8 +26,8 @@
 use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
-use node::local_node_adapter::LocalNodeAdapter;
 use log::{error, info, warn};
+use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
 use p2pool::models::Connections;
