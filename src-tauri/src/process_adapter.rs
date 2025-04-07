@@ -75,6 +75,7 @@ pub(crate) trait ProcessAdapter {
 
     fn pid_file_name(&self) -> &str;
 
+    #[allow(dead_code)]
     fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
         std::path::Path::new(&base_folder)
             .join(self.pid_file_name())

@@ -142,12 +142,12 @@ impl P2poolManager {
             Ok(None)
         }
     }
-
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
@@ -201,7 +201,7 @@ impl P2poolManager {
         }
         Ok(())
     }
-
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;

@@ -161,6 +161,7 @@ impl WalletManager {
             })
     }
 
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
@@ -168,12 +169,12 @@ impl WalletManager {
             .await
             .map_err(WalletManagerError::UnknownError)
     }
-
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)

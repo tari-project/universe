@@ -191,6 +191,7 @@ impl EventsManager {
         EventsEmitter::emit_detected_available_gpu_engines(app, engines, selected_engine).await;
     }
 
+    #[allow(dead_code)]
     pub async fn handle_resuming_all_processes(
         &self,
         app: &AppHandle,

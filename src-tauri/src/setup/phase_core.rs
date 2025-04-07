@@ -50,10 +50,7 @@ use crate::{
     },
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    utils::{
-        network_status::NetworkStatus, platform_utils::PlatformUtils,
-        shutdown_utils::resume_all_processes, system_status::SystemStatus,
-    },
+    utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
 };
 
@@ -419,52 +416,33 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .handle_core_phase_finished(&self.app_handle, true)
             .await;
 
-        let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
-            let mut last_state = *receiver.borrow();
-            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-            loop {
-                select! {
-                    _ = receiver.changed() => {
-                        let current_state = *receiver.borrow();
-                        if last_state && !current_state {
-                            info!(target: LOG_TARGET, "System is no longer in sleep mode");
-                            let _unused = resume_all_processes(app_handle_clone.clone()).await;
-                        }
-                        if !last_state && current_state {
-                            info!(target: LOG_TARGET, "System entered sleep mode");
-                            TasksTrackers::current().stop_all_processes().await;
-                        }
-                        last_state = current_state;
-                    }
-                    _ = shutdown_signal.wait() => {
-                    break;
-                }
-            }
+        // let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
+        // TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+        //     let mut receiver = SystemStatus::current().get_sleep_mode_watcher();
+        //     let mut last_state = *receiver.borrow();
+        //     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        //     loop {
+        //         select! {
+        //             _ = receiver.changed() => {
+        //                 let current_state = *receiver.borrow();
+        //                 if last_state && !current_state {
+        //                     info!(target: LOG_TARGET, "System is no longer in sleep mode");
+        //                     let _unused = resume_all_processes(app_handle_clone.clone()).await;
+        //                 }
+        //                 if !last_state && current_state {
+        //                     info!(target: LOG_TARGET, "System entered sleep mode");
+        //                     TasksTrackers::current().stop_all_processes().await;
+        //                 }
+        //                 last_state = current_state;
+        //             }
+        //             _ = shutdown_signal.wait() => {
+        //             break;
+        //         }
+        //     }
 
-            }
+        //     }
 
-            // loop {
-            //     if receiver.changed().await.is_ok() {
-            //         let current_state = *receiver.borrow();
-
-            //         if last_state && !current_state {
-            //             info!(target: LOG_TARGET, "System is no longer in sleep mode");
-            //             let _unused = resume_all_processes(app_handle_clone.clone()).await;
-            //         }
-
-            //         if !last_state && current_state {
-            //             info!(target: LOG_TARGET, "System entered sleep mode");
-            //             TasksTrackers::current().stop_all_processes().await;
-            //         }
-
-            //         last_state = current_state;
-            //     } else {
-            //         error!(target: LOG_TARGET, "Failed to receive sleep mode change");
-            //     }
-            // }
-        });
+        // });
 
         Ok(())
     }

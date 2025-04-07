@@ -27,17 +27,15 @@ use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tokio::task::JoinHandle;
 
 use tokio::select;
 use tokio::sync::watch;
-use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
+use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::task::TaskTracker;
 
 const LOG_TARGET: &str = "tari::universe::process_watcher";
@@ -201,19 +199,20 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub fn is_running(&self) -> bool {
         if let Some(task) = self.watcher_task.as_ref() {
-            !task.inner().is_finished()
+            !task.is_finished()
         } else {
             false
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         self.adapter.pid_file_exisits(base_path)
     }
 
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
-            if task.inner().is_finished() {
+            if task.is_finished() {
                 //let exit_code = task.await??;
 
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));

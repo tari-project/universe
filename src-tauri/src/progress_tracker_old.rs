@@ -114,7 +114,6 @@ impl ProgressTrackerInner {
             / 100.0;
         if let Some(channel) = &self.last_action_channel {
             let _unused = channel
-            let _unused = channel
                 .send(format!(
                     "last action: {} at progress: {}",
                     title.clone(),

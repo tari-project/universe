@@ -262,7 +262,7 @@ impl CpuMiner {
         let lock = self.watcher.read().await;
         lock.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
