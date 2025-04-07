@@ -119,10 +119,7 @@ impl WebsocketEventsManager {
                 let mut shutdown_signal = shutdown.clone().to_signal();
                 tokio::select! {
                   _= interval.tick() => {
-                        info!(target:LOG_TARGET, "jwt might exist");
                         if let Some(jwt)= jwt_token{
-                            info!(target:LOG_TARGET, "jwt exist");
-
                         if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                           cpu_miner_status_watch_rx.clone(),
                           gpu_latest_miner_stats.clone(),
@@ -131,8 +128,6 @@ impl WebsocketEventsManager {
                           app_version.clone(),
                           jwt,
                         ).await{
-                            info!(target:LOG_TARGET, "sending mining-status message: {:?}", message);
-
                             let _ = websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
                               error!(target:LOG_TARGET, "could not send to websocket channel due to {}",e);
                             });
