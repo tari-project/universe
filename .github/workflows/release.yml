@@ -34,24 +34,24 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles deb,appimage,updater'
-          #   extra: '-x64'
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles deb,appimage,updater'
-          #   best_effort: true
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles rpm'
-          #   extra: '-x64-rpm'
-          #   best_effort: true
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles rpm'
-          #   extra: '-rpm'
-          #   best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles deb,appimage'
+            extra: '-x64'
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles deb,appimage'
+            best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles rpm'
+            extra: '-x64-rpm'
+            best_effort: true
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles rpm'
+            extra: '-rpm'
+            best_effort: true
           - platform: 'windows-latest'
-            args: '--bundles msi,updater'
-          # - platform: 'macos-latest'
-          #   args: '--target universal-apple-darwin'
+            args: '--bundles msi'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platform }}
     steps:
       - name: Dump env
@@ -63,12 +63,12 @@ jobs:
 
       - uses: actions/checkout@v4
 
-      - name: BETA Builds - Install dependencies (windows) [yq]
+      - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
           choco upgrade yq -y
 
-      - name: BETA Builds - Install dependencies (linux) [yq]
+      - name: Builds - Install dependencies (linux) [yq]
         if: ${{ startsWith(runner.os,'Linux') }}
         shell: bash
         run: |
@@ -281,7 +281,7 @@ jobs:
         uses: microsoft/setup-msbuild@v2
         if: startsWith(runner.os,'Windows')
 
-      - name: Build WiX on Windows
+      - name: Build bundled WiX Windows installer
         if: ${{ startsWith(runner.os,'Windows') }}
         env:
           TARI_UNIVERSE_APP_VERSION: ${{ steps.build.outputs.appVersion }}
@@ -329,7 +329,7 @@ jobs:
           ls -la tari-win-bundler/executables
           mv -v ./tari-win-bundler/Bundle.exe "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe"
 
-      - name: Sign New Windows Installer
+      - name: Sign Bundled Windows Installer
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         shell: bash
         env:
@@ -342,7 +342,7 @@ jobs:
           wix burn reattach "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}_unsigned.exe" -engine ./tari-win-bundler/burnengine.exe -o "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
           trusted-signing-cli -e https://eus.codesigning.azure.net/ -a Tari -d TariUniverse -c Tarilabs "./tari-win-bundler/${TARI_UNIVERSE_BUNDLER_NAME}.exe"
 
-      - name: Verify Windows signing for installer
+      - name: Verify signing for Bundled Windows installer
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( env.AZURE_TENANT_ID != '' ) }}
         continue-on-error: true
         env:
@@ -391,7 +391,7 @@ jobs:
             exit 1
           }
 
-      - name: Add Windows bundled wix installer to release
+      - name: Add bundled Windows installer to release
         if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -399,13 +399,13 @@ jobs:
         run: |
           gh release view "v${{ steps.build.outputs.appVersion }}"
           cd tari-win-bundler
-          ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+          ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
           gh release view "v${{ steps.build.outputs.appVersion }}"
           gh release upload "v${{ steps.build.outputs.appVersion }}" \
-            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}_unsigned.exe"
+            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
           gh release view "v${{ steps.build.outputs.appVersion }}"
 
-      - name: BETA Builds - upload wix installer
+      - name: BETA Builds bundled Windows installer upload
         if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
         uses: actions/upload-artifact@v4
         with:

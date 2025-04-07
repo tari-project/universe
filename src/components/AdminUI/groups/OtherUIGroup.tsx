@@ -3,12 +3,31 @@ import { useUIStore } from '@app/store/useUIStore';
 import { useShellOfSecretsStore } from '../../../store/useShellOfSecretsStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 
-import { setAdminShow, setFlareAnimationType } from '@app/store';
+import { handleNewBlock, setAdminShow, setFlareAnimationType, useBlockchainVisualisationStore } from '@app/store';
 
 export function OtherUIGroup() {
     const adminShow = useUIStore((s) => s.adminShow);
     const showWidget = useShellOfSecretsStore((s) => s.showWidget);
     const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
+    const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
+    const dummyNewBlock = {
+        block_height: height || 4000,
+        coinbase_transaction: undefined,
+        balance: {
+            available_balance: 333748143307,
+            timelocked_balance: 13904199881,
+            pending_incoming_balance: 0,
+            pending_outgoing_balance: 0,
+        },
+    };
+    const addDummyBlocks = (count = 1000) => {
+        for (let i = 0; i < count; i++) {
+            handleNewBlock({
+                ...dummyNewBlock,
+                block_height: dummyNewBlock.block_height + i,
+            });
+        }
+    };
 
     return (
         <>
@@ -20,6 +39,7 @@ export function OtherUIGroup() {
                 <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
                     SoS Widget
                 </Button>
+                <Button onClick={() => addDummyBlocks()}>Add New Dummy Blocks</Button>
                 <Button
                     onClick={() => setAdminShow(adminShow === 'orphanChainWarning' ? null : 'orphanChainWarning')}
                     $isActive={adminShow === 'orphanChainWarning'}

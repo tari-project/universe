@@ -22,15 +22,16 @@
 
 use crate::binaries::{Binaries, BinaryResolver};
 use crate::process_adapter::{HealthStatus, ProcessAdapter, ProcessInstance, StatusMonitor};
-use crate::tasks_tracker::TasksTracker;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tari_shutdown::{Shutdown, ShutdownSignal};
+use tauri::async_runtime::JoinHandle;
 use tokio::select;
 use tokio::sync::watch;
-use tokio::task::JoinHandle;
 use tokio::time::MissedTickBehavior;
 use tokio::time::{sleep, timeout};
 
@@ -58,6 +59,7 @@ pub struct ProcessWatcher<TAdapter: ProcessAdapter> {
     pub(crate) status_monitor: Option<TAdapter::StatusMonitor>,
     pub stop_on_exit_codes: Vec<i32>,
     stats_broadcast: watch::Sender<ProcessWatcherStats>,
+    is_first_start: Arc<AtomicBool>,
 }
 
 impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
@@ -72,6 +74,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             status_monitor: None,
             stop_on_exit_codes: Vec::new(),
             stats_broadcast,
+            is_first_start: Arc::new(AtomicBool::new(true)),
         }
     }
 }
@@ -116,9 +119,16 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
             .await
             .resolve_path_to_binary_files(binary)?;
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
+        let first_start = self
+            .is_first_start
+            .load(std::sync::atomic::Ordering::SeqCst);
         let (mut child, status_monitor) =
             self.adapter
-                .spawn(base_path, config_path, log_path, binary_path)?;
+                .spawn(base_path, config_path, log_path, binary_path, first_start)?;
+        if first_start {
+            self.is_first_start
+                .store(false, std::sync::atomic::Ordering::SeqCst);
+        }
         let status_monitor2 = status_monitor.clone();
         self.status_monitor = Some(status_monitor);
 
@@ -126,7 +136,7 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let mut app_shutdown: ShutdownSignal = app_shutdown.clone();
         let stop_on_exit_codes = self.stop_on_exit_codes.clone();
         let stats_broadcast = self.stats_broadcast.clone();
-        self.watcher_task = Some(TasksTracker::current().spawn(async move {
+        self.watcher_task = Some(tauri::async_runtime::spawn(async move {
             child.start().await?;
             let mut uptime = Instant::now();
             let mut stats = ProcessWatcherStats {
@@ -183,15 +193,19 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
 
     pub fn is_running(&self) -> bool {
         if let Some(task) = self.watcher_task.as_ref() {
-            !task.is_finished()
+            !task.inner().is_finished()
         } else {
             false
         }
     }
 
+    pub fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
+        self.adapter.pid_file_exisits(base_path)
+    }
+
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         if let Some(ref task) = self.watcher_task {
-            if task.is_finished() {
+            if task.inner().is_finished() {
                 //let exit_code = task.await??;
 
                 return Err(anyhow::anyhow!("Process watcher task has already finished"));
@@ -233,9 +247,10 @@ async fn do_health_check<T: StatusMonitor>(
     if child.ping() {
         let mut inner_shutdown2 = inner_shutdown.clone();
         let mut app_shutdown2 = app_shutdown.clone();
+        let current_uptime = uptime.elapsed();
         if let Ok(inner) = timeout(health_timeout, async {
             select! {
-                r = status_monitor3.check_health() => r,
+                r = status_monitor3.check_health(current_uptime) => r,
                 // Watch for shutdown signals
                 _ = inner_shutdown2.wait() => HealthStatus::Healthy,
                 _ = app_shutdown2.wait() => HealthStatus::Healthy
