@@ -13,7 +13,7 @@ import { setConnectionStatus } from '@app/store/actions/uiStoreActions';
 
 const retryBackoff = [60, 120, 240];
 
-const Disconnected: React.FC = () => {
+const Disconnected = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
@@ -71,7 +71,7 @@ const Disconnected: React.FC = () => {
     );
 
     return (
-        <Wrapper style={{ display: isVisible ? 'block' : 'none' }}>
+        <Wrapper>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
                 <HeaderImg src={disconnectedImage} alt="Disconnected" style={{ width: 'min(600px, 66vh)' }} />
                 <TextWrapper>

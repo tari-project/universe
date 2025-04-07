@@ -4,26 +4,28 @@ import styled, { keyframes } from 'styled-components';
 export const Wrapper = styled.div`
     pointer-events: all;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    top: 0;
+    right: -20px; // 20px offsets for container padding
+    transform: translate(0, -20px);
     background-color: rgba(0, 0, 0, 0);
-    width: 100%;
-    height: 100%;
+    width: calc(100% + 40px);
+    height: calc(100% + 40px);
     margin: auto;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    z-index: 2;
 `;
 
 export const SubTitle = styled(Typography)`
-    font-family: Poppins;
     max-width: 700px;
     font-weight: 400;
     font-size: 18px;
     line-height: 22px;
-    letter-spacing: 0%;
+
     text-align: center;
 `;
 
@@ -58,7 +60,7 @@ export const RetryTimer = styled.div`
     padding: 15px 30px;
     background: linear-gradient(to right, #ffaf40, #ff825f);
     color: white;
-    box-shadow: 0px 0px 34px 0px rgba(255, 213, 167, 0.75);
+    box-shadow: 0 0 34px 0 rgba(255, 213, 167, 0.75);
     position: relative; // Needed for pseudo-element positioning
     overflow: hidden; // Needed to clip the shine effect
 
@@ -96,11 +98,11 @@ export const SecondaryButton = styled(Typography)<{ isActive?: boolean }>`
     width: fit-content;
     cursor: ${(props) => (props.isActive ? 'pointer' : 'default')};
     color: black;
-    font-family: Poppins;
+
     font-weight: 600;
     font-size: 18px;
     line-height: 22px;
-    letter-spacing: 0%;
+
     text-align: center;
     opacity: ${(props) => (props.isActive ? 0.5 : 0.2)};
     transition: opacity 0.2s ease-in-out; // Optional: add a smooth transition

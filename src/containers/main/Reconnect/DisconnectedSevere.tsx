@@ -13,7 +13,7 @@ import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 
-const DisconnectedSevere: React.FC = () => {
+const DisconnectedSevere = () => {
     const { t } = useTranslation('reconnect', { useSuspense: false });
     const [isVisible, setIsVisible] = React.useState(false);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
@@ -68,7 +68,7 @@ const DisconnectedSevere: React.FC = () => {
     );
 
     return (
-        <Wrapper style={{ display: isVisible ? 'block' : 'none' }}>
+        <Wrapper>
             <Stack gap={16} alignItems="center" style={{ width: '100%', height: '100%' }}>
                 <HeaderImgSevere
                     src={disconnectedSevereImage}
