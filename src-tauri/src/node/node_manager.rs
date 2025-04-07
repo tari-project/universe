@@ -367,7 +367,6 @@ impl NodeManager {
         mut shutdown_signal: ShutdownSignal,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
-        let current_adapter = self.current_adapter.clone();
         let node_manager = self.clone();
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             select! {
