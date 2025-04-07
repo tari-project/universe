@@ -5,7 +5,6 @@ import { setLatestXSpaceEvent } from '@app/store/actions/airdropStoreActions.ts'
 
 export function useHandleWsUserIdEvent() {
     return useCallback((event: WebsocketUserEvent) => {
-        console.log('---------------------user-event', event);
         switch (event.name) {
             case WebsocketEventNames.REFERRAL_INSTALL_REWARD:
                 setFlareAnimationType('FriendAccepted');
