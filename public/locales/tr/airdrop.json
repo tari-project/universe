@@ -24,13 +24,13 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Daha fazla ödül kazanmak için madenciliğe devam edin!",
   "linkCopied": "Bağlantı kopyalandı!",
+  "live": "live",
   "logged-in-as": "<strong>@{{twitter}}</strong> olarak giriş yapıldı",
   "loggedInTitle": "Airdrop Ödülleri",
   "loggedOutTitle": "Maden Kaz ve Arkadaşlarını Davet Et, Taş Kazan",
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",
-  "update-username": "Kullanıcı adını güncelle",
   "permission": {
     "setup": "Tari Universe, deneyiminizi <strong>iyileştirmek</strong> için analizleri kullanmak istiyor.",
     "text": "Tari Universe, deneyiminizi iyileştirmek ve sizi madencilik için mücevherlerle ödüllendirmek için analizleri kullanmak istiyor.",
@@ -42,9 +42,13 @@
   },
   "referral": "Arkadaşlarını davet et",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Success",
   "topTooltipText": "Mücevher toplayarak bir Tari Airdrop kazanın. Ne kadar çok mücevher kazanırsanız, airdrop\"unuz o kadar büyük olur.",
   "topTooltipTitle": "Testnet Ödülleri",
   "unclaimedGems": "Talep Edilmemiş Taşlar",
+  "update-username": "Kullanıcı adını güncelle",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
   "you-reached-your-giftinh-goal": "Hediye verme hedefinize ulaştınız!",
   "your-friend-accepted-gift": "Arkadaşlarınızdan biri hediyenizi kabul etti!"
 }

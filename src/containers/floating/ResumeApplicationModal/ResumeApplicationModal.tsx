@@ -36,7 +36,13 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         }
 
         return corePhaseInfoPayload;
-    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
+    }, [
+        corePhaseInfoPayload,
+        hardwarePhaseInfoPayload,
+        nodePhaseInfoPayload,
+        unknownPhaseInfoPayload,
+        walletPhaseInfoPayload,
+    ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {
         if (unknownPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
@@ -61,7 +67,13 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
         }
 
         return [0, 5];
-    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
+    }, [
+        corePhaseInfoPayload?.is_complete,
+        hardwarePhaseInfoPayload?.is_complete,
+        nodePhaseInfoPayload?.is_complete,
+        unknownPhaseInfoPayload?.is_complete,
+        walletPhaseInfoPayload?.is_complete,
+    ]);
 
     const setupPhaseTitle = currentPhaseToShow?.phase_title;
     const setupTitle = currentPhaseToShow?.title;

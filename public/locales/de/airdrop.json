@@ -24,13 +24,13 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Weiter minen, um mehr Belohnungen zu verdienen!",
   "linkCopied": "Link kopiert!",
+  "live": "live",
   "logged-in-as": "Eingeloggt als <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop-Belohnungen",
   "loggedOutTitle": "Minen & Freunde einladen, um Edelsteine zu verdienen",
   "loginButton": "Einloggen, um Edelsteine zu beanspruchen",
   "logout": "Ausloggen",
   "nextTierBonus": "Lade <strong>{{count}} Freunde</strong> ein und erhalte {{bonusGems}} Bonus-Edelsteine",
-  "update-username": "Benutzernamen aktualisieren",
   "permission": {
     "setup": "Tari Universe möchte Analysen verwenden, um <strong>Ihr Erlebnis zu verbessern.</strong>",
     "text": "Tari Universe möchte Analysen verwenden, um deine Erfahrung zu verbessern und dich mit Edelsteinen für das Mining zu belohnen.",
@@ -46,6 +46,9 @@
   "topTooltipText": "Erhalte einen Tari Airdrop, indem du Edelsteine sammelst. Je mehr Edelsteine du verdienst, desto größer ist dein Airdrop.",
   "topTooltipTitle": "Testnet Belohnungen",
   "unclaimedGems": "Nicht beanspruchte Edelsteine",
+  "update-username": "Benutzernamen aktualisieren",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
   "you-reached-your-giftinh-goal": "Sie haben Ihr Geschenkziel erreicht!",
   "your-friend-accepted-gift": "Einer Ihrer Freunde hat Ihr Geschenk angenommen!"
 }

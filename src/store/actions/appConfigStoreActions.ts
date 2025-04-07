@@ -37,8 +37,8 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
     }
     try {
         if (i18next.language !== uiConfig.application_language) {
-            console.log('Current language is', i18next.language);
-            console.log('Changing language to', uiConfig.application_language);
+            console.info('Current language is', i18next.language);
+            console.info('Changing language to', uiConfig.application_language);
             await changeLanguage(uiConfig.application_language);
         }
     } catch (e) {

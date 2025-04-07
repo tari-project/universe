@@ -1,6 +1,3 @@
-import { Language } from '@app/i18initializer';
-import { displayMode, modeType } from '../store/types';
-
 export interface TorConfig {
     control_port: number;
     use_bridges: boolean;
