@@ -423,7 +423,9 @@ async fn setup_inner(
     websocket_manager_write.set_app_handle(app.clone());
     drop(websocket_manager_write);
 
-    let webview = app.get_webview_window("main").unwrap();
+    let webview = app
+        .get_webview_window("main")
+        .expect("main window must exist");
     let websocket_tx = state.websocket_message_tx.clone();
     webview.listen("ws-tx", move |event: tauri::Event| {
         let event_cloned = event.clone();

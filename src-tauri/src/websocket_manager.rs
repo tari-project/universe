@@ -149,11 +149,11 @@ impl WebsocketManager {
         tokio::spawn(async move {
             while status_channel_rx.changed().await.is_ok() {
                 let new_state = status_channel_rx.borrow();
-                let _ = main_window
+                drop(main_window
                     .clone()
                     .emit("ws-status-change", new_state.clone()).inspect_err(|e|{
                         error!(target:LOG_TARGET,"could not send ws-status-change event: {:?} error: {}",new_state, e.to_string());
-                    });
+                    }));
             }
         });
     }
@@ -244,13 +244,12 @@ impl WebsocketManager {
                         let connection_res = WebsocketManager::connect_to_url(app_id.clone(), app_config.clone(), &config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
                         if let Ok(connection) = connection_res {
-                            _= WebsocketManager::listen(connection,app_cloned.clone(),
+                            WebsocketManager::listen(connection,app_cloned.clone(),
                                 shutdown.clone(),
                                 message_cache.clone(),
                                 receiver_channel.clone(),
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
-                                .inspect_err(|e|{error!(target:LOG_TARGET,"Websocket: event handler error:{}",e.to_string())});
                         }
                         sleep(Duration::from_millis(5000)).await;
                         Ok::<(),anyhow::Error>(())
@@ -294,7 +293,7 @@ impl WebsocketManager {
         message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         close_channel_tx: tokio::sync::broadcast::Sender<bool>,
-    ) -> Result<(), WebsocketError> {
+    ) {
         let (write_stream, read_stream) = connection_stream.split();
         info!(target:LOG_TARGET,"listening to websocket events");
 
@@ -345,8 +344,6 @@ impl WebsocketManager {
             _=shutdown_signal.wait()=>{}
         }
         info!(target:LOG_TARGET, "websocket task closed");
-
-        Result::Ok(())
     }
 }
 
@@ -401,12 +398,12 @@ async fn receiver_task(
                                 }).ok();
 
                     if let Some(message) = messsage_value {
-                        let _ = cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
+                        drop(cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
                                         error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
-                                    });
-                        let _ = app.emit("ws-rx", message).inspect_err(|e|{
+                                    }));
+                        drop(app.emit("ws-rx", message).inspect_err(|e|{
                                         error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
-                                    });
+                                    }));
                     }
                 }
                 Message::Close(_) => {
@@ -451,12 +448,12 @@ async fn cache_msg(
     cache_write
         .entry(key.clone())
         .and_modify(|message_set| {
-            if key != "other" {
-                //we only store the latest of named messages, this is the normal mode of operation
-                message_set.clear();
+            if key == "other" {
+                //other messages get accumulated
                 message_set.insert(new_message.clone());
             } else {
-                //other messages get accumulated
+                //we only store the latest of named messages, this is the normal mode of operation
+                message_set.clear();
                 message_set.insert(new_message.clone());
             }
         })
