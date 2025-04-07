@@ -1,4 +1,4 @@
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
