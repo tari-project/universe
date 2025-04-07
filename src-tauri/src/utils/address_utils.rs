@@ -27,10 +27,6 @@ use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 pub fn verify_tari_address(address: &str) -> Result<TariAddress, String> {
     let tari_address =
         TariAddress::from_str(address).map_err(|_| "Invalid address format".to_string())?;
-    println!(
-        "aaaaaaappp {:?}",
-        Network::get_current_or_user_setting_or_default()
-    );
     if tari_address.network() != Network::get_current_or_user_setting_or_default() {
         return Err("Invalid network".to_string());
     }
