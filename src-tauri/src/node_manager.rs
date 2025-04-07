@@ -96,7 +96,13 @@ impl NodeManager {
     }
 
     pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
-        fs::remove_dir_all(base_path.join("node")).await?;
+        fs::remove_dir_all(
+            base_path
+                .join("node")
+                .join(Network::get_current().to_string().to_lowercase())
+                .join("data"),
+        )
+        .await?;
         Ok(())
     }
 
