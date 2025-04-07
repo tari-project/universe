@@ -537,10 +537,7 @@ impl SetupManager {
             loop {
                 select! {
                     _ = receiver.changed() => {
-                        info!(target: LOG_TARGET, "Sleep mode changed");
                         let current_state = *receiver.borrow();
-                        info!(target: LOG_TARGET, "Current state: {}", current_state);
-                        info!(target: LOG_TARGET, "Last state: {}", last_state);
                         if last_state && !current_state {
                             info!(target: LOG_TARGET, "System is no longer in sleep mode");
                             SetupManager::get_instance().resume_phases(app_handle.clone(), SetupPhase::all()).await;
