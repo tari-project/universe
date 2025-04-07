@@ -62,6 +62,8 @@ export const BottomNavWrapper = styled.div`
     align-items: center;
     width: 100%;
     gap: 10px;
+
+    padding-top: 10px;
 `;
 
 export const NavButtonContent = styled.div`

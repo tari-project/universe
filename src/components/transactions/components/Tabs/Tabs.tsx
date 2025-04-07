@@ -1,3 +1,5 @@
+/* This component is depricated, but it's styles are still being used */
+
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 

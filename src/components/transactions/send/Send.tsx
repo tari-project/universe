@@ -17,13 +17,16 @@ import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, DividerIcon, ErrorMessageWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { HeaderLabel, TabHeader } from '../components/Tabs/tab.styles.ts';
 
 const defaultValues = { message: '', address: '', amount: '' };
-export function Send({
-    setCurrentIndex = (_i: number) => {
-        /* void */
-    },
-}) {
+
+interface Props {
+    section: string;
+    setSection: (section: string) => void;
+}
+
+export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
 
@@ -55,8 +58,9 @@ export function Send({
         clearErrors(name);
     }
 
+    const addressField = <FormField control={control} handleChange={handleChange} name="address" required autoFocus />;
     const paymentIdField = <FormField control={control} handleChange={handleChange} name="message" />;
-    const addressField = <FormField control={control} handleChange={handleChange} name="address" required />;
+
     const amountField = (
         <FormField
             control={control}
@@ -91,8 +95,7 @@ export function Send({
                 await invoke('send_one_sided_to_stealth_address', payload);
 
                 addPendingTransaction(payload);
-                // Back to tx history
-                setCurrentIndex?.(0);
+                setSection('history');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {
@@ -100,31 +103,40 @@ export function Send({
                 });
             }
         },
-        [setCurrentIndex, setError, t]
+        [setSection, setError, t]
     );
 
     return (
-        <Wrapper $isLoading={isSubmitting}>
-            <StyledForm onSubmit={handleSubmit(handleSend)}>
-                {fieldMarkup}
-                <BottomWrapper>
-                    <Button
-                        disabled={isSubmitting || !isValid}
-                        type="submit"
-                        fluid
-                        backgroundColor="greyscale"
-                        loader={<CircularProgress />}
-                        isLoading={isSubmitting}
-                    >
-                        {t('send.cta-send')}
-                    </Button>
-                    <ErrorMessageWrapper>
-                        <Typography variant="p">{errors.address?.message}</Typography>
-                        <Typography variant="p">{errors.amount?.message}</Typography>
-                    </ErrorMessageWrapper>
-                </BottomWrapper>
-            </StyledForm>
-            <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
-        </Wrapper>
+        <>
+            <TabHeader $bordered>
+                <HeaderLabel>{`${t('tabs.send')}  ${t('tari')}`}</HeaderLabel>
+                <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
+                    {t('common:back')}
+                </Button>
+            </TabHeader>
+
+            <Wrapper $isLoading={isSubmitting}>
+                <StyledForm onSubmit={handleSubmit(handleSend)}>
+                    {fieldMarkup}
+                    <BottomWrapper>
+                        <Button
+                            disabled={isSubmitting || !isValid}
+                            type="submit"
+                            fluid
+                            backgroundColor="greyscale"
+                            loader={<CircularProgress />}
+                            isLoading={isSubmitting}
+                        >
+                            {t('send.cta-send')}
+                        </Button>
+                        <ErrorMessageWrapper>
+                            <Typography variant="p">{errors.address?.message}</Typography>
+                            <Typography variant="p">{errors.amount?.message}</Typography>
+                        </ErrorMessageWrapper>
+                    </BottomWrapper>
+                </StyledForm>
+                <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
+            </Wrapper>
+        </>
     );
 }
