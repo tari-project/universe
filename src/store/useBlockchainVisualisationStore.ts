@@ -130,11 +130,22 @@ export const handleWinReplay = (txItem: TransactionInfo) => {
         useBlockchainVisualisationStore.setState({ replayItem: undefined });
     }, 1500);
 };
-export const handleNewBlock = async (payload: {
+
+let newBlockDebounceTimeout: NodeJS.Timeout | undefined = undefined;
+const BLOCK_DEBOUNCE_DELAY = 200;
+let latestBlockPayload:
+    | {
+          block_height: number;
+          coinbase_transaction?: TransactionInfo;
+          balance: WalletBalance;
+      }
+    | undefined = undefined;
+
+async function processNewBlock(payload: {
     block_height: number;
     coinbase_transaction?: TransactionInfo;
     balance: WalletBalance;
-}) => {
+}) {
     if (useMiningStore.getState().miningInitiated) {
         const minimized = await appWindow?.isMinimized();
         const documentIsVisible = document?.visibilityState === 'visible' || false;
@@ -147,7 +158,27 @@ export const handleNewBlock = async (payload: {
         }
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
+        console.info('Mining not initiated. Block height updated.');
         await refreshTransactions();
         refreshPendingTransactions();
     }
+}
+
+export const handleNewBlock = async (payload: {
+    block_height: number;
+    coinbase_transaction?: TransactionInfo;
+    balance: WalletBalance;
+}) => {
+    latestBlockPayload = payload;
+
+    if (newBlockDebounceTimeout) {
+        clearTimeout(newBlockDebounceTimeout);
+    }
+    newBlockDebounceTimeout = setTimeout(async () => {
+        if (latestBlockPayload) {
+            await processNewBlock(latestBlockPayload);
+            latestBlockPayload = undefined;
+        }
+        newBlockDebounceTimeout = undefined;
+    }, BLOCK_DEBOUNCE_DELAY);
 };

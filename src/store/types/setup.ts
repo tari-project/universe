@@ -1,7 +1,5 @@
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
-export type SetupTitleParams = Record<string, string>;
-
 export interface SetupState {
     miningUnlocked: boolean;
     walletUnlocked: boolean;

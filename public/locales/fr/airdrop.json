@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Continuez à miner pour gagner plus de récompenses !",
   "linkCopied": "Lien copié !",
+  "live": "live",
   "logged-in-as": "Connecté en tant que <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Récompenses Airdrop",
   "loggedOutTitle": "Miner & Inviter des amis pour gagner des gemmes",
@@ -41,9 +42,13 @@
   },
   "referral": "Inviter un ami",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Succès",
   "topTooltipText": "Obtenez un Airdrop Tari en collectant des gemmes. Plus vous gagnez de gemmes, plus votre Airdrop est important.",
   "topTooltipTitle": "Récompenses du Testnet",
   "unclaimedGems": "Gemmes non réclamés",
+  "update-username": "Mettre à jour votre nom d'utilisateur",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
   "you-reached-your-giftinh-goal": "Vous avez atteint votre objectif de cadeau !",
   "your-friend-accepted-gift": "Un de vos amis a accepté votre cadeau !"
 }

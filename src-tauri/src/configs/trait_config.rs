@@ -26,6 +26,7 @@ use anyhow::Error;
 use dirs::config_dir;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 use crate::APPLICATION_FOLDER_ID;
@@ -53,6 +54,7 @@ pub trait ConfigImpl {
         });
         config_dir
             .join(APPLICATION_FOLDER_ID)
+            .join(Network::get_current_or_user_setting_or_default().as_key_str())
             .join(Self::_get_name())
     }
     fn _save_config(&self) -> Result<(), Error> {

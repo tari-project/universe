@@ -20,17 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod address_utils;
-pub mod app_flow_utils;
-pub mod file_utils;
-pub mod formatting_utils;
-pub mod locks_utils;
-pub mod logging_utils;
-pub mod macos_utils;
-pub mod math_utils;
-pub mod network_status;
-pub mod platform_utils;
-
-pub mod system_status;
-#[cfg(windows)]
-pub mod windows_setup_utils;
+pub mod local_node_adapter;
+pub mod node_adapter;
+pub mod node_manager;
+pub mod remote_node_adapter;

@@ -12,22 +12,25 @@ import { CircularProgress } from '@app/components/elements/CircularProgress.tsx'
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-import type { SendInputs, InputName } from './types.ts';
+import type { InputName, SendInputs } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, DividerIcon, ErrorMessageWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { HeaderLabel, TabHeader } from '../components/Tabs/tab.styles.ts';
 
 const defaultValues = { message: '', address: '', amount: '' };
-export function Send({
-    setCurrentIndex = (_i: number) => {
-        /* void */
-    },
-}) {
+
+interface Props {
+    section: string;
+    setSection: (section: string) => void;
+}
+
+export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
 
-    const { control, handleSubmit, reset, formState, clearErrors, setError, setValue } = useForm<SendInputs>({
+    const { control, handleSubmit, reset, formState, setError, setValue, clearErrors } = useForm<SendInputs>({
         defaultValues,
         mode: 'all',
     });
@@ -50,39 +53,18 @@ export function Send({
         }
     }, [isSubmitted, isSubmitSuccessful, errors, reset]);
 
-    function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        setValue(name, e.target.value, { shouldValidate: true });
-        clearErrors(name);
-    }
-
-    const paymentIdField = <FormField control={control} handleChange={handleChange} name="message" />;
-    const addressField = <FormField control={control} handleChange={handleChange} name="address" required />;
-    const amountField = (
-        <FormField
-            control={control}
-            handleChange={handleChange}
-            name="amount"
-            required
-            icon={<TariOutlineSVG />}
-            accent={
-                <DividerIcon>
-                    <FaArrowDown size={18} />
-                </DividerIcon>
-            }
-        />
-    );
-
-    const fieldMarkup = (
-        <FormFieldsWrapper>
-            {paymentIdField}
-            {addressField}
-            {amountField}
-        </FormFieldsWrapper>
-    );
-
     const handleSend = useCallback(
         async (data: SendInputs) => {
             try {
+                if (!data.address) {
+                    setError('address', { message: t('send.error-address-required') });
+                    return;
+                }
+                if (!data.amount) {
+                    setError('amount', { message: t('send.error-amount-required') });
+                    return;
+                }
+
                 const payload = {
                     amount: data.amount,
                     destination: data.address,
@@ -91,8 +73,7 @@ export function Send({
                 await invoke('send_one_sided_to_stealth_address', payload);
 
                 addPendingTransaction(payload);
-                // Back to tx history
-                setCurrentIndex?.(0);
+                setSection('history');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {
@@ -100,31 +81,67 @@ export function Send({
                 });
             }
         },
-        [setCurrentIndex, setError, t]
+        [setSection, setError, t]
     );
 
+    function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+        setValue(name, e.target.value, { shouldValidate: true });
+        clearErrors(name);
+    }
+
     return (
-        <Wrapper $isLoading={isSubmitting}>
-            <StyledForm onSubmit={handleSubmit(handleSend)}>
-                {fieldMarkup}
-                <BottomWrapper>
-                    <Button
-                        disabled={isSubmitting || !isValid}
-                        type="submit"
-                        fluid
-                        backgroundColor="greyscale"
-                        loader={<CircularProgress />}
-                        isLoading={isSubmitting}
-                    >
-                        {t('send.cta-send')}
-                    </Button>
-                    <ErrorMessageWrapper>
-                        <Typography variant="p">{errors.address?.message}</Typography>
-                        <Typography variant="p">{errors.amount?.message}</Typography>
-                    </ErrorMessageWrapper>
-                </BottomWrapper>
-            </StyledForm>
-            <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
-        </Wrapper>
+        <>
+            <TabHeader>
+                <HeaderLabel>{`${t('tabs.send')}  ${t('tari')}`}</HeaderLabel>
+                <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
+                    {t('common:back')}
+                </Button>
+            </TabHeader>
+
+            <Wrapper $isLoading={isSubmitting}>
+                <StyledForm onSubmit={handleSubmit(handleSend)}>
+                    <FormFieldsWrapper>
+                        <FormField
+                            control={control}
+                            name="address"
+                            handleChange={handleChange}
+                            required
+                            autoFocus
+                            truncateOnBlur
+                        />
+
+                        <FormField control={control} name="message" handleChange={handleChange} />
+
+                        <FormField
+                            control={control}
+                            name="amount"
+                            required
+                            icon={<TariOutlineSVG />}
+                            accent={
+                                <DividerIcon>
+                                    <FaArrowDown size={18} />
+                                </DividerIcon>
+                            }
+                        />
+                    </FormFieldsWrapper>
+                    <BottomWrapper>
+                        <Button
+                            disabled={isSubmitting || !isValid}
+                            type="submit"
+                            fluid
+                            loader={<CircularProgress />}
+                            isLoading={isSubmitting}
+                        >
+                            {t('send.cta-send')}
+                        </Button>
+                        <ErrorMessageWrapper>
+                            <Typography variant="p">{errors.address?.message}</Typography>
+                            <Typography variant="p">{errors.amount?.message}</Typography>
+                        </ErrorMessageWrapper>
+                    </BottomWrapper>
+                </StyledForm>
+                <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
+            </Wrapper>
+        </>
     );
 }

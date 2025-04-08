@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Kontynuuj kopanie, aby zdobyć więcej nagród!",
   "linkCopied": "Link skopiowany!",
+  "live": "live",
   "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Nagrody Airdrop",
   "loggedOutTitle": "Kop i zapraszaj znajomych, aby zdobywać klejnoty",
@@ -41,9 +42,13 @@
   },
   "referral": "Zaproś znajomego",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Success",
   "topTooltipText": "Zdobądź Airdrop Tari, zbierając klejnoty. Im więcej klejnotów zdobędziesz, tym większy będzie twój airdrop.",
   "topTooltipTitle": "Nagrody Testnet",
   "unclaimedGems": "Nieodebrane klejnoty",
+  "update-username": "Zaktualizuj nazwę użytkownika",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
   "you-reached-your-giftinh-goal": "Osiągnąłeś swój cel obdarowywania!",
   "your-friend-accepted-gift": "Jeden z Twoich przyjaciół zaakceptował Twój prezent!"
 }

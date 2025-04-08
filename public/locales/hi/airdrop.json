@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "अधिक पुरस्कार अर्जित करने के लिए माइनिंग जारी रखें!",
   "linkCopied": "लिंक कॉपी किया गया!",
+  "live": "live",
   "logged-in-as": "<strong>@{{twitter}}</strong> के रूप में लॉग इन",
   "loggedInTitle": "एयरड्रॉप पुरस्कार",
   "loggedOutTitle": "माइन करें और रत्न कमाने के लिए दोस्तों को आमंत्रित करें",
@@ -41,9 +42,13 @@
   },
   "referral": "एक मित्र को आमंत्रित करें",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "सफलता",
   "topTooltipText": "रत्नों को इकट्ठा करके एक Tari Airdrop प्राप्त करें। जितने अधिक रत्न आप कमाते हैं, आपका airdrop उतना ही बड़ा होगा।",
   "topTooltipTitle": "टेस्टनेट पुरस्कार",
   "unclaimedGems": "अदावा किए गए रत्न",
+  "update-username": "उपयोगकर्ता नाम अपडेट करें",
+  "username-error": "उपयोगकर्ता नाम 3-20 अक्षरों का होना चाहिए और इसमें केवल अक्षर, संख्याएं, अंडरस्कोर या हाइफ़न हो सकते हैं",
+  "username-update-success": "उपयोगकर्ता नाम सफलतापूर्वक अपडेट किया गया",
   "you-reached-your-giftinh-goal": "आपने अपना उपहार लक्ष्य प्राप्त कर लिया है!",
   "your-friend-accepted-gift": "आपके दोस्तों में से एक ने आपका उपहार स्वीकार कर लिया है!"
 }

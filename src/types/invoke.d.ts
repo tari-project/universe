@@ -104,4 +104,8 @@ declare module '@tauri-apps/api/core' {
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
     function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
+    function invoke(
+        param: 'verify_address_for_send',
+        payload: { address: string; sendingMethod?: number }
+    ): Promise<void>;
 }

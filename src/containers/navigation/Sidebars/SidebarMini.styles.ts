@@ -44,10 +44,9 @@ export const GridBottom = styled.div`
     }
 `;
 
-export const NavIconWrapper = styled.div`
+export const NavIconWrapper = styled(m.div)`
     display: flex;
     flex-direction: column;
-    transition: 0.2s ease;
     z-index: 1;
 `;
 
@@ -59,12 +58,6 @@ export const HoverIconWrapper = styled(m.div)`
     height: 100%;
     display: flex;
     z-index: 2;
-
-    &:hover + {
-        & ${NavIconWrapper} {
-            opacity: 0;
-        }
-    }
 `;
 
 export const LogoWrapper = styled.div`

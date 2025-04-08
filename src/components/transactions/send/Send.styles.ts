@@ -1,6 +1,6 @@
 import styled, { css } from 'styled-components';
 
-export const Wrapper = styled.div<{ $isLoading?: boolean }>`
+export const Wrapper = styled.div<{ $isLoading?: boolean; $hasError?: boolean }>`
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -13,7 +13,14 @@ export const Wrapper = styled.div<{ $isLoading?: boolean }>`
         css`
             opacity: 0.8;
         `}
+
+    ${({ $hasError, theme }) =>
+        $hasError &&
+        css`
+            background-color: ${theme.mode === 'dark' ? '#3A2A2A' : '#FFF3F3'};
+        `}
 `;
+
 export const StyledForm = styled.form`
     display: flex;
     flex-direction: column;
@@ -29,6 +36,7 @@ export const FormFieldsWrapper = styled.div`
     flex-direction: column;
     gap: 10px;
     align-items: center;
+    padding-top: 20px;
 `;
 
 export const BottomWrapper = styled.div`
@@ -48,6 +56,7 @@ export const DividerIcon = styled.div`
     justify-content: center;
     position: relative;
     color: #fff;
+    border: 4px solid #fff;
 `;
 
 export const ErrorMessageWrapper = styled.div`

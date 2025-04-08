@@ -26,13 +26,14 @@
 use commands::CpuMinerStatus;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
-use local_node_adapter::{BaseNodeStatus, LocalNodeAdapter};
 use log::{error, info, warn};
-use node_manager::NodeType;
+use node::local_node_adapter::LocalNodeAdapter;
+use node::node_adapter::BaseNodeStatus;
+use node::node_manager::NodeType;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
-use remote_node_adapter::RemoteNodeAdapter;
+use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
 use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
@@ -78,7 +79,7 @@ use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
-use crate::node_manager::NodeManager;
+use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::p2pool_manager::P2poolManager;
 use crate::spend_wallet_manager::SpendWalletManager;
@@ -110,11 +111,10 @@ mod gpu_miner_adapter;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
-mod local_node_adapter;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
-mod node_manager;
+mod node;
 mod p2pool;
 mod p2pool_adapter;
 mod p2pool_manager;
@@ -127,7 +127,6 @@ mod process_watcher;
 mod progress_tracker_old;
 mod progress_trackers;
 mod release_notes;
-mod remote_node_adapter;
 mod setup;
 mod spend_wallet_adapter;
 mod spend_wallet_manager;
@@ -1368,6 +1367,7 @@ fn main() {
             commands::set_selected_engine,
             commands::frontend_ready,
             commands::send_one_sided_to_stealth_address,
+            commands::verify_address_for_send,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

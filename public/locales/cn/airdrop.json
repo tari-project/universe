@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "继续挖矿以获得更多奖励！",
   "linkCopied": "链接已复制！",
+  "live": "live",
   "logged-in-as": "登录为 <strong>@{{twitter}}</strong>",
   "loggedInTitle": "空投奖励",
   "loggedOutTitle": "挖矿并邀请朋友赚取宝石",
@@ -41,9 +42,13 @@
   },
   "referral": "邀请朋友",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "成功",
   "topTooltipText": "通过收集宝石获得 Tari 空投。你赚取的宝石越多，空投就越大。",
   "topTooltipTitle": "测试网奖励",
   "unclaimedGems": "未领取的宝石",
+  "update-username": "更新用户名",
+  "username-error": "Username must be 3-20 characters and contain only letters, numbers, underscores, or hyphens",
+  "username-update-success": "Username updated successfully",
   "you-reached-your-giftinh-goal": "您达到了赠送目标！",
   "your-friend-accepted-gift": "您的朋友之一接受了您的礼物！"
 }

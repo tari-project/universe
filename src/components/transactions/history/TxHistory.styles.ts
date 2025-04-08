@@ -3,9 +3,10 @@ import styled from 'styled-components';
 export const ListWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    height: 100%;
+    overflow: hidden;
     overflow-y: auto;
     width: 100%;
+    flex-grow: 1;
     position: relative;
 
     h6 {
@@ -19,7 +20,6 @@ export const ListItemWrapper = styled.div`
     align-items: center;
     width: calc(100% - 4px);
     padding: 0 2px;
-    height: 100%;
     position: relative;
-    gap: 10px;
+    gap: 4px;
 `;

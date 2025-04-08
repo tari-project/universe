@@ -22,7 +22,7 @@
 
 use crate::binaries::Binaries;
 use crate::binaries::BinaryResolver;
-use crate::node_manager::NodeManager;
+use crate::node::node_manager::NodeManager;
 use crate::spend_wallet_adapter::SpendWalletAdapter;
 use anyhow::Error;
 use log::info;
