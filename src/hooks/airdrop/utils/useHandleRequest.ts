@@ -7,6 +7,7 @@ interface RequestProps {
     body?: Record<string, unknown>;
     onError?: (e: unknown) => void;
     headers?: HeadersInit | undefined;
+    auth?: boolean;
 }
 
 const MAX_RETRIES = 3;
@@ -20,13 +21,13 @@ async function retryHandler(errorMessage: string) {
     return await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
-export async function handleAirdropRequest<T>({ body, method, path, onError, headers }: RequestProps) {
+export async function handleAirdropRequest<T>({ body, method, path, onError, headers, auth }: RequestProps) {
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
-    if (isTokenExpired) {
+    if (isTokenExpired && !auth) {
         if (retryCount >= MAX_RETRIES) {
             throw Error('Failed to refresh tokens from handleAirdropRequest');
         }

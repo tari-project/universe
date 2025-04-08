@@ -5,7 +5,6 @@
   "application-info": "Информация о приложении",
   "applyInviteCode": "Применить код приглашения",
   "cancel": "Отмена",
-  "gpu-engine": "Движок GPU",
   "change-language": "Язык",
   "confirm": "Подтвердить",
   "confirm-action": "Подтвердить действие",
@@ -30,6 +29,7 @@
   "debug-info": "Отладка",
   "disconnect": "Отключиться от Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Конфигурация моста недействительна",
     "invalid-control-port": "Конфигурация порта управления недействительна"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "Устройства для майнинга на GPU",
   "gpu-device-enabled-description": "Включить или отключить конкретное устройство GPU.",
   "gpu-device-no-found": "⚠️ Устройства GPU не найдены",
+  "gpu-engine": "Движок GPU",
   "gpu-mining-enabled": "Майнинг на GPU",
   "gpu-unavailable": "⚠️ GPU отключен, так как ваше оборудование не поддерживает его",
   "hardware-status": "Состояние оборудования",
