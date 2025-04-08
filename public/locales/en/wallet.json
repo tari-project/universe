@@ -24,9 +24,9 @@
     "error-invalid-address": "The address is invalid"
   },
   "tabs": {
-    "history": "history",
-    "receive": "receive",
-    "send": "send"
+    "history": "History",
+    "receive": "Receive",
+    "send": "Send"
   },
   "tari": "Tari"
 }
