@@ -5,7 +5,6 @@
   "application-info": "Aansoek Inligting",
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
-  "gpu-engine": "Gpu Enjin",
   "change-language": "Verander taal",
   "confirm": "Bevestig",
   "confirm-action": "Bevestig aksie",
@@ -30,6 +29,7 @@
   "debug-info": "Ontfoutingsinligting",
   "disconnect": "Ontkoppel van Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Brugkonfigurasie is ongeldig",
     "invalid-control-port": "Beheerpoort konfigurasie is ongeldig"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU Myn toestelle",
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
   "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
+  "gpu-engine": "Gpu Enjin",
   "gpu-mining-enabled": "GPU Mynbou",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
   "hardware-status": "Hardeware status",

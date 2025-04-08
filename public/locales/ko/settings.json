@@ -5,7 +5,6 @@
   "application-info": "애플리케이션 정보",
   "applyInviteCode": "초대 코드 적용",
   "cancel": "취소",
-  "gpu-engine": "GPU 엔진",
   "change-language": "언어",
   "confirm": "확인",
   "confirm-action": "작업 확인",
@@ -30,6 +29,7 @@
   "debug-info": "디버그",
   "disconnect": "에어드롭 연결 해제",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "브리지 구성 설정이 잘못되었습니다",
     "invalid-control-port": "제어 포트 구성 설정이 잘못되었습니다"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU 채굴 장치",
   "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
   "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
+  "gpu-engine": "GPU 엔진",
   "gpu-mining-enabled": "GPU 채굴",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
   "hardware-status": "하드웨어 상태",
