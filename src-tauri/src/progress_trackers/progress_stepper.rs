@@ -94,17 +94,6 @@ impl ProgressStepper {
                     is_completed,
                 )
                 .await;
-            println!(
-                "Sending telemetry event: {} | with data: {:?}",
-                "progress-stepper".to_string(),
-                json!({
-                    "phase": resolved_step.get_phase_title(),
-                    "step": event.get_title(),
-                    "percentage": resolved_percentage,
-                    "is_completed": is_completed,
-                })
-            );
-
             let _unused = app_state
                 .telemetry_service
                 .read()

@@ -87,10 +87,6 @@ impl ConfigImpl for ConfigWallet {
         event_data: serde_json::Value,
     ) -> Result<(), anyhow::Error> {
         if let Some(app_handle) = self.app_handle.read().await.deref() {
-            println!(
-                "Sending telemetry event: {} | with data: {:?}",
-                event_name, event_data
-            );
             let app_state = app_handle.state::<UniverseAppState>();
             app_state
                 .telemetry_service
