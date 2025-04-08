@@ -5,7 +5,6 @@
   "application-info": "एप्लिकेशन जानकारी",
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
-  "gpu-engine": "जीपीयू इंजन",
   "change-language": "भाषा",
   "confirm": "पुष्टि करें",
   "confirm-action": "क्रिया की पुष्टि करें",
@@ -30,6 +29,7 @@
   "debug-info": "डीबग",
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "ब्रिज कॉन्फ़िगरेशन अमान्य है",
     "invalid-control-port": "कंट्रोल पोर्ट कॉन्फ़िगरेशन अमान्य है"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU माइनिंग डिवाइस",
   "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
   "gpu-device-no-found": "⚠️ कोई GPU डिवाइस नहीं मिला",
+  "gpu-engine": "जीपीयू इंजन",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",
