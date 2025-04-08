@@ -116,7 +116,7 @@ export function Send({ setSection }: Props) {
 
     return (
         <>
-            <TabHeader>
+            <TabHeader $noBorder>
                 <HeaderLabel>{`${t('tabs.send')}  ${t('tari')}`}</HeaderLabel>
                 <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
                     {t('common:back')}

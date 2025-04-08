@@ -36,7 +36,7 @@ export const FormFieldsWrapper = styled.div`
     flex-direction: column;
     gap: 10px;
     align-items: center;
-    padding-top: 20px;
+    padding-top: 15px;
 `;
 
 export const BottomWrapper = styled.div`
