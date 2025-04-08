@@ -11,6 +11,7 @@
   "send": {
     "cta-send": "Send Tari",
     "error-invalid-address": "The address is invalid",
+    "error-invalid-amount": "The amount is invalid",
     "error-message": "Error sending transaction: ",
     "field-address": "address",
     "field-amount": "amount",

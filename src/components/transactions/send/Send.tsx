@@ -109,9 +109,24 @@ export function Send({ setSection }: Props) {
         }
     };
 
+    const validateAmount = async (amount: string) => {
+        if (amount.length === 0) return;
+
+        try {
+            await invoke('format_micro_minotari', { amount });
+        } catch (_error) {
+            setError('amount', { message: t('send.error-invalid-amount') });
+        }
+    };
+
     const handleAddressBlur = (e: FocusEvent<HTMLInputElement>) => {
         const address = e.target.value;
         validateAddress(address);
+    };
+
+    const handleAmountBlur = (e: FocusEvent<HTMLInputElement>) => {
+        const amount = e.target.value;
+        validateAmount(amount);
     };
 
     return (
@@ -142,6 +157,7 @@ export function Send({ setSection }: Props) {
                         <FormField
                             control={control}
                             name="amount"
+                            onBlur={handleAmountBlur}
                             required
                             icon={<TariOutlineSVG />}
                             accent={

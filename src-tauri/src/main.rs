@@ -1011,7 +1011,7 @@ fn main() {
         RemoteNodeAdapter::new(base_node_watch_tx.clone()),
         shutdown.to_signal(),
         // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        NodeType::Remote,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
@@ -1368,6 +1368,7 @@ fn main() {
             commands::frontend_ready,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
+            commands::format_micro_minotari,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
