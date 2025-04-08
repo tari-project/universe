@@ -121,7 +121,8 @@ impl<TAdapter: ProcessAdapter> ProcessWatcher<TAdapter> {
         let binary_path = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(binary)?;
+            .resolve_path_to_binary_files(binary)
+            .await?;
         info!(target: LOG_TARGET, "Using {:?} for {}", binary_path, name);
         let first_start = self
             .is_first_start

@@ -20,10 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{sync::Arc, time::Duration};
 
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
@@ -31,19 +28,14 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Receiver, Sender},
+        watch::{Receiver, Sender},
         Mutex,
     },
 };
 
 use crate::{
     auto_launcher::AutoLauncher,
-    binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::{ConfigCore, ConfigCoreContent},
-        trait_config::ConfigImpl,
-    },
-    progress_tracker_old::ProgressTracker,
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
@@ -57,7 +49,6 @@ use crate::{
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
-const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6);
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
@@ -66,8 +57,6 @@ pub struct CoreSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
-    last_binaries_update_timestamp: Option<SystemTime>,
-    use_tor: bool,
 }
 
 pub struct CoreSetupPhase {
@@ -103,16 +92,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
-            .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::BinariesMergeMiningProxy,
-            ))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .build(app_handle)
     }
@@ -120,15 +99,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
         let is_auto_launcher_enabled = *ConfigCore::content().await.should_auto_launch();
 
-        let last_binaries_update_timestamp =
-            *ConfigCore::content().await.last_binaries_update_timestamp();
-
-        let use_tor = *ConfigCore::content().await.use_tor();
-
         Ok(CoreSetupPhaseAppConfiguration {
             is_auto_launcher_enabled,
-            last_binaries_update_timestamp,
-            use_tor,
         })
     }
 
@@ -181,29 +153,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        state
-            .events_manager
-            .handle_config_core_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_mining_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_ui_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&self.app_handle)
-            .await;
-
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
-
         PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
@@ -227,44 +178,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
             );
 
-        let now = SystemTime::now();
-
-        state
-            .telemetry_manager
-            .write()
-            .await
-            .initialize(self.app_handle.clone())
-            .await?;
-
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
-        if telemetry_id.is_empty() {
-            telemetry_id = "unknown_miner_tari_universe".to_string();
-        }
-
-        let app_version = self.app_handle.package_info().version.clone();
-        state
-            .telemetry_service
-            .write()
-            .await
-            .init(app_version.to_string(), telemetry_id.clone())
-            .await?;
-
-        let mut binary_resolver = BinaryResolver::current().write().await;
-        let should_check_for_update = now
-            .duration_since(
-                self.app_configuration
-                    .last_binaries_update_timestamp
-                    .unwrap_or(SystemTime::UNIX_EPOCH),
-            )
-            .unwrap_or(Duration::from_secs(0))
-            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
-
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
@@ -274,124 +188,9 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .run_speed_test_with_timeout(&self.app_handle)
             .await;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
-
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            binary_resolver
-                .initialize_binary_timeout(
-                    Binaries::Tor,
-                    progress.clone(),
-                    should_check_for_update,
-                    rx.clone(),
-                )
-                .await?;
-            let _unused = progress_stepper
-                .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
-                .await;
-        } else {
-            let _unused =
-                progress_stepper.skip_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor));
-        };
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::MinotariNode,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
-            .await;
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::MergeMiningProxy,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::BinariesMergeMiningProxy,
-            ))
-            .await;
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::Wallet,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
-            .await;
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::GpuMiner,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
-            .await;
-
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
-            .await;
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::Xmrig,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::ShaP2pool,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
-            .await;
-
-        if should_check_for_update {
-            let _unused = ConfigCore::update_field(
-                ConfigCoreContent::set_last_binaries_update_timestamp,
-                Some(now),
-            )
-            .await;
-        }
-
-        //drop binary resolver to release the lock
-        drop(binary_resolver);
-
-        let _uunused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
-            .await;
-
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            state
-                .tor_manager
-                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
-                .await?;
-        }
 
         Ok(None)
     }
@@ -403,8 +202,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     ) -> Result<(), anyhow::Error> {
         sender.send(PhaseStatus::Success).ok();
 
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))

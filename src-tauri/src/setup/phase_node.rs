@@ -23,8 +23,10 @@
 use std::time::Duration;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -41,7 +43,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
     time::{interval, Interval},
@@ -85,6 +87,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .add_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForInitialSync,
@@ -162,8 +167,42 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            binary_resolver
+                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
+                .await?;
+            progress_stepper
+                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
+                .await;
+        } else {
+            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
+        };
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
+            .await?;
+        progress_stepper
+            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
+            .await;
+
+        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            state
+                .tor_manager
+                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
+                .await?;
+        }
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
+            .await;
+
         let tor_control_port = state.tor_manager.get_control_port().await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
@@ -242,8 +281,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         _payload: Option<NodeSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))

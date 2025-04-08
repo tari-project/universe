@@ -23,8 +23,10 @@
 use std::time::Duration;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     p2pool_manager::P2poolConfig,
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupUnknownPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -41,7 +43,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
 };
@@ -107,6 +109,12 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
+            ))
+            .add_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::BinariesP2pool,
+            ))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
@@ -186,8 +194,31 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .get_unique_string()
             .await;
 
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
+            .await?;
+        progress_stepper
+            .resolve_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
+            ))
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
+            .await?;
+        progress_stepper
+            .resolve_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::BinariesP2pool,
+            ))
+            .await;
+
         if self.app_configuration.p2pool_enabled {
-            let _unused = progress_stepper
+            progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
                 .await;
 
@@ -207,11 +238,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 )
                 .await?;
         } else {
-            let _unused = progress_stepper
-                .skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
+            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
         }
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
@@ -245,8 +275,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         _payload: Option<UnknownSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))

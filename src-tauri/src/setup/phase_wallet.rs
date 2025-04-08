@@ -23,6 +23,8 @@
 use std::time::Duration;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
@@ -39,7 +41,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
 };
@@ -80,6 +82,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Wallet(
+                ProgressSetupWalletPlan::BinariesWallet,
+            ))
             .add_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .add_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
@@ -143,7 +148,22 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        let _unused = progress_stepper
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
+            .await?;
+        progress_stepper
+            .resolve_step(ProgressPlans::Wallet(
+                ProgressSetupWalletPlan::BinariesWallet,
+            ))
+            .await;
+
+        progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
@@ -157,7 +177,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
@@ -187,8 +207,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         _payload: Option<WalletSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unsed = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))

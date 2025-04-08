@@ -204,6 +204,32 @@ impl SetupManager {
             .events_manager
             .handle_config_wallet_loaded(&app_handle)
             .await;
+
+        let _unused = state
+            .telemetry_manager
+            .write()
+            .await
+            .initialize(app_handle.clone())
+            .await;
+
+        let mut telemetry_id = state
+            .telemetry_manager
+            .read()
+            .await
+            .get_unique_string()
+            .await;
+        if telemetry_id.is_empty() {
+            telemetry_id = "unknown_miner_tari_universe".to_string();
+        }
+
+        let app_version = app_handle.package_info().version.clone();
+        let _unused = state
+            .telemetry_service
+            .write()
+            .await
+            .init(app_version.to_string(), telemetry_id.clone())
+            .await;
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -217,20 +243,14 @@ impl SetupManager {
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
         let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
         hardware_phase_setup
-            .setup(
-                self.hardware_phase_status.clone(),
-                vec![self.core_phase_status.subscribe()],
-            )
+            .setup(self.hardware_phase_status.clone(), vec![])
             .await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
         let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
         node_phase_setup
-            .setup(
-                self.node_phase_status.clone(),
-                vec![self.core_phase_status.subscribe()],
-            )
+            .setup(self.node_phase_status.clone(), vec![])
             .await;
     }
 
@@ -239,10 +259,7 @@ impl SetupManager {
         wallet_phase_setup
             .setup(
                 self.wallet_phase_status.clone(),
-                vec![
-                    self.core_phase_status.subscribe(),
-                    self.node_phase_status.subscribe(),
-                ],
+                vec![self.node_phase_status.subscribe()],
             )
             .await;
     }
@@ -253,7 +270,6 @@ impl SetupManager {
             .setup(
                 self.unknown_phase_status.clone(),
                 vec![
-                    self.core_phase_status.subscribe(),
                     self.node_phase_status.subscribe(),
                     self.hardware_phase_status.subscribe(),
                 ],
