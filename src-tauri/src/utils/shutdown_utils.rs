@@ -137,7 +137,21 @@ pub async fn stop_all_processes(
 
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     match inner_resume_all_processes(app_handle.clone()).await {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            info!(target: LOG_TARGET, "Successfully resumed all processes");
+            if let Err(emit_err) = app_handle.emit(
+                "resuming-all-processes",
+                ResumingAllProcessesPayload {
+                    title: "resume-success".to_string(),
+                    stage_progress: 0,
+                    stage_total: 0,
+                    is_resuming: false,
+                },
+            ) {
+                error!(target: LOG_TARGET, "Failed to emit resume-success event: {:?}", emit_err);
+            }
+            Ok(())
+        }
         Err(e) => {
             error!(target: LOG_TARGET, "Failed to resume processes: {:?}", e);
             if let Err(emit_err) = app_handle.emit(
