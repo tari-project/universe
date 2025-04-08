@@ -26,8 +26,8 @@ use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
-    local_node_adapter::{MinotariNodeClient, MinotariNodeStatusMonitor},
-    node_manager::NodeType,
+    node::node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
+    node::node_manager::NodeType,
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
     BaseNodeStatus,
 };
@@ -51,18 +51,18 @@ impl RemoteNodeAdapter {
         }
     }
 
-    pub fn grpc_address(&self) -> Option<(String, u16)> {
+    pub fn get_grpc_address(&self) -> Option<(String, u16)> {
         self.grpc_address.clone()
     }
 
-    pub fn get_node_client(&self) -> Option<MinotariNodeClient> {
-        if let Some(grpc_address) = self.grpc_address() {
+    pub fn get_service(&self) -> Option<NodeAdapterService> {
+        if let Some(grpc_address) = self.get_grpc_address() {
             let address = if grpc_address.0.starts_with("http") {
                 format!("{}:{}", grpc_address.0, grpc_address.1)
             } else {
                 format!("http://{}:{}", grpc_address.0, grpc_address.1)
             };
-            Some(MinotariNodeClient::new(address, 1))
+            Some(NodeAdapterService::new(address, 1))
         } else {
             None
         }
@@ -89,8 +89,30 @@ impl RemoteNodeAdapter {
     }
 }
 
+#[async_trait]
+impl NodeAdapter for RemoteNodeAdapter {
+    fn get_grpc_address(&self) -> Option<(String, u16)> {
+        self.get_grpc_address()
+    }
+
+    fn get_service(&self) -> Option<NodeAdapterService> {
+        self.get_service()
+    }
+
+    async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
+        let node_service = self.get_service();
+        if let Some(node_service) = node_service {
+            let node_identity = node_service.get_identity().await?;
+            let public_tcp_address = node_identity.public_address[0].clone();
+            Ok(public_tcp_address)
+        } else {
+            Err(anyhow::anyhow!("Remote node service is not available"))
+        }
+    }
+}
+
 impl ProcessAdapter for RemoteNodeAdapter {
-    type StatusMonitor = MinotariNodeStatusMonitor;
+    type StatusMonitor = NodeStatusMonitor;
     type ProcessInstance = NullProcessInstance;
 
     fn spawn_inner(
@@ -103,7 +125,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
     ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         let inner_shutdown = Shutdown::new();
         let grpc_address = self
-            .grpc_address()
+            .get_grpc_address()
             .ok_or_else(|| anyhow::anyhow!("GRPC address not set"))?;
         let address = if grpc_address.0.starts_with("http") {
             format!("{}:{}", grpc_address.0, grpc_address.1)
@@ -114,9 +136,9 @@ impl ProcessAdapter for RemoteNodeAdapter {
             NullProcessInstance {
                 shutdown: inner_shutdown,
             },
-            MinotariNodeStatusMonitor::new(
+            NodeStatusMonitor::new(
                 NodeType::Remote,
-                MinotariNodeClient::new(address, 1),
+                NodeAdapterService::new(address, 1),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
             ),

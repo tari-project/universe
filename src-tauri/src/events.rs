@@ -25,7 +25,8 @@ use std::collections::HashMap;
 
 use crate::{
     gpu_status_file::GpuDevice,
-    node_manager::{NodeIdentity, NodeType},
+    node::node_adapter::NodeIdentity,
+    node::node_manager::NodeType,
     wallet_adapter::{TransactionInfo, WalletBalance},
 };
 
