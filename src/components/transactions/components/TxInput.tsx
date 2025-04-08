@@ -1,6 +1,16 @@
 import { InputHTMLAttributes, ReactNode, ChangeEvent, useRef, useState } from 'react';
 
-import { Wrapper, IconWrapper, ContentWrapper, StyledInput, Label, AccentWrapper } from './TxInput.style.ts';
+import {
+    Wrapper,
+    IconWrapper,
+    ContentWrapper,
+    StyledInput,
+    Label,
+    AccentWrapper,
+    CheckIconWrapper,
+} from './TxInput.style.ts';
+import CheckIcon from './CheckIcon.tsx';
+import { AnimatePresence } from 'motion/react';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
@@ -16,6 +26,7 @@ export interface TxInputProps extends TxInputBase {
     autoFocus?: boolean;
     truncateOnBlur?: boolean;
     truncateText?: string;
+    isValid?: boolean;
 }
 
 export function TxInput({
@@ -31,6 +42,7 @@ export function TxInput({
     autoFocus,
     truncateOnBlur,
     truncateText,
+    isValid,
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
@@ -75,6 +87,17 @@ export function TxInput({
                     {...rest}
                     aria-errormessage={errorMessage}
                 />
+                <AnimatePresence>
+                    {isValid && (
+                        <CheckIconWrapper
+                            initial={{ opacity: 0, scale: 0 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0 }}
+                        >
+                            <CheckIcon />
+                        </CheckIconWrapper>
+                    )}
+                </AnimatePresence>
             </ContentWrapper>
         </Wrapper>
     );

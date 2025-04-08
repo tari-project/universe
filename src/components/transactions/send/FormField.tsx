@@ -13,6 +13,7 @@ interface FormFieldProps {
     required?: boolean;
     autoFocus?: boolean;
     truncateOnBlur?: boolean;
+    isValid?: boolean;
 }
 export function FormField({
     control,
@@ -23,6 +24,7 @@ export function FormField({
     accent,
     autoFocus,
     truncateOnBlur,
+    isValid,
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
@@ -57,6 +59,7 @@ export function FormField({
                         autoFocus={autoFocus}
                         truncateOnBlur={truncateOnBlur}
                         truncateText={truncateOnBlur && rest.value ? String(rest.value) : undefined}
+                        isValid={isValid}
                     />
                 );
             }}

@@ -30,6 +30,8 @@ export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
 
+    const [isAddressValid, setIsAddressValid] = useState(false);
+
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors } = useForm<SendInputs>({
         defaultValues,
         mode: 'all',
@@ -89,6 +91,13 @@ export function Send({ setSection }: Props) {
         clearErrors(name);
     }
 
+    function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+        setValue(name, e.target.value, { shouldValidate: true });
+        clearErrors(name);
+
+        setIsAddressValid(true);
+    }
+
     return (
         <>
             <TabHeader>
@@ -104,10 +113,11 @@ export function Send({ setSection }: Props) {
                         <FormField
                             control={control}
                             name="address"
-                            handleChange={handleChange}
+                            handleChange={handleAddressChange}
                             required
                             autoFocus
                             truncateOnBlur
+                            isValid={isAddressValid}
                         />
 
                         <FormField control={control} name="message" handleChange={handleChange} />
