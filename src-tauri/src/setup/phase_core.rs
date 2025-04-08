@@ -20,10 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{
-    sync::Arc,
-    time::{Duration, SystemTime},
-};
+use std::{sync::Arc, time::Duration};
 
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
@@ -31,19 +28,14 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Receiver, Sender},
+        watch::{Receiver, Sender},
         Mutex,
     },
 };
 
 use crate::{
     auto_launcher::AutoLauncher,
-    binaries::{Binaries, BinaryResolver},
-    configs::{
-        config_core::{ConfigCore, ConfigCoreContent},
-        trait_config::ConfigImpl,
-    },
-    progress_tracker_old::ProgressTracker,
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
@@ -65,7 +57,6 @@ pub struct CoreSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
-    use_tor: bool,
 }
 
 pub struct CoreSetupPhase {
@@ -108,11 +99,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
         let is_auto_launcher_enabled = *ConfigCore::content().await.should_auto_launch();
 
-        let use_tor = *ConfigCore::content().await.use_tor();
-
         Ok(CoreSetupPhaseAppConfiguration {
             is_auto_launcher_enabled,
-            use_tor,
         })
     }
 
@@ -214,8 +202,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     ) -> Result<(), anyhow::Error> {
         sender.send(PhaseStatus::Success).ok();
 
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))

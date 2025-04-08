@@ -172,13 +172,13 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         binary_resolver
             .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
             .await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::BinariesGpuMiner,
             ))
             .await;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::BinariesCpuMiner,
             ))
@@ -187,7 +187,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
             .await?;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
@@ -207,7 +207,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
         HardwareStatusMonitor::current().initialize().await?;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::RunCpuBenchmark,
             ))
@@ -235,8 +235,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         payload: Option<HardwareSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))

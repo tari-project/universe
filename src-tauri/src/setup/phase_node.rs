@@ -176,18 +176,17 @@ impl SetupPhaseImpl for NodeSetupPhase {
             binary_resolver
                 .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
                 .await?;
-            let _unused = progress_stepper
+            progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
                 .await;
         } else {
-            let _unused =
-                progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
+            progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
         binary_resolver
             .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
             .await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .await;
 
@@ -198,12 +197,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .await?;
         }
 
-        let _uunused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
             .await;
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
@@ -282,8 +281,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         _payload: Option<NodeSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))

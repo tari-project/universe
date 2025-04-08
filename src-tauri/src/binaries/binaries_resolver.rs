@@ -33,7 +33,6 @@ use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tauri::async_runtime::block_on;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};

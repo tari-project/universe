@@ -211,14 +211,14 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         binary_resolver
             .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Unknown(
                 ProgressSetupUnknownPlan::BinariesP2pool,
             ))
             .await;
 
         if self.app_configuration.p2pool_enabled {
-            let _unused = progress_stepper
+            progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
                 .await;
 
@@ -238,11 +238,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 )
                 .await?;
         } else {
-            let _unused = progress_stepper
-                .skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
+            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
         }
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
@@ -276,8 +275,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         _payload: Option<UnknownSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unused = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))

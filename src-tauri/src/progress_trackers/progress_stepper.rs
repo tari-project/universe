@@ -25,7 +25,6 @@ use std::{
     ops::{Add, Mul},
 };
 
-use anyhow::Error;
 use tauri::{AppHandle, Manager};
 
 use log::warn;

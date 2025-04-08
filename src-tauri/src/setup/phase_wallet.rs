@@ -157,13 +157,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
         binary_resolver
             .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
             .await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::BinariesWallet,
             ))
             .await;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
@@ -177,7 +177,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::InitializeSpendingWallet,
             ))
@@ -207,8 +207,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         _payload: Option<WalletSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
-        let _unsed = self
-            .progress_stepper
+        self.progress_stepper
             .lock()
             .await
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
