@@ -58,11 +58,13 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddressFeatures;
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
@@ -1816,4 +1818,10 @@ pub fn verify_address_for_send(
     let sending_method = sending_method.unwrap_or(TariAddressFeatures::ONE_SIDED);
 
     verify_send(address, sending_method)
+}
+
+#[tauri::command]
+pub fn format_micro_minotari(amount: String) -> Result<String, String> {
+    let mm_amount = MicroMinotari::from_str(&amount).map_err(|e| e.to_string())?;
+    Ok(format!("{}", mm_amount))
 }
