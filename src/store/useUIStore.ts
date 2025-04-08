@@ -35,7 +35,7 @@ const initialState: UIStoreState = {
     isWebglNotSupported: false,
     theme: preferredTheme,
     preferredTheme,
-    sidebarOpen: true,
+    sidebarOpen: false,
     currentSidebar: 'mining',
     dialogToShow: null,
     showExperimental: false,

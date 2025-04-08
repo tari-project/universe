@@ -1,12 +1,21 @@
-import { InputHTMLAttributes, ReactNode, ChangeEvent, useRef, useState } from 'react';
+import { InputHTMLAttributes, ReactNode, ChangeEvent, FocusEvent, useRef, useState } from 'react';
 
-import { Wrapper, IconWrapper, ContentWrapper, StyledInput, Label, AccentWrapper } from './TxInput.style.ts';
+import {
+    Wrapper,
+    IconWrapper,
+    ContentWrapper,
+    StyledInput,
+    Label,
+    AccentWrapper,
+    CheckIconWrapper,
+} from './TxInput.style.ts';
+import CheckIcon from './CheckIcon.tsx';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
     value: string;
     onChange: (e: ChangeEvent<HTMLInputElement>) => void;
-    onBlur: () => void;
+    onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
     name: string;
     placeholder: string;
     icon?: ReactNode;
@@ -16,6 +25,7 @@ export interface TxInputProps extends TxInputBase {
     autoFocus?: boolean;
     truncateOnBlur?: boolean;
     truncateText?: string;
+    isValid?: boolean;
 }
 
 export function TxInput({
@@ -31,6 +41,7 @@ export function TxInput({
     autoFocus,
     truncateOnBlur,
     truncateText,
+    isValid,
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
@@ -41,9 +52,9 @@ export function TxInput({
         ref.current?.focus();
     };
 
-    const handleBlur = () => {
+    const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
         setIsFocused(false);
-        onBlur();
+        onBlur?.(e);
     };
 
     const displayValue =
@@ -75,6 +86,12 @@ export function TxInput({
                     {...rest}
                     aria-errormessage={errorMessage}
                 />
+
+                {isValid && !isFocused && (
+                    <CheckIconWrapper initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }}>
+                        <CheckIcon />
+                    </CheckIconWrapper>
+                )}
             </ContentWrapper>
         </Wrapper>
     );

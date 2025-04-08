@@ -36,7 +36,7 @@ export const FormFieldsWrapper = styled.div`
     flex-direction: column;
     gap: 10px;
     align-items: center;
-    padding-top: 20px;
+    padding-top: 15px;
 `;
 
 export const BottomWrapper = styled.div`
@@ -49,14 +49,14 @@ export const BottomWrapper = styled.div`
 export const DividerIcon = styled.div`
     width: 34px;
     height: 34px;
-    background: linear-gradient(0deg, #040723 4%, #071e6b 120%);
+    background: linear-gradient(0deg, #1c264a 0%, #050c32 100%);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     color: #fff;
-    border: 4px solid #fff;
+    border: ${({ theme }) => (theme.mode === 'dark' ? '4px solid #2E2E2E' : '4px solid #fff')};
 `;
 
 export const ErrorMessageWrapper = styled.div`

@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState, FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
@@ -29,6 +29,8 @@ interface Props {
 export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
+
+    const [isAddressValid, setIsAddressValid] = useState(false);
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors } = useForm<SendInputs>({
         defaultValues,
@@ -89,9 +91,32 @@ export function Send({ setSection }: Props) {
         clearErrors(name);
     }
 
+    function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
+        setValue(name, e.target.value, { shouldValidate: true });
+        clearErrors(name);
+        setIsAddressValid(false);
+    }
+
+    const validateAddress = async (address: string) => {
+        if (address.length === 0) return;
+
+        try {
+            await invoke('verify_address_for_send', { address });
+            setIsAddressValid(true);
+        } catch (_error) {
+            setIsAddressValid(false);
+            setError('address', { message: t('send.error-invalid-address') });
+        }
+    };
+
+    const handleAddressBlur = (e: FocusEvent<HTMLInputElement>) => {
+        const address = e.target.value;
+        validateAddress(address);
+    };
+
     return (
         <>
-            <TabHeader>
+            <TabHeader $noBorder>
                 <HeaderLabel>{`${t('tabs.send')}  ${t('tari')}`}</HeaderLabel>
                 <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
                     {t('common:back')}
@@ -104,10 +129,12 @@ export function Send({ setSection }: Props) {
                         <FormField
                             control={control}
                             name="address"
-                            handleChange={handleChange}
+                            handleChange={handleAddressChange}
+                            onBlur={handleAddressBlur}
                             required
                             autoFocus
                             truncateOnBlur
+                            isValid={isAddressValid}
                         />
 
                         <FormField control={control} name="message" handleChange={handleChange} />

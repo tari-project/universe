@@ -10,6 +10,7 @@
   },
   "send": {
     "cta-send": "Send Tari",
+    "error-invalid-address": "The address is invalid",
     "error-message": "Error sending transaction: ",
     "field-address": "address",
     "field-amount": "amount",
@@ -23,9 +24,9 @@
     "required": "The {{fieldName}} field is required"
   },
   "tabs": {
-    "history": "history",
-    "receive": "receive",
-    "send": "send"
+    "history": "History",
+    "receive": "Receive",
+    "send": "Send"
   },
   "tari": "Tari"
 }

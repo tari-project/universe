@@ -32,7 +32,7 @@ export default function Wallet({ section, setSection }: Props) {
 
     return (
         <Wrapper>
-            <TabHeader>
+            <TabHeader $noBorder>
                 <HeaderLabel>{t('my_tari')}</HeaderLabel>
                 <AddressWrapper>
                     <HeaderLabel>{displayAddress}</HeaderLabel>

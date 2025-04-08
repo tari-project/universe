@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
 import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
@@ -40,15 +40,24 @@ export const HeaderLabel = styled(Typography).attrs({
 })`
     font-weight: 500;
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+    text-transform: none;
 `;
-export const TabHeader = styled.div`
+
+export const TabHeader = styled.div<{ $noBorder?: boolean }>`
     display: flex;
     width: 100%;
     text-transform: capitalize;
     justify-content: space-between;
     align-items: center;
     padding: 0px 0 15px 0;
-    border-bottom: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
+    border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[10]}`};
+
+    ${({ $noBorder }) =>
+        $noBorder &&
+        css`
+            padding: 0;
+            border: none;
+        `}
 `;
 export const BottomNavWrapper = styled.div`
     display: flex;

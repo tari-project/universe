@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { m } from 'motion/react';
 
 export const Wrapper = styled.div<{ $hasError?: boolean }>`
     display: flex;
@@ -44,11 +45,15 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
         font-size: 1.4rem;
     }
 `;
+
 export const ContentWrapper = styled.div`
     display: flex;
+    align-items: center;
+    gap: 10px;
     position: relative;
     width: 100%;
 `;
+
 export const IconWrapper = styled.div`
     display: flex;
     align-items: center;
@@ -62,4 +67,10 @@ export const IconWrapper = styled.div`
 export const Label = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.accent};
     font-weight: 500;
+`;
+
+export const CheckIconWrapper = styled(m.div)`
+    pointer-events: none;
+    width: 25px;
+    height: 25px;
 `;
