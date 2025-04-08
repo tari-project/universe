@@ -10,7 +10,6 @@ import {
     CheckIconWrapper,
 } from './TxInput.style.ts';
 import CheckIcon from './CheckIcon.tsx';
-import { AnimatePresence } from 'motion/react';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
