@@ -26,6 +26,7 @@ use anyhow::Error;
 use dirs::config_dir;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 use crate::APPLICATION_FOLDER_ID;
@@ -47,12 +48,19 @@ pub trait ConfigImpl {
     fn _get_content(&self) -> &Self::Config;
     fn _get_content_mut(&mut self) -> &mut Self::Config;
     fn _get_config_path() -> PathBuf {
+        let network = match Network::get_current_or_user_setting_or_default() {
+            Network::NextNet => "nextnet",
+            Network::Esmeralda => "esmeralda",
+            _ => panic!("Unsupported network"),
+        };
+
         let config_dir = config_dir().unwrap_or_else(|| {
             debug!("Failed to get config directory, using temp dir");
             temp_dir()
         });
         config_dir
             .join(APPLICATION_FOLDER_ID)
+            .join(network)
             .join(Self::_get_name())
     }
     fn _save_config(&self) -> Result<(), Error> {
