@@ -20,14 +20,19 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use anyhow::Ok;
 use getset::{Getters, Setters};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{str::FromStr, sync::LazyLock, time::SystemTime};
+use std::{ops::Deref, str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tokio::sync::RwLock;
+use tauri::{AppHandle, Manager};
+use tokio::sync::{Mutex, RwLock};
 
-use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
+use crate::{
+    app_config::AirdropTokens, internal_wallet::generate_password,
+    telemetry_service::TelemetryService, AppConfig, UniverseAppState,
+};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -88,6 +93,7 @@ impl ConfigContentImpl for ConfigCoreContent {}
 
 pub struct ConfigCore {
     content: ConfigCoreContent,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl ConfigImpl for ConfigCore {
@@ -101,7 +107,34 @@ impl ConfigImpl for ConfigCore {
     fn new() -> Self {
         Self {
             content: ConfigCore::_load_config().unwrap_or_default(),
+            app_handle: RwLock::new(None),
         }
+    }
+
+    async fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        if let Some(app_handle) = self.app_handle.read().await.deref() {
+            println!(
+                "Sending telemetry event: {} | with data: {:?}",
+                event_name, event_data
+            );
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(event_name.to_string(), event_data)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), anyhow::Error> {
+        *self.app_handle.write().await = Some(app_handle);
+        Ok(())
     }
 
     fn _get_name() -> String {
@@ -116,9 +149,9 @@ impl ConfigImpl for ConfigCore {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
         if self.content.was_config_migrated {
-            return Ok(());
+            return;
         }
 
         self.content = ConfigCoreContent {
@@ -135,10 +168,10 @@ impl ConfigImpl for ConfigCore {
             auto_update: old_config.auto_update(),
             p2pool_stats_server_port: old_config.p2pool_stats_server_port(),
             pre_release: old_config.pre_release(),
-            last_changelog_version: Version::from_str(old_config.last_changelog_version())?,
+            last_changelog_version: Version::from_str(old_config.last_changelog_version())
+                .unwrap_or_else(|_| Version::new(0, 0, 0)),
             airdrop_tokens: old_config.airdrop_tokens(),
             ..Default::default()
         };
-        Ok(())
     }
 }

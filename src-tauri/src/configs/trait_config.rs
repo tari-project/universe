@@ -28,9 +28,10 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tari_common::configuration::Network;
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::APPLICATION_FOLDER_ID;
+use crate::{telemetry_service::TelemetryService, APPLICATION_FOLDER_ID};
 
 #[allow(dead_code)]
 pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
@@ -45,7 +46,7 @@ pub trait ConfigImpl {
 
     fn new() -> Self;
     fn current() -> &'static RwLock<Self>;
-    fn _send_telemetry_event(
+    async fn _send_telemetry_event(
         &self,
         event_name: &str,
         event_data: serde_json::Value,
@@ -85,7 +86,8 @@ pub trait ConfigImpl {
     {
         Self::current().read().await._get_content().clone()
     }
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), Error>;
+    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), Error>;
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig);
     async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where
         I: Serialize + Clone,
@@ -100,14 +102,18 @@ pub trait ConfigImpl {
         Self::current().write().await._save_config().inspect_err(|error|
             debug!(target: LOG_TARGET, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
         )?;
-        Self::current().read().await._send_telemetry_event(
-            "config-update-field",
-            json!({
-                "config": Self::_get_name(),
-                "field": std::any::type_name::<F>(),
-                "value": value,
-            }),
-        )?;
+        Self::current()
+            .read()
+            .await
+            ._send_telemetry_event(
+                "config-update-field",
+                json!({
+                    "config": Self::_get_name(),
+                    "field": std::any::type_name::<F>(),
+                    "value": value,
+                }),
+            )
+            .await?;
         Ok(())
     }
 }
