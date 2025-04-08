@@ -158,6 +158,10 @@ impl WebsocketManager {
         });
     }
 
+    pub fn is_websocket_manager_ready(&self) -> bool {
+        self.app.is_some()
+    }
+
     async fn connect_to_url(
         app_id: String,
         app_config: Arc<RwLock<AppConfig>>,
@@ -166,7 +170,7 @@ impl WebsocketManager {
         info!(target:LOG_TARGET,"connecting to websocket...");
         let config_read = in_memory_config.read().await;
         let mut adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
-        adjusted_ws_url.push_str(&format!("/new-wss?app_id={}", encode(&app_id)));
+        adjusted_ws_url.push_str(&format!("/v2/wss?app_id={}", encode(&app_id)));
 
         let token = app_config
             .read()
@@ -221,6 +225,11 @@ impl WebsocketManager {
             info!(target:LOG_TARGET,"websocket already connected");
             return Ok(());
         }
+        if self.app.is_none() {
+            return Err(anyhow::anyhow!(
+                " Cannot connect to websocket as app is not set yet"
+            ));
+        }
 
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
@@ -237,12 +246,14 @@ impl WebsocketManager {
         let app_id = self.app_id.clone();
         //we don't want to receive previous messages
         status_update_channel_rx.mark_unchanged();
+
         tauri::async_runtime::spawn(async move {
             loop {
                 tokio::select! {
                     _ = async {
                         let connection_res = WebsocketManager::connect_to_url(app_id.clone(), app_config.clone(), &config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
+
                         if let Ok(connection) = connection_res {
                             WebsocketManager::listen(connection,app_cloned.clone(),
                                 shutdown.clone(),

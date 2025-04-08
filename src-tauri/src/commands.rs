@@ -1857,10 +1857,14 @@ pub async fn websocket_connect(
         return Ok(());
     }
 
-    state
-        .websocket_manager
-        .write()
-        .await
+    let mut websocket_manger_guard = state.websocket_manager.write().await;
+
+    if !websocket_manger_guard.is_websocket_manager_ready() {
+        warn!(target: LOG_TARGET, "websocket_connect cannot be done as websocket_manager is not ready yet");
+        return Err("websocket manager is not ready".into());
+    }
+
+    websocket_manger_guard
         .connect()
         .await
         .map_err(|e| e.to_string())?;
