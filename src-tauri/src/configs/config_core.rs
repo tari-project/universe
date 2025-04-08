@@ -24,6 +24,7 @@ use getset::{Getters, Setters};
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::LazyLock, time::SystemTime};
+use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
 use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
@@ -58,6 +59,11 @@ pub struct ConfigCoreContent {
 
 impl Default for ConfigCoreContent {
     fn default() -> Self {
+        let remote_base_node_address = format!(
+            "https://grpc.{}.tari.com:443",
+            Network::get_current_or_user_setting_or_default().as_key_str()
+        );
+
         Self {
             was_config_migrated: false,
             created_at: SystemTime::now(),
@@ -74,7 +80,7 @@ impl Default for ConfigCoreContent {
             pre_release: false,
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
-            remote_base_node_address: "https://grpc.esmeralda.tari.com:443".to_string(),
+            remote_base_node_address,
         }
     }
 }
