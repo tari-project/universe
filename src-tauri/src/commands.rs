@@ -1874,7 +1874,8 @@ pub async fn websocket_connect(
         .write()
         .await
         .emit_interval_ws_events()
-        .await;
+        .await
+        .map_err(|e| e.to_string())?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());

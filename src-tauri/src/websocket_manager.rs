@@ -384,10 +384,10 @@ async fn sender_task(
 async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
     match channel.recv().await {
         Ok(_) => {
-            info!(target:LOG_TARGET,"received stop signal");
+            info!(target:LOG_TARGET,"received websocket_manager stop signal");
         }
         Err(_) => {
-            info!(target:LOG_TARGET,"received stop signal");
+            info!(target:LOG_TARGET,"received websocket_manager stop signal");
         }
     }
 }

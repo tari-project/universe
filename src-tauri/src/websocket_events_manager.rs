@@ -22,6 +22,7 @@
 
 use std::{sync::Arc, time::Duration};
 
+use futures::lock::Mutex;
 use log::{error, info};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
@@ -50,6 +51,7 @@ pub struct WebsocketEventsManager {
     app_id: String,
     websocket_tx_channel: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    is_started: Arc<Mutex<bool>>,
 }
 
 impl WebsocketEventsManager {
@@ -73,6 +75,7 @@ impl WebsocketEventsManager {
             app: None,
             app_config,
             close_channel_tx,
+            is_started: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -92,7 +95,7 @@ impl WebsocketEventsManager {
         info!(target: LOG_TARGET,"stopped emitting messages from websocket_events_manager");
     }
 
-    pub async fn emit_interval_ws_events(&mut self) {
+    pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
         let shutdown = self.shutdown.clone();
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
@@ -109,38 +112,50 @@ impl WebsocketEventsManager {
         let websocket_tx_channel_clone = self.websocket_tx_channel.clone();
         let close_channel_tx = self.close_channel_tx.clone();
 
-        tokio::spawn(async move {
-            loop {
-                let jwt_token = app_config_clone
-                    .read()
-                    .await
-                    .airdrop_tokens()
-                    .map(|tokens| tokens.token);
-                let mut shutdown_signal = shutdown.clone().to_signal();
-                tokio::select! {
-                  _= interval.tick() => {
-                        if let Some(jwt)= jwt_token{
-                        if let Some(message) = WebsocketEventsManager::assemble_mining_status(
-                          cpu_miner_status_watch_rx.clone(),
-                          gpu_latest_miner_stats.clone(),
-                          node_latest_status.clone(),
-                          app_id.clone(),
-                          app_version.clone(),
-                          jwt,
-                        ).await{
-                            drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
-                              error!(target:LOG_TARGET, "could not send to websocket channel due to {}",e);
-                            }));
-                        }}
-                  },
-                  _= shutdown_signal.wait()=>{
-                    info!(target:LOG_TARGET, "websocket events manager closed");
-                    return;
-                  }
-                  _=wait_for_close_signal(close_channel_tx.subscribe())=>{}
-                }
+        let is_started = self.is_started.clone();
+        if let Some(mut is_started_guard) = self.is_started.try_lock() {
+            if *is_started_guard {
+                return Ok(());
             }
-        });
+
+            tokio::spawn(async move {
+                loop {
+                    let jwt_token = app_config_clone
+                        .read()
+                        .await
+                        .airdrop_tokens()
+                        .map(|tokens| tokens.token);
+                    let mut shutdown_signal = shutdown.clone().to_signal();
+                    tokio::select! {
+                      _= interval.tick() => {
+                            if let Some(jwt)= jwt_token{
+                            if let Some(message) = WebsocketEventsManager::assemble_mining_status(
+                              cpu_miner_status_watch_rx.clone(),
+                              gpu_latest_miner_stats.clone(),
+                              node_latest_status.clone(),
+                              app_id.clone(),
+                              app_version.clone(),
+                              jwt,
+                            ).await{
+                                drop(websocket_tx_channel_clone.send(message).await.inspect_err(|e|{
+                                  error!(target:LOG_TARGET, "could not send to websocket channel due to {}",e);
+                                }));
+                            }}
+                      },
+                      _= shutdown_signal.wait()=>{
+                        info!(target:LOG_TARGET, "websocket events manager closed");
+
+                        return;
+                      }
+                      _=wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone())=>{}
+                    }
+                }
+            });
+            *is_started_guard = true;
+            Ok(())
+        } else {
+            Err(anyhow::anyhow!("could not start emitting"))
+        }
     }
 
     async fn assemble_mining_status(
@@ -191,13 +206,19 @@ impl WebsocketEventsManager {
     }
 }
 
-async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
+async fn wait_for_close_signal(
+    mut channel: broadcast::Receiver<bool>,
+    is_started: Arc<Mutex<bool>>,
+) {
     match channel.recv().await {
         Ok(_) => {
-            info!(target:LOG_TARGET,"received stop signal");
+            let mut is_started_guard = is_started.lock().await;
+            *is_started_guard = false;
+            drop(is_started_guard);
+            info!(target:LOG_TARGET,"received websocket_events_manager stop signal");
         }
         Err(_) => {
-            info!(target:LOG_TARGET,"received stop signal");
+            info!(target:LOG_TARGET,"received websocket_events_manager stop signal");
         }
     }
 }
