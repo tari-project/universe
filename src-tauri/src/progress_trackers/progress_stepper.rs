@@ -30,7 +30,7 @@ use tauri::{AppHandle, Manager};
 
 use log::warn;
 
-use crate::{telemetry_service::TelemetryService, UniverseAppState};
+use crate::UniverseAppState;
 
 use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 

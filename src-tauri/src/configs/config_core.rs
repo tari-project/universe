@@ -27,11 +27,10 @@ use serde::{Deserialize, Serialize};
 use std::{ops::Deref, str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
 use tauri::{AppHandle, Manager};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AirdropTokens, internal_wallet::generate_password,
-    telemetry_service::TelemetryService, AppConfig, UniverseAppState,
+    app_config::AirdropTokens, internal_wallet::generate_password, AppConfig, UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -128,9 +127,8 @@ impl ConfigImpl for ConfigCore {
         Ok(())
     }
 
-    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), anyhow::Error> {
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
         *self.app_handle.write().await = Some(app_handle);
-        Ok(())
     }
 
     fn _get_name() -> String {

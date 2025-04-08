@@ -31,7 +31,7 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::{telemetry_service::TelemetryService, APPLICATION_FOLDER_ID};
+use crate::APPLICATION_FOLDER_ID;
 
 #[allow(dead_code)]
 pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
@@ -86,7 +86,7 @@ pub trait ConfigImpl {
     {
         Self::current().read().await._get_content().clone()
     }
-    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), Error>;
+    async fn load_app_handle(&mut self, app_handle: AppHandle);
     fn migrate_old_config(&mut self, old_config: Self::OldConfig);
     async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where

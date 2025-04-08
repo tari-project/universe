@@ -25,9 +25,9 @@ use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
-use crate::{telemetry_service::TelemetryService, UniverseAppState};
+use crate::UniverseAppState;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -119,9 +119,8 @@ impl ConfigImpl for TestConfig {
         Ok(())
     }
 
-    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), anyhow::Error> {
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
         *self.app_handle.write().await = Some(app_handle);
-        Ok(())
     }
 
     fn _get_name() -> String {

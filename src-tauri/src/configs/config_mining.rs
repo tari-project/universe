@@ -23,7 +23,6 @@
 use crate::{
     app_config::{GpuThreads, MiningMode},
     gpu_miner::EngineType,
-    telemetry_service::TelemetryService,
     UniverseAppState,
 };
 use std::{ops::Deref, sync::LazyLock, time::SystemTime};
@@ -31,7 +30,7 @@ use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
@@ -122,9 +121,8 @@ impl ConfigImpl for ConfigMining {
         Ok(())
     }
 
-    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), anyhow::Error> {
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
         *self.app_handle.write().await = Some(app_handle);
-        Ok(())
     }
 
     fn _get_name() -> String {

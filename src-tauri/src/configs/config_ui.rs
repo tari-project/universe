@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{app_config::DisplayMode, telemetry_service::TelemetryService, UniverseAppState};
+use crate::{app_config::DisplayMode, UniverseAppState};
 
 use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 
@@ -28,7 +28,7 @@ use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use sys_locale::get_locale;
 use tauri::{AppHandle, Manager};
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 
 use crate::AppConfig;
 
@@ -123,9 +123,8 @@ impl ConfigImpl for ConfigUI {
         Ok(())
     }
 
-    async fn load_app_handle(&mut self, app_handle: AppHandle) -> Result<(), anyhow::Error> {
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
         *self.app_handle.write().await = Some(app_handle);
-        Ok(())
     }
     fn _get_name() -> String {
         "ui_config".to_string()

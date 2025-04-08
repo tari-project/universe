@@ -43,7 +43,6 @@ use log::{debug, error, info};
 use serde::Serialize;
 use std::{
     fmt::{Display, Formatter},
-    ops::Deref,
     sync::{Arc, LazyLock},
 };
 use tauri::{AppHandle, Manager};
