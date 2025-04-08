@@ -5,7 +5,6 @@
   "application-info": "アプリケーション情報",
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
-  "gpu-engine": "GPUエンジン",
   "change-language": "言語",
   "confirm": "確認",
   "confirm-action": "アクションを確認",
@@ -30,6 +29,7 @@
   "debug-info": "デバッグ",
   "disconnect": "エアドロップから切断",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "ブリッジ設定が無効です",
     "invalid-control-port": "コントロールポートの設定が無効です"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
+  "gpu-engine": "GPUエンジン",
   "gpu-mining-enabled": "GPUマイニング",
   "gpu-unavailable": "⚠️ ハードウェアがサポートしていないため、GPUが無効です",
   "hardware-status": "ハードウェアの状態",
