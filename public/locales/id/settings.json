@@ -5,7 +5,6 @@
   "application-info": "Informasi Aplikasi",
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
-  "gpu-engine": "Mesin Gpu",
   "change-language": "Bahasa",
   "confirm": "Konfirmasi",
   "confirm-action": "Konfirmasi tindakan",
@@ -30,6 +29,7 @@
   "debug-info": "Debug",
   "disconnect": "Putuskan dari Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Konfigurasi jembatan tidak valid",
     "invalid-control-port": "Konfigurasi Port Kontrol tidak valid"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "Perangkat Penambangan GPU",
   "gpu-device-enabled-description": "Aktifkan atau nonaktifkan perangkat GPU tertentu.",
   "gpu-device-no-found": "⚠️ Tidak ada perangkat GPU yang ditemukan",
+  "gpu-engine": "Mesin Gpu",
   "gpu-mining-enabled": "Penambangan GPU",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
   "hardware-status": "Status perangkat keras",

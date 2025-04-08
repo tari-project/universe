@@ -5,7 +5,6 @@
   "application-info": "Application Information",
   "applyInviteCode": "Apply Invite Code",
   "cancel": "Cancel",
-  "gpu-engine": "Gpu Engine",
   "change-language": "Language",
   "confirm": "Confirm",
   "confirm-action": "Confirm action",
@@ -30,6 +29,7 @@
   "debug-info": "Debug",
   "disconnect": "Disconnect from Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Bridge configuration is invalid",
     "invalid-control-port": "Control Port configuration is invalid"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU Mining devices",
   "gpu-device-enabled-description": "Enable or disable specific GPU device.",
   "gpu-device-no-found": "⚠️ No GPU devices found",
+  "gpu-engine": "Gpu Engine",
   "gpu-mining-enabled": "GPU Mining",
   "gpu-unavailable": "⚠️ GPU disabled because your hardware does not support it",
   "hardware-status": "Hardware status",
