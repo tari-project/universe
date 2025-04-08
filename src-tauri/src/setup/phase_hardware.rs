@@ -23,9 +23,11 @@
 use std::time::Duration;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupHardwarePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -42,7 +44,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
 };
@@ -89,6 +91,12 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesGpuMiner,
+            ))
+            .add_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesCpuMiner,
+            ))
             .add_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::DetectGPU,
             ))
@@ -154,6 +162,30 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
+
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
+
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
+            .await?;
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesGpuMiner,
+            ))
+            .await;
+
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Hardware(
+                ProgressSetupHardwarePlan::BinariesCpuMiner,
+            ))
+            .await;
+        binary_resolver
+            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
+            .await?;
 
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Hardware(

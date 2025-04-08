@@ -101,13 +101,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .add_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::BinariesMergeMiningProxy,
-            ))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .build(app_handle)
     }
@@ -172,27 +165,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        state
-            .events_manager
-            .handle_config_core_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_mining_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_ui_loaded(&self.app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&self.app_handle)
-            .await;
-
-        // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
-        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
-
         PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
         progress_stepper
             .resolve_step(ProgressPlans::Core(
@@ -218,33 +190,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
             );
 
-        state
-            .telemetry_manager
-            .write()
-            .await
-            .initialize(self.app_handle.clone())
-            .await?;
-
-        let mut telemetry_id = state
-            .telemetry_manager
-            .read()
-            .await
-            .get_unique_string()
-            .await;
-        if telemetry_id.is_empty() {
-            telemetry_id = "unknown_miner_tari_universe".to_string();
-        }
-
-        let app_version = self.app_handle.package_info().version.clone();
-        state
-            .telemetry_service
-            .write()
-            .await
-            .init(app_version.to_string(), telemetry_id.clone())
-            .await?;
-
-        let binary_resolver = BinaryResolver::current().read().await;
-
         progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
@@ -258,46 +203,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
         progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
-
-        binary_resolver
-            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
-            .await?;
-        progress_stepper
-            .resolve_step(ProgressPlans::Core(
-                ProgressSetupCorePlan::BinariesMergeMiningProxy,
-            ))
-            .await;
-
-        binary_resolver
-            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
-            .await;
-
-        binary_resolver
-            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
-            .await;
-
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
-            .await;
-        binary_resolver
-            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
-            .await?;
-
-        binary_resolver
-            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
-            .await;
-
-        //drop binary resolver to release the lock
-        drop(binary_resolver);
 
         Ok(None)
     }
