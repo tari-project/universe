@@ -65,7 +65,8 @@ impl SpendWalletManager {
         let binary_path = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(Binaries::Wallet)?;
+            .resolve_path_to_binary_files(Binaries::Wallet)
+            .await?;
         self.adapter
             .init(app_shutdown, base_path, config_path, log_path, binary_path)
             .await

@@ -103,8 +103,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
             .add_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::BinariesMergeMiningProxy,
             ))
@@ -112,7 +110,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .add_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .build(app_handle)
     }
@@ -254,7 +251,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .init(app_version.to_string(), telemetry_id.clone())
             .await?;
 
-        let mut binary_resolver = BinaryResolver::current().write().await;
+        let binary_resolver = BinaryResolver::current().read().await;
         let should_check_for_update = now
             .duration_since(
                 self.app_configuration
@@ -276,35 +273,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
-            .await;
-
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            binary_resolver
-                .initialize_binary_timeout(
-                    Binaries::Tor,
-                    progress.clone(),
-                    should_check_for_update,
-                    rx.clone(),
-                )
-                .await?;
-            let _unused = progress_stepper
-                .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
-                .await;
-        } else {
-            let _unused =
-                progress_stepper.skip_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor));
-        };
-
-        binary_resolver
-            .initialize_binary_timeout(
-                Binaries::MinotariNode,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
-            .await?;
-        let _unused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
             .await;
 
         binary_resolver
@@ -379,19 +347,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
         //drop binary resolver to release the lock
         drop(binary_resolver);
-
-        let _uunused = progress_stepper
-            .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
-            .await;
-
-        let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
-
-        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            state
-                .tor_manager
-                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
-                .await?;
-        }
 
         Ok(None)
     }

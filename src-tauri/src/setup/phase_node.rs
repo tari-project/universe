@@ -23,6 +23,7 @@
 use std::time::Duration;
 
 use crate::{
+    binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_trackers::{
@@ -85,6 +86,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
+            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .add_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForInitialSync,
@@ -161,6 +165,42 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
+
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            binary_resolver
+                .initialize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+                .await?;
+            let _unused = progress_stepper
+                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
+                .await;
+        } else {
+            let _unused =
+                progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
+        };
+
+        binary_resolver
+            .initialize_binary(
+                Binaries::MinotariNode,
+                progress.clone(),
+                should_check_for_update,
+            )
+            .await?;
+        let _unused = progress_stepper
+            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
+            .await;
+
+        if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            state
+                .tor_manager
+                .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
+                .await?;
+        }
+
+        let _uunused = progress_stepper
+            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
+            .await;
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
         let _unused = progress_stepper

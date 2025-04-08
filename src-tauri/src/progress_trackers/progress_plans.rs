@@ -54,14 +54,11 @@ pub enum ProgressSetupCorePlan {
     PlatformPrequisites,
     InitializeApplicationModules,
     NetworkSpeedTest,
-    BinariesTor,
-    BinariesNode,
     BinariesWallet,
     BinariesCpuMiner,
     BinariesGpuMiner,
     BinariesP2pool,
     BinariesMergeMiningProxy,
-    StartTor,
     Done,
 }
 
@@ -77,14 +74,11 @@ impl ProgressStep for ProgressSetupCorePlan {
             ProgressSetupCorePlan::PlatformPrequisites => 1,
             ProgressSetupCorePlan::InitializeApplicationModules => 1,
             ProgressSetupCorePlan::NetworkSpeedTest => 1,
-            ProgressSetupCorePlan::BinariesTor => 2,
-            ProgressSetupCorePlan::BinariesNode => 2,
             ProgressSetupCorePlan::BinariesWallet => 2,
             ProgressSetupCorePlan::BinariesCpuMiner => 2,
             ProgressSetupCorePlan::BinariesGpuMiner => 2,
             ProgressSetupCorePlan::BinariesP2pool => 2,
             ProgressSetupCorePlan::BinariesMergeMiningProxy => 2,
-            ProgressSetupCorePlan::StartTor => 1,
             ProgressSetupCorePlan::Done => 1,
         }
     }
@@ -96,8 +90,6 @@ impl ProgressStep for ProgressSetupCorePlan {
                 "initialize-application-modules".to_string()
             }
             ProgressSetupCorePlan::NetworkSpeedTest => "network-speed-test".to_string(),
-            ProgressSetupCorePlan::BinariesTor => "binaries-tor".to_string(),
-            ProgressSetupCorePlan::BinariesNode => "binaries-node".to_string(),
             ProgressSetupCorePlan::BinariesWallet => "binaries-wallet".to_string(),
             ProgressSetupCorePlan::BinariesCpuMiner => "binaries-cpu-miner".to_string(),
             ProgressSetupCorePlan::BinariesGpuMiner => "binaries-gpu-miner".to_string(),
@@ -105,7 +97,6 @@ impl ProgressStep for ProgressSetupCorePlan {
             ProgressSetupCorePlan::BinariesMergeMiningProxy => {
                 "binaries-merge-mining-proxy".to_string()
             }
-            ProgressSetupCorePlan::StartTor => "start-tor".to_string(),
             ProgressSetupCorePlan::Done => "done".to_string(),
         }
     }
@@ -120,6 +111,9 @@ impl ProgressStep for ProgressSetupCorePlan {
 
 #[derive(Clone, PartialEq)]
 pub enum ProgressSetupNodePlan {
+    BinariesTor,
+    BinariesNode,
+    StartTor,
     StartingNode,
     WaitingForInitialSync,
     WaitingForHeaderSync,
@@ -136,6 +130,9 @@ impl ProgressStep for ProgressSetupNodePlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
+            ProgressSetupNodePlan::BinariesTor => 2,
+            ProgressSetupNodePlan::BinariesNode => 2,
+            ProgressSetupNodePlan::StartTor => 1,
             ProgressSetupNodePlan::StartingNode => 1,
             ProgressSetupNodePlan::WaitingForInitialSync => 1,
             ProgressSetupNodePlan::WaitingForHeaderSync => 1,
@@ -146,6 +143,9 @@ impl ProgressStep for ProgressSetupNodePlan {
 
     fn get_title(&self) -> String {
         match self {
+            ProgressSetupNodePlan::BinariesTor => "binaries-tor".to_string(),
+            ProgressSetupNodePlan::BinariesNode => "binaries-node".to_string(),
+            ProgressSetupNodePlan::StartTor => "start-tor".to_string(),
             ProgressSetupNodePlan::StartingNode => "starting-node".to_string(),
             ProgressSetupNodePlan::WaitingForInitialSync => "waiting-for-initial-sync".to_string(),
             ProgressSetupNodePlan::WaitingForHeaderSync => "waiting-for-header-sync".to_string(),

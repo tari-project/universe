@@ -209,7 +209,8 @@ impl GpuMiner {
         let gpuminer_bin = BinaryResolver::current()
             .read()
             .await
-            .resolve_path_to_binary_files(Binaries::GpuMiner)?;
+            .resolve_path_to_binary_files(Binaries::GpuMiner)
+            .await?;
 
         info!(target: LOG_TARGET, "Gpu miner binary file path {:?}", gpuminer_bin.clone());
         crate::download_utils::set_permissions(&gpuminer_bin).await?;

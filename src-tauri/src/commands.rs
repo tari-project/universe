@@ -1620,7 +1620,7 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
 #[tauri::command]
 pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let mut binary_resolver = BinaryResolver::current().write().await;
+    let binary_resolver = BinaryResolver::current().read().await;
 
     ConfigCore::update_field(
         ConfigCoreContent::set_last_binaries_update_timestamp,
