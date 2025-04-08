@@ -59,11 +59,10 @@ pub struct ConfigCoreContent {
 
 impl Default for ConfigCoreContent {
     fn default() -> Self {
-        let remote_base_node_address = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => "https://grpc.nextnet.tari.com:443".to_string(),
-            Network::Esmeralda => "https://grpc.esmeralda.tari.com:443".to_string(),
-            _ => panic!("Unsupported network"),
-        };
+        let remote_base_node_address = format!(
+            "https://grpc.{}.tari.com:443",
+            Network::get_current_or_user_setting_or_default().as_key_str()
+        );
 
         Self {
             was_config_migrated: false,
