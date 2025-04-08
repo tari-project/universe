@@ -312,11 +312,6 @@ async fn setup_inner(
         return Ok(());
     }
 
-    state
-        .updates_manager
-        .init_periodic_updates(app.clone())
-        .await?;
-
     let data_dir = app
         .path()
         .app_local_data_dir()
