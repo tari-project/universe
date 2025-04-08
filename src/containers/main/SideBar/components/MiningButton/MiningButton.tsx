@@ -13,6 +13,7 @@ import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -38,13 +39,48 @@ export default function MiningButton() {
         return isMining && isMiningInitiated ? MiningButtonStateText.STARTED : MiningButtonStateText.START;
     }, [isMining, isMiningInitiated]);
 
+    const forceAnimationStop = useCallback(() => {
+        let retryCount = 0;
+        const maxRetries = 10;
+
+        const attemptStop = () => {
+            if (animationStatus === 'not-started') {
+                console.debug('MiningButton', `Animation stopped: status=${animationStatus}`);
+                return;
+            }
+
+            if (retryCount >= maxRetries) {
+                console.debug(
+                    'MiningButton',
+                    `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
+                );
+                return;
+            }
+
+            console.debug(
+                'MiningButton',
+                `Animation stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
+            );
+            setAnimationState('stop');
+            retryCount++;
+
+            setTimeout(() => {
+                attemptStop();
+            }, 1000);
+        };
+
+        attemptStop();
+    }, []);
+
     const handleClick = useCallback(async () => {
         if (!isMining) {
             await startMining();
+            setAnimationState('start');
         } else {
             await stopMining();
+            forceAnimationStop();
         }
-    }, [isMining]);
+    }, [isMining, forceAnimationStop]);
 
     const icon = isMining ? <GiPauseButton /> : <IoChevronForwardOutline />;
     const iconFinal = <IconWrapper>{isMiningLoading ? <SpinnerIcon /> : icon}</IconWrapper>;

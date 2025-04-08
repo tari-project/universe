@@ -5,7 +5,6 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useBlockchainVisualisationStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -16,33 +15,26 @@ export const useUiMiningStateMachine = () => {
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
-    const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
 
-    const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
-    const blockTimeTrigger = Number(blockTime?.seconds) % 5 === 0;
 
     useEffect(() => {
-        if (!visualMode || visualModeLoading) return;
+        if (!setupComplete || !visualMode || visualModeLoading) return;
 
-        const notStarted = stateTrigger === 'not-started';
-        const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
-        const shouldStop = !isMining && !notStarted && !preventStop;
-        const shouldStartAnimation = isMining && notStarted && !isResuming;
-        if (shouldStop) {
+        const shouldStopAnimation = !isMining && !isMiningInitiated && !isChangingMode;
+
+        if (shouldStopAnimation) {
+            console.debug(
+                'useUiMiningStateMachine',
+                `Animation stopping: status=${animationStatus}, isMining=${isMining}`
+            );
             setAnimationState('stop');
-        } else if (shouldStartAnimation) {
+        } else if (isResuming) {
+            console.debug(
+                'useUiMiningStateMachine',
+                `Animation starting: status=${animationStatus}, isResuming=${isResuming}`
+            );
             setAnimationState('start');
         }
-    }, [
-        blockTimeTrigger, // do not remove - needed to re-trigger these checks since `animationStatus` takes a while to come back updated
-        isChangingMode,
-        isMining,
-        isMiningInitiated,
-        isResuming,
-        setupComplete,
-        stateTrigger,
-        visualMode,
-        visualModeLoading,
-    ]);
+    }, [isChangingMode, isMining, isMiningInitiated, isResuming, setupComplete, visualMode, visualModeLoading]);
 };
