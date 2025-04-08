@@ -1,4 +1,4 @@
-import { ChangeEvent, ReactNode } from 'react';
+import { ChangeEvent, ReactNode, FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Control, Controller } from 'react-hook-form';
 import { type InputName, SendInputs } from '@app/components/transactions/send/types.ts';
@@ -8,6 +8,7 @@ interface FormFieldProps {
     name: string;
     control: Control<SendInputs>;
     handleChange?: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
+    onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
     icon?: ReactNode;
     accent?: ReactNode;
     required?: boolean;
@@ -24,6 +25,7 @@ export function FormField({
     accent,
     autoFocus,
     truncateOnBlur,
+    onBlur,
     isValid,
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
@@ -51,6 +53,7 @@ export function FormField({
                                 handleChange(e, name as InputName);
                             }
                         }}
+                        onBlur={onBlur || undefined}
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}

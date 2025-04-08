@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState, FocusEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
@@ -94,9 +94,25 @@ export function Send({ setSection }: Props) {
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
         setValue(name, e.target.value, { shouldValidate: true });
         clearErrors(name);
-
-        setIsAddressValid(true);
+        setIsAddressValid(false);
     }
+
+    const validateAddress = async (address: string) => {
+        if (address.length === 0) return;
+
+        try {
+            await invoke('verify_address_for_send', { address });
+            setIsAddressValid(true);
+        } catch (_error) {
+            setIsAddressValid(false);
+            setError('address', { message: t('send.error-invalid-address') });
+        }
+    };
+
+    const handleAddressBlur = (e: FocusEvent<HTMLInputElement>) => {
+        const address = e.target.value;
+        validateAddress(address);
+    };
 
     return (
         <>
@@ -114,6 +130,7 @@ export function Send({ setSection }: Props) {
                             control={control}
                             name="address"
                             handleChange={handleAddressChange}
+                            onBlur={handleAddressBlur}
                             required
                             autoFocus
                             truncateOnBlur

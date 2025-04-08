@@ -20,7 +20,8 @@
     "placeholder-address": "Enter address",
     "placeholder-amount": "100",
     "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "required": "The {{fieldName}} field is required",
+    "error-invalid-address": "The address is invalid"
   },
   "tabs": {
     "history": "history",
