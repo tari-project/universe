@@ -20,11 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::SystemTime};
+use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
+
+use crate::UniverseAppState;
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -81,6 +84,7 @@ impl ConfigContentImpl for TestConfigContent {}
 
 struct TestConfig {
     content: TestConfigContent,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl ConfigImpl for TestConfig {
@@ -94,7 +98,29 @@ impl ConfigImpl for TestConfig {
     fn new() -> Self {
         Self {
             content: TestConfigContent::default(),
+            app_handle: RwLock::new(None),
         }
+    }
+
+    async fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        if let Some(app_handle) = self.app_handle.read().await.deref() {
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(event_name.to_string(), event_data)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        *self.app_handle.write().await = Some(app_handle);
     }
 
     fn _get_name() -> String {
@@ -109,14 +135,13 @@ impl ConfigImpl for TestConfig {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
         self.content = TestConfigContent {
             created_at: SystemTime::now(),
             some_test_string: old_config.some_test_string,
             some_test_bool: old_config.some_test_bool,
             some_test_int: 0,
         };
-        Ok(())
     }
 }
 
@@ -184,7 +209,7 @@ mod tests {
             some_test_bool: true,
         };
 
-        config.migrate_old_config(old_config.clone()).unwrap();
+        config.migrate_old_config(old_config.clone());
 
         assert_eq!(
             &old_config.some_test_string,

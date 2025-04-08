@@ -25,6 +25,7 @@ use std::{
     ops::{Add, Mul},
 };
 
+use serde_json::json;
 use tauri::{AppHandle, Manager};
 
 use log::warn;
@@ -72,12 +73,6 @@ pub struct ProgressStepper {
 
 impl ProgressStepper {
     pub async fn resolve_step(&mut self, step: ProgressPlans) {
-        // info!(
-        //     target: LOG_TARGET,
-        //     "Resolving step: {}",
-        //     step.get_title(),
-        // );
-
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let resolved_step = self.plan.remove(index);
             let resolved_percentage = self.percentage_steps.remove(index);
@@ -97,6 +92,20 @@ impl ProgressStepper {
                     resolved_percentage,
                     None,
                     is_completed,
+                )
+                .await;
+            let _unused = app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(
+                    "progress-stepper".to_string(),
+                    json!({
+                        "phase": resolved_step.get_phase_title(),
+                        "step": event.get_title(),
+                        "percentage": resolved_percentage,
+                        "is_completed": is_completed,
+                    }),
                 )
                 .await;
         } else {

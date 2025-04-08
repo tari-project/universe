@@ -23,11 +23,13 @@
 use crate::{
     app_config::{GpuThreads, MiningMode},
     gpu_miner::EngineType,
+    UniverseAppState,
 };
-use std::{sync::LazyLock, time::SystemTime};
+use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::AppConfig;
@@ -84,6 +86,7 @@ impl ConfigContentImpl for ConfigMiningContent {}
 
 pub struct ConfigMining {
     content: ConfigMiningContent,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl ConfigImpl for ConfigMining {
@@ -97,7 +100,29 @@ impl ConfigImpl for ConfigMining {
     fn new() -> Self {
         Self {
             content: ConfigMining::_load_config().unwrap_or_default(),
+            app_handle: RwLock::new(None),
         }
+    }
+
+    async fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        if let Some(app_handle) = self.app_handle.read().await.deref() {
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(event_name.to_string(), event_data)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        *self.app_handle.write().await = Some(app_handle);
     }
 
     fn _get_name() -> String {
@@ -112,9 +137,9 @@ impl ConfigImpl for ConfigMining {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
         if self.content.was_config_migrated {
-            return Ok(());
+            return;
         }
 
         self.content = ConfigMiningContent {
@@ -133,6 +158,5 @@ impl ConfigImpl for ConfigMining {
             cpu_mining_enabled: old_config.cpu_mining_enabled(),
             ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
         };
-        Ok(())
     }
 }

@@ -156,55 +156,6 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let old_config = state.config.read().await;
 
-        let _unused = ConfigCore::current()
-            .write()
-            .await
-            .migrate_old_config(old_config.clone())
-            .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
-            });
-
-        let _unused = ConfigWallet::current()
-            .write()
-            .await
-            .migrate_old_config(old_config.clone())
-            .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
-            });
-
-        let _unused = ConfigMining::current()
-            .write()
-            .await
-            .migrate_old_config(old_config.clone())
-            .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to migrate old config: {:?}", e);
-            });
-
-        let _unused = ConfigUI::current()
-            .write()
-            .await
-            .migrate_old_config(old_config.clone())
-            .inspect_err(|e| {
-                error!(target: LOG_TARGET, "Failed to save config: {:?}", e);
-            });
-
-        state
-            .events_manager
-            .handle_config_core_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_mining_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_ui_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&app_handle)
-            .await;
-
         let _unused = state
             .telemetry_manager
             .write()
@@ -228,6 +179,43 @@ impl SetupManager {
             .write()
             .await
             .init(app_version.to_string(), telemetry_id.clone())
+            .await;
+
+        let mut config_core = ConfigCore::current().write().await;
+        config_core.migrate_old_config(old_config.clone());
+        config_core.load_app_handle(app_handle.clone()).await;
+        drop(config_core);
+
+        let mut config_wallet = ConfigWallet::current().write().await;
+        config_wallet.migrate_old_config(old_config.clone());
+        config_wallet.load_app_handle(app_handle.clone()).await;
+        drop(config_wallet);
+
+        let mut config_mining = ConfigMining::current().write().await;
+        config_mining.migrate_old_config(old_config.clone());
+        config_mining.load_app_handle(app_handle.clone()).await;
+        drop(config_mining);
+
+        let mut config_ui = ConfigUI::current().write().await;
+        config_ui.migrate_old_config(old_config.clone());
+        config_ui.load_app_handle(app_handle.clone()).await;
+        drop(config_ui);
+
+        state
+            .events_manager
+            .handle_config_core_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_mining_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_ui_loaded(&app_handle)
+            .await;
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&app_handle)
             .await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");

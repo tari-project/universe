@@ -20,13 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::DisplayMode;
+use crate::{app_config::DisplayMode, UniverseAppState};
 
-use std::{sync::LazyLock, time::SystemTime};
+use std::{ops::Deref, sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
 use sys_locale::get_locale;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::AppConfig;
@@ -87,6 +88,7 @@ impl ConfigUIContent {
 }
 pub struct ConfigUI {
     content: ConfigUIContent,
+    app_handle: RwLock<Option<AppHandle>>,
 }
 
 impl ConfigImpl for ConfigUI {
@@ -100,9 +102,30 @@ impl ConfigImpl for ConfigUI {
     fn new() -> Self {
         Self {
             content: ConfigUI::_load_config().unwrap_or_default(),
+            app_handle: RwLock::new(None),
         }
     }
 
+    async fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), anyhow::Error> {
+        if let Some(app_handle) = self.app_handle.read().await.deref() {
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(event_name.to_string(), event_data)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn load_app_handle(&mut self, app_handle: AppHandle) {
+        *self.app_handle.write().await = Some(app_handle);
+    }
     fn _get_name() -> String {
         "ui_config".to_string()
     }
@@ -115,9 +138,9 @@ impl ConfigImpl for ConfigUI {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), anyhow::Error> {
+    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
         if self.content.was_config_migrated {
-            return Ok(());
+            return;
         }
 
         self.content = ConfigUIContent {
@@ -133,6 +156,5 @@ impl ConfigImpl for ConfigUI {
             visual_mode: old_config.visual_mode(),
             show_experimental_settings: old_config.show_experimental_settings(),
         };
-        Ok(())
     }
 }
