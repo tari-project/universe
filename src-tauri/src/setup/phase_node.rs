@@ -25,7 +25,7 @@ use std::time::Duration;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
+    node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
