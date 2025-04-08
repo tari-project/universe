@@ -186,6 +186,13 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 
 #[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
+    static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
+        std::sync::atomic::AtomicBool::new(false);
+    if FRONTEND_READY_CALLED.load(Ordering::SeqCst) {
+        return;
+    }
+    FRONTEND_READY_CALLED.store(true, Ordering::SeqCst);
+
     let app_handle = app.clone();
     tauri::async_runtime::spawn(async move {
         let state = app_handle.state::<UniverseAppState>().clone();
