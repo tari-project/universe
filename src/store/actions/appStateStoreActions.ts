@@ -2,8 +2,17 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow } from '../index.ts';
+import { SetupPhase } from '@app/types/backend-state.ts';
+import {
+    updateCoreSetupPhaseInfo,
+    updateHardwareSetupPhaseInfo,
+    updateNodeSetupPhaseInfo,
+    updateUnknownSetupPhaseInfo,
+    updateWalletSetupPhaseInfo,
+} from './setupStoreActions.ts';
+import { setShowResumeAppModal } from './uiStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -42,8 +51,6 @@ export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
-export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
-    useAppStateStore.setState({ appResumePayload });
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
@@ -75,5 +82,35 @@ export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
     setIsAppUpdateAvailable(payload.is_app_update_available);
     if (payload.should_show_dialog) {
         setDialogToShow('releaseNotes');
+    }
+};
+
+export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
+    if (phasesToRestart.length === 0) {
+        return;
+    }
+
+    setShowResumeAppModal(true);
+
+    for (const phase of phasesToRestart) {
+        switch (phase) {
+            case SetupPhase.Core:
+                updateCoreSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Node:
+                updateNodeSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Hardware:
+                updateHardwareSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Unknown:
+                updateUnknownSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Wallet:
+                updateWalletSetupPhaseInfo(undefined);
+                break;
+            default:
+                break;
+        }
     }
 };

@@ -135,5 +135,5 @@ i18n.use(HttpBackend)
         contextSeparator: '-',
     })
     .then(() => {
-        console.log('i18n initialized');
+        console.info('i18n initialized');
     });

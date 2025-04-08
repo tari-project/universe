@@ -25,6 +25,9 @@ export const WalletBalanceContainer = styled(m.div)`
 
     flex-shrink: 0;
     color: ${({ theme }) => theme.palette.text.secondary};
+
+    padding-top: 10px;
+    padding-bottom: 10px;
 `;
 
 export const BalanceVisibilityButton = styled(IconButton)`

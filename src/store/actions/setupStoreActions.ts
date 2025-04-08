@@ -59,23 +59,23 @@ export const handleMiningLocked = async () => {
     }
 };
 
-export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ core_phase_setup_payload: payload });
 };
 
-export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateHardwareSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ hardware_phase_setup_payload: payload });
 };
 
-export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateNodeSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ node_phase_setup_payload: payload });
 };
 
-export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ wallet_phase_setup_payload: payload });
 };
 
-export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload) => {
+export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ unknown_phase_setup_payload: payload });
 };
 

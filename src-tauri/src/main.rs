@@ -1367,6 +1367,7 @@ fn main() {
             commands::set_selected_engine,
             commands::frontend_ready,
             commands::send_one_sided_to_stealth_address,
+            commands::verify_address_for_send,
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -1397,10 +1398,7 @@ fn main() {
             let handle_clone = app_handle.clone();
             tauri::async_runtime::spawn(async move {
                 SetupManager::get_instance().start_setup(handle_clone.clone()).await;
-                // let state = handle_clone.state::<UniverseAppState>().clone();
-                // let _res = setup_inner(state, handle_clone.clone())
-                //     .await
-                //     .inspect_err(|e| error!(target: LOG_TARGET, "Could not setup app: {:?}", e));
+                SetupManager::spawn_sleep_mode_handler(handle_clone.clone()).await;
             });
         }
         tauri::RunEvent::ExitRequested { api: _, code, .. } => {

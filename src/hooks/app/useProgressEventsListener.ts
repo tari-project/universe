@@ -3,6 +3,7 @@ import {
     updateHardwareSetupPhaseInfo,
     updateNodeSetupPhaseInfo,
     updateUnknownSetupPhaseInfo,
+    updateWalletSetupPhaseInfo,
 } from '@app/store/actions/setupStoreActions';
 import { deepEqual } from '@app/utils/objectDeepEqual';
 import { listen } from '@tauri-apps/api/event';
@@ -33,6 +34,10 @@ export type ProgressStateUpdateEvent =
       }
     | {
           event_type: 'Unknown';
+          payload: ProgressTrackerUpdatePayload;
+      }
+    | {
+          event_type: 'Wallet';
           payload: ProgressTrackerUpdatePayload;
       };
 
@@ -68,6 +73,9 @@ export const useProgressEventsListener = () => {
                         break;
                     case 'Unknown':
                         updateUnknownSetupPhaseInfo(event.payload);
+                        break;
+                    case 'Wallet':
+                        updateWalletSetupPhaseInfo(event.payload);
                         break;
                     default:
                         break;

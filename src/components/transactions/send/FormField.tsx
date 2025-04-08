@@ -7,12 +7,23 @@ import { TxInput } from '@app/components/transactions/components/TxInput.tsx';
 interface FormFieldProps {
     name: string;
     control: Control<SendInputs>;
-    handleChange: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
+    handleChange?: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
     icon?: ReactNode;
     accent?: ReactNode;
     required?: boolean;
+    autoFocus?: boolean;
+    truncateOnBlur?: boolean;
 }
-export function FormField({ control, name, handleChange, icon, required = false, accent }: FormFieldProps) {
+export function FormField({
+    control,
+    name,
+    handleChange,
+    icon,
+    required = false,
+    accent,
+    autoFocus,
+    truncateOnBlur,
+}: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
     const placeholderT = t(`send.placeholder`, { context: name });
@@ -32,12 +43,20 @@ export function FormField({ control, name, handleChange, icon, required = false,
                     <TxInput
                         {...rest}
                         name={name}
-                        onChange={(e) => handleChange(e, name)}
+                        onChange={(e) => {
+                            rest.onChange(e);
+                            if (handleChange) {
+                                handleChange(e, name as InputName);
+                            }
+                        }}
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}
                         accent={accent}
                         errorMessage={fieldState.error?.message}
+                        autoFocus={autoFocus}
+                        truncateOnBlur={truncateOnBlur}
+                        truncateText={truncateOnBlur && rest.value ? String(rest.value) : undefined}
                     />
                 );
             }}

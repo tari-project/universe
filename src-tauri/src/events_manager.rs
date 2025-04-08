@@ -41,13 +41,12 @@ use crate::{
         config_wallet::ConfigWallet,
         trait_config::ConfigImpl,
     },
-    events::{
-        NodeTypeUpdatePayload, ProgressEvents, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
-    },
+    events::{NodeTypeUpdatePayload, ProgressEvents, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,
+    setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
     wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
@@ -192,12 +191,8 @@ impl EventsManager {
     }
 
     #[allow(dead_code)]
-    pub async fn handle_resuming_all_processes(
-        &self,
-        app: &AppHandle,
-        payload: ResumingAllProcessesPayload,
-    ) {
-        EventsEmitter::emit_resuming_all_processes(app, payload).await;
+    pub async fn handle_restarting_phases(&self, app: &AppHandle, payload: Vec<SetupPhase>) {
+        EventsEmitter::emit_restarting_phases(app, payload).await;
     }
     pub async fn handle_network_status_update(
         &self,

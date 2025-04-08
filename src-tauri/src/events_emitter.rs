@@ -34,11 +34,11 @@ use crate::{
     events::{
         DetectedAvailableGpuEnginesPayload, DetectedDevicesPayload, Event, EventType,
         NetworkStatusPayload, NewBlockHeightPayload, NodeTypeUpdatePayload, ProgressEvents,
-        ProgressTrackerUpdatePayload, ResumingAllProcessesPayload, ShowReleaseNotesPayload,
-        WalletAddressUpdatePayload,
+        ProgressTrackerUpdatePayload, ShowReleaseNotesPayload, WalletAddressUpdatePayload,
     },
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::PublicDeviceProperties,
+    setup::setup_manager::SetupPhase,
     utils::app_flow_utils::FrontendReadyChannel,
     wallet_adapter::{TransactionInfo, WalletBalance},
     BaseNodeStatus, GpuMinerStatus,
@@ -128,17 +128,14 @@ impl EventsEmitter {
     }
 
     #[allow(dead_code)]
-    pub async fn emit_resuming_all_processes(
-        app_handle: &AppHandle,
-        payload: ResumingAllProcessesPayload,
-    ) {
+    pub async fn emit_restarting_phases(app_handle: &AppHandle, payload: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
-            event_type: EventType::ResumingAllProcesses,
+            event_type: EventType::RestartingPhases,
             payload,
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit ResumingAllProcesses event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit RestartingPhases event: {:?}", e);
         }
     }
 

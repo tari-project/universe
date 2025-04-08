@@ -14,9 +14,9 @@ import {
 import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
+    handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
-    setAppResumePayload,
     setCriticalProblem,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
@@ -137,10 +137,6 @@ const useTauriEventsListener = () => {
                     case 'DetectedAvailableGpuEngines':
                         setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                         break;
-
-                    case 'ResumingAllProcesses':
-                        setAppResumePayload(event.payload);
-                        break;
                     case 'CriticalProblem':
                         setCriticalProblem(event.payload);
                         break;
@@ -159,6 +155,9 @@ const useTauriEventsListener = () => {
                         break;
                     case `NodeTypeUpdate`:
                         setNodeStoreState(event.payload);
+                        break;
+                    case 'RestartingPhases':
+                        handleRestartingPhases(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

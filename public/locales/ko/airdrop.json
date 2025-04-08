@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "더 많은 보상을 얻기 위해 계속 채굴하세요!",
   "linkCopied": "링크가 복사되었습니다!",
+  "live": "live",
   "logged-in-as": "<strong>@{{twitter}}</strong>으로 로그인됨",
   "loggedInTitle": "에어드롭 보상",
   "loggedOutTitle": "채굴하고 친구를 초대하여 보석 획득",
@@ -41,9 +42,13 @@
   },
   "referral": "친구 초대",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "성공",
   "topTooltipText": "보석을 모아 Tari 에어드롭을 받으세요. 더 많은 보석을 모을수록 더 큰 에어드롭을 받습니다.",
   "topTooltipTitle": "테스트넷 보상",
   "unclaimedGems": "미수령 보석",
+  "update-username": "사용자 이름 업데이트",
+  "username-error": "사용자 이름은 3-20자여야 하며 문자, 숫자, 밑줄 또는 하이픈만 포함해야 합니다",
+  "username-update-success": "사용자 이름이 성공적으로 업데이트되었습니다",
   "you-reached-your-giftinh-goal": "선물 목표에 도달했습니다!",
   "your-friend-accepted-gift": "친구 중 한 명이 당신의 선물을 수락했습니다!"
 }

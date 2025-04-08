@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Terus menambang untuk mendapatkan lebih banyak hadiah!",
   "linkCopied": "Tautan disalin!",
+  "live": "live",
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Hadiah Airdrop",
   "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata",
@@ -41,9 +42,13 @@
   },
   "referral": "Undang teman",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Berhasil",
   "topTooltipText": "Dapatkan Airdrop Tari dengan mengumpulkan permata. Semakin banyak permata yang Anda kumpulkan, semakin besar airdrop Anda.",
   "topTooltipTitle": "Hadiah Testnet",
   "unclaimedGems": "Permata yang Belum Diklaim",
+  "update-username": "Perbarui nama pengguna",
+  "username-error": "Nama pengguna harus 3-20 karakter dan hanya berisi huruf, angka, garis bawah, atau tanda hubung",
+  "username-update-success": "Nama pengguna berhasil diperbarui",
   "you-reached-your-giftinh-goal": "Anda mencapai tujuan pemberian hadiah Anda!",
   "your-friend-accepted-gift": "Salah satu teman Anda menerima hadiah Anda!"
 }

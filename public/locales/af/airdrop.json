@@ -24,6 +24,7 @@
   "joinAirdropButtonAriaLabel": "Join Airdrop and earn gems. Right-click to copy link",
   "keep-mining-to-earn-rewards": "Hou aan myn om meer belonings te verdien!",
   "linkCopied": "Skakel gekopieer!",
+  "live": "live",
   "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop Belonings",
   "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien",
@@ -41,9 +42,13 @@
   },
   "referral": "Nooi \"n vriend",
   "rightClickToCopy": "Right-click to copy link",
+  "success": "Sukses",
   "topTooltipText": "Kry \"n Tari Airdrop deur edelstene in te samel. Hoe meer edelstene jy verdien, hoe groter is jou airdrop.",
   "topTooltipTitle": "Testnet Belonings",
   "unclaimedGems": "Ongeëisde Edelstene",
+  "update-username": "Werk gebruikersnaam op",
+  "username-error": "Gebruikersnaam moet 3-20 karakters wees en slegs letters, nommers, onderstrepe of koppeltekens bevat",
+  "username-update-success": "Gebruikersnaam suksesvol opgedateer",
   "you-reached-your-giftinh-goal": "Jy het jou geskenkdoelwit bereik!",
   "your-friend-accepted-gift": "Een van jou vriende het jou geskenk aanvaar!"
 }

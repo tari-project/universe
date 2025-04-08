@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 
-import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
@@ -13,7 +12,6 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
-    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
     const visualMode = useConfigUIStore((s) => s.visual_mode);
     const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
@@ -28,7 +26,7 @@ export const useUiMiningStateMachine = () => {
         const notStarted = stateTrigger === 'not-started';
         const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
         const shouldStop = !isMining && !notStarted && !preventStop;
-        const shouldStartAnimation = isMining && notStarted && !isResuming;
+        const shouldStartAnimation = isMining && notStarted;
         if (shouldStop) {
             setAnimationState('stop');
         } else if (shouldStartAnimation) {
@@ -39,7 +37,6 @@ export const useUiMiningStateMachine = () => {
         isChangingMode,
         isMining,
         isMiningInitiated,
-        isResuming,
         setupComplete,
         stateTrigger,
         visualMode,

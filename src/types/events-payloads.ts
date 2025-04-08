@@ -20,13 +20,6 @@ export interface DetectedAvailableGpuEngines {
     selected_engine: string;
 }
 
-export interface ResumingAllProcessesPayload {
-    title: string;
-    stage_progress: number;
-    stage_total: number;
-    is_resuming: boolean;
-}
-
 export interface CriticalProblemPayload {
     title?: string;
     description?: string;

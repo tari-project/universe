@@ -5,7 +5,6 @@ import {
     DetectedDevicesPayload,
     NewBlockHeightPayload,
     NodeTypeUpdatePayload,
-    ResumingAllProcessesPayload,
     ShowReleaseNotesPayload,
     WalletAddressUpdatePayload,
 } from './events-payloads.ts';
@@ -18,6 +17,14 @@ import {
     WalletBalance,
 } from './app-status.ts';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
+
+export enum SetupPhase {
+    Core = 'Core',
+    Wallet = 'Wallet',
+    Hardware = 'Hardware',
+    Node = 'Node',
+    Unknown = 'Unknown',
+}
 
 export const BACKEND_STATE_UPDATE = 'backend_state_update';
 export type BackendStateUpdateEvent =
@@ -60,10 +67,6 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'DetectedAvailableGpuEngines';
           payload: DetectedAvailableGpuEngines;
-      }
-    | {
-          event_type: 'ResumingAllProcesses';
-          payload: ResumingAllProcessesPayload;
       }
     | {
           event_type: 'CriticalProblem';
@@ -144,4 +147,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ConfigMiningLoaded';
           payload: ConfigMining;
+      }
+    | {
+          event_type: 'RestartingPhases';
+          payload: SetupPhase[];
       };

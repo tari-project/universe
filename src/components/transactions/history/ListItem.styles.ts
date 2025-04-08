@@ -8,11 +8,13 @@ export const ItemWrapper = styled(m.div)`
     align-items: center;
     width: 100%;
     border-radius: 10px;
-    background: rgba(255, 255, 255, 0.07);
+
     flex-direction: column;
     overflow: hidden;
     position: relative;
     box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
+
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
 `;
 
 export const HoverWrapper = styled(m.div)`
