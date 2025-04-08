@@ -1850,6 +1850,7 @@ enum ReconnectStatus {
 #[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     drop(app_handle.emit("reconnecting", ReconnectStatus::InProgress));
+    stop_all_processes(app_handle.clone(), false).await?;
     let resume_res = resume_all_processes(app_handle.clone())
         .await
         .map_err(|e| e.to_string());

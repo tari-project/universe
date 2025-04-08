@@ -135,7 +135,6 @@ pub async fn stop_all_processes(
     Ok(())
 }
 
-#[allow(clippy::too_many_lines)]
 pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
     let state = app_handle.state::<UniverseAppState>().inner();
     let (tx, _rx) = watch::channel("".to_string());
