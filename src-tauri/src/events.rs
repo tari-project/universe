@@ -66,6 +66,7 @@ pub enum EventType {
     ConfigUILoaded,
     ConfigWalletLoaded,
     ConfigMiningLoaded,
+    BackgroundNodeSyncUpdate
 }
 
 #[derive(Clone, Debug, Serialize)]

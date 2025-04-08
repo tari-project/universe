@@ -22,6 +22,7 @@
 
 use crate::node::node_manager::NodeType;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
+use crate::progress_trackers::progress_plans::ProgressSetupNodePlan;
 use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -150,7 +151,8 @@ impl NodeAdapterService {
     #[allow(clippy::too_many_lines)]
     pub async fn wait_synced(
         &self,
-        progress_tracker: Vec<Option<ChanneledStepUpdate>>,
+        progress_params_tx: &watch::Sender<HashMap<String, String>>,
+        progress_percentage_tx: &watch::Sender<f64>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), NodeStatusMonitorError> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
@@ -176,22 +178,13 @@ impl NodeAdapterService {
                 break Ok(());
             }
 
-            let (initial_sync_tracker, header_sync_tracker, block_sync_tracker) =
-                match progress_tracker.as_slice() {
-                    [initial_sync, header_sync, block_sync] => {
-                        (initial_sync, header_sync, block_sync)
-                    }
-                    _ => {
-                        return Err(NodeStatusMonitorError::UnknownError(anyhow!(
-                            "Progress tracker not set up correctly"
-                        )));
-                    }
-                };
+            let mut progress_params: HashMap<String, String> = HashMap::new();
+            let mut percentage = 0f64;
 
             if sync_progress.state == SyncState::Startup as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage = sync_progress.initial_connected_peers as f64
+                percentage = sync_progress.initial_connected_peers as f64
                     / f64::from(self.required_sync_peers);
+                progress_params.insert("step".to_string(), "Startup".to_string());
                 progress_params.insert(
                     "initial_connected_peers".to_string(),
                     sync_progress.initial_connected_peers.to_string(),
@@ -200,13 +193,9 @@ impl NodeAdapterService {
                     "required_peers".to_string(),
                     self.required_sync_peers.to_string(),
                 );
-                if let Some(tracker) = initial_sync_tracker {
-                    tracker.send_update(progress_params, percentage).await;
-                }
             } else if sync_progress.state == SyncState::Header as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage =
-                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert("step".to_string(), "Header".to_string());
                 progress_params.insert(
                     "local_header_height".to_string(),
                     sync_progress.local_height.to_string(),
@@ -229,13 +218,9 @@ impl NodeAdapterService {
                     "tip_height".to_string(),
                     sync_progress.tip_height.to_string(),
                 );
-                if let Some(tracker) = header_sync_tracker {
-                    tracker.send_update(progress_params, percentage).await;
-                }
             } else if sync_progress.state == SyncState::Block as i32 {
-                let mut progress_params: HashMap<String, String> = HashMap::new();
-                let percentage =
-                    sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
+                progress_params.insert("step".to_string(), "Block".to_string());
                 progress_params.insert(
                     "local_header_height".to_string(),
                     sync_progress.local_height.to_string(),
@@ -261,13 +246,10 @@ impl NodeAdapterService {
                     "tip_height".to_string(),
                     sync_progress.tip_height.to_string(),
                 );
-
-                if let Some(tracker) = block_sync_tracker {
-                    tracker.send_update(progress_params, percentage).await;
-                }
-            } else {
-                // do nothing
             }
+
+            progress_percentage_tx.send(percentage).ok();
+            progress_params_tx.send(progress_params).ok();
 
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
