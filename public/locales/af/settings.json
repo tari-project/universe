@@ -5,7 +5,6 @@
   "application-info": "Aansoek Inligting",
   "applyInviteCode": "Pas Uitnodigingskode Toe",
   "cancel": "Cancel",
-  "gpu-engine": "Gpu Enjin",
   "change-language": "Verander taal",
   "confirm": "Bevestig",
   "confirm-action": "Bevestig aksie",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "GPU Myn toestelle",
   "gpu-device-enabled-description": "Aktiveer of deaktiveer spesifieke GPU toestel.",
   "gpu-device-no-found": "⚠️ Geen GPU toestelle gevind nie",
+  "gpu-engine": "Gpu Enjin",
   "gpu-mining-enabled": "GPU Mynbou",
   "gpu-unavailable": "⚠️ GPU gedeaktiveer omdat jou hardeware dit nie ondersteun nie",
   "hardware-status": "Hardeware status",
@@ -56,6 +56,7 @@
   "inviteCode": "Uitnodigingskode",
   "is-on-orphan-chain": "Dit lyk of jy aan \"n vurk gekoppel is, en nie die hoofketting nie. Enige blokke wat jy wen, mag ongeldig verklaar word.",
   "last-block-added-time": "Tyd toe laaste blok by ketting gevoeg was",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Verslae",
   "low-hash-rate-warning": "Jou hash rate is baie laag. Probeer om alle toepassings behalwe Tari Universe te sluit",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "Mynwerkers",
   "mining-toggle-warning": "Mynbou sal gepauseer word terwyl die veranderinge in werking tree.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Voer Monero-adres in",
     "title": "Monero-adres"
@@ -71,6 +73,10 @@
   "monero-seed-words": "Monero Saadwoorde",
   "network": "Netwerk",
   "no-entry-guard": "Geen Toegangsbewaarder verbind nie!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Nie aan die Tari Netwerk gekoppel nie",
   "open-logs-directory": "Maak verslag lêer oop",
   "p2pool-chain-tip": "Punt van kettings",
@@ -157,10 +163,5 @@
   "visual-mode": "Visuele modus",
   "yes": "Yes",
   "your-feedback": "Beskryf asseblief u probleem",
-  "your-reference": "U verwysing",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "U verwysing"
 }

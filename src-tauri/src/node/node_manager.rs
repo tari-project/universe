@@ -35,7 +35,6 @@ use tokio::sync::RwLock;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
-use crate::events_manager::EventsManager;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
 };

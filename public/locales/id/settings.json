@@ -5,7 +5,6 @@
   "application-info": "Informasi Aplikasi",
   "applyInviteCode": "Terapkan Kode Undangan",
   "cancel": "Batal",
-  "gpu-engine": "Mesin Gpu",
   "change-language": "Bahasa",
   "confirm": "Konfirmasi",
   "confirm-action": "Konfirmasi tindakan",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "Perangkat Penambangan GPU",
   "gpu-device-enabled-description": "Aktifkan atau nonaktifkan perangkat GPU tertentu.",
   "gpu-device-no-found": "⚠️ Tidak ada perangkat GPU yang ditemukan",
+  "gpu-engine": "Mesin Gpu",
   "gpu-mining-enabled": "Penambangan GPU",
   "gpu-unavailable": "⚠️ GPU dinonaktifkan karena perangkat keras Anda tidak mendukungnya",
   "hardware-status": "Status perangkat keras",
@@ -56,6 +56,7 @@
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Log",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "Penambang",
   "mining-toggle-warning": "Penambangan akan dijeda saat perubahan diterapkan.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Masukkan alamat Monero",
     "title": "Alamat Monero"
@@ -71,6 +73,10 @@
   "monero-seed-words": "Kata Kunci Pemulihan Monero",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "open-logs-directory": "Buka direktori log",
   "p2pool-chain-tip": "Ujung rantai",
@@ -157,10 +163,5 @@
   "visual-mode": "Mode visual",
   "yes": "Ya",
   "your-feedback": "Silakan jelaskan masalah Anda",
-  "your-reference": "Referensi Anda",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "Referensi Anda"
 }

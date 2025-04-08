@@ -5,7 +5,6 @@
   "application-info": "Anwendungsinformationen",
   "applyInviteCode": "Einladungscode anwenden",
   "cancel": "Abbrechen",
-  "gpu-engine": "GPU-Engine",
   "change-language": "Sprache",
   "confirm": "Bestätigen",
   "confirm-action": "Aktion bestätigen",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "GPU-Mining-Geräte",
   "gpu-device-enabled-description": "Bestimmtes GPU-Gerät aktivieren oder deaktivieren.",
   "gpu-device-no-found": "⚠️ Keine GPU-Geräte gefunden",
+  "gpu-engine": "GPU-Engine",
   "gpu-mining-enabled": "GPU-Mining",
   "gpu-unavailable": "⚠️ GPU deaktiviert, da deine Hardware dies nicht unterstützt",
   "hardware-status": "Hardware-Status",
@@ -56,6 +56,7 @@
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Protokolle",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "Miner",
   "mining-toggle-warning": "Mining wird pausiert, während die Änderungen wirksam werden.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Gib die Monero-Adresse ein",
     "title": "Monero-Adresse"
@@ -71,6 +73,10 @@
   "monero-seed-words": "Monero Seed-Wörter",
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Nicht mit dem Tari-Netzwerk verbunden",
   "open-logs-directory": "Protokollverzeichnis öffnen",
   "p2pool-chain-tip": "Spitze der Ketten",
@@ -157,10 +163,5 @@
   "visual-mode": "Visueller Modus",
   "yes": "Ja",
   "your-feedback": "Beschreibe dein Problem, einschließlich deines Telegram-Namens, falls vorhanden, damit wir dich mit Updates kontaktieren können.",
-  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "Dein Verweis:<br/><bold>{{logRef}}</bold>"
 }

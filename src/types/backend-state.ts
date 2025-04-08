@@ -1,4 +1,5 @@
 import {
+    BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
@@ -151,4 +152,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'RestartingPhases';
           payload: SetupPhase[];
+      }
+    | {
+          event_type: 'BackgroundNodeSyncUpdate';
+          payload: BackgroundNodeSyncUpdatePayload;
       };
