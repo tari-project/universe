@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -29,8 +31,9 @@ use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
+use tauri::async_runtime::block_on;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
@@ -41,6 +44,8 @@ use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
+
+const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
 
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
@@ -208,6 +213,25 @@ impl BinaryResolver {
         &INSTANCE
     }
 
+    async fn should_check_for_update() -> bool {
+        let now = SystemTime::now();
+
+        let should_check_for_update = now
+            .duration_since(*ConfigCore::content().await.last_binaries_update_timestamp())
+            .unwrap_or(Duration::from_secs(0))
+            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
+
+        if should_check_for_update {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_last_binaries_update_timestamp,
+                now,
+            )
+            .await;
+        }
+
+        should_check_for_update
+    }
+
     pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
@@ -236,11 +260,33 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
+    pub async fn initialize_binary_timeout(
+        &self,
+        binary: Binaries,
+        progress_tracker: ProgressTracker,
+        timeout_channel: Receiver<String>,
+    ) -> Result<(), Error> {
+        match timeout(
+            Duration::from_secs(60 * 5),
+            self.initialize_binary(binary, progress_tracker.clone()),
+        )
+        .await
+        {
+            Err(_) => {
+                let last_msg = timeout_channel.borrow().clone();
+                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
+                let error_msg = format!("Setup took too long: {}", last_msg);
+                sentry::capture_message(&error_msg, sentry::Level::Error);
+                Err(anyhow!(error_msg))
+            }
+            Ok(result) => result,
+        }
+    }
+
     pub async fn initialize_binary(
         &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
     ) -> Result<(), Error> {
         let mut manager = self
             .managers
@@ -248,6 +294,8 @@ impl BinaryResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
             .lock()
             .await;
+
+        let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
 

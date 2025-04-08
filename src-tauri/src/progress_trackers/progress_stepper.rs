@@ -72,7 +72,7 @@ pub struct ProgressStepper {
 }
 
 impl ProgressStepper {
-    pub async fn resolve_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
+    pub async fn resolve_step(&mut self, step: ProgressPlans) {
         // info!(
         //     target: LOG_TARGET,
         //     "Resolving step: {}",
@@ -107,8 +107,6 @@ impl ProgressStepper {
                 step.get_title()
             );
         }
-
-        Ok(())
     }
 
     pub fn channel_step_range_updates(
@@ -147,7 +145,7 @@ impl ProgressStepper {
         None
     }
 
-    pub fn skip_step(&mut self, step: ProgressPlans) -> Result<(), Error> {
+    pub fn skip_step(&mut self, step: ProgressPlans) {
         if let Some(index) = self.plan.iter().position(|x| x.eq(&step)) {
             let _removed_step = self.plan.remove(index);
             let _removed_percentage = self.percentage_steps.remove(index);
@@ -158,7 +156,6 @@ impl ProgressStepper {
                 step.get_title()
             );
         }
-        Ok(())
     }
 }
 

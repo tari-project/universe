@@ -57,7 +57,6 @@ use crate::{
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
-const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6);
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
@@ -66,7 +65,6 @@ pub struct CoreSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseAppConfiguration {
     is_auto_launcher_enabled: bool,
-    last_binaries_update_timestamp: Option<SystemTime>,
     use_tor: bool,
 }
 
@@ -117,14 +115,10 @@ impl SetupPhaseImpl for CoreSetupPhase {
     async fn load_app_configuration() -> Result<Self::AppConfiguration, anyhow::Error> {
         let is_auto_launcher_enabled = *ConfigCore::content().await.should_auto_launch();
 
-        let last_binaries_update_timestamp =
-            *ConfigCore::content().await.last_binaries_update_timestamp();
-
         let use_tor = *ConfigCore::content().await.use_tor();
 
         Ok(CoreSetupPhaseAppConfiguration {
             is_auto_launcher_enabled,
-            last_binaries_update_timestamp,
             use_tor,
         })
     }
@@ -200,7 +194,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         PlatformUtils::initialize_preqesities(self.app_handle.clone()).await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
             ))
@@ -223,8 +217,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .inspect_err(
                 |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
             );
-
-        let now = SystemTime::now();
 
         state
             .telemetry_manager
@@ -252,16 +244,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .await?;
 
         let binary_resolver = BinaryResolver::current().read().await;
-        let should_check_for_update = now
-            .duration_since(
-                self.app_configuration
-                    .last_binaries_update_timestamp
-                    .unwrap_or(SystemTime::UNIX_EPOCH),
-            )
-            .unwrap_or(Duration::from_secs(0))
-            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::InitializeApplicationModules,
             ))
@@ -271,43 +255,28 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .run_speed_test_with_timeout(&self.app_handle)
             .await;
 
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(
-                Binaries::MergeMiningProxy,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
+            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
             .await?;
-        let _unused = progress_stepper
+        progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::BinariesMergeMiningProxy,
             ))
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(
-                Binaries::Wallet,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
+            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
             .await?;
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesWallet))
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(
-                Binaries::GpuMiner,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
+            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
             .await?;
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesGpuMiner))
@@ -317,33 +286,15 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesCpuMiner))
             .await;
         binary_resolver
-            .initialize_binary_timeout(
-                Binaries::Xmrig,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
+            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
             .await?;
 
         binary_resolver
-            .initialize_binary_timeout(
-                Binaries::ShaP2pool,
-                progress.clone(),
-                should_check_for_update,
-                rx.clone(),
-            )
+            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesP2pool))
             .await;
-
-        if should_check_for_update {
-            let _unused = ConfigCore::update_field(
-                ConfigCoreContent::set_last_binaries_update_timestamp,
-                Some(now),
-            )
-            .await;
-        }
 
         //drop binary resolver to release the lock
         drop(binary_resolver);

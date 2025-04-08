@@ -26,6 +26,7 @@ use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
+    progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupNodePlan},
         progress_stepper::ProgressStepperBuilder,
@@ -42,7 +43,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{Receiver, Sender},
+        watch::{self, Receiver, Sender},
         Mutex,
     },
     time::{interval, Interval},
@@ -86,9 +87,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
         ProgressStepperBuilder::new()
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesTor))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::BinariesNode))
-            .add_step(ProgressPlans::Core(ProgressSetupCorePlan::StartTor))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
+            .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
             .add_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .add_step(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForInitialSync,
@@ -166,11 +167,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
+        // TODO Remove once not needed
+        let (tx, rx) = watch::channel("".to_string());
+        let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
         let binary_resolver = BinaryResolver::current().read().await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
             binary_resolver
-                .initialize_binary(Binaries::Tor, progress.clone(), should_check_for_update)
+                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
                 .await?;
             let _unused = progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
@@ -181,11 +185,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         };
 
         binary_resolver
-            .initialize_binary(
-                Binaries::MinotariNode,
-                progress.clone(),
-                should_check_for_update,
-            )
+            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
             .await?;
         let _unused = progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))

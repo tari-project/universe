@@ -1624,7 +1624,7 @@ pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeErro
 
     ConfigCore::update_field(
         ConfigCoreContent::set_last_binaries_update_timestamp,
-        Some(SystemTime::now()),
+        SystemTime::now(),
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
