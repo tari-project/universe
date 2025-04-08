@@ -5,7 +5,6 @@
   "application-info": "应用信息",
   "applyInviteCode": "应用邀请代码",
   "cancel": "取消",
-  "gpu-engine": "Gpu 引擎",
   "change-language": "更改语言",
   "confirm": "确认",
   "confirm-action": "确认操作",
@@ -30,6 +29,7 @@
   "debug-info": "调试信息",
   "disconnect": "断开与空投的连接",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "桥接配置无效",
     "invalid-control-port": "控制端口配置无效"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU 挖矿设备",
   "gpu-device-enabled-description": "启用或禁用特定的 GPU 设备。",
   "gpu-device-no-found": "⚠️ 未找到 GPU 设备",
+  "gpu-engine": "Gpu 引擎",
   "gpu-mining-enabled": "GPU 挖矿",
   "gpu-unavailable": "⚠️ GPU已禁用，因为您的硬件不支持",
   "hardware-status": "硬件状态",

@@ -5,7 +5,6 @@
   "application-info": "Uygulama Bilgileri",
   "applyInviteCode": "Davet Kodunu Uygula",
   "cancel": "İptal",
-  "gpu-engine": "Gpu Motoru",
   "change-language": "Dil Değiştir",
   "confirm": "Onayla",
   "confirm-action": "İşlemi onayla",
@@ -30,6 +29,7 @@
   "debug-info": "Hata Ayıklama",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Köprü yapılandırması geçersiz",
     "invalid-control-port": "Kontrol Portu yapılandırması geçersiz"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU Madencilik cihazları",
   "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
   "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
+  "gpu-engine": "Gpu Motoru",
   "gpu-mining-enabled": "GPU Madenciliği",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "hardware-status": "Donanım durumu",
