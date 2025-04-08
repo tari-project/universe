@@ -92,14 +92,18 @@ impl UpdatesManager {
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
         let app_clone = app.clone();
         let self_clone = self.clone();
+
         tauri::async_runtime::spawn(async move {
             let mut interval = time::interval(Duration::from_secs(3600));
+
             loop {
                 if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
                 {
                     break;
                 };
+
                 interval.tick().await;
+
                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
                     error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                 }
