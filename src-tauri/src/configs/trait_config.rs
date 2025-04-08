@@ -26,6 +26,7 @@ use anyhow::Error;
 use dirs::config_dir;
 use log::debug;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tari_common::configuration::Network;
 use tokio::sync::RwLock;
 
@@ -44,6 +45,11 @@ pub trait ConfigImpl {
 
     fn new() -> Self;
     fn current() -> &'static RwLock<Self>;
+    fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), Error>;
     fn _get_name() -> String;
     fn _get_content(&self) -> &Self::Config;
     fn _get_content_mut(&mut self) -> &mut Self::Config;
@@ -82,13 +88,25 @@ pub trait ConfigImpl {
     fn migrate_old_config(&mut self, old_config: Self::OldConfig) -> Result<(), Error>;
     async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where
+        I: Serialize + Clone,
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {
         debug!(target: LOG_TARGET, "[{}] [update_field] with function: {:?} and value: {:?}", Self::_get_name(), std::any::type_name::<F>(), value);
-        setter_callback(Self::current().write().await._get_content_mut(), value);
+        setter_callback(
+            Self::current().write().await._get_content_mut(),
+            value.clone(),
+        );
         Self::current().write().await._save_config().inspect_err(|error|
             debug!(target: LOG_TARGET, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
+        )?;
+        Self::current().read().await._send_telemetry_event(
+            "config-update-field",
+            json!({
+                "config": Self::_get_name(),
+                "field": std::any::type_name::<F>(),
+                "value": value,
+            }),
         )?;
         Ok(())
     }
