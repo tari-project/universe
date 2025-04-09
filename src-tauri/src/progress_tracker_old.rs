@@ -107,8 +107,6 @@ impl ProgressTrackerInner {
         title_params: Option<HashMap<String, String>>,
         progress: u64,
     ) {
-        info!(target: LOG_TARGET, "Progress: {}% {}", progress, title);
-        info!(target: LOG_TARGET, "Params: {:?}", title_params);
         let progress_percentage = (self.min as f64
             + (((self.next_max - self.min) as f64) * ((progress as f64) / 100.0)))
             / 100.0;
