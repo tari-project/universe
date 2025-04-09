@@ -1,4 +1,5 @@
 import {
+    BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
@@ -155,4 +156,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'AskForRestart';
           payload: undefined;
+      }
+    | {
+          event_type: 'BackgroundNodeSyncUpdate';
+          payload: BackgroundNodeSyncUpdatePayload;
       };

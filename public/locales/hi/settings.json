@@ -5,7 +5,6 @@
   "application-info": "एप्लिकेशन जानकारी",
   "applyInviteCode": "आमंत्रण कोड लागू करें",
   "cancel": "रद्द करें",
-  "gpu-engine": "जीपीयू इंजन",
   "change-language": "भाषा",
   "confirm": "पुष्टि करें",
   "confirm-action": "क्रिया की पुष्टि करें",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "GPU माइनिंग डिवाइस",
   "gpu-device-enabled-description": "विशिष्ट GPU डिवाइस को सक्षम या अक्षम करें।",
   "gpu-device-no-found": "⚠️ कोई GPU डिवाइस नहीं मिला",
+  "gpu-engine": "जीपीयू इंजन",
   "gpu-mining-enabled": "जीपीयू माइनिंग",
   "gpu-unavailable": "⚠️ जीपीयू अक्षम है क्योंकि आपका हार्डवेयर इसे समर्थन नहीं करता",
   "hardware-status": "हार्डवेयर स्थिति",
@@ -56,6 +56,7 @@
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "लॉग्स",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "माइनर्स",
   "mining-toggle-warning": "परिवर्तनों के प्रभावी होने के दौरान माइनिंग रोक दी जाएगी।",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "मोनरो पता दर्ज करें",
     "title": "मोनरो पता"
@@ -71,6 +73,10 @@
   "monero-seed-words": "मोनरो सीड शब्द",
   "network": "नेटवर्क",
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "open-logs-directory": "लॉग्स निर्देशिका खोलें",
   "p2pool-chain-tip": "श्रृंखलाओं की नोक",
@@ -157,10 +163,5 @@
   "visual-mode": "दृश्य मोड",
   "yes": "हाँ",
   "your-feedback": "कृपया अपनी समस्या का वर्णन करें",
-  "your-reference": "आपका संदर्भ",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "आपका संदर्भ"
 }

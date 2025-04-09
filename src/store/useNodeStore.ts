@@ -1,3 +1,4 @@
+import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
 import { create } from './create';
 
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
@@ -10,6 +11,7 @@ interface NodeStoreState {
     node_type?: NodeType;
     node_identity?: NodeIdentity;
     node_connection_address?: string;
+    backgroundNodeSyncLastUpdate?: BackgroundNodeSyncUpdatePayload;
 }
 
 const initialState: NodeStoreState = {

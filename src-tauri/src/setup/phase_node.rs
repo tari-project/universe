@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -162,6 +162,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         });
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<Option<NodeSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
@@ -219,6 +220,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 self.app_configuration.use_tor,
                 tor_control_port,
                 Some(self.app_configuration.base_node_grpc_address.clone()),
+                self.app_handle.clone(),
             )
             .await
         {
@@ -242,7 +244,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 return Err(e.into());
             }
         }
-        // }
+
+        let (progress_params_tx, mut progress_params_rx) =
+            watch::channel(HashMap::<String, String>::new());
+        let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
 
         let wait_for_initial_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForInitialSync),
@@ -250,26 +256,59 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 ProgressSetupNodePlan::WaitingForHeaderSync,
             )),
         );
-
         let wait_for_header_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForHeaderSync),
             Some(ProgressPlans::Node(
                 ProgressSetupNodePlan::WaitingForBlockSync,
             )),
         );
-
         let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
             None,
         );
 
+        TasksTrackers::current()
+            .node_phase
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                    tokio::select! {
+                        _ = progress_params_rx.changed() => {
+                            let progress_params = progress_params_rx.borrow().clone();
+                            let percentage = *progress_percentage_rx.borrow();
+                            if let Some(step) = progress_params.get("step").cloned() {
+                                let tracker = match step.as_str() {
+                                    "Startup" => &wait_for_initial_sync_tracker,
+                                    "Header" => &wait_for_header_sync_tracker,
+                                    "Block" => &wait_for_block_sync_tracker,
+                                    _ => {
+                                        warn!("Unknown step: {}", step);
+                                        continue;
+                                    }
+                                };
+
+                                if let Some(tracker) = tracker {
+                                    tracker.send_update(progress_params.clone(), percentage).await;
+                                    if step == "Block" && percentage == 1.0 {
+                                        break;
+                                    }
+                                } else {
+                                    warn!("Progress tracker not found for step: {}", step);
+                                }
+                                tokio::time::sleep(Duration::from_secs(1)).await;
+                            }
+                        },
+                        _ = shutdown_signal.wait() => {
+                            break;
+                        }
+                    }
+                }
+            });
+
         state
             .node_manager
-            .wait_synced(vec![
-                wait_for_initial_sync_tracker,
-                wait_for_header_sync_tracker,
-                wait_for_block_sync_tracker,
-            ])
+            .wait_synced(&progress_params_tx, &progress_percentage_tx)
             .await?;
 
         Ok(None)

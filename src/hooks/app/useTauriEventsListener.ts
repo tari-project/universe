@@ -166,6 +166,11 @@ const useTauriEventsListener = () => {
                     case 'AskForRestart':
                         handleAskForRestart();
                         break;
+                    case 'BackgroundNodeSyncUpdate':
+                        setNodeStoreState({
+                            backgroundNodeSyncLastUpdate: event.payload,
+                        });
+                        break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));
                         break;

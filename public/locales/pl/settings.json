@@ -5,7 +5,6 @@
   "application-info": "Informacje o aplikacji",
   "applyInviteCode": "Zastosuj Kod Zaproszenia",
   "cancel": "Anuluj",
-  "gpu-engine": "Silnik GPU",
   "change-language": "Zmień język",
   "confirm": "Potwierdź",
   "confirm-action": "Potwierdź działanie",
@@ -40,6 +39,7 @@
   "gpu-device-enabled": "Urządzenia do kopania GPU",
   "gpu-device-enabled-description": "Włącz lub wyłącz konkretne urządzenie GPU.",
   "gpu-device-no-found": "⚠️ Nie znaleziono urządzeń GPU",
+  "gpu-engine": "Silnik GPU",
   "gpu-mining-enabled": "Wydobycie GPU",
   "gpu-unavailable": "⚠️ Kopanie GPU niedostępne ponieważ Twój sprzęt go nie obsługuje",
   "hardware-status": "Status sprzętu",
@@ -57,6 +57,7 @@
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "mine-on-app-start": {
@@ -65,6 +66,7 @@
   },
   "miners": "Górnicy",
   "mining-toggle-warning": "Wydobycie zostanie wstrzymane, gdy zmiany wejdą w życie.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Wprowadź address Monero",
     "title": "Address Monero"
@@ -72,6 +74,10 @@
   "monero-seed-words": "Słowa kluczowe Monero",
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",
@@ -159,10 +165,5 @@
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",
-  "your-reference": "Twoje odniesienie",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "Twoje odniesienie"
 }

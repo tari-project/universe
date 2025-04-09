@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
@@ -28,7 +29,8 @@ use log::{error, info, warn};
 use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tokio::sync::watch::Sender;
+use tauri::{AppHandle, Manager};
+use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
@@ -40,10 +42,9 @@ use crate::process_adapter::ProcessAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{LocalNodeAdapter, RemoteNodeAdapter};
+use crate::{LocalNodeAdapter, RemoteNodeAdapter, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -134,6 +135,7 @@ impl NodeManager {
         use_tor: bool,
         tor_control_port: Option<u16>,
         remote_grpc_address: Option<String>,
+        app_handle: AppHandle,
     ) -> Result<(), NodeManagerError> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -186,10 +188,11 @@ impl NodeManager {
                 )
                 .await?;
 
-                self.switch_to_local_after_remote(shutdown_signal).await?;
+                self.switch_to_local_after_remote(shutdown_signal, app_handle)
+                    .await?;
             }
         }
-        // println!("====== grpc: {:?}", self.get_grpc_address().await);
+
         self.wait_ready().await?;
         Ok(())
     }
@@ -290,6 +293,7 @@ impl NodeManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        app_handle: AppHandle,
     ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
@@ -355,7 +359,8 @@ impl NodeManager {
                         .await?;
                 }
 
-                self.switch_to_local_after_remote(shutdown_signal).await?;
+                self.switch_to_local_after_remote(shutdown_signal, app_handle)
+                    .await?;
             }
         }
 
@@ -365,10 +370,43 @@ impl NodeManager {
     async fn switch_to_local_after_remote(
         &self,
         mut shutdown_signal: ShutdownSignal,
+        app_handle: AppHandle,
     ) -> Result<(), anyhow::Error> {
         let node_type = self.node_type.clone();
         let node_manager = self.clone();
+        let app_handle = app_handle.clone();
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            let (progress_params_tx, mut progress_params_rx) =
+                watch::channel(HashMap::<String, String>::new());
+            let (progress_percentage_tx, progress_percentage_rx) = watch::channel(0f64);
+            let mut shutdown_signal_clone = shutdown_signal.clone();
+
+            TasksTrackers::current()
+                .node_phase
+                .get_task_tracker()
+                .await
+                .spawn(async move {
+                    loop {
+                        tokio::select! {
+                            _ = progress_params_rx.changed() => {
+                                let progress_params = progress_params_rx.borrow().clone();
+                                let percentage = *progress_percentage_rx.borrow();
+                                if let Some(step) = progress_params.get("step").cloned() {
+                                    let app_state = app_handle.state::<UniverseAppState>();
+                                    app_state.events_manager.handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
+                                    if step == "Block" && percentage == 1.0 {
+                                        break;
+                                    }
+                                }
+                                tokio::time::sleep(Duration::from_secs(1)).await;
+                            },
+                            _ = shutdown_signal_clone.wait() => {
+                                break;
+                            }
+                        }
+                    }
+                });
+
             select! {
                 _ = shutdown_signal.wait() => {
                     info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
@@ -382,7 +420,7 @@ impl NodeManager {
 
                         if let Some(local_current_service) = local_current_service {
                             match local_current_service
-                                .wait_synced(vec![None, None, None], node_manager.shutdown.clone())
+                                .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
                                 .await
                             {
                                 Ok(_) => {
@@ -429,13 +467,18 @@ impl NodeManager {
 
     pub async fn wait_synced(
         &self,
-        progress_trackers: Vec<Option<ChanneledStepUpdate>>,
+        progress_params_tx: &watch::Sender<HashMap<String, String>>,
+        progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
-                .wait_synced(progress_trackers.clone(), self.shutdown.clone())
+                .wait_synced(
+                    progress_params_tx,
+                    progress_percentage_tx,
+                    self.shutdown.clone(),
+                )
                 .await
             {
                 Ok(_) => {
