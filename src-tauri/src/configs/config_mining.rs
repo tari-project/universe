@@ -23,13 +23,12 @@
 use crate::{
     app_config::{GpuThreads, MiningMode},
     gpu_miner::EngineType,
-    UniverseAppState,
 };
-use std::{ops::Deref, sync::LazyLock, time::SystemTime};
+use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::AppConfig;

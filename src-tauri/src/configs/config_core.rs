@@ -20,18 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::Ok;
 use getset::{Getters, Setters};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{ops::Deref, str::FromStr, sync::LazyLock, time::SystemTime};
+use std::{str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::{
-    app_config::AirdropTokens, internal_wallet::generate_password, AppConfig, UniverseAppState,
-};
+use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
