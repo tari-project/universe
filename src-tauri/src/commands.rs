@@ -1345,6 +1345,14 @@ pub async fn set_tor_config(
         .await
         .map_err(|e| e.to_string())?;
 
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Unknown,
+        ])
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
     }

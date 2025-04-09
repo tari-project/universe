@@ -97,7 +97,6 @@ export const TorMarkup = () => {
                 console.error('Update Tor config error:', error);
             }
         }
-        setDialogToShow('restart');
     }, [defaultTorConfig, defaultUseTor, editedConfig, editedUseTor]);
 
     const isSaveButtonVisible = useMemo(() => {
