@@ -33,6 +33,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
 use tari_shutdown::Shutdown;
+use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
@@ -262,6 +263,8 @@ impl WebsocketManager {
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
                         }
+                        let _ = status_update_channel_tx
+                        .send(WebsocketManagerStatusMessage::Reconnecting);
                         sleep(Duration::from_millis(5000)).await;
                         Ok::<(),anyhow::Error>(())
                     } => {},
@@ -308,51 +311,26 @@ impl WebsocketManager {
         let (write_stream, read_stream) = connection_stream.split();
         info!(target:LOG_TARGET,"listening to websocket events");
 
-        let task_cancellation = CancellationToken::new();
-        let task_cancellation_cloned = task_cancellation.clone();
-        let task_cancellation_cloned2 = task_cancellation.clone();
         let mut shutdown_signal = shutdown.to_signal();
-        //receiver
-        let receiver_task = tauri::async_runtime::spawn(async move {
-            tokio::select! {
-                _=receiver_task(app, message_cache, read_stream)=>{
-                },
-                _=task_cancellation_cloned.cancelled()=>{
-                    info!(target:LOG_TARGET,"cancelling receiver task");
-                }
-            }
-        });
-
-        //sender
-        let sender_task = tauri::async_runtime::spawn(async move {
-            tokio::select! {
-                _=sender_task(message_receiver_channel, write_stream)=>{
-                },
-                _=task_cancellation_cloned2.cancelled()=>{
-                    info!(target:LOG_TARGET,"cancelling sender task");
-                }
-            }
-        });
+        let close_channel_tx_sender = close_channel_tx.clone();
+        let close_channel_tx_receiver = close_channel_tx.clone();
+        let shutdown_cloned = shutdown.clone();
 
         let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
 
         tokio::select! {
-            _=receiver_task=>{
-                info!(target:LOG_TARGET,"receiver cancelled");
-                let _ = status_update_channel_tx
-                .send(WebsocketManagerStatusMessage::Reconnecting);
-                task_cancellation.cancel();
-            },
-            _=sender_task=>{
-                info!(target:LOG_TARGET,"sender cancelled");
-                let _ = status_update_channel_tx
-                .send(WebsocketManagerStatusMessage::Reconnecting);
-                task_cancellation.cancel();
-            },
+            _= tauri::async_runtime::spawn(async move {
+                receiver_task(app, message_cache, read_stream, close_channel_tx_receiver.clone(), shutdown.clone().to_signal()).await;
+            })=>{},
+            _=tauri::async_runtime::spawn(async move {
+                let _ = sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone(), shutdown_cloned.to_signal()).await;
+            })=>{},
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
-                task_cancellation.cancel();
+                return;
+            },
+            _=shutdown_signal.wait()=>{
+                return;
             }
-            _=shutdown_signal.wait()=>{}
         }
         info!(target:LOG_TARGET, "websocket task closed");
     }
@@ -364,21 +342,33 @@ async fn sender_task(
         WebSocketStream<MaybeTlsStream<TcpStream>>,
         Message,
     >,
+    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    mut shutdown_signal: ShutdownSignal,
 ) -> Result<(), WebsocketError> {
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
     let mut receiver = receiver_channel.lock().await;
-    while let Some(msg) = receiver.recv().await {
-        let message_as_json = serde_json::to_string(&msg)?;
-        write_stream
-            .send(Message::Text(Utf8Bytes::from(message_as_json.clone())))
-            .await
-            .inspect_err(|e| {
-                error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
-            })?;
-        info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
+    loop {
+        tokio::select! {
+            Some(msg) = receiver.recv() => {
+                let message_as_json = serde_json::to_string(&msg)?;
+                write_stream
+                    .send(Message::Text(Utf8Bytes::from(message_as_json.clone())))
+                    .await
+                    .inspect_err(|e| {
+                        error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
+                    })?;
+                info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
+            },
+            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
+                info!(target:LOG_TARGET, "exiting websocket_manager sender task");
+                return Result::Ok(());
+            },
+            _=shutdown_signal.wait()=>{
+                info!(target:LOG_TARGET, "shutting down websocket_manager sender task");
+                return Result::Ok(());
+            }
+        }
     }
-    info!(target:LOG_TARGET, "exiting sender task");
-    Result::Ok(())
 }
 
 async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
@@ -396,41 +386,55 @@ async fn receiver_task(
     app: AppHandle,
     message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     mut read_stream: futures::stream::SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
+    close_channel_tx: tokio::sync::broadcast::Sender<bool>,
+    mut shutdown_signal: ShutdownSignal,
 ) {
     info!(target:LOG_TARGET,"websocket_manager: rx loop initialized...");
-    while let Some(msg_or_error) = read_stream.next().await {
-        match msg_or_error {
-            Result::Ok(msg) => match msg {
-                Message::Text(text) => {
-                    info!(target:LOG_TARGET,"websocket message received {}", text);
-                    let message_as_str = text.as_str();
-                    let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
-                                    error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {}", e);
-                                }).ok();
+    loop {
+        tokio::select! {
+                Some(msg_or_error) = read_stream.next() => {
+                    match msg_or_error {
+                        Result::Ok(msg) => match msg {
+                            Message::Text(text) => {
+                                info!(target:LOG_TARGET,"websocket message received {}", text);
+                                let message_as_str = text.as_str();
+                                let messsage_value = serde_json::from_str::<Value>(message_as_str).inspect_err(|e|{
+                                            error!(target:LOG_TARGET,"Received text websocket message that cannot be transformed to JSON: {}", e);
+                                        }).ok();
 
-                    if let Some(message) = messsage_value {
-                        drop(cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
-                                        error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
-                                    }));
-                        drop(app.emit("ws-rx", message).inspect_err(|e|{
-                                        error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
-                                    }));
+                                if let Some(message) = messsage_value {
+                                    drop(cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
+                                                error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
+                                            }));
+                                    drop(app.emit("ws-rx", message).inspect_err(|e|{
+                                                error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
+                                            }));
+                                }
+                            }
+                            Message::Close(_) => {
+                                info!(target:LOG_TARGET, "webSocket connection got closed.");
+                                return;
+                            }
+                            _ => {
+                                error!(target: LOG_TARGET,"Not supported message type.");
+                            }
+                        },
+                        Result::Err(e) => {
+                            error!(target: LOG_TARGET,"error at receiving websocket stream message {}",e);
+                            return;
+                        }
                     }
-                }
-                Message::Close(_) => {
-                    info!(target:LOG_TARGET, "webSocket connection got closed.");
-                    return;
-                }
-                _ => {
-                    error!(target: LOG_TARGET,"Not supported message type.");
-                }
             },
-            Result::Err(e) => {
-                error!(target: LOG_TARGET,"error at receiving websocket stream message {}",e);
+            _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
+                info!(target:LOG_TARGET, "exiting websocket_manager receiver task");
+                return;
+            },
+            _=shutdown_signal.wait()=>{
+                info!(target:LOG_TARGET, "shutting down websocket_manager receiver task");
+                return;
             }
         }
     }
-    info!(target:LOG_TARGET, "websocket receiving stream closed from server side");
 }
 
 fn check_message_conforms_to_event_format(value: &Value) -> Option<String> {
