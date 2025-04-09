@@ -430,7 +430,6 @@ impl NodeManager {
                                         *node_type = NodeType::LocalAfterRemote;
                                     }
                                     {
-                                        println!("PODMIANIA current adaptera");
                                         let local_node_watcher = node_manager.local_node_watcher.read().await;
                                         if let Some(local_node_watcher) = &*local_node_watcher {
                                             let mut current_adapter = node_manager.current_adapter.write().await;

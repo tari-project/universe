@@ -14,6 +14,7 @@ export const Trigger = styled('div')`
 export const Menu = styled(m.div)`
     height: min-content;
 
+    z-index: 2;
     display: flex;
     align-items: flex-start;
     flex-direction: column;
