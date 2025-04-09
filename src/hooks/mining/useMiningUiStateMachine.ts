@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -18,23 +18,59 @@ export const useUiMiningStateMachine = () => {
 
     const isMining = cpuIsMining || gpuIsMining;
 
+    const forceAnimationStop = useCallback(() => {
+        let retryCount = 0;
+        const maxRetries = 10;
+        let timeoutId: NodeJS.Timeout;
+
+        const attemptStop = () => {
+            if (animationStatus === 'not-started') {
+                console.debug(`Animation stopped: status=${animationStatus}`);
+                return;
+            }
+
+            if (retryCount >= maxRetries) {
+                console.debug(`Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`);
+                return;
+            }
+
+            console.debug(`Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`);
+            setAnimationState('stop');
+            retryCount++;
+
+            timeoutId = setTimeout(() => {
+                attemptStop();
+            }, 1000);
+        };
+
+        attemptStop();
+
+        return () => {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        };
+    }, []);
+
     useEffect(() => {
         if (!setupComplete || !visualMode || visualModeLoading) return;
 
         const shouldStopAnimation = !isMining && !isMiningInitiated && !isChangingMode;
 
         if (shouldStopAnimation) {
-            console.debug(
-                'useUiMiningStateMachine',
-                `Animation stopping: status=${animationStatus}, isMining=${isMining}`
-            );
-            setAnimationState('stop');
+            forceAnimationStop();
         } else if (isResuming) {
-            console.debug(
-                'useUiMiningStateMachine',
-                `Animation starting: status=${animationStatus}, isResuming=${isResuming}`
-            );
             setAnimationState('start');
+            console.debug(`Animation resuming: status=${animationStatus}`);
         }
-    }, [isChangingMode, isMining, isMiningInitiated, isResuming, setupComplete, visualMode, visualModeLoading]);
+    }, [
+        isChangingMode,
+        isMining,
+        isMiningInitiated,
+        isResuming,
+        setupComplete,
+        visualMode,
+        visualModeLoading,
+        forceAnimationStop,
+    ]);
 };
