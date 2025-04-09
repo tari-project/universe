@@ -20,8 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{error, warn};
-use std::sync::Arc;
+use log::error;
+use std::{sync::Arc, time::Duration};
 
 use crate::{
     wallet_adapter::{TransactionInfo, WalletState},
@@ -46,33 +46,33 @@ impl EventsService {
     pub async fn wait_for_wallet_scan(
         &self,
         block_height: u64,
-        retries_limit: u32,
-    ) -> Result<WalletState, anyhow::Error> {
-        let mut retries = 0;
+        timeout_duration: Duration,
+    ) -> Result<WalletState, String> {
         let mut wallet_state_watch_rx = (*self.wallet_state_watch_rx).clone();
         loop {
-            if wallet_state_watch_rx.changed().await.is_err() {
-                error!(target: LOG_TARGET, "Failed to receive wallet_state_watch_rx");
-                break;
-            }
-            if let Some(wallet_state) = wallet_state_watch_rx.borrow().clone() {
-                if wallet_state.scanned_height >= block_height {
-                    return Ok(wallet_state);
+            tokio::select! {
+                // Wait for a change in the wallet state
+                result = wallet_state_watch_rx.changed() => {
+                    match result {
+                        Ok(_) => {
+                            let wallet_state = wallet_state_watch_rx.borrow().clone();
+                            if let Some(wallet_state) = wallet_state {
+                                if wallet_state.scanned_height >= block_height && block_height > 0 {
+                                    return Ok(wallet_state); // Wallet scan is complete
+                                }
+                                continue;
+                            }
+                        }
+                        Err(_) => {
+                            return Err("Wallet state watch channel closed".to_string());
+                        }
+                    }
                 }
-
-                if wallet_state.scanned_height == 0 && retries > 2 {
-                    warn!(target: LOG_TARGET, "Initial wallet scan completed before the wallet grpc server started");
-                    return Ok(wallet_state);
+                _ = tokio::time::sleep(timeout_duration) => {
+                    return Err("Timeout while waiting for wallet scan to complete".to_string());
                 }
-            }
-            retries += 1;
-            if retries >= retries_limit {
-                break;
             }
         }
-        Err(anyhow::anyhow!(
-            "Exceeded maximum retries waiting for wallet scan"
-        ))
     }
 
     pub async fn get_coinbase_transaction_for_last_mined_block(

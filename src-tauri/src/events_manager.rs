@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 
 use log::{error, info};
 use tari_core::transactions::tari_amount::MicroMinotari;
@@ -85,7 +85,7 @@ impl EventsManager {
                 _ = shutdown_signal.wait() => {
                     info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
                 }
-                result = events_service.wait_for_wallet_scan(block_height, 1200) => {
+                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(300)) => {
                     match result {
                         Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                             Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
@@ -106,7 +106,7 @@ impl EventsManager {
         let app_clone = app.clone();
         let events_service = self.events_service.clone();
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            match events_service.wait_for_wallet_scan(block_height, 20).await {
+            match events_service.wait_for_wallet_scan(block_height, Duration::from_secs(5)).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {
                         let coinbase_tx =

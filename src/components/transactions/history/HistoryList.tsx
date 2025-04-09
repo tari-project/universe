@@ -15,6 +15,7 @@ const HistoryList = () => {
     const transactions = useWalletStore((s) => s.transactions);
     const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
+    const isWalletScanning = useWalletStore((s) => !Number.isFinite(s.calculated_balance));
 
     useEffect(() => {
         initialFetchTxs();
@@ -30,22 +31,28 @@ const HistoryList = () => {
 
     return (
         <ListWrapper id="list">
-            {!is_transactions_history_loading && !combinedTransactions?.length && (
+            {!isWalletScanning && !is_transactions_history_loading && !combinedTransactions?.length && (
                 <Typography variant="h6">{t('empty-tx')}</Typography>
             )}
-            <InfiniteScroll
-                dataLength={combinedTransactions?.length || 0}
-                next={handleNext}
-                hasMore={hasMore}
-                loader={<CircularProgress />}
-                scrollableTarget="list"
-            >
-                <ListItemWrapper>
-                    {combinedTransactions.map((tx, index) => (
-                        <HistoryListItem key={tx.tx_id} item={tx} index={index} />
-                    ))}
-                </ListItemWrapper>
-            </InfiniteScroll>
+            {isWalletScanning ? (
+                <Typography variant="h6" style={{ textAlign: 'left' }}>
+                    {t('wallet-is-scanning')}
+                </Typography>
+            ) : (
+                <InfiniteScroll
+                    dataLength={combinedTransactions?.length || 0}
+                    next={handleNext}
+                    hasMore={hasMore}
+                    loader={<CircularProgress />}
+                    scrollableTarget="list"
+                >
+                    <ListItemWrapper>
+                        {combinedTransactions.map((tx, index) => (
+                            <HistoryListItem key={tx.tx_id} item={tx} index={index} />
+                        ))}
+                    </ListItemWrapper>
+                </InfiniteScroll>
+            )}
         </ListWrapper>
     );
 };

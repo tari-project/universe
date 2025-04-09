@@ -83,7 +83,7 @@ export default function WalletBalanceMarkup() {
                     <CircularProgress />
                 )}
             </WalletBalanceWrapper>
-            {balanceVis}
+            {!isWalletScanning && balanceVis}
         </WalletBalanceContainer>
     );
 }
