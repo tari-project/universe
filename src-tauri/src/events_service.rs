@@ -59,11 +59,6 @@ impl EventsService {
                 if wallet_state.scanned_height >= block_height {
                     return Ok(wallet_state);
                 }
-
-                if wallet_state.scanned_height == 0 && retries > 2 {
-                    warn!(target: LOG_TARGET, "Initial wallet scan completed before the wallet grpc server started");
-                    return Ok(wallet_state);
-                }
             }
             retries += 1;
             if retries >= retries_limit {

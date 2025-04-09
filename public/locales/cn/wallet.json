@@ -29,5 +29,6 @@
     "receive": "Receive",
     "send": "Send"
   },
-  "tari": "Tari"
+  "tari": "Tari",
+  "wallet-is-scanning": "Wallet is scanning.."
 }

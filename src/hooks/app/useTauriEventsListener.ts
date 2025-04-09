@@ -25,7 +25,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { setWalletAddress, setWalletBalance } from '@app/store';
+import { refreshTransactions, setWalletAddress, setWalletBalance } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -104,6 +104,7 @@ const useTauriEventsListener = () => {
                         break;
                     case 'WalletBalanceUpdate':
                         setWalletBalance(event.payload);
+                        refreshTransactions();
                         break;
                     case 'BaseNodeUpdate':
                         handleBaseNodeStatusUpdate(event.payload);
