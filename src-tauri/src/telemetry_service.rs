@@ -226,8 +226,6 @@ async fn send_telemetry_data(
         )
         .json(&full_data);
 
-    println!("Telemetry data: {:?}", full_data);
-
     let response = request_builder.send().await?;
 
     if response.status() == 429 {
