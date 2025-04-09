@@ -147,7 +147,10 @@ impl WebsocketEventsManager {
 
                         return;
                       }
-                      _=wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone())=>{}
+                      _=wait_for_close_signal(close_channel_tx.subscribe(),is_started.clone())=>{
+                        info!(target:LOG_TARGET, "websocket events manager closed");
+                        return;
+                      }
                     }
                 }
             });
