@@ -11,30 +11,46 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
+    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
 
+    const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
+
+    const notStarted = stateTrigger === 'not-started';
+    const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
+    const shouldStop = !isMining && !notStarted && !preventStop;
+    const shouldStart = isMining && notStarted && !isResuming;
+
+    const noVisualMode = !visualMode || visualModeLoading;
 
     const forceAnimationStop = useCallback(() => {
         let retryCount = 0;
         const maxRetries = 10;
-        const interval = 1000; // 1 second
+        const interval = 1000 * 2; // 2 seconds
         let timeoutId: NodeJS.Timeout;
 
         const attemptStop = () => {
+            if (timeoutId && animationStatus === 'started') {
+                clearTimeout(timeoutId);
+            }
             if (animationStatus === 'not-started') {
-                console.debug(`Animation stopped: status=${animationStatus}`);
+                console.debug(`tari-tower debug |Animation stopped: status=${animationStatus}`);
                 return;
             }
 
             if (retryCount >= maxRetries) {
-                console.debug(`Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`);
+                console.debug(
+                    `tari-tower debug | Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
+                );
                 return;
             }
 
-            console.debug(`Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`);
+            console.debug(
+                `tari-tower debug | Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
+            );
             setAnimationState('stop');
             retryCount++;
 
@@ -55,12 +71,12 @@ export const useUiMiningStateMachine = () => {
     }, []);
 
     useEffect(() => {
-        if (!setupComplete || !visualMode || visualModeLoading) return;
+        if (noVisualMode) return;
 
-        const shouldStopAnimation = !isMining && !isMiningInitiated && !isChangingMode;
-
-        if (shouldStopAnimation) {
+        if (shouldStop) {
             forceAnimationStop();
+        } else if (shouldStart) {
+            setAnimationState('start');
         }
-    }, [isChangingMode, isMining, isMiningInitiated, setupComplete, visualMode, visualModeLoading, forceAnimationStop]);
+    }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

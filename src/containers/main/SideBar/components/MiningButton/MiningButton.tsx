@@ -13,7 +13,7 @@ import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
+import { setAnimationState } from '@tari-project/tari-tower';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
