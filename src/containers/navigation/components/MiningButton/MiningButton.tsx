@@ -25,6 +25,7 @@ enum MiningButtonStateText {
 export default function MiningButton() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isAppSettingUp = useSetupStore((s) => !s.appUnlocked);
+    const isMiningUnlocked = useSetupStore((s) => s.miningUnlocked);
     const isMiningControlsEnabled = useMiningStore((s) => s.miningControlsEnabled);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
 
@@ -35,7 +36,8 @@ export default function MiningButton() {
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isMiningEnabled = isCpuMiningEnabled || isGpuMiningEnabled;
     const isMiningLoading = (isMining && !isMiningInitiated) || (isMiningInitiated && !isMining);
-    const isMiningButtonDisabled = isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled;
+    const isMiningButtonDisabled =
+        isAppSettingUp || isMiningLoading || !isMiningControlsEnabled || !isMiningEnabled || !isMiningUnlocked;
     const isAppLoading = isAppSettingUp || isMiningLoading;
 
     const miningButtonStateText = useMemo(() => {

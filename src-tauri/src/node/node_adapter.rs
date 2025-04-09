@@ -135,7 +135,6 @@ impl NodeAdapterService {
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
         let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
-        println!("asking for identity to {:?}", self.grpc_address.clone());
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
