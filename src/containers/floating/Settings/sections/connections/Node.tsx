@@ -13,7 +13,7 @@ import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads.ts';
 
 export function BackgroundNodeSyncProgress({ lastUpdate }: { lastUpdate: BackgroundNodeSyncUpdatePayload }) {
-    const { t } = useTranslation('setup-progresses', { useSuspense: false });
+    const { t } = useTranslation(['setup-progresses', 'setup-view'], { useSuspense: false });
     if (!lastUpdate) return null;
 
     switch (lastUpdate.step) {
@@ -101,14 +101,16 @@ export default function Node() {
                     </SettingsGroupContent>
                     {backgroundNodeSyncLastUpdate?.step && node_type == 'RemoteUntilLocal' && (
                         <SettingsGroupContent>
-                            <Stack direction="column" alignItems="flex-start">
-                                <Stack direction="row">
-                                    <Typography>{t('local-node-sync-progress')}: </Typography>
-                                    <b>
+                            <SettingsGroupTitle>
+                                <Typography variant="h6">{t('local-node-sync-progress')}</Typography>
+                            </SettingsGroupTitle>
+                            <SettingsGroupContent>
+                                <Stack direction="column" alignItems="flex-start">
+                                    <Stack direction="row">
                                         <BackgroundNodeSyncProgress lastUpdate={backgroundNodeSyncLastUpdate} />
-                                    </b>
+                                    </Stack>
                                 </Stack>
-                            </Stack>
+                            </SettingsGroupContent>
                         </SettingsGroupContent>
                     )}
                 </SettingsGroupContent>
