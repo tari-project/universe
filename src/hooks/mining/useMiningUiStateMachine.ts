@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
 
 import { useAppStateStore } from '@app/store/appStateStore';
@@ -26,16 +26,26 @@ export const useUiMiningStateMachine = () => {
 
     const noVisualMode = !visualMode || visualModeLoading;
 
+    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+    function clearStopTimeout() {
+        if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current);
+            timeoutIdRef.current = null;
+        }
+    }
+
     const forceAnimationStop = useCallback(() => {
         let retryCount = 0;
-        const maxRetries = 10;
-        const interval = 1000 * 2; // 2 seconds
-        let timeoutId: NodeJS.Timeout;
+        const maxRetries = 15;
+        const interval = 2000; // 2 seconds
 
         const attemptStop = () => {
-            if (timeoutId && animationStatus === 'started') {
-                clearTimeout(timeoutId);
+            if (animationStatus === 'started') {
+                clearStopTimeout();
+                return;
             }
+
             if (animationStatus === 'not-started') {
                 console.debug(`tari-tower debug |Animation stopped: status=${animationStatus}`);
                 return;
@@ -54,19 +64,17 @@ export const useUiMiningStateMachine = () => {
             setAnimationState('stop');
             retryCount++;
 
-            timeoutId = setTimeout(() => {
+            timeoutIdRef.current = setTimeout(() => {
                 attemptStop();
             }, interval);
         };
 
-        timeoutId = setTimeout(() => {
+        timeoutIdRef.current = setTimeout(() => {
             attemptStop();
         }, interval);
 
         return () => {
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
+            clearStopTimeout();
         };
     }, []);
 
@@ -77,6 +85,7 @@ export const useUiMiningStateMachine = () => {
             forceAnimationStop();
         } else if (shouldStart) {
             setAnimationState('start');
+            clearStopTimeout();
         }
     }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };
