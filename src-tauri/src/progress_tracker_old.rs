@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use log::{error, info};
+use log::error;
 use tauri::AppHandle;
 use tokio::sync::{watch::Sender, RwLock};
 
