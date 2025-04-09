@@ -1372,9 +1372,13 @@ pub async fn set_use_tor(
         .send("set_use_tor".to_string(), json!(use_tor))
         .await;
     drop(telemetry_service);
-    ConfigCore::update_field(ConfigCoreContent::set_use_tor, use_tor)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field_with_restart(
+        ConfigCoreContent::set_use_tor,
+        use_tor,
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     let config_dir = app
         .path()
