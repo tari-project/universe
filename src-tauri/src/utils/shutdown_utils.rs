@@ -154,7 +154,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         .app_log_dir()
         .expect("Could not get log dir");
 
-    let use_tor = state.config.read().await.use_tor();
+    let use_tor = state.config.read().await.use_tor().await;
     let p2pool_enabled = state.config.read().await.p2pool_enabled();
     let mut stage_total = 5;
     let mut stage_progress = 0;
