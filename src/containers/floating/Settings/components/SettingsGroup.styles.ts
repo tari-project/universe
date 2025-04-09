@@ -20,7 +20,6 @@ export const SettingsGroupWrapper = styled.div<{ $advanced?: boolean; $subGroup?
                 position: absolute;
                 background-color: ${({ theme }) => theme.palette.background.paper};
                 top: -9px;
-
                 color: ${({ theme }) => theme.palette.primary.light};
                 font-size: 12px;
                 font-weight: 600;
