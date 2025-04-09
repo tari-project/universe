@@ -16,6 +16,7 @@ import MainView from '../containers/main/MainView.tsx';
 import Setup from '../containers/phase/Setup/Setup';
 
 import { AppContentContainer } from './App.styles.ts';
+import { TOWER_CANVAS_ID } from '@app/store';
 
 const CurrentAppSection = memo(function CurrentAppSection({
     isAppReady,
@@ -84,6 +85,7 @@ export default function App() {
                 <FloatingElements />
                 <CurrentAppSection isAppReady={isAppReady} isShuttingDown={isShuttingDown} />
             </LazyMotion>
+            <canvas id={TOWER_CANVAS_ID} />
         </ThemeProvider>
     );
 }
