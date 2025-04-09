@@ -29,6 +29,7 @@
   "debug-info": "调试信息",
   "disconnect": "断开与空投的连接",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "桥接配置无效",
     "invalid-control-port": "控制端口配置无效"
   },

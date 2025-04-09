@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { setError } from '@app/store/actions';
 
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 
@@ -114,7 +115,12 @@ export const TorMarkup = () => {
         const updated_use_bridges = !editedConfig?.use_bridges;
         let bridges = editedConfig?.bridges || [];
         if (updated_use_bridges && Number(bridges?.length) < 2) {
-            bridges = await invoke('fetch_tor_bridges');
+            try {
+                bridges = await invoke('fetch_tor_bridges');
+            } catch (error) {
+                console.error('Fetch Tor bridges error:', error);
+                setError(t('errors.fetch-tor-bridges'));
+            }
         }
 
         setEditedConfig((prev) => ({
@@ -122,7 +128,7 @@ export const TorMarkup = () => {
             use_bridges: updated_use_bridges,
             bridges,
         }));
-    }, [editedConfig?.bridges, editedConfig?.use_bridges]);
+    }, [editedConfig?.bridges, editedConfig?.use_bridges, t]);
 
     const toggleRandomControlPort = useCallback(() => {
         setEditedConfig((prev) => ({

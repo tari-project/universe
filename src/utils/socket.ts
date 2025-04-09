@@ -35,6 +35,7 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
     socket = io(airdropApiUrl, wsOptions);
     console.info('Socket initialised');
     socket.connect();
+    return socket;
 };
 
 function removeSocket() {

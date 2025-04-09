@@ -29,6 +29,7 @@
   "debug-info": "デバッグ",
   "disconnect": "エアドロップから切断",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "ブリッジ設定が無効です",
     "invalid-control-port": "コントロールポートの設定が無効です"
   },

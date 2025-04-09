@@ -29,6 +29,7 @@
   "debug-info": "Debuggen",
   "disconnect": "Von Airdrop trennen",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Bridge-Konfiguration ist ungültig",
     "invalid-control-port": "Steuerport-Konfiguration ist ungültig"
   },

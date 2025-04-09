@@ -29,6 +29,7 @@
   "debug-info": "디버그",
   "disconnect": "에어드롭 연결 해제",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "브리지 구성 설정이 잘못되었습니다",
     "invalid-control-port": "제어 포트 구성 설정이 잘못되었습니다"
   },

@@ -29,6 +29,7 @@
   "debug-info": "Ontfoutingsinligting",
   "disconnect": "Ontkoppel van Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Brugkonfigurasie is ongeldig",
     "invalid-control-port": "Beheerpoort konfigurasie is ongeldig"
   },

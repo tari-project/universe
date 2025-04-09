@@ -29,6 +29,7 @@
   "debug-info": "डीबग",
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "ब्रिज कॉन्फ़िगरेशन अमान्य है",
     "invalid-control-port": "कंट्रोल पोर्ट कॉन्फ़िगरेशन अमान्य है"
   },

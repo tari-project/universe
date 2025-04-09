@@ -92,6 +92,7 @@ impl UpdatesManager {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let app_clone = app.clone();
         let self_clone = self.clone();
+
         let mut interval = time::interval(Duration::from_secs(3600));
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         TasksTrackers::current()
@@ -99,15 +100,18 @@ impl UpdatesManager {
             .get_task_tracker()
             .await
             .spawn(async move {
-                loop {
+    
+            loop {
                     select! {
                         _ = shutdown_signal.wait() => {
                             info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
                             break;
                         }
+
                         _ = interval.tick() => {
                             info!(target: LOG_TARGET, "Periodic update check triggered.");
-                            if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+            
+                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
                                 error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
                             }
                         }

@@ -29,6 +29,7 @@
   "debug-info": "Отладка",
   "disconnect": "Отключиться от Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Конфигурация моста недействительна",
     "invalid-control-port": "Конфигурация порта управления недействительна"
   },

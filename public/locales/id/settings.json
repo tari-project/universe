@@ -29,6 +29,7 @@
   "debug-info": "Debug",
   "disconnect": "Putuskan dari Airdrop",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Konfigurasi jembatan tidak valid",
     "invalid-control-port": "Konfigurasi Port Kontrol tidak valid"
   },

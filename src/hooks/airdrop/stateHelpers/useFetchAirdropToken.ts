@@ -21,6 +21,7 @@ export default function useFetchAirdropToken({ canListen = false }: { canListen?
                             headers: {
                                 'Content-Type': 'application/json',
                             },
+                            auth: true,
                         });
 
                         if (tokenResponse) {

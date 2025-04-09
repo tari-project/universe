@@ -29,6 +29,7 @@
   "debug-info": "Hata Ayıklama",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "errors": {
+    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
     "invalid-bridge": "Köprü yapılandırması geçersiz",
     "invalid-control-port": "Kontrol Portu yapılandırması geçersiz"
   },
