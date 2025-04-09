@@ -100,24 +100,21 @@ impl UpdatesManager {
             .get_task_tracker()
             .await
             .spawn(async move {
-    
-            loop {
-                    select! {
-                        _ = shutdown_signal.wait() => {
-                            info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
-                            break;
-                        }
-
-                        _ = interval.tick() => {
-                            info!(target: LOG_TARGET, "Periodic update check triggered.");
-            
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                                error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                loop {
+                        select! {
+                            _ = shutdown_signal.wait() => {
+                                info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                                break;
+                            }
+                            _ = interval.tick() => {
+                                info!(target: LOG_TARGET, "Periodic update check triggered.");
+                                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                                }
                             }
                         }
                     }
-                }
-            });
+                });
 
         Ok(())
     }
