@@ -30,5 +30,6 @@
   "versions": "Версии",
   "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
   "close": "Закрыть",
-  "update": "Обновить"
+  "update": "Обновить",
+  "join_the_space": "Присоединиться к Space"
 }

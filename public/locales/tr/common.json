@@ -30,5 +30,6 @@
   "versions": "Versiyon",
   "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı.",
   "close": "Kapat",
-  "update": "Güncelle"
+  "update": "Güncelle",
+  "join_the_space": "Space'e Katıl"
 }

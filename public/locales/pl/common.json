@@ -30,5 +30,6 @@
   "versions": "Wersje",
   "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
   "close": "Zamknij",
-  "update": "Aktualizuj"
+  "update": "Aktualizuj",
+  "join_the_space": "Dołącz do Space"
 }

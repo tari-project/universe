@@ -30,5 +30,6 @@
   "versions": "Versions",
   "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
   "close": "Close",
-  "update": "Update"
+  "update": "Update",
+  "join_the_space": "Join the Space"
 }

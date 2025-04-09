@@ -30,5 +30,6 @@
   "versions": "Versionen",
   "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert.",
   "close": "Schließen",
-  "update": "Aktualisieren"
+  "update": "Aktualisieren",
+  "join_the_space": "Dem Space beitreten"
 }

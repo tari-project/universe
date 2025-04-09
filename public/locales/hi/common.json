@@ -30,5 +30,6 @@
   "versions": "संस्करण",
   "webgl-not-supported": "WebGL समर्थित नहीं है। दृश्य मोड अक्षम किया गया।",
   "close": "बंद करें",
-  "update": "अपडेट"
+  "update": "अपडेट",
+  "join_the_space": "स्पेस में शामिल हों"
 }

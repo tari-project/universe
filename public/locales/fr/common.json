@@ -30,5 +30,6 @@
   "versions": "Versions",
   "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
   "close": "Fermer",
-  "update": "Mettre à jour"
+  "update": "Mettre à jour",
+  "join_the_space": "Rejoindre l'espace"
 }
