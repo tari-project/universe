@@ -20,8 +20,6 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -55,7 +53,6 @@ use urlencoding::encode;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::AppConfig;
 const LOG_TARGET: &str = "tari::universe::websocket";
-const OTHER_MESSAGE_NAME: &str = "other";
 
 #[derive(Debug, thiserror::Error)]
 pub enum WebsocketError {
@@ -103,7 +100,6 @@ pub struct WebsocketStoredMessage {
 
 pub struct WebsocketManager {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     app: Option<AppHandle>,
     message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
     shutdown: Shutdown,
@@ -127,7 +123,6 @@ impl WebsocketManager {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketManager {
             app_in_memory_config,
-            message_cache: Arc::new(RwLock::new(HashMap::new())),
             app: None,
             message_receiver_channel: Arc::new(Mutex::new(websocket_manager_rx)),
             shutdown,
@@ -234,7 +229,6 @@ impl WebsocketManager {
 
         let in_memory_config = &self.app_in_memory_config;
         let config_cloned = in_memory_config.clone();
-        let message_cache = self.message_cache.clone();
         let app_cloned = self.app.clone().ok_or(WebsocketError::MissingAppHandle)?;
         let receiver_channel = self.message_receiver_channel.clone();
         let shutdown = self.shutdown.clone();
@@ -258,7 +252,6 @@ impl WebsocketManager {
                         if let Ok(connection) = connection_res {
                             WebsocketManager::listen(connection,app_cloned.clone(),
                                 shutdown.clone(),
-                                message_cache.clone(),
                                 receiver_channel.clone(),
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
@@ -303,7 +296,6 @@ impl WebsocketManager {
         connection_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
         app: AppHandle,
         shutdown: Shutdown,
-        message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
         message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         close_channel_tx: tokio::sync::broadcast::Sender<bool>,
@@ -320,7 +312,7 @@ impl WebsocketManager {
 
         tokio::select! {
             _= tauri::async_runtime::spawn(async move {
-                receiver_task(app, message_cache, read_stream, close_channel_tx_receiver.clone(), shutdown.clone().to_signal()).await;
+                receiver_task(app, read_stream, close_channel_tx_receiver.clone(), shutdown.clone().to_signal()).await;
             })=>{},
             _=tauri::async_runtime::spawn(async move {
                 let _ = sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone(), shutdown_cloned.to_signal()).await;
@@ -384,7 +376,6 @@ async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
 
 async fn receiver_task(
     app: AppHandle,
-    message_cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
     mut read_stream: futures::stream::SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     mut shutdown_signal: ShutdownSignal,
@@ -403,9 +394,6 @@ async fn receiver_task(
                                         }).ok();
 
                                 if let Some(message) = messsage_value {
-                                    drop(cache_msg(message_cache.clone(), &message).await.inspect_err(|e|{
-                                                error!(target:LOG_TARGET,"Received text websocket message cannot be cached: {}", e);
-                                            }));
                                     drop(app.emit("ws-rx", message).inspect_err(|e|{
                                                 error!(target:LOG_TARGET,"Received text websocket message cannot be sent to frontend: {}", e);
                                             }));
@@ -435,48 +423,4 @@ async fn receiver_task(
             }
         }
     }
-}
-
-fn check_message_conforms_to_event_format(value: &Value) -> Option<String> {
-    if let Value::Object(map) = value {
-        if let (Some(Value::String(name)), Some(_)) = (map.get("name"), map.get("data")) {
-            return Some(name.clone());
-        }
-    }
-    None
-}
-
-async fn cache_msg(
-    cache: Arc<RwLock<HashMap<String, HashSet<WebsocketStoredMessage>>>>,
-    value: &Value,
-) -> Result<(), WebsocketError> {
-    let message_name = check_message_conforms_to_event_format(value);
-
-    let mut cache_write = cache.write().await;
-    let key = message_name.unwrap_or(OTHER_MESSAGE_NAME.into());
-
-    let new_message = WebsocketStoredMessage {
-        time: Utc::now(),
-        data: value.clone(),
-    };
-
-    cache_write
-        .entry(key.clone())
-        .and_modify(|message_set| {
-            if key == "other" {
-                //other messages get accumulated
-                message_set.insert(new_message.clone());
-            } else {
-                //we only store the latest of named messages, this is the normal mode of operation
-                message_set.clear();
-                message_set.insert(new_message.clone());
-            }
-        })
-        .or_insert_with(|| {
-            let mut new_set: HashSet<WebsocketStoredMessage> = HashSet::new();
-            new_set.insert(new_message.clone());
-            new_set
-        });
-
-    Result::<(), WebsocketError>::Ok(())
 }
