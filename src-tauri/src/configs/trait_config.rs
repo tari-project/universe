@@ -63,21 +63,16 @@ pub trait ConfigImpl {
             .join(Network::get_current_or_user_setting_or_default().as_key_str())
             .join(Self::_get_name())
     }
-    async fn _send_telemetry_event(
-        &self,
-        event_name: &str,
-        event_data: serde_json::Value,
-    ) -> Result<(), Error> {
+    async fn _send_telemetry_event(&self, event_name: &str, event_data: serde_json::Value) {
         if let Some(app_handle) = self._get_app_handle().await {
             let app_state = app_handle.state::<UniverseAppState>();
-            app_state
+            let _unused = app_state
                 .telemetry_service
                 .read()
                 .await
                 .send(event_name.to_string(), event_data)
-                .await?;
+                .await;
         }
-        Ok(())
     }
 
     async fn _send_restart_event(&self) -> Result<(), Error> {
@@ -140,7 +135,7 @@ pub trait ConfigImpl {
                     "value": value,
                 }),
             )
-            .await?;
+            .await;
         Ok(())
     }
 
