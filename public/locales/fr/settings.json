@@ -5,7 +5,6 @@
   "application-info": "Informations sur l\"application",
   "applyInviteCode": "Appliquer le code d\"invitation",
   "cancel": "Cancel",
-  "gpu-engine": "Moteur GPU",
   "change-language": "Langue",
   "confirm": "Confirmer",
   "confirm-action": "Confirmer l\"action",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "Appareils de minage GPU",
   "gpu-device-enabled-description": "Activer ou désactiver un appareil GPU spécifique.",
   "gpu-device-no-found": "⚠️ Aucun appareil GPU trouvé",
+  "gpu-engine": "Moteur GPU",
   "gpu-mining-enabled": "Minage GPU",
   "gpu-unavailable": "⚠️ GPU désactivé car votre matériel ne le supporte pas",
   "hardware-status": "État du matériel",
@@ -56,6 +56,7 @@
   "inviteCode": "Code d\"invitation",
   "is-on-orphan-chain": "Vous semblez être connecté à une branche secondaire, et non à la chaîne principale. Tout bloc que vous gagnez pourrait être invalidé.",
   "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Journaux",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "Mineurs",
   "mining-toggle-warning": "Le minage sera suspendu pendant que les modifications prennent effet.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
@@ -71,6 +73,10 @@
   "monero-seed-words": "Mots de récupération Monero",
   "network": "Réseau",
   "no-entry-guard": "Aucun Entry Guard connecté !",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Non connecté au réseau Tari",
   "open-logs-directory": "Ouvrir le répertoire des journaux",
   "p2pool-chain-tip": "Pointe des chaînes",
@@ -157,10 +163,5 @@
   "visual-mode": "Mode visuel",
   "yes": "Yes",
   "your-feedback": "Veuillez décrire votre problème",
-  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "Votre référence :<br/><bold>{{logRef}}</bold>"
 }

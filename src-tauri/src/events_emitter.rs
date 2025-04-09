@@ -480,4 +480,18 @@ impl EventsEmitter {
             error!(target: LOG_TARGET, "Failed to emit NodeTypeUpdate event: {:?}", e);
         }
     }
+
+    pub async fn emit_background_node_sync_update(
+        app_handle: &AppHandle,
+        payload: HashMap<String, String>,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::BackgroundNodeSyncUpdate,
+            payload,
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit BackgroundNodeSyncUpdate event: {:?}", e);
+        }
+    }
 }

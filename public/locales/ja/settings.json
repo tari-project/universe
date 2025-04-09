@@ -5,7 +5,6 @@
   "application-info": "アプリケーション情報",
   "applyInviteCode": "招待コードを適用",
   "cancel": "キャンセル",
-  "gpu-engine": "GPUエンジン",
   "change-language": "言語",
   "confirm": "確認",
   "confirm-action": "アクションを確認",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "GPUマイニングデバイス",
   "gpu-device-enabled-description": "特定のGPUデバイスを有効または無効にします。",
   "gpu-device-no-found": "⚠️ GPUデバイスが見つかりません",
+  "gpu-engine": "GPUエンジン",
   "gpu-mining-enabled": "GPUマイニング",
   "gpu-unavailable": "⚠️ ハードウェアがサポートしていないため、GPUが無効です",
   "hardware-status": "ハードウェアの状態",
@@ -56,6 +56,7 @@
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "マイナー",
   "mining-toggle-warning": "変更が適用される間、マイニングは一時停止されます。",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Moneroアドレスを入力",
     "title": "Moneroアドレス"
@@ -71,6 +73,10 @@
   "monero-seed-words": "Monero シードワード",
   "network": "ネットワーク",
   "no-entry-guard": "エントリーガードが接続されていません！",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "open-logs-directory": "ログディレクトリを開く",
   "p2pool-chain-tip": "チェーンの先端",
@@ -157,10 +163,5 @@
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",
-  "your-reference": "あなたの参照",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "あなたの参照"
 }

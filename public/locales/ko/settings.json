@@ -5,7 +5,6 @@
   "application-info": "애플리케이션 정보",
   "applyInviteCode": "초대 코드 적용",
   "cancel": "취소",
-  "gpu-engine": "GPU 엔진",
   "change-language": "언어",
   "confirm": "확인",
   "confirm-action": "작업 확인",
@@ -39,6 +38,7 @@
   "gpu-device-enabled": "GPU 채굴 장치",
   "gpu-device-enabled-description": "특정 GPU 장치를 활성화하거나 비활성화합니다.",
   "gpu-device-no-found": "⚠️ GPU 장치를 찾을 수 없습니다",
+  "gpu-engine": "GPU 엔진",
   "gpu-mining-enabled": "GPU 채굴",
   "gpu-unavailable": "⚠️ 하드웨어가 지원하지 않아 GPU가 비활성화되었습니다",
   "hardware-status": "하드웨어 상태",
@@ -56,6 +56,7 @@
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "mine-on-app-start": {
@@ -64,6 +65,7 @@
   },
   "miners": "마이너",
   "mining-toggle-warning": "변경 사항이 적용되는 동안 채굴이 일시 중지됩니다.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "모네로 주소 입력",
     "title": "모네로 주소"
@@ -71,6 +73,10 @@
   "monero-seed-words": "모네로 시드 단어",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
   "p2pool-chain-tip": "체인의 끝",
@@ -157,10 +163,5 @@
   "visual-mode": "시각 모드",
   "yes": "예",
   "your-feedback": "문제를 설명해 주세요",
-  "your-reference": "귀하의 참조",
-  "minotari-node": "Minotari Node",
-  "node-type": "Type",
-  "node-public-key": "Public key",
-  "node-public-address": "Public address",
-  "node-connection-address": "Connection address"
+  "your-reference": "귀하의 참조"
 }

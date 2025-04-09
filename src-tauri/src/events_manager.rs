@@ -334,4 +334,12 @@ impl EventsManager {
         let payload = ConfigWallet::content().await;
         EventsEmitter::emit_wallet_config_loaded(app, payload).await;
     }
+
+    pub async fn handle_background_node_sync_update(
+        &self,
+        app: &AppHandle,
+        progress_params: HashMap<String, String>,
+    ) {
+        EventsEmitter::emit_background_node_sync_update(app, progress_params).await;
+    }
 }
