@@ -41,11 +41,6 @@ export const useUiMiningStateMachine = () => {
         const interval = 2000; // 2 seconds
 
         const attemptStop = () => {
-            if (animationStatus === 'started') {
-                clearStopTimeout();
-                return;
-            }
-
             if (animationStatus === 'not-started') {
                 console.debug(getTowerLogPrefix('debug'), `Animation stopped: status=${animationStatus}`);
                 return;
