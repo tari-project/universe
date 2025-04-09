@@ -219,7 +219,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 self.app_configuration.use_tor,
                 tor_control_port,
                 Some(self.app_configuration.base_node_grpc_address.clone()),
-                self.app_handle.clone()
+                self.app_handle.clone(),
             )
             .await
         {

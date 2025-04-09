@@ -223,7 +223,7 @@ impl NodeAdapterService {
                 progress_params.insert("step".to_string(), "Block".to_string());
                 progress_params.insert(
                     "local_header_height".to_string(),
-                    sync_progress.local_height.to_string(),
+                    sync_progress.tip_height.to_string(),
                 );
                 progress_params.insert(
                     "tip_header_height".to_string(),

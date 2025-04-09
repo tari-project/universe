@@ -481,7 +481,10 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_background_node_sync_update(app_handle: &AppHandle, payload: HashMap::<String, String>) {
+    pub async fn emit_background_node_sync_update(
+        app_handle: &AppHandle,
+        payload: HashMap<String, String>,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::BackgroundNodeSyncUpdate,
