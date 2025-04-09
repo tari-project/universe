@@ -106,10 +106,4 @@ export const GlobalStyle = createGlobalStyle<{ $hideCanvas?: boolean }>`
         background: none;
         visibility: ${({ $hideCanvas }) => (!$hideCanvas ? 'visible' : 'hidden')};
     }
-
-    #root {
-        z-index: 1;
-        pointer-events: none;
-    }
-
 `;

@@ -41,4 +41,11 @@ export const AppContentContainer = styled(m.div).attrs({
 })`
     width: 100vw;
     height: 100vh;
+    z-index: 1;
+    position: relative;
+
+    pointer-events: none;
+    * > {
+        pointer-events: all;
+    }
 `;
