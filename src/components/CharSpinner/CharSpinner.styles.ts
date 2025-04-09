@@ -29,7 +29,7 @@ export const XTMWrapper = styled.span`
 export const SpinnerWrapper = styled(m.div)<Props>`
     column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '2px')};
     display: flex;
-    padding: 0 4px 0 0;
+    margin: 0 4px 0 0;
 `;
 
 export const CharacterWrapper = styled(m.div)<Props>`
@@ -55,7 +55,8 @@ export const Character = styled(m.div)<Props>`
     text-transform: lowercase;
     position: relative;
     letter-spacing: -0.08em;
-    width: max-content;
+    width: min-content;
+    padding: 0 0.01em 0 0;
     z-index: 1;
 
     // for the unit & decimal
@@ -63,8 +64,8 @@ export const Character = styled(m.div)<Props>`
     ${({ $decimal, $variant }) =>
         $decimal &&
         css`
-            width: ${$variant == 'simple' ? `4px` : 'auto'};
-            margin: 0 2px;
+            width: ${$variant == 'simple' ? `min-content` : 'auto'};
+            margin: 0 1px 0 2px;
         `}
     ${({ $unit, $fontSize }) =>
         $unit &&
