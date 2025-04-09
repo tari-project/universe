@@ -28,6 +28,7 @@ use std::time::Duration;
 use chrono::Utc;
 use futures::SinkExt;
 use futures::StreamExt;
+use log::trace;
 use log::{error, info};
 use serde::Deserialize;
 use serde::Serialize;
@@ -47,7 +48,6 @@ use tokio::time::sleep;
 use tokio_tungstenite::connect_async;
 use tokio_tungstenite::MaybeTlsStream;
 use tokio_tungstenite::WebSocketStream;
-use tokio_util::sync::CancellationToken;
 use tungstenite::Message;
 use tungstenite::Utf8Bytes;
 use urlencoding::encode;
@@ -374,10 +374,10 @@ async fn sender_task(
 async fn wait_for_close_signal(mut channel: broadcast::Receiver<bool>) {
     match channel.recv().await {
         Ok(_) => {
-            info!(target:LOG_TARGET,"received websocket_manager stop signal");
+            trace!(target:LOG_TARGET,"received websocket_manager stop signal");
         }
         Err(_) => {
-            info!(target:LOG_TARGET,"received websocket_manager stop signal");
+            trace!(target:LOG_TARGET,"received websocket_manager stop signal");
         }
     }
 }
