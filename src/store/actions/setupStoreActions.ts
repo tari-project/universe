@@ -41,7 +41,7 @@ export const handleMiningUnlocked = async () => {
     const mine_on_app_start = useConfigMiningStore.getState().mine_on_app_start;
     const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
     const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
-    if (mine_on_app_start && useSetupStore.getState().miningUnlocked && (cpu_mining_enabled || gpu_mining_enabled)) {
+    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
         await startMining();
     }
 };

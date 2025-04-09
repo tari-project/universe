@@ -41,7 +41,7 @@ export type ProgressStateUpdateEvent =
           payload: ProgressTrackerUpdatePayload;
       };
 
-// const LOG_EVENT_TYPES = ['Core', 'Node', 'Hardware', 'Unknown'];
+// const LOG_EVENT_TYPES = ['Core', 'Node', 'Wallet', 'Hardware', 'Unknown'];
 const LOG_EVENT_TYPES = [''];
 
 export const useProgressEventsListener = () => {

@@ -19,19 +19,19 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const showModal = useUIStore((state) => state.showResumeAppModal);
 
     const currentPhaseToShow = useMemo(() => {
-        if (walletPhaseInfoPayload?.is_complete) {
+        if (walletPhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {
             return unknownPhaseInfoPayload;
         }
 
-        if (hardwarePhaseInfoPayload?.is_complete) {
+        if (hardwarePhaseInfoPayload?.is_complete && Boolean(walletPhaseInfoPayload)) {
             return walletPhaseInfoPayload;
         }
 
-        if (nodePhaseInfoPayload?.is_complete) {
+        if (nodePhaseInfoPayload?.is_complete && Boolean(hardwarePhaseInfoPayload)) {
             return hardwarePhaseInfoPayload;
         }
 
-        if (corePhaseInfoPayload?.is_complete) {
+        if (corePhaseInfoPayload?.is_complete && Boolean(nodePhaseInfoPayload)) {
             return nodePhaseInfoPayload;
         }
 
