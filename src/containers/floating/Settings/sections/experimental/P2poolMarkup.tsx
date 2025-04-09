@@ -15,7 +15,7 @@ import {
     SettingsGroupAction,
 } from '../../components/SettingsGroup.styles';
 import { invoke } from '@tauri-apps/api/core';
-import { setCustomStatsServerPort, setDialogToShow, useConfigCoreStore } from '@app/store';
+import { setCustomStatsServerPort, useConfigCoreStore } from '@app/store';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
