@@ -90,7 +90,9 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         return;
     }
 
+    setDialogToShow(undefined);
     setShowResumeAppModal(true);
+    setIsSettingsOpen(false);
 
     for (const phase of phasesToRestart) {
         switch (phase) {

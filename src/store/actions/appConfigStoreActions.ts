@@ -10,7 +10,7 @@ import {
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
+import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
@@ -189,11 +189,15 @@ export const setMode = async (params: SetModeProps) => {
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
     useConfigWalletStore.setState({ monero_address: moneroAddress });
-    invoke('set_monero_address', { moneroAddress }).catch((e) => {
-        console.error('Could not set Monero address', e);
-        setError('Could not change Monero address');
-        useConfigWalletStore.setState({ monero_address: prevMoneroAddress });
-    });
+    invoke('set_monero_address', { moneroAddress })
+        .then(() => {
+            restartMining();
+        })
+        .catch((e) => {
+            console.error('Could not set Monero address', e);
+            setError('Could not change Monero address');
+            useConfigWalletStore.setState({ monero_address: prevMoneroAddress });
+        });
 };
 export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: string[]) => {
     const prevMoneroNodes = useConfigCoreStore.getState().mmproxy_monero_nodes;

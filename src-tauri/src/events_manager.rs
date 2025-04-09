@@ -190,10 +190,14 @@ impl EventsManager {
         EventsEmitter::emit_detected_available_gpu_engines(app, engines, selected_engine).await;
     }
 
-    #[allow(dead_code)]
     pub async fn handle_restarting_phases(&self, app: &AppHandle, payload: Vec<SetupPhase>) {
         EventsEmitter::emit_restarting_phases(app, payload).await;
     }
+
+    pub async fn handle_ask_for_restart(&self, app: &AppHandle) {
+        EventsEmitter::emit_ask_for_restart(app).await;
+    }
+
     pub async fn handle_network_status_update(
         &self,
         app: &AppHandle,

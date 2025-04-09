@@ -127,7 +127,6 @@ impl EventsEmitter {
         }
     }
 
-    #[allow(dead_code)]
     pub async fn emit_restarting_phases(app_handle: &AppHandle, payload: Vec<SetupPhase>) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
@@ -136,6 +135,17 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit RestartingPhases event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_ask_for_restart(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::AskForRestart,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit AskForRestart event: {:?}", e);
         }
     }
 

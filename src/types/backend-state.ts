@@ -151,4 +151,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'RestartingPhases';
           payload: SetupPhase[];
+      }
+    | {
+          event_type: 'AskForRestart';
+          payload: undefined;
       };

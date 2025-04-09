@@ -104,21 +104,8 @@ impl ConfigImpl for ConfigMining {
         }
     }
 
-    async fn _send_telemetry_event(
-        &self,
-        event_name: &str,
-        event_data: serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        if let Some(app_handle) = self.app_handle.read().await.deref() {
-            let app_state = app_handle.state::<UniverseAppState>();
-            app_state
-                .telemetry_service
-                .read()
-                .await
-                .send(event_name.to_string(), event_data)
-                .await?;
-        }
-        Ok(())
+    async fn _get_app_handle(&self) -> Option<AppHandle> {
+        self.app_handle.read().await.clone()
     }
 
     async fn load_app_handle(&mut self, app_handle: AppHandle) {

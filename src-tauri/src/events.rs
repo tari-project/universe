@@ -44,6 +44,7 @@ pub enum EventType {
     DetectedDevices,
     DetectedAvailableGpuEngines,
     RestartingPhases,
+    AskForRestart,
     ShowReleaseNotes,
     #[cfg(target_os = "macos")]
     CriticalProblem,
