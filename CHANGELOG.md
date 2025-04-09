@@ -1,8 +1,21 @@
+🌟 TARI UNIVERSE v0.9.841 — The Shell Stirs
+
+_April 9, 2025_
+
+Hey fam,
+
+Welcome to Tari Universe v0.9.841. This release includes a flurry of bug fixes, tweaks, performance enhancements and other magic that makes Tari Universe better then its ever been before. It also serves as a foundation for a series of larger forthcoming upgrades in the pipeline. Thank you for all of your help and support testing every release of Tari Universe. Tari Universe, and the Tari network exist because of you 💜🐢
+
+🚀 What's new:
+- 🔧 Stability & performance improvements
+- 🔐 WebSocket, auth, and airdrop handling fixes
+- 📦 Installer & deployment fixes
+
+--
+
 🌟 TARI UNIVERSE v0.9.827: The Great Pool Expansion
 
 _March 27, 2025_
-
-🔄 Rolling out via auto-update
 
 Hey Tari Fam 👋,
 🚨 IMPORTANT! v0.9.827 is a hard fork of p2pool — meaning you must update to avoid degraded mining performance as other peers upgrade.
