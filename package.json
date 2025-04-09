@@ -4,7 +4,7 @@
     "version": "0.9.840",
     "type": "module",
     "scripts": {
-        "dev": "vite dev --force",
+        "dev": "vite dev",
         "build": "tsc && vite build",
         "preview": "vite preview",
         "tauri": "tauri",
@@ -17,6 +17,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.5",
         "@lottiefiles/dotlottie-react": "^0.13.2",
+        "@tari-project/tari-tower": "^0.0.30",
         "@tauri-apps/api": "^2.4.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
         "@tauri-apps/plugin-os": "^2.2.1",
