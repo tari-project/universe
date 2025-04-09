@@ -104,7 +104,7 @@ impl ProgressTrackerInner {
     pub async fn update(
         &self,
         title: String,
-        title_params: Option<HashMap<String, String>>,
+        _title_params: Option<HashMap<String, String>>,
         progress: u64,
     ) {
         let progress_percentage = (self.min as f64
