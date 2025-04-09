@@ -4,7 +4,7 @@ import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-pro
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
-import { useBlockchainVisualisationStore, useConfigUIStore } from '@app/store';
+import { useConfigUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
@@ -21,7 +21,7 @@ export const useUiMiningStateMachine = () => {
     const notStarted = stateTrigger === 'not-started';
     const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
     const shouldStop = !isMining && !notStarted && !preventStop;
-    const shouldStart = isMining && notStarted && !isResuming;
+    const shouldStart = isMining && notStarted;
 
     const noVisualMode = !visualMode || visualModeLoading;
 

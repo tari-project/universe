@@ -1011,7 +1011,7 @@ fn main() {
         RemoteNodeAdapter::new(base_node_watch_tx.clone()),
         shutdown.to_signal(),
         // TODO: Decide who and how controls it
-        NodeType::Remote,
+        NodeType::RemoteUntilLocal,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
