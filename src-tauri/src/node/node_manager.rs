@@ -475,8 +475,8 @@ impl NodeManager {
             let current_service = self.get_current_service().await?;
             match current_service
                 .wait_synced(
-                    &progress_params_tx,
-                    &progress_percentage_tx,
+                    progress_params_tx,
+                    progress_percentage_tx,
                     self.shutdown.clone(),
                 )
                 .await

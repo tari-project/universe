@@ -162,6 +162,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         });
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<Option<NodeSetupPhaseOutput>, Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;

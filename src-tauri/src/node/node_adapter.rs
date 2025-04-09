@@ -22,8 +22,6 @@
 
 use crate::node::node_manager::NodeType;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
-use crate::progress_trackers::progress_plans::ProgressSetupNodePlan;
-use crate::progress_trackers::progress_stepper::ChanneledStepUpdate;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::{
@@ -218,7 +216,8 @@ impl NodeAdapterService {
                     "tip_height".to_string(),
                     sync_progress.tip_height.to_string(),
                 );
-            } else if sync_progress.state == SyncState::Block as i32 {
+            }
+            if sync_progress.state == SyncState::Block as i32 {
                 percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
                 progress_params.insert("step".to_string(), "Block".to_string());
                 progress_params.insert(
