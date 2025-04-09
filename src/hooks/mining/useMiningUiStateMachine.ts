@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
+import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-project/tari-tower';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
@@ -47,19 +47,21 @@ export const useUiMiningStateMachine = () => {
             }
 
             if (animationStatus === 'not-started') {
-                console.debug(`tari-tower debug |Animation stopped: status=${animationStatus}`);
+                console.debug(getTowerLogPrefix('debug'), `Animation stopped: status=${animationStatus}`);
                 return;
             }
 
             if (retryCount >= maxRetries) {
                 console.debug(
-                    `tari-tower debug | Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
+                    getTowerLogPrefix('debug'),
+                    `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
                 );
                 return;
             }
 
             console.debug(
-                `tari-tower debug | Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
+                getTowerLogPrefix('debug'),
+                `Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
             );
             setAnimationState('stop');
             retryCount++;
