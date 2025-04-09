@@ -154,6 +154,10 @@ export type BackendStateUpdateEvent =
           payload: SetupPhase[];
       }
     | {
+          event_type: 'AskForRestart';
+          payload: undefined;
+      }
+    | {
           event_type: 'BackgroundNodeSyncUpdate';
           payload: BackgroundNodeSyncUpdatePayload;
       };

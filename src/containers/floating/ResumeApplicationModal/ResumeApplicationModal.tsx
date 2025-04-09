@@ -81,7 +81,7 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
 
     return (
         <AnimatePresence>
-            {showModal && (
+            {showModal && Boolean(currentPhaseToShow) && (
                 <Wrapper>
                     <TextWrapper>
                         <Title>{t(`phase-title.${setupPhaseTitle}`)}</Title>

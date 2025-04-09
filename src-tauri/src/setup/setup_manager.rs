@@ -40,7 +40,7 @@ use crate::{
     UniverseAppState,
 };
 use log::{debug, error, info};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
@@ -55,7 +55,7 @@ static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 
-#[derive(Clone, PartialEq, Eq, Hash, Serialize)]
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetupPhase {
     Core,
     Wallet,
@@ -130,14 +130,13 @@ pub struct SetupManager {
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
-    #[allow(dead_code)]
-    remote_node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
     is_initial_setup_finished: Mutex<bool>,
+    phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     pub hardware_phase_output: Sender<HardwareSetupPhaseOutput>,
     app_handle: Mutex<Option<AppHandle>>,
 }
@@ -570,5 +569,27 @@ impl SetupManager {
             }
 
         });
+    }
+
+    pub async fn add_phases_to_restart_queue(&self, phases: Vec<SetupPhase>) {
+        let mut queue = self.phases_to_restart_queue.lock().await;
+        for phase in phases {
+            if !queue.contains(&phase) {
+                queue.push(phase);
+            }
+        }
+        info!(target: LOG_TARGET, "Phases to restart queue: {:?}", queue);
+    }
+
+    pub async fn restart_phases_from_queue(&self, app_handle: AppHandle) {
+        let mut queue = self.phases_to_restart_queue.lock().await;
+        if queue.is_empty() {
+            return;
+        }
+        info!(target: LOG_TARGET, "Restarting phases from queue: {:?}", queue);
+        self.shutdown_phases(app_handle.clone(), queue.clone())
+            .await;
+        self.resume_phases(app_handle.clone(), queue.clone()).await;
+        queue.clear();
     }
 }

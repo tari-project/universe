@@ -41,6 +41,7 @@ use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
+use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -505,9 +506,13 @@ pub async fn set_p2pool_stats_server_port(
         }
     };
 
-    ConfigCore::update_field(ConfigCoreContent::set_p2pool_stats_server_port, port)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field_with_restart(
+        ConfigCoreContent::set_p2pool_stats_server_port,
+        port,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
@@ -1170,9 +1175,13 @@ pub async fn set_mode(
 #[tauri::command]
 pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigWallet::update_field(ConfigWalletContent::set_monero_address, monero_address)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigWallet::update_field_with_restart(
+        ConfigWalletContent::set_monero_address,
+        monero_address,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
@@ -1186,16 +1195,18 @@ pub async fn set_monerod_config(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
-    ConfigCore::update_field(
+    ConfigCore::update_field_with_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
+        vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    ConfigCore::update_field(
+    ConfigCore::update_field_with_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
+        vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
@@ -1219,9 +1230,13 @@ pub async fn set_p2pool_enabled(
         .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
         .await;
     drop(telemetry_service);
-    ConfigCore::update_field(ConfigCoreContent::set_is_p2pool_enabled, p2pool_enabled)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field_with_restart(
+        ConfigCoreContent::set_is_p2pool_enabled,
+        p2pool_enabled,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
@@ -1330,6 +1345,14 @@ pub async fn set_tor_config(
         .await
         .map_err(|e| e.to_string())?;
 
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Unknown,
+        ])
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
     }
@@ -1349,9 +1372,13 @@ pub async fn set_use_tor(
         .send("set_use_tor".to_string(), json!(use_tor))
         .await;
     drop(telemetry_service);
-    ConfigCore::update_field(ConfigCoreContent::set_use_tor, use_tor)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+    ConfigCore::update_field_with_restart(
+        ConfigCoreContent::set_use_tor,
+        use_tor,
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     let config_dir = app
         .path()
@@ -1824,4 +1851,13 @@ pub fn verify_address_for_send(
 pub fn format_micro_minotari(amount: String) -> Result<String, String> {
     let mm_amount = MicroMinotari::from_str(&amount).map_err(|e| e.to_string())?;
     Ok(format!("{}", mm_amount))
+}
+
+#[tauri::command]
+pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
+    Ok(())
 }

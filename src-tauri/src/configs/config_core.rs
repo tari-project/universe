@@ -20,18 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use anyhow::Ok;
 use getset::{Getters, Setters};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::{ops::Deref, str::FromStr, sync::LazyLock, time::SystemTime};
+use std::{str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::{
-    app_config::AirdropTokens, internal_wallet::generate_password, AppConfig, UniverseAppState,
-};
+use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -110,21 +107,8 @@ impl ConfigImpl for ConfigCore {
         }
     }
 
-    async fn _send_telemetry_event(
-        &self,
-        event_name: &str,
-        event_data: serde_json::Value,
-    ) -> Result<(), anyhow::Error> {
-        if let Some(app_handle) = self.app_handle.read().await.deref() {
-            let app_state = app_handle.state::<UniverseAppState>();
-            app_state
-                .telemetry_service
-                .read()
-                .await
-                .send(event_name.to_string(), event_data)
-                .await?;
-        }
-        Ok(())
+    async fn _get_app_handle(&self) -> Option<AppHandle> {
+        self.app_handle.read().await.clone()
     }
 
     async fn load_app_handle(&mut self, app_handle: AppHandle) {

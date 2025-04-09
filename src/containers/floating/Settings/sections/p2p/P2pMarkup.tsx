@@ -29,7 +29,6 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
         async (event: React.ChangeEvent<HTMLInputElement>) => {
             await setP2poolEnabled(event.target.checked);
             setDisabledStats(!event.target.checked);
-            setDialogToShow('restart');
         },
         [setDisabledStats]
     );

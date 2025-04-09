@@ -28,10 +28,13 @@ use log::debug;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tari_common::configuration::Network;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
-use crate::APPLICATION_FOLDER_ID;
+use crate::{
+    setup::setup_manager::{SetupManager, SetupPhase},
+    UniverseAppState, APPLICATION_FOLDER_ID,
+};
 
 #[allow(dead_code)]
 pub trait ConfigContentImpl: Clone + Default + Serialize + for<'de> Deserialize<'de> {}
@@ -46,11 +49,7 @@ pub trait ConfigImpl {
 
     fn new() -> Self;
     fn current() -> &'static RwLock<Self>;
-    async fn _send_telemetry_event(
-        &self,
-        event_name: &str,
-        event_data: serde_json::Value,
-    ) -> Result<(), Error>;
+    async fn _get_app_handle(&self) -> Option<AppHandle>;
     fn _get_name() -> String;
     fn _get_content(&self) -> &Self::Config;
     fn _get_content_mut(&mut self) -> &mut Self::Config;
@@ -64,6 +63,34 @@ pub trait ConfigImpl {
             .join(Network::get_current_or_user_setting_or_default().as_key_str())
             .join(Self::_get_name())
     }
+    async fn _send_telemetry_event(
+        &self,
+        event_name: &str,
+        event_data: serde_json::Value,
+    ) -> Result<(), Error> {
+        if let Some(app_handle) = self._get_app_handle().await {
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .telemetry_service
+                .read()
+                .await
+                .send(event_name.to_string(), event_data)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn _send_restart_event(&self) -> Result<(), Error> {
+        if let Some(app_handle) = self._get_app_handle().await {
+            let app_state = app_handle.state::<UniverseAppState>();
+            app_state
+                .events_manager
+                .handle_ask_for_restart(&app_handle)
+                .await;
+        }
+        Ok(())
+    }
+
     fn _save_config(&self) -> Result<(), Error> {
         let config_path = Self::_get_config_path();
         if let Some(parent) = config_path.parent() {
@@ -114,6 +141,24 @@ pub trait ConfigImpl {
                 }),
             )
             .await?;
+        Ok(())
+    }
+
+    async fn update_field_with_restart<F, I: Debug>(
+        setter_callback: F,
+        value: I,
+        phases_to_restart: Vec<SetupPhase>,
+    ) -> Result<(), Error>
+    where
+        I: Serialize + Clone,
+        F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
+        Self: 'static,
+    {
+        Self::update_field(setter_callback, value).await?;
+        Self::current().read().await._send_restart_event().await?;
+        SetupManager::get_instance()
+            .add_phases_to_restart_queue(phases_to_restart)
+            .await;
         Ok(())
     }
 }

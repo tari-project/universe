@@ -11,7 +11,11 @@ import {
     setGpuDevices,
     setGpuMiningStatus,
 } from '@app/store/actions/miningMetricsStoreActions';
-import { handleCloseSplashscreen, setShowExternalDependenciesDialog } from '@app/store/actions/uiStoreActions';
+import {
+    handleAskForRestart,
+    handleCloseSplashscreen,
+    setShowExternalDependenciesDialog,
+} from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
 import {
     handleRestartingPhases,
@@ -158,6 +162,9 @@ const useTauriEventsListener = () => {
                         break;
                     case 'RestartingPhases':
                         handleRestartingPhases(event.payload);
+                        break;
+                    case 'AskForRestart':
+                        handleAskForRestart();
                         break;
                     case 'BackgroundNodeSyncUpdate':
                         setNodeStoreState({

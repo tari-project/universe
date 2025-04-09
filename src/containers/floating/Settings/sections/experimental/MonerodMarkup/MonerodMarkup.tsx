@@ -55,9 +55,7 @@ const MonerodMarkup = () => {
         !errors.monero_nodes?.length;
 
     const onSave = async (formValues: FormValues) => {
-        setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes).then(() => {
-            setDialogToShow('restart');
-        });
+        await setMonerodConfig(formValues.use_monero_fail, formValues.monero_nodes);
     };
 
     return (

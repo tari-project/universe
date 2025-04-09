@@ -45,7 +45,6 @@ const P2poolMarkup = () => {
         } else {
             console.error('P2Pool unhandled case', editedCustomStatsServerPort);
         }
-        setDialogToShow('restart');
     }, [isRandomStatsServerPort, editedCustomStatsServerPort]);
 
     const isSaveButtonVisible = useMemo(() => {

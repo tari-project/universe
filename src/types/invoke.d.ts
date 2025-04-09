@@ -12,6 +12,7 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
+import { SetupPhase } from './backend-state';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -109,4 +110,5 @@ declare module '@tauri-apps/api/core' {
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
     function invoke(param: 'format_micro_minotari', payload: { amount: string }): Promise<string>;
+    function invoke(param: 'trigger_phases_restart'): Promise<void>;
 }

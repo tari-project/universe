@@ -13,7 +13,6 @@ const MoneroAddressMarkup = () => {
 
     const handleMoneroAddressChange = useCallback(async (moneroAddress: string) => {
         await setMoneroAddress(moneroAddress);
-        setDialogToShow('restart');
     }, []);
 
     return (
