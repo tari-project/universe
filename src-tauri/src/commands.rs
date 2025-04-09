@@ -409,7 +409,7 @@ pub async fn get_network(
 pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if *ConfigWallet::content().await.monero_address_is_generated() {
+    if !*ConfigWallet::content().await.monero_address_is_generated() {
         return Err(
             "Monero seed words are not available when a Monero address is provided".to_string(),
         );
