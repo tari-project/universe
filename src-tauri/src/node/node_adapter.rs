@@ -191,7 +191,8 @@ impl NodeAdapterService {
                     "required_peers".to_string(),
                     self.required_sync_peers.to_string(),
                 );
-            } else if sync_progress.state == SyncState::Header as i32 {
+            }
+            if sync_progress.state == SyncState::Header as i32 {
                 percentage = sync_progress.local_height as f64 / sync_progress.tip_height as f64;
                 progress_params.insert("step".to_string(), "Header".to_string());
                 progress_params.insert(
