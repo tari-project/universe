@@ -11,7 +11,6 @@ export const useUiMiningStateMachine = () => {
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
-    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
@@ -21,6 +20,7 @@ export const useUiMiningStateMachine = () => {
     const forceAnimationStop = useCallback(() => {
         let retryCount = 0;
         const maxRetries = 10;
+        const interval = 1000; // 1 second
         let timeoutId: NodeJS.Timeout;
 
         const attemptStop = () => {
@@ -40,10 +40,12 @@ export const useUiMiningStateMachine = () => {
 
             timeoutId = setTimeout(() => {
                 attemptStop();
-            }, 1000);
+            }, interval);
         };
 
-        attemptStop();
+        timeoutId = setTimeout(() => {
+            attemptStop();
+        }, interval);
 
         return () => {
             if (timeoutId) {
@@ -59,18 +61,6 @@ export const useUiMiningStateMachine = () => {
 
         if (shouldStopAnimation) {
             forceAnimationStop();
-        } else if (isResuming) {
-            setAnimationState('start');
-            console.debug(`Animation resuming: status=${animationStatus}`);
         }
-    }, [
-        isChangingMode,
-        isMining,
-        isMiningInitiated,
-        isResuming,
-        setupComplete,
-        visualMode,
-        visualModeLoading,
-        forceAnimationStop,
-    ]);
+    }, [isChangingMode, isMining, isMiningInitiated, setupComplete, visualMode, visualModeLoading, forceAnimationStop]);
 };

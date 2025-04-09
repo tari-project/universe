@@ -45,6 +45,7 @@ export default function MiningButton() {
             setAnimationState('start');
         } else {
             await stopMining();
+            setAnimationState('stop');
         }
     }, [isMining]);
 
