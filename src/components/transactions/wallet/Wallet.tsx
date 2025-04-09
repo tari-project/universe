@@ -16,6 +16,9 @@ import { useCopyToClipboard } from '@app/hooks/index.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { SendSVG } from '@app/assets/icons/send.tsx';
 import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
+import { usePaperWalletStore } from '@app/store';
+import { Button } from '@app/components/elements/buttons/Button';
+import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { Wrapper } from './wallet.styles.ts';
 
 interface Props {
@@ -23,10 +26,13 @@ interface Props {
     setSection: (section: string) => void;
 }
 
+const environment = import.meta.env.MODE;
+
 export default function Wallet({ section, setSection }: Props) {
-    const { t } = useTranslation(['wallet', 'common']);
+    const { t } = useTranslation(['wallet', 'common', 'sidebar']);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
 
     const displayAddress = truncateMiddle(walletAddress, 4);
 
@@ -47,26 +53,40 @@ export default function Wallet({ section, setSection }: Props) {
             <HistoryList />
 
             <BottomNavWrapper>
-                <NavButton
-                    onClick={() => setSection('send')}
-                    $isActive={section === 'send'}
-                    aria-selected={section === 'send'}
-                >
-                    <NavButtonContent>
-                        <SendSVG />
-                        {t('tabs.send')}
-                    </NavButtonContent>
-                </NavButton>
-                <NavButton
-                    onClick={() => setSection('receive')}
-                    $isActive={section === 'receive'}
-                    aria-selected={section === 'receive'}
-                >
-                    <NavButtonContent>
-                        <ReceiveSVG />
-                        {t('tabs.receive')}
-                    </NavButtonContent>
-                </NavButton>
+                {environment === 'development' ? (
+                    <>
+                        <NavButton
+                            onClick={() => setSection('send')}
+                            $isActive={section === 'send'}
+                            aria-selected={section === 'send'}
+                        >
+                            <NavButtonContent>
+                                <SendSVG />
+                                {t('tabs.send')}
+                            </NavButtonContent>
+                        </NavButton>
+                        <NavButton
+                            onClick={() => setSection('receive')}
+                            $isActive={section === 'receive'}
+                            aria-selected={section === 'receive'}
+                        >
+                            <NavButtonContent>
+                                <ReceiveSVG />
+                                {t('tabs.receive')}
+                            </NavButtonContent>
+                        </NavButton>
+                    </>
+                ) : (
+                    <SyncTooltip
+                        title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
+                        text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
+                        trigger={
+                            <Button fluid onClick={() => setShowPaperWalletModal(true)}>
+                                {t('paper-wallet-button', { ns: 'sidebar' })}
+                            </Button>
+                        }
+                    />
+                )}
             </BottomNavWrapper>
         </Wrapper>
     );
