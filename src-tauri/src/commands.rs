@@ -56,7 +56,7 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
 use std::str::FromStr;
@@ -489,17 +489,7 @@ pub async fn get_p2pool_connections(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_stats_server_port(
-    port: Option<u16>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_p2pool_stats_server_port".to_string(), json!(port))
-        .await;
-    drop(telemetry_service);
-
+pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
     if let Some(port) = port {
         if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
@@ -909,7 +899,6 @@ pub async fn send_feedback(
 
 #[tauri::command]
 pub async fn set_allow_telemetry(allow_telemetry: bool) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[set_allow_telemetry] called with flag: {:?}", allow_telemetry);
     ConfigCore::update_field(ConfigCoreContent::set_allow_telemetry, allow_telemetry)
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -934,19 +923,7 @@ pub async fn send_data_telemetry_service(
 }
 
 #[tauri::command]
-pub async fn set_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-    application_language: String,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_application_language] called with language: {}", application_language);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_application_language".to_string(),
-            json!(application_language.clone()),
-        )
-        .await;
-    drop(telemetry_service);
+pub async fn set_application_language(application_language: String) -> Result<(), String> {
     ConfigUI::update_field(
         ConfigUIContent::set_application_language,
         application_language,
@@ -958,20 +935,8 @@ pub async fn set_application_language(
 }
 
 #[tauri::command]
-pub async fn set_auto_update(
-    auto_update: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_auto_update".to_string(),
-            json!({ "auto_update": auto_update }),
-        )
-        .await;
-    drop(telemetry_service);
     ConfigCore::update_field(ConfigCoreContent::set_auto_update, auto_update)
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -984,17 +949,8 @@ pub async fn set_auto_update(
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled<'r>(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled<'r>(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_cpu_mining_enabled".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
     let _unused =
         ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
 
@@ -1033,17 +989,8 @@ pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
 }
 
 #[tauri::command]
-pub async fn set_display_mode(
-    display_mode: &str,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_display_mode".to_string(), json!(display_mode))
-        .await;
-    drop(telemetry_service);
 
     if let Some(display_mode) = DisplayMode::from_str(display_mode) {
         ConfigUI::update_field(ConfigUIContent::set_display_mode, display_mode)
@@ -1080,17 +1027,8 @@ pub async fn toggle_device_exclusion(
 }
 
 #[tauri::command]
-pub async fn set_gpu_mining_enabled(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_gpu_mining_enabled".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
 
     ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, enabled)
         .await
@@ -1107,20 +1045,8 @@ pub async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
-pub async fn set_mine_on_app_start(
-    mine_on_app_start: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mine_on_app_start] called with flag: {:?}", mine_on_app_start);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_mine_on_app_start".to_string(),
-            json!(mine_on_app_start),
-        )
-        .await;
-    drop(telemetry_service);
     ConfigMining::update_field(
         ConfigMiningContent::set_mine_on_app_start,
         mine_on_app_start,
@@ -1224,12 +1150,6 @@ pub async fn set_p2pool_enabled(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
-        .await;
-    drop(telemetry_service);
     ConfigCore::update_field_with_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
@@ -1302,19 +1222,7 @@ pub async fn set_should_always_use_system_language(
 }
 
 #[tauri::command]
-pub async fn set_should_auto_launch(
-    should_auto_launch: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
-    info!(target: LOG_TARGET, "[set_should_auto_launch] called with flag: {:?}", should_auto_launch);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_should_auto_launch".to_string(),
-            json!(should_auto_launch),
-        )
-        .await;
-    drop(telemetry_service);
+pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), InvokeError> {
     ConfigCore::update_field(
         ConfigCoreContent::set_should_auto_launch,
         should_auto_launch,
@@ -1360,18 +1268,8 @@ pub async fn set_tor_config(
 }
 
 #[tauri::command]
-pub async fn set_use_tor(
-    use_tor: bool,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), InvokeError> {
+pub async fn set_use_tor(use_tor: bool, app: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_use_tor".to_string(), json!(use_tor))
-        .await;
-    drop(telemetry_service);
     ConfigCore::update_field_with_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
@@ -1399,17 +1297,8 @@ pub async fn set_use_tor(
 }
 
 #[tauri::command]
-pub async fn set_visual_mode<'r>(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_visual_mode".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
     ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
         .await
         .map_err(InvokeError::from_anyhow)?;
@@ -1702,12 +1591,6 @@ pub async fn set_pre_release(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_pre_release".to_string(), json!(pre_release))
-        .await;
-    drop(telemetry_service);
     ConfigCore::update_field(ConfigCoreContent::set_pre_release, pre_release)
         .await
         .map_err(InvokeError::from_anyhow)?;

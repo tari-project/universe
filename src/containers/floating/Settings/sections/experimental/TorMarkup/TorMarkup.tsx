@@ -22,7 +22,7 @@ import { TorDebug } from './TorDebug';
 import { ErrorTypography, StyledInput, TorSettingsContainer } from './TorMarkup.styles';
 
 import { type } from '@tauri-apps/plugin-os';
-import { setDialogToShow, setUseTor, useConfigCoreStore } from '@app/store';
+import { setUseTor, useConfigCoreStore } from '@app/store';
 
 interface EditedTorConfig {
     // it's also string here to prevent an empty value

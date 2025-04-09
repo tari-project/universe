@@ -11,7 +11,7 @@ import {
     SettingsGroupTitle,
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
-import { setDialogToShow, setP2poolEnabled, useConfigCoreStore } from '@app/store';
+import { setP2poolEnabled, useConfigCoreStore } from '@app/store';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 interface P2pMarkupProps {

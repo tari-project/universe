@@ -5,7 +5,7 @@ import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import MoneroAddressEditor from './MoneroAddressEditor';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles.ts';
-import { setDialogToShow, setMoneroAddress, useConfigWalletStore } from '@app/store';
+import { setMoneroAddress, useConfigWalletStore } from '@app/store';
 
 const MoneroAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
