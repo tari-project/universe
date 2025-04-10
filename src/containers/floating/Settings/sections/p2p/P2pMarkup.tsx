@@ -38,10 +38,7 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
             <SettingsGroup>
                 <SettingsGroupContent>
                     <SettingsGroupTitle>
-                        <Typography variant="h6">
-                            {t('pool-mining', { ns: 'settings' })}
-                            <b>&nbsp;({t('app-restart-required', { ns: 'settings' })})</b>
-                        </Typography>
+                        <Typography variant="h6">{t('pool-mining', { ns: 'settings' })}</Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
                 </SettingsGroupContent>

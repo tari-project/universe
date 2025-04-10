@@ -98,7 +98,7 @@ impl ConfigImpl for ConfigMining {
 
     fn new() -> Self {
         Self {
-            content: ConfigMining::_load_config().unwrap_or_default(),
+            content: ConfigMining::_initialize_config_content(),
             app_handle: RwLock::new(None),
         }
     }
@@ -112,7 +112,7 @@ impl ConfigImpl for ConfigMining {
     }
 
     fn _get_name() -> String {
-        "mining_config".to_string()
+        "config_mining".to_string()
     }
 
     fn _get_content(&self) -> &Self::Config {

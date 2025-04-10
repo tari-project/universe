@@ -501,11 +501,15 @@ async fn get_telemetry_data(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
-    let system = System::new_all();
+    let mut system = System::new_all();
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    // Refresh CPUs again.
+    system.refresh_cpu_usage();
     extra_data.insert(
         "cpu_usage".to_string(),
         system.global_cpu_usage().to_string(),
     );
+    system.refresh_memory();
     extra_data.insert(
         "total_memory".to_string(),
         system.total_memory().to_string(),

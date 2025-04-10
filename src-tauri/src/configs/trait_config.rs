@@ -24,7 +24,7 @@ use std::{any::Any, env::temp_dir, fmt::Debug, fs, path::PathBuf};
 
 use anyhow::Error;
 use dirs::config_dir;
-use log::debug;
+use log::{debug, info, warn};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tari_common::configuration::Network;
@@ -60,8 +60,9 @@ pub trait ConfigImpl {
         });
         config_dir
             .join(APPLICATION_FOLDER_ID)
+            .join("app_configs")
             .join(Network::get_current_or_user_setting_or_default().as_key_str())
-            .join(Self::_get_name())
+            .join(format!("{}.json", Self::_get_name()))
     }
     async fn _send_telemetry_event(&self, event_name: &str, event_data: serde_json::Value) {
         if let Some(app_handle) = self._get_app_handle().await {
@@ -86,13 +87,29 @@ pub trait ConfigImpl {
         Ok(())
     }
 
-    fn _save_config(&self) -> Result<(), Error> {
+    fn _initialize_config_content() -> Self::Config {
+        match Self::_load_config() {
+            Ok(config_content) => {
+                info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());
+                config_content
+            }
+            Err(_) => {
+                debug!(target: LOG_TARGET, "[{}] [load_config] creating new config content", Self::_get_name());
+                let config_content = Self::Config::default();
+                let _unused = Self::_save_config(config_content.clone()).inspect_err(|error| {
+                    warn!(target: LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
+                });
+                config_content
+            }
+        }
+    }
+
+    fn _save_config(config_content: Self::Config) -> Result<(), Error> {
         let config_path = Self::_get_config_path();
         if let Some(parent) = config_path.parent() {
             fs::create_dir_all(parent)?;
         }
-        let config_content = self._get_content();
-        let config_content_serialized = serde_json::to_string_pretty(config_content)?;
+        let config_content_serialized = serde_json::to_string_pretty(&config_content)?;
         fs::write(config_path, config_content_serialized)?;
         Ok(())
     }
@@ -121,7 +138,7 @@ pub trait ConfigImpl {
             Self::current().write().await._get_content_mut(),
             value.clone(),
         );
-        Self::current().write().await._save_config().inspect_err(|error|
+        Self::_save_config(Self::current().read().await._get_content().clone()).inspect_err(|error|
             debug!(target: LOG_TARGET, "[{}] [update_field] error: {:?}", Self::_get_name(), error)
         )?;
         Self::current()
@@ -138,7 +155,6 @@ pub trait ConfigImpl {
             .await;
         Ok(())
     }
-
     async fn update_field_with_restart<F, I>(
         setter_callback: F,
         value: I,
@@ -150,7 +166,6 @@ pub trait ConfigImpl {
         Self: 'static,
     {
         Self::update_field(setter_callback, value).await?;
-        Self::current().read().await._send_restart_event().await?;
         SetupManager::get_instance()
             .add_phases_to_restart_queue(phases_to_restart)
             .await;

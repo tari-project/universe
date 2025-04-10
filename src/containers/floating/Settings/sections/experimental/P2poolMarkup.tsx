@@ -82,10 +82,7 @@ const P2poolMarkup = () => {
                 <SettingsGroup>
                     <SettingsGroupContent>
                         <SettingsGroupTitle>
-                            <Typography variant="h6">
-                                {t('pool-mining')}
-                                <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
-                            </Typography>
+                            <Typography variant="h6">{t('pool-mining')}</Typography>
                         </SettingsGroupTitle>
                     </SettingsGroupContent>
                     <SettingsGroupAction style={{ alignItems: 'center', minHeight: 50 }}>

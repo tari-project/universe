@@ -444,7 +444,7 @@ pub struct WalletState {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 pub struct NetworkStatus {
     pub status: ConnectivityStatus,
     pub avg_latency_ms: u32,
@@ -471,7 +471,7 @@ impl NetworkStatus {
 }
 
 #[allow(dead_code)]
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Copy, Clone)]
 pub enum ConnectivityStatus {
     /// Initial connectivity status before the Connectivity actor has initialized.
     #[default]

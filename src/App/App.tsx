@@ -16,13 +16,11 @@ import { AppContentContainer } from './App.styles.ts';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { TOWER_CANVAS_ID } from '@app/store';
 
-const CurrentAppSection = function CurrentAppSection({
-    showSplashscreen,
-    isShuttingDown,
-}: {
+interface CurrentAppSectionProps {
     showSplashscreen?: boolean;
     isShuttingDown?: boolean;
-}) {
+}
+function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSectionProps) {
     const currentSection = useMemo(() => {
         const showMainView = !isShuttingDown && !showSplashscreen;
 
@@ -53,7 +51,7 @@ const CurrentAppSection = function CurrentAppSection({
     }, [showSplashscreen, isShuttingDown]);
 
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
-};
+}
 
 export default function App() {
     const isShuttingDown = useShuttingDown();

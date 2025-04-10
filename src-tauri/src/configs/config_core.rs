@@ -102,7 +102,7 @@ impl ConfigImpl for ConfigCore {
 
     fn new() -> Self {
         Self {
-            content: ConfigCore::_load_config().unwrap_or_default(),
+            content: ConfigCore::_initialize_config_content(),
             app_handle: RwLock::new(None),
         }
     }
@@ -116,7 +116,7 @@ impl ConfigImpl for ConfigCore {
     }
 
     fn _get_name() -> String {
-        "core_config".to_string()
+        "config_core".to_string()
     }
 
     fn _get_content(&self) -> &Self::Config {

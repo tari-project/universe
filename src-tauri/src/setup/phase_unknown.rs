@@ -200,22 +200,25 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        binary_resolver
-            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
-            .await?;
         progress_stepper
             .resolve_step(ProgressPlans::Unknown(
                 ProgressSetupUnknownPlan::BinariesMergeMiningProxy,
             ))
             .await;
+
         binary_resolver
-            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
+            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
             .await?;
+
         progress_stepper
             .resolve_step(ProgressPlans::Unknown(
                 ProgressSetupUnknownPlan::BinariesP2pool,
             ))
             .await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
+            .await?;
 
         if self.app_configuration.p2pool_enabled {
             progress_stepper

@@ -146,7 +146,6 @@ export const TorMarkup = () => {
                         <SettingsGroupTitle>
                             <Typography variant="h6">
                                 <Trans>Tor</Trans>
-                                <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
                             </Typography>
                         </SettingsGroupTitle>
                         <Typography>{t('setup-tor-settings')}</Typography>
