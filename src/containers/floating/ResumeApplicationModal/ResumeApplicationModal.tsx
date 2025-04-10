@@ -6,13 +6,15 @@ import { Text, Title, Wrapper, ProgressWrapper, TextWrapper } from './styles';
 import { useTranslation } from 'react-i18next';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { startMining, stopMining, setMiningControlsEnabled } from '@app/store/actions/miningStoreActions';
+import { useUIStore } from '@app/store';
 
 const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const { t } = useTranslation('components');
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
 
     const appResumePayload = useAppStateStore((state) => state.appResumePayload);
-    const showModal = appResumePayload?.is_resuming;
+    const connectionStatus = useUIStore((s) => s.connectionStatus);
+    const showModal = appResumePayload?.is_resuming && connectionStatus === 'connected';
     const wasMiningInitiatedRef = useRef(isMiningInitiated);
 
     useEffect(() => {

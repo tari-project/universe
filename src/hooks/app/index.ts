@@ -4,3 +4,4 @@ export * from './useLanguageResolver.ts';
 export * from './useListenForExternalDependencies.ts';
 export * from './useSetUp.ts';
 export * from './useShuttingDown.ts';
+export * from './useConnecionStatusListener.ts';

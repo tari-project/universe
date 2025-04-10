@@ -9,7 +9,7 @@ export const LockImage = styled('img')`
 `;
 
 export const Title = styled('div')`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     text-align: center;
     font-size: 30.8px;
     font-weight: 600;
