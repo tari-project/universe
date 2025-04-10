@@ -12,7 +12,6 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
-import { SetupPhase } from './backend-state';
 
 declare module '@tauri-apps/api/core' {
     function invoke(

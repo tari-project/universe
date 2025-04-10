@@ -154,14 +154,15 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        binary_resolver
-            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
-            .await?;
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(
                 ProgressSetupWalletPlan::BinariesWallet,
             ))
             .await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
+            .await?;
 
         progress_stepper
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))

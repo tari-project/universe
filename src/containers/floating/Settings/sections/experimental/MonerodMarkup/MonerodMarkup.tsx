@@ -65,7 +65,6 @@ const MonerodMarkup = () => {
                     <SettingsGroupTitle>
                         <Typography variant="h6">
                             <Trans>{t('use-dynamic-fail-data')}</Trans>
-                            <b>&nbsp;({t('app-restart-required').toUpperCase()})</b>
                         </Typography>
                     </SettingsGroupTitle>
                     <Typography>{t('set-dynamic-fail-data')}</Typography>

@@ -1,40 +1,9 @@
 import styled, { css } from 'styled-components';
-import * as m from 'motion/react-m';
-import { SB_WIDTH } from '@app/theme/styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
-export const TabsWrapper = styled.div`
-    width: 100%;
-    display: flex;
-`;
-export const Wrapper = styled.div`
-    width: 100%;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    position: relative;
-    overflow: hidden;
-    gap: 15px;
-`;
-
-export const GUTTER = 20;
-export const SB_CONTENT_WIDTH = SB_WIDTH - GUTTER * 2;
-export const Track = styled(m.div)`
-    display: flex;
-    flex-direction: row;
-    gap: 20px;
-    flex-shrink: 0;
-`;
-
-export const ItemWrapper = styled(m.div)`
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    max-height: 100%;
-`;
 export const HeaderLabel = styled(Typography).attrs({
     variant: 'p',
 })`
@@ -49,7 +18,7 @@ export const TabHeader = styled.div<{ $noBorder?: boolean }>`
     text-transform: capitalize;
     justify-content: space-between;
     align-items: center;
-    padding: 0px 0 15px 0;
+    padding: 0 0 15px 0;
     border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[10]}`};
 
     ${({ $noBorder }) =>

@@ -24,7 +24,7 @@ use log::error;
 use std::{sync::Arc, time::Duration};
 
 use crate::{
-    wallet_adapter::{TransactionInfo, WalletState},
+    wallet_adapter::{ConnectivityStatus, TransactionInfo, WalletState},
     wallet_manager::WalletManager,
 };
 use tokio::sync::watch::Receiver;
@@ -58,7 +58,15 @@ impl EventsService {
                             let wallet_state = wallet_state_watch_rx.borrow().clone();
                             if let Some(wallet_state) = wallet_state {
                                 if wallet_state.scanned_height >= block_height && block_height > 0 {
-                                    return Ok(wallet_state); // Wallet scan is complete
+                                    return Ok(wallet_state); // Scan is completed
+                                }
+                                if wallet_state.scanned_height == 0 {
+                                    let wallet_network = wallet_state.network.unwrap_or_default();
+                                    if let ConnectivityStatus::Online(_) = wallet_network.status {
+                                        // Scan completed before the wallet grpc server started
+                                        // scanned_height will be updated with the next mined block
+                                        return Ok(wallet_state);
+                                    };
                                 }
                                 continue;
                             }

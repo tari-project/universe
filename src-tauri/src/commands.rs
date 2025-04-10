@@ -496,20 +496,27 @@ pub async fn get_p2pool_connections(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_stats_server_port(port: Option<u16>) -> Result<(), InvokeError> {
+pub async fn set_p2pool_stats_server_port(
+    port: Option<u16>,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     if let Some(port) = port {
         if port.le(&1024) || port.gt(&65535) {
             return Err(InvokeError::from("Port must be between 1024 and 65535"));
         }
     };
 
-    ConfigCore::update_field_with_restart(
+    ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_p2pool_stats_server_port,
         port,
         vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
     Ok(())
 }
 
@@ -1106,15 +1113,22 @@ pub async fn set_mode(
 }
 
 #[tauri::command]
-pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeError> {
+pub async fn set_monero_address(
+    monero_address: String,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigWallet::update_field_with_restart(
+    ConfigWallet::update_field_requires_restart(
         ConfigWalletContent::set_monero_address,
         monero_address,
         vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
@@ -1125,10 +1139,11 @@ pub async fn set_monero_address(monero_address: String) -> Result<(), InvokeErro
 pub async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
+    app_handle: tauri::AppHandle,
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
-    ConfigCore::update_field_with_restart(
+    ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_monero_nodes,
         monero_nodes.clone(),
         vec![SetupPhase::Unknown],
@@ -1136,13 +1151,17 @@ pub async fn set_monerod_config(
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    ConfigCore::update_field_with_restart(
+    ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_mmproxy_use_monero_failover,
         use_monero_fail,
         vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
@@ -1152,15 +1171,22 @@ pub async fn set_monerod_config(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
+pub async fn set_p2pool_enabled(
+    p2pool_enabled: bool,
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigCore::update_field_with_restart(
+    ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
         p2pool_enabled,
         vec![SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
@@ -1218,7 +1244,7 @@ pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_tor_config] called with config: {:?}", config);
@@ -1236,6 +1262,10 @@ pub async fn set_tor_config(
         ])
         .await;
 
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
     }
@@ -1243,9 +1273,9 @@ pub async fn set_tor_config(
 }
 
 #[tauri::command]
-pub async fn set_use_tor(use_tor: bool, app: tauri::AppHandle) -> Result<(), InvokeError> {
+pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    ConfigCore::update_field_with_restart(
+    ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_use_tor,
         use_tor,
         vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
@@ -1253,7 +1283,11 @@ pub async fn set_use_tor(use_tor: bool, app: tauri::AppHandle) -> Result<(), Inv
     .await
     .map_err(InvokeError::from_anyhow)?;
 
-    let config_dir = app
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle.clone())
+        .await;
+
+    let config_dir = app_handle
         .path()
         .app_config_dir()
         .expect("Could not get config dir");

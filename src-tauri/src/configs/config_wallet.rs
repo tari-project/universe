@@ -76,7 +76,7 @@ impl ConfigImpl for ConfigWallet {
 
     fn new() -> Self {
         Self {
-            content: ConfigWallet::_load_config().unwrap_or_default(),
+            content: ConfigWallet::_initialize_config_content(),
             app_handle: RwLock::new(None),
         }
     }
@@ -90,7 +90,7 @@ impl ConfigImpl for ConfigWallet {
     }
 
     fn _get_name() -> String {
-        "wallet_config".to_string()
+        "config_wallet".to_string()
     }
 
     fn _get_content(&self) -> &Self::Config {
