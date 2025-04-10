@@ -987,6 +987,16 @@ fn main() {
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
 
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
