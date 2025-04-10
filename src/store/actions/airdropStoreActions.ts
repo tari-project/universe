@@ -242,6 +242,13 @@ export const fetchAllUserData = async () => {
             .then((data) => {
                 if (data?.user?.id) {
                     setUserDetails(data);
+                    setUserPoints({
+                        base: {
+                            gems: data.user.rank.gems,
+                            shells: data.user.rank.shells,
+                            hammers: data.user.rank.hammers,
+                        },
+                    });
                     return data.user;
                 } else {
                     console.error('Error fetching user details, logging out');
