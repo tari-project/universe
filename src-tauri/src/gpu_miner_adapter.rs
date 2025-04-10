@@ -50,7 +50,7 @@ use crate::{
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
 pub enum GpuNodeSource {
-    BaseNode { port: u16 },
+    BaseNode { grpc_address: String },
     P2Pool { port: u16 },
 }
 
@@ -116,6 +116,7 @@ impl GpuMinerAdapter {
 
 impl ProcessAdapter for GpuMinerAdapter {
     type StatusMonitor = GpuMinerStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -138,9 +139,9 @@ impl ProcessAdapter for GpuMinerAdapter {
             return Err(anyhow!("GpuMinerAdapter node_source is not set"));
         }
 
-        let tari_node_port = match self.node_source.as_ref() {
-            Some(GpuNodeSource::BaseNode { port }) => port,
-            Some(GpuNodeSource::P2Pool { port }) => port,
+        let tari_node_address = match self.node_source.as_ref() {
+            Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
+            Some(GpuNodeSource::P2Pool { port }) => format!("http://127.0.0.1:{}", port),
             None => {
                 return Err(anyhow!("GpuMinerAdapter node_source is not set"));
             }
@@ -164,7 +165,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--tari-address".to_string(),
             self.tari_address.to_base58(),
             "--tari-node-url".to_string(),
-            format!("http://127.0.0.1:{}", tari_node_port),
+            tari_node_address,
             "--config".to_string(),
             config_dir
                 .join("gpuminer")

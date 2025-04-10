@@ -20,12 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::{AirdropTokens, AppConfig, GpuThreads};
+use crate::app_config::{AirdropTokens, DisplayMode, GpuThreads, MiningMode};
 use crate::app_in_memory_config::{
     get_der_encode_pub_key, get_websocket_key, AirdropInMemoryConfig,
 };
 use crate::auto_launcher::AutoLauncher;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
+use crate::configs::config_mining::{ConfigMining, ConfigMiningContent};
+use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
@@ -35,10 +40,12 @@ use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
 use crate::p2pool::models::{Connections, P2poolStats};
-use crate::progress_tracker::ProgressTracker;
+use crate::progress_tracker_old::ProgressTracker;
+use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
+use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::utils::shutdown_utils::stop_all_processes;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -49,16 +56,19 @@ use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tauri::{Emitter, Manager, PhysicalPosition, PhysicalSize};
+use tari_common_types::tari_address::TariAddressFeatures;
+use tari_core::transactions::tari_amount::MicroMinotari;
+use tauri::ipc::InvokeError;
+use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
-use tokio::time;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
 const LOG_TARGET: &str = "tari::universe::commands";
@@ -194,37 +204,20 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
     FRONTEND_READY_CALLED.store(true, Ordering::SeqCst);
 
     let app_handle = app.clone();
-    tauri::async_runtime::spawn(async move {
-        let state = app_handle.state::<UniverseAppState>().clone();
-        let setup_complete_clone = state.is_setup_finished.read().await;
-        let missing_dependencies = state.missing_dependencies.read().await;
-        let setup_complete_value = *setup_complete_clone;
-
-        let prog = ProgressTracker::new(app_handle.clone(), None);
-        prog.send_last_action("".to_string()).await;
-
-        time::sleep(Duration::from_secs(3)).await;
-        app_handle
-            .emit("app_ready", setup_complete_value)
-            .expect("Could not emit event 'app_ready'");
-
-        if let Err(e) = state
-            .updates_manager
-            .init_periodic_updates(app.clone())
-            .await
-        {
-            error!(target: LOG_TARGET, "Failed to init periodic updates: {}", e);
-        }
-
-        let has_missing = missing_dependencies.is_some();
-        let external_dependencies = missing_dependencies.clone();
-        if has_missing {
-            app_handle
-                .emit("missing-applications", external_dependencies)
-                .expect("Could not emit event 'missing-applications");
-        }
-        FrontendReadyChannel::current().set_ready();
-    });
+    FrontendReadyChannel::current().set_ready();
+    TasksTrackers::current()
+        .common
+        .get_task_tracker()
+        .await
+        .spawn(async move {
+            let app_state = app_handle.state::<UniverseAppState>();
+            // Give the splash screen a few seconds to show before closing it
+            sleep(Duration::from_secs(3));
+            app_state
+                .events_manager
+                .handle_close_splash_screen(&app_handle)
+                .await;
+        });
 }
 
 #[tauri::command]
@@ -255,7 +248,7 @@ pub async fn download_and_start_installer(
 
 #[tauri::command]
 pub async fn exit_application(_window: tauri::Window, app: tauri::AppHandle) -> Result<(), String> {
-    stop_all_processes(app.clone(), true).await?;
+    TasksTrackers::current().stop_all_processes().await;
 
     app.exit(0);
     Ok(())
@@ -281,15 +274,6 @@ pub async fn fetch_tor_bridges() -> Result<Vec<String>, String> {
         warn!(target: LOG_TARGET, "fetch_default_tor_bridges took too long: {:?}", timer.elapsed());
     }
     Ok(bridges)
-}
-
-#[tauri::command]
-pub async fn get_app_config(
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<AppConfig, String> {
-    Ok(state.config.read().await.clone())
 }
 
 #[tauri::command]
@@ -422,13 +406,10 @@ pub async fn get_network(
 }
 
 #[tauri::command]
-pub async fn get_monero_seed_words(
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<Vec<String>, String> {
+pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
 
-    if !state.config.read().await.monero_address_is_generated() {
+    if !*ConfigWallet::content().await.monero_address_is_generated() {
         return Err(
             "Monero seed words are not available when a Monero address is provided".to_string(),
         );
@@ -517,21 +498,25 @@ pub async fn get_p2pool_connections(
 #[tauri::command]
 pub async fn set_p2pool_stats_server_port(
     port: Option<u16>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_p2pool_stats_server_port] called with port: {:?}", port);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_p2pool_stats_server_port".to_string(), json!(port))
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
+    if let Some(port) = port {
+        if port.le(&1024) || port.gt(&65535) {
+            return Err(InvokeError::from("Port must be between 1024 and 65535"));
+        }
+    };
+
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_p2pool_stats_server_port,
+        port,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
         .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_p2pool_stats_server_port(port)
-        .await
-        .map_err(|e| e.to_string())?;
     Ok(())
 }
 
@@ -547,7 +532,7 @@ pub async fn get_paper_wallet_details(
     app: tauri::AppHandle,
     state: tauri::State<'_, UniverseAppState>,
     auth_uuid: Option<String>,
-) -> Result<PaperWalletConfig, String> {
+) -> Result<PaperWalletConfig, InvokeError> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -558,20 +543,22 @@ pub async fn get_paper_wallet_details(
         .borrow()
         .clone()
         .and_then(|state| state.balance);
-    let anon_id = state.config.read().await.anon_id().to_string();
+
     let internal_wallet = InternalWallet::load_or_create(config_path)
         .await
         .map_err(|e| e.to_string())?;
 
     warn!(target: LOG_TARGET, "auth_uuid {:?}", auth_uuid);
+    let anon_id = ConfigCore::content().await.anon_id().clone();
     let result = internal_wallet
         .get_paper_wallet_details(anon_id, balance, auth_uuid)
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_paper_wallet_details took too long: {:?}", timer.elapsed());
-    }
+    };
+
     Ok(result)
 }
 
@@ -641,15 +628,49 @@ pub async fn get_tor_entry_guards(
 #[tauri::command]
 pub async fn get_airdrop_tokens(
     _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
     _app: tauri::AppHandle,
 ) -> Result<Option<AirdropTokens>, String> {
     let timer = Instant::now();
-    let airdrop_access_token = state.config.read().await.airdrop_tokens();
+    let airdrop_access_token = ConfigCore::content().await.airdrop_tokens().clone();
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "get_airdrop_tokens took too long: {:?}", timer.elapsed());
     }
     Ok(airdrop_access_token)
+}
+
+#[tauri::command]
+pub async fn get_transactions_history(
+    state: tauri::State<'_, UniverseAppState>,
+    continuation: bool,
+    limit: Option<u32>,
+) -> Result<Vec<TransactionInfo>, String> {
+    let timer = Instant::now();
+    if state.is_getting_transactions_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting transfers history");
+        return Err("Already getting transfers history".to_string());
+    }
+    state
+        .is_getting_transactions_history
+        .store(true, Ordering::SeqCst);
+    let transactions = state
+        .wallet_manager
+        .get_transactions_history(continuation, limit)
+        .await
+        .unwrap_or_else(|e| {
+            if !matches!(e, WalletManagerError::WalletNotStarted) {
+                warn!(target: LOG_TARGET, "Error getting transaction history: {}", e);
+            }
+            vec![]
+        });
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "get_transactions_history took too long: {:?}", timer.elapsed());
+    }
+
+    state
+        .is_getting_transactions_history
+        .store(false, Ordering::SeqCst);
+    Ok(transactions)
 }
 
 #[tauri::command]
@@ -659,12 +680,12 @@ pub async fn get_coinbase_transactions(
     limit: Option<u32>,
 ) -> Result<Vec<TransactionInfo>, String> {
     let timer = Instant::now();
-    if state.is_getting_transaction_history.load(Ordering::SeqCst) {
-        warn!(target: LOG_TARGET, "Already getting transaction history");
-        return Err("Already getting transaction history".to_string());
+    if state.is_getting_coinbase_history.load(Ordering::SeqCst) {
+        warn!(target: LOG_TARGET, "Already getting coinbase history");
+        return Err("Already getting coinbase history".to_string());
     }
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(true, Ordering::SeqCst);
     let transactions = state
         .wallet_manager
@@ -682,7 +703,7 @@ pub async fn get_coinbase_transactions(
     }
 
     state
-        .is_getting_transaction_history
+        .is_getting_coinbase_history
         .store(false, Ordering::SeqCst);
     Ok(transactions)
 }
@@ -703,10 +724,9 @@ pub async fn import_seed_words(
         .app_local_data_dir()
         .expect("Could not get data dir");
 
-    stop_all_processes(app.clone(), false).await?;
-
     match InternalWallet::create_from_seed(config_path, seed_words).await {
         Ok(_wallet) => {
+            TasksTrackers::current().stop_all_processes().await;
             InternalWallet::clear_wallet_local_data(data_dir)
                 .await
                 .map_err(|e| e.to_string())?;
@@ -750,8 +770,7 @@ pub async fn reset_settings<'r>(
     _window: tauri::Window,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[reset_settings] Resetting settings, reset_wallet: {:?}", reset_wallet);
-    stop_all_processes(app.clone(), true).await?;
+    TasksTrackers::current().stop_all_processes().await;
     let network = Network::get_current_or_user_setting_or_default().as_key_str();
 
     let app_config_dir = app.path().app_config_dir();
@@ -854,17 +873,6 @@ pub async fn reset_settings<'r>(
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 }
-
-#[tauri::command]
-pub async fn resolve_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<String, String> {
-    let mut config = state.config.write().await;
-    let _unused = config.propose_system_language().await;
-
-    Ok(config.application_language().to_string())
-}
-
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
@@ -872,7 +880,7 @@ pub async fn restart_application(
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     if should_stop_miners {
-        stop_all_processes(app.clone(), true).await?;
+        TasksTrackers::current().stop_all_processes().await;
     }
 
     app.restart();
@@ -904,21 +912,10 @@ pub async fn send_feedback(
 }
 
 #[tauri::command]
-pub async fn set_allow_telemetry(
-    allow_telemetry: bool,
-    _window: tauri::Window,
-    state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_allow_telemetry] called with flag: {:?}", allow_telemetry);
-    state
-        .config
-        .write()
+pub async fn set_allow_telemetry(allow_telemetry: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(ConfigCoreContent::set_allow_telemetry, allow_telemetry)
         .await
-        .set_allow_telemetry(allow_telemetry)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_allow_telemetry {:?}", e))
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
     Ok(())
 }
 
@@ -940,52 +937,23 @@ pub async fn send_data_telemetry_service(
 }
 
 #[tauri::command]
-pub async fn set_application_language(
-    state: tauri::State<'_, UniverseAppState>,
-    application_language: String,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_application_language] called with language: {}", application_language);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_application_language".to_string(),
-            json!(application_language.clone()),
-        )
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_application_language(application_language)
-        .await
-        .map_err(|e| e.to_string())?;
+pub async fn set_application_language(application_language: String) -> Result<(), String> {
+    ConfigUI::update_field(
+        ConfigUIContent::set_application_language,
+        application_language,
+    )
+    .await
+    .map_err(|e| e.to_string())?;
+
     Ok(())
 }
 
 #[tauri::command]
-pub async fn set_auto_update(
-    auto_update: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_auto_update(auto_update: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_auto_update] called with flag: {:?}", auto_update);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_auto_update".to_string(),
-            json!({ "auto_update": auto_update }),
-        )
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
+    ConfigCore::update_field(ConfigCoreContent::set_auto_update, auto_update)
         .await
-        .set_auto_update(auto_update)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_auto_update {:?}", e))
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_auto_update took too long: {:?}", timer.elapsed());
@@ -995,23 +963,11 @@ pub async fn set_auto_update(
 }
 
 #[tauri::command]
-pub async fn set_cpu_mining_enabled<'r>(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_cpu_mining_enabled<'r>(enabled: bool) -> Result<(), String> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_cpu_mining_enabled] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_cpu_mining_enabled".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
-    let mut config = state.config.write().await;
-    config
-        .set_cpu_mining_enabled(enabled)
-        .await
-        .inspect_err(|e| error!("error at set_cpu_mining_enabled {:?}", e))
-        .map_err(|e| e.to_string())?;
+    let _unused =
+        ConfigMining::update_field(ConfigMiningContent::set_cpu_mining_enabled, enabled).await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_cpu_mining_enabled took too long: {:?}",
@@ -1047,25 +1003,17 @@ pub async fn sign_ws_data(data: String) -> Result<SignWsDataResponse, String> {
 }
 
 #[tauri::command]
-pub async fn set_display_mode(
-    display_mode: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_display_mode(display_mode: &str) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_display_mode] called with mode: {:?}", display_mode);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_display_mode".to_string(), json!(display_mode))
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_display_mode(display_mode)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_display_mode {:?}", e))
-        .map_err(|e| e.to_string())?;
+
+    if let Some(display_mode) = DisplayMode::from_str(display_mode) {
+        ConfigUI::update_field(ConfigUIContent::set_display_mode, display_mode)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    } else {
+        return Err(InvokeError::from("Invalid display mode".to_string()));
+    }
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_display_mode took too long: {:?}", timer.elapsed());
     }
@@ -1093,23 +1041,13 @@ pub async fn toggle_device_exclusion(
 }
 
 #[tauri::command]
-pub async fn set_gpu_mining_enabled(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_gpu_mining_enabled(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_gpu_mining_enabled] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_gpu_mining_enabled".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
-    let mut config = state.config.write().await;
-    config
-        .set_gpu_mining_enabled(enabled)
+
+    ConfigMining::update_field(ConfigMiningContent::set_gpu_mining_enabled, enabled)
         .await
-        .inspect_err(|e| error!("error at set_gpu_mining_enabled {:?}", e))
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_gpu_mining_enabled took too long: {:?}",
@@ -1121,28 +1059,14 @@ pub async fn set_gpu_mining_enabled(
 }
 
 #[tauri::command]
-pub async fn set_mine_on_app_start(
-    mine_on_app_start: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_mine_on_app_start(mine_on_app_start: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mine_on_app_start] called with flag: {:?}", mine_on_app_start);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_mine_on_app_start".to_string(),
-            json!(mine_on_app_start),
-        )
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_mine_on_app_start(mine_on_app_start)
-        .await
-        .inspect_err(|e| error!("error at set_mine_on_app_start {:?}", e))
-        .map_err(|e| e.to_string())?;
+    ConfigMining::update_field(
+        ConfigMiningContent::set_mine_on_app_start,
+        mine_on_app_start,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mine_on_app_start took too long: {:?}", timer.elapsed());
@@ -1156,19 +1080,31 @@ pub async fn set_mode(
     mode: String,
     custom_cpu_usage: Option<u32>,
     custom_gpu_usage: Vec<GpuThreads>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}, custom_max_cpu_usage: {:?}, custom_max_gpu_usage: {:?}", mode, custom_cpu_usage, custom_gpu_usage);
+    info!(target: LOG_TARGET, "[set_mode] called with mode: {:?}", mode);
+    if let Some(mode) = MiningMode::from_str(&mode) {
+        ConfigMining::update_field(ConfigMiningContent::set_mode, mode)
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+    } else {
+        return Err(InvokeError::from("Invalid mode".to_string()));
+    }
 
-    state
-        .config
-        .write()
-        .await
-        .set_mode(mode, custom_cpu_usage, custom_gpu_usage)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_mode {:?}", e))
-        .map_err(|e| e.to_string())?;
+    ConfigMining::update_field(
+        ConfigMiningContent::set_custom_max_cpu_usage,
+        custom_cpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    ConfigMining::update_field(
+        ConfigMiningContent::set_custom_max_gpu_usage,
+        custom_gpu_usage,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_mode took too long: {:?}", timer.elapsed());
     }
@@ -1179,14 +1115,20 @@ pub async fn set_mode(
 #[tauri::command]
 pub async fn set_monero_address(
     monero_address: String,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let mut app_config = state.config.write().await;
-    app_config
-        .set_monero_address(monero_address)
-        .await
-        .map_err(|e| e.to_string())?;
+    ConfigWallet::update_field_requires_restart(
+        ConfigWalletContent::set_monero_address,
+        monero_address,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
     }
@@ -1197,18 +1139,30 @@ pub async fn set_monero_address(
 pub async fn set_monerod_config(
     use_monero_fail: bool,
     monero_nodes: Vec<String>,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_monerod_config] called with use_monero_fail: {:?}, monero_nodes: {:?}", use_monero_fail, monero_nodes);
-    state
-        .config
-        .write()
-        .await
-        .set_monerod_config(use_monero_fail, monero_nodes)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_monerod_config {:?}", e))
-        .map_err(|e| e.to_string())?;
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_mmproxy_monero_nodes,
+        monero_nodes.clone(),
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_mmproxy_use_monero_failover,
+        use_monero_fail,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_monerod_config took too long: {:?}", timer.elapsed());
     }
@@ -1219,52 +1173,20 @@ pub async fn set_monerod_config(
 #[tauri::command]
 pub async fn set_p2pool_enabled(
     p2pool_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+    app_handle: tauri::AppHandle,
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_p2pool_enabled] called with flag: {:?}", p2pool_enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_p2pool_enabled".to_string(), json!(p2pool_enabled))
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_is_p2pool_enabled,
+        p2pool_enabled,
+        vec![SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
         .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_p2pool_enabled(p2pool_enabled)
-        .await
-        .inspect_err(|e| error!("error at set_p2pool_enabled {:?}", e))
-        .map_err(|e| e.to_string())?;
-
-    let origin_config = state.mm_proxy_manager.config().await;
-    let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
-
-    match origin_config {
-        None => {
-            warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
-            return Ok(());
-        }
-        Some(mut origin_config) => {
-            if origin_config.p2pool_enabled != p2pool_enabled {
-                if p2pool_enabled {
-                    origin_config.set_to_use_p2pool(p2pool_grpc_port);
-                } else {
-                    let base_node_grpc_port = state
-                        .node_manager
-                        .get_grpc_port()
-                        .await
-                        .map_err(|error| error.to_string())?;
-                    origin_config.set_to_use_base_node(base_node_grpc_port);
-                }
-                state
-                    .mm_proxy_manager
-                    .change_config(origin_config)
-                    .await
-                    .map_err(|error| error.to_string())?;
-            }
-        }
-    }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
@@ -1275,15 +1197,13 @@ pub async fn set_p2pool_enabled(
 #[tauri::command]
 pub async fn set_show_experimental_settings(
     show_experimental_settings: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    state
-        .config
-        .write()
-        .await
-        .set_show_experimental_settings(show_experimental_settings)
-        .await
-        .map_err(|e| e.to_string())?;
+) -> Result<(), InvokeError> {
+    ConfigUI::update_field(
+        ConfigUIContent::set_show_experimental_settings,
+        show_experimental_settings,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }
@@ -1291,53 +1211,30 @@ pub async fn set_show_experimental_settings(
 #[tauri::command]
 pub async fn set_should_always_use_system_language(
     should_always_use_system_language: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    state
-        .config
-        .write()
-        .await
-        .set_should_always_use_system_language(should_always_use_system_language)
-        .await
-        .map_err(|e| e.to_string())?;
+) -> Result<(), InvokeError> {
+    ConfigUI::update_field(
+        ConfigUIContent::set_should_always_use_system_language,
+        should_always_use_system_language,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
     Ok(())
 }
 
 #[tauri::command]
-pub async fn set_should_auto_launch(
-    should_auto_launch: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
-    info!(target: LOG_TARGET, "[set_should_auto_launch] called with flag: {:?}", should_auto_launch);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send(
-            "set_should_auto_launch".to_string(),
-            json!(should_auto_launch),
-        )
-        .await;
-    drop(telemetry_service);
-    match state
-        .config
-        .write()
+pub async fn set_should_auto_launch(should_auto_launch: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(
+        ConfigCoreContent::set_should_auto_launch,
+        should_auto_launch,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    AutoLauncher::current()
+        .update_auto_launcher(should_auto_launch)
         .await
-        .set_should_auto_launch(should_auto_launch)
-        .await
-    {
-        Ok(_) => {
-            AutoLauncher::current()
-                .update_auto_launcher(should_auto_launch)
-                .await
-                .map_err(|e| {
-                    error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
-                    e.to_string()
-                })?;
-        }
-        Err(e) => {
-            error!(target: LOG_TARGET, "Error setting should_auto_launch: {:?}", e);
-            return Err(e.to_string());
-        }
-    }
+        .map_err(InvokeError::from_anyhow)?;
 
     Ok(())
 }
@@ -1347,7 +1244,7 @@ pub async fn set_tor_config(
     config: TorConfig,
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,
-    _app: tauri::AppHandle,
+    app_handle: tauri::AppHandle,
 ) -> Result<TorConfig, String> {
     let timer = Instant::now();
     info!(target: LOG_TARGET, "[set_tor_config] called with config: {:?}", config);
@@ -1357,6 +1254,18 @@ pub async fn set_tor_config(
         .await
         .map_err(|e| e.to_string())?;
 
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Unknown,
+        ])
+        .await;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tor_config took too long: {:?}", timer.elapsed());
     }
@@ -1364,32 +1273,26 @@ pub async fn set_tor_config(
 }
 
 #[tauri::command]
-pub async fn set_use_tor(
-    use_tor: bool,
-    state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<(), String> {
+pub async fn set_use_tor(use_tor: bool, app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_use_tor] called with flag: {:?}", use_tor);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_use_tor".to_string(), json!(use_tor))
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
-        .await
-        .set_use_tor(use_tor)
-        .await
-        .inspect_err(|e| error!(target: LOG_TARGET, "error at set_use_tor {:?}", e))
-        .map_err(|e| e.to_string())?;
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_use_tor,
+        use_tor,
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
-    let config_dir = app
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle.clone())
+        .await;
+
+    let config_dir = app_handle
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
 
+    //TODO: Do we still need this?
     if config_dir.exists() {
         let tcp_tor_toggled_file = config_dir.join("tcp_tor_toggled");
         File::create(tcp_tor_toggled_file).map_err(|e| e.to_string())?;
@@ -1403,23 +1306,12 @@ pub async fn set_use_tor(
 }
 
 #[tauri::command]
-pub async fn set_visual_mode<'r>(
-    enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn set_visual_mode<'r>(enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_visual_mode] called with flag: {:?}", enabled);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_visual_mode".to_string(), json!(enabled))
-        .await;
-    drop(telemetry_service);
-    let mut config = state.config.write().await;
-    config
-        .set_visual_mode(enabled)
+    ConfigUI::update_field(ConfigUIContent::set_visual_mode, enabled)
         .await
-        .inspect_err(|e| error!("error at set_visual_mode {:?}", e))
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET,
             "set_visual_mode took too long: {:?}",
@@ -1435,23 +1327,23 @@ pub async fn set_airdrop_tokens<'r>(
     airdrop_tokens: Option<AirdropTokens>,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
-    let old_tokens = state.config.clone().read().await.airdrop_tokens();
-    let old_id = old_tokens.clone().and_then(|tokens| {
-        airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
-    });
+) -> Result<(), InvokeError> {
+    let old_id = ConfigCore::content()
+        .await
+        .airdrop_tokens()
+        .clone()
+        .and_then(|tokens| {
+            airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
+        });
     let new_id = airdrop_tokens.clone().and_then(|tokens| {
         airdrop::decode_jwt_claims_without_exp(&tokens.token).map(|claim| claim.id)
     });
 
     let user_id_changed = old_id != new_id;
 
-    let mut app_config_lock = state.config.write().await;
-    app_config_lock
-        .set_airdrop_tokens(airdrop_tokens)
+    ConfigCore::update_field(ConfigCoreContent::set_airdrop_tokens, airdrop_tokens)
         .await
-        .map_err(|e| e.to_string())?;
-    drop(app_config_lock);
+        .map_err(InvokeError::from_anyhow)?;
 
     info!(target: LOG_TARGET, "New Airdrop tokens saved, user id changed:{:?}", user_id_changed);
     if user_id_changed {
@@ -1487,15 +1379,13 @@ pub async fn start_mining<'r>(
     let timer = Instant::now();
     let _lock = state.stop_start_mutex.lock().await;
 
-    let config = state.config.read().await;
-    let cpu_mining_enabled = config.cpu_mining_enabled();
-    let gpu_mining_enabled = config.gpu_mining_enabled();
-    let mode = config.mode();
-    let custom_cpu_usage = config.custom_cpu_usage();
-    let custom_gpu_usage = config.custom_gpu_usage();
-    let p2pool_enabled = config.p2pool_enabled();
-    let monero_address = config.monero_address().to_string();
-    drop(config);
+    let cpu_mining_enabled = *ConfigMining::content().await.cpu_mining_enabled();
+    let gpu_mining_enabled = *ConfigMining::content().await.gpu_mining_enabled();
+    let mode = *ConfigMining::content().await.mode();
+    let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
+    let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
+    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
+    let monero_address = ConfigWallet::content().await.monero_address().clone();
 
     let mut telemetry_id = state
         .telemetry_manager
@@ -1520,7 +1410,7 @@ pub async fn start_mining<'r>(
             let mut cpu_miner = state.cpu_miner.write().await;
             let res = cpu_miner
                 .start(
-                    state.shutdown.to_signal(),
+                    TasksTrackers::current().hardware_phase.get_signal().await,
                     &cpu_miner_config,
                     monero_address.to_string(),
                     mm_proxy_port,
@@ -1568,13 +1458,15 @@ pub async fn start_mining<'r>(
             let p2pool_port = state.p2pool_manager.grpc_port().await;
             GpuNodeSource::P2Pool { port: p2pool_port }
         } else {
-            let grpc_port = state
+            let grpc_address = state
                 .node_manager
-                .get_grpc_port()
+                .get_grpc_address()
                 .await
                 .map_err(|e| e.to_string())?;
 
-            GpuNodeSource::BaseNode { port: grpc_port }
+            GpuNodeSource::BaseNode {
+                grpc_address: grpc_address.to_string(),
+            }
         };
 
         info!(target: LOG_TARGET, "2 Starting gpu miner");
@@ -1592,7 +1484,6 @@ pub async fn start_mining<'r>(
         let mut gpu_miner = state.gpu_miner.write().await;
         let res = gpu_miner
             .start(
-                state.shutdown.to_signal(),
                 tari_address,
                 source,
                 app.path()
@@ -1656,23 +1547,16 @@ pub async fn stop_mining<'r>(state: tauri::State<'_, UniverseAppState>) -> Resul
 }
 
 #[tauri::command]
-pub async fn update_applications(
-    app: tauri::AppHandle,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+pub async fn update_applications(app: tauri::AppHandle) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    let mut binary_resolver = BinaryResolver::current().write().await;
+    let binary_resolver = BinaryResolver::current().read().await;
 
-    state
-        .config
-        .write()
-        .await
-        .set_last_binaries_update_timestamp(SystemTime::now())
-        .await
-        .inspect_err(
-            |e| error!(target: LOG_TARGET, "Could not set last binaries update timestamp: {:?}", e),
-        )
-        .map_err(|e| e.to_string())?;
+    ConfigCore::update_field(
+        ConfigCoreContent::set_last_binaries_update_timestamp,
+        SystemTime::now(),
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
 
     let progress_tracker = ProgressTracker::new(app.clone(), None);
     binary_resolver
@@ -1714,21 +1598,11 @@ pub async fn set_pre_release(
     app: tauri::AppHandle,
     pre_release: bool,
     state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
-    info!(target: LOG_TARGET, "[set_pre_release] called with flag: {:?}", pre_release);
-    let telemetry_service = state.telemetry_service.read().await;
-    let _res = telemetry_service
-        .send("set_pre_release".to_string(), json!(pre_release))
-        .await;
-    drop(telemetry_service);
-    state
-        .config
-        .write()
+    ConfigCore::update_field(ConfigCoreContent::set_pre_release, pre_release)
         .await
-        .set_pre_release(pre_release)
-        .await
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
 
     state
         .updates_manager
@@ -1806,36 +1680,76 @@ pub async fn set_selected_engine(
     selected_engine: &str,
     state: tauri::State<'_, UniverseAppState>,
     app: tauri::AppHandle,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     info!(target: LOG_TARGET, "set_selected_engine called with engine: {:?}", selected_engine);
     let timer = Instant::now();
 
-    info!(target: LOG_TARGET, "Setting selected engine");
-    let engine_type = EngineType::from_string(selected_engine).map_err(|e| e.to_string())?;
-    info!(target: LOG_TARGET, "Selected engine set to {:?}", engine_type);
+    let engine_type = EngineType::from_string(selected_engine).map_err(InvokeError::from_anyhow)?;
     let config = app
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
+
     state
         .gpu_miner
         .write()
         .await
-        .set_selected_engine(engine_type, config, app)
+        .set_selected_engine(engine_type.clone(), config, app)
         .await
         .map_err(|e| e.to_string())?;
 
-    state
-        .config
-        .write()
+    ConfigMining::update_field(ConfigMiningContent::set_gpu_engine, engine_type)
         .await
-        .set_gpu_engine(selected_engine)
-        .await
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
     }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn send_one_sided_to_stealth_address(
+    state: tauri::State<'_, UniverseAppState>,
+    amount: String,
+    destination: String,
+    payment_id: Option<String>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] called with args: (amount: {:?}, destination: {:?}, payment_id: {:?})", amount, destination, payment_id);
+    let mut spend_wallet_manager = state.spend_wallet_manager.write().await;
+    spend_wallet_manager
+        .send_one_sided_to_stealth_address(amount, destination, payment_id)
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub fn verify_address_for_send(
+    address: String,
+    sending_method: Option<TariAddressFeatures>,
+) -> Result<(), String> {
+    let sending_method = sending_method.unwrap_or(TariAddressFeatures::ONE_SIDED);
+
+    verify_send(address, sending_method)
+}
+
+#[tauri::command]
+pub fn format_micro_minotari(amount: String) -> Result<String, String> {
+    let mm_amount = MicroMinotari::from_str(&amount).map_err(|e| e.to_string())?;
+    Ok(format!("{}", mm_amount))
+}
+
+#[tauri::command]
+pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
 
     Ok(())
 }

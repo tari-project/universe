@@ -117,6 +117,8 @@ pub struct AppConfigFromFile {
     airdrop_tokens: Option<AirdropTokens>,
     #[serde(default = "default_gpu_engine")]
     gpu_engine: String,
+    #[serde(default)]
+    remote_base_node_address: Option<String>,
 }
 
 impl Default for AppConfigFromFile {
@@ -161,18 +163,20 @@ impl Default for AppConfigFromFile {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             gpu_engine: default_gpu_engine(),
+            remote_base_node_address: None,
         }
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
 pub enum DisplayMode {
+    #[default]
     System,
     Dark,
     Light,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct AirdropTokens {
     pub token: String,
     pub refresh_token: String,
@@ -239,50 +243,52 @@ pub struct GpuThreads {
 
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct AppConfig {
-    config_version: u32,
-    config_file: Option<PathBuf>,
-    created_at: Option<DateTime<Utc>>,
-    mode: MiningMode,
-    display_mode: DisplayMode,
-    mine_on_app_start: bool,
-    p2pool_enabled: bool,
-    last_binaries_update_timestamp: SystemTime,
-    allow_telemetry: bool,
-    anon_id: String,
-    monero_address: String,
-    monero_address_is_generated: bool,
-    gpu_mining_enabled: bool,
-    cpu_mining_enabled: bool,
-    has_system_language_been_proposed: bool,
-    should_always_use_system_language: bool,
-    should_auto_launch: bool,
-    application_language: String,
-    paper_wallet_enabled: bool,
-    use_tor: bool,
-    eco_mode_cpu_threads: Option<u32>,
-    ludicrous_mode_cpu_threads: Option<u32>,
-    eco_mode_cpu_options: Vec<String>,
-    ludicrous_mode_cpu_options: Vec<String>,
-    custom_mode_cpu_options: Vec<String>,
-    mmproxy_use_monero_fail: bool,
-    mmproxy_monero_nodes: Vec<String>,
-    custom_max_cpu_usage: Option<u32>,
-    custom_max_gpu_usage: Vec<GpuThreads>,
-    auto_update: bool,
-    keyring_accessed: bool,
-    custom_power_levels_enabled: bool,
-    sharing_enabled: bool,
-    visual_mode: bool,
-    window_settings: Option<WindowSettings>,
-    show_experimental_settings: bool,
-    p2pool_stats_server_port: Option<u16>,
-    pre_release: bool,
-    last_changelog_version: String,
-    airdrop_tokens: Option<AirdropTokens>,
-    gpu_engine: String,
+pub struct AppConfig {
+    config_version: u32,                        // PER CONFIG
+    config_file: Option<PathBuf>,               // REMOVE
+    created_at: Option<DateTime<Utc>>,          // PER CONFIG
+    mode: MiningMode,                           // Mining
+    display_mode: DisplayMode,                  // UI
+    mine_on_app_start: bool,                    // UI
+    p2pool_enabled: bool,                       // Core
+    last_binaries_update_timestamp: SystemTime, // Core
+    allow_telemetry: bool,                      // CORE
+    anon_id: String,                            // CORE
+    monero_address: String,                     // Wallet
+    monero_address_is_generated: bool,          // Wallet
+    gpu_mining_enabled: bool,                   // UI
+    cpu_mining_enabled: bool,                   // UI
+    has_system_language_been_proposed: bool,    // UI
+    should_always_use_system_language: bool,    // UI
+    should_auto_launch: bool,                   // Core
+    application_language: String,               // UI
+    paper_wallet_enabled: bool,                 // UI
+    use_tor: bool,                              // CORE
+    eco_mode_cpu_threads: Option<u32>,          // Mining
+    ludicrous_mode_cpu_threads: Option<u32>,    // Mining
+    eco_mode_cpu_options: Vec<String>,          // Mining
+    ludicrous_mode_cpu_options: Vec<String>,    // Mining
+    custom_mode_cpu_options: Vec<String>,       // Mining
+    mmproxy_use_monero_fail: bool,              // CORE
+    mmproxy_monero_nodes: Vec<String>,          // CORE
+    custom_max_cpu_usage: Option<u32>,          // Mining
+    custom_max_gpu_usage: Vec<GpuThreads>,      // Mining
+    auto_update: bool,                          // CORE
+    keyring_accessed: bool,                     // Wallet
+    custom_power_levels_enabled: bool,          // UI
+    sharing_enabled: bool,                      // UI
+    visual_mode: bool,                          // UI
+    window_settings: Option<WindowSettings>,    // CORE
+    show_experimental_settings: bool,           // UI
+    p2pool_stats_server_port: Option<u16>,      // CORE
+    pre_release: bool,                          // CORE
+    last_changelog_version: String,             // CORE
+    airdrop_tokens: Option<AirdropTokens>,      // CORE
+    gpu_engine: String,                         // Mining
+    remote_base_node_address: Option<String>,
 }
 
+#[allow(dead_code)]
 impl AppConfig {
     pub fn new() -> Self {
         Self {
@@ -327,7 +333,32 @@ impl AppConfig {
             last_changelog_version: default_changelog_version(),
             airdrop_tokens: None,
             gpu_engine: EngineType::OpenCL.to_string(),
+            remote_base_node_address: None,
         }
+    }
+
+    pub async fn move_out_of_original_location(&self, config_path: PathBuf) {
+        let file = config_path.join("app_config.json");
+        if file.exists() {
+            let destination_dir = config_path.join("old");
+            if !destination_dir.exists() {
+                fs::create_dir_all(&destination_dir)
+                    .await
+                    .expect("Failed to create old directory");
+            }
+            let new_file = config_path.join("old").join("app_config.json");
+            let _unused = fs::rename(file, new_file).await.inspect_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to move app_config.json: {}", e);
+            });
+        }
+    }
+
+    pub fn is_file_exists(&self, config_path: PathBuf) -> bool {
+        let file = config_path.join("app_config.json");
+        if file.exists() {
+            return true;
+        }
+        false
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
@@ -339,18 +370,19 @@ impl AppConfig {
             let config = fs::read_to_string(&file).await?;
             self.created_at = Some(file.clone().metadata()?.created()?.into());
             self.apply_loaded_config(config);
-        } else {
-            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-            if let Ok(address) = create_monereo_address(config_path).await {
-                self.monero_address = address;
-                self.monero_address_is_generated = true;
-            }
-
-            if self.update_config_file().await.is_ok() {
-                self.created_at = Some(file.clone().metadata()?.created()?.into());
-            }
         }
-        self.update_config_file().await?;
+        // else {
+        //     info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+        //     if let Ok(address) = create_monereo_address(config_path).await {
+        //         self.monero_address = address;
+        //         self.monero_address_is_generated = true;
+        //     }
+
+        //     if self.update_config_file().await.is_ok() {
+        //         self.created_at = Some(file.clone().metadata()?.created()?.into());
+        //     }
+        // }
+        // self.update_config_file().await?;
         Ok(())
     }
 
@@ -397,6 +429,7 @@ impl AppConfig {
                 self.last_changelog_version = config.last_changelog_version;
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.gpu_engine = config.gpu_engine;
+                self.remote_base_node_address = config.remote_base_node_address;
 
                 KEYRING_ACCESSED.store(
                     config.keyring_accessed,
@@ -470,6 +503,10 @@ impl AppConfig {
         &self.ludicrous_mode_cpu_options
     }
 
+    pub fn created_at(&self) -> Option<DateTime<Utc>> {
+        self.created_at
+    }
+
     pub fn custom_mode_cpu_options(&self) -> &Vec<String> {
         &self.custom_mode_cpu_options
     }
@@ -529,8 +566,16 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn display_mode(&self) -> DisplayMode {
+        self.display_mode
+    }
+
     pub fn mode(&self) -> MiningMode {
         self.mode
+    }
+
+    pub fn keyring_accessed(&self) -> bool {
+        self.keyring_accessed
     }
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
@@ -653,6 +698,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn mine_on_app_start(&self) -> bool {
+        self.mine_on_app_start
+    }
+
     pub async fn set_allow_telemetry(
         &mut self,
         allow_telemetry: bool,
@@ -694,10 +743,6 @@ impl AppConfig {
         Ok(())
     }
 
-    pub fn application_language(&self) -> &str {
-        &self.application_language
-    }
-
     pub async fn set_application_language(
         &mut self,
         language: String,
@@ -705,6 +750,10 @@ impl AppConfig {
         self.application_language = language;
         self.update_config_file().await?;
         Ok(())
+    }
+
+    pub fn application_language(&self) -> String {
+        self.application_language.clone()
     }
 
     pub async fn set_should_always_use_system_language(
@@ -727,6 +776,34 @@ impl AppConfig {
             self.update_config_file().await?;
             Ok(())
         }
+    }
+
+    pub fn should_always_use_system_language(&self) -> bool {
+        self.should_always_use_system_language
+    }
+
+    pub fn has_system_language_been_proposed(&self) -> bool {
+        self.has_system_language_been_proposed
+    }
+
+    pub fn paper_wallet_enabled(&self) -> bool {
+        self.paper_wallet_enabled
+    }
+
+    pub fn custom_power_levels_enabled(&self) -> bool {
+        self.custom_power_levels_enabled
+    }
+
+    pub fn sharing_enabled(&self) -> bool {
+        self.sharing_enabled
+    }
+
+    pub fn visual_mode(&self) -> bool {
+        self.visual_mode
+    }
+
+    pub fn show_experimental_settings(&self) -> bool {
+        self.show_experimental_settings
     }
 
     pub fn use_tor(&self) -> bool {
@@ -798,6 +875,10 @@ impl AppConfig {
         Ok(())
     }
 
+    pub fn remote_base_node_address(&self) -> Option<String> {
+        self.remote_base_node_address.clone()
+    }
+
     // Allow needless update because in future there may be fields that are
     // missing
     #[allow(clippy::needless_update)]
@@ -847,6 +928,7 @@ impl AppConfig {
             last_changelog_version: self.last_changelog_version.clone(),
             airdrop_tokens: self.airdrop_tokens.clone(),
             gpu_engine: self.gpu_engine.clone(),
+            remote_base_node_address: self.remote_base_node_address.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -900,6 +982,7 @@ fn default_gpu_engine() -> String {
     EngineType::OpenCL.to_string()
 }
 
+#[allow(dead_code)]
 async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
     let cm = CredentialManager::default_with_dir(path);
 

@@ -25,6 +25,7 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
@@ -128,12 +129,19 @@ impl CpuMiner {
                 MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
             };
 
+            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current()
+                .hardware_phase
+                .get_task_tracker()
+                .await;
+
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         }
@@ -145,12 +153,17 @@ impl CpuMiner {
 
     pub async fn start_benchmarking(
         &mut self,
-        app_shutdown: ShutdownSignal,
         duration: Duration,
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
     ) -> Result<u64, anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
@@ -165,11 +178,12 @@ impl CpuMiner {
             lock.adapter.extra_options = vec![];
 
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         }
@@ -203,7 +217,7 @@ impl CpuMiner {
             let mut max_hashrate = 0f64;
 
             loop {
-                if app_shutdown.is_triggered() {
+                if shutdown_signal.is_triggered() {
                     break;
                 }
 
@@ -248,7 +262,7 @@ impl CpuMiner {
         let lock = self.watcher.read().await;
         lock.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
@@ -259,7 +273,7 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        tauri::async_runtime::spawn(async move {
+        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {

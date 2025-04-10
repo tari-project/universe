@@ -26,12 +26,13 @@ use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
-use crate::node_adapter::BaseNodeStatus;
+use crate::node::node_adapter::BaseNodeStatus;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
 use crate::tor_control_client::TorStatus;
 use crate::utils::network_status::NetworkStatus;
+use crate::TasksTrackers;
 use anyhow::Result;
 use base64::prelude::*;
 use blake2::digest::Update;
@@ -45,12 +46,13 @@ use sha2::Digest;
 use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
-use std::{sync::Arc, thread::sleep, time::Duration};
+use std::{sync::Arc, time::Duration};
 use sysinfo::System;
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
+use tokio::time::interval;
 use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
@@ -206,6 +208,7 @@ pub struct TelemetryManager {
 }
 
 impl TelemetryManager {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         config: Arc<RwLock<AppConfig>>,
@@ -300,11 +303,14 @@ impl TelemetryManager {
         let config_cloned = self.config.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-        tokio::spawn(async move {
-            tokio::select! {
-                _ = async {
-                    debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
-                    loop {
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut interval = interval(timeout);
+
+        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = interval.tick() => {
+                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
                         let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
                         if telemetry_collection_enabled {
@@ -314,11 +320,15 @@ impl TelemetryManager {
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
-                        sleep(timeout);
+                    },
+                    _ = cancellation_token.cancelled() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
+                        break;
                     }
-                } => {},
-                _ = cancellation_token.cancelled() => {
-                    debug!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled");
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+                        break;
+                    }
                 }
             }
         });
@@ -327,6 +337,7 @@ impl TelemetryManager {
 }
 
 #[allow(clippy::too_many_lines)]
+#[allow(clippy::too_many_arguments)]
 async fn get_telemetry_data(
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
@@ -490,11 +501,15 @@ async fn get_telemetry_data(
         extra_data.insert("all_gpus".to_string(), all_gpus.join(","));
     }
 
-    let system = System::new_all();
+    let mut system = System::new_all();
+    std::thread::sleep(sysinfo::MINIMUM_CPU_UPDATE_INTERVAL);
+    // Refresh CPUs again.
+    system.refresh_cpu_usage();
     extra_data.insert(
         "cpu_usage".to_string(),
         system.global_cpu_usage().to_string(),
     );
+    system.refresh_memory();
     extra_data.insert(
         "total_memory".to_string(),
         system.total_memory().to_string(),
