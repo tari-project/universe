@@ -60,7 +60,12 @@ const XSpaceEventBanner = () => {
     }, [latestXSpaceEvent]); // Re-run the effect when the event changes
 
     const displayedDate = useMemo(() => {
-        return latestXSpaceEvent?.goingLive && formatDateForEvent(new Date(latestXSpaceEvent.goingLive));
+        try {
+            return latestXSpaceEvent?.goingLive ? formatDateForEvent(new Date(latestXSpaceEvent.goingLive)) : null;
+        } catch (error) {
+            console.error('Invalid date format for event:', error);
+            return null;
+        }
     }, [latestXSpaceEvent]);
 
     return (
