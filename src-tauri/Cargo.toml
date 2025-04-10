@@ -103,7 +103,7 @@ reqwest-middleware = "0.4.0"
 reqwest-retry = "0.7.0"
 cfspeedtest = "1.3.1"
 tungstenite = "0.26.2"
-tokio-tungstenite = {version = "0.26.2", features = ["native-tls"] }
+tokio-tungstenite = { version = "0.26.2", features = ["native-tls"] }
 futures = "0.3.31"
 
 [target.'cfg(windows)'.dependencies]
