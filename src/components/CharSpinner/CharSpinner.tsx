@@ -1,4 +1,3 @@
-import { Trans } from 'react-i18next';
 import { Character, Characters, CharacterWrapper, SpinnerWrapper, Wrapper, XTMWrapper } from './CharSpinner.styles.ts';
 
 const transition = {
@@ -97,12 +96,7 @@ export default function CharSpinner({
                 <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
             </SpinnerWrapper>
 
-            {/* // eslint-disable-next-line i18next/no-literal-string */}
-            {value === '-' ? null : (
-                <XTMWrapper>
-                    <Trans>tXTM</Trans>
-                </XTMWrapper>
-            )}
+            {value === `-` ? null : <XTMWrapper>{`tXTM`}</XTMWrapper>}
         </Wrapper>
     );
 }
