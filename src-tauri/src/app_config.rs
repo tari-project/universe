@@ -982,6 +982,7 @@ fn default_gpu_engine() -> String {
     EngineType::OpenCL.to_string()
 }
 
+#[allow(dead_code)]
 async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
     let cm = CredentialManager::default_with_dir(path);
 

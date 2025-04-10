@@ -185,10 +185,10 @@ impl SetupManager {
             .app_config_dir()
             .expect("Could not get config dir");
 
-        let is_old_config_file_exists = old_config.is_file_exists(old_config_path.clone());
-        let old_config_content = match is_old_config_file_exists {
-            true => Some(old_config.clone()),
-            false => None,
+        let old_config_content = if old_config.is_file_exists(old_config_path.clone()) {
+            Some(old_config.clone())
+        } else {
+            None
         };
 
         let mut config_core = ConfigCore::current().write().await;
