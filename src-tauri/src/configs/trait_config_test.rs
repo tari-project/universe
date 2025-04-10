@@ -109,7 +109,7 @@ impl ConfigImpl for TestConfig {
     }
 
     fn _get_name() -> String {
-        "test_config".to_string()
+        "config_test".to_string()
     }
 
     fn _get_content(&self) -> &Self::Config {
@@ -152,7 +152,7 @@ mod tests {
         let config = TestConfig::current().read().await;
         before_each();
 
-        config._save_config().unwrap();
+        TestConfig::_save_config(config._get_content().clone()).unwrap();
 
         assert!(TestConfig::_get_config_path().exists());
     }
@@ -162,7 +162,7 @@ mod tests {
         let config = TestConfig::current().read().await;
         before_each();
 
-        config._save_config().unwrap();
+        TestConfig::_save_config(config._get_content().clone()).unwrap();
 
         let loaded_config = TestConfig::_load_config().unwrap();
         assert_eq!(config._get_content(), &loaded_config);

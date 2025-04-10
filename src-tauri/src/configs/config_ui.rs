@@ -101,7 +101,7 @@ impl ConfigImpl for ConfigUI {
 
     fn new() -> Self {
         Self {
-            content: ConfigUI::_load_config().unwrap_or_default(),
+            content: ConfigUI::_initialize_config_content(),
             app_handle: RwLock::new(None),
         }
     }
@@ -114,7 +114,7 @@ impl ConfigImpl for ConfigUI {
         *self.app_handle.write().await = Some(app_handle);
     }
     fn _get_name() -> String {
-        "ui_config".to_string()
+        "config_ui".to_string()
     }
 
     fn _get_content(&self) -> &Self::Config {
