@@ -61,6 +61,7 @@ impl Default for NotFullConfigContent {
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 struct TestConfigContent {
+    was_config_migrated: bool,
     created_at: SystemTime,
     some_test_string: String,
     some_test_bool: bool,
@@ -70,6 +71,7 @@ struct TestConfigContent {
 impl Default for TestConfigContent {
     fn default() -> Self {
         Self {
+            was_config_migrated: false,
             created_at: SystemTime::now(),
             some_test_string: "".to_string(),
             some_test_bool: false,
@@ -120,13 +122,23 @@ impl ConfigImpl for TestConfig {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
-        self.content = TestConfigContent {
-            created_at: SystemTime::now(),
-            some_test_string: old_config.some_test_string,
-            some_test_bool: old_config.some_test_bool,
-            some_test_int: 0,
-        };
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
+        if self.content.was_config_migrated {
+            return;
+        }
+
+        if old_config.is_some() {
+            let old_config = old_config.expect("Old config should be present");
+            self.content = TestConfigContent {
+                was_config_migrated: true,
+                created_at: SystemTime::now(),
+                some_test_string: old_config.some_test_string,
+                some_test_bool: old_config.some_test_bool,
+                some_test_int: 0,
+            };
+        } else {
+            self.content.set_was_config_migrated(true);
+        }
     }
 }
 
@@ -194,7 +206,7 @@ mod tests {
             some_test_bool: true,
         };
 
-        config.migrate_old_config(old_config.clone());
+        config.handle_old_config_migration(Some(old_config.clone()));
 
         assert_eq!(
             &old_config.some_test_string,

@@ -51,6 +51,7 @@ pub(crate) struct MergeMiningProxyConfig {
     pub monero_nodes: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl MergeMiningProxyConfig {
     pub fn set_to_use_base_node(&mut self, grpc_address: String) {
         self.base_node_grpc_address = grpc_address;
