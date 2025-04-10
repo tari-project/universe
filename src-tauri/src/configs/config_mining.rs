@@ -123,26 +123,31 @@ impl ConfigImpl for ConfigMining {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
         if self.content.was_config_migrated {
             return;
         }
 
-        self.content = ConfigMiningContent {
-            was_config_migrated: true,
-            created_at: SystemTime::now(),
-            mode: old_config.mode(),
-            custom_max_cpu_usage: old_config.custom_cpu_usage(),
-            custom_max_gpu_usage: old_config.custom_gpu_usage(),
-            mine_on_app_start: old_config.mine_on_app_start(),
-            custom_mode_cpu_options: old_config.custom_mode_cpu_options().clone(),
-            eco_mode_cpu_options: old_config.eco_mode_cpu_options().clone(),
-            eco_mode_cpu_threads: old_config.eco_mode_cpu_threads(),
-            gpu_engine: old_config.gpu_engine(),
-            ludicrous_mode_cpu_options: old_config.ludicrous_mode_cpu_options().clone(),
-            gpu_mining_enabled: old_config.gpu_mining_enabled(),
-            cpu_mining_enabled: old_config.cpu_mining_enabled(),
-            ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
-        };
+        if old_config.is_some() {
+            let old_config = old_config.expect("Old config should be present");
+            self.content = ConfigMiningContent {
+                was_config_migrated: true,
+                created_at: SystemTime::now(),
+                mode: old_config.mode(),
+                custom_max_cpu_usage: old_config.custom_cpu_usage(),
+                custom_max_gpu_usage: old_config.custom_gpu_usage(),
+                mine_on_app_start: old_config.mine_on_app_start(),
+                custom_mode_cpu_options: old_config.custom_mode_cpu_options().clone(),
+                eco_mode_cpu_options: old_config.eco_mode_cpu_options().clone(),
+                eco_mode_cpu_threads: old_config.eco_mode_cpu_threads(),
+                gpu_engine: old_config.gpu_engine(),
+                ludicrous_mode_cpu_options: old_config.ludicrous_mode_cpu_options().clone(),
+                gpu_mining_enabled: old_config.gpu_mining_enabled(),
+                cpu_mining_enabled: old_config.cpu_mining_enabled(),
+                ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
+            };
+        } else {
+            self.content.set_was_config_migrated(true);
+        }
     }
 }

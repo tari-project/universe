@@ -127,29 +127,34 @@ impl ConfigImpl for ConfigCore {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
         if self.content.was_config_migrated {
             return;
         }
 
-        self.content = ConfigCoreContent {
-            was_config_migrated: true,
-            created_at: SystemTime::now(),
-            is_p2pool_enabled: old_config.p2pool_enabled(),
-            use_tor: old_config.use_tor(),
-            allow_telemetry: old_config.allow_telemetry(),
-            last_binaries_update_timestamp: old_config.last_binaries_update_timestamp(),
-            anon_id: old_config.anon_id().to_string(),
-            should_auto_launch: old_config.should_auto_launch(),
-            mmproxy_use_monero_failover: old_config.mmproxy_use_monero_fail(),
-            mmproxy_monero_nodes: old_config.mmproxy_monero_nodes().to_vec(),
-            auto_update: old_config.auto_update(),
-            p2pool_stats_server_port: old_config.p2pool_stats_server_port(),
-            pre_release: old_config.pre_release(),
-            last_changelog_version: Version::from_str(old_config.last_changelog_version())
-                .unwrap_or_else(|_| Version::new(0, 0, 0)),
-            airdrop_tokens: old_config.airdrop_tokens(),
-            ..Default::default()
-        };
+        if old_config.is_some() {
+            let old_config = old_config.expect("Old config should be present");
+            self.content = ConfigCoreContent {
+                was_config_migrated: true,
+                created_at: SystemTime::now(),
+                is_p2pool_enabled: old_config.p2pool_enabled(),
+                use_tor: old_config.use_tor(),
+                allow_telemetry: old_config.allow_telemetry(),
+                last_binaries_update_timestamp: old_config.last_binaries_update_timestamp(),
+                anon_id: old_config.anon_id().to_string(),
+                should_auto_launch: old_config.should_auto_launch(),
+                mmproxy_use_monero_failover: old_config.mmproxy_use_monero_fail(),
+                mmproxy_monero_nodes: old_config.mmproxy_monero_nodes().to_vec(),
+                auto_update: old_config.auto_update(),
+                p2pool_stats_server_port: old_config.p2pool_stats_server_port(),
+                pre_release: old_config.pre_release(),
+                last_changelog_version: Version::from_str(old_config.last_changelog_version())
+                    .unwrap_or_else(|_| Version::new(0, 0, 0)),
+                airdrop_tokens: old_config.airdrop_tokens(),
+                ..Default::default()
+            };
+        } else {
+            self.content.set_was_config_migrated(true);
+        }
     }
 }

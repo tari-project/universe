@@ -180,25 +180,40 @@ impl SetupManager {
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
 
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        let is_old_config_file_exists = old_config.is_file_exists(old_config_path.clone());
+        let old_config_content = match is_old_config_file_exists {
+            true => Some(old_config.clone()),
+            false => None,
+        };
+
         let mut config_core = ConfigCore::current().write().await;
-        config_core.migrate_old_config(old_config.clone());
+        config_core.handle_old_config_migration(old_config_content.clone());
         config_core.load_app_handle(app_handle.clone()).await;
         drop(config_core);
 
         let mut config_wallet = ConfigWallet::current().write().await;
-        config_wallet.migrate_old_config(old_config.clone());
+        config_wallet.handle_old_config_migration(old_config_content.clone());
         config_wallet.load_app_handle(app_handle.clone()).await;
         drop(config_wallet);
 
         let mut config_mining = ConfigMining::current().write().await;
-        config_mining.migrate_old_config(old_config.clone());
+        config_mining.handle_old_config_migration(old_config_content.clone());
         config_mining.load_app_handle(app_handle.clone()).await;
         drop(config_mining);
 
         let mut config_ui = ConfigUI::current().write().await;
-        config_ui.migrate_old_config(old_config.clone());
+        config_ui.handle_old_config_migration(old_config_content.clone());
         config_ui.load_app_handle(app_handle.clone()).await;
         drop(config_ui);
+
+        old_config
+            .move_out_of_original_location(old_config_path)
+            .await;
 
         state
             .events_manager

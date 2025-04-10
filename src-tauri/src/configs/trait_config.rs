@@ -109,7 +109,7 @@ pub trait ConfigImpl {
         Self::current().read().await._get_content().clone()
     }
     async fn load_app_handle(&mut self, app_handle: AppHandle);
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig);
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>);
     async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
     where
         I: Serialize + Clone,

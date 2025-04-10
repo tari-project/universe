@@ -337,6 +337,30 @@ impl AppConfig {
         }
     }
 
+    pub async fn move_out_of_original_location(&self, config_path: PathBuf) {
+        let file = config_path.join("app_config.json");
+        if file.exists() {
+            let destination_dir = config_path.join("old");
+            if !destination_dir.exists() {
+                fs::create_dir_all(&destination_dir)
+                    .await
+                    .expect("Failed to create old directory");
+            }
+            let new_file = config_path.join("old").join("app_config.json");
+            let _unused = fs::rename(file, new_file).await.inspect_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to move app_config.json: {}", e);
+            });
+        }
+    }
+
+    pub fn is_file_exists(&self, config_path: PathBuf) -> bool {
+        let file = config_path.join("app_config.json");
+        if file.exists() {
+            return true;
+        }
+        false
+    }
+
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
         self.config_file = Some(file.clone());
@@ -346,18 +370,19 @@ impl AppConfig {
             let config = fs::read_to_string(&file).await?;
             self.created_at = Some(file.clone().metadata()?.created()?.into());
             self.apply_loaded_config(config);
-        } else {
-            info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
-            if let Ok(address) = create_monereo_address(config_path).await {
-                self.monero_address = address;
-                self.monero_address_is_generated = true;
-            }
-
-            if self.update_config_file().await.is_ok() {
-                self.created_at = Some(file.clone().metadata()?.created()?.into());
-            }
         }
-        self.update_config_file().await?;
+        // else {
+        //     info!(target: LOG_TARGET, "App config does not exist or is corrupt. Creating new one");
+        //     if let Ok(address) = create_monereo_address(config_path).await {
+        //         self.monero_address = address;
+        //         self.monero_address_is_generated = true;
+        //     }
+
+        //     if self.update_config_file().await.is_ok() {
+        //         self.created_at = Some(file.clone().metadata()?.created()?.into());
+        //     }
+        // }
+        // self.update_config_file().await?;
         Ok(())
     }
 
