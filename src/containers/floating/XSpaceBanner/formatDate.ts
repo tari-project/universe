@@ -13,5 +13,5 @@ export function formatDateForEvent(date: Date) {
     const minutes = date.getMinutes();
     const minutesStr = minutes < 10 ? `0${minutes}` : minutes;
 
-    return `${dayName}, ${monthName} ${dateNum} @${hours}:${minutesStr}${ampm} EST`;
+    return `${dayName}, ${monthName} ${dateNum} @${hours}:${minutesStr}${ampm}`;
 }
