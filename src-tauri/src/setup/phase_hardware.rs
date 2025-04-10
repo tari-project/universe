@@ -169,20 +169,22 @@ impl SetupPhaseImpl for HardwareSetupPhase {
 
         let binary_resolver = BinaryResolver::current().read().await;
 
-        binary_resolver
-            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
-            .await?;
         progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::BinariesGpuMiner,
             ))
             .await;
 
+        binary_resolver
+            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
+            .await?;
+
         progress_stepper
             .resolve_step(ProgressPlans::Hardware(
                 ProgressSetupHardwarePlan::BinariesCpuMiner,
             ))
             .await;
+
         binary_resolver
             .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
             .await?;
