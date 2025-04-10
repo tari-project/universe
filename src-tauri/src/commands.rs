@@ -1152,10 +1152,7 @@ pub async fn set_monerod_config(
 }
 
 #[tauri::command]
-pub async fn set_p2pool_enabled(
-    p2pool_enabled: bool,
-    state: tauri::State<'_, UniverseAppState>,
-) -> Result<(), InvokeError> {
+pub async fn set_p2pool_enabled(p2pool_enabled: bool) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigCore::update_field_with_restart(
         ConfigCoreContent::set_is_p2pool_enabled,
