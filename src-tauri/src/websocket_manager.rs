@@ -320,7 +320,7 @@ impl WebsocketManager {
                 receiver_task(app, read_stream, close_channel_tx_receiver.clone(), shutdown.clone().to_signal()).await;
             })=>{},
             _=tauri::async_runtime::spawn(async move {
-                let _ = sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone(), shutdown_cloned.to_signal()).await;
+                drop(sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone(), shutdown_cloned.to_signal()).await);
             })=>{},
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 return;
