@@ -46,6 +46,8 @@ use utils::locks_utils::try_write_with_retry;
 use utils::network_status::NetworkStatus;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
+use websocket_events_manager::WebsocketEventsManager;
+use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
 use log4rs::config::RawConfig;
 use serde::Serialize;
@@ -58,7 +60,7 @@ use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
 use tauri::async_runtime::{block_on, JoinHandle};
-use tauri::{Emitter, Manager, RunEvent};
+use tauri::{Emitter, Listener, Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
 use tokio::sync::{Mutex, RwLock};
@@ -142,6 +144,8 @@ mod updates_manager;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
+mod websocket_events_manager;
+mod websocket_manager;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -410,6 +414,40 @@ async fn setup_inner(
             }),
         )
         .await?;
+
+    let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+    websocket_events_manager_guard.set_app_handle(app.clone());
+    drop(websocket_events_manager_guard);
+
+    let mut websocket_manager_write = state.websocket_manager.write().await;
+    websocket_manager_write.set_app_handle(app.clone());
+    drop(websocket_manager_write);
+
+    let webview = app
+        .get_webview_window("main")
+        .expect("main window must exist");
+    let websocket_tx = state.websocket_message_tx.clone();
+    webview.listen("ws-tx", move |event: tauri::Event| {
+        let event_cloned = event.clone();
+        let websocket_tx_clone = websocket_tx.clone();
+
+        tauri::async_runtime::spawn(async move {
+            let message = event_cloned.payload();
+            if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                .inspect_err(|e| error!("websocket malformatted: {}", e))
+            {
+                if websocket_tx_clone
+                    .send(message.clone())
+                    .await
+                    .inspect_err(|e| error!("too many messages in websocket send queue {}", e))
+                    .is_ok()
+                {
+                    log::trace!("websocket message sent {:?}", message);
+                }
+            }
+        });
+    });
+
     progress.set_max(5).await;
     progress
         .update("benchmarking-network".to_string(), None, 0)
@@ -958,6 +996,10 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
+    websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
+    websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
+    websocket_manager: Arc<RwLock<WebsocketManager>>,
+    websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -991,6 +1033,13 @@ fn main() {
     let node_manager = NodeManager::new(base_node_watch_tx, &mut stats_collector);
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (websocket_message_tx, websocket_message_rx) =
+        tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+
+    //NOTE DONT use websocket_state_tx anywhere else than WebsocketManager
+    let (websocket_manager_status_tx, websocket_manager_status_rx) =
+        watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
+
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
@@ -1054,6 +1103,17 @@ fn main() {
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    let app_id = app_config_raw.anon_id().to_string();
+
+    let websocket_events_manager = WebsocketEventsManager::new(
+        app_config.clone(),
+        app_id.clone(),
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        shutdown.clone(),
+        websocket_message_tx.clone(),
+    );
 
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
@@ -1085,6 +1145,18 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
+        websocket_message_tx: Arc::new(websocket_message_tx),
+        websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
+        websocket_manager: Arc::new(RwLock::new(WebsocketManager::new(
+            app_in_memory_config.clone(),
+            websocket_message_rx,
+            shutdown.clone(),
+            websocket_manager_status_tx.clone(),
+            websocket_manager_status_rx.clone(),
+            app_config.clone(),
+            app_id.clone(),
+        ))),
+        websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1340,7 +1412,9 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::websocket_connect,
+            commands::websocket_close
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -1364,6 +1438,8 @@ fn main() {
         let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
             error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
         });
+
+
 
         match event {
         tauri::RunEvent::Ready  => {
