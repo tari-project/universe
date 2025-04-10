@@ -125,23 +125,28 @@ impl ConfigImpl for ConfigUI {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
         if self.content.was_config_migrated {
             return;
         }
 
-        self.content = ConfigUIContent {
-            was_config_migrated: true,
-            created_at: SystemTime::now(),
-            display_mode: old_config.display_mode(),
-            has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
-            should_always_use_system_language: old_config.should_always_use_system_language(),
-            application_language: old_config.application_language().to_string(),
-            paper_wallet_enabled: old_config.paper_wallet_enabled(),
-            custom_power_levels_enabled: old_config.custom_power_levels_enabled(),
-            sharing_enabled: old_config.sharing_enabled(),
-            visual_mode: old_config.visual_mode(),
-            show_experimental_settings: old_config.show_experimental_settings(),
-        };
+        if old_config.is_some() {
+            let old_config = old_config.expect("Old config should be present");
+            self.content = ConfigUIContent {
+                was_config_migrated: true,
+                created_at: SystemTime::now(),
+                display_mode: old_config.display_mode(),
+                has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
+                should_always_use_system_language: old_config.should_always_use_system_language(),
+                application_language: old_config.application_language().to_string(),
+                paper_wallet_enabled: old_config.paper_wallet_enabled(),
+                custom_power_levels_enabled: old_config.custom_power_levels_enabled(),
+                sharing_enabled: old_config.sharing_enabled(),
+                visual_mode: old_config.visual_mode(),
+                show_experimental_settings: old_config.show_experimental_settings(),
+            };
+        } else {
+            self.content.set_was_config_migrated(true);
+        }
     }
 }

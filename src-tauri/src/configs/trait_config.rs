@@ -126,10 +126,10 @@ pub trait ConfigImpl {
         Self::current().read().await._get_content().clone()
     }
     async fn load_app_handle(&mut self, app_handle: AppHandle);
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig);
-    async fn update_field<F, I: Debug>(setter_callback: F, value: I) -> Result<(), Error>
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>);
+    async fn update_field<F, I>(setter_callback: F, value: I) -> Result<(), Error>
     where
-        I: Serialize + Clone,
+        I: Serialize + Clone + Debug,
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {
@@ -155,14 +155,13 @@ pub trait ConfigImpl {
             .await;
         Ok(())
     }
-
-    async fn update_field_requires_restart<F, I: Debug>(
+    async fn update_field_requires_restart<F, I>(
         setter_callback: F,
         value: I,
         phases_to_restart: Vec<SetupPhase>,
     ) -> Result<(), Error>
     where
-        I: Serialize + Clone,
+        I: Serialize + Clone + Debug,
         F: FnOnce(&mut Self::Config, I) -> &mut Self::Config,
         Self: 'static,
     {

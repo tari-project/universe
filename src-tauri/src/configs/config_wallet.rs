@@ -101,17 +101,22 @@ impl ConfigImpl for ConfigWallet {
         &mut self.content
     }
 
-    fn migrate_old_config(&mut self, old_config: Self::OldConfig) {
+    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
         if self.content.was_config_migrated {
             return;
         }
 
-        self.content = ConfigWalletContent {
-            was_config_migrated: true,
-            created_at: SystemTime::now(),
-            keyring_accessed: old_config.keyring_accessed(),
-            monero_address: old_config.monero_address().to_string(),
-            monero_address_is_generated: old_config.monero_address_is_generated(),
-        };
+        if old_config.is_some() {
+            let old_config = old_config.expect("Old config should be present");
+            self.content = ConfigWalletContent {
+                was_config_migrated: true,
+                created_at: SystemTime::now(),
+                keyring_accessed: old_config.keyring_accessed(),
+                monero_address: old_config.monero_address().to_string(),
+                monero_address_is_generated: old_config.monero_address_is_generated(),
+            };
+        } else {
+            self.content.set_was_config_migrated(true);
+        }
     }
 }
