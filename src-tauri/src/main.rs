@@ -249,9 +249,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+    TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
