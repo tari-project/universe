@@ -139,7 +139,7 @@ pub trait ConfigImpl {
         Ok(())
     }
 
-    async fn update_field_with_restart<F, I: Debug>(
+    async fn update_field_requires_restart<F, I: Debug>(
         setter_callback: F,
         value: I,
         phases_to_restart: Vec<SetupPhase>,
@@ -150,7 +150,6 @@ pub trait ConfigImpl {
         Self: 'static,
     {
         Self::update_field(setter_callback, value).await?;
-        Self::current().read().await._send_restart_event().await?;
         SetupManager::get_instance()
             .add_phases_to_restart_queue(phases_to_restart)
             .await;
