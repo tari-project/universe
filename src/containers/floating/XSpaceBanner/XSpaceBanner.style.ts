@@ -118,15 +118,6 @@ export const LiveBadgeText = styled(m.div)`
     letter-spacing: 1%;
 `;
 
-export const TimeBadge = styled(m.div)`
-    background-color: white;
-    color: black;
-    font-weight: 1000;
-    padding: 4px 12px;
-    border-radius: 9999px;
-    font-size: 0.875rem;
-`;
-
 export const LiveWrapper = styled(m.div)`
     display: flex;
     align-items: center;
