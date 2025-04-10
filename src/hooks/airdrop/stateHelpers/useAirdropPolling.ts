@@ -24,6 +24,10 @@ export const useAirdropPolling = () => {
 
     useEffect(() => {
         fetchPollingFeatureFlag();
+        const interval = setInterval(async () => {
+            await fetchPollingFeatureFlag();
+        }, 1000 * 60); // Once every minute
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
