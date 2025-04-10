@@ -171,6 +171,7 @@ impl MmProxyManager {
             if lock.is_running() {
                 if let Some(status) = lock.status_monitor.as_ref() {
                     if status.check_health(start_time.elapsed()).await == HealthStatus::Healthy {
+                        info!(target: LOG_TARGET, "MM proxy is healthy");
                         return Ok(());
                     } else {
                         info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/20", i + 1);
