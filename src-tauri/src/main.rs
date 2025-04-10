@@ -1049,6 +1049,7 @@ fn main() {
         p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
         stats_collector.build(),
+        node_manager.clone(),
     );
     let telemetry_service = TelemetryService::new(app_config.clone(), app_in_memory_config.clone());
     let updates_manager = UpdatesManager::new(app_config.clone(), shutdown.to_signal());
