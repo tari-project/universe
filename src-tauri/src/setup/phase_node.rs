@@ -174,33 +174,33 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let binary_resolver = BinaryResolver::current().read().await;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
-            binary_resolver
-                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
-                .await?;
+            tokio::time::sleep(Duration::from_secs(10)).await;
             progress_stepper
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
                 .await;
+            binary_resolver
+                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
+                .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
         };
 
-        binary_resolver
-            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
-            .await?;
         progress_stepper
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .await;
+        binary_resolver
+            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
+            .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {
+            progress_stepper
+                .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
+                .await;
             state
                 .tor_manager
                 .ensure_started(data_dir.clone(), config_dir.clone(), log_dir.clone())
                 .await?;
         }
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartTor))
-            .await;
 
         let tor_control_port = state.tor_manager.get_control_port().await?;
         progress_stepper
