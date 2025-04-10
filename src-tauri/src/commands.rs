@@ -1168,31 +1168,31 @@ pub async fn set_p2pool_enabled(
     let origin_config = state.mm_proxy_manager.config().await;
     let p2pool_grpc_port = state.p2pool_manager.grpc_port().await;
 
-    match origin_config {
-        None => {
-            warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
-            return Ok(());
-        }
-        Some(mut origin_config) => {
-            if origin_config.p2pool_enabled != p2pool_enabled {
-                if p2pool_enabled {
-                    origin_config.set_to_use_p2pool(p2pool_grpc_port);
-                } else {
-                    let base_node_grpc_address = state
-                        .node_manager
-                        .get_grpc_address()
-                        .await
-                        .map_err(|error| error.to_string())?;
-                    origin_config.set_to_use_base_node(base_node_grpc_address.to_string());
-                }
-                state
-                    .mm_proxy_manager
-                    .change_config(origin_config)
-                    .await
-                    .map_err(|error| error.to_string())?;
-            }
-        }
-    }
+    // match origin_config {
+    //     None => {
+    //         warn!(target: LOG_TARGET, "Tried to set p2pool_enabled but mmproxy has not been initialized yet");
+    //         return Ok(());
+    //     }
+    //     Some(mut origin_config) => {
+    //         if origin_config.p2pool_enabled != p2pool_enabled {
+    //             if p2pool_enabled {
+    //                 origin_config.set_to_use_p2pool(p2pool_grpc_port);
+    //             } else {
+    //                 let base_node_grpc_address = state
+    //                     .node_manager
+    //                     .get_grpc_address()
+    //                     .await
+    //                     .map_err(|error| error.to_string())?;
+    //                 origin_config.set_to_use_base_node(base_node_grpc_address.to_string());
+    //             }
+    //             state
+    //                 .mm_proxy_manager
+    //                 .change_config(origin_config)
+    //                 .await
+    //                 .map_err(|error| error.to_string())?;
+    //         }
+    //     }
+    // }
 
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_p2pool_enabled took too long: {:?}", timer.elapsed());
