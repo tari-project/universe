@@ -40,7 +40,15 @@ export const useAirdropPolling = () => {
     }, [fetchAirdropDataDebounced, pollingEnabled]);
 
     useEffect(() => {
-        if (!pollingEnabled) return;
+        if (!pollingEnabled) {
+            window.addEventListener('focus', fetchPollingFeatureFlag);
+            return () => {
+                window.removeEventListener('focus', fetchPollingFeatureFlag);
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                }
+            };
+        }
         window.addEventListener('focus', fetchAirdropDataDebounced);
         return () => {
             window.removeEventListener('focus', fetchAirdropDataDebounced);
