@@ -62,14 +62,11 @@ impl EventsService {
                                 }
                                 if wallet_state.scanned_height == 0 {
                                     let wallet_network = wallet_state.network.unwrap_or_default();
-                                    match wallet_network.status {
-                                        ConnectivityStatus::Online(_) => {
-                                            // Scan completed before the wallet grpc server started
-                                            // scanned_height will be updated with the next mined block
-                                            return Ok(wallet_state);
-                                        },
-                                        _ => {}
-                                    }
+                                    if let ConnectivityStatus::Online(_) = wallet_network.status {
+                                        // Scan completed before the wallet grpc server started
+                                        // scanned_height will be updated with the next mined block
+                                        return Ok(wallet_state);
+                                    };
                                 }
                                 continue;
                             }
