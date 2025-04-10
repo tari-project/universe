@@ -31,15 +31,15 @@ export default function Progress() {
     const { countdown } = useProgressCountdown(120);
 
     const currentPhaseToShow = useMemo(() => {
-        if (hardwarePhaseInfoPayload?.is_complete) {
+        if (hardwarePhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {
             return unknownPhaseInfoPayload;
         }
 
-        if (nodePhaseInfoPayload?.is_complete) {
+        if (nodePhaseInfoPayload?.is_complete && Boolean(hardwarePhaseInfoPayload)) {
             return hardwarePhaseInfoPayload;
         }
 
-        if (corePhaseInfoPayload?.is_complete) {
+        if (corePhaseInfoPayload?.is_complete && Boolean(nodePhaseInfoPayload)) {
             return nodePhaseInfoPayload;
         }
 
