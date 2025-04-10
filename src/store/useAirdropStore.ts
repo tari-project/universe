@@ -96,6 +96,7 @@ export interface AirdropStoreState {
     bonusTiers?: BonusTier[];
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
+    pollingEnabled?: boolean;
 }
 
 const initialState: AirdropStoreState = {
@@ -107,6 +108,7 @@ const initialState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
+    pollingEnabled: undefined,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

@@ -197,6 +197,41 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
+export async function fetchPollingFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/polling',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ pollingEnabled: response.access });
+        // TODO: Let the BE know we're using the polling feature for mining proofs
+    }
+
+    return response;
+}
+
+export async function fetchLatestXSpaceEvent() {
+    const response = await handleAirdropRequest<XSpaceEvent | null>({
+        publicRequest: true,
+        path: '/miner/x-space-events/latest',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ latestXSpaceEvent: response });
+    }
+
+    return response;
+}
+
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
@@ -244,6 +279,7 @@ export const fetchAllUserData = async () => {
         if (!data?.tiers) return;
         setBonusTiers(data?.tiers);
     };
+
     const fetchData = async () => {
         const details = await fetchUserDetails();
 

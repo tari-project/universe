@@ -7,7 +7,7 @@ interface RequestProps {
     body?: Record<string, unknown>;
     onError?: (e: unknown) => void;
     headers?: HeadersInit | undefined;
-    auth?: boolean;
+    publicRequest?: boolean;
 }
 
 const MAX_RETRIES = 3;
@@ -21,13 +21,13 @@ async function retryHandler(errorMessage: string) {
     return await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
-export async function handleAirdropRequest<T>({ body, method, path, onError, headers, auth }: RequestProps) {
+export async function handleAirdropRequest<T>({ body, method, path, onError, headers, publicRequest }: RequestProps) {
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
-    if (isTokenExpired && !auth) {
+    if (isTokenExpired && !publicRequest) {
         if (retryCount >= MAX_RETRIES) {
             throw Error('Failed to refresh tokens from handleAirdropRequest');
         }
@@ -44,7 +44,11 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
         retryCount = 0;
     }
 
-    if (!headers && !headers && (!baseUrl || !airdropToken)) return;
+    // If no token and no public request, return
+    if (!baseUrl || (!airdropToken && !publicRequest)) {
+        console.warn(`No token or baseUrl, skipping request to ${path}`);
+        return;
+    }
 
     const fullUrl = `${baseUrl}${path}`;
     try {
