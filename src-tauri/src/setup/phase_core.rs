@@ -162,10 +162,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
-        // return Err(anyhow!(
-        //     "Core setup phase is not implemented yet. Please implement the setup_inner method."
-        // ));
-
         progress_stepper
             .resolve_step(ProgressPlans::Core(
                 ProgressSetupCorePlan::PlatformPrequisites,
