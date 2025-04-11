@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import i18n from 'i18next';
 import * as m from 'motion/react-m';
 import { setApplicationLanguage } from '@app/store';
-import { memo } from 'react';
+import { useReducer } from 'react';
 
 type LanguageOption = SelectOption;
 
@@ -19,18 +19,23 @@ const Wrapper = styled(m.div)`
     position: relative;
 `;
 
-const LanguageDropdown = memo(function LanguageDropdown() {
+function LanguageDropdown() {
+    const [, forceUpdate] = useReducer((x) => x + 1, 0);
+    const handleLanguageChange = (value: string) => {
+        setApplicationLanguage(value as Language);
+        forceUpdate(); // Since i18n is outside of store component doesn't update
+    };
     return (
         <Wrapper>
             <Select
                 options={languageOptions}
-                onChange={(value) => setApplicationLanguage(value as Language)}
+                onChange={handleLanguageChange}
                 selectedValue={resolveI18nLanguage(i18n.language)}
                 variant="bordered"
                 forceHeight={36}
             />
         </Wrapper>
     );
-});
+}
 
 export default LanguageDropdown;
