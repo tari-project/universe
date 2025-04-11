@@ -1,5 +1,6 @@
 {
   "cancel": "Anuluj",
+  "close": "Zamknij",
   "close-tari-universe": "Zamknij Tari Universe",
   "connection": "Połączenie",
   "continue": "Kontynuuj",
@@ -9,6 +10,7 @@
   "disconnect": "Odłącz",
   "hashrate": "Prędkość ( hashrate )",
   "installation-problem": "Problem z instalacją",
+  "join_the_space": "Dołącz do Space",
   "max-temperature": "Maksymalna temperatura",
   "minimize": "Zminimalizuj",
   "mode": "Tryb",
@@ -24,11 +26,10 @@
   "testnet": "Testnet",
   "unknown": "Nieznany",
   "unminimize": "Przywróć",
+  "update": "Aktualizuj",
   "usage": "Użycie",
   "utilization": "Wykorzystanie",
   "version": "Wersja",
   "versions": "Wersje",
-  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
-  "close": "Zamknij",
-  "update": "Aktualizuj"
+  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony."
 }
