@@ -201,14 +201,14 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
+                    let node_status: BaseNodeStatus = *node_status_watch_rx.borrow();
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
                             let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
                     } else {
-                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status.clone()).await;
+                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {

@@ -387,7 +387,7 @@ impl StatusMonitor for NodeStatusMonitor {
         match timeout(duration, self.node_client.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    let _res = self.status_broadcast.send(status.clone());
+                    let _res = self.status_broadcast.send(status);
                     if status.num_connections == 0 && uptime > Duration::from_secs(60)
                         // Remote Node always returns 0 connections
                         && self.node_type != NodeType::Remote

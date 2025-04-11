@@ -601,7 +601,7 @@ impl NodeManager {
                             Ok(node_type) => {
                                 if matches!(node_type, NodeType::Local | NodeType::LocalAfterRemote) {
                                     let status = *local_node_watch_rx.borrow();
-                                    if base_node_watch_tx.send(status.clone()).is_err() {
+                                    if base_node_watch_tx.send(status).is_err() {
                                         error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                                     } else {
                                         info!(target: LOG_TARGET, "Forwarded local BaseNodeStatus: {:?}", status);

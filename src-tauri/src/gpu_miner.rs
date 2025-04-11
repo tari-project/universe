@@ -304,7 +304,7 @@ impl GpuMiner {
             loop {
                 select! {
                     _ = gpu_raw_status_rx.changed() => {
-                        let node_status = node_status_watch_rx.borrow().clone();
+                        let node_status = *node_status_watch_rx.borrow();
                         let gpu_raw_status = gpu_raw_status_rx.borrow().clone();
 
                         let gpu_status = match gpu_raw_status {

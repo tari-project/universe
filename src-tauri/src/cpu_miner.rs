@@ -280,7 +280,7 @@ impl CpuMiner {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {
-                        let node_status = node_status_watch_rx.borrow().clone();
+                        let node_status = *node_status_watch_rx.borrow();
                         let xmrig_summary = summary_watch_rx.borrow().clone();
 
                         let cpu_status = match xmrig_summary {
