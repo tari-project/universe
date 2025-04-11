@@ -1,5 +1,6 @@
 {
   "cancel": "İptal",
+  "close": "Kapat",
   "close-tari-universe": "Tari Evreni\"ni Kapat",
   "connection": "Bağlantı",
   "continue": "Devam Et",
@@ -9,6 +10,7 @@
   "disconnect": "Bağlantıyı Kes",
   "hashrate": "Hashrate",
   "installation-problem": "Kurulum sorunu",
+  "join_the_space": "Space'e Katıl",
   "max-temperature": "Maks. Sıcaklık",
   "minimize": "Küçült",
   "mode": "Mod",
@@ -24,12 +26,10 @@
   "testnet": "Testnet",
   "unknown": "Bilinmeyen",
   "unminimize": "Küçültmeyi Geri Al",
+  "update": "Güncelle",
   "usage": "Kullanım",
   "utilization": "Fayda",
   "version": "Versiyon",
   "versions": "Versiyon",
-  "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı.",
-  "close": "Kapat",
-  "update": "Güncelle",
-  "join_the_space": "Space'e Katıl"
+  "webgl-not-supported": "WebGL desteklenmiyor. Görsel mod devre dışı bırakıldı."
 }

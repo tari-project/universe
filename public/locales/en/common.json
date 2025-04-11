@@ -1,5 +1,6 @@
 {
   "cancel": "Cancel",
+  "close": "Close",
   "close-tari-universe": "Close Tari Universe",
   "connection": "Connection",
   "continue": "Continue",
@@ -9,6 +10,7 @@
   "disconnect": "Disconnect",
   "hashrate": "Hashrate",
   "installation-problem": "Installation problem",
+  "join_the_space": "Join the Space",
   "max-temperature": "Max temperature",
   "minimize": "Minimize",
   "mode": "Mode",
@@ -24,12 +26,10 @@
   "testnet": "Testnet",
   "unknown": "Unknown",
   "unminimize": "Unminimize",
+  "update": "Update",
   "usage": "Usage",
   "utilization": "Utilization",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL not supported. Disabled visual mode.",
-  "close": "Close",
-  "update": "Update",
-  "join_the_space": "Join the Space"
+  "webgl-not-supported": "WebGL not supported. Disabled visual mode."
 }

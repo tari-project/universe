@@ -1,5 +1,6 @@
 {
   "cancel": "Batal",
+  "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
   "connection": "Koneksi",
   "continue": "Lanjutkan",
@@ -9,6 +10,7 @@
   "disconnect": "Putuskan Koneksi",
   "hashrate": "Hashrate",
   "installation-problem": "Masalah instalasi",
+  "join_the_space": "Bergabung dengan Space",
   "max-temperature": "Suhu maksimum",
   "minimize": "Minimalkan",
   "mode": "Mode",
@@ -24,12 +26,10 @@
   "testnet": "Testnet",
   "unknown": "Tidak diketahui",
   "unminimize": "Maksimalkan",
+  "update": "Perbarui",
   "usage": "Penggunaan",
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
-  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
-  "close": "Tutup",
-  "update": "Perbarui",
-  "join_the_space": "Bergabung dengan Space"
+  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan."
 }
