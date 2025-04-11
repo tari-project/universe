@@ -304,8 +304,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                 } else {
                                     warn!("Progress tracker not found for step: {}", step);
                                 }
-                                tokio::time::sleep(Duration::from_secs(1)).await;
                             }
+                            tokio::time::sleep(Duration::from_secs(1)).await;
                         },
                         _ = shutdown_signal.wait() => {
                             break;
