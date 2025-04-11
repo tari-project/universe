@@ -82,7 +82,7 @@ impl InternalWallet {
                     config.config_path = Some(file_parent.to_path_buf());
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
-                    if let Err(e) = cm.migrate(&config) {
+                    if let Err(e) = cm.migrate(&config).await {
                         warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
                     }
 
@@ -145,7 +145,8 @@ impl InternalWallet {
             .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
 
         let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
-            .get_credentials()?
+            .get_credentials()
+            .await?
             .tari_seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
@@ -206,12 +207,12 @@ impl InternalWallet {
         };
 
         let cm = CredentialManager::default_with_dir(path);
-        let passphrase = match cm.get_credentials() {
+        let passphrase = match cm.get_credentials().await {
             Ok(mut creds) => match creds.tari_seed_passphrase {
                 Some(p) => Some(p),
                 None => {
                     creds.tari_seed_passphrase = Some(SafePassword::from(generate_password(32)));
-                    cm.set_credentials(&creds)?;
+                    cm.set_credentials(&creds).await?;
                     creds.tari_seed_passphrase
                 }
             },
@@ -220,7 +221,7 @@ impl InternalWallet {
                     tari_seed_passphrase: Some(SafePassword::from(generate_password(32))),
                     monero_seed: None,
                 };
-                cm.set_credentials(&credentials)?;
+                cm.set_credentials(&credentials).await?;
                 credentials.tari_seed_passphrase
             }
             Err(_) => {
@@ -280,7 +281,7 @@ impl InternalWallet {
         ))
     }
 
-    pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
+    pub async fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
         let path = match &self.config.config_path {
             Some(p) => match p.parent() {
                 Some(p) => p.to_path_buf(),
@@ -290,7 +291,8 @@ impl InternalWallet {
         };
 
         let passphrase = CredentialManager::default_with_dir(path)
-            .get_credentials()?
+            .get_credentials()
+            .await?
             .tari_seed_passphrase;
 
         let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)

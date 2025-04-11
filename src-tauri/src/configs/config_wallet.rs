@@ -76,9 +76,16 @@ impl Default for ConfigWalletContent {
 impl ConfigContentImpl for ConfigWalletContent {}
 
 impl ConfigWalletContent {
-    pub fn set_monero_address(&mut self, address: String) -> &mut Self {
+    pub fn set_user_monero_address(&mut self, address: String) -> &mut Self {
         self.monero_address = address;
         self.monero_address_is_generated = false;
+
+        self
+    }
+
+    pub fn set_generated_monero_address(&mut self, address: String) -> &mut Self {
+        self.monero_address = address;
+        self.monero_address_is_generated = true;
 
         self
     }
@@ -90,17 +97,7 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn resolve_monero_address(&mut self) {
-        if self.content.monero_address.is_empty() {
-            if let Ok(address) = Self::create_monereo_address() {
-                self.content.monero_address = address;
-                self.content.monero_address_is_generated = true;
-            } else {
-                warn!(target: LOG_TARGET, "Failed to create monero seed");
-            }
-        }
-    }
-    fn create_monereo_address() -> Result<String, Error> {
+    pub async fn create_monereo_address() -> Result<String, Error> {
         let config_dir = config_dir()
             .unwrap_or_else(|| {
                 warn!("Failed to get config directory, using temp dir");
@@ -110,7 +107,7 @@ impl ConfigWallet {
 
         let cm = CredentialManager::default_with_dir(config_dir);
 
-        if let Ok(cred) = cm.get_credentials() {
+        if let Ok(cred) = cm.get_credentials().await {
             if let Some(seed) = cred.monero_seed {
                 info!(target: LOG_TARGET, "Found monero seed in credential manager");
                 let seed = MoneroSeed::new(seed);
@@ -127,7 +124,7 @@ impl ConfigWallet {
         };
 
         info!(target: LOG_TARGET, "Setting monero seed in credential manager");
-        cm.set_credentials(&cred)?;
+        cm.set_credentials(&cred).await?;
 
         Ok(monero_seed
             .to_address::<Mainnet>()
