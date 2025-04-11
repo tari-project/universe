@@ -27,7 +27,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::{select, sync::watch::Receiver};
 
-#[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -85,7 +84,7 @@ impl EventsManager {
                 _ = shutdown_signal.wait() => {
                     info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
                 }
-                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(300)) => {
+                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(3600)) => {
                     match result {
                         Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                             Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
@@ -210,7 +209,6 @@ impl EventsManager {
             .await;
     }
 
-    #[cfg(target_os = "macos")]
     pub async fn handle_critical_problem(
         &self,
         app: &AppHandle,

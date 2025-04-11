@@ -382,20 +382,21 @@ impl NodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration) -> HealthStatus {
         let duration = std::time::Duration::from_secs(5);
         match timeout(duration, self.node_client.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
-                    let _res = self.status_broadcast.send(status.clone());
-                    if status.num_connections == 0
+                    let _res = self.status_broadcast.send(status);
+                    if status.num_connections == 0 && uptime > Duration::from_secs(60)
                         // Remote Node always returns 0 connections
                         && self.node_type != NodeType::Remote
                         && self.node_type != NodeType::RemoteUntilLocal
                     {
                         warn!(
-                            "{:?} Node Health Check Warning: No connections",
-                            self.node_type
+                            "{:?} Node Health Check Warning: No connections | status: {:?}",
+                            self.node_type,
+                            status.clone()
                         );
                         return HealthStatus::Warning;
                     }
@@ -429,21 +430,15 @@ impl StatusMonitor for NodeStatusMonitor {
                 }
             },
             Err(e) => {
-                warn!("{:?} Node Health Check Error. {:?}", self.node_type, e);
+                warn!(
+                    "{:?} Node Health Check (get_network_state) error: {:?}",
+                    self.node_type, e
+                );
                 match self.node_client.get_identity().await {
-                    Ok(_) => match self.node_client.get_identity().await {
-                        Ok(identity) => {
-                            info!(target: LOG_TARGET, "{:?} Node identity: {:?}", self.node_type, identity);
-                            return HealthStatus::Healthy;
-                        }
-                        Err(e) => {
-                            warn!(
-                                "{:?} Node Health Check Error: checking base node identity: {:?}",
-                                self.node_type, e
-                            );
-                            return HealthStatus::Unhealthy;
-                        }
-                    },
+                    Ok(identity) => {
+                        info!(target: LOG_TARGET, "{:?} Node hecking base node identity success: {:?}", self.node_type, identity);
+                        return HealthStatus::Healthy;
+                    }
                     Err(e) => {
                         warn!(
                             "{:?} Node Health Check Error: checking base node identity: {:?}",
@@ -463,7 +458,7 @@ pub struct NodeIdentity {
     pub public_address: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
     pub randomx_network_hashrate: u64,

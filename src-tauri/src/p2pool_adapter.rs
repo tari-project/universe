@@ -106,7 +106,7 @@ impl ProcessAdapter for P2poolAdapter {
                 });
             }
             if fs::exists(data_dir.join("block_cache_backup"))? {
-                let _unused = fs::remove_file(data_dir.join("block_cache_backup")).inspect_err(
+                let _unused = fs::remove_dir_all(data_dir.join("block_cache_backup")).inspect_err(
                     |e| warn!(target: LOG_TARGET, "Failed to remove block cache backup file: {}", e),
                 ).inspect(|_| {
                     info!(target: LOG_TARGET, "Removed block cache backup file");

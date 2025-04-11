@@ -141,6 +141,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                     sentry::capture_message(&error_message, sentry::Level::Error);
+                    self.app_handle.state::<UniverseAppState>()
+                        .events_manager
+                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                        .await;
                 }
                 result = self.setup_inner() => {
                     match result {
@@ -152,6 +156,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
+                            self.app_handle.state::<UniverseAppState>()
+                                .events_manager
+                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                                .await;
                         }
                     }
                 }
@@ -210,38 +218,41 @@ impl SetupPhaseImpl for NodeSetupPhase {
         info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
 
         // Note: it starts 2 processes of node
-        // for _i in 0..2 {
-        match state
-            .node_manager
-            .ensure_started(
-                data_dir.clone(),
-                config_dir.clone(),
-                log_dir.clone(),
-                self.app_configuration.use_tor,
-                tor_control_port,
-                Some(self.app_configuration.base_node_grpc_address.clone()),
-                self.app_handle.clone(),
-            )
-            .await
-        {
-            Ok(_) => {
-                let events_manager = &self.app_handle.state::<UniverseAppState>().events_manager;
-                events_manager
-                    .handle_node_type_update(&self.app_handle)
-                    .await;
-            }
-            Err(e) => {
-                if let NodeManagerError::ExitCode(code) = e {
-                    if STOP_ON_ERROR_CODES.contains(&code) {
-                        warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
-                        state.node_manager.clean_data_folder(&data_dir).await?;
-                        // continue;
-                    }
+        for _i in 0..2 {
+            match state
+                .node_manager
+                .ensure_started(
+                    data_dir.clone(),
+                    config_dir.clone(),
+                    log_dir.clone(),
+                    self.app_configuration.use_tor,
+                    tor_control_port,
+                    Some(self.app_configuration.base_node_grpc_address.clone()),
+                    self.app_handle.clone(),
+                )
+                .await
+            {
+                Ok(_) => {
+                    let events_manager =
+                        &self.app_handle.state::<UniverseAppState>().events_manager;
+                    events_manager
+                        .handle_node_type_update(&self.app_handle)
+                        .await;
+                    break;
                 }
-                error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
+                Err(e) => {
+                    if let NodeManagerError::ExitCode(code) = e {
+                        if STOP_ON_ERROR_CODES.contains(&code) {
+                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                            state.node_manager.clean_data_folder(&data_dir).await?;
+                            continue;
+                        }
+                    }
+                    error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
 
-                self.app_handle.exit(-1);
-                return Err(e.into());
+                    self.app_handle.exit(-1);
+                    return Err(e.into());
+                }
             }
         }
 

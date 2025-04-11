@@ -49,6 +49,7 @@ pub(crate) struct CpuMiner {
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    pub benchmarked_hashrate: u64,
 }
 
 impl CpuMiner {
@@ -65,6 +66,7 @@ impl CpuMiner {
             cpu_miner_status_watch_tx,
             summary_watch_rx,
             node_status_watch_rx,
+            benchmarked_hashrate: 0,
         }
     }
 
@@ -157,7 +159,7 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-    ) -> Result<u64, anyhow::Error> {
+    ) -> Result<(), anyhow::Error> {
         let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
             .hardware_phase
@@ -206,7 +208,7 @@ impl CpuMiner {
                     error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
                     // Stop the miner before returning
                     self.stop().await?;
-                    return Ok(0);
+                    return Ok(());
                 }
             }
         };
@@ -246,7 +248,8 @@ impl CpuMiner {
         // Stop the miner
         self.stop().await?;
 
-        Ok(result)
+        self.benchmarked_hashrate = result;
+        Ok(())
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
@@ -277,7 +280,7 @@ impl CpuMiner {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {
-                        let node_status = node_status_watch_rx.borrow().clone();
+                        let node_status = *node_status_watch_rx.borrow();
                         let xmrig_summary = summary_watch_rx.borrow().clone();
 
                         let cpu_status = match xmrig_summary {

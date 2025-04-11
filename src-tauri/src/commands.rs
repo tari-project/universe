@@ -421,7 +421,7 @@ pub async fn get_monero_seed_words(app: tauri::AppHandle) -> Result<Vec<String>,
         .expect("Could not get config dir");
 
     let cm = CredentialManager::default_with_dir(config_path);
-    let cred = match cm.get_credentials() {
+    let cred = match cm.get_credentials().await {
         Ok(cred) => cred,
         Err(e @ CredentialError::PreviouslyUsedKeyring) => {
             return Err(e.to_string());
@@ -578,6 +578,7 @@ pub async fn get_seed_words(
         .map_err(|e| e.to_string())?;
     let seed_words = internal_wallet
         .decrypt_seed_words()
+        .await
         .map_err(|e| e.to_string())?;
     let mut res = vec![];
     for i in 0..seed_words.len() {
@@ -1119,7 +1120,7 @@ pub async fn set_monero_address(
 ) -> Result<(), InvokeError> {
     let timer = Instant::now();
     ConfigWallet::update_field_requires_restart(
-        ConfigWalletContent::set_monero_address,
+        ConfigWalletContent::set_user_monero_address,
         monero_address,
         vec![SetupPhase::Unknown],
     )
