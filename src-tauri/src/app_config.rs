@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::credential_manager::{Credential, KEYRING_ACCESSED};
+use crate::credential_manager::Credential;
 use crate::gpu_miner::EngineType;
 use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
@@ -431,10 +431,10 @@ impl AppConfig {
                 self.gpu_engine = config.gpu_engine;
                 self.remote_base_node_address = config.remote_base_node_address;
 
-                KEYRING_ACCESSED.store(
-                    config.keyring_accessed,
-                    std::sync::atomic::Ordering::Relaxed,
-                );
+                // KEYRING_ACCESSED.store(
+                //     config.keyring_accessed,
+                //     std::sync::atomic::Ordering::Relaxed,
+                // );
             }
             Err(e) => {
                 warn!(target: LOG_TARGET, "Failed to parse app config: {}", e.to_string());
@@ -916,7 +916,8 @@ impl AppConfig {
             ludicrous_mode_cpu_threads: self.ludicrous_mode_cpu_threads,
             mmproxy_monero_nodes: self.mmproxy_monero_nodes.clone(),
             mmproxy_use_monero_fail: self.mmproxy_use_monero_fail,
-            keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
+            // keyring_accessed: KEYRING_ACCESSED.load(std::sync::atomic::Ordering::Relaxed),
+            keyring_accessed: false, // placeholder
             auto_update: self.auto_update,
             custom_power_levels_enabled: self.custom_power_levels_enabled,
             sharing_enabled: self.sharing_enabled,
@@ -986,7 +987,7 @@ fn default_gpu_engine() -> String {
 async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> {
     let cm = CredentialManager::default_with_dir(path);
 
-    if let Ok(cred) = cm.get_credentials() {
+    if let Ok(cred) = cm.get_credentials().await {
         if let Some(seed) = cred.monero_seed {
             info!(target: LOG_TARGET, "Found monero seed in credential manager");
             let seed = MoneroSeed::new(seed);
@@ -1003,7 +1004,7 @@ async fn create_monereo_address(path: PathBuf) -> Result<String, anyhow::Error> 
     };
 
     info!(target: LOG_TARGET, "Setting monero seed in credential manager");
-    cm.set_credentials(&cred)?;
+    cm.set_credentials(&cred).await?;
 
     Ok(monero_seed
         .to_address::<Mainnet>()

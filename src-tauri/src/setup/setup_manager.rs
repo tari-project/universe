@@ -30,8 +30,11 @@ use super::{
 };
 use crate::{
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet, trait_config::ConfigImpl,
+        config_core::ConfigCore,
+        config_mining::ConfigMining,
+        config_ui::ConfigUI,
+        config_wallet::{ConfigWallet, ConfigWalletContent},
+        trait_config::ConfigImpl,
     },
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
@@ -196,10 +199,23 @@ impl SetupManager {
         config_core.load_app_handle(app_handle.clone()).await;
         drop(config_core);
 
-        let mut config_wallet = ConfigWallet::current().write().await;
-        config_wallet.handle_old_config_migration(old_config_content.clone());
-        config_wallet.load_app_handle(app_handle.clone()).await;
-        drop(config_wallet);
+        ConfigWallet::current()
+            .write()
+            .await
+            .handle_old_config_migration(old_config_content.clone());
+        ConfigWallet::current()
+            .write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
+
+        if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+            let _unused = ConfigWallet::update_field(
+                ConfigWalletContent::set_generated_monero_address,
+                monero_address,
+            )
+            .await;
+        }
 
         let mut config_mining = ConfigMining::current().write().await;
         config_mining.handle_old_config_migration(old_config_content.clone());

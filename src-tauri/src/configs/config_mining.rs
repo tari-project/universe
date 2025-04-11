@@ -68,15 +68,15 @@ impl Default for ConfigMiningContent {
             created_at: SystemTime::now(),
             mode: MiningMode::Eco,
             eco_mode_cpu_threads: None,
-            mine_on_app_start: false,
+            mine_on_app_start: true,
             ludicrous_mode_cpu_threads: None,
             eco_mode_cpu_options: vec![],
             ludicrous_mode_cpu_options: vec![],
             custom_mode_cpu_options: vec![],
             custom_max_cpu_usage: None,
             custom_max_gpu_usage: vec![],
-            gpu_mining_enabled: false,
-            cpu_mining_enabled: false,
+            gpu_mining_enabled: true,
+            cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
         }
     }
