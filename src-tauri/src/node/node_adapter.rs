@@ -463,7 +463,7 @@ pub struct NodeIdentity {
     pub public_address: Vec<String>,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Copy, Debug, Serialize)]
 pub(crate) struct BaseNodeStatus {
     pub sha_network_hashrate: u64,
     pub randomx_network_hashrate: u64,

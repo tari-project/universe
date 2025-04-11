@@ -1005,13 +1005,18 @@ fn main() {
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let node_manager = NodeManager::new(
         &mut stats_collector,
-        LocalNodeAdapter::new(base_node_watch_tx.clone()),
-        RemoteNodeAdapter::new(base_node_watch_tx.clone()),
+        LocalNodeAdapter::new(local_node_watch_tx.clone()),
+        RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
         shutdown.to_signal(),
         // TODO: Decide who and how controls it
         NodeType::RemoteUntilLocal,
+        base_node_watch_tx,
+        local_node_watch_rx,
+        remote_node_watch_rx,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
