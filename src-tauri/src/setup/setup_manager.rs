@@ -198,6 +198,7 @@ impl SetupManager {
 
         let mut config_wallet = ConfigWallet::current().write().await;
         config_wallet.handle_old_config_migration(old_config_content.clone());
+        config_wallet.resolve_monero_address().await;
         config_wallet.load_app_handle(app_handle.clone()).await;
         drop(config_wallet);
 

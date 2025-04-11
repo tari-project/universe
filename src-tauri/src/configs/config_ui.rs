@@ -64,9 +64,9 @@ impl Default for ConfigUIContent {
             has_system_language_been_proposed: false,
             should_always_use_system_language: false,
             application_language: "en".to_string(),
-            paper_wallet_enabled: false,
-            custom_power_levels_enabled: false,
-            sharing_enabled: false,
+            paper_wallet_enabled: true,
+            custom_power_levels_enabled: true,
+            sharing_enabled: true,
             visual_mode: true,
             show_experimental_settings: false,
         }

@@ -20,16 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::LazyLock, time::SystemTime};
+use std::{env::temp_dir, sync::LazyLock, time::SystemTime};
 
+use anyhow::Error;
+use dirs::config_dir;
 use getset::{Getters, Setters};
+use log::{info, warn};
+use monero_address_creator::network::Mainnet;
+use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::AppConfig;
+use crate::{
+    consts::DEFAULT_MONERO_ADDRESS,
+    credential_manager::{Credential, CredentialManager},
+    AppConfig, APPLICATION_FOLDER_ID,
+};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
+
+static LOG_TARGET: &str = "tari::universe::config_wallet";
 
 static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
     LazyLock::new(|| RwLock::new(ConfigWallet::new()));
@@ -38,12 +49,15 @@ static INSTANCE: LazyLock<RwLock<ConfigWallet>> =
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
 #[derive(Getters, Setters)]
-#[getset(get = "pub", set = "pub")]
 pub struct ConfigWalletContent {
+    #[getset(get = "pub", set = "pub")]
     was_config_migrated: bool,
     created_at: SystemTime,
+    #[getset(get = "pub")]
     monero_address: String,
+    #[getset(get = "pub")]
     monero_address_is_generated: bool,
+    #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
 }
 
@@ -61,9 +75,64 @@ impl Default for ConfigWalletContent {
 
 impl ConfigContentImpl for ConfigWalletContent {}
 
+impl ConfigWalletContent {
+    pub fn set_monero_address(&mut self, address: String) -> &mut Self {
+        self.monero_address = address;
+        self.monero_address_is_generated = false;
+
+        self
+    }
+}
+
 pub struct ConfigWallet {
     content: ConfigWalletContent,
     app_handle: RwLock<Option<AppHandle>>,
+}
+
+impl ConfigWallet {
+    pub async fn resolve_monero_address(&mut self) {
+        if self.content.monero_address.is_empty() {
+            if let Ok(address) = Self::create_monereo_address() {
+                self.content.monero_address = address;
+                self.content.monero_address_is_generated = true;
+            } else {
+                warn!(target: LOG_TARGET, "Failed to create monero seed");
+            }
+        }
+    }
+    fn create_monereo_address() -> Result<String, Error> {
+        let config_dir = config_dir()
+            .unwrap_or_else(|| {
+                warn!("Failed to get config directory, using temp dir");
+                temp_dir()
+            })
+            .join(APPLICATION_FOLDER_ID);
+
+        let cm = CredentialManager::default_with_dir(config_dir);
+
+        if let Ok(cred) = cm.get_credentials() {
+            if let Some(seed) = cred.monero_seed {
+                info!(target: LOG_TARGET, "Found monero seed in credential manager");
+                let seed = MoneroSeed::new(seed);
+                return Ok(seed
+                    .to_address::<Mainnet>()
+                    .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
+            }
+        }
+
+        let monero_seed = MoneroSeed::generate()?;
+        let cred = Credential {
+            tari_seed_passphrase: None,
+            monero_seed: Some(*monero_seed.inner()),
+        };
+
+        info!(target: LOG_TARGET, "Setting monero seed in credential manager");
+        cm.set_credentials(&cred)?;
+
+        Ok(monero_seed
+            .to_address::<Mainnet>()
+            .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
+    }
 }
 
 impl ConfigImpl for ConfigWallet {
