@@ -48,10 +48,7 @@ use tokio::{
     },
 };
 
-use super::{
-    setup_manager::{PhaseStatus, SetupManager},
-    trait_setup_phase::SetupPhaseImpl,
-};
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
@@ -59,9 +56,7 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseOutput {}
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseSessionConfiguration {
-    pub cpu_benchmarked_hashrate: u64,
-}
+pub struct UnknownSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseAppConfiguration {
