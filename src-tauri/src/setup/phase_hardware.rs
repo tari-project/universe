@@ -135,6 +135,10 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                     sentry::capture_message(&error_message, sentry::Level::Error);
+                    self.app_handle.state::<UniverseAppState>()
+                        .events_manager
+                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                        .await;
                 }
                 result = self.setup_inner() => {
                     match result {
@@ -146,6 +150,10 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
+                            self.app_handle.state::<UniverseAppState>()
+                                .events_manager
+                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                                .await;
                         }
                     }
                 }
