@@ -27,7 +27,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     const handleRestart = useCallback(async () => {
         try {
             setIsExiting(true);
-            await invoke('restart_application');
+            await invoke('restart_application', { shouldStopMiners: true });
         } catch (e) {
             console.error('Error restarting application| handleRestart in CriticalProblemDialog: ', e);
         }
