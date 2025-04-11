@@ -24,6 +24,7 @@ use std::{sync::Arc, time::Duration};
 
 use futures_util::lock::Mutex;
 use log::{error, info};
+use reqwest::header::AUTHORIZATION;
 use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
@@ -146,7 +147,7 @@ impl MiningStatusManager {
                               jwt.clone(),
                             ).await{
                                 let client = reqwest::Client::new();
-                                drop(client.post(format!("{}/miner/mining-status", base_url)).bearer_auth(jwt.clone())
+                                drop(client.post(format!("{}/miner/mining-status", base_url)).header(AUTHORIZATION, &format!("Bearer {}", jwt))
                                 .json(&message).send().await.inspect_err(|e|{error!("error at sendind mining status {}",e.to_string());}));
                             }}
                       },
