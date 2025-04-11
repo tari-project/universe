@@ -167,21 +167,21 @@ impl MmProxyManager {
     pub async fn wait_ready(&self) -> Result<(), anyhow::Error> {
         let lock = self.watcher.read().await;
         let start_time = Instant::now();
-        for i in 0..20 {
+        for i in 0..90 {
             if lock.is_running() {
                 if let Some(status) = lock.status_monitor.as_ref() {
                     if status.check_health(start_time.elapsed()).await == HealthStatus::Healthy {
                         info!(target: LOG_TARGET, "MM proxy is healthy");
                         return Ok(());
                     } else {
-                        info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/20", i + 1);
+                        info!(target: LOG_TARGET, "Waiting for mmproxy to be healthy... {}/90", i + 1);
                     }
                 }
             }
-            info!(target: LOG_TARGET, "Waiting for mmproxy to start... {}/20", i + 1);
+            info!(target: LOG_TARGET, "Waiting for mmproxy to start... {}/90", i + 1);
             sleep(std::time::Duration::from_secs(1)).await;
         }
-        Err(anyhow!("MM proxy did not start in time"))
+        Err(anyhow!("MM proxy did not start in 90sec"))
     }
 
     pub async fn get_monero_port(&self) -> Result<u16, anyhow::Error> {
