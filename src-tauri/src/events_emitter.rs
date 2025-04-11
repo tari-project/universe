@@ -21,7 +21,6 @@ use std::collections::HashMap;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -115,7 +114,6 @@ impl EventsEmitter {
         }
     }
 
-    #[cfg(target_os = "macos")]
     pub async fn emit_critical_problem(app_handle: &AppHandle, payload: CriticalProblemPayload) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

@@ -32,5 +32,15 @@
         "p2pool": "Starting P2Pool",
         "mm-proxy": "Starting Merge Mining Proxy",
         "done": "Done"
-    }
+    },
+    "phase-core-critical-problem-title": "Core Setup Failed",
+    "phase-wallet-critical-problem-title": "Wallet Setup Failed",
+    "phase-hardware-critical-problem-title": "Hardware Setup Failed",
+    "phase-node-critical-problem-title": "Node Setup Failed",
+    "phase-unknown-critical-problem-title": "Mining Setup Failed",
+    "phase-core-critical-problem-description": "Core setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
+    "phase-wallet-critical-problem-description": "Wallet setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
+    "phase-hardware-critical-problem-description": "Hardware setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
+    "phase-node-critical-problem-description": "Node setup is critical to the application. Please try restarting the application. If the problem persists, please contact support.",
+    "phase-unknown-critical-problem-description": "Mining setup is critical to the application. Please try restarting the application. If the problem persists, please contact support."
 }
