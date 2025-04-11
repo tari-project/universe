@@ -58,9 +58,7 @@ static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
-pub struct HardwareSetupPhaseOutput {
-    pub cpu_benchmarked_hashrate: u64,
-}
+pub struct HardwareSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhaseAppConfiguration {
@@ -216,7 +214,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await;
 
         let mut cpu_miner = state.cpu_miner.write().await;
-        let benchmarked_hashrate = cpu_miner
+        cpu_miner
             .start_benchmarking(
                 Duration::from_secs(30),
                 data_dir.clone(),
@@ -226,9 +224,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await?;
         drop(cpu_miner);
 
-        Ok(Some(HardwareSetupPhaseOutput {
-            cpu_benchmarked_hashrate: benchmarked_hashrate,
-        }))
+        Ok(Some(HardwareSetupPhaseOutput {}))
     }
 
     async fn finalize_setup(

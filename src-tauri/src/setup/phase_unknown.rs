@@ -77,20 +77,6 @@ pub struct UnknownSetupPhase {
     app_configuration: UnknownSetupPhaseAppConfiguration,
 }
 
-impl UnknownSetupPhase {
-    pub fn load_session_configuration() -> UnknownSetupPhaseSessionConfiguration {
-        let hardware_phase_output = SetupManager::get_instance()
-            .hardware_phase_output
-            .subscribe()
-            .borrow()
-            .clone();
-
-        UnknownSetupPhaseSessionConfiguration {
-            cpu_benchmarked_hashrate: hardware_phase_output.cpu_benchmarked_hashrate,
-        }
-    }
-}
-
 impl SetupPhaseImpl for UnknownSetupPhase {
     type AppConfiguration = UnknownSetupPhaseAppConfiguration;
     type SetupOutput = UnknownSetupPhaseOutput;
@@ -182,7 +168,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
-        let session_configuration = Self::load_session_configuration();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -229,7 +214,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
                 .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
-                .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
+                .with_cpu_benchmark_hashrate(Some(
+                    state.cpu_miner.read().await.benchmarked_hashrate,
+                ))
                 .build()?;
             state
                 .p2pool_manager
