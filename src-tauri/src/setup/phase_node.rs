@@ -141,6 +141,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                     sentry::capture_message(&error_message, sentry::Level::Error);
+                    self.app_handle.state::<UniverseAppState>()
+                        .events_manager
+                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                        .await;
                 }
                 result = self.setup_inner() => {
                     match result {
@@ -152,6 +156,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
+                            self.app_handle.state::<UniverseAppState>()
+                                .events_manager
+                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                                .await;
                         }
                     }
                 }

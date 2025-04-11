@@ -86,6 +86,25 @@ impl SetupPhase {
             SetupPhase::Unknown,
         ]
     }
+    pub fn get_critical_problem_title(&self) -> String {
+        match self {
+            SetupPhase::Core => "phase-core-critical-problem-title".to_string(),
+            SetupPhase::Hardware => "phase-hardware-critical-problem-title".to_string(),
+            SetupPhase::Node => "phase-node-critical-problem-title".to_string(),
+            SetupPhase::Wallet => "phase-wallet-critical-problem-title".to_string(),
+            SetupPhase::Unknown => "phase-unknown-critical-problem-title".to_string(),
+        }
+    }
+
+    pub fn get_critical_problem_description(&self) -> String {
+        match self {
+            SetupPhase::Core => "phase-core-critical-problem-description".to_string(),
+            SetupPhase::Hardware => "phase-hardware-critical-problem-description".to_string(),
+            SetupPhase::Node => "phase-node-critical-problem-description".to_string(),
+            SetupPhase::Wallet => "phase-wallet-critical-problem-description".to_string(),
+            SetupPhase::Unknown => "phase-unknown-critical-problem-description".to_string(),
+        }
+    }
 }
 
 #[allow(dead_code)]

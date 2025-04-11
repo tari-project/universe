@@ -27,7 +27,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::{select, sync::watch::Receiver};
 
-#[cfg(target_os = "macos")]
 use crate::events::CriticalProblemPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -210,7 +209,6 @@ impl EventsManager {
             .await;
     }
 
-    #[cfg(target_os = "macos")]
     pub async fn handle_critical_problem(
         &self,
         app: &AppHandle,
