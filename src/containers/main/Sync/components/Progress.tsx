@@ -47,16 +47,6 @@ export default function Progress() {
     }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
 
     const setupProgress = currentPhaseToShow?.progress;
-    // const setupPhaseTitle = currentPhaseToShow?.phase_title;
-    // const setupTitle = currentPhaseToShow?.title;
-    // const setupParams = currentPhaseToShow?.title_params ? { ...currentPhaseToShow.title_params } : {};
-
-    // const setUpText = setupTitle ? t(`setup-view:title.${setupTitle}`, setupTitleParams) : '';
-
-    // const setUpText =
-    //     setupTitle && setupPhaseTitle
-    //         ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
-    //         : '';
 
     const setUpText =
         countdown === 1
