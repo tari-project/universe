@@ -48,10 +48,7 @@ use tokio::{
     },
 };
 
-use super::{
-    setup_manager::{PhaseStatus, SetupManager},
-    trait_setup_phase::SetupPhaseImpl,
-};
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
@@ -59,9 +56,7 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseOutput {}
 #[derive(Clone, Default)]
-pub struct UnknownSetupPhaseSessionConfiguration {
-    pub cpu_benchmarked_hashrate: u64,
-}
+pub struct UnknownSetupPhaseSessionConfiguration {}
 
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseAppConfiguration {
@@ -75,20 +70,6 @@ pub struct UnknownSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: UnknownSetupPhaseAppConfiguration,
-}
-
-impl UnknownSetupPhase {
-    pub fn load_session_configuration() -> UnknownSetupPhaseSessionConfiguration {
-        let hardware_phase_output = SetupManager::get_instance()
-            .hardware_phase_output
-            .subscribe()
-            .borrow()
-            .clone();
-
-        UnknownSetupPhaseSessionConfiguration {
-            cpu_benchmarked_hashrate: hardware_phase_output.cpu_benchmarked_hashrate,
-        }
-    }
 }
 
 impl SetupPhaseImpl for UnknownSetupPhase {
@@ -159,6 +140,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     sentry::capture_message(&error_message, sentry::Level::Error);
+                    self.app_handle.state::<UniverseAppState>()
+                        .events_manager
+                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                        .await;
                 }
                 result = self.setup_inner() => {
                     match result {
@@ -170,6 +155,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
+                            self.app_handle.state::<UniverseAppState>()
+                                .events_manager
+                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                                .await;
                         }
                     }
                 }
@@ -182,7 +171,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
-        let session_configuration = Self::load_session_configuration();
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -229,7 +217,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc)
                 .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
-                .with_cpu_benchmark_hashrate(Some(session_configuration.cpu_benchmarked_hashrate))
+                .with_cpu_benchmark_hashrate(Some(
+                    state.cpu_miner.read().await.benchmarked_hashrate,
+                ))
                 .build()?;
             state
                 .p2pool_manager

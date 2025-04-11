@@ -46,7 +46,6 @@ pub enum EventType {
     RestartingPhases,
     AskForRestart,
     ShowReleaseNotes,
-    #[cfg(target_os = "macos")]
     CriticalProblem,
     #[cfg(target_os = "windows")]
     MissingApplications,

@@ -214,7 +214,7 @@ impl SpendWalletAdapter {
 
     async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
         let internal_wallet = InternalWallet::load_or_create(config_path).await?;
-        let seed_words = internal_wallet.decrypt_seed_words()?;
+        let seed_words = internal_wallet.decrypt_seed_words().await?;
         Ok(seed_words.join(" ").reveal().to_string())
     }
 
