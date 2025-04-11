@@ -25,6 +25,9 @@ export const Content = styled(m.div)`
     overflow: hidden;
     gap: 40px;
     padding: calc(0.3rem + 1vmin);
+    @media (max-height: 955px) {
+        gap: 30px;
+    }
 `;
 
 export const HeaderContent = styled(m.div)`
@@ -44,7 +47,7 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const HeaderImg = styled.img`
-    width: min(360px, 34vh);
+    width: min(360px, 32vh);
     max-width: 100%;
 `;
 
