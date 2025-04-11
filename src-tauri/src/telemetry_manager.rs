@@ -354,7 +354,7 @@ async fn get_telemetry_data(
         is_synced,
         num_connections,
         ..
-    } = node_latest_status.borrow().clone();
+    } = *node_latest_status.borrow();
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();

@@ -45,7 +45,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{LocalNodeAdapter, RemoteNodeAdapter, UniverseAppState};
+use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, UniverseAppState};
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -76,6 +76,9 @@ pub struct NodeManager {
     remote_node_watcher: Arc<RwLock<Option<ProcessWatcher<RemoteNodeAdapter>>>>,
     current_adapter: Arc<RwLock<Box<dyn NodeAdapter + Send + Sync>>>,
     shutdown: ShutdownSignal,
+    base_node_watch_tx: watch::Sender<BaseNodeStatus>,
+    local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+    remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     local_node_db_cleared: Arc<AtomicBool>,
 }
 
@@ -98,6 +101,9 @@ impl NodeManager {
         remote_node_adapter: RemoteNodeAdapter,
         shutdown: ShutdownSignal,
         node_type: NodeType,
+        base_node_watch_tx: watch::Sender<BaseNodeStatus>,
+        local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
+        remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
         let local_node_watcher = match node_type {
@@ -125,6 +131,9 @@ impl NodeManager {
             remote_node_watcher: Arc::new(RwLock::new(remote_node_watcher)),
             current_adapter: Arc::new(RwLock::new(current_adapter)),
             shutdown,
+            base_node_watch_tx,
+            local_node_watch_rx,
+            remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
         }
     }
@@ -191,10 +200,12 @@ impl NodeManager {
                 )
                 .await?;
 
-                self.switch_to_local_after_remote(shutdown_signal, app_handle)
+                self.switch_to_local_after_remote(shutdown_signal.clone(), app_handle)
                     .await?;
             }
         }
+
+        self.start_status_forwarding_thread(shutdown_signal).await?;
 
         self.wait_ready().await?;
         Ok(())
@@ -564,6 +575,66 @@ impl NodeManager {
                 }
             }
         }
+
+        Ok(())
+    }
+
+    pub async fn start_status_forwarding_thread(
+        &self,
+        mut shutdown_signal: ShutdownSignal,
+    ) -> Result<(), anyhow::Error> {
+        let base_node_watch_tx = self.base_node_watch_tx.clone();
+        let mut local_node_watch_rx = self.local_node_watch_rx.clone();
+        let mut remote_node_watch_rx = self.remote_node_watch_rx.clone();
+        let node_manager = self.clone();
+
+        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
+                        break;
+                    }
+                    // Local node status update received
+                    Ok(()) = local_node_watch_rx.changed() => {
+                        match node_manager.get_node_type().await {
+                            Ok(node_type) => {
+                                if matches!(node_type, NodeType::Local | NodeType::LocalAfterRemote) {
+                                    let status = *local_node_watch_rx.borrow();
+                                    if base_node_watch_tx.send(status).is_err() {
+                                        error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
+                                    } else {
+                                        info!(target: LOG_TARGET, "Forwarded local BaseNodeStatus: {:?}", status);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!(target: LOG_TARGET, "Failed to get node type: {}", e);
+                            }
+                        }
+                    }
+
+                    // Remote node status update received
+                    Ok(()) = remote_node_watch_rx.changed() => {
+                        match node_manager.get_node_type().await {
+                            Ok(node_type) => {
+                                if matches!(node_type, NodeType::Remote | NodeType::RemoteUntilLocal) {
+                                    let status = *remote_node_watch_rx.borrow();
+                                    if base_node_watch_tx.send(status).is_err() {
+                                        error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
+                                    } else {
+                                        info!(target: LOG_TARGET, "Forwarded remote BaseNodeStatus: {:?}", status);
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                error!(target: LOG_TARGET, "Failed to get node type: {}", e);
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
         Ok(())
     }
