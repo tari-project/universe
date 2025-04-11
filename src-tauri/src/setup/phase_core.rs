@@ -22,7 +22,6 @@
 
 use std::{sync::Arc, time::Duration};
 
-use anyhow::anyhow;
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
@@ -37,7 +36,6 @@ use tokio::{
 use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
-    events::CriticalProblemPayload,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
