@@ -29,6 +29,7 @@ use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use hardware::hardware_status_monitor::HardwareStatusMonitor;
 use log::{error, info, warn};
+use mining_status_manager::MiningStatusManager;
 use node_adapter::BaseNodeStatus;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
@@ -115,6 +116,7 @@ mod gpu_miner_adapter;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod mining_status_manager;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
@@ -360,6 +362,12 @@ async fn setup_inner(
         .initialize_auto_launcher(is_auto_launcher_enabled)
         .await
         .inspect_err(|e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e));
+
+    state
+        .mining_status_manger
+        .write()
+        .await
+        .set_app_handle(app.clone());
 
     let (tx, rx) = watch::channel("".to_string());
     let progress = ProgressTracker::new(app.clone(), Some(tx));
@@ -958,6 +966,7 @@ struct UniverseAppState {
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
     events_manager: Arc<EventsManager>,
+    mining_status_manger: Arc<RwLock<MiningStatusManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1055,6 +1064,14 @@ fn main() {
 
     let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
 
+    let mining_status_manager = MiningStatusManager::new(
+        app_config.clone(),
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        shutdown.clone(),
+        app_in_memory_config.clone(),
+    );
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
@@ -1085,6 +1102,7 @@ fn main() {
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
         events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
+        mining_status_manger: Arc::new(RwLock::new(mining_status_manager)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1340,7 +1358,9 @@ fn main() {
             commands::set_airdrop_tokens,
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
-            commands::frontend_ready
+            commands::frontend_ready,
+            commands::start_mining_status,
+            commands::stop_mining_status
         ])
         .build(tauri::generate_context!())
         .inspect_err(

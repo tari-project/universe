@@ -134,8 +134,8 @@ pub struct CpuMinerConnectionStatus {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SignWsDataResponse {
-    signature: String,
-    pub_key: String,
+    pub signature: String,
+    pub pub_key: String,
 }
 
 #[tauri::command]
@@ -1797,6 +1797,37 @@ pub async fn proceed_with_update(
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "proceed_with_update took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .mining_status_manger
+        .write()
+        .await
+        .emit_interval_ws_events()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "start_mining_status_sending took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    state
+        .mining_status_manger
+        .write()
+        .await
+        .stop_polling()
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining_status_sending took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }
