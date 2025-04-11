@@ -58,6 +58,7 @@
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "mine-on-app-start": {
@@ -66,6 +67,7 @@
   },
   "miners": "Górnicy",
   "mining-toggle-warning": "Wydobycie zostanie wstrzymane, gdy zmiany wejdą w życie.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "Wprowadź address Monero",
     "title": "Address Monero"
@@ -73,6 +75,10 @@
   "monero-seed-words": "Słowa kluczowe Monero",
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",

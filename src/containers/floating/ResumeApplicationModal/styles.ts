@@ -18,6 +18,7 @@ export const Wrapper = styled(Stack)`
     right: 0;
     left: 0;
     margin: auto;
+    z-index: 10;
 `;
 
 export const TextWrapper = styled(Stack)`

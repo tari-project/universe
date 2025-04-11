@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-project/tari-tower';
 
-import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useConfigUIStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
+    const setupComplete = useSetupStore((s) => s.appUnlocked);
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
     const isChangingMode = useMiningStore((s) => s.isChangingMode);
     const cpuIsMining = useMiningMetricsStore((s) => s.cpu_mining_status?.is_mining);
     const gpuIsMining = useMiningMetricsStore((s) => s.gpu_mining_status?.is_mining);
-    const isResuming = useAppStateStore((state) => state.appResumePayload?.is_resuming);
-    const setupComplete = useAppStateStore((s) => s.setupComplete);
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
-    const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const visualModeLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
 
     const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
@@ -22,7 +21,7 @@ export const useUiMiningStateMachine = () => {
     const notStarted = stateTrigger === 'not-started';
     const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
     const shouldStop = !isMining && !notStarted && !preventStop;
-    const shouldStart = isMining && notStarted && !isResuming;
+    const shouldStart = isMining && notStarted;
 
     const noVisualMode = !visualMode || visualModeLoading;
 

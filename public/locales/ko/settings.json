@@ -57,6 +57,7 @@
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
+  "local-node-sync-progress": "Local node syncing progress",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "mine-on-app-start": {
@@ -65,6 +66,7 @@
   },
   "miners": "마이너",
   "mining-toggle-warning": "변경 사항이 적용되는 동안 채굴이 일시 중지됩니다.",
+  "minotari-node": "Minotari Node",
   "monero-address": {
     "placeholder": "모네로 주소 입력",
     "title": "모네로 주소"
@@ -72,6 +74,10 @@
   "monero-seed-words": "모네로 시드 단어",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
+  "node-connection-address": "Connection address",
+  "node-public-address": "Public address",
+  "node-public-key": "Public key",
+  "node-type": "Type",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
   "p2pool-chain-tip": "체인의 끝",

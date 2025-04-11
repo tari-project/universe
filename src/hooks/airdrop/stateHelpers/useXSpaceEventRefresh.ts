@@ -1,12 +1,12 @@
-import { useAppStateStore } from '@app/store/appStateStore';
 import { useAirdropStore } from '@app/store/useAirdropStore';
 import { XSpaceEvent } from '@app/types/ws';
 import { useEffect } from 'react';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 export function useXSpaceEventRefresh() {
-    const setupComplete = useAppStateStore((state) => state.setupComplete);
-
+    const setupComplete = useSetupStore((state) => state.appUnlocked);
     const backendInMemoryConfig = useAirdropStore((s) => s.backendInMemoryConfig);
+
     useEffect(() => {
         if (!backendInMemoryConfig?.airdropApiUrl) return;
         if (!setupComplete) return; //user logged in, data will arrive through websocket

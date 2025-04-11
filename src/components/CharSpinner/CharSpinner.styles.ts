@@ -18,7 +18,6 @@ export const Wrapper = styled.div<{ $variant?: Props['$variant']; $alignment?: s
     flex-direction: row;
     align-items: ${({ $alignment }) => $alignment};
     font-family: ${({ $variant }) => ($variant == 'simple' ? 'Poppins' : 'DrukWide')}, sans-serif;
-    gap: 4px;
 `;
 
 export const XTMWrapper = styled.span`
@@ -28,9 +27,9 @@ export const XTMWrapper = styled.span`
 `;
 
 export const SpinnerWrapper = styled(m.div)<Props>`
-    font-variant-numeric: tabular-nums;
     column-gap: ${({ $variant }) => ($variant == 'simple' ? '0' : '2px')};
     display: flex;
+    margin: 0 4px 0 0;
 `;
 
 export const CharacterWrapper = styled(m.div)<Props>`
@@ -39,7 +38,6 @@ export const CharacterWrapper = styled(m.div)<Props>`
     overflow: hidden;
     position: relative;
     user-select: none;
-    font-variant-numeric: tabular-nums;
 `;
 
 export const Characters = styled(m.div)<Props>`
@@ -54,26 +52,26 @@ export const Characters = styled(m.div)<Props>`
 
 export const Character = styled(m.div)<Props>`
     display: flex;
-    justify-self: center;
-    font-size: ${({ $fontSize }) => `${$fontSize}px`};
     text-transform: lowercase;
+    position: relative;
+    letter-spacing: -0.08em;
     width: min-content;
-    letter-spacing: -3px;
+    padding: 0 0.01em 0 0;
     z-index: 1;
 
     // for the unit & decimal
 
-    ${({ $decimal, $unit }) =>
-        ($decimal || $unit) &&
+    ${({ $decimal, $variant }) =>
+        $decimal &&
         css`
-            letter-spacing: normal;
-            margin-left: 1px;
-            margin-right: -1px;
+            width: ${$variant == 'simple' ? `min-content` : 'auto'};
+            margin: 0 1px 0 2px;
         `}
-
-    ${({ $unit }) =>
+    ${({ $unit, $fontSize }) =>
         $unit &&
         css`
-            margin-top: 3px;
+            margin: 3px 0 0 2px;
+            font-size: ${$fontSize}px;
+            letter-spacing: 0.02em;
         `}
 `;

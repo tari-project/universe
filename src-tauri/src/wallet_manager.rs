@@ -20,10 +20,10 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::node_manager::NodeManager;
-use crate::node_manager::NodeManagerError;
+use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
@@ -83,12 +83,15 @@ impl WalletManager {
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), WalletManagerError> {
+        let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await;
+
         self.node_manager.wait_ready().await?;
-        let node_identity = self.node_manager.get_identity().await?;
-        let base_node_tcp_port = self.node_manager.get_tcp_listener_port().await;
 
         let mut process_watcher = self.watcher.write().await;
-
         if process_watcher.is_running()
             || app_shutdown.is_terminated()
             || app_shutdown.is_triggered()
@@ -96,16 +99,19 @@ impl WalletManager {
             return Ok(());
         }
 
+        let node_identity = self.node_manager.get_identity().await?;
+        let node_connection_address = self.node_manager.get_connection_address().await?;
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address =
-            Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
+        process_watcher.adapter.base_node_address = Some(node_connection_address);
+
         process_watcher
             .start(
-                app_shutdown,
                 base_path,
                 config_path,
                 log_path,
                 crate::binaries::Binaries::Wallet,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;
@@ -122,6 +128,22 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
+    pub async fn get_transactions_history(
+        &self,
+        continuation: bool,
+        limit: Option<u32>,
+    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .get_transactions_history(continuation, limit)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
     pub async fn get_coinbase_transactions(
         &self,
         continuation: bool,
@@ -129,9 +151,7 @@ impl WalletManager {
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+            .adapter
             .get_coinbase_transactions(continuation, limit)
             .await
             .map_err(|e| match e {
@@ -140,6 +160,7 @@ impl WalletManager {
             })
     }
 
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
         let mut process_watcher = self.watcher.write().await;
         process_watcher
@@ -147,12 +168,12 @@ impl WalletManager {
             .await
             .map_err(WalletManagerError::UnknownError)
     }
-
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)

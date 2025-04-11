@@ -3,16 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { useBlockchainVisualisationStore } from '@app/store/useBlockchainVisualisationStore';
 import { BlockTimeContainer, SpacedNum, TimerTypography, TitleTypography } from './BlockTime.styles';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { useConfigUIStore } from '@app/store';
 
 function BlockTime() {
     const { t } = useTranslation('mining-view', { useSuspense: false });
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
     const displayBlockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
+
     const isConnectedToTari = useMiningMetricsStore((s) => s.isNodeConnected);
-    const visualMode = useAppConfigStore((s) => s.visual_mode);
+    const visualMode = useConfigUIStore((s) => s.visual_mode);
     const isMining = isCPUMining || isGPUMining;
 
     const { daysString, hoursString, minutes, seconds } = displayBlockTime || {};

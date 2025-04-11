@@ -103,8 +103,6 @@ impl TorControlClient {
         if let Some(response) = reader.next_line().await? {
             if response.contains("circuit-established=1") {
                 circuit_ok = true;
-            } else {
-                warn!(target: LOG_TARGET, "Circuit status not up: {}", response);
             }
             let _s250_ok = reader.next_line().await?;
         }

@@ -10,7 +10,7 @@ import { memo, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const CriticalProblemDialog = memo(function CriticalProblemDialog() {
-    const { t } = useTranslation('common', { useSuspense: false });
+    const { t } = useTranslation('setup-progresses', { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
 
@@ -24,11 +24,21 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
         setIsExiting(false);
     }, []);
 
+    const handleRestart = useCallback(async () => {
+        try {
+            setIsExiting(true);
+            await invoke('restart_application', { shouldStopMiners: true });
+        } catch (e) {
+            console.error('Error restarting application| handleRestart in CriticalProblemDialog: ', e);
+        }
+        setIsExiting(false);
+    }, []);
+
     return (
         <Dialog open={!!criticalProblem}>
             <DialogContent>
                 <Stack gap={16}>
-                    <Stack gap={4}>
+                    <Stack gap={4} style={{ maxWidth: '480px' }}>
                         <Typography variant="h4">{t(criticalProblem?.title || 'installation-problem')}</Typography>
                         <Typography variant="p">{t(criticalProblem?.description || 'installation-problem')}</Typography>
                     </Stack>
@@ -36,9 +46,24 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                         {isExiting ? (
                             <CircularProgress />
                         ) : (
-                            <SquaredButton color="error" size="medium" onClick={handleClose} style={{ width: '100%' }}>
-                                {t('close-tari-universe')}
-                            </SquaredButton>
+                            <Stack direction="row" gap={8} justifyContent="space-around">
+                                <SquaredButton
+                                    color="error"
+                                    size="medium"
+                                    onClick={handleClose}
+                                    style={{ width: '100%' }}
+                                >
+                                    {t('close-tari-universe')}
+                                </SquaredButton>
+                                <SquaredButton
+                                    color="warning"
+                                    size="medium"
+                                    onClick={handleRestart}
+                                    style={{ width: '100%' }}
+                                >
+                                    {t('restart')}
+                                </SquaredButton>
+                            </Stack>
                         )}
                     </Stack>
                 </Stack>

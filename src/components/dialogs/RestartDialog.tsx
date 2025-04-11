@@ -31,7 +31,7 @@ export default function RestartDialog() {
         try {
             setIsRestarting(true);
             console.info('Restarting application.');
-            await invoke('restart_application', { shouldStopMiners: true });
+            await invoke('trigger_phases_restart');
         } catch (error) {
             console.error('Restart error: ', error);
         }

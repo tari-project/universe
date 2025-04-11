@@ -13,6 +13,7 @@ import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog';
 import { Stack } from '@app/components/elements/Stack';
 import { useTranslation } from 'react-i18next';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { importSeedWords } from '@app/store';
 
 interface SeedWordsEditProps {
     toggleEdit: () => Promise<void>;
@@ -61,9 +62,7 @@ const dialogStyles = {
 
 export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: SeedWordsEditProps) => {
     const [showConfirm, setShowConfirm] = useState(false);
-
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
-    const importSeedWords = useWalletStore((s) => s.importSeedWords);
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
     const { t } = useTranslation('settings', { useSuspense: false });
 
@@ -107,7 +106,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
             setShowConfirm(false);
             await importSeedWords(newSeedWords);
         }
-    }, [hasChanges, importSeedWords, newSeedWords]);
+    }, [hasChanges, newSeedWords]);
 
     const handleReset = useCallback(() => {
         reset({ seedWords: seedWords.join(' ') });

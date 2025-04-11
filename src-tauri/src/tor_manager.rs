@@ -22,11 +22,11 @@
 
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
-use tari_shutdown::ShutdownSignal;
 use tokio::sync::{watch, RwLock};
 
 pub(crate) struct TorManager {
@@ -58,12 +58,14 @@ impl TorManager {
 
     pub async fn ensure_started(
         &self,
-        app_shutdown: ShutdownSignal,
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
     ) -> Result<(), anyhow::Error> {
         {
+            let shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current().core_phase.get_task_tracker().await;
+
             let mut process_watcher = self.watcher.write().await;
 
             process_watcher
@@ -72,11 +74,12 @@ impl TorManager {
                 .await?;
             process_watcher
                 .start(
-                    app_shutdown,
                     base_path,
                     config_path,
                     log_path,
                     crate::binaries::Binaries::Tor,
+                    shutdown_signal,
+                    task_tracker,
                 )
                 .await?;
         }
@@ -127,17 +130,20 @@ impl TorManager {
         self.watcher.read().await.adapter.get_entry_guards().await
     }
 
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;
         let exit_code = process_watcher.stop().await?;
         Ok(exit_code)
     }
 
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
 
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
