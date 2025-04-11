@@ -45,6 +45,7 @@ export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => 
         // initial set, later updates via new block height handlers only
         setDisplayBlockHeight(base_node_status.block_height);
     }
+    useMiningMetricsStore.setState({ base_node_status });
 };
 export const handleMiningModeChange = () => {
     useMiningMetricsStore.setState((currentState) => ({
