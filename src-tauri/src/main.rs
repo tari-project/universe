@@ -201,14 +201,14 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
-                    let node_status: BaseNodeStatus = node_status_watch_rx.borrow().clone();
+                    let node_status: BaseNodeStatus = *node_status_watch_rx.borrow();
                     if node_status.block_height > latest_updated_block_height {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
                             let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
                     } else {
-                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status.clone()).await;
+                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
@@ -1005,13 +1005,18 @@ fn main() {
     // and addresses once the different services have been started.
     // A better way is to only provide the config when we start the service.
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+    let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let node_manager = NodeManager::new(
         &mut stats_collector,
-        LocalNodeAdapter::new(base_node_watch_tx.clone()),
-        RemoteNodeAdapter::new(base_node_watch_tx.clone()),
+        LocalNodeAdapter::new(local_node_watch_tx.clone()),
+        RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
         shutdown.to_signal(),
         // TODO: Decide who and how controls it
         NodeType::RemoteUntilLocal,
+        base_node_watch_tx,
+        local_node_watch_rx,
+        remote_node_watch_rx,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
