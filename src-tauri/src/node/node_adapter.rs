@@ -56,26 +56,29 @@ const LOG_TARGET: &str = "tari::universe::minotari_node_adapter";
 #[async_trait]
 pub trait NodeAdapter {
     fn get_grpc_address(&self) -> Option<(String, u16)>;
+    fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error>;
     fn get_service(&self) -> Option<NodeAdapterService>;
     async fn get_connection_address(&self) -> Result<String, anyhow::Error>;
+    fn use_tor(&mut self, use_tor: bool);
+    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
 }
 
 #[derive(Debug, Clone)]
 pub(crate) struct NodeAdapterService {
-    grpc_address: String,
+    connection_address: String,
     required_sync_peers: u32,
 }
 
 impl NodeAdapterService {
-    pub fn new(grpc_address: String, required_sync_peers: u32) -> Self {
+    pub fn new(connection_address: String, required_sync_peers: u32) -> Self {
         Self {
-            grpc_address,
+            connection_address,
             required_sync_peers,
         }
     }
 
     pub async fn get_network_state(&self) -> Result<BaseNodeStatus, NodeStatusMonitorError> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|_| NodeStatusMonitorError::NodeNotStarted)?;
 
@@ -108,7 +111,7 @@ impl NodeAdapterService {
         &self,
         heights: Vec<u64>,
     ) -> Result<Vec<(u64, String)>, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone()).await?;
 
         let mut res = client
             .get_blocks(GetBlocksRequest { heights })
@@ -134,14 +137,14 @@ impl NodeAdapterService {
     }
 
     pub async fn get_identity(&self) -> Result<NodeIdentity, Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone()).await?;
         let id = client.identify(Empty {}).await?;
         let res = id.into_inner();
 
         Ok(NodeIdentity {
             public_key: RistrettoPublicKey::from_canonical_bytes(&res.public_key)
                 .map_err(|e| anyhow!(e.to_string()))?,
-            public_address: res.public_addresses,
+            public_addresses: res.public_addresses,
         })
     }
 
@@ -152,7 +155,7 @@ impl NodeAdapterService {
         progress_percentage_tx: &watch::Sender<f64>,
         shutdown_signal: ShutdownSignal,
     ) -> Result<(), NodeStatusMonitorError> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone())
+        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?;
 
@@ -255,7 +258,7 @@ impl NodeAdapterService {
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
-        let mut client = BaseNodeGrpcClient::connect(self.grpc_address.clone()).await?;
+        let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone()).await?;
         let peers_list = client
             .list_connected_peers(Empty {})
             .await
@@ -358,7 +361,7 @@ impl NodeAdapterService {
 #[derive(Clone)]
 pub(crate) struct NodeStatusMonitor {
     node_type: NodeType,
-    node_client: NodeAdapterService,
+    node_service: NodeAdapterService,
     status_broadcast: watch::Sender<BaseNodeStatus>,
     #[allow(dead_code)]
     last_block_time: Arc<AtomicU64>,
@@ -367,13 +370,13 @@ pub(crate) struct NodeStatusMonitor {
 impl NodeStatusMonitor {
     pub fn new(
         node_type: NodeType,
-        node_client: NodeAdapterService,
+        node_service: NodeAdapterService,
         status_broadcast: watch::Sender<BaseNodeStatus>,
         last_block_time: Arc<AtomicU64>,
     ) -> Self {
         Self {
             node_type,
-            node_client,
+            node_service,
             status_broadcast,
             last_block_time,
         }
@@ -382,13 +385,13 @@ impl NodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, uptime: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
         let duration = std::time::Duration::from_secs(5);
-        match timeout(duration, self.node_client.get_network_state()).await {
+        match timeout(duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
-                    if status.num_connections == 0 && uptime > Duration::from_secs(60)
+                    if status.num_connections == 0
                         // Remote Node always returns 0 connections
                         && self.node_type != NodeType::Remote
                         && self.node_type != NodeType::RemoteUntilLocal
@@ -434,7 +437,7 @@ impl StatusMonitor for NodeStatusMonitor {
                     "{:?} Node Health Check (get_network_state) error: {:?}",
                     self.node_type, e
                 );
-                match self.node_client.get_identity().await {
+                match self.node_service.get_identity().await {
                     Ok(identity) => {
                         info!(target: LOG_TARGET, "{:?} Node hecking base node identity success: {:?}", self.node_type, identity);
                         return HealthStatus::Healthy;
@@ -455,7 +458,7 @@ impl StatusMonitor for NodeStatusMonitor {
 #[derive(Clone, Debug, Serialize)]
 pub struct NodeIdentity {
     pub public_key: RistrettoPublicKey,
-    pub public_address: Vec<String>,
+    pub public_addresses: Vec<String>,
 }
 
 #[derive(Clone, Copy, Debug, Serialize)]
