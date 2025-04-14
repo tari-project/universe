@@ -209,7 +209,8 @@ export async function fetchPollingFeatureFlag() {
 
     if (response) {
         useAirdropStore.setState({ pollingEnabled: response.access });
-        // TODO: Let the BE know we're using the polling feature for mining proofs
+        // Let the BE know we're using the polling feature for mining proofs
+        invoke('set_airdrop_polling', { pollingEnabled: response.access });
     }
 
     return response;

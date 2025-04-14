@@ -37,6 +37,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'send_data_telemetry_service', payload: { eventName: string; data: object }): Promise<void>;
     function invoke(param: 'set_user_inactivity_timeout', payload: { timeout: number }): Promise<void>;
     function invoke(param: 'update_applications'): Promise<void>;
+    function invoke(param: 'set_airdrop_polling', payload: { pollingEnabled: boolean }): Promise<void>;
     function invoke(
         param: 'set_mode',
         payload: { mode: modeType; customCpuUsage: number; customGpuUsage: GpuThreads[] }
