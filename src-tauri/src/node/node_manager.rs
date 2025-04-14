@@ -36,6 +36,7 @@ use tokio::sync::RwLock;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
+use crate::events_manager::EventsManager;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
 };
@@ -610,8 +611,7 @@ async fn spawn_syncing_updater(
                         let progress_params = progress_params_rx.borrow().clone();
                         let percentage = *progress_percentage_rx.borrow();
                         if let Some(step) = progress_params.get("step").cloned() {
-                            let app_state = app_handle.state::<UniverseAppState>();
-                            app_state.events_manager.handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
+                            EventsManager::handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
                             if step == "Block" && percentage == 1.0 {
                                 break;
                             }

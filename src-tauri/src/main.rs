@@ -102,7 +102,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod events_service;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -174,12 +173,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         .get_task_tracker()
         .await
         .spawn(async move {
-            let app_state = move_app.state::<UniverseAppState>().clone();
-
-            let _ = &app_state
-                .events_manager
-                .handle_internal_wallet_loaded_or_created(&move_app)
-                .await;
+            let _ = EventsManager::handle_internal_wallet_loaded_or_created(&move_app).await;
         });
 
     let move_app = app.clone();
@@ -190,60 +184,36 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let wallet_state_watch_rx = (*app_state.wallet_state_watch_rx).clone();
 
         let init_node_status = *node_status_watch_rx.borrow();
-        let _ = &app_state.events_manager.handle_base_node_update(&move_app, init_node_status).await;
+        let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
 
         let mut latest_updated_block_height = init_node_status.block_height;
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
                     let node_status = *node_status_watch_rx.borrow();
-                    info!(target: LOG_TARGET, "Processing node status change. Node block height: {}, Latest updated block height: {}", node_status.block_height, latest_updated_block_height);
-
-                    let initial_sync_finished = match &*wallet_state_watch_rx.borrow() {
-                        Some(wallet_state) => {
-                            if wallet_state.scanned_height >= latest_updated_block_height && latest_updated_block_height > 0 {
-                                true // Scan is completed
-                            } else if wallet_state.scanned_height == 0 {
-                                // Special case: scanned_height is 0
-                                if let Some(wallet_network) = &wallet_state.network {
-                                    let is_online = matches!(wallet_network.status, ConnectivityStatus::Online(_));
-                                    is_online
-                                    // When wallet is online with 0 scanned height, the scan likely
-                                    // completed before the wallet GRPC server started recording heights
-                                } else {
-                                    false
-                                }
-                            } else {
-                                false // Still scanning
-                            }
-                        },
-                        None => {
-                            false // No wallet state available
-                        }
-                    };
+                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
 
                     if node_status.block_height > latest_updated_block_height && initial_sync_finished {
-                        while latest_updated_block_height < node_status.block_height{
+                        while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
+                            let _ = EventsManager::handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
                     }
                     if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
-                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
+                        let _ = EventsManager::handle_base_node_update(&move_app, node_status).await;
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
 
-                    let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
+                    let _ = EventsManager::handle_gpu_mining_update(&move_app, gpu_status).await;
                 },
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                    let _ = &app_state.events_manager.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                    let _ = EventsManager::handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
 
                     // Update systemtray data
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
@@ -286,7 +256,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            let _ = &app_state.events_manager.handle_connected_peers_update(&move_app, connected_peers).await;
+                            let _ = EventsManager::handle_connected_peers_update(&move_app, connected_peers).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -999,7 +969,6 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
-    events_manager: Arc<EventsManager>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1140,7 +1109,6 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
-        events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]

@@ -22,10 +22,9 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use log::{error, info};
+use log::error;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
-use tokio::{select, sync::watch::Receiver};
 
 use crate::events::CriticalProblemPayload;
 #[cfg(target_os = "windows")]
@@ -42,29 +41,19 @@ use crate::{
     },
     events::{NodeTypeUpdatePayload, ProgressEvents, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
-    events_service::EventsService,
     gpu_status_file::GpuDevice,
     hardware::hardware_status_monitor::GpuDeviceProperties,
     setup::setup_manager::SetupPhase,
     tasks_tracker::TasksTrackers,
-    wallet_adapter::WalletState,
     BaseNodeStatus, GpuMinerStatus, UniverseAppState,
 };
 
 const LOG_TARGET: &str = "tari::universe::events_manager";
 
-pub struct EventsManager {
-    events_service: EventsService,
-}
+pub struct EventsManager;
 
 impl EventsManager {
-    pub fn new(wallet_state_watch_rx: Receiver<Option<WalletState>>) -> Self {
-        Self {
-            events_service: EventsService::new(wallet_state_watch_rx),
-        }
-    }
-
-    pub async fn handle_internal_wallet_loaded_or_created(&self, app: &AppHandle) {
+    pub async fn handle_internal_wallet_loaded_or_created(app: &AppHandle) {
         let wallet_address = app
             .state::<UniverseAppState>()
             .tari_address
@@ -74,88 +63,70 @@ impl EventsManager {
         EventsEmitter::emit_wallet_address_update(app, wallet_address).await;
     }
 
-    pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
-        let events_service = self.events_service.clone();
-        let app = app.clone();
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-
-            select! {
-                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(36000)) => {
-                    match result {
-                        Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
-                            Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
-                            None => {
-                                error!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
-                            }
-                        },
-                        Err(e) => {
-                            error!(target: LOG_TARGET, "Error waiting for initial wallet scan: {:?}", e);
-                        }
-                    };
-                }
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
-                }
-            };
-        });
-    }
-
-    pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
+    pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
-        let events_service = self.events_service.clone();
+        let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            match events_service.wait_for_wallet_scan(block_height, Duration::from_secs(5)).await {
-                Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
-                    Some(balance) => {
-                        let coinbase_tx =
-                            if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
-                                events_service
-                                    .get_coinbase_transaction_for_last_mined_block(
-                                        &app_clone.state::<UniverseAppState>().wallet_manager,
-                                        block_height,
-                                    )
-                                    .await
-                            } else {
-                                None
-                            };
+            // Use a short timeout for processing new blocks
+            match wallet_manager.wait_for_scan_to_height(block_height, Duration::from_secs(5)).await {
+                Ok(scanned_wallet_state) => {
+                    if let Some(balance) = scanned_wallet_state.balance {
+                        // Check for coinbase transaction if there's pending balance
+                        let coinbase_tx = if balance.pending_incoming_balance.gt(&MicroMinotari::zero()) {
+                            match wallet_manager.find_coinbase_transaction_for_block(block_height).await {
+                                Ok(tx) => tx,
+                                Err(e) => {
+                                    error!(target: LOG_TARGET, "Failed to get coinbase transaction: {:?}", e);
+                                    None
+                                }
+                            }
+                        } else {
+                            None
+                        };
+
                         EventsEmitter::emit_new_block_mined(
                             &app_clone,
                             block_height,
                             coinbase_tx,
-                            balance,
+                            Some(balance),
+                        )
+                        .await;
+                    } else {
+                        error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
+                        EventsEmitter::emit_new_block_mined(
+                            &app_clone,
+                            block_height,
+                            None,
+                            None,
                         )
                         .await;
                     }
-                    None => {
-                        error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
-                    }
                 },
                 Err(e) => {
-                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+                    error!(target: LOG_TARGET, "Error waiting for wallet scan: {}", e);
+                    EventsEmitter::emit_new_block_mined(
+                        &app_clone,
+                        block_height,
+                        None,
+                        None,
+                    )
+                    .await;
                 }
-            };
+            }
         });
     }
 
-    pub async fn handle_base_node_update(&self, app: &AppHandle, status: BaseNodeStatus) {
+    pub async fn handle_base_node_update(app: &AppHandle, status: BaseNodeStatus) {
         EventsEmitter::emit_base_node_update(app, status).await;
     }
 
-    pub async fn handle_connected_peers_update(
-        &self,
-        app: &AppHandle,
-        connected_peers: Vec<String>,
-    ) {
+    pub async fn handle_connected_peers_update(app: &AppHandle, connected_peers: Vec<String>) {
         EventsEmitter::emit_connected_peers_update(app, connected_peers).await;
     }
 
     #[allow(dead_code)]
-    pub async fn handle_gpu_devices_update(
-        &self,
-        app: &AppHandle,
-        gpu_devices: Vec<GpuDeviceProperties>,
-    ) {
+    pub async fn handle_gpu_devices_update(app: &AppHandle, gpu_devices: Vec<GpuDeviceProperties>) {
         let gpu_public_devices = gpu_devices
             .iter()
             .map(|gpu_device| gpu_device.public_properties.clone())
@@ -164,24 +135,23 @@ impl EventsManager {
         EventsEmitter::emit_gpu_devices_update(app, gpu_public_devices).await;
     }
 
-    pub async fn handle_cpu_mining_update(&self, app: &AppHandle, status: CpuMinerStatus) {
+    pub async fn handle_cpu_mining_update(app: &AppHandle, status: CpuMinerStatus) {
         EventsEmitter::emit_cpu_mining_update(app, status).await;
     }
 
-    pub async fn handle_gpu_mining_update(&self, app: &AppHandle, status: GpuMinerStatus) {
+    pub async fn handle_gpu_mining_update(app: &AppHandle, status: GpuMinerStatus) {
         EventsEmitter::emit_gpu_mining_update(app, status).await;
     }
 
-    pub async fn handle_close_splash_screen(&self, app: &AppHandle) {
+    pub async fn handle_close_splash_screen(app: &AppHandle) {
         EventsEmitter::emit_close_splashscreen(app).await;
     }
 
-    pub async fn handle_detected_devices(&self, app: &AppHandle, devices: Vec<GpuDevice>) {
+    pub async fn handle_detected_devices(app: &AppHandle, devices: Vec<GpuDevice>) {
         EventsEmitter::emit_detected_devices(app, devices).await;
     }
 
     pub async fn handle_detected_available_gpu_engines(
-        &self,
         app: &AppHandle,
         engines: Vec<String>,
         selected_engine: String,
@@ -189,16 +159,15 @@ impl EventsManager {
         EventsEmitter::emit_detected_available_gpu_engines(app, engines, selected_engine).await;
     }
 
-    pub async fn handle_restarting_phases(&self, app: &AppHandle, payload: Vec<SetupPhase>) {
+    pub async fn handle_restarting_phases(app: &AppHandle, payload: Vec<SetupPhase>) {
         EventsEmitter::emit_restarting_phases(app, payload).await;
     }
 
-    pub async fn handle_ask_for_restart(&self, app: &AppHandle) {
+    pub async fn handle_ask_for_restart(app: &AppHandle) {
         EventsEmitter::emit_ask_for_restart(app).await;
     }
 
     pub async fn handle_network_status_update(
-        &self,
         app: &AppHandle,
         download_speed: f64,
         upload_speed: f64,
@@ -210,7 +179,6 @@ impl EventsManager {
     }
 
     pub async fn handle_critical_problem(
-        &self,
         app: &AppHandle,
         title: Option<String>,
         description: Option<String>,
@@ -221,26 +189,20 @@ impl EventsManager {
 
     #[cfg(target_os = "windows")]
     pub async fn handle_missing_application_files(
-        &self,
         app: &AppHandle,
         external_dependecies: RequiredExternalDependency,
     ) {
         EventsEmitter::emit_missing_applications(app, external_dependecies).await;
     }
 
-    pub async fn handle_show_release_notes(
-        &self,
-        app: &AppHandle,
-        payload: ShowReleaseNotesPayload,
-    ) {
+    pub async fn handle_show_release_notes(app: &AppHandle, payload: ShowReleaseNotesPayload) {
         EventsEmitter::emit_show_release_notes(app, payload).await;
     }
 
-    pub async fn handle_stuck_on_orphan_chain(&self, app: &AppHandle, is_stuck: bool) {
+    pub async fn handle_stuck_on_orphan_chain(app: &AppHandle, is_stuck: bool) {
         EventsEmitter::emit_stuck_on_orphan_chain(app, is_stuck).await;
     }
     pub async fn handle_progress_tracker_update(
-        &self,
         app: &AppHandle,
         event_type: ProgressEvents,
         phase_title: String,
@@ -261,44 +223,44 @@ impl EventsManager {
         .await;
     }
 
-    pub async fn handle_core_phase_finished(&self, app: &AppHandle, status: bool) {
+    pub async fn handle_core_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_core_phase_finished(app, status).await;
     }
 
-    pub async fn handle_wallet_phase_finished(&self, app: &AppHandle, status: bool) {
+    pub async fn handle_wallet_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_wallet_phase_finished(app, status).await;
     }
 
-    pub async fn handle_hardware_phase_finished(&self, app: &AppHandle, status: bool) {
+    pub async fn handle_hardware_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_hardware_phase_finished(app, status).await;
     }
 
-    pub async fn handle_node_phase_finished(&self, app: &AppHandle, status: bool) {
+    pub async fn handle_node_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_node_phase_finished(app, status).await;
     }
-    pub async fn handle_unknown_phase_finished(&self, app: &AppHandle, status: bool) {
+    pub async fn handle_unknown_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_unknown_phase_finished(app, status).await;
     }
-    pub async fn handle_unlock_app(&self, app: &AppHandle) {
+    pub async fn handle_unlock_app(app: &AppHandle) {
         EventsEmitter::emit_unlock_app(app).await;
     }
 
-    pub async fn handle_unlock_wallet(&self, app: &AppHandle) {
+    pub async fn handle_unlock_wallet(app: &AppHandle) {
         EventsEmitter::emit_unlock_wallet(app).await;
     }
 
-    pub async fn handle_unlock_mining(&self, app: &AppHandle) {
+    pub async fn handle_unlock_mining(app: &AppHandle) {
         EventsEmitter::emit_unlock_mining(app).await;
     }
-    pub async fn handle_lock_wallet(&self, app: &AppHandle) {
+    pub async fn handle_lock_wallet(app: &AppHandle) {
         EventsEmitter::emit_lock_wallet(app).await;
     }
 
-    pub async fn handle_lock_mining(&self, app: &AppHandle) {
+    pub async fn handle_lock_mining(app: &AppHandle) {
         EventsEmitter::emit_lock_mining(app).await;
     }
 
-    pub async fn handle_node_type_update(&self, app: &AppHandle) {
+    pub async fn handle_node_type_update(app: &AppHandle) {
         let node_manager = &app.state::<UniverseAppState>().node_manager;
         let node_type = node_manager.get_node_type().await.ok();
         let node_identity = node_manager.get_identity().await.ok();
@@ -312,12 +274,12 @@ impl EventsManager {
         EventsEmitter::emit_node_type_update(app, payload).await;
     }
 
-    pub async fn handle_config_core_loaded(&self, app: &AppHandle) {
+    pub async fn handle_config_core_loaded(app: &AppHandle) {
         let payload = ConfigCore::content().await;
         EventsEmitter::emit_core_config_loaded(app, payload).await;
     }
 
-    pub async fn handle_config_ui_loaded(&self, app: &AppHandle) {
+    pub async fn handle_config_ui_loaded(app: &AppHandle) {
         let payload = ConfigUI::content().await;
         EventsEmitter::emit_ui_config_loaded(app, payload).await;
         let _unused = ConfigUI::update_field(
@@ -327,18 +289,17 @@ impl EventsManager {
         .await;
     }
 
-    pub async fn handle_config_mining_loaded(&self, app: &AppHandle) {
+    pub async fn handle_config_mining_loaded(app: &AppHandle) {
         let payload = ConfigMining::content().await;
         EventsEmitter::emit_mining_config_loaded(app, payload).await;
     }
 
-    pub async fn handle_config_wallet_loaded(&self, app: &AppHandle) {
+    pub async fn handle_config_wallet_loaded(app: &AppHandle) {
         let payload = ConfigWallet::content().await;
         EventsEmitter::emit_wallet_config_loaded(app, payload).await;
     }
 
     pub async fn handle_background_node_sync_update(
-        &self,
         app: &AppHandle,
         progress_params: HashMap<String, String>,
     ) {

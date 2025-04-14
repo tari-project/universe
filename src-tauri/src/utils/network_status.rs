@@ -26,12 +26,12 @@ use cfspeedtest::speedtest::{test_download, test_latency, test_upload};
 use cfspeedtest::OutputFormat;
 use log::error;
 use log::info;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
-use crate::UniverseAppState;
+use crate::events_manager::EventsManager;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -88,10 +88,7 @@ impl NetworkStatus {
                 error!("Failed to send network speeds: {:?}", e);
             });
 
-        app_handle
-            .state::<UniverseAppState>()
-            .events_manager
-            .handle_network_status_update(
+        EventsManager::handle_network_status_update(
                 app_handle,
                 download_speed,
                 upload_speed,

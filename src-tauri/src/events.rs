@@ -121,7 +121,7 @@ pub struct WalletAddressUpdatePayload {
 pub struct NewBlockHeightPayload {
     pub block_height: u64,
     pub coinbase_transaction: Option<TransactionInfo>,
-    pub balance: WalletBalance,
+    pub balance: Option<WalletBalance>,
 }
 
 #[derive(Debug, Serialize, Clone)]

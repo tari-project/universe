@@ -34,7 +34,7 @@ use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
 use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 use tokio::sync::RwLock;
 
 use crate::{
@@ -43,6 +43,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     events::ShowReleaseNotesPayload,
+    events_manager::EventsManager,
     UniverseAppState, APPLICATION_FOLDER_ID,
 };
 
@@ -286,18 +287,15 @@ impl ReleaseNotes {
 
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Is app update available: {}", is_app_update_available);
 
-        let app_state = app.state::<UniverseAppState>();
-        app_state
-            .events_manager
-            .handle_show_release_notes(
-                &app,
-                ShowReleaseNotesPayload {
-                    release_notes: release_notes.content,
-                    is_app_update_available,
-                    should_show_dialog: should_show_release_notes,
-                },
-            )
-            .await;
+        EventsManager::handle_show_release_notes(
+            &app,
+            ShowReleaseNotesPayload {
+                release_notes: release_notes.content,
+                is_app_update_available,
+                should_show_dialog: should_show_release_notes,
+            },
+        )
+        .await;
         debug!(target: LOG_TARGET, "[handle_release_notes_event_emit] Emitted release notes event");
 
         if should_show_release_notes {

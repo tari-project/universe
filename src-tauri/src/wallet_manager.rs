@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::events_emitter::EventsEmitter;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -29,10 +30,15 @@ use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::time::Duration;
 use tari_shutdown::ShutdownSignal;
+use tauri::AppHandle;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
+
+static LOG_TARGET: &str = "tari::universe::wallet_manager";
 
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
@@ -47,6 +53,7 @@ pub enum WalletManagerError {
 pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
     node_manager: NodeManager,
+    initial_scan_completed: Arc<AtomicBool>,
 }
 
 impl Clone for WalletManager {
@@ -54,6 +61,7 @@ impl Clone for WalletManager {
         Self {
             watcher: self.watcher.clone(),
             node_manager: self.node_manager.clone(),
+            initial_scan_completed: self.initial_scan_completed.clone(),
         }
     }
 }
@@ -70,6 +78,7 @@ impl WalletManager {
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             node_manager,
+            initial_scan_completed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -127,6 +136,11 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
+    pub fn is_initial_scan_completed(&self) -> bool {
+        self.initial_scan_completed
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
     pub async fn get_transactions_history(
         &self,
         continuation: bool,
@@ -159,8 +173,92 @@ impl WalletManager {
             })
     }
 
+    pub async fn wait_for_scan_to_height(
+        &self,
+        block_height: u64,
+        timeout: Duration,
+    ) -> Result<WalletState, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+
+        process_watcher
+            .adapter
+            .wait_for_scan_to_height(block_height, timeout)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn find_coinbase_transaction_for_block(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+
+        process_watcher
+            .adapter
+            .find_coinbase_transaction_for_block(block_height)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn wait_for_initial_wallet_scan(
+        &self,
+        app: &AppHandle,
+        block_height: u64,
+    ) -> Result<(), WalletManagerError> {
+        let app_clone = app.clone();
+        log::info!(target: LOG_TARGET, "Starting initial wallet scan to height {}", block_height);
+
+        if self.is_initial_scan_completed() {
+            log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
+            return Ok(());
+        }
+
+        match self
+            .wait_for_scan_to_height(block_height, Duration::from_secs(600))
+            .await
+        {
+            Ok(scanned_wallet_state) => {
+                if let Some(balance) = scanned_wallet_state.balance {
+                    log::info!(
+                        target: LOG_TARGET,
+                        "Initial wallet scan complete. Available balance: {}",
+                        balance.available_balance
+                    );
+                    EventsEmitter::emit_wallet_balance_update(&app_clone, balance).await;
+
+                    self.initial_scan_completed
+                        .store(true, std::sync::atomic::Ordering::Relaxed);
+                } else {
+                    log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                }
+                Ok(())
+            }
+            Err(e) => {
+                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
+                Err(e)
+            }
+        }
+    }
+
     #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
+        // Reset the initial scan flag
+        self.initial_scan_completed
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher
             .stop()

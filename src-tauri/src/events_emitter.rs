@@ -352,7 +352,7 @@ impl EventsEmitter {
         app_handle: &AppHandle,
         block_height: u64,
         coinbase_transaction: Option<TransactionInfo>,
-        balance: WalletBalance,
+        balance: Option<WalletBalance>,
     ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {

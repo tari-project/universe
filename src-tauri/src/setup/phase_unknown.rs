@@ -25,6 +25,7 @@ use std::time::Duration;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events_manager::EventsManager,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -140,9 +141,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     sentry::capture_message(&error_message, sentry::Level::Error);
-                    self.app_handle.state::<UniverseAppState>()
-                        .events_manager
-                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
                         .await;
                 }
                 result = self.setup_inner() => {
@@ -155,9 +154,8 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            self.app_handle.state::<UniverseAppState>()
-                                .events_manager
-                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                            EventsManager
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
                                 .await;
                         }
                     }
@@ -274,11 +272,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        state
-            .events_manager
-            .handle_unknown_phase_finished(&self.app_handle, true)
-            .await;
+        EventsManager::handle_unknown_phase_finished(&self.app_handle, true).await;
 
         Ok(())
     }

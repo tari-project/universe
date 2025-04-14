@@ -24,6 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
@@ -211,6 +212,89 @@ impl WalletAdapter {
             .await
             .replace(stream);
         Ok(transactions)
+    }
+
+    pub async fn wait_for_scan_to_height(
+        &self,
+        block_height: u64,
+        timeout: Duration,
+    ) -> Result<WalletState, WalletStatusMonitorError> {
+        let mut state_receiver = self.state_broadcast.subscribe();
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        loop {
+            tokio::select! {
+                result = state_receiver.changed() => {
+                    if result.is_err() {
+                        return Err(WalletStatusMonitorError::WalletNotStarted);
+                    }
+
+                    let current_state = state_receiver.borrow().clone();
+                    if let Some(state) = current_state {
+                        // Case 1: Scan has reached or exceeded target height
+                        if state.scanned_height >= block_height && block_height > 0 {
+                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {}", block_height);
+                            return Ok(state);
+                        }
+                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
+                        if state.scanned_height == 0 && block_height > 0 {
+                            if let Some(network) = &state.network {
+                                if matches!(network.status, ConnectivityStatus::Online(2..)) {
+                                    warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
+                                    return Ok(state);
+                                }
+                            }
+                        }
+
+                        // Log progress periodically for long scans
+                        if state.scanned_height > 0 && block_height > 0 {
+                            let progress_percentage = (state.scanned_height as f64 / block_height as f64 * 100.0) as u32;
+                            if state.scanned_height % 1000 == 0 || state.scanned_height == block_height {
+                                info!(
+                                    target: LOG_TARGET,
+                                    "Wallet scan in progress: {} / {} blocks ({}%)",
+                                    state.scanned_height,
+                                    block_height,
+                                    progress_percentage
+                                );
+                            }
+                        }
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wait_for_scan_to_height");
+                    return Ok(WalletState::default());
+                }
+                _ = tokio::time::sleep(timeout) => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
+                        state_receiver.borrow().as_ref().map(|s| s.scanned_height).unwrap_or(0),
+                        block_height
+                    );
+                    // Return current state if available, otherwise error
+                    return state_receiver
+                        .borrow()
+                        .clone()
+                        .ok_or(WalletStatusMonitorError::WalletNotStarted);
+                }
+            }
+        }
+    }
+
+    /// Find a recent coinbase transaction for a specific block height
+    pub async fn find_coinbase_transaction_for_block(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
+        // Get a small batch of recent coinbase transactions
+        let transactions = self.get_coinbase_transactions(false, Some(10)).await?;
+
+        // Find one matching the specified block height
+        let matching_tx = transactions
+            .into_iter()
+            .find(|tx| tx.mined_in_block_height == block_height);
+
+        Ok(matching_tx)
     }
 
     pub fn wallet_grpc_address(&self) -> String {
@@ -440,7 +524,7 @@ pub enum WalletStatusMonitorError {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct WalletState {
     pub scanned_height: u64,
     pub balance: Option<WalletBalance>,
