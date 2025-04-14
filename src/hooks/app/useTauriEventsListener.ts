@@ -103,6 +103,7 @@ const useTauriEventsListener = () => {
                         setWalletAddress(event.payload);
                         break;
                     case 'WalletBalanceUpdate':
+                        console.log('AAAAAAAAA WalletBalanceUpdate:', event.payload);
                         setWalletBalance(event.payload);
                         refreshTransactions();
                         break;

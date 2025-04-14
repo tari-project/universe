@@ -77,6 +77,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }
         winTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
+            console.log('CCCCCCCCCCCCCCCCCCCCC');
             setWalletBalance(balance);
             await refreshTransactions();
             refreshPendingTransactions();
@@ -101,6 +102,7 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
         }
         failTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
+            console.log('DDDDDDDDDDDDDDDDDD');
             setWalletBalance(balance);
             setMiningControlsEnabled(true);
             await refreshTransactions();

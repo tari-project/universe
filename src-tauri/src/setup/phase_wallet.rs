@@ -23,16 +23,11 @@
 use std::time::Duration;
 
 use crate::{
-    binaries::{Binaries, BinaryResolver},
-    progress_tracker_old::ProgressTracker,
-    progress_trackers::{
+    binaries::{Binaries, BinaryResolver}, configs::{config_core::ConfigCore, trait_config::ConfigImpl}, progress_tracker_old::ProgressTracker, progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
-    },
-    setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    }, setup::setup_manager::SetupPhase, tasks_tracker::TasksTrackers, UniverseAppState
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -55,7 +50,9 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 pub struct WalletSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {}
+pub struct WalletSetupPhaseAppConfiguration {
+    use_tor: bool,
+}
 
 pub struct WalletSetupPhase {
     app_handle: AppHandle,
@@ -94,7 +91,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        Ok(WalletSetupPhaseAppConfiguration::default())
+        let use_tor = *ConfigCore::content().await.use_tor();
+        Ok(WalletSetupPhaseAppConfiguration { use_tor })
     }
 
     async fn setup(
@@ -183,6 +181,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                self.app_configuration.use_tor,
             )
             .await?;
 

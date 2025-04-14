@@ -81,10 +81,7 @@ impl EventsManager {
             let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
             select! {
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
-                }
-                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(3600)) => {
+                result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(36000)) => {
                     match result {
                         Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                             Some(balance) => EventsEmitter::emit_wallet_balance_update(&app, balance).await,
@@ -93,9 +90,12 @@ impl EventsManager {
                             }
                         },
                         Err(e) => {
-                            error!(target: LOG_TARGET, "Error waiting for wallet scan: {:?}", e);
+                            error!(target: LOG_TARGET, "Error waiting for initial wallet scan: {:?}", e);
                         }
                     };
+                }
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Shutdown signal received. Exiting wait for initial wallet scan");
                 }
             };
         });
