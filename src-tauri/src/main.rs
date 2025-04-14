@@ -77,7 +77,6 @@ use crate::commands::CpuMinerConnection;
 use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
-use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -1028,7 +1027,6 @@ fn main() {
         wallet_state_watch_tx,
         &mut stats_collector,
     );
-    let wallet_manager2 = wallet_manager.clone();
     let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
