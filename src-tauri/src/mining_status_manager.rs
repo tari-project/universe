@@ -103,7 +103,7 @@ impl MiningStatusManager {
         info!(target: LOG_TARGET,"stopped emitting messages from mining_status_manger");
     }
 
-    pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
+    pub async fn start_polling(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
         let shutdown = self.shutdown.clone();
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();

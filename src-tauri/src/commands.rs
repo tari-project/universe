@@ -1808,7 +1808,7 @@ pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> R
         .mining_status_manger
         .write()
         .await
-        .emit_interval_ws_events()
+        .start_polling()
         .await
         .map_err(|e| e.to_string())?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
