@@ -57,7 +57,6 @@ export const setWalletAddress = (addresses: WalletAddress) => {
     });
 };
 export const setWalletBalance = (balance: WalletBalance) => {
-    console.log('XXXXXXXXXXXXXXX Setting wallet balance:', balance);
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState({ balance, calculated_balance });
