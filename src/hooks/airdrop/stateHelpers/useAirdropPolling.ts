@@ -4,6 +4,7 @@ import {
     fetchLatestXSpaceEvent,
     fetchPollingFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
+import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
 
 const DEBOUNCE_DELAY = 1000; // 1 second delay
@@ -40,18 +41,14 @@ export const useAirdropPolling = () => {
     }, [fetchAirdropDataDebounced, pollingEnabled]);
 
     useEffect(() => {
+        let listener: Promise<UnlistenFn>;
         if (!pollingEnabled) {
-            window.addEventListener('focus', fetchPollingFeatureFlag);
-            return () => {
-                window.removeEventListener('focus', fetchPollingFeatureFlag);
-                if (timeoutRef.current) {
-                    clearTimeout(timeoutRef.current);
-                }
-            };
+            listener = listen('tauri://focus', fetchPollingFeatureFlag);
+        } else {
+            listener = listen('tauri://focus', fetchAirdropDataDebounced);
         }
-        window.addEventListener('focus', fetchAirdropDataDebounced);
         return () => {
-            window.removeEventListener('focus', fetchAirdropDataDebounced);
+            listener.then((unlisten) => unlisten());
             if (timeoutRef.current) {
                 clearTimeout(timeoutRef.current);
             }
