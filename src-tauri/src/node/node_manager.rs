@@ -567,7 +567,7 @@ where
                             node_type,
                             err
                         );
-                        return stop_watcher_on_error(&node_watcher, err).await;
+                        return stop_watcher_on_error(node_watcher, err).await;
                     }
                     warn!(
                         target: LOG_TARGET,

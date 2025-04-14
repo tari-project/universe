@@ -192,7 +192,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let wallet_state_watch_rx = (*app_state.wallet_state_watch_rx).clone();
 
-        let init_node_status = node_status_watch_rx.borrow().clone();
+        let init_node_status = *node_status_watch_rx.borrow();
         let _ = &app_state.events_manager.handle_base_node_update(&move_app, init_node_status).await;
 
         let mut latest_updated_block_height = init_node_status.block_height;

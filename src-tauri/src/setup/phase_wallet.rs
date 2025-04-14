@@ -214,7 +214,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let node_status = node_status_watch_rx.borrow().clone();
+        let node_status = *node_status_watch_rx.borrow();
         let _ = app_state
             .events_manager
             .wait_for_initial_wallet_scan(self.get_app_handle(), node_status.block_height)
