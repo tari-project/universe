@@ -23,11 +23,17 @@
 use std::time::Duration;
 
 use crate::{
-    binaries::{Binaries, BinaryResolver}, configs::{config_core::ConfigCore, trait_config::ConfigImpl}, progress_tracker_old::ProgressTracker, progress_trackers::{
+    binaries::{Binaries, BinaryResolver},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    progress_tracker_old::ProgressTracker,
+    progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
-    }, setup::setup_manager::SetupPhase, tasks_tracker::TasksTrackers, UniverseAppState
+    },
+    setup::setup_manager::SetupPhase,
+    tasks_tracker::TasksTrackers,
+    UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -205,6 +211,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
         drop(spend_wallet_manager);
+
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let node_status = node_status_watch_rx.borrow().clone();
+        let _ = app_state
+            .events_manager
+            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status.block_height)
+            .await;
 
         Ok(None)
     }

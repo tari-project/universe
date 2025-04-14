@@ -77,8 +77,8 @@ impl EventsManager {
     pub async fn wait_for_initial_wallet_scan(&self, app: &AppHandle, block_height: u64) {
         let events_service = self.events_service.clone();
         let app = app.clone();
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
             select! {
                 result = events_service.wait_for_wallet_scan(block_height, Duration::from_secs(36000)) => {
@@ -104,7 +104,7 @@ impl EventsManager {
     pub async fn handle_new_block_height(&self, app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
         let events_service = self.events_service.clone();
-        TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             match events_service.wait_for_wallet_scan(block_height, Duration::from_secs(5)).await {
                 Ok(scanned_wallet_state) => match scanned_wallet_state.balance {
                     Some(balance) => {

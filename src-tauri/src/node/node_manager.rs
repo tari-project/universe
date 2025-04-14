@@ -188,7 +188,7 @@ impl NodeManager {
                 self.is_remote_current().await?,
                 remote_grpc_address,
                 use_tor,
-                None,  // no control port needed
+                None, // no control port needed
             )
             .await?;
             start_watcher(

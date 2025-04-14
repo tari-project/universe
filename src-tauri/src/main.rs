@@ -192,13 +192,10 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let wallet_state_watch_rx = (*app_state.wallet_state_watch_rx).clone();
 
-        let current_block_height = node_status_watch_rx.borrow().block_height;
-        let _ = &app_state
-            .events_manager
-            .wait_for_initial_wallet_scan(&move_app, current_block_height)
-            .await;
+        let init_node_status = node_status_watch_rx.borrow().clone();
+        let _ = &app_state.events_manager.handle_base_node_update(&move_app, init_node_status).await;
 
-        let mut latest_updated_block_height = current_block_height;
+        let mut latest_updated_block_height = init_node_status.block_height;
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
@@ -207,45 +204,34 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
                     let initial_sync_finished = match &*wallet_state_watch_rx.borrow() {
                         Some(wallet_state) => {
-                            // Check if wallet has already scanned past the latest known block height
                             if wallet_state.scanned_height >= latest_updated_block_height && latest_updated_block_height > 0 {
-                                info!(target: LOG_TARGET, "Wallet scan completed. Wallet scanned height: {} >= Latest updated block height: {}", wallet_state.scanned_height, latest_updated_block_height);
                                 true // Scan is completed
                             } else if wallet_state.scanned_height == 0 {
                                 // Special case: scanned_height is 0
                                 if let Some(wallet_network) = &wallet_state.network {
                                     let is_online = matches!(wallet_network.status, ConnectivityStatus::Online(_));
-                                    info!(target: LOG_TARGET, "Wallet scanned height is 0. Wallet network status: {:?}, Is online: {}", wallet_network.status, is_online);
                                     is_online
                                     // When wallet is online with 0 scanned height, the scan likely
                                     // completed before the wallet GRPC server started recording heights
                                 } else {
-                                    info!(target: LOG_TARGET, "Wallet scanned height is 0 but wallet network is None");
                                     false
                                 }
                             } else {
-                                info!(target: LOG_TARGET, "Wallet still scanning. Wallet scanned height: {} < Latest updated block height: {}", wallet_state.scanned_height, latest_updated_block_height);
                                 false // Still scanning
                             }
                         },
                         None => {
-                            info!(target: LOG_TARGET, "No wallet state available yet");
                             false // No wallet state available
                         }
                     };
 
-                    info!(target: LOG_TARGET, "Initial sync finished: {}", initial_sync_finished);
-
-                    if node_status.block_height > latest_updated_block_height && initial_sync_finished  {
-                        info!(target: LOG_TARGET, "Processing new blocks from {} to {}", latest_updated_block_height, node_status.block_height);
+                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
                         while latest_updated_block_height < node_status.block_height{
                             latest_updated_block_height += 1;
-                            info!(target: LOG_TARGET, "Handling new block height: {}", latest_updated_block_height);
                             let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
-                    } else {
-                        info!(target: LOG_TARGET, "Handling base node update. Initial sync: {}, Node height: {}, Latest height: {}",
-                            initial_sync_finished, node_status.block_height, latest_updated_block_height);
+                    }
+                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
                         let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
                         latest_updated_block_height = node_status.block_height;
                     }
