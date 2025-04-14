@@ -229,18 +229,17 @@ impl GpuMiner {
             Some(0) => {
                 self.is_available = true;
                 EventsManager::handle_detected_available_gpu_engines(
-                        &app,
-                        self.get_available_gpu_engines(config_dir)
-                            .await?
-                            .iter()
-                            .map(|x| x.to_string())
-                            .collect(),
-                        self.curent_selected_engine.to_string(),
-                    )
-                    .await;
+                    &app,
+                    self.get_available_gpu_engines(config_dir)
+                        .await?
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect(),
+                    self.curent_selected_engine.to_string(),
+                )
+                .await;
 
-                EventsManager::handle_detected_devices(&app, self.gpu_devices.clone())
-                    .await;
+                EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
                 Ok(())
             }
             _ => {
@@ -380,8 +379,7 @@ impl GpuMiner {
 
         self.gpu_devices = gpu_settings.gpu_devices;
 
-        EventsManager::handle_detected_devices(&app, self.gpu_devices.clone())
-            .await;
+        EventsManager::handle_detected_devices(&app, self.gpu_devices.clone()).await;
 
         Ok(())
     }

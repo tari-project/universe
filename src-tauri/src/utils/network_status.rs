@@ -89,13 +89,13 @@ impl NetworkStatus {
             });
 
         EventsManager::handle_network_status_update(
-                app_handle,
-                download_speed,
-                upload_speed,
-                latency,
-                is_bandwidth_too_low,
-            )
-            .await;
+            app_handle,
+            download_speed,
+            upload_speed,
+            latency,
+            is_bandwidth_too_low,
+        )
+        .await;
     }
 
     pub fn get_network_speeds_receiver(&self) -> Receiver<(f64, f64, f64)> {
