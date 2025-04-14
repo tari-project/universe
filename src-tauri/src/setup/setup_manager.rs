@@ -173,6 +173,7 @@ impl SetupManager {
         &INSTANCE
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
@@ -230,12 +231,14 @@ impl SetupManager {
             .await;
 
         // This must happend before InternalWallet::load_or_create !!!
-        if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
-            let _unused = ConfigWallet::update_field(
-                ConfigWalletContent::set_generated_monero_address,
-                monero_address,
-            )
-            .await;
+        if ConfigWallet::content().await.monero_address().is_empty() {
+            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await;
+            }
         }
 
         match InternalWallet::load_or_create(old_config_path.clone()).await {
