@@ -229,6 +229,7 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
+        // This must happend before InternalWallet::load_or_create !!!
         if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
             let _unused = ConfigWallet::update_field(
                 ConfigWalletContent::set_generated_monero_address,
