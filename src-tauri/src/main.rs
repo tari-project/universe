@@ -1246,13 +1246,12 @@ fn main() {
                 File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
 
-            let cpu_config2 = cpu_config.clone();
             let thread_config: JoinHandle<Result<(), anyhow::Error>> =
                 tauri::async_runtime::spawn(async move {
                     let mut app_conf = app_config.write().await;
                     app_conf.load_or_create(config_path).await?;
 
-                    let mut cpu_conf = cpu_config2.write().await;
+                    let mut cpu_conf = cpu_config.write().await;
                     cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
                     cpu_conf.ludicrous_mode_cpu_percentage = app_conf.ludicrous_mode_cpu_threads();
                     cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
@@ -1270,47 +1269,7 @@ fn main() {
                 }
             };
 
-            let config_path = app
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-            let address = app.state::<UniverseAppState>().tari_address.clone();
-            let thread = tauri::async_runtime::spawn(async move {
-                match InternalWallet::load_or_create(config_path).await {
-                    Ok(wallet) => {
-                        cpu_config.write().await.tari_address = wallet.get_tari_address();
-                        wallet_manager2
-                            .set_view_private_key_and_spend_key(
-                                wallet.get_view_key(),
-                                wallet.get_spend_key(),
-                            )
-                            .await;
-                        let mut address_lock = address.write().await;
-                        *address_lock = wallet.get_tari_address();
-                        Ok(())
-                        //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
-                    }
-                    Err(e) => {
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                        // TODO: If this errors, the application does not exit properly.
-                        // So temporarily we are going to kill it here
-
-                        Err(e)
-                    }
-                }
-            });
-
-            match tauri::async_runtime::block_on(thread).expect("Could not start task") {
-                Ok(_) => {
-                    // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
-                    // *lock = address;
-                    Ok(())
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
-                    Err(e.into())
-                }
-            }
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,

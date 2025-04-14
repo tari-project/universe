@@ -872,7 +872,8 @@ pub async fn reset_settings<'r>(
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
-    app.restart();
+    // app.restart();
+    Ok(())
 }
 #[tauri::command]
 pub async fn restart_application(

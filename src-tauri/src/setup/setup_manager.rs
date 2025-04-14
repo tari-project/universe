@@ -37,6 +37,7 @@ use crate::{
         trait_config::ConfigImpl,
     },
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -235,6 +236,23 @@ impl SetupManager {
             )
             .await;
         }
+
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
+            Ok(wallet) => {
+                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.get_view_key(),
+                        wallet.get_spend_key(),
+                    )
+                    .await;
+                *state.tari_address.write().await = wallet.get_tari_address();
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
+        };
 
         let mut config_mining = ConfigMining::current().write().await;
         config_mining.handle_old_config_migration(old_config_content.clone());
