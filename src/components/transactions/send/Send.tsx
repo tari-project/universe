@@ -150,6 +150,7 @@ export function Send({ setSection }: Props) {
                             autoFocus
                             truncateOnBlur
                             isValid={isAddressValid}
+                            errorText={errors.address?.message}
                         />
 
                         <FormField control={control} name="message" handleChange={handleChange} />
@@ -177,10 +178,6 @@ export function Send({ setSection }: Props) {
                         >
                             {t('send.cta-send')}
                         </Button>
-                        <ErrorMessageWrapper>
-                            <Typography variant="p">{errors.address?.message}</Typography>
-                            <Typography variant="p">{errors.amount?.message}</Typography>
-                        </ErrorMessageWrapper>
                     </BottomWrapper>
                 </StyledForm>
                 <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
