@@ -60,9 +60,9 @@
                 ],
                 "script-src": "'self' 'unsafe-eval'",
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower",
                 "object-src": "'self' data: blob:",
-                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
+                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'",
+                "img-src": ["'self'", "data:", "blob:", "base64:", "https://cdn.npmjs.com/@tari-project/tari-tower", "https://*.twimg.com","https://*.googleusercontent.com"]
             },
             "pattern": {
                 "use": "isolation",
