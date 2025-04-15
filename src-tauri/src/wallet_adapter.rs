@@ -66,11 +66,11 @@ pub struct WalletAdapter {
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool, state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
+    pub fn new(state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            use_tor,
+            use_tor: false,
             base_node_address: None,
             base_node_public_key: None,
             view_private_key: "".to_string(),
@@ -81,6 +81,10 @@ impl WalletAdapter {
             completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
+    }
+
+    pub fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
     }
 
     pub async fn get_transactions_history(

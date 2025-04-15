@@ -73,6 +73,19 @@ export const ValueWrapper = styled.div`
     justify-content: flex-end;
     align-items: baseline;
 `;
+export const Chip = styled.div`
+    display: flex;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 700;
+    align-self: stretch;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50px;
+    background-color: ${({ theme }) => theme.colors.green[700]};
+    height: 14px;
+    padding: 0 7px;
+`;
 
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
     display: flex;

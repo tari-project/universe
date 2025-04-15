@@ -24,6 +24,7 @@ use std::time::Duration;
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
@@ -55,7 +56,9 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 pub struct WalletSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {}
+pub struct WalletSetupPhaseAppConfiguration {
+    use_tor: bool,
+}
 
 pub struct WalletSetupPhase {
     app_handle: AppHandle,
@@ -94,7 +97,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        Ok(WalletSetupPhaseAppConfiguration::default())
+        let use_tor = *ConfigCore::content().await.use_tor();
+        Ok(WalletSetupPhaseAppConfiguration { use_tor })
     }
 
     async fn setup(
@@ -183,6 +187,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                self.app_configuration.use_tor,
             )
             .await?;
 
@@ -206,6 +211,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             )
             .await?;
         drop(spend_wallet_manager);
+
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let node_status = *node_status_watch_rx.borrow();
+        let _ = app_state
+            .events_manager
+            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status.block_height)
+            .await;
 
         Ok(None)
     }

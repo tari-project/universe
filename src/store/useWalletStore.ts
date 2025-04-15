@@ -24,6 +24,7 @@ interface WalletStoreState {
     has_more_transactions: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
+    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
 const initialState: WalletStoreState = {

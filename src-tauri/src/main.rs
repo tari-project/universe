@@ -47,7 +47,7 @@ use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
-use wallet_adapter::WalletState;
+use wallet_adapter::{ConnectivityStatus, WalletState};
 
 use log4rs::config::RawConfig;
 use std::fs;
@@ -180,25 +180,50 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let wallet_state_watch_rx = (*app_state.wallet_state_watch_rx).clone();
 
-        let current_block_height = node_status_watch_rx.borrow().block_height;
-        let _ = &app_state
-            .events_manager
-            .wait_for_initial_wallet_scan(&move_app, current_block_height)
-            .await;
+        let init_node_status = *node_status_watch_rx.borrow();
+        let _ = &app_state.events_manager.handle_base_node_update(&move_app, init_node_status).await;
 
-        let mut latest_updated_block_height = current_block_height;
+        let mut latest_updated_block_height = init_node_status.block_height;
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
-                    let node_status: BaseNodeStatus = *node_status_watch_rx.borrow();
-                    if node_status.block_height > latest_updated_block_height {
-                        while latest_updated_block_height < node_status.block_height {
+                    let node_status = *node_status_watch_rx.borrow();
+                    info!(target: LOG_TARGET, "Processing node status change. Node block height: {}, Latest updated block height: {}", node_status.block_height, latest_updated_block_height);
+
+                    let initial_sync_finished = match &*wallet_state_watch_rx.borrow() {
+                        Some(wallet_state) => {
+                            if wallet_state.scanned_height >= latest_updated_block_height && latest_updated_block_height > 0 {
+                                true // Scan is completed
+                            } else if wallet_state.scanned_height == 0 {
+                                // Special case: scanned_height is 0
+                                if let Some(wallet_network) = &wallet_state.network {
+                                    let is_online = matches!(wallet_network.status, ConnectivityStatus::Online(_));
+                                    is_online
+                                    // When wallet is online with 0 scanned height, the scan likely
+                                    // completed before the wallet GRPC server started recording heights
+                                } else {
+                                    false
+                                }
+                            } else {
+                                false // Still scanning
+                            }
+                        },
+                        None => {
+                            false // No wallet state available
+                        }
+                    };
+
+                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
+                        while latest_updated_block_height < node_status.block_height{
                             latest_updated_block_height += 1;
                             let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
-                    } else {
+                    }
+                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
                         let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
+                        latest_updated_block_height = node_status.block_height;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
@@ -1234,7 +1259,6 @@ fn main() {
                 create_dir_all(&config_path).map_err(|e| e.to_string())?;
                 File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
-
 
             Ok(())
         })

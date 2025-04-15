@@ -10,13 +10,12 @@ import { addPendingTransaction, setError as setStoreError } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { TariOutlineSVG } from '@app/assets/icons/tari-outline.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
 import type { InputName, SendInputs } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
-import { BottomWrapper, DividerIcon, ErrorMessageWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { BottomWrapper, DividerIcon, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 import { HeaderLabel, TabHeader } from '../components/Tabs/tab.styles.ts';
 
 const defaultValues = { message: '', address: '', amount: '' };
@@ -150,6 +149,7 @@ export function Send({ setSection }: Props) {
                             autoFocus
                             truncateOnBlur
                             isValid={isAddressValid}
+                            errorText={errors.address?.message}
                         />
 
                         <FormField control={control} name="message" handleChange={handleChange} />
@@ -177,10 +177,6 @@ export function Send({ setSection }: Props) {
                         >
                             {t('send.cta-send')}
                         </Button>
-                        <ErrorMessageWrapper>
-                            <Typography variant="p">{errors.address?.message}</Typography>
-                            <Typography variant="p">{errors.amount?.message}</Typography>
-                        </ErrorMessageWrapper>
                     </BottomWrapper>
                 </StyledForm>
                 <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>

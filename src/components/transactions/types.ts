@@ -5,6 +5,7 @@ export type TransationType = 'mined' | 'sent' | 'received' | 'unknown';
 export interface HistoryListItemProps {
     item: TransactionInfo;
     index: number;
+    itemIsNew?: boolean;
 }
 
 export interface BaseItemProps {
