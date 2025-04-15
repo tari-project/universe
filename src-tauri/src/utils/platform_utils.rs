@@ -27,13 +27,14 @@ use super::macos_utils::is_app_in_applications_folder;
 use crate::external_dependencies::ExternalDependencies;
 
 #[cfg(not(target_os = "linux"))]
+use crate::events_manager::EventsManager;
+#[cfg(not(target_os = "linux"))]
 use crate::UniverseAppState;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
+use std::fmt::Display;
 #[cfg(not(target_os = "linux"))]
 use tauri::Manager;
-
-use std::fmt::Display;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
