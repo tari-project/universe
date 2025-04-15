@@ -36,10 +36,12 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean }>`
     letter-spacing: -1px;
     font-weight: 500;
     opacity: 0.9;
+
     &:focus {
         outline: none;
         opacity: 1;
     }
+
     &::placeholder {
         color: ${({ theme }) => theme.palette.text.shadow};
         font-size: 1.4rem;
@@ -73,4 +75,13 @@ export const CheckIconWrapper = styled(m.div)`
     pointer-events: none;
     width: 25px;
     height: 25px;
+`;
+
+export const ErrorText = styled(m.div)`
+    color: ${({ theme }) => theme.palette.error.main};
+
+    font-size: 12px;
+    font-weight: 500;
+    width: max-content;
+    overflow: hidden;
 `;
