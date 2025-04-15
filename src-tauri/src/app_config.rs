@@ -25,6 +25,7 @@ use crate::gpu_miner::EngineType;
 use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
+use tauri::{AppHandle, Manager};
 
 use crate::credential_manager::CredentialManager;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
@@ -359,6 +360,30 @@ impl AppConfig {
             return true;
         }
         false
+    }
+
+    pub async fn initialize_for_migration(&mut self, app_handle: AppHandle) -> Option<AppConfig> {
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        let _unused = self
+            .load_or_create(old_config_path.clone())
+            .await
+            .map_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to load or create app config: {}", e);
+            });
+
+        let old_config_content = if self.is_file_exists(old_config_path.clone()) {
+            Some(self.clone())
+        } else {
+            None
+        };
+
+        self.move_out_of_original_location(old_config_path).await;
+
+        old_config_content
     }
 
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {

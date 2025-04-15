@@ -25,10 +25,12 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
-use crate::{app_config::AirdropTokens, internal_wallet::generate_password, AppConfig};
+use crate::{
+    app_config::AirdropTokens, internal_wallet::generate_password, AppConfig, UniverseAppState,
+};
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
@@ -92,6 +94,20 @@ pub struct ConfigCore {
     app_handle: RwLock<Option<AppHandle>>,
 }
 
+impl ConfigCore {
+    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let state = app_handle.state::<UniverseAppState>();
+        let mut config = Self::current().write().await;
+        config.load_app_handle(app_handle.clone()).await;
+        config.handle_old_config_migration(old_config);
+
+        state
+            .events_manager
+            .handle_config_core_loaded(&app_handle)
+            .await;
+    }
+}
+
 impl ConfigImpl for ConfigCore {
     type Config = ConfigCoreContent;
     type OldConfig = AppConfig;
@@ -102,7 +118,7 @@ impl ConfigImpl for ConfigCore {
 
     fn new() -> Self {
         Self {
-            content: ConfigCore::_initialize_config_content(),
+            content: ConfigCore::_load_or_create(),
             app_handle: RwLock::new(None),
         }
     }

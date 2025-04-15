@@ -25,17 +25,18 @@ use std::{env::temp_dir, sync::LazyLock, time::SystemTime};
 use anyhow::Error;
 use dirs::config_dir;
 use getset::{Getters, Setters};
-use log::{info, warn};
+use log::{error, info, warn};
 use monero_address_creator::network::Mainnet;
 use monero_address_creator::Seed as MoneroSeed;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
     consts::DEFAULT_MONERO_ADDRESS,
     credential_manager::{Credential, CredentialManager},
-    AppConfig, APPLICATION_FOLDER_ID,
+    internal_wallet::InternalWallet,
+    AppConfig, UniverseAppState, APPLICATION_FOLDER_ID,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -97,6 +98,59 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
+    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let state = app_handle.state::<UniverseAppState>();
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        ConfigWallet::current()
+            .write()
+            .await
+            .handle_old_config_migration(old_config);
+        ConfigWallet::current()
+            .write()
+            .await
+            .load_app_handle(app_handle.clone())
+            .await;
+
+        // Thinmk about better place for this
+
+        // This must happend before InternalWallet::load_or_create !!!
+        if ConfigWallet::content().await.monero_address().is_empty() {
+            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await;
+            }
+        }
+
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
+            Ok(wallet) => {
+                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.get_view_key(),
+                        wallet.get_spend_key(),
+                    )
+                    .await;
+                *state.tari_address.write().await = wallet.get_tari_address();
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
+        };
+
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&app_handle)
+            .await;
+    }
+
     pub async fn create_monereo_address() -> Result<String, Error> {
         let config_dir = config_dir()
             .unwrap_or_else(|| {
@@ -142,7 +196,7 @@ impl ConfigImpl for ConfigWallet {
 
     fn new() -> Self {
         Self {
-            content: ConfigWallet::_initialize_config_content(),
+            content: ConfigWallet::_load_or_create(),
             app_handle: RwLock::new(None),
         }
     }

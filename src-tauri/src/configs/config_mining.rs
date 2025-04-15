@@ -23,12 +23,13 @@
 use crate::{
     app_config::{GpuThreads, MiningMode},
     gpu_miner::EngineType,
+    UniverseAppState,
 };
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::AppConfig;
@@ -88,6 +89,25 @@ pub struct ConfigMining {
     app_handle: RwLock<Option<AppHandle>>,
 }
 
+impl ConfigMining {
+    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let state = app_handle.state::<UniverseAppState>();
+        let mut config = Self::current().write().await;
+        config.load_app_handle(app_handle.clone()).await;
+        config.handle_old_config_migration(old_config);
+        state
+            .cpu_miner_config
+            .write()
+            .await
+            .load_from_config_mining(config._get_content());
+
+        state
+            .events_manager
+            .handle_config_mining_loaded(&app_handle)
+            .await;
+    }
+}
+
 impl ConfigImpl for ConfigMining {
     type Config = ConfigMiningContent;
     type OldConfig = AppConfig;
@@ -98,7 +118,7 @@ impl ConfigImpl for ConfigMining {
 
     fn new() -> Self {
         Self {
-            content: ConfigMining::_initialize_config_content(),
+            content: ConfigMining::_load_or_create(),
             app_handle: RwLock::new(None),
         }
     }

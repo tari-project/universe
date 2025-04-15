@@ -87,7 +87,7 @@ pub trait ConfigImpl {
         Ok(())
     }
 
-    fn _initialize_config_content() -> Self::Config {
+    fn _load_or_create() -> Self::Config {
         match Self::_load_config() {
             Ok(config_content) => {
                 info!(target: LOG_TARGET, "[{}] [load_config] loaded config content", Self::_get_name());

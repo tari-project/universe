@@ -178,19 +178,6 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
 
-        let old_config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-
-        let _unused = state
-            .config
-            .write()
-            .await
-            .load_or_create(old_config_path.clone())
-            .await;
-        let old_config = state.config.read().await;
-
         let _unused = state
             .telemetry_manager
             .write()
@@ -216,91 +203,17 @@ impl SetupManager {
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
 
-        let old_config_content = if old_config.is_file_exists(old_config_path.clone()) {
-            Some(old_config.clone())
-        } else {
-            None
-        };
-
-        let mut config_core = ConfigCore::current().write().await;
-        config_core.handle_old_config_migration(old_config_content.clone());
-        config_core.load_app_handle(app_handle.clone()).await;
-        drop(config_core);
-
-        ConfigWallet::current()
+        let old_config_content = state
+            .config
             .write()
             .await
-            .handle_old_config_migration(old_config_content.clone());
-        ConfigWallet::current()
-            .write()
-            .await
-            .load_app_handle(app_handle.clone())
+            .initialize_for_migration(app_handle.clone())
             .await;
 
-        // This must happend before InternalWallet::load_or_create !!!
-        if ConfigWallet::content().await.monero_address().is_empty() {
-            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
-                let _unused = ConfigWallet::update_field(
-                    ConfigWalletContent::set_generated_monero_address,
-                    monero_address,
-                )
-                .await;
-            }
-        }
-
-        match InternalWallet::load_or_create(old_config_path.clone()).await {
-            Ok(wallet) => {
-                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
-                state
-                    .wallet_manager
-                    .set_view_private_key_and_spend_key(
-                        wallet.get_view_key(),
-                        wallet.get_spend_key(),
-                    )
-                    .await;
-                *state.tari_address.write().await = wallet.get_tari_address();
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            }
-        };
-
-        let mut config_mining = ConfigMining::current().write().await;
-        config_mining.handle_old_config_migration(old_config_content.clone());
-        config_mining.load_app_handle(app_handle.clone()).await;
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config_mining._get_content());
-
-        drop(config_mining);
-
-        let mut config_ui = ConfigUI::current().write().await;
-        config_ui.handle_old_config_migration(old_config_content.clone());
-        config_ui.load_app_handle(app_handle.clone()).await;
-        drop(config_ui);
-
-        old_config
-            .move_out_of_original_location(old_config_path)
-            .await;
-
-        state
-            .events_manager
-            .handle_config_core_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_mining_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_ui_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&app_handle)
-            .await;
+        ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
