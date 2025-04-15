@@ -64,10 +64,7 @@ impl WalletManager {
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
-        // TODO: wire up to front end
-        let use_tor = false;
-
-        let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
+        let adapter = WalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
@@ -82,6 +79,7 @@ impl WalletManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        use_tor: bool,
     ) -> Result<(), WalletManagerError> {
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -103,6 +101,7 @@ impl WalletManager {
         let node_connection_address = self.node_manager.get_connection_address().await?;
         process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
         process_watcher.adapter.base_node_address = Some(node_connection_address);
+        process_watcher.adapter.use_tor(use_tor);
 
         process_watcher
             .start(
