@@ -12,7 +12,7 @@ function useTariBalance() {
     const formattedBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLongBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
 
-    const isWalletScanning = useMemo(() => !Number.isFinite(calculated_balance), [calculated_balance]);
+    const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const balanceDisplayValue = useMemo(
         () => (isWalletScanning ? '-' : !hideWalletBalance ? formattedBalance : '*****'),
         [formattedBalance, isWalletScanning, hideWalletBalance]

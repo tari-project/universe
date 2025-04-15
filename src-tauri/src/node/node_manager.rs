@@ -30,12 +30,13 @@ use log::{error, info, warn};
 use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
+use crate::events_manager::EventsManager;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
 };
@@ -45,7 +46,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, UniverseAppState};
+use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -92,18 +93,6 @@ pub struct NodeManager {
     local_node_db_cleared: Arc<AtomicBool>,
 }
 
-fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'static>(
-    stats_broadcast: Sender<ProcessWatcherStats>,
-    node_adapter: T,
-) -> ProcessWatcher<T> {
-    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast);
-    process_watcher.poll_time = Duration::from_secs(5);
-    process_watcher.health_timeout = Duration::from_secs(4);
-    process_watcher.expected_startup_time = Duration::from_secs(30);
-
-    process_watcher
-}
-
 impl NodeManager {
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
@@ -121,6 +110,7 @@ impl NodeManager {
             local_node_watcher = Some(construct_process_watcher(
                 stats_broadcast.clone(),
                 local_node_adapter.clone(),
+                node_type.is_local(),
             ));
         }
         let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
@@ -128,6 +118,7 @@ impl NodeManager {
             remote_node_watcher = Some(construct_process_watcher(
                 stats_broadcast,
                 remote_node_adapter.clone(),
+                node_type.is_local(),
             ));
         }
 
@@ -398,12 +389,12 @@ impl NodeManager {
     }
 
     // Self Checks
-    async fn is_local(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_local(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_local())
     }
 
-    async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(matches!(
             node_type,
@@ -411,17 +402,34 @@ impl NodeManager {
         ))
     }
 
-    async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
         self.is_remote().await
     }
 
-    async fn is_remote(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_remote())
     }
 }
 
 // Helpers
+fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'static>(
+    stats_broadcast: Sender<ProcessWatcherStats>,
+    node_adapter: T,
+    is_local: bool,
+) -> ProcessWatcher<T> {
+    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast);
+    if is_local {
+        process_watcher.poll_time = Duration::from_secs(5);
+        process_watcher.health_timeout = Duration::from_secs(4);
+    } else {
+        process_watcher.poll_time = Duration::from_secs(10);
+        process_watcher.health_timeout = Duration::from_secs(9);
+    }
+    process_watcher.expected_startup_time = Duration::from_secs(30);
+
+    process_watcher
+}
 
 async fn start_watcher<T>(
     node_watcher: &Arc<RwLock<Option<ProcessWatcher<T>>>>,
@@ -610,8 +618,7 @@ async fn spawn_syncing_updater(
                         let progress_params = progress_params_rx.borrow().clone();
                         let percentage = *progress_percentage_rx.borrow();
                         if let Some(step) = progress_params.get("step").cloned() {
-                            let app_state = app_handle.state::<UniverseAppState>();
-                            app_state.events_manager.handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
+                            EventsManager::handle_background_node_sync_update(&app_handle, progress_params.clone()).await;
                             if step == "Block" && percentage == 1.0 {
                                 break;
                             }
