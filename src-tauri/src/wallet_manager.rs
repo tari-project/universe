@@ -291,6 +291,12 @@ impl WalletManager {
                             balance.available_balance
                         );
                         EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+                        EventsEmitter::emit_init_wallet_scanning_progress(
+                            &app_clone2,
+                            block_height,
+                            block_height,
+                            100.0,
+                        ).await;
 
                         wallet_manager.initial_scan_completed
                             .store(true, std::sync::atomic::Ordering::Relaxed);
