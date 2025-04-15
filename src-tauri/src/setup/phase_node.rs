@@ -243,13 +243,16 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 Err(e) => {
                     if let NodeManagerError::ExitCode(code) = e {
                         if STOP_ON_ERROR_CODES.contains(&code) {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
                             state.node_manager.clean_data_folder(&data_dir).await?;
-                            continue;
                         }
+                        continue;
                     }
-                    error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
-
+                    if let NodeManagerError::UnknownError(error) = e {
+                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({:?}) needs a restart.", error);
+                        continue;
+                    }
+                    error!(target: LOG_TARGET, "Could not start node manager after restart: {:?} | Exitting the app", e);
                     self.app_handle.exit(-1);
                     return Err(e.into());
                 }

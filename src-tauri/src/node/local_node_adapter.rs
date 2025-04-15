@@ -110,14 +110,6 @@ impl LocalNodeAdapter {
             None
         }
     }
-
-    pub fn use_tor(&mut self, use_tor: bool) {
-        self.use_tor = use_tor;
-    }
-
-    pub fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
-        self.tor_control_port = tor_control_port;
-    }
 }
 
 #[async_trait]
@@ -126,12 +118,25 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_grpc_address()
     }
 
+    fn set_grpc_address(&mut self, _grpc_address: String) -> Result<(), anyhow::Error> {
+        log::error!(target: LOG_TARGET, "Attempted to set gRPC address for local node, which is fixed to localhost.");
+        Ok(())
+    }
+
     fn get_service(&self) -> Option<NodeAdapterService> {
         self.get_service()
     }
 
     async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
         Ok(self.tcp_address())
+    }
+
+    fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
+        self.tor_control_port = tor_control_port;
     }
 }
 

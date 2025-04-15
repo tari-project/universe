@@ -37,7 +37,7 @@ export interface NodeTypeUpdatePayload {
     node_type?: 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
     node_identity?: {
         public_key: string;
-        public_address: string[];
+        public_addresses: string[];
     };
     node_connection_address?: string;
 }

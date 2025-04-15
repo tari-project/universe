@@ -88,7 +88,7 @@ export default function Node() {
                             <Stack direction="row">
                                 <Typography>{t('node-public-address')}</Typography>
                                 <Typography>
-                                    <b>{node_identity?.public_address.join(', ') || 'N/A'}</b>
+                                    <b>{node_identity?.public_addresses.join(', ') || 'N/A'}</b>
                                 </Typography>
                             </Stack>
                             <Stack direction="row">

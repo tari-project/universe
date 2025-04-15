@@ -49,7 +49,8 @@ impl TorManager {
         let adapter = TorAdapter::new(status_broadcast);
         let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
         process_watcher.expected_startup_time = Duration::from_secs(120);
-        process_watcher.health_timeout = Duration::from_secs(14);
+        process_watcher.health_timeout = Duration::from_secs(9);
+        process_watcher.poll_time = Duration::from_secs(10);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
