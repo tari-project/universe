@@ -34,13 +34,7 @@ use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayl
 
 use crate::{
     commands::CpuMinerStatus,
-    configs::{
-        config_core::ConfigCore,
-        config_mining::ConfigMining,
-        config_ui::{ConfigUI, ConfigUIContent},
-        config_wallet::ConfigWallet,
-        trait_config::ConfigImpl,
-    },
+    configs::config_ui::ConfigUIContent,
     events::{NodeTypeUpdatePayload, ProgressEvents, ShowReleaseNotesPayload},
     events_emitter::EventsEmitter,
     gpu_status_file::GpuDevice,

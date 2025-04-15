@@ -35,7 +35,6 @@ use crate::{
     },
     events_manager::EventsManager,
     initialize_frontend_updates,
-    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,

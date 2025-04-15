@@ -22,6 +22,7 @@
 
 use crate::{
     app_config::{GpuThreads, MiningMode},
+    events_manager::EventsManager,
     gpu_miner::EngineType,
     UniverseAppState,
 };
@@ -101,10 +102,7 @@ impl ConfigMining {
             .await
             .load_from_config_mining(config._get_content());
 
-        state
-            .events_manager
-            .handle_config_mining_loaded(&app_handle, config.content.clone())
-            .await;
+        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }
 }
 

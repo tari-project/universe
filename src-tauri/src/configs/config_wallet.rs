@@ -29,8 +29,8 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
-    internal_wallet::InternalWallet, utils::wallet_utils::create_monereo_address, AppConfig,
-    UniverseAppState,
+    events_manager::EventsManager, internal_wallet::InternalWallet,
+    utils::wallet_utils::create_monereo_address, AppConfig, UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -103,10 +103,7 @@ impl ConfigWallet {
         config.handle_old_config_migration(old_config);
         config.load_app_handle(app_handle.clone()).await;
 
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&app_handle, config.content.clone())
-            .await;
+        EventsManager::handle_config_wallet_loaded(&app_handle, config.content.clone()).await;
         drop(config);
         // Think about better place for this
         // This must happend before InternalWallet::load_or_create !!!

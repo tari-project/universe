@@ -25,11 +25,12 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::LazyLock, time::SystemTime};
 use tari_common::configuration::Network;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AirdropTokens, internal_wallet::generate_password, AppConfig, UniverseAppState,
+    app_config::AirdropTokens, events_manager::EventsManager, internal_wallet::generate_password,
+    AppConfig,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -96,15 +97,11 @@ pub struct ConfigCore {
 
 impl ConfigCore {
     pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
-        let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         config.handle_old_config_migration(old_config);
 
-        state
-            .events_manager
-            .handle_config_core_loaded(&app_handle, config.content.clone())
-            .await;
+        EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
     }
 }
 
