@@ -34,6 +34,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use sysinfo::System;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
@@ -150,16 +151,14 @@ impl CpuMiner {
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-    ) -> Result<u64, anyhow::Error> {
-        let max_cpu_available = thread::available_parallelism();
-        let max_cpu_available = match max_cpu_available {
-            Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
-            Err(_) => 1,
-        };
+    ) -> Result<Option<u64>, anyhow::Error> {
+        let system = System::new_all();
+        let max_cpu_available = system.cpus().len() as u32;
 
         {
             let mut lock = self.watcher.write().await;
             lock.adapter.node_connection = Some(XmrigNodeConnection::Benchmark);
+            // This is benchmarking, so address doesn't really matter
             lock.adapter.monero_address = Some("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A".to_string());
             lock.adapter.cpu_threads = Some(Some(1));
             lock.adapter.extra_options = vec![];
@@ -192,12 +191,12 @@ impl CpuMiner {
                     error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
                     // Stop the miner before returning
                     self.stop().await?;
-                    return Ok(0);
+                    return Ok(None);
                 }
             }
         };
 
-        let timeout_duration = duration + Duration::from_secs(10);
+        let timeout_duration = duration + Duration::from_secs(120);
         let result = match timeout(timeout_duration, async move {
             let start_time = Instant::now();
             let mut max_hashrate = 0f64;
@@ -225,8 +224,8 @@ impl CpuMiner {
         })
         .await
         {
-            Ok(res) => res? * u64::from(max_cpu_available),
-            Err(_) => 0,
+            Ok(res) => Some(res? * u64::from(max_cpu_available)),
+            Err(_) => None,
         };
 
         // Stop the miner

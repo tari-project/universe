@@ -491,6 +491,7 @@ async fn get_telemetry_data(
     }
 
     let system = System::new_all();
+
     extra_data.insert(
         "cpu_usage".to_string(),
         system.global_cpu_usage().to_string(),

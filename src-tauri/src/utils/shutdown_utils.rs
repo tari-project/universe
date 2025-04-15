@@ -321,7 +321,7 @@ pub async fn resume_all_processes(app_handle: tauri::AppHandle) -> Result<(), an
         let p2pool_config = P2poolConfig::builder()
             .with_base_node(base_node_grpc)
             .with_stats_server_port(state.config.read().await.p2pool_stats_server_port())
-            .with_cpu_benchmark_hashrate(Some(benchmarked_hashrate))
+            .with_cpu_benchmark_hashrate(benchmarked_hashrate)
             .build()?;
 
         state
