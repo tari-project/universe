@@ -42,9 +42,13 @@ export const importSeedWords = async (seedWords: string[]) => {
         console.error('Could not import seed words: ', error);
     }
 };
-export const initialFetchTxs = () => {
-    void fetchTransactionsHistory({ continuation: false, limit: 20 });
-};
+export const initialFetchTxs = () =>
+    fetchTransactionsHistory({ continuation: false, limit: 20 }).then((tx) => {
+        if (tx?.length) {
+            useWalletStore.setState({ newestTxIdOnInitialFetch: tx[0]?.tx_id });
+        }
+    });
+
 export const refreshTransactions = async () => {
     const limit = useWalletStore.getState().transactions.length;
     return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });

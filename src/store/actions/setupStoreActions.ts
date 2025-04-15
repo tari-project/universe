@@ -4,6 +4,7 @@ import { useSetupStore } from '../useSetupStore';
 import { startMining, stopMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
+    initialFetchTxs,
     sidebarTowerOffset,
     TOWER_CANVAS_ID,
     useConfigMiningStore,
@@ -34,6 +35,8 @@ export const handleAppUnlocked = async () => {
 };
 export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
+    // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
+    initialFetchTxs();
 };
 export const handleMiningUnlocked = async () => {
     useSetupStore.setState({ miningUnlocked: true });
