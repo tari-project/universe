@@ -33,6 +33,7 @@ use crate::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet,
     },
+    events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
@@ -405,11 +406,7 @@ impl SetupManager {
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
-            let state = app_handle.state::<UniverseAppState>();
-            state
-                .events_manager
-                .handle_restarting_phases(&app_handle, phases.clone())
-                .await;
+            EventsManager::handle_restarting_phases(&app_handle, phases.clone()).await;
         }
 
         for phase in phases {
@@ -446,8 +443,7 @@ impl SetupManager {
             .handle_release_notes_event_emit(state.clone(), app_handle.clone())
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_app(&app_handle).await;
+        EventsManager::handle_unlock_app(&app_handle).await;
     }
 
     async fn unlock_wallet(&self, app_handle: AppHandle) {
@@ -458,8 +454,7 @@ impl SetupManager {
 
         info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_wallet(&app_handle).await;
+        EventsManager::handle_unlock_wallet(&app_handle).await;
     }
 
     async fn unlock_mining(&self, app_handle: AppHandle) {
@@ -469,8 +464,7 @@ impl SetupManager {
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_mining_unlocked.lock().await = true;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_mining(&app_handle).await;
+        EventsManager::handle_unlock_mining(&app_handle).await;
     }
 
     async fn lock_mining(&self, app_handle: AppHandle) {
@@ -482,8 +476,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_mining_unlocked.lock().await = false;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_lock_mining(&app_handle).await;
+        EventsManager::handle_lock_mining(&app_handle).await;
     }
 
     async fn lock_wallet(&self, app_handle: AppHandle) {
@@ -494,8 +487,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Wallet");
 
         *self.is_wallet_unlocked.lock().await = false;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_lock_wallet(&app_handle).await;
+        EventsManager::handle_lock_wallet(&app_handle).await;
     }
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
@@ -519,8 +511,7 @@ impl SetupManager {
     pub async fn handle_switch_to_local_node(&self) {
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
-            let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
-            events_manager.handle_node_type_update(&app_handle).await;
+            EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
             self.shutdown_phases(

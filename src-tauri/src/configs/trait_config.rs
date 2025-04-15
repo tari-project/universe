@@ -32,6 +32,7 @@ use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
+    events_manager::EventsManager,
     setup::setup_manager::{SetupManager, SetupPhase},
     UniverseAppState, APPLICATION_FOLDER_ID,
 };
@@ -78,11 +79,7 @@ pub trait ConfigImpl {
 
     async fn _send_restart_event(&self) -> Result<(), Error> {
         if let Some(app_handle) = self._get_app_handle().await {
-            let app_state = app_handle.state::<UniverseAppState>();
-            app_state
-                .events_manager
-                .handle_ask_for_restart(&app_handle)
-                .await;
+            EventsManager::handle_ask_for_restart(&app_handle).await;
         }
         Ok(())
     }

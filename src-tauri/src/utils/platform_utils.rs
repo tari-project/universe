@@ -27,13 +27,14 @@ use super::macos_utils::is_app_in_applications_folder;
 use crate::external_dependencies::ExternalDependencies;
 
 #[cfg(not(target_os = "linux"))]
+use crate::events_manager::EventsManager;
+#[cfg(not(target_os = "linux"))]
 use crate::UniverseAppState;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
+use std::fmt::Display;
 #[cfg(not(target_os = "linux"))]
 use tauri::Manager;
-
-use std::fmt::Display;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
@@ -91,16 +92,13 @@ impl PlatformUtils {
     async fn initialize_macos_preqesities(
         app_handle: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
-        let state = app_handle.state::<UniverseAppState>();
         if !cfg!(dev) && !is_app_in_applications_folder() {
-            state
-                .events_manager
-                .handle_critical_problem(
-                    &app_handle,
-                    None,
-                    Some("not-installed-in-applications-directory".to_string()),
-                )
-                .await;
+            EventsManager::handle_critical_problem(
+                &app_handle,
+                None,
+                Some("not-installed-in-applications-directory".to_string()),
+            )
+            .await;
             return Err(anyhow!(
                 "App is not installed in the Applications directory"
             ));
@@ -112,7 +110,6 @@ impl PlatformUtils {
     async fn initialize_windows_preqesities(
         app_handle: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
-        let state = app_handle.state::<UniverseAppState>();
         if cfg!(target_os = "windows") && !cfg!(dev) {
             ExternalDependencies::current()
                 .read_registry_installed_applications()
@@ -121,15 +118,13 @@ impl PlatformUtils {
                 .check_if_some_dependency_is_not_installed()
                 .await;
             if is_missing {
-                state
-                    .events_manager
-                    .handle_missing_application_files(
-                        &app_handle,
-                        ExternalDependencies::current()
-                            .get_external_dependencies()
-                            .await,
-                    )
-                    .await;
+                EventsManager::handle_missing_application_files(
+                    &app_handle,
+                    ExternalDependencies::current()
+                        .get_external_dependencies()
+                        .await,
+                )
+                .await;
                 return Err(anyhow!("Missing required dependencies"));
             }
         }
