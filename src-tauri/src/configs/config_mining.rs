@@ -103,7 +103,7 @@ impl ConfigMining {
 
         state
             .events_manager
-            .handle_config_mining_loaded(&app_handle)
+            .handle_config_mining_loaded(&app_handle, config.content.clone())
             .await;
     }
 }

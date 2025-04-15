@@ -93,22 +93,21 @@ pub struct ConfigWallet {
 
 impl ConfigWallet {
     pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let mut config = Self::current().write().await;
         let state = app_handle.state::<UniverseAppState>();
         let old_config_path = app_handle
             .path()
             .app_config_dir()
             .expect("Could not get config dir");
 
-        ConfigWallet::current()
-            .write()
-            .await
-            .handle_old_config_migration(old_config);
-        ConfigWallet::current()
-            .write()
-            .await
-            .load_app_handle(app_handle.clone())
-            .await;
+        config.handle_old_config_migration(old_config);
+        config.load_app_handle(app_handle.clone()).await;
 
+        state
+            .events_manager
+            .handle_config_wallet_loaded(&app_handle, config.content.clone())
+            .await;
+        drop(config);
         // Think about better place for this
         // This must happend before InternalWallet::load_or_create !!!
         if ConfigWallet::content().await.monero_address().is_empty() {
@@ -137,11 +136,6 @@ impl ConfigWallet {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
-
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&app_handle)
-            .await;
     }
 }
 

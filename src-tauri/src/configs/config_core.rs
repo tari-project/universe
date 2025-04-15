@@ -103,7 +103,7 @@ impl ConfigCore {
 
         state
             .events_manager
-            .handle_config_core_loaded(&app_handle)
+            .handle_config_core_loaded(&app_handle, config.content.clone())
             .await;
     }
 }

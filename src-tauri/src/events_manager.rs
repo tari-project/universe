@@ -27,9 +27,11 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tokio::{select, sync::watch::Receiver};
 
-use crate::events::CriticalProblemPayload;
+use crate::configs::config_mining::ConfigMiningContent;
+use crate::configs::config_wallet::ConfigWalletContent;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
+use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayload};
 
 use crate::{
     commands::CpuMinerStatus,
@@ -312,28 +314,19 @@ impl EventsManager {
         EventsEmitter::emit_node_type_update(app, payload).await;
     }
 
-    pub async fn handle_config_core_loaded(&self, app: &AppHandle) {
-        let payload = ConfigCore::content().await;
+    pub async fn handle_config_core_loaded(&self, app: &AppHandle, payload: ConfigCoreContent) {
         EventsEmitter::emit_core_config_loaded(app, payload).await;
     }
 
-    pub async fn handle_config_ui_loaded(&self, app: &AppHandle) {
-        let payload = ConfigUI::content().await;
+    pub async fn handle_config_ui_loaded(&self, app: &AppHandle, payload: ConfigUIContent) {
         EventsEmitter::emit_ui_config_loaded(app, payload).await;
-        let _unused = ConfigUI::update_field(
-            ConfigUIContent::propose_system_language,
-            "en-US".to_string(),
-        )
-        .await;
     }
 
-    pub async fn handle_config_mining_loaded(&self, app: &AppHandle) {
-        let payload = ConfigMining::content().await;
+    pub async fn handle_config_mining_loaded(&self, app: &AppHandle, payload: ConfigMiningContent) {
         EventsEmitter::emit_mining_config_loaded(app, payload).await;
     }
 
-    pub async fn handle_config_wallet_loaded(&self, app: &AppHandle) {
-        let payload = ConfigWallet::content().await;
+    pub async fn handle_config_wallet_loaded(&self, app: &AppHandle, payload: ConfigWalletContent) {
         EventsEmitter::emit_wallet_config_loaded(app, payload).await;
     }
 
