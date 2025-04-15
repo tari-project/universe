@@ -178,6 +178,14 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let is_local_node = app_state.node_manager.is_local_current().await?;
+        let use_tor = if is_local_node {
+            // Always use direct connections with the local node
+            false
+        } else {
+            self.app_configuration.use_tor
+        };
         state
             .wallet_manager
             .ensure_started(
@@ -185,7 +193,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
-                self.app_configuration.use_tor,
+                use_tor,
             )
             .await?;
 
@@ -210,7 +218,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
         let node_status = *node_status_watch_rx.borrow();
         state

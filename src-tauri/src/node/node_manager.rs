@@ -389,12 +389,12 @@ impl NodeManager {
     }
 
     // Self Checks
-    async fn is_local(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_local(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_local())
     }
 
-    async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_local_current(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(matches!(
             node_type,
@@ -402,11 +402,11 @@ impl NodeManager {
         ))
     }
 
-    async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote_current(&self) -> Result<bool, anyhow::Error> {
         self.is_remote().await
     }
 
-    async fn is_remote(&self) -> Result<bool, anyhow::Error> {
+    pub async fn is_remote(&self) -> Result<bool, anyhow::Error> {
         let node_type = self.get_node_type().await?;
         Ok(node_type.is_remote())
     }
