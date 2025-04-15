@@ -24,6 +24,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use commands::CpuMinerStatus;
+use cpu_miner::CpuMinerConfig;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
@@ -56,7 +57,7 @@ use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tauri::async_runtime::{block_on, JoinHandle};
+use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
@@ -153,16 +154,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
-
-struct CpuMinerConfig {
-    node_connection: CpuMinerConnection,
-    tari_address: TariAddress,
-    eco_mode_xmrig_options: Vec<String>,
-    ludicrous_mode_xmrig_options: Vec<String>,
-    custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<u32>,
-    ludicrous_mode_cpu_percentage: Option<u32>,
-}
 
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
@@ -1236,29 +1227,6 @@ fn main() {
                 create_dir_all(&config_path).map_err(|e| e.to_string())?;
                 File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
-
-            let thread_config: JoinHandle<Result<(), anyhow::Error>> =
-                tauri::async_runtime::spawn(async move {
-                    let mut app_conf = app_config.write().await;
-                    app_conf.load_or_create(config_path).await?;
-
-                    let mut cpu_conf = cpu_config.write().await;
-                    cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
-                    cpu_conf.ludicrous_mode_cpu_percentage = app_conf.ludicrous_mode_cpu_threads();
-                    cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
-                    cpu_conf.ludicrous_mode_xmrig_options =
-                        app_conf.ludicrous_mode_cpu_options().clone();
-                    cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
-
-                    Ok(())
-                });
-
-            match tauri::async_runtime::block_on(thread_config) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
-                }
-            };
 
             Ok(())
         })

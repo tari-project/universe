@@ -8,8 +8,10 @@ import {
     Label,
     AccentWrapper,
     CheckIconWrapper,
+    ErrorText,
 } from './TxInput.style.ts';
 import CheckIcon from './CheckIcon.tsx';
+import { AnimatePresence } from 'motion/react';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
@@ -93,6 +95,17 @@ export function TxInput({
                     </CheckIconWrapper>
                 )}
             </ContentWrapper>
+            <AnimatePresence>
+                {errorMessage && (
+                    <ErrorText
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                    >
+                        {errorMessage}
+                    </ErrorText>
+                )}
+            </AnimatePresence>
         </Wrapper>
     );
 }

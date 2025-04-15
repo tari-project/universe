@@ -31,6 +31,7 @@ interface WalletStoreState {
         total_height: number;
         progress: number;
     };
+    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
 const initialState: WalletStoreState = {

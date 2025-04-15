@@ -178,6 +178,18 @@ impl SetupManager {
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
+
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        let _unused = state
+            .config
+            .write()
+            .await
+            .load_or_create(old_config_path.clone())
+            .await;
         let old_config = state.config.read().await;
 
         let _unused = state
@@ -204,11 +216,6 @@ impl SetupManager {
             .await
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
-
-        let old_config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
 
         let old_config_content = if old_config.is_file_exists(old_config_path.clone()) {
             Some(old_config.clone())
@@ -262,6 +269,12 @@ impl SetupManager {
         let mut config_mining = ConfigMining::current().write().await;
         config_mining.handle_old_config_migration(old_config_content.clone());
         config_mining.load_app_handle(app_handle.clone()).await;
+        state
+            .cpu_miner_config
+            .write()
+            .await
+            .load_from_config_mining(config_mining._get_content());
+
         drop(config_mining);
 
         let mut config_ui = ConfigUI::current().write().await;

@@ -15,10 +15,13 @@ import {
     CurrencyText,
     StatusWrapper,
     CircularProgressWrapper,
+    Chip,
 } from './ListItem.styles.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { TransactionStatus } from '@app/types/transactions.ts';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { useTranslation } from 'react-i18next';
 
 const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
@@ -38,8 +41,13 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status
             </StatusWrapper>
             <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
             <TimeWrapper variant="p">{time}</TimeWrapper>
+
             <ValueWrapper>
-                {chip && <TimeWrapper variant="p">{chip}</TimeWrapper>}
+                {chip && (
+                    <Chip>
+                        <Typography>{chip}</Typography>
+                    </Chip>
+                )}
                 <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
                     {isPositiveValue ? `+` : `-`}
                 </ValueChangeWrapper>
@@ -50,7 +58,8 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status
     );
 });
 
-const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemProps) {
+const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false }: HistoryListItemProps) {
+    const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
     const appLanguage = useConfigUIStore((s) => s.application_language);
     const systemLang = useConfigUIStore((s) => s.should_always_use_system_language);
@@ -100,6 +109,7 @@ const HistoryListItem = memo(function ListItem({ item, index }: HistoryListItemP
             type={itemType}
             status={item?.status}
             onClick={handleTxClick}
+            chip={itemIsNew ? t('new') : ''}
         />
     );
     const itemHover = isMined ? <ItemHover item={item} /> : null;
