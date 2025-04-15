@@ -30,6 +30,7 @@ pub mod macos_utils;
 pub mod math_utils;
 pub mod network_status;
 pub mod platform_utils;
+pub mod wallet_utils;
 
 pub mod system_status;
 #[cfg(windows)]

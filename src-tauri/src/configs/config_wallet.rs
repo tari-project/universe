@@ -20,23 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, sync::LazyLock, time::SystemTime};
+use std::{sync::LazyLock, time::SystemTime};
 
-use anyhow::Error;
-use dirs::config_dir;
 use getset::{Getters, Setters};
-use log::{error, info, warn};
-use monero_address_creator::network::Mainnet;
-use monero_address_creator::Seed as MoneroSeed;
+use log::error;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
-    consts::DEFAULT_MONERO_ADDRESS,
-    credential_manager::{Credential, CredentialManager},
-    internal_wallet::InternalWallet,
-    AppConfig, UniverseAppState, APPLICATION_FOLDER_ID,
+    internal_wallet::InternalWallet, utils::wallet_utils::create_monereo_address, AppConfig,
+    UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -115,11 +109,10 @@ impl ConfigWallet {
             .load_app_handle(app_handle.clone())
             .await;
 
-        // Thinmk about better place for this
-
+        // Think about better place for this
         // This must happend before InternalWallet::load_or_create !!!
         if ConfigWallet::content().await.monero_address().is_empty() {
-            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+            if let Ok(monero_address) = create_monereo_address().await {
                 let _unused = ConfigWallet::update_field(
                     ConfigWalletContent::set_generated_monero_address,
                     monero_address,
@@ -149,40 +142,6 @@ impl ConfigWallet {
             .events_manager
             .handle_config_wallet_loaded(&app_handle)
             .await;
-    }
-
-    pub async fn create_monereo_address() -> Result<String, Error> {
-        let config_dir = config_dir()
-            .unwrap_or_else(|| {
-                warn!("Failed to get config directory, using temp dir");
-                temp_dir()
-            })
-            .join(APPLICATION_FOLDER_ID);
-
-        let cm = CredentialManager::default_with_dir(config_dir);
-
-        if let Ok(cred) = cm.get_credentials().await {
-            if let Some(seed) = cred.monero_seed {
-                info!(target: LOG_TARGET, "Found monero seed in credential manager");
-                let seed = MoneroSeed::new(seed);
-                return Ok(seed
-                    .to_address::<Mainnet>()
-                    .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
-            }
-        }
-
-        let monero_seed = MoneroSeed::generate()?;
-        let cred = Credential {
-            tari_seed_passphrase: None,
-            monero_seed: Some(*monero_seed.inner()),
-        };
-
-        info!(target: LOG_TARGET, "Setting monero seed in credential manager");
-        cm.set_credentials(&cred).await?;
-
-        Ok(monero_seed
-            .to_address::<Mainnet>()
-            .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
     }
 }
 
