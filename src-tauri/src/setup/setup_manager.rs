@@ -38,6 +38,7 @@ use crate::{
     },
     events_manager::EventsManager,
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -173,6 +174,7 @@ impl SetupManager {
         &INSTANCE
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
@@ -229,13 +231,33 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
-        if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
-            let _unused = ConfigWallet::update_field(
-                ConfigWalletContent::set_generated_monero_address,
-                monero_address,
-            )
-            .await;
+        // This must happend before InternalWallet::load_or_create !!!
+        if ConfigWallet::content().await.monero_address().is_empty() {
+            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await;
+            }
         }
+
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
+            Ok(wallet) => {
+                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.get_view_key(),
+                        wallet.get_spend_key(),
+                    )
+                    .await;
+                *state.tari_address.write().await = wallet.get_tari_address();
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
+        };
 
         let mut config_mining = ConfigMining::current().write().await;
         config_mining.handle_old_config_migration(old_config_content.clone());
