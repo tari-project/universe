@@ -46,7 +46,7 @@ use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
-use wallet_adapter::{ConnectivityStatus, WalletState};
+use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
 use std::fs;
@@ -183,7 +183,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
-        let wallet_state_watch_rx = (*app_state.wallet_state_watch_rx).clone();
 
         let init_node_status = *node_status_watch_rx.borrow();
         let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
