@@ -30,14 +30,10 @@ use super::{
 };
 use crate::{
     configs::{
-        config_core::ConfigCore,
-        config_mining::ConfigMining,
-        config_ui::ConfigUI,
-        config_wallet::{ConfigWallet, ConfigWalletContent},
-        trait_config::ConfigImpl,
+        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
+        config_wallet::ConfigWallet,
     },
     initialize_frontend_updates,
-    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
