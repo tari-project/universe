@@ -47,11 +47,13 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
+    time::Duration,
 };
 use tauri::{AppHandle, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex},
+    time::{interval, timeout, Interval},
 };
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
@@ -572,6 +574,29 @@ impl SetupManager {
     }
 
     pub async fn handle_switch_to_local_node(&self) {
+        let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+        let finished_unknown_setup = unknown_phase_status_subscriber.borrow().is_success();
+        if !finished_unknown_setup {
+            info!("Waiting for unknown setup to finish before switching to local node");
+            let mut timeout = interval(Duration::from_secs(90));
+            timeout.tick().await;
+            loop {
+                select! {
+                    _ = unknown_phase_status_subscriber.changed() => {
+                        let finished = unknown_phase_status_subscriber.borrow().is_success();
+                        if finished {
+                            info!("Pending Unknown setup has finished");
+                            break;
+                        } else {
+                            debug!("Pending Unknown setup has not finished")
+                        }
+                    }
+                    _ = timeout.tick()=> {
+                        error!("Unknown setup timed out");
+                    }
+                }
+            }
+        }
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
             let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
