@@ -37,9 +37,12 @@ use std::{
     sync::{atomic::AtomicU64, Arc},
 };
 
+const LOG_TARGET: &str = "tari::universe::remote_node_adapter";
+
 #[derive(Clone)]
 pub(crate) struct RemoteNodeAdapter {
     pub grpc_address: Option<(String, u16)>,
+    pub(crate) use_tor: bool,
     status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
@@ -48,6 +51,7 @@ impl RemoteNodeAdapter {
         Self {
             grpc_address: None,
             status_broadcast,
+            use_tor: false,
         }
     }
 
@@ -68,7 +72,7 @@ impl RemoteNodeAdapter {
         }
     }
 
-    // Expected format currently: https://grpc.esmeralda.tari.com:443
+    // Expected format currently: https://grpc.<network>.tari.com:443
     pub fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error> {
         let has_scheme = grpc_address.starts_with("http");
         let is_https = grpc_address.starts_with("https");
@@ -95,16 +99,50 @@ impl NodeAdapter for RemoteNodeAdapter {
         self.get_grpc_address()
     }
 
+    fn set_grpc_address(&mut self, grpc_address: String) -> Result<(), anyhow::Error> {
+        self.set_grpc_address(grpc_address)
+    }
+
     fn get_service(&self) -> Option<NodeAdapterService> {
         self.get_service()
+    }
+
+    fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    fn set_tor_control_port(&mut self, _tor_control_port: Option<u16>) {
+        log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 
     async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
-            let public_tcp_address = node_identity.public_address[0].clone();
-            Ok(public_tcp_address)
+
+            if self.use_tor {
+                for address in &node_identity.public_addresses {
+                    if address.contains("/onion") {
+                        return Ok(address.clone());
+                    }
+                }
+                return Err(anyhow::anyhow!("No onion address found for remote node"));
+            } else {
+                for address in &node_identity.public_addresses {
+                    if address.starts_with("/ip4/") {
+                        return Ok(address.clone());
+                    }
+                }
+                for address in &node_identity.public_addresses {
+                    if address.starts_with("/ip6/") {
+                        return Ok(address.clone());
+                    }
+                }
+                // If we got here, no suitable address was found
+                return Err(anyhow::anyhow!(
+                    "No suitable IP address found for remote node"
+                ));
+            }
         } else {
             Err(anyhow::anyhow!("Remote node service is not available"))
         }

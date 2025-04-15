@@ -189,6 +189,7 @@ export const setMode = async (params: SetModeProps) => {
 export const setMoneroAddress = async (moneroAddress: string) => {
     const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
     useConfigWalletStore.setState({ monero_address: moneroAddress });
+    useConfigWalletStore.setState({ monero_address_is_generated: false });
     invoke('set_monero_address', { moneroAddress })
         .then(() => {
             restartMining();
