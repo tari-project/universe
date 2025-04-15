@@ -218,7 +218,6 @@ impl WalletManager {
         app: &AppHandle,
         block_height: u64,
     ) -> Result<(), WalletManagerError> {
-        let app_clone = app.clone();
         log::info!(target: LOG_TARGET, "Starting initial wallet scan to height {}", block_height);
 
         if self.is_initial_scan_completed() {
@@ -226,8 +225,60 @@ impl WalletManager {
             return Ok(());
         }
 
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+        let state_receiver = process_watcher.adapter.state_broadcast.subscribe();
+        let app_clone = app.clone();
+        drop(process_watcher);
+        // Start a background task to monitor the wallet state and emit scan progress updates
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            let mut state_rx = state_receiver;
+            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
+                        break;
+                    }
+                    result = state_rx.changed() => {
+                        if result.is_err() {
+                            log::warn!(target: LOG_TARGET, "Failed to get wallet state update");
+                            break;
+                        }
+
+                        let (scanned_height, progress) = {
+                            if let Some(state) = &*state_rx.borrow() {
+                                let scanned_height = state.scanned_height;
+                                let progress = if block_height > 0 {
+                                    (scanned_height as f64 / block_height as f64 * 100.0).min(100.0)
+                                } else {
+                                    0.0
+                                };
+                                (scanned_height, progress)
+                            } else {
+                                continue;
+                            }
+                        };
+
+                        if scanned_height > 0 {
+                            EventsEmitter::emit_init_wallet_scanning_progress(
+                                &app_clone,
+                                scanned_height,
+                                block_height,
+                                progress,
+                            ).await;
+                        }
+                    }
+                }
+            }
+        });
+
+        let app_clone2 = app.clone();
         match self
-            .wait_for_scan_to_height(block_height, Duration::from_secs(600))
+            .wait_for_scan_to_height(block_height, Duration::from_secs(3600))
             .await
         {
             Ok(scanned_wallet_state) => {
@@ -237,7 +288,7 @@ impl WalletManager {
                         "Initial wallet scan complete. Available balance: {}",
                         balance.available_balance
                     );
-                    EventsEmitter::emit_wallet_balance_update(&app_clone, balance).await;
+                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
 
                     self.initial_scan_completed
                         .store(true, std::sync::atomic::Ordering::Relaxed);

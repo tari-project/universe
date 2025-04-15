@@ -67,6 +67,7 @@ pub enum EventType {
     ConfigWalletLoaded,
     ConfigMiningLoaded,
     BackgroundNodeSyncUpdate,
+    InitWalletScanningProgress,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -142,4 +143,11 @@ pub struct NodeTypeUpdatePayload {
     pub node_type: Option<NodeType>,
     pub node_identity: Option<NodeIdentity>,
     pub node_connection_address: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct InitWalletScanningProgressPayload {
+    pub scanned_height: u64,
+    pub total_height: u64,
+    pub progress: f64,
 }

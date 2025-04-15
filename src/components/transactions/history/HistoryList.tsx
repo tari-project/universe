@@ -15,7 +15,7 @@ const HistoryList = () => {
     const transactions = useWalletStore((s) => s.transactions);
     const pendingTransactions = useWalletStore((s) => s.pending_transactions);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
-    const isWalletScanning = useWalletStore((s) => !Number.isFinite(s.calculated_balance));
+    const walletScanning = useWalletStore((s) => s.wallet_scanning);
 
     useEffect(() => {
         initialFetchTxs();
@@ -31,12 +31,18 @@ const HistoryList = () => {
 
     return (
         <ListWrapper id="list">
-            {!isWalletScanning && !is_transactions_history_loading && !combinedTransactions?.length && (
+            {!walletScanning.is_scanning && !is_transactions_history_loading && !combinedTransactions?.length && (
                 <Typography variant="h6">{t('empty-tx')}</Typography>
             )}
-            {isWalletScanning ? (
+            {walletScanning.is_scanning ? (
                 <Typography variant="h6" style={{ textAlign: 'left' }}>
-                    {t('wallet-is-scanning')}
+                    {walletScanning.is_scanning && walletScanning.total_height > 0
+                        ? t('wallet-scanning-with-progress', {
+                              scanned: walletScanning.scanned_height.toLocaleString(),
+                              total: walletScanning.total_height.toLocaleString(),
+                              percent: walletScanning.progress.toFixed(1),
+                          })
+                        : t('wallet-is-scanning')}
                 </Typography>
             ) : (
                 <InfiniteScroll

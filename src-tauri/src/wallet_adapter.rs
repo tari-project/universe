@@ -61,7 +61,7 @@ pub struct WalletAdapter {
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
-    state_broadcast: watch::Sender<Option<WalletState>>,
+    pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
@@ -238,24 +238,10 @@ impl WalletAdapter {
                         // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
                         if state.scanned_height == 0 && block_height > 0 {
                             if let Some(network) = &state.network {
-                                if matches!(network.status, ConnectivityStatus::Online(2..)) {
+                                if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                     return Ok(state);
                                 }
-                            }
-                        }
-
-                        // Log progress periodically for long scans
-                        if state.scanned_height > 0 && block_height > 0 {
-                            let progress_percentage = (state.scanned_height as f64 / block_height as f64 * 100.0) as u32;
-                            if state.scanned_height % 1000 == 0 || state.scanned_height == block_height {
-                                info!(
-                                    target: LOG_TARGET,
-                                    "Wallet scan in progress: {} / {} blocks ({}%)",
-                                    state.scanned_height,
-                                    block_height,
-                                    progress_percentage
-                                );
                             }
                         }
                     }

@@ -160,4 +160,12 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'BackgroundNodeSyncUpdate';
           payload: BackgroundNodeSyncUpdatePayload;
+      }
+    | {
+          event_type: 'InitWalletScanningProgress';
+          payload: {
+              scanned_height: number;
+              total_height: number;
+              progress: number;
+          };
       };

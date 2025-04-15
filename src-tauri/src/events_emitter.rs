@@ -21,7 +21,7 @@ use std::collections::HashMap;
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-use crate::events::CriticalProblemPayload;
+use crate::events::{CriticalProblemPayload, InitWalletScanningProgressPayload};
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{
@@ -500,6 +500,26 @@ impl EventsEmitter {
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
             error!(target: LOG_TARGET, "Failed to emit BackgroundNodeSyncUpdate event: {:?}", e);
+        }
+    }
+
+    pub async fn emit_init_wallet_scanning_progress(
+        app_handle: &AppHandle,
+        scanned_height: u64,
+        total_height: u64,
+        progress: f64,
+    ) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::InitWalletScanningProgress,
+            payload: InitWalletScanningProgressPayload {
+                scanned_height,
+                total_height,
+                progress,
+            },
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit InitWalletScanningProgress event: {:?}", e);
         }
     }
 }
