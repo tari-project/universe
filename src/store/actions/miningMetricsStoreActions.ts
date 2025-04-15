@@ -47,8 +47,7 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
     const displayBlockHeight = useBlockchainVisualisationStore.getState().displayBlockHeight;
     const setDisplayBlockHeight = useBlockchainVisualisationStore.getState().setDisplayBlockHeight;
-    const calculated_balance = useWalletStore.getState().calculated_balance;
-    const isWalletScanning = !Number.isFinite(calculated_balance);
+    const isWalletScanning = useWalletStore.getState()?.wallet_scanning?.is_scanning;
 
     if (base_node_status.block_height && (!displayBlockHeight || isWalletScanning)) {
         // setting here before wallet initial scan, later updates via new block height handlers only

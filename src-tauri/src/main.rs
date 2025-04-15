@@ -46,7 +46,7 @@ use tokio::sync::watch::{self};
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
-use wallet_adapter::{ConnectivityStatus, WalletState};
+use wallet_adapter::WalletState;
 
 use log4rs::config::RawConfig;
 use std::fs;

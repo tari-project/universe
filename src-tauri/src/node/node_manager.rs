@@ -30,7 +30,7 @@ use log::{error, info, warn};
 use serde::Serialize;
 use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
 use tokio::{fs, select};
@@ -46,7 +46,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, UniverseAppState};
+use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -93,18 +93,6 @@ pub struct NodeManager {
     local_node_db_cleared: Arc<AtomicBool>,
 }
 
-fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'static>(
-    stats_broadcast: Sender<ProcessWatcherStats>,
-    node_adapter: T,
-) -> ProcessWatcher<T> {
-    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast);
-    process_watcher.poll_time = Duration::from_secs(5);
-    process_watcher.health_timeout = Duration::from_secs(4);
-    process_watcher.expected_startup_time = Duration::from_secs(30);
-
-    process_watcher
-}
-
 impl NodeManager {
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
@@ -122,6 +110,7 @@ impl NodeManager {
             local_node_watcher = Some(construct_process_watcher(
                 stats_broadcast.clone(),
                 local_node_adapter.clone(),
+                node_type.is_local(),
             ));
         }
         let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
@@ -129,6 +118,7 @@ impl NodeManager {
             remote_node_watcher = Some(construct_process_watcher(
                 stats_broadcast,
                 remote_node_adapter.clone(),
+                node_type.is_local(),
             ));
         }
 
@@ -423,6 +413,23 @@ impl NodeManager {
 }
 
 // Helpers
+fn construct_process_watcher<T: NodeAdapter + ProcessAdapter + Send + Sync + 'static>(
+    stats_broadcast: Sender<ProcessWatcherStats>,
+    node_adapter: T,
+    is_local: bool,
+) -> ProcessWatcher<T> {
+    let mut process_watcher = ProcessWatcher::new(node_adapter, stats_broadcast);
+    if is_local {
+        process_watcher.poll_time = Duration::from_secs(5);
+        process_watcher.health_timeout = Duration::from_secs(4);
+    } else {
+        process_watcher.poll_time = Duration::from_secs(10);
+        process_watcher.health_timeout = Duration::from_secs(9);
+    }
+    process_watcher.expected_startup_time = Duration::from_secs(30);
+
+    process_watcher
+}
 
 async fn start_watcher<T>(
     node_watcher: &Arc<RwLock<Option<ProcessWatcher<T>>>>,

@@ -277,31 +277,36 @@ impl WalletManager {
         });
 
         let app_clone2 = app.clone();
-        match self
-            .wait_for_scan_to_height(block_height, Duration::from_secs(3600))
-            .await
-        {
-            Ok(scanned_wallet_state) => {
-                if let Some(balance) = scanned_wallet_state.balance {
-                    log::info!(
-                        target: LOG_TARGET,
-                        "Initial wallet scan complete. Available balance: {}",
-                        balance.available_balance
-                    );
-                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+        let wallet_manager = self.clone();
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            match wallet_manager
+                .wait_for_scan_to_height(block_height, Duration::from_secs(3600))
+                .await
+            {
+                Ok(scanned_wallet_state) => {
+                    if let Some(balance) = scanned_wallet_state.balance {
+                        log::info!(
+                            target: LOG_TARGET,
+                            "Initial wallet scan complete. Available balance: {}",
+                            balance.available_balance
+                        );
+                        EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
 
-                    self.initial_scan_completed
-                        .store(true, std::sync::atomic::Ordering::Relaxed);
-                } else {
-                    log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                        wallet_manager.initial_scan_completed
+                            .store(true, std::sync::atomic::Ordering::Relaxed);
+                    } else {
+                        log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                    }
+                    Ok(())
                 }
-                Ok(())
+                Err(e) => {
+                    log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
+                    Err(e)
+                }
             }
-            Err(e) => {
-                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
-                Err(e)
-            }
-        }
+        });
+
+        Ok(())
     }
 
     #[allow(dead_code)]
