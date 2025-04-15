@@ -19,8 +19,6 @@ setupLogger();
 export default function AppEffects() {
     useEffect(() => {
         async function initialize() {
-            await setMiningNetwork();
-            await airdropSetup();
             await invoke('frontend_ready')
                 .then(() => {
                     console.info('Successfully called frontend_ready');
@@ -28,6 +26,8 @@ export default function AppEffects() {
                 .catch((e) => {
                     console.error('Failed to call frontend_ready: ', e);
                 });
+            await setMiningNetwork();
+            await airdropSetup();
         }
         void initialize();
     }, []);
