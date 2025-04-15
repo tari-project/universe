@@ -1,5 +1,5 @@
 {
-    "version": "0.9.844",
+    "version": "0.9.847",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -62,7 +62,15 @@
                 "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
                 "object-src": "'self' data: blob:",
                 "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'",
-                "img-src": ["'self'", "data:", "blob:", "base64:", "https://cdn.npmjs.com/@tari-project/tari-tower", "https://*.twimg.com","https://*.googleusercontent.com"]
+                "img-src": [
+                    "'self'",
+                    "data:",
+                    "blob:",
+                    "base64:",
+                    "https://cdn.npmjs.com/@tari-project/tari-tower",
+                    "https://*.twimg.com",
+                    "https://*.googleusercontent.com"
+                ]
             },
             "pattern": {
                 "use": "isolation",
