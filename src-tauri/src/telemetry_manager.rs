@@ -46,7 +46,7 @@ use std::collections::HashMap;
 use std::ops::Div;
 use std::time::Instant;
 use std::{sync::Arc, thread::sleep, time::Duration};
-use sysinfo::System;
+use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
@@ -496,15 +496,24 @@ async fn get_telemetry_data(
         system.global_cpu_usage().to_string(),
     );
     extra_data.insert(
-        "total_memory".to_string(),
-        system.total_memory().to_string(),
+        "total_memory_gb".to_string(),
+        system
+            .total_memory()
+            .saturating_div(1_000_000_000)
+            .to_string(),
     );
     let memory_utilization = (system.used_memory() as f64 / system.total_memory() as f64) * 100.0;
     extra_data.insert(
         "memory_utilization".to_string(),
         memory_utilization.round().to_string(),
     );
-    extra_data.insert("free_memory".to_string(), system.free_memory().to_string());
+    extra_data.insert(
+        "free_memory_gb".to_string(),
+        system
+            .free_memory()
+            .saturating_div(1_000_000_000)
+            .to_string(),
+    );
     if let Some(core_count) = system.physical_core_count() {
         extra_data.insert("physical_core_count".to_string(), core_count.to_string());
     }
@@ -558,6 +567,41 @@ async fn get_telemetry_data(
     let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
         .borrow();
+
+    extra_data.insert(
+        "download_speed".to_string(),
+        download_speed.round().to_string(),
+    );
+    extra_data.insert("upload_speed".to_string(), upload_speed.round().to_string());
+    extra_data.insert("network_latency".to_string(), latency.round().to_string());
+
+    let disks = Disks::new_with_refreshed_list();
+    for (i, disk) in disks.list().iter().enumerate() {
+        extra_data.insert(
+            format!("disk_{}_total_gb", i),
+            disk.total_space().saturating_div(1_000_000_000).to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_free_gb", i),
+            disk.available_space()
+                .saturating_div(1_000_000_000)
+                .to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_used_gb", i),
+            (disk.total_space().saturating_sub(disk.available_space()))
+                .saturating_div(1_000_000_000)
+                .to_string(),
+        );
+        extra_data.insert(
+            format!("disk_{}_kind", i),
+            match disk.kind() {
+                sysinfo::DiskKind::HDD => "HDD".to_string(),
+                sysinfo::DiskKind::SSD => "SSD".to_string(),
+                sysinfo::DiskKind::Unknown(_) => "Unknown".to_string(),
+            },
+        );
+    }
 
     let data = TelemetryData {
         app_id: config_guard.anon_id().to_string(),
