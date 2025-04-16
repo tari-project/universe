@@ -11,6 +11,7 @@ function useHandleEmitMiningStatus() {
     const appId = useConfigCoreStore((state) => state.anon_id);
     const network = useMiningStore((state) => state.network);
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
+    const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
 
     return useCallback(
         ({ isMining }: { isMining: boolean }) => {
@@ -28,7 +29,7 @@ function useHandleEmitMiningStatus() {
                 data: transformed,
             })
                 .then(async (signatureData) => {
-                    if (signatureData && socket) {
+                    if (signatureData && socket && !pollingEnabled) {
                         await socket.timeout(5000).emitWithAck(MINING_EVENT_NAME, {
                             data: payload,
                             signature: signatureData.signature,
@@ -40,7 +41,7 @@ function useHandleEmitMiningStatus() {
                     console.error('Error signing ws data: ', e);
                 });
         },
-        [appId, blockHeight, network, userId, version]
+        [appId, blockHeight, network, pollingEnabled, userId, version]
     );
 }
 
