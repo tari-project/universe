@@ -237,7 +237,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-
         let p2pool_port = state.p2pool_manager.grpc_port().await;
         state
             .mm_proxy_manager
