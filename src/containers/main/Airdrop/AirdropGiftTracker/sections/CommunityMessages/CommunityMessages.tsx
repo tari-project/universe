@@ -41,7 +41,7 @@ export const CommunityMessages = () => {
                         opacity: 1,
                     }}
                     exit={{
-                        scale: 0,
+                        scale: 0.5,
                         opacity: 0,
                     }}
                     key={activeMessage.id}
