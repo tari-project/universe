@@ -227,6 +227,7 @@ impl WalletAdapter {
     ) -> Result<WalletState, WalletStatusMonitorError> {
         let mut state_receiver = self.state_broadcast.subscribe();
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let mut zero_scanned_height_count = 0;
         loop {
             tokio::select! {
                 result = state_receiver.changed() => {
@@ -245,8 +246,11 @@ impl WalletAdapter {
                         if state.scanned_height == 0 && block_height > 0 {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
-                                    warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
-                                    return Ok(state);
+                                    zero_scanned_height_count += 1;
+                                    if zero_scanned_height_count >= 2 {
+                                        warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
+                                        return Ok(state);
+                                    }
                                 }
                             }
                         }
