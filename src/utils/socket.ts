@@ -1,6 +1,7 @@
 import { io } from 'socket.io-client';
 
 import { useAppConfigStore, useMiningStore } from '@app/store';
+import { invoke } from '@tauri-apps/api/core';
 
 type DisconnectDescription =
     | Error
@@ -32,6 +33,7 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
         secure: true,
     };
 
+    invoke('start_mining_status').catch(console.error);
     socket = io(airdropApiUrl, wsOptions);
     console.info('Socket initialised');
     socket.connect();
@@ -40,6 +42,7 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
 
 function removeSocket() {
     socket?.disconnect();
+    invoke('stop_mining_status').catch(console.error);
     socket = null;
     console.info('Socket removed');
 }
