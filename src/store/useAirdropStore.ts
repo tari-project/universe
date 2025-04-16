@@ -85,11 +85,7 @@ interface MiningPoint {
     reward: number;
 }
 
-export enum MessageType {
-    info = 'info',
-    warning = 'warning',
-    error = 'error',
-}
+export type MessageType = 'info' | 'warning' | 'error';
 
 export interface CommunityMessage {
     id: string;
