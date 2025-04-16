@@ -176,7 +176,7 @@ impl WalletManager {
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
-        timeout: Duration,
+        timeout: Option<Duration>,
     ) -> Result<WalletState, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
 
@@ -280,7 +280,7 @@ impl WalletManager {
         let wallet_manager = self.clone();
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             match wallet_manager
-                .wait_for_scan_to_height(block_height, Duration::from_secs(3600))
+                .wait_for_scan_to_height(block_height, None)
                 .await
             {
                 Ok(scanned_wallet_state) => {

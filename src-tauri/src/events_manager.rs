@@ -69,7 +69,7 @@ impl EventsManager {
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             // Use a short timeout for processing new blocks
-            match wallet_manager.wait_for_scan_to_height(block_height, Duration::from_secs(5)).await {
+            match wallet_manager.wait_for_scan_to_height(block_height, Some(Duration::from_secs(5))).await {
                 Ok(scanned_wallet_state) => {
                     if let Some(balance) = scanned_wallet_state.balance {
                         // Check for coinbase transaction if there's pending balance
