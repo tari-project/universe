@@ -32,6 +32,7 @@ use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::events_manager::EventsManager;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
 };
@@ -210,13 +211,9 @@ pub async fn frontend_ready(app: tauri::AppHandle) {
         .get_task_tracker()
         .await
         .spawn(async move {
-            let app_state = app_handle.state::<UniverseAppState>();
             // Give the splash screen a few seconds to show before closing it
             sleep(Duration::from_secs(3));
-            app_state
-                .events_manager
-                .handle_close_splash_screen(&app_handle)
-                .await;
+            EventsManager::handle_close_splash_screen(&app_handle).await;
         });
 }
 
