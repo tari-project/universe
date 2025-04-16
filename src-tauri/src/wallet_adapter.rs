@@ -223,7 +223,7 @@ impl WalletAdapter {
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
-        timeout: Duration,
+        timeout: Option<Duration>,
     ) -> Result<WalletState, WalletStatusMonitorError> {
         let mut state_receiver = self.state_broadcast.subscribe();
         let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
@@ -256,7 +256,9 @@ impl WalletAdapter {
                     log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wait_for_scan_to_height");
                     return Ok(WalletState::default());
                 }
-                _ = tokio::time::sleep(timeout) => {
+                _ = async {
+                    tokio::time::sleep(timeout.unwrap_or(Duration::MAX)).await;
+                } => {
                     warn!(
                         target: LOG_TARGET,
                         "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
