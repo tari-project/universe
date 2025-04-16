@@ -64,8 +64,8 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
 impl Default for AppInMemoryConfig {
     fn default() -> Self {
         AppInMemoryConfig {
-            airdrop_url: "http://localhost:4000".into(),
-            airdrop_api_url: "http://localhost:3004".into(),
+            airdrop_url: "https://airdrop.tari.com".into(),
+            airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
         }
     }
