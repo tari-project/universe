@@ -2,38 +2,41 @@ import { useAirdropStore } from '@app/store';
 import { CloseButton, Message } from './styles';
 import { AnimatePresence } from 'motion/react';
 import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export const CommunityMessages = () => {
-    const [hiddenMessages, setHiddenMessages] = useState<string[]>([]);
+    const [dismissedMessages, setDismissedMessages] = useState<string[]>([]);
     const { communityMessages } = useAirdropStore();
-    const handleCloseMessage = (id: string) => {
-        setHiddenMessages((prev) => {
-            if (prev.length > 5) {
-                setHiddenMessages((prev) => prev.slice(1));
+
+    const handleCloseMessage = useCallback(
+        (id: string) => {
+            if (dismissedMessages.length > 5) {
+                setDismissedMessages((prev) => prev.slice(1));
             }
-            localStorage.setItem('hiddenCommunityMessages', JSON.stringify(prev));
-            return [...prev, id];
-        });
-    };
+            const newHiddenMessages = [...dismissedMessages, id];
+            localStorage.setItem('dismissedCommunityMessages', JSON.stringify(newHiddenMessages));
+            setDismissedMessages(newHiddenMessages);
+        },
+        [dismissedMessages]
+    );
 
     useEffect(() => {
-        const hiddenMessages = localStorage.getItem('hiddenCommunityMessages') || '';
+        const hiddenMessages = localStorage.getItem('dismissedCommunityMessages');
         if (hiddenMessages) {
-            setHiddenMessages(JSON.parse(hiddenMessages));
+            setDismissedMessages(JSON.parse(hiddenMessages));
         }
     }, []);
 
     const activeMessage = useMemo(() => {
-        return communityMessages?.find((message) => !hiddenMessages.includes(message.id));
-    }, [communityMessages, hiddenMessages]);
+        return communityMessages?.find((message) => !dismissedMessages.includes(message.id));
+    }, [communityMessages, dismissedMessages]);
 
     return (
         <AnimatePresence mode="wait">
             {activeMessage ? (
                 <Message
                     initial={{
-                        scale: 0,
+                        scale: 0.5,
                         opacity: 0,
                     }}
                     animate={{
