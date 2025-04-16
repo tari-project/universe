@@ -10,20 +10,28 @@ export const CommunityMessages = () => {
 
     const handleCloseMessage = useCallback(
         (id: string) => {
-            if (dismissedMessages.length > 5) {
-                setDismissedMessages((prev) => prev.slice(1));
+            try {
+                if (dismissedMessages.length > 5) {
+                    setDismissedMessages((prev) => prev.slice(1));
+                }
+                const newHiddenMessages = [...dismissedMessages, id];
+                localStorage.setItem('dismissedCommunityMessages', JSON.stringify(newHiddenMessages));
+                setDismissedMessages(newHiddenMessages);
+            } catch (e) {
+                console.error(e);
             }
-            const newHiddenMessages = [...dismissedMessages, id];
-            localStorage.setItem('dismissedCommunityMessages', JSON.stringify(newHiddenMessages));
-            setDismissedMessages(newHiddenMessages);
         },
         [dismissedMessages]
     );
 
     useEffect(() => {
-        const hiddenMessages = localStorage.getItem('dismissedCommunityMessages');
-        if (hiddenMessages) {
-            setDismissedMessages(JSON.parse(hiddenMessages));
+        try {
+            const hiddenMessages = localStorage.getItem('dismissedCommunityMessages');
+            if (hiddenMessages) {
+                setDismissedMessages(JSON.parse(hiddenMessages));
+            }
+        } catch (e) {
+            console.error(e);
         }
     }, []);
 
