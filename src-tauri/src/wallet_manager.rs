@@ -28,11 +28,15 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::APPLICATION_FOLDER_ID;
+use dirs::data_local_dir;
 use futures_util::future::FusedFuture;
+use log::error;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
+use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch;
@@ -126,6 +130,29 @@ impl WalletManager {
             )
             .await?;
         process_watcher.wait_ready().await?;
+        Ok(())
+    }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let watcher = self.watcher.read().await;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "Wallet is running, cannot clear local files");
+        }
+
+        if let Some(local_dir) = data_local_dir() {
+            let wallet_dir = local_dir
+                .join(APPLICATION_FOLDER_ID)
+                .join("wallet")
+                .join(Network::get_current().as_key_str());
+
+            if wallet_dir.exists() {
+                std::fs::remove_dir_all(&wallet_dir).map_err(|e| {
+                    error!(target: LOG_TARGET, "Failed to remove wallet directory: {}", e);
+                    anyhow::anyhow!("Failed to remove wallet directory: {}", e)
+                })?;
+            }
+        };
+
         Ok(())
     }
 

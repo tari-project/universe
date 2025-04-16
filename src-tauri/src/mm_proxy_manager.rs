@@ -25,7 +25,9 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use anyhow::anyhow;
-use log::info;
+use dirs::data_local_dir;
+use log::{error, info};
+use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
@@ -36,6 +38,7 @@ use crate::process_adapter::{HealthStatus, StatusMonitor};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
+use crate::APPLICATION_FOLDER_ID;
 
 const LOG_TARGET: &str = "tari::universe::mm_proxy_manager";
 
@@ -191,6 +194,30 @@ impl MmProxyManager {
             None => Err(anyhow!("MM proxy not started")),
         }
     }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let watcher = self.watcher.read().await;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "MM proxy is running, cannot clear local files");
+        }
+
+        if let Some(local_dir) = data_local_dir() {
+            let mmproxy_dir = local_dir
+                .join(APPLICATION_FOLDER_ID)
+                .join("mmproxy")
+                .join(Network::get_current().as_key_str());
+
+            if mmproxy_dir.exists() {
+                std::fs::remove_dir_all(&mmproxy_dir).map_err(|e| {
+                    error!(target: LOG_TARGET, "Failed to remove mmproxy directory: {}", e);
+                    anyhow::anyhow!("Failed to remove mmproxy directory: {}", e)
+                })?;
+            }
+        };
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     pub async fn stop(&self) -> Result<(), anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;

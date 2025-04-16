@@ -406,4 +406,15 @@ impl BinaryResolver {
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())
     }
+
+    pub async fn remove_binary(&self, binary: Binaries) -> Result<(), Error> {
+        let manager = self
+            .managers
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
+
+        manager.delete_binary_files().await
+    }
 }

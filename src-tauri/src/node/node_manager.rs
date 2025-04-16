@@ -26,6 +26,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
 
+use dirs::data_local_dir;
 use log::{error, info, warn};
 use serde::Serialize;
 use tari_common::configuration::Network;
@@ -47,7 +48,7 @@ use crate::process_watcher::ProcessWatcher;
 use crate::process_watcher::ProcessWatcherStats;
 use crate::setup::setup_manager::SetupManager;
 use crate::tasks_tracker::TasksTrackers;
-use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter};
+use crate::{BaseNodeStatus, LocalNodeAdapter, RemoteNodeAdapter, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::minotari_node_manager";
 
@@ -208,6 +209,43 @@ impl NodeManager {
         )
         .await?;
         self.wait_ready().await?;
+
+        Ok(())
+    }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        if self.is_local().await.ok().is_some_and(|is_local| is_local) {
+            let watcher = self.local_node_watcher.read().await;
+            if watcher.as_ref().is_some_and(|watcher| watcher.is_running()) {
+                error!(target: LOG_TARGET, "Local node is running, cannot clear local files");
+            }
+
+            if let Some(local_dir) = data_local_dir() {
+                let node_dir = local_dir
+                    .join(APPLICATION_FOLDER_ID)
+                    .join("node")
+                    .join(Network::get_current().as_key_str());
+
+                if node_dir.exists() {
+                    std::fs::remove_dir_all(&node_dir).map_err(|e| {
+                        error!(target: LOG_TARGET, "Failed to remove node directory: {}", e);
+                        anyhow::anyhow!("Failed to remove node directory: {}", e)
+                    })?;
+                }
+            };
+        };
+
+        if self
+            .is_remote()
+            .await
+            .ok()
+            .is_some_and(|is_remote| is_remote)
+        {
+            let watcher = self.remote_node_watcher.read().await;
+            if watcher.as_ref().is_some_and(|watcher| watcher.is_running()) {
+                error!(target: LOG_TARGET, "Remote node is running, cannot clear local files");
+            }
+        };
 
         Ok(())
     }

@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -52,7 +52,8 @@ use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-
+const SOFT_RESTART_LIMIT: u8 = 2;
+const MAX_RESTART_LIMIT: u8 = 3;
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
 
@@ -102,15 +103,24 @@ impl SetupPhaseImpl for WalletSetupPhase {
         Ok(WalletSetupPhaseAppConfiguration { use_tor })
     }
 
+    async fn hard_reset(&self) -> Result<(), anyhow::Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        state.wallet_manager.clear_local_files().await?;
+
+        binary_resolver.remove_binary(Binaries::Wallet).await?;
+
+        Ok(())
+    }
+
     async fn setup(
-        self: std::sync::Arc<Self>,
+        self: Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
-
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
                 select! {
@@ -122,34 +132,62 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 }
             };
 
-            tokio::select! {
-                _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+            let mut restart_counter: u8 = 0;
+            loop {
+                if restart_counter.eq(&MAX_RESTART_LIMIT) {
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Wallet, MAX_RESTART_LIMIT);
+                    let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Wallet, MAX_RESTART_LIMIT);
                     sentry::capture_message(&error_message, sentry::Level::Error);
                     EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
                         .await;
+                    break;
                 }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
-                            let _unused = self.finalize_setup(status_sender, payload).await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
-                                .await;
+
+                if restart_counter.eq(&SOFT_RESTART_LIMIT) {
+                    info!(target: LOG_TARGET, "[ {} Phase ] All soft restart attempts failed", SetupPhase::Wallet);
+                    info!(target: LOG_TARGET, "[ {} Phase ] Executing hard restart", SetupPhase::Wallet);
+                    let _unused = self.hard_reset().await.map_err(|e| {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Wallet, e);
+                        let error_message = format!("[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Wallet, e);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                    });
+                };
+
+                let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+                tokio::select! {
+                    _ = setup_timeout => {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                            .await;
+
+                    }
+                    result = self.setup_inner() => {
+                        match result {
+                            Ok(payload) => {
+                                info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
+                                let _unused = self.finalize_setup(status_sender.clone(),payload).await;
+                                break;
+                            }
+                            Err(error) => {
+                                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
+                                let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
+                                sentry::capture_message(&error_message, sentry::Level::Error);
+                                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                                    .await;
+                            }
                         }
                     }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                }
-            };
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
+                        break;
+                    }
+                };
+
+                restart_counter += 1;
+                info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Wallet, restart_counter, MAX_RESTART_LIMIT);
+            }
         });
     }
 

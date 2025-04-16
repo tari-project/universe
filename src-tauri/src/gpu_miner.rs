@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use log::{info, warn};
+use dirs::data_local_dir;
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::fs::read_dir;
@@ -47,7 +48,7 @@ use crate::{
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_watcher::ProcessWatcher,
 };
-use crate::{process_utils, BaseNodeStatus};
+use crate::{process_utils, BaseNodeStatus, APPLICATION_FOLDER_ID};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner";
 
@@ -153,6 +154,26 @@ impl GpuMiner {
         info!(target: LOG_TARGET, "xtrgpuminer started");
 
         self.initialize_status_updates(shutdown_signal).await;
+
+        Ok(())
+    }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let watcher = self.watcher.read().await;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "Gpu miner is running, cannot clear local files");
+        }
+
+        if let Some(local_dir) = data_local_dir() {
+            let gpu_miner_dir = local_dir.join(APPLICATION_FOLDER_ID).join("gpuminer");
+
+            if gpu_miner_dir.exists() {
+                std::fs::remove_dir_all(&gpu_miner_dir).map_err(|e| {
+                    error!(target: LOG_TARGET, "Failed to remove gpuminer direcgpuminery: {}", e);
+                    anyhow::anyhow!("Failed to remove gpuminer directory: {}", e)
+                })?;
+            }
+        };
 
         Ok(())
     }

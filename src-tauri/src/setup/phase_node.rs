@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{collections::HashMap, time::Duration};
+use std::{collections::HashMap, sync::Arc, time::Duration};
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -54,7 +54,8 @@ use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-
+const SOFT_RESTART_LIMIT: u8 = 2;
+const MAX_RESTART_LIMIT: u8 = 3;
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseOutput {}
 
@@ -118,25 +119,63 @@ impl SetupPhaseImpl for NodeSetupPhase {
         })
     }
 
+    async fn hard_reset(&self) -> Result<(), anyhow::Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let binary_resolver = BinaryResolver::current().read().await;
+        let (data_dir, _, _) = self.get_app_dirs()?;
+
+        state.tor_manager.clear_local_files().await?;
+        state.node_manager.clean_data_folder(&data_dir).await?;
+        state.node_manager.clear_local_files().await?;
+
+        binary_resolver.remove_binary(Binaries::Tor).await?;
+        binary_resolver
+            .remove_binary(Binaries::MinotariNode)
+            .await?;
+
+        Ok(())
+    }
+
     async fn setup(
-        self: std::sync::Arc<Self>,
+        self: Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
-
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
-            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
-                        return;
-                    }
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        for subscriber in &mut flow_subscribers.iter_mut() {
+            select! {
+                _ = subscriber.wait_for(|value| value.is_success()) => {}
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
+                    return;
                 }
+            }
+        };
+
+        let mut restart_counter: u8 = 0;
+        loop {
+            if restart_counter.eq(&MAX_RESTART_LIMIT) {
+                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Node, MAX_RESTART_LIMIT);
+                let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Node, MAX_RESTART_LIMIT);
+                sentry::capture_message(&error_message, sentry::Level::Error);
+                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                    .await;
+                break;
+            }
+
+            if restart_counter.eq(&SOFT_RESTART_LIMIT) {
+                info!(target: LOG_TARGET, "[ {} Phase ] All soft restart attempts failed", SetupPhase::Node);
+                info!(target: LOG_TARGET, "[ {} Phase ] Executing hard restart", SetupPhase::Node);
+                let _unused = self.hard_reset().await.map_err(|e| {
+                    error!(target: LOG_TARGET, "[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Node, e);
+                    let error_message = format!("[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Node, e);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
+                });
             };
+
+            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
@@ -144,28 +183,34 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     sentry::capture_message(&error_message, sentry::Level::Error);
                     EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                         .await;
+
                 }
                 result = self.setup_inner() => {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Node);
-                            let __unused = self.finalize_setup(status_sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender.clone(),payload).await;
+                            break;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                                 .await;
                         }
                     }
                 }
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
+                    break;
                 }
             };
-        });
+
+            restart_counter += 1;
+            info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Node, restart_counter, MAX_RESTART_LIMIT);
+        }
+    });
     }
 
     #[allow(clippy::too_many_lines)]

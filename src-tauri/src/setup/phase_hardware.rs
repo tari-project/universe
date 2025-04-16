@@ -57,7 +57,8 @@ use super::{
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-
+const SOFT_RESTART_LIMIT: u8 = 2;
+const MAX_RESTART_LIMIT: u8 = 3;
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhaseOutput {}
 
@@ -112,6 +113,17 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         Ok(HardwareSetupPhaseAppConfiguration { gpu_engine })
     }
 
+    async fn hard_reset(&self) -> Result<(), anyhow::Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let binary_resolver = BinaryResolver::current().read().await;
+        state.gpu_miner.read().await.clear_local_files().await?;
+        state.cpu_miner.read().await.clear_local_files().await?;
+
+        binary_resolver.remove_binary(Binaries::GpuMiner).await?;
+        binary_resolver.remove_binary(Binaries::Xmrig).await?;
+
+        Ok(())
+    }
     async fn setup(
         self: std::sync::Arc<Self>,
         status_sender: Sender<PhaseStatus>,
@@ -120,17 +132,41 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Hardware);
 
         TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
-            let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Hardware);
-                        return;
-                    }
+
+        let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+
+        for subscriber in &mut flow_subscribers.iter_mut() {
+            select! {
+                _ = subscriber.wait_for(|value| value.is_success()) => {}
+                _ = shutdown_signal.wait() => {
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Hardware);
+                    return;
                 }
-            };
+            }
+        };
+
+        let mut restart_counter: u8 = 0;
+
+        loop {
+            if restart_counter >= MAX_RESTART_LIMIT {
+                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Hardware, MAX_RESTART_LIMIT);
+                let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Hardware, MAX_RESTART_LIMIT);
+                sentry::capture_message(&error_message, sentry::Level::Error);
+                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                    .await;
+                break;
+            }
+
+            if restart_counter == SOFT_RESTART_LIMIT {
+                info!(target: LOG_TARGET, "[ {} Phase ] All soft restart attempts failed", SetupPhase::Hardware);
+                info!(target: LOG_TARGET, "[ {} Phase ] Executing hard restart", SetupPhase::Hardware);
+                if let Err(e) = self.hard_reset().await {
+                    error!(target: LOG_TARGET, "[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Hardware, e);
+                    let error_message = format!("[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Hardware, e);
+                    sentry::capture_message(&error_message, sentry::Level::Error);
+                }
+            }
+            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             tokio::select! {
                 _ = setup_timeout => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
@@ -143,23 +179,28 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                     match result {
                         Ok(payload) => {
                             info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Hardware);
-                            let _unused = self.finalize_setup(status_sender,payload).await;
+                            let _unused = self.finalize_setup(status_sender, payload).await;
+                            break;
                         }
                         Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
+                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware, error);
+                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware, error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
                                 .await;
                         }
                     }
                 }
                 _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Hardware);
+                    break;
                 }
             };
-        });
+
+            restart_counter += 1;
+            info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Hardware, restart_counter, MAX_RESTART_LIMIT);
+        }
+    });
     }
 
     async fn setup_inner(&self) -> Result<Option<HardwareSetupPhaseOutput>, Error> {

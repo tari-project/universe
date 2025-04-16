@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -53,7 +53,8 @@ use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-
+const SOFT_RESTART_LIMIT: u8 = 2;
+const MAX_RESTART_LIMIT: u8 = 3;
 #[derive(Clone, Default)]
 pub struct UnknownSetupPhaseOutput {}
 #[derive(Clone, Default)]
@@ -117,15 +118,28 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         })
     }
 
+    async fn hard_reset(&self) -> Result<(), anyhow::Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let binary_resolver = BinaryResolver::current().read().await;
+
+        state.mm_proxy_manager.clear_local_files().await?;
+        state.p2pool_manager.clear_local_files().await?;
+
+        binary_resolver
+            .remove_binary(Binaries::MergeMiningProxy)
+            .await?;
+        binary_resolver.remove_binary(Binaries::ShaP2pool).await?;
+
+        Ok(())
+    }
+
     async fn setup(
-        self: std::sync::Arc<Self>,
+        self: Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
     ) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
-
         TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
                 select! {
@@ -136,34 +150,63 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                     }
                 }
             };
-            tokio::select! {
-                _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+
+            let mut restart_counter: u8 = 0;
+            loop {
+                if restart_counter.eq(&MAX_RESTART_LIMIT) {
+                    error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Unknown, MAX_RESTART_LIMIT);
+                    let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Unknown, MAX_RESTART_LIMIT);
                     sentry::capture_message(&error_message, sentry::Level::Error);
                     EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
                         .await;
+                    break;
                 }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Unknown);
-                            let _unused = self.finalize_setup(status_sender,payload).await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
-                                .await;
+
+                if restart_counter.eq(&SOFT_RESTART_LIMIT) {
+                    info!(target: LOG_TARGET, "[ {} Phase ] All soft restart attempts failed", SetupPhase::Unknown);
+                    info!(target: LOG_TARGET, "[ {} Phase ] Executing hard restart", SetupPhase::Unknown);
+                    let _unused = self.hard_reset().await.map_err(|e| {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Unknown, e);
+                        let error_message = format!("[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Unknown, e);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                    });
+                };
+
+                let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+                tokio::select! {
+                    _ = setup_timeout => {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                            .await;
+
+                    }
+                    result = self.setup_inner() => {
+                        match result {
+                            Ok(payload) => {
+                                info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Unknown);
+                                let _unused = self.finalize_setup(status_sender.clone(),payload).await;
+                                break; 
+                            }
+                            Err(error) => {
+                                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown, error);
+                                let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown, error);
+                                sentry::capture_message(&error_message, sentry::Level::Error);
+                                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                                    .await;
+                            }
                         }
                     }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                }
-            };
+                    _ = shutdown_signal.wait() => {
+                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Unknown);
+                        break;
+                    }
+                };
+
+                restart_counter += 1;
+                info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Unknown, restart_counter, MAX_RESTART_LIMIT);
+            }
         });
     }
 

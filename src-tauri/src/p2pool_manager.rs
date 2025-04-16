@@ -24,8 +24,9 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
+use dirs::data_local_dir;
 use futures_util::future::FusedFuture;
-use log::{info, warn};
+use log::{error, info, warn};
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
@@ -35,6 +36,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
+use crate::APPLICATION_FOLDER_ID;
 
 const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 // const P2POOL_STATS_UPDATE_INTERVAL: Duration = Duration::from_secs(10);
@@ -201,6 +203,27 @@ impl P2poolManager {
         }
         Ok(())
     }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let watcher = self.watcher.read().await;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "P2pool is running, cannot clear local files");
+        }
+
+        if let Some(local_dir) = data_local_dir() {
+            let p2pool_dir = local_dir.join(APPLICATION_FOLDER_ID).join("sha-p2pool");
+
+            if p2pool_dir.exists() {
+                std::fs::remove_dir_all(&p2pool_dir).map_err(|e| {
+                    error!(target: LOG_TARGET, "Failed to remove p2pool directory: {}", e);
+                    anyhow::anyhow!("Failed to remove p2pool directory: {}", e)
+                })?;
+            }
+        };
+
+        Ok(())
+    }
+
     #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, anyhow::Error> {
         let mut process_watcher = self.watcher.write().await;

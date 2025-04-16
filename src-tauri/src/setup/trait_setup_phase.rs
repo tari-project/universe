@@ -32,10 +32,11 @@ use super::setup_manager::PhaseStatus;
 
 pub trait SetupPhaseImpl {
     type AppConfiguration: Clone + Default;
-    type SetupOutput: Clone + Default;
+    type SetupOutput: Clone + Default + Send + Sync;
 
     async fn new(app_handle: AppHandle) -> Self;
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
+    async fn hard_reset(&self) -> Result<(), Error>;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
     async fn setup(
         self: Arc<Self>,
