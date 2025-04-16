@@ -79,12 +79,10 @@ impl SpendWalletManager {
         payment_id: Option<String>,
     ) -> Result<(), Error> {
         self.node_manager.wait_ready().await?;
-        let node_type = self.node_manager.get_node_type().await?;
-        let node_identity = self.node_manager.get_identity().await?;
-        let node_connection_address = self.node_manager.get_connection_address().await?;
-        self.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        self.adapter.base_node_address = Some(node_connection_address);
-        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with {:?} Node", node_type);
+        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        self.adapter.base_node_public_key = Some(public_key.clone());
+        self.adapter.base_node_address = Some(public_address.clone());
+        info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
 
         self.adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id)

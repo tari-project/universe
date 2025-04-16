@@ -25,7 +25,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletAddress, setWalletBalance } from '@app/store';
+import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -171,6 +171,9 @@ const useTauriEventsListener = () => {
                         setNodeStoreState({
                             backgroundNodeSyncLastUpdate: event.payload,
                         });
+                        break;
+                    case 'InitWalletScanningProgress':
+                        updateWalletScanningProgress(event.payload);
                         break;
                     default:
                         console.warn('Unknown event', JSON.stringify(event));

@@ -25,6 +25,7 @@ use std::{collections::HashMap, time::Duration};
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events_manager::EventsManager,
     node::node_manager::{NodeManagerError, STOP_ON_ERROR_CODES},
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -142,9 +143,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                     sentry::capture_message(&error_message, sentry::Level::Error);
-                    self.app_handle.state::<UniverseAppState>()
-                        .events_manager
-                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                         .await;
                 }
                 result = self.setup_inner() => {
@@ -157,9 +156,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            self.app_handle.state::<UniverseAppState>()
-                                .events_manager
-                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                            EventsManager
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                                 .await;
                         }
                     }
@@ -234,23 +232,22 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .await
             {
                 Ok(_) => {
-                    let events_manager =
-                        &self.app_handle.state::<UniverseAppState>().events_manager;
-                    events_manager
-                        .handle_node_type_update(&self.app_handle)
-                        .await;
+                    EventsManager::handle_node_type_update(&self.app_handle).await;
                     break;
                 }
                 Err(e) => {
                     if let NodeManagerError::ExitCode(code) = e {
                         if STOP_ON_ERROR_CODES.contains(&code) {
-                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a reset, deleting and trying again.");
+                            warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
                             state.node_manager.clean_data_folder(&data_dir).await?;
-                            continue;
                         }
+                        continue;
                     }
-                    error!(target: LOG_TARGET, "Could not start node manager: {:?}", e);
-
+                    if let NodeManagerError::UnknownError(error) = e {
+                        warn!(target: LOG_TARGET, "NodeManagerError::UnknownError({:?}) needs a restart.", error);
+                        continue;
+                    }
+                    error!(target: LOG_TARGET, "Could not start node manager after restart: {:?} | Exitting the app", e);
                     self.app_handle.exit(-1);
                     return Err(e.into());
                 }
@@ -338,11 +335,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::Done))
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        state
-            .events_manager
-            .handle_node_phase_finished(&self.app_handle, true)
-            .await;
+        EventsManager::handle_node_phase_finished(&self.app_handle, true).await;
 
         let app_handle_clone: tauri::AppHandle = self.app_handle.clone();
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
@@ -366,9 +359,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                                 if is_stuck && !has_send_error {
                                     has_send_error = true;
                                 }
-                                state
-                            .events_manager
-                            .handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
+                                EventsManager::handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
                             .await;
                             }
                             Err(ref e) => {

@@ -37,6 +37,7 @@ use tokio::{
 use crate::{
     auto_launcher::AutoLauncher,
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events_manager::EventsManager,
     progress_trackers::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
@@ -128,9 +129,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
                     sentry::capture_message(&error_message, sentry::Level::Error);
-                    self.app_handle.state::<UniverseAppState>()
-                        .events_manager
-                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
                         .await;
 
                 }
@@ -144,9 +143,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            self.app_handle.state::<UniverseAppState>()
-                                .events_manager
-                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
                                 .await;
                         }
                     }
@@ -218,11 +215,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::Done))
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        state
-            .events_manager
-            .handle_core_phase_finished(&self.app_handle, true)
-            .await;
+        EventsManager::handle_core_phase_finished(&self.app_handle, true).await;
 
         Ok(())
     }

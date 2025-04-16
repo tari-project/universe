@@ -4,7 +4,7 @@ import { create } from './create';
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
 export interface NodeIdentity {
     public_key: string;
-    public_address: string[];
+    public_addresses: string[];
 }
 
 interface NodeStoreState {
@@ -18,7 +18,7 @@ const initialState: NodeStoreState = {
     node_type: undefined,
     node_identity: {
         public_key: '',
-        public_address: [],
+        public_addresses: [],
     },
     node_connection_address: '',
 };

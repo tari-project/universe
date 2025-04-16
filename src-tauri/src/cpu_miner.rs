@@ -23,18 +23,20 @@
 use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::configs::config_mining::ConfigMiningContent;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{BaseNodeStatus, CpuMinerConfig};
+use crate::BaseNodeStatus;
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
@@ -43,6 +45,27 @@ use tokio::time::{sleep, timeout};
 
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
+
+pub struct CpuMinerConfig {
+    pub node_connection: CpuMinerConnection,
+    pub tari_address: TariAddress,
+    pub eco_mode_xmrig_options: Vec<String>,
+    pub ludicrous_mode_xmrig_options: Vec<String>,
+    pub custom_mode_xmrig_options: Vec<String>,
+    pub eco_mode_cpu_percentage: Option<u32>,
+    pub ludicrous_mode_cpu_percentage: Option<u32>,
+}
+
+impl CpuMinerConfig {
+    pub fn load_from_config_mining(&mut self, config_mining_content: &ConfigMiningContent) {
+        self.custom_mode_xmrig_options = config_mining_content.custom_mode_cpu_options().clone();
+        self.eco_mode_cpu_percentage = *config_mining_content.eco_mode_cpu_threads();
+        self.ludicrous_mode_cpu_percentage = *config_mining_content.ludicrous_mode_cpu_threads();
+        self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
+        self.ludicrous_mode_xmrig_options =
+            config_mining_content.ludicrous_mode_cpu_options().clone();
+    }
+}
 
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,

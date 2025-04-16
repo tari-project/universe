@@ -24,6 +24,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use commands::CpuMinerStatus;
+use cpu_miner::CpuMinerConfig;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
@@ -56,7 +57,7 @@ use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
 use tari_shutdown::Shutdown;
-use tauri::async_runtime::{block_on, JoinHandle};
+use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
 use tokio::select;
@@ -77,7 +78,6 @@ use crate::commands::CpuMinerConnection;
 use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
-use crate::internal_wallet::InternalWallet;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
 use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
@@ -102,7 +102,6 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
-mod events_service;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -156,16 +155,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 
-struct CpuMinerConfig {
-    node_connection: CpuMinerConnection,
-    tari_address: TariAddress,
-    eco_mode_xmrig_options: Vec<String>,
-    ludicrous_mode_xmrig_options: Vec<String>,
-    custom_mode_xmrig_options: Vec<String>,
-    eco_mode_cpu_percentage: Option<u32>,
-    ludicrous_mode_cpu_percentage: Option<u32>,
-}
-
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
@@ -174,12 +163,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         .get_task_tracker()
         .await
         .spawn(async move {
-            let app_state = move_app.state::<UniverseAppState>().clone();
-
-            let _ = &app_state
-                .events_manager
-                .handle_internal_wallet_loaded_or_created(&move_app)
-                .await;
+            let _ = EventsManager::handle_internal_wallet_loaded_or_created(&move_app).await;
         });
 
     let move_app = app.clone();
@@ -191,34 +175,35 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        let current_block_height = node_status_watch_rx.borrow().block_height;
-        let _ = &app_state
-            .events_manager
-            .wait_for_initial_wallet_scan(&move_app, current_block_height)
-            .await;
+        let init_node_status = *node_status_watch_rx.borrow();
+        let _ = EventsManager::handle_base_node_update(&move_app, init_node_status).await;
 
-        let mut latest_updated_block_height = current_block_height;
+        let mut latest_updated_block_height = init_node_status.block_height;
         loop {
             select! {
                 _ = node_status_watch_rx.changed() => {
-                    let node_status: BaseNodeStatus = *node_status_watch_rx.borrow();
-                    if node_status.block_height > latest_updated_block_height {
+                    let node_status = *node_status_watch_rx.borrow();
+                    let initial_sync_finished = app_state.wallet_manager.is_initial_scan_completed();
+
+                    if node_status.block_height > latest_updated_block_height && initial_sync_finished {
                         while latest_updated_block_height < node_status.block_height {
                             latest_updated_block_height += 1;
-                            let _ = &app_state.events_manager.handle_new_block_height(&move_app, latest_updated_block_height).await;
+                            let _ = EventsManager::handle_new_block_height(&move_app, latest_updated_block_height).await;
                         }
-                    } else {
-                        let _ = &app_state.events_manager.handle_base_node_update(&move_app, node_status).await;
+                    }
+                    if node_status.block_height > latest_updated_block_height && !initial_sync_finished {
+                        let _ = EventsManager::handle_base_node_update(&move_app, node_status).await;
+                        latest_updated_block_height = node_status.block_height;
                     }
                 },
                 _ = gpu_status_watch_rx.changed() => {
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
 
-                    let _ = &app_state.events_manager.handle_gpu_mining_update(&move_app, gpu_status).await;
+                    let _ = EventsManager::handle_gpu_mining_update(&move_app, gpu_status).await;
                 },
                 _ = cpu_miner_status_watch_rx.changed() => {
                     let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                    let _ = &app_state.events_manager.handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
+                    let _ = EventsManager::handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
 
                     // Update systemtray data
                     let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
@@ -261,7 +246,7 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         .node_manager
                         .list_connected_peers()
                         .await {
-                            let _ = &app_state.events_manager.handle_connected_peers_update(&move_app, connected_peers).await;
+                            let _ = EventsManager::handle_connected_peers_update(&move_app, connected_peers).await;
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
@@ -974,7 +959,6 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
-    events_manager: Arc<EventsManager>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1028,7 +1012,6 @@ fn main() {
         wallet_state_watch_tx,
         &mut stats_collector,
     );
-    let wallet_manager2 = wallet_manager.clone();
     let spend_wallet_manager = SpendWalletManager::new(node_manager.clone());
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
@@ -1115,7 +1098,6 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
-        events_manager: Arc::new(EventsManager::new(wallet_state_watch_rx)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1246,71 +1228,7 @@ fn main() {
                 File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
             }
 
-            let cpu_config2 = cpu_config.clone();
-            let thread_config: JoinHandle<Result<(), anyhow::Error>> =
-                tauri::async_runtime::spawn(async move {
-                    let mut app_conf = app_config.write().await;
-                    app_conf.load_or_create(config_path).await?;
-
-                    let mut cpu_conf = cpu_config2.write().await;
-                    cpu_conf.eco_mode_cpu_percentage = app_conf.eco_mode_cpu_threads();
-                    cpu_conf.ludicrous_mode_cpu_percentage = app_conf.ludicrous_mode_cpu_threads();
-                    cpu_conf.eco_mode_xmrig_options = app_conf.eco_mode_cpu_options().clone();
-                    cpu_conf.ludicrous_mode_xmrig_options =
-                        app_conf.ludicrous_mode_cpu_options().clone();
-                    cpu_conf.custom_mode_xmrig_options = app_conf.custom_mode_cpu_options().clone();
-
-                    Ok(())
-                });
-
-            match tauri::async_runtime::block_on(thread_config) {
-                Ok(_) => {}
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up app state: {:?}", e);
-                }
-            };
-
-            let config_path = app
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-            let address = app.state::<UniverseAppState>().tari_address.clone();
-            let thread = tauri::async_runtime::spawn(async move {
-                match InternalWallet::load_or_create(config_path).await {
-                    Ok(wallet) => {
-                        cpu_config.write().await.tari_address = wallet.get_tari_address();
-                        wallet_manager2
-                            .set_view_private_key_and_spend_key(
-                                wallet.get_view_key(),
-                                wallet.get_spend_key(),
-                            )
-                            .await;
-                        let mut address_lock = address.write().await;
-                        *address_lock = wallet.get_tari_address();
-                        Ok(())
-                        //app.state::<UniverseAppState>().tari_address = wallet.get_tari_address();
-                    }
-                    Err(e) => {
-                        error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-                        // TODO: If this errors, the application does not exit properly.
-                        // So temporarily we are going to kill it here
-
-                        Err(e)
-                    }
-                }
-            });
-
-            match tauri::async_runtime::block_on(thread).expect("Could not start task") {
-                Ok(_) => {
-                    // let mut lock = app.state::<UniverseAppState>().tari_address.write().await;
-                    // *lock = address;
-                    Ok(())
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET, "Error setting up internal wallet: {:?}", e);
-                    Err(e.into())
-                }
-            }
+            Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             commands::close_splashscreen,

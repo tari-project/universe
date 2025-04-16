@@ -24,6 +24,7 @@ use crate::port_allocator::PortAllocator;
 use crate::process_adapter::{
     HealthStatus, ProcessAdapter, ProcessInstance, ProcessStartupSpec, StatusMonitor,
 };
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
 use anyhow::Error;
@@ -54,23 +55,25 @@ const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
 pub struct WalletAdapter {
     use_tor: bool,
+    connect_with_local_node: bool,
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
     pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
     pub(crate) spend_key: String,
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
-    state_broadcast: watch::Sender<Option<WalletState>>,
+    pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
     completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
 
 impl WalletAdapter {
-    pub fn new(use_tor: bool, state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
+    pub fn new(state_broadcast: watch::Sender<Option<WalletState>>) -> Self {
         let tcp_listener_port = PortAllocator::new().assign_port_with_fallback();
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
-            use_tor,
+            use_tor: false,
+            connect_with_local_node: false,
             base_node_address: None,
             base_node_public_key: None,
             view_private_key: "".to_string(),
@@ -81,6 +84,14 @@ impl WalletAdapter {
             completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
+    }
+
+    pub fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
+        self.connect_with_local_node = connect_with_local_node;
     }
 
     pub async fn get_transactions_history(
@@ -209,6 +220,77 @@ impl WalletAdapter {
         Ok(transactions)
     }
 
+    pub async fn wait_for_scan_to_height(
+        &self,
+        block_height: u64,
+        timeout: Option<Duration>,
+    ) -> Result<WalletState, WalletStatusMonitorError> {
+        let mut state_receiver = self.state_broadcast.subscribe();
+        let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        loop {
+            tokio::select! {
+                result = state_receiver.changed() => {
+                    if result.is_err() {
+                        return Err(WalletStatusMonitorError::WalletNotStarted);
+                    }
+
+                    let current_state = state_receiver.borrow().clone();
+                    if let Some(state) = current_state {
+                        // Case 1: Scan has reached or exceeded target height
+                        if state.scanned_height >= block_height && block_height > 0 {
+                            info!(target: LOG_TARGET, "Wallet scan completed up to block height {}", block_height);
+                            return Ok(state);
+                        }
+                        // Case 2: Wallet is at height 0 but is connected - likely means scan finished already
+                        if state.scanned_height == 0 && block_height > 0 {
+                            if let Some(network) = &state.network {
+                                if matches!(network.status, ConnectivityStatus::Online(3..)) {
+                                    warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
+                                    return Ok(state);
+                                }
+                            }
+                        }
+                    }
+                },
+                _ = shutdown_signal.wait() => {
+                    log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wait_for_scan_to_height");
+                    return Ok(WalletState::default());
+                }
+                _ = async {
+                    tokio::time::sleep(timeout.unwrap_or(Duration::MAX)).await;
+                } => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Timeout reached while waiting for wallet scan to complete. Current height: {}/{}",
+                        state_receiver.borrow().as_ref().map(|s| s.scanned_height).unwrap_or(0),
+                        block_height
+                    );
+                    // Return current state if available, otherwise error
+                    return state_receiver
+                        .borrow()
+                        .clone()
+                        .ok_or(WalletStatusMonitorError::WalletNotStarted);
+                }
+            }
+        }
+    }
+
+    /// Find a recent coinbase transaction for a specific block height
+    pub async fn find_coinbase_transaction_for_block(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<TransactionInfo>, WalletStatusMonitorError> {
+        // Get a small batch of recent coinbase transactions
+        let transactions = self.get_coinbase_transactions(false, Some(10)).await?;
+
+        // Find one matching the specified block height
+        let matching_tx = transactions
+            .into_iter()
+            .find(|tx| tx.mined_in_block_height == block_height);
+
+        Ok(matching_tx)
+    }
+
     pub fn wallet_grpc_address(&self) -> String {
         format!("http://127.0.0.1:{}", self.grpc_port)
     }
@@ -263,8 +345,6 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
             "-p".to_string(),
-            "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
-            "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 self.base_node_public_key
@@ -281,10 +361,15 @@ impl ProcessAdapter for WalletAdapter {
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
 
-        if self.use_tor {
+        // Always use direct connections with the local node
+        if self.use_tor && !self.connect_with_local_node {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         } else {
+            if self.connect_with_local_node {
+                args.push("-p".to_string());
+                args.push("wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string());
+            }
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
@@ -436,7 +521,7 @@ pub enum WalletStatusMonitorError {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct WalletState {
     pub scanned_height: u64,
     pub balance: Option<WalletBalance>,

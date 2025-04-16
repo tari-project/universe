@@ -24,6 +24,8 @@ use std::time::Duration;
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    events_manager::EventsManager,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
         progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
@@ -56,7 +58,9 @@ const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Min
 pub struct WalletSetupPhaseOutput {}
 
 #[derive(Clone, Default)]
-pub struct WalletSetupPhaseAppConfiguration {}
+pub struct WalletSetupPhaseAppConfiguration {
+    use_tor: bool,
+}
 
 pub struct WalletSetupPhase {
     app_handle: AppHandle,
@@ -95,7 +99,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
-        Ok(WalletSetupPhaseAppConfiguration::default())
+        let use_tor = *ConfigCore::content().await.use_tor();
+        Ok(WalletSetupPhaseAppConfiguration { use_tor })
     }
 
     async fn setup(
@@ -123,9 +128,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                     sentry::capture_message(&error_message, sentry::Level::Error);
-                    self.app_handle.state::<UniverseAppState>()
-                        .events_manager
-                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
                         .await;
                 }
                 result = self.setup_inner() => {
@@ -138,9 +141,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            self.app_handle.state::<UniverseAppState>()
-                                .events_manager
-                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                            EventsManager
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
                                 .await;
                         }
                     }
@@ -177,6 +179,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::StartWallet))
             .await;
 
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let is_local_node = app_state.node_manager.is_local_current().await?;
         state
             .wallet_manager
             .ensure_started(
@@ -184,6 +188,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
                 data_dir.clone(),
                 config_dir.clone(),
                 log_dir.clone(),
+                self.app_configuration.use_tor,
+                is_local_node,
             )
             .await?;
 
@@ -208,6 +214,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
+        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        let node_status = *node_status_watch_rx.borrow();
+        state
+            .wallet_manager
+            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status.block_height)
+            .await?;
+
         Ok(None)
     }
 
@@ -223,11 +236,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        state
-            .events_manager
-            .handle_wallet_phase_finished(&self.app_handle, true)
-            .await;
+        EventsManager::handle_wallet_phase_finished(&self.app_handle, true).await;
 
         Ok(())
     }

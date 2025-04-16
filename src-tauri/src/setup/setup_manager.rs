@@ -36,7 +36,9 @@ use crate::{
         config_wallet::{ConfigWallet, ConfigWalletContent},
         trait_config::ConfigImpl,
     },
+    events_manager::EventsManager,
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -176,9 +178,22 @@ impl SetupManager {
         &INSTANCE
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
+
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        let _unused = state
+            .config
+            .write()
+            .await
+            .load_or_create(old_config_path.clone())
+            .await;
         let old_config = state.config.read().await;
 
         let _unused = state
@@ -206,11 +221,6 @@ impl SetupManager {
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
 
-        let old_config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-
         let old_config_content = if old_config.is_file_exists(old_config_path.clone()) {
             Some(old_config.clone())
         } else {
@@ -232,17 +242,43 @@ impl SetupManager {
             .load_app_handle(app_handle.clone())
             .await;
 
-        if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
-            let _unused = ConfigWallet::update_field(
-                ConfigWalletContent::set_generated_monero_address,
-                monero_address,
-            )
-            .await;
+        // This must happend before InternalWallet::load_or_create !!!
+        if ConfigWallet::content().await.monero_address().is_empty() {
+            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await;
+            }
         }
+
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
+            Ok(wallet) => {
+                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.get_view_key(),
+                        wallet.get_spend_key(),
+                    )
+                    .await;
+                *state.tari_address.write().await = wallet.get_tari_address();
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
+        };
 
         let mut config_mining = ConfigMining::current().write().await;
         config_mining.handle_old_config_migration(old_config_content.clone());
         config_mining.load_app_handle(app_handle.clone()).await;
+        state
+            .cpu_miner_config
+            .write()
+            .await
+            .load_from_config_mining(config_mining._get_content());
+
         drop(config_mining);
 
         let mut config_ui = ConfigUI::current().write().await;
@@ -254,22 +290,10 @@ impl SetupManager {
             .move_out_of_original_location(old_config_path)
             .await;
 
-        state
-            .events_manager
-            .handle_config_core_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_mining_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_ui_loaded(&app_handle)
-            .await;
-        state
-            .events_manager
-            .handle_config_wallet_loaded(&app_handle)
-            .await;
+        EventsManager::handle_config_core_loaded(&app_handle).await;
+        EventsManager::handle_config_mining_loaded(&app_handle).await;
+        EventsManager::handle_config_ui_loaded(&app_handle).await;
+        EventsManager::handle_config_wallet_loaded(&app_handle).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
@@ -466,11 +490,7 @@ impl SetupManager {
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         if !phases.is_empty() {
-            let state = app_handle.state::<UniverseAppState>();
-            state
-                .events_manager
-                .handle_restarting_phases(&app_handle, phases.clone())
-                .await;
+            EventsManager::handle_restarting_phases(&app_handle, phases.clone()).await;
         }
 
         for phase in phases {
@@ -507,8 +527,7 @@ impl SetupManager {
             .handle_release_notes_event_emit(state.clone(), app_handle.clone())
             .await;
 
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_app(&app_handle).await;
+        EventsManager::handle_unlock_app(&app_handle).await;
     }
 
     async fn unlock_wallet(&self, app_handle: AppHandle) {
@@ -519,8 +538,7 @@ impl SetupManager {
 
         info!(target: LOG_TARGET, "Unlocking Wallet");
         *self.is_wallet_unlocked.lock().await = true;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_wallet(&app_handle).await;
+        EventsManager::handle_unlock_wallet(&app_handle).await;
     }
 
     async fn unlock_mining(&self, app_handle: AppHandle) {
@@ -530,8 +548,7 @@ impl SetupManager {
         }
         info!(target: LOG_TARGET, "Unlocking Mining");
         *self.is_mining_unlocked.lock().await = true;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_unlock_mining(&app_handle).await;
+        EventsManager::handle_unlock_mining(&app_handle).await;
     }
 
     async fn lock_mining(&self, app_handle: AppHandle) {
@@ -543,8 +560,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Mining");
 
         *self.is_mining_unlocked.lock().await = false;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_lock_mining(&app_handle).await;
+        EventsManager::handle_lock_mining(&app_handle).await;
     }
 
     pub async fn lock_mining_switching(&self, app_handle: AppHandle) {
@@ -565,8 +581,7 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Locking Wallet");
 
         *self.is_wallet_unlocked.lock().await = false;
-        let state = app_handle.state::<UniverseAppState>();
-        state.events_manager.handle_lock_wallet(&app_handle).await;
+        EventsManager::handle_lock_wallet(&app_handle).await;
     }
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
@@ -607,8 +622,7 @@ impl SetupManager {
                 };
             }
 
-            let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
-            events_manager.handle_node_type_update(&app_handle).await;
+            EventsManager::handle_node_type_update(&app_handle).await;
 
             info!(target: LOG_TARGET, "Restarting Phases");
             self.shutdown_phases(

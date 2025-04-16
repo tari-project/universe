@@ -1,5 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
+import { refreshTransactions } from './actions/walletStoreActions.ts';
 
 interface PendingTransaction {
     tx_id: number;
@@ -24,6 +25,13 @@ interface WalletStoreState {
     has_more_transactions: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
+    wallet_scanning: {
+        is_scanning: boolean;
+        scanned_height: number;
+        total_height: number;
+        progress: number;
+    };
+    newestTxIdOnInitialFetch?: TransactionInfo['tx_id']; // only set once - needed to check against truly "new" txs for the badge
 }
 
 const initialState: WalletStoreState = {
@@ -37,6 +45,12 @@ const initialState: WalletStoreState = {
     is_reward_history_loading: false,
     is_transactions_history_loading: false,
     is_wallet_importing: false,
+    wallet_scanning: {
+        is_scanning: true,
+        scanned_height: 0,
+        total_height: 0,
+        progress: 0,
+    },
 };
 
 export const useWalletStore = create<WalletStoreState>()(() => ({
@@ -58,6 +72,24 @@ export const addPendingTransaction = (payload: { amount: string; destination: st
     useWalletStore.setState((state) => ({
         pending_transactions: [transaction, ...state.pending_transactions],
     }));
+};
+
+export const updateWalletScanningProgress = (payload: {
+    scanned_height: number;
+    total_height: number;
+    progress: number;
+}) => {
+    const is_scanning = payload.scanned_height < payload.total_height;
+    useWalletStore.setState({
+        wallet_scanning: {
+            is_scanning,
+            ...payload,
+        },
+    });
+
+    if (!is_scanning) {
+        refreshTransactions();
+    }
 };
 
 export const refreshPendingTransactions = () => {

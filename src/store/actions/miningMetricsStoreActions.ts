@@ -1,6 +1,12 @@
 import { BaseNodeStatus, CpuMinerStatus, GpuDevice, GpuMinerStatus } from '@app/types/app-status.ts';
 import { setGpuMiningEnabled } from './appConfigStoreActions';
-import { useBlockchainVisualisationStore, useConfigMiningStore, useMiningMetricsStore, useMiningStore } from '../';
+import {
+    useBlockchainVisualisationStore,
+    useConfigMiningStore,
+    useMiningMetricsStore,
+    useMiningStore,
+    useWalletStore,
+} from '../';
 import { setAnimationState } from '@tari-project/tari-tower';
 
 export const setGpuDevices = (gpu_devices: GpuDevice[]) => {
@@ -41,8 +47,10 @@ export const handleConnectedPeersUpdate = (connected_peers: string[]) => {
 export const handleBaseNodeStatusUpdate = (base_node_status: BaseNodeStatus) => {
     const displayBlockHeight = useBlockchainVisualisationStore.getState().displayBlockHeight;
     const setDisplayBlockHeight = useBlockchainVisualisationStore.getState().setDisplayBlockHeight;
-    if (base_node_status.block_height && !displayBlockHeight) {
-        // initial set, later updates via new block height handlers only
+    const isWalletScanning = useWalletStore.getState()?.wallet_scanning?.is_scanning;
+
+    if (base_node_status.block_height && (!displayBlockHeight || isWalletScanning)) {
+        // setting here before wallet initial scan, later updates via new block height handlers only
         setDisplayBlockHeight(base_node_status.block_height);
     }
     useMiningMetricsStore.setState({ base_node_status });

@@ -30,7 +30,7 @@ use tauri::{AppHandle, Manager};
 
 use log::warn;
 
-use crate::UniverseAppState;
+use crate::{events_manager::EventsManager, UniverseAppState};
 
 use super::progress_plans::{ProgressEvent, ProgressPlans, ProgressStep};
 
@@ -46,23 +46,20 @@ pub struct ChanneledStepUpdate {
 
 impl ChanneledStepUpdate {
     pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
-        let app_state = self.app_handle.state::<UniverseAppState>();
         let resolved_percentage = self.step_percentage
             + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
                 * current_step_percentage;
 
-        app_state
-            .events_manager
-            .handle_progress_tracker_update(
-                &self.app_handle,
-                self.step.get_event_type(),
-                self.step.get_phase_title(),
-                self.step.get_title(),
-                resolved_percentage.round(),
-                Some(params),
-                false,
-            )
-            .await;
+        EventsManager::handle_progress_tracker_update(
+            &self.app_handle,
+            self.step.get_event_type(),
+            self.step.get_phase_title(),
+            self.step.get_title(),
+            resolved_percentage.round(),
+            Some(params),
+            false,
+        )
+        .await;
     }
 }
 pub struct ProgressStepper {
@@ -81,19 +78,17 @@ impl ProgressStepper {
 
             let is_completed = self.plan.is_empty();
 
+            EventsManager::handle_progress_tracker_update(
+                &self.app_handle,
+                event.get_event_type(),
+                resolved_step.get_phase_title(),
+                event.get_title(),
+                resolved_percentage,
+                None,
+                is_completed,
+            )
+            .await;
             let app_state = self.app_handle.state::<UniverseAppState>();
-            app_state
-                .events_manager
-                .handle_progress_tracker_update(
-                    &self.app_handle,
-                    event.get_event_type(),
-                    resolved_step.get_phase_title(),
-                    event.get_title(),
-                    resolved_percentage,
-                    None,
-                    is_completed,
-                )
-                .await;
             let _unused = app_state
                 .telemetry_service
                 .read()

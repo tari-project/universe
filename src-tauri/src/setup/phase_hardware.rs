@@ -25,6 +25,7 @@ use std::time::Duration;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_mining::ConfigMining, trait_config::ConfigImpl},
+    events_manager::EventsManager,
     gpu_miner::EngineType,
     hardware::hardware_status_monitor::HardwareStatusMonitor,
     progress_tracker_old::ProgressTracker,
@@ -136,9 +137,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
                     sentry::capture_message(&error_message, sentry::Level::Error);
-                    self.app_handle.state::<UniverseAppState>()
-                        .events_manager
-                        .handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
                         .await;
                 }
                 result = self.setup_inner() => {
@@ -151,9 +150,8 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Hardware,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            self.app_handle.state::<UniverseAppState>()
-                                .events_manager
-                                .handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                            EventsManager
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
                                 .await;
                         }
                     }
@@ -248,11 +246,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .await;
 
-        let state = self.app_handle.state::<UniverseAppState>();
-        state
-            .events_manager
-            .handle_hardware_phase_finished(&self.app_handle, true)
-            .await;
+        EventsManager::handle_hardware_phase_finished(&self.app_handle, true).await;
 
         if let Some(payload) = payload {
             let _unused = SetupManager::get_instance()

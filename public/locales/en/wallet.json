@@ -5,6 +5,7 @@
     "label-rewards": "My rewards"
   },
   "my_tari": "My Tari",
+  "new": "New",
   "receive": {
     "label-address": "My address"
   },
@@ -30,5 +31,6 @@
     "send": "Send"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning.."
+  "wallet-is-scanning": "Wallet is scanning..",
+  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
 }

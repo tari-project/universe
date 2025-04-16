@@ -36,6 +36,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use tari_common::configuration::Network;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -110,14 +111,6 @@ impl LocalNodeAdapter {
             None
         }
     }
-
-    pub fn use_tor(&mut self, use_tor: bool) {
-        self.use_tor = use_tor;
-    }
-
-    pub fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
-        self.tor_control_port = tor_control_port;
-    }
 }
 
 #[async_trait]
@@ -126,12 +119,32 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_grpc_address()
     }
 
+    fn set_grpc_address(&mut self, _grpc_address: String) -> Result<(), anyhow::Error> {
+        log::error!(target: LOG_TARGET, "Attempted to set gRPC address for local node, which is fixed to localhost.");
+        Ok(())
+    }
+
     fn get_service(&self) -> Option<NodeAdapterService> {
         self.get_service()
     }
 
-    async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        Ok(self.tcp_address())
+    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+        let node_service = self.get_service();
+        if let Some(node_service) = node_service {
+            let node_identity = node_service.get_identity().await?;
+            let public_key = node_identity.public_key.clone();
+            Ok((public_key, self.tcp_address()))
+        } else {
+            Err(anyhow::anyhow!("Remote node service is not available"))
+        }
+    }
+
+    fn use_tor(&mut self, use_tor: bool) {
+        self.use_tor = use_tor;
+    }
+
+    fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
+        self.tor_control_port = tor_control_port;
     }
 }
 
