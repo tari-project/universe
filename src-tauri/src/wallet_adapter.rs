@@ -55,6 +55,7 @@ const LOG_TARGET: &str = "tari::universe::wallet_adapter";
 
 pub struct WalletAdapter {
     use_tor: bool,
+    connect_with_local_node: bool,
     pub(crate) base_node_public_key: Option<RistrettoPublicKey>,
     pub(crate) base_node_address: Option<String>,
     pub(crate) view_private_key: String,
@@ -72,6 +73,7 @@ impl WalletAdapter {
         let grpc_port = PortAllocator::new().assign_port_with_fallback();
         Self {
             use_tor: false,
+            connect_with_local_node: false,
             base_node_address: None,
             base_node_public_key: None,
             view_private_key: "".to_string(),
@@ -86,6 +88,10 @@ impl WalletAdapter {
 
     pub fn use_tor(&mut self, use_tor: bool) {
         self.use_tor = use_tor;
+    }
+
+    pub fn connect_with_local_node(&mut self, connect_with_local_node: bool) {
+        self.connect_with_local_node = connect_with_local_node;
     }
 
     pub async fn get_transactions_history(
@@ -337,8 +343,6 @@ impl ProcessAdapter for WalletAdapter {
             "--grpc-address".to_string(),
             format!("/ip4/127.0.0.1/tcp/{}", self.grpc_port),
             "-p".to_string(),
-            "wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string(),
-            "-p".to_string(),
             format!(
                 "wallet.custom_base_node={}::{}",
                 self.base_node_public_key
@@ -355,10 +359,15 @@ impl ProcessAdapter for WalletAdapter {
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
 
-        if self.use_tor {
+        // Always use direct connections with the local node
+        if self.use_tor && !self.connect_with_local_node {
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
         } else {
+            if self.connect_with_local_node {
+                args.push("-p".to_string());
+                args.push("wallet.base_node.base_node_monitor_max_refresh_interval=1".to_string());
+            }
             args.push("-p".to_string());
             args.push("wallet.p2p.transport.type=tcp".to_string());
             args.push("-p".to_string());
