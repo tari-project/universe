@@ -1,11 +1,10 @@
-import { useEffect } from 'react';
-import { setAnimationState, animationStatus } from '@tari-project/tari-tower';
+import { useCallback, useEffect, useRef } from 'react';
+import { setAnimationState, animationStatus, getTowerLogPrefix } from '@tari-project/tari-tower';
 
 import { useAppStateStore } from '@app/store/appStateStore';
 import { useMiningStore } from '@app/store/useMiningStore';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { useBlockchainVisualisationStore } from '@app/store';
 
 export const useUiMiningStateMachine = () => {
     const isMiningInitiated = useMiningStore((s) => s.miningInitiated);
@@ -16,33 +15,74 @@ export const useUiMiningStateMachine = () => {
     const setupComplete = useAppStateStore((s) => s.setupComplete);
     const visualMode = useAppConfigStore((s) => s.visual_mode);
     const visualModeLoading = useAppConfigStore((s) => s.visualModeToggleLoading);
-    const blockTime = useBlockchainVisualisationStore((s) => s.displayBlockTime);
 
     const stateTrigger = animationStatus;
     const isMining = cpuIsMining || gpuIsMining;
-    const blockTimeTrigger = Number(blockTime?.seconds) % 5 === 0;
+
+    const notStarted = stateTrigger === 'not-started';
+    const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
+    const shouldStop = !isMining && !notStarted && !preventStop;
+    const shouldStart = isMining && notStarted && !isResuming;
+
+    const noVisualMode = !visualMode || visualModeLoading;
+
+    const timeoutIdRef = useRef<NodeJS.Timeout | null>(null);
+
+    function clearStopTimeout() {
+        if (timeoutIdRef.current) {
+            clearTimeout(timeoutIdRef.current);
+            timeoutIdRef.current = null;
+        }
+    }
+
+    const forceAnimationStop = useCallback(() => {
+        let retryCount = 0;
+        const maxRetries = 15;
+        const interval = 2000; // 2 seconds
+
+        const attemptStop = () => {
+            if (animationStatus === 'not-started') {
+                console.debug(getTowerLogPrefix('debug'), `Animation stopped: status=${animationStatus}`);
+                return;
+            }
+
+            if (retryCount >= maxRetries) {
+                console.debug(
+                    getTowerLogPrefix('debug'),
+                    `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
+                );
+                return;
+            }
+
+            console.debug(
+                getTowerLogPrefix('debug'),
+                `Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
+            );
+            setAnimationState('stop');
+            retryCount++;
+
+            timeoutIdRef.current = setTimeout(() => {
+                attemptStop();
+            }, interval);
+        };
+
+        timeoutIdRef.current = setTimeout(() => {
+            attemptStop();
+        }, interval);
+
+        return () => {
+            clearStopTimeout();
+        };
+    }, []);
 
     useEffect(() => {
-        if (!visualMode || visualModeLoading) return;
+        if (noVisualMode) return;
 
-        const notStarted = stateTrigger === 'not-started';
-        const preventStop = !setupComplete || isMiningInitiated || isChangingMode;
-        const shouldStop = !isMining && !notStarted && !preventStop;
-        const shouldStartAnimation = isMining && notStarted && !isResuming;
         if (shouldStop) {
-            setAnimationState('stop');
-        } else if (shouldStartAnimation) {
+            forceAnimationStop();
+        } else if (shouldStart) {
             setAnimationState('start');
+            clearStopTimeout();
         }
-    }, [
-        blockTimeTrigger, // do not remove - needed to re-trigger these checks since `animationStatus` takes a while to come back updated
-        isChangingMode,
-        isMining,
-        isMiningInitiated,
-        isResuming,
-        setupComplete,
-        stateTrigger,
-        visualMode,
-        visualModeLoading,
-    ]);
+    }, [forceAnimationStop, noVisualMode, shouldStart, shouldStop]);
 };

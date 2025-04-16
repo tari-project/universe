@@ -13,6 +13,7 @@ import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { startMining, stopMining } from '@app/store/actions/miningStoreActions.ts';
 import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
+import { setAnimationState } from '@tari-project/tari-tower';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -41,8 +42,10 @@ export default function MiningButton() {
     const handleClick = useCallback(async () => {
         if (!isMining) {
             await startMining();
+            setAnimationState('start');
         } else {
             await stopMining();
+            setAnimationState('stop');
         }
     }, [isMining]);
 
