@@ -2,8 +2,6 @@ import { MessageType } from '@app/store';
 import styled, { css } from 'styled-components';
 import * as motion from 'motion/react-m';
 
-export const MessagesWrapper = styled.div``;
-
 export const Message = styled(motion.div)<{ $type: MessageType }>`
     position: fixed;
     z-index: 10;
