@@ -24,7 +24,10 @@ use std::{path::PathBuf, sync::Arc};
 
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
-use tokio::sync::watch::{Receiver, Sender};
+use tokio::{
+    sync::watch::{Receiver, Sender},
+    task::JoinHandle,
+};
 
 use crate::progress_trackers::ProgressStepper;
 
@@ -41,7 +44,7 @@ pub trait SetupPhaseImpl {
         self: Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    );
+    ) -> JoinHandle<()>;
     async fn setup_inner(&self) -> Result<Option<Self::SetupOutput>, Error>;
     async fn finalize_setup(
         &self,

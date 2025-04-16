@@ -29,7 +29,6 @@ use super::{
     trait_setup_phase::SetupPhaseImpl,
 };
 use crate::{
-    commands::stop_mining,
     configs::{
         config_core::ConfigCore,
         config_mining::ConfigMining,
@@ -54,7 +53,8 @@ use tauri::{AppHandle, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex},
-    time::{interval, timeout},
+    task::JoinHandle,
+    time::timeout,
 };
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
@@ -161,6 +161,7 @@ pub struct SetupManager {
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
     is_initial_setup_finished: Mutex<bool>,
+    is_switching_to_local: Mutex<bool>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
     pub hardware_phase_output: Sender<HardwareSetupPhaseOutput>,
     app_handle: Mutex<Option<AppHandle>>,
@@ -304,7 +305,7 @@ impl SetupManager {
             .await;
     }
 
-    async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+    async fn setup_unknown_phase(&self, app_handle: AppHandle) -> JoinHandle<()> {
         let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
         unknown_phase_setup
             .setup(
@@ -314,7 +315,7 @@ impl SetupManager {
                     self.hardware_phase_status.subscribe(),
                 ],
             )
-            .await;
+            .await
     }
 
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
@@ -363,10 +364,12 @@ impl SetupManager {
                             .await;
                     }
 
+                    let is_switching_to_local = *SetupManager::get_instance().is_switching_to_local.lock().await;
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
+                        && !is_switching_to_local
                         && !is_mining_unlocked
                     {
                         SetupManager::get_instance()
@@ -544,6 +547,16 @@ impl SetupManager {
         state.events_manager.handle_lock_mining(&app_handle).await;
     }
 
+    pub async fn lock_mining_switching(&self, app_handle: AppHandle) {
+        *self.is_switching_to_local.lock().await = true;
+        self.lock_mining(app_handle).await;
+    }
+
+    pub async fn unlock_mining_switching(&self, app_handle: AppHandle) {
+        *self.is_switching_to_local.lock().await = false;
+        self.unlock_mining(app_handle).await;
+    }
+
     async fn lock_wallet(&self, app_handle: AppHandle) {
         if !*self.is_wallet_unlocked.lock().await {
             debug!(target: LOG_TARGET, "Wallet is already locked");
@@ -576,8 +589,8 @@ impl SetupManager {
 
     pub async fn handle_switch_to_local_node(&self) {
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
+            self.lock_mining_switching(app_handle.clone()).await;
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
-            let state = app_handle.state::<UniverseAppState>();
 
             let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
             let finished_unknown_setup = unknown_phase_status_subscriber.borrow().is_success();
@@ -605,13 +618,8 @@ impl SetupManager {
             .await;
 
             self.setup_wallet_phase(app_handle.clone()).await;
-            self.setup_unknown_phase(app_handle.clone()).await;
-            let mm_proxy_port = state
-                .mm_proxy_manager
-                .get_monero_port()
-                .await
-                .map_err(|e| e.to_string());
-            info!(target: LOG_TARGET, "Monero Proxy Port: {:?}", mm_proxy_port);
+            let _ = self.setup_unknown_phase(app_handle.clone()).await.await;
+            self.unlock_mining_switching(app_handle).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }

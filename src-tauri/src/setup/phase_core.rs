@@ -31,6 +31,7 @@ use tokio::{
         watch::{Receiver, Sender},
         Mutex,
     },
+    task::JoinHandle,
 };
 
 use crate::{
@@ -108,7 +109,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         self: Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    ) -> JoinHandle<()> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
         TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
@@ -154,7 +155,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
             };
-        });
+        })
     }
 
     #[allow(clippy::too_many_lines)]

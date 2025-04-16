@@ -44,6 +44,7 @@ use tokio::{
         watch::{self, Receiver, Sender},
         Mutex,
     },
+    task::JoinHandle,
 };
 
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
@@ -101,7 +102,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         self: std::sync::Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    ) -> JoinHandle<()> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
@@ -148,7 +149,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
             };
-        });
+        })
     }
 
     async fn setup_inner(&self) -> Result<Option<WalletSetupPhaseOutput>, Error> {

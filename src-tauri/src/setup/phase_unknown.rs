@@ -46,6 +46,7 @@ use tokio::{
         watch::{self, Receiver, Sender},
         Mutex,
     },
+    task::JoinHandle,
 };
 
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
@@ -120,7 +121,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         self: std::sync::Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    ) -> JoinHandle<()> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
         TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
@@ -166,7 +167,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
             };
-        });
+        })
     }
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
@@ -279,7 +280,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .events_manager
             .handle_unknown_phase_finished(&self.app_handle, true)
             .await;
-
         Ok(())
     }
 }

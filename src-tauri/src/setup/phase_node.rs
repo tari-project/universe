@@ -46,6 +46,7 @@ use tokio::{
         watch::{self, Receiver, Sender},
         Mutex,
     },
+    task::JoinHandle,
     time::{interval, Interval},
 };
 
@@ -121,7 +122,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         self: std::sync::Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    ) -> JoinHandle<()> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
 
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
@@ -167,7 +168,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
                 }
             };
-        });
+        })
     }
 
     #[allow(clippy::too_many_lines)]

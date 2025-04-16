@@ -47,6 +47,7 @@ use tokio::{
         watch::{self, Receiver, Sender},
         Mutex,
     },
+    task::JoinHandle,
 };
 
 use super::{
@@ -115,7 +116,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         self: std::sync::Arc<Self>,
         status_sender: Sender<PhaseStatus>,
         mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    ) -> JoinHandle<()> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Hardware);
 
         TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
@@ -161,7 +162,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
                 }
             };
-        });
+        })
     }
 
     async fn setup_inner(&self) -> Result<Option<HardwareSetupPhaseOutput>, Error> {
