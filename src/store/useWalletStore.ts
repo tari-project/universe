@@ -23,6 +23,8 @@ interface WalletStoreState {
     is_reward_history_loading: boolean;
     has_more_coinbase_transactions: boolean;
     has_more_transactions: boolean;
+    is_wallet_connected: boolean;
+    wallet_connect_modal_open: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
     wallet_scanning: {
@@ -40,6 +42,8 @@ const initialState: WalletStoreState = {
     coinbase_transactions: [],
     transactions: [],
     pending_transactions: [],
+    is_wallet_connected: false,
+    wallet_connect_modal_open: false,
     has_more_coinbase_transactions: true,
     has_more_transactions: true,
     is_reward_history_loading: false,

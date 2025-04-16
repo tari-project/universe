@@ -173,7 +173,6 @@ const useTauriEventsListener = () => {
                         });
                         break;
                     case 'InitWalletScanningProgress':
-                        console.log(event.payload);
                         updateWalletScanningProgress(event.payload);
                         break;
                     default:

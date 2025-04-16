@@ -65,3 +65,7 @@ export const setWalletBalance = (balance: WalletBalance) => {
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
     useWalletStore.setState({ balance, calculated_balance });
 };
+
+export const setWalletConnectModalOpen = (open: boolean) => {
+    useWalletStore.setState({ wallet_connect_modal_open: open });
+};
