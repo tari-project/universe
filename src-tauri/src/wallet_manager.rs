@@ -89,6 +89,7 @@ impl WalletManager {
         config_path: PathBuf,
         log_path: PathBuf,
         use_tor: bool,
+        connect_with_local_node: bool,
     ) -> Result<(), WalletManagerError> {
         let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
         let task_tracker = TasksTrackers::current()
@@ -106,11 +107,13 @@ impl WalletManager {
             return Ok(());
         }
 
-        let node_identity = self.node_manager.get_identity().await?;
-        let node_connection_address = self.node_manager.get_connection_address().await?;
-        process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address = Some(node_connection_address);
+        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        process_watcher.adapter.base_node_public_key = Some(public_key.clone());
+        process_watcher.adapter.base_node_address = Some(public_address.clone());
         process_watcher.adapter.use_tor(use_tor);
+        process_watcher
+            .adapter
+            .connect_with_local_node(connect_with_local_node);
 
         process_watcher
             .start(
@@ -176,7 +179,7 @@ impl WalletManager {
     pub async fn wait_for_scan_to_height(
         &self,
         block_height: u64,
-        timeout: Duration,
+        timeout: Option<Duration>,
     ) -> Result<WalletState, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
 
@@ -280,7 +283,7 @@ impl WalletManager {
         let wallet_manager = self.clone();
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             match wallet_manager
-                .wait_for_scan_to_height(block_height, Duration::from_secs(3600))
+                .wait_for_scan_to_height(block_height, None)
                 .await
             {
                 Ok(scanned_wallet_state) => {
