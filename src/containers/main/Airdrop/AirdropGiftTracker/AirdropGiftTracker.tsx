@@ -8,6 +8,7 @@ import LoggedIn from './sections/LoggedIn/LoggedIn';
 import { Title, TitleWrapper, Wrapper } from './styles';
 import useAirdropWebsocket from '@app/hooks/airdrop/ws/useAirdropWebsocket.ts';
 import { useAirdropPolling } from '@app/hooks/airdrop/stateHelpers/useAirdropPolling';
+import { CommunityMessages } from './sections/CommunityMessages/CommunityMessages';
 
 export default function AirdropGiftTracker() {
     useAirdropPolling();
@@ -25,6 +26,7 @@ export default function AirdropGiftTracker() {
             </TitleWrapper>
 
             {isLoggedIn ? <LoggedIn /> : <LoggedOut />}
+            <CommunityMessages />
         </Wrapper>
     );
 }

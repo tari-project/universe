@@ -1,0 +1,56 @@
+import { useAirdropStore } from '@app/store';
+import { CloseButton, Message, MessagesWrapper } from './styles';
+import { AnimatePresence } from 'motion/react';
+import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
+import { useEffect, useState } from 'react';
+
+const CARD_OFFSET = 8;
+const SCALE_FACTOR = 0.05;
+export const CommunityMessages = () => {
+    const [hiddenMessages, setHiddenMessages] = useState<string[]>([]);
+    const { communityMessages } = useAirdropStore();
+    const handleCloseMessage = (id: string) => {
+        setHiddenMessages((prev) => {
+            if (prev.length > 5) {
+                setHiddenMessages((prev) => prev.slice(1));
+            }
+            localStorage.setItem('hiddenCommunityMessages', JSON.stringify(prev));
+            return [...prev, id];
+        });
+    };
+
+    useEffect(() => {
+        const hiddenMessages = localStorage.getItem('hiddenCommunityMessages') || '';
+        if (hiddenMessages) {
+            setHiddenMessages(JSON.parse(hiddenMessages));
+        }
+    }, []);
+
+    return (
+        <MessagesWrapper>
+            <AnimatePresence>
+                {communityMessages
+                    ?.filter((message) => !hiddenMessages.includes(message.id))
+                    .map((message, index) => (
+                        <Message
+                            animate={{
+                                top: index * -CARD_OFFSET,
+                                scale: 1 - index * SCALE_FACTOR,
+                                zIndex: communityMessages.length - index,
+                            }}
+                            transition={{
+                                type: 'linear',
+                            }}
+                            key={message.id}
+                            $type={message.type}
+                        >
+                            <div dangerouslySetInnerHTML={{ __html: message.textHtml }} />
+                            <CloseButton onClick={() => handleCloseMessage(message.id)}>
+                                <CloseIcon />
+                            </CloseButton>
+                        </Message>
+                    ))}
+            </AnimatePresence>
+        </MessagesWrapper>
+    );
+};

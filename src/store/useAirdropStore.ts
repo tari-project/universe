@@ -84,6 +84,21 @@ interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
+
+export enum MessageType {
+    info = 'info',
+    warning = 'warning',
+    error = 'error',
+}
+
+export interface CommunityMessage {
+    id: string;
+    message: string;
+    isVisible: boolean;
+    createdAt: string;
+    textHtml: string;
+    type: MessageType;
+}
 //////////////////////////////////////////
 
 export interface AirdropStoreState {
@@ -97,6 +112,8 @@ export interface AirdropStoreState {
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
     pollingEnabled?: boolean;
+    orphanChainUiEnabled?: boolean;
+    communityMessages?: CommunityMessage[];
 }
 
 const initialState: AirdropStoreState = {

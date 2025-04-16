@@ -1,7 +1,9 @@
 import { useAirdropStore } from '@app/store';
 import {
     fetchAllUserData,
+    fetchCommunityMessages,
     fetchLatestXSpaceEvent,
+    fetchOrphanChainUiFeatureFlag,
     fetchPollingFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -11,25 +13,35 @@ const DEBOUNCE_DELAY = 1000; // 1 second delay
 
 export const useAirdropPolling = () => {
     const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
-    const timeoutRef = useRef<NodeJS.Timeout>();
+    const airdropTimeoutRef = useRef<NodeJS.Timeout>();
+    const featureFlagTimeoutRef = useRef<NodeJS.Timeout>();
 
     const fetchAirdropDataDebounced = useCallback(() => {
-        if (timeoutRef.current) {
-            clearTimeout(timeoutRef.current);
+        if (airdropTimeoutRef.current) {
+            clearTimeout(airdropTimeoutRef.current);
         }
-        timeoutRef.current = setTimeout(async () => {
+        airdropTimeoutRef.current = setTimeout(async () => {
+            await fetchCommunityMessages();
             await fetchAllUserData();
             await fetchLatestXSpaceEvent();
         }, DEBOUNCE_DELAY);
     }, []);
 
-    useEffect(() => {
-        fetchPollingFeatureFlag();
-        const interval = setInterval(async () => {
+    const fetchFeatureFlagDebounced = useCallback(() => {
+        if (featureFlagTimeoutRef.current) {
+            clearTimeout(featureFlagTimeoutRef.current);
+        }
+        featureFlagTimeoutRef.current = setTimeout(async () => {
+            await fetchOrphanChainUiFeatureFlag();
             await fetchPollingFeatureFlag();
         }, 1000 * 60); // Once every minute
-        return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        fetchFeatureFlagDebounced();
+        const interval = setInterval(fetchFeatureFlagDebounced, 1000 * 60); // Once every minute
+        return () => clearInterval(interval);
+    }, [fetchFeatureFlagDebounced]);
 
     useEffect(() => {
         if (!pollingEnabled) return;
@@ -41,16 +53,17 @@ export const useAirdropPolling = () => {
     }, [fetchAirdropDataDebounced, pollingEnabled]);
 
     useEffect(() => {
-        let listener: Promise<UnlistenFn>;
-        if (!pollingEnabled) {
-            listener = listen('tauri://focus', fetchPollingFeatureFlag);
-        } else {
-            listener = listen('tauri://focus', fetchAirdropDataDebounced);
+        const unlistenPromises: Promise<UnlistenFn>[] = [];
+        unlistenPromises.push(listen('tauri://focus', fetchPollingFeatureFlag));
+        if (pollingEnabled) {
+            unlistenPromises.push(listen('tauri://focus', fetchAirdropDataDebounced));
         }
         return () => {
-            listener.then((unlisten) => unlisten());
-            if (timeoutRef.current) {
-                clearTimeout(timeoutRef.current);
+            for (const unlisten of unlistenPromises) {
+                unlisten.then((unlisten) => unlisten());
+            }
+            if (airdropTimeoutRef.current) {
+                clearTimeout(airdropTimeoutRef.current);
             }
         };
     }, [fetchAirdropDataDebounced, pollingEnabled]);
