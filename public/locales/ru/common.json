@@ -1,5 +1,6 @@
 {
   "cancel": "Отмена",
+  "close": "Закрыть",
   "close-tari-universe": "Закрыть Tari Universe",
   "connection": "Соединение",
   "continue": "Продолжить",
@@ -7,6 +8,7 @@
   "critical-error": "Критическая ошибка",
   "day": "День",
   "disconnect": "Отключить",
+  "dismiss": "Dismiss",
   "hashrate": "Хэшрейт",
   "installation-problem": "Проблема при установке",
   "max-temperature": "Максимальная температура",
@@ -24,11 +26,11 @@
   "testnet": "Тестовая сеть",
   "unknown": "Неизвестно",
   "unminimize": "Увеличить",
+  "update": "Обновить",
   "usage": "Использование",
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
   "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
-  "close": "Закрыть",
-  "update": "Обновить"
+  "yes": "Yes"
 }

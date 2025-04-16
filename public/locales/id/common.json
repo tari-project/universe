@@ -1,5 +1,6 @@
 {
   "cancel": "Batal",
+  "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
   "connection": "Koneksi",
   "continue": "Lanjutkan",
@@ -7,6 +8,7 @@
   "critical-error": "Kesalahan kritis",
   "day": "Hari",
   "disconnect": "Putuskan Koneksi",
+  "dismiss": "Dismiss",
   "hashrate": "Hashrate",
   "installation-problem": "Masalah instalasi",
   "max-temperature": "Suhu maksimum",
@@ -24,11 +26,11 @@
   "testnet": "Testnet",
   "unknown": "Tidak diketahui",
   "unminimize": "Maksimalkan",
+  "update": "Perbarui",
   "usage": "Penggunaan",
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
   "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
-  "close": "Tutup",
-  "update": "Perbarui"
+  "yes": "Yes"
 }

@@ -2,7 +2,7 @@ import { create } from './create';
 import { backgroundType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
 
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'keyring'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 

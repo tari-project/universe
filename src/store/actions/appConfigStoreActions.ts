@@ -11,7 +11,7 @@ import {
 } from '../index.ts';
 import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
-import { setUITheme } from './uiStoreActions';
+import { setUITheme, setDialogToShow } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { loadTowerAnimation } from '@tari-project/tari-tower';
@@ -26,7 +26,13 @@ export const fetchAppConfig = async () => {
     try {
         const appConfig = await invoke('get_app_config');
         useAppConfigStore.setState(appConfig);
+        const noKeychain = appConfig.keyring_fallback || !appConfig.keyring_accessed;
+
+        if (noKeychain) {
+            setDialogToShow('keyring');
+        }
         const configTheme = appConfig.display_mode?.toLowerCase();
+
         if (configTheme) {
             setUITheme(configTheme as displayMode);
         }
