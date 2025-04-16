@@ -29,6 +29,7 @@ use super::{
     trait_setup_phase::SetupPhaseImpl,
 };
 use crate::{
+    commands::stop_mining,
     configs::{
         config_core::ConfigCore,
         config_mining::ConfigMining,
@@ -53,7 +54,7 @@ use tauri::{AppHandle, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex},
-    time::{interval, timeout, Interval},
+    time::{interval, timeout},
 };
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
@@ -574,31 +575,25 @@ impl SetupManager {
     }
 
     pub async fn handle_switch_to_local_node(&self) {
-        let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
-        let finished_unknown_setup = unknown_phase_status_subscriber.borrow().is_success();
-        if !finished_unknown_setup {
-            info!("Waiting for unknown setup to finish before switching to local node");
-            let mut timeout = interval(Duration::from_secs(90));
-            timeout.tick().await;
-            loop {
-                select! {
-                    _ = unknown_phase_status_subscriber.changed() => {
-                        let finished = unknown_phase_status_subscriber.borrow().is_success();
-                        if finished {
-                            info!("Pending Unknown setup has finished");
-                            break;
-                        } else {
-                            debug!("Pending Unknown setup has not finished")
-                        }
-                    }
-                    _ = timeout.tick()=> {
-                        error!("Unknown setup timed out");
-                    }
-                }
-            }
-        }
         if let Some(app_handle) = self.app_handle.lock().await.clone() {
             info!(target: LOG_TARGET, "Handle Switching to Local Node in Setup Manager");
+            let state = app_handle.state::<UniverseAppState>();
+
+            let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+            let finished_unknown_setup = unknown_phase_status_subscriber.borrow().is_success();
+            if !finished_unknown_setup {
+                info!(target: LOG_TARGET, "Waiting for unknown setup to finish before switching to local node");
+
+                if let Err(e) = timeout(
+                    Duration::from_secs(90),
+                    unknown_phase_status_subscriber.wait_for(|value| value.is_success()),
+                )
+                .await
+                {
+                    error!(target: LOG_TARGET, "Timeout waiting for unknown setup to finish: {}", e);
+                };
+            }
+
             let events_manager = &app_handle.state::<UniverseAppState>().events_manager;
             events_manager.handle_node_type_update(&app_handle).await;
 
@@ -611,6 +606,12 @@ impl SetupManager {
 
             self.setup_wallet_phase(app_handle.clone()).await;
             self.setup_unknown_phase(app_handle.clone()).await;
+            let mm_proxy_port = state
+                .mm_proxy_manager
+                .get_monero_port()
+                .await
+                .map_err(|e| e.to_string());
+            info!(target: LOG_TARGET, "Monero Proxy Port: {:?}", mm_proxy_port);
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
         }
