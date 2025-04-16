@@ -29,6 +29,7 @@ use std::time::Duration;
 use log::{error, info, warn};
 use serde::Serialize;
 use tari_common::configuration::Network;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
@@ -354,9 +355,11 @@ impl NodeManager {
         })
     }
 
-    pub async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
+    pub async fn get_connection_details(
+        &self,
+    ) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
         let current_adapter = self.current_adapter.read().await;
-        current_adapter.get_connection_address().await
+        current_adapter.get_connection_details().await
     }
 
     pub async fn get_grpc_address(&self) -> Result<String, anyhow::Error> {

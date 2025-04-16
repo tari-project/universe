@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 use tokio_util::task::TaskTracker;
@@ -115,27 +116,28 @@ impl NodeAdapter for RemoteNodeAdapter {
         log::info!(target: LOG_TARGET, "RemoteNodeAdapter doesn't use tor_control_port");
     }
 
-    async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
+    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
         let node_service = self.get_service();
         if let Some(node_service) = node_service {
             let node_identity = node_service.get_identity().await?;
+            let public_key = node_identity.public_key.clone();
 
             if self.use_tor {
                 for address in &node_identity.public_addresses {
                     if address.contains("/onion") {
-                        return Ok(address.clone());
+                        return Ok((public_key, address.clone()));
                     }
                 }
                 return Err(anyhow::anyhow!("No onion address found for remote node"));
             } else {
                 for address in &node_identity.public_addresses {
                     if address.starts_with("/ip4/") {
-                        return Ok(address.clone());
+                        return Ok((public_key, address.clone()));
                     }
                 }
                 for address in &node_identity.public_addresses {
                     if address.starts_with("/ip6/") {
-                        return Ok(address.clone());
+                        return Ok((public_key, address.clone()));
                     }
                 }
                 // If we got here, no suitable address was found
