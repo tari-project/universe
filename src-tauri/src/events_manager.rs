@@ -264,7 +264,11 @@ impl EventsManager {
         let node_manager = &app.state::<UniverseAppState>().node_manager;
         let node_type = node_manager.get_node_type().await.ok();
         let node_identity = node_manager.get_identity().await.ok();
-        let node_connection_address = node_manager.get_connection_address().await.ok();
+        let node_connection_address = node_manager
+            .get_connection_details()
+            .await
+            .ok()
+            .map(|(_, address)| address);
         let payload = NodeTypeUpdatePayload {
             node_type,
             node_identity,

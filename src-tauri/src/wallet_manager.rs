@@ -106,10 +106,9 @@ impl WalletManager {
             return Ok(());
         }
 
-        let node_identity = self.node_manager.get_identity().await?;
-        let node_connection_address = self.node_manager.get_connection_address().await?;
-        process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address = Some(node_connection_address);
+        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        process_watcher.adapter.base_node_public_key = Some(public_key.clone());
+        process_watcher.adapter.base_node_address = Some(public_address.clone());
         process_watcher.adapter.use_tor(use_tor);
 
         process_watcher

@@ -36,6 +36,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 use tari_common::configuration::Network;
+use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
 use tokio::sync::watch;
 
@@ -127,8 +128,15 @@ impl NodeAdapter for LocalNodeAdapter {
         self.get_service()
     }
 
-    async fn get_connection_address(&self) -> Result<String, anyhow::Error> {
-        Ok(self.tcp_address())
+    async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error> {
+        let node_service = self.get_service();
+        if let Some(node_service) = node_service {
+            let node_identity = node_service.get_identity().await?;
+            let public_key = node_identity.public_key.clone();
+            Ok((public_key, self.tcp_address()))
+        } else {
+            Err(anyhow::anyhow!("Remote node service is not available"))
+        }
     }
 
     fn use_tor(&mut self, use_tor: bool) {
