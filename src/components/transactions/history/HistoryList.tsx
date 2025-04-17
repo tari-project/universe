@@ -55,7 +55,7 @@ const HistoryList = memo(function HistoryList() {
         );
     }, [combinedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
 
-    const scanningMarkup = walletScanning.is_scanning ? (
+    const baseMarkup = walletScanning.is_scanning ? (
         <Typography variant="h6" style={{ textAlign: 'left' }}>
             {walletScanning.is_scanning && walletScanning.total_height > 0
                 ? t('wallet-scanning-with-progress', {
@@ -65,7 +65,9 @@ const HistoryList = memo(function HistoryList() {
                   })
                 : t('wallet-is-scanning')}
         </Typography>
-    ) : null;
+    ) : (
+        listMarkup
+    );
 
     const isEmpty = !walletScanning.is_scanning && !is_transactions_history_loading && !combinedTransactions?.length;
     const emptyMarkup = isEmpty ? <Typography variant="h6">{t('empty-tx')}</Typography> : null;
@@ -73,8 +75,7 @@ const HistoryList = memo(function HistoryList() {
     return (
         <ListWrapper id="list">
             {emptyMarkup}
-            {scanningMarkup}
-            {listMarkup}
+            {baseMarkup}
         </ListWrapper>
     );
 });
