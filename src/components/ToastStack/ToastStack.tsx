@@ -1,13 +1,13 @@
 import { memo, useCallback, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { Toast } from './Toast/Toast';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useToastStore } from './useToastStore';
-import { useAppStateStore } from '@app/store/appStateStore';
+import { Toast } from './Toast/Toast';
 import { Inside, Wrapper } from './styles';
 
 const ToastStack = memo(function ToastStack() {
     const { toasts } = useToastStore();
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
     const [isHovered, setIsHovered] = useState(false);
 
     const handleMouseEnter = useCallback(() => {

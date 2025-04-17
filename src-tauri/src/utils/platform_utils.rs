@@ -20,7 +20,21 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#[cfg(target_os = "macos")]
+use super::macos_utils::is_app_in_applications_folder;
+
+#[cfg(target_os = "windows")]
+use crate::external_dependencies::ExternalDependencies;
+
+#[cfg(not(target_os = "linux"))]
+use crate::events_manager::EventsManager;
+#[cfg(not(target_os = "linux"))]
+use crate::UniverseAppState;
+#[cfg(not(target_os = "linux"))]
+use anyhow::anyhow;
 use std::fmt::Display;
+#[cfg(not(target_os = "linux"))]
+use tauri::Manager;
 
 #[derive(Clone)]
 pub enum CurrentOperatingSystem {
@@ -51,5 +65,76 @@ impl PlatformUtils {
         } else {
             panic!("Unsupported OS");
         }
+    }
+
+    pub async fn initialize_preqesities(app_handle: tauri::AppHandle) -> Result<(), anyhow::Error> {
+        let current_os = PlatformUtils::detect_current_os();
+        match current_os {
+            CurrentOperatingSystem::Windows => {
+                #[cfg(target_os = "windows")]
+                PlatformUtils::initialize_windows_preqesities(app_handle).await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::Linux => {
+                #[cfg(target_os = "linux")]
+                PlatformUtils::initialize_linux_preqesities(app_handle).await?;
+                Ok(())
+            }
+            CurrentOperatingSystem::MacOS => {
+                #[cfg(target_os = "macos")]
+                PlatformUtils::initialize_macos_preqesities(app_handle).await?;
+                Ok(())
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    async fn initialize_macos_preqesities(
+        app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        if !cfg!(dev) && !is_app_in_applications_folder() {
+            EventsManager::handle_critical_problem(
+                &app_handle,
+                None,
+                Some("not-installed-in-applications-directory".to_string()),
+            )
+            .await;
+            return Err(anyhow!(
+                "App is not installed in the Applications directory"
+            ));
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "windows")]
+    async fn initialize_windows_preqesities(
+        app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        if cfg!(target_os = "windows") && !cfg!(dev) {
+            ExternalDependencies::current()
+                .read_registry_installed_applications()
+                .await?;
+            let is_missing = ExternalDependencies::current()
+                .check_if_some_dependency_is_not_installed()
+                .await;
+            if is_missing {
+                EventsManager::handle_missing_application_files(
+                    &app_handle,
+                    ExternalDependencies::current()
+                        .get_external_dependencies()
+                        .await,
+                )
+                .await;
+                return Err(anyhow!("Missing required dependencies"));
+            }
+        }
+        Ok(())
+    }
+
+    #[cfg(target_os = "linux")]
+    async fn initialize_linux_preqesities(
+        _app_handle: tauri::AppHandle,
+    ) -> Result<(), anyhow::Error> {
+        Ok(())
     }
 }

@@ -1,4 +1,5 @@
 {
+  "back": "Back",
   "cancel": "Batal",
   "close": "Tutup",
   "close-tari-universe": "Tutup Tari Universe",
@@ -16,9 +17,11 @@
   "mode": "Mode",
   "not-installed-in-applications-directory": "Ups! Tari Universe perlu berada di direktori Aplikasi. Apakah Anda keberatan menginstalnya di sana?",
   "please-try-again-later": "Silakan coba lagi nanti. Jika masalah berlanjut, silakan hubungi kami.",
+  "received": "Received",
   "resources": "Sumber daya",
   "restart": "Mulai Ulang",
   "seconds": "detik",
+  "sent": "Sent",
   "shutting-down": "Mematikan..",
   "submit": "Kirim",
   "tari-universe": "Tari Universe",

@@ -1,4 +1,5 @@
 {
+  "back": "Back",
   "cancel": "Annuler",
   "close": "Fermer",
   "close-tari-universe": "Fermer le Tari Universe",
@@ -16,9 +17,11 @@
   "mode": "Mode",
   "not-installed-in-applications-directory": "Oups ! Tari Universe doit être dans le répertoire Applications. Pourriez-vous l\"installer là-bas ?",
   "please-try-again-later": "Réessaye plus tard s'il te plaît. Si le problème persiste, contacte-nous s'il te plaît.",
+  "received": "Received",
   "resources": "Ressources",
   "restart": "Redémarrer",
   "seconds": "secondes",
+  "sent": "Sent",
   "shutting-down": "Arrêt...",
   "submit": "Envoyer",
   "tari-universe": "Univers Tari",

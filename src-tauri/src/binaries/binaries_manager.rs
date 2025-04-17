@@ -28,7 +28,7 @@ use tari_common::configuration::Network;
 
 use crate::{
     download_utils::{download_file_with_retries, extract, validate_checksum},
-    progress_tracker::ProgressTracker,
+    progress_tracker_old::ProgressTracker,
 };
 
 use super::{
