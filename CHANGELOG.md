@@ -1,3 +1,36 @@
+🚀 TARI UNIVERSE v0.9.90x “RC1” — The Surge of Soon
+
+_April 17, 2025_
+
+Hey fam 👋,
+
+We’re excited to drop the BIGGEST update we’ve ever released 💥
+
+Introducing “The Surge of Soon,” the first release candidate of Tari Universe (v0.9.90). This release of Tari Universe is groundbreaking. One of the most significant sources of feedback contributors receive from the Tari community is related to the startup and initialization of Tari Universe. There are three primary problems with our current startup process:
+
+You can’t access settings, sign into airdrop, or do anything else while the app is starting up
+It can take up to 3 hours for a new user to be able to start mining
+
+Many community members aren’t able to load the app at all due to a wide range of errors that occur during the startup process
+
+The Surge of Soon solves these mission-critical issues. You can now access settings ⚙️ and sign into airdrop 🎁 while the app loads. And all Tari Universe users will be able to go from launching the app to mining in 120 seconds or less 🏎️🏁
+
+How does it work? 🧙‍♂️🔧
+
+🔁 When you open the app, Tari Universe now starts immediately mining using a remote node
+📡 A newly rewritten sync process runs in the background (check the Connections subtab for progress).
+⚡ Once your local node is fully synced, the app automatically switches over to mining using your local node
+
+This remote node setup is a big deal because it allows Tari Universe to fulfill its promise of being the easiest way for anyone to earn crypto and get on-chain. At the same time, Tari miners will still become full nodes for the network, which helps the Tari network from a decentralization and reliability point of view. Local nodes are also more efficient and, therefore, enable better mining performance. 
+
+TL;DR
+⏱️ Remote mining gets you started in 120 seconds or less
+🏆 Local mining keeps you ahead in the long run
+
+Thank you to everyone in the Tari community for all of your support and for sharing so much great feedback. We are very lucky to have the opportunity to contribute to Tari with you. This release of Tari Universe brings us even closer to our first mainnet release. Tari mainnet, as you may expect, is coming Soon™ 💜🐢
+
+--
+
 🌟 TARI UNIVERSE v0.9.841 — The Shell Stirs
 
 _April 9, 2025_
