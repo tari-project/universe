@@ -49,16 +49,6 @@ const LOG_TARGET: &str = "tari::universe::events_manager";
 pub struct EventsManager;
 
 impl EventsManager {
-    pub async fn handle_internal_wallet_loaded_or_created(app: &AppHandle) {
-        let wallet_address = app
-            .state::<UniverseAppState>()
-            .tari_address
-            .read()
-            .await
-            .clone();
-        EventsEmitter::emit_wallet_address_update(app, wallet_address).await;
-    }
-
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
         let app_clone = app.clone();
         let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
