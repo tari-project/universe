@@ -27,18 +27,28 @@ export const HoverWrapper = styled(m.div)`
 `;
 
 export const ContentWrapper = styled.div`
-    padding: 12px;
-    display: grid;
-    place-items: stretch;
-    justify-content: stretch;
     width: 100%;
-    grid-template-areas:
-        'status title . earnings'
-        'status time . earnings';
-    grid-template-columns: auto 1fr auto 1fr;
+    padding: 0 12px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+`;
+
+export const Content = styled.div`
+    display: flex;
+    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    height: 100%;
+`;
+
+export const BlockInfoWrapper = styled.div`
+    display: flex;
+    flex-direction: column;
 `;
 export const StatusWrapper = styled.div`
-    grid-area: status;
     display: flex;
     align-items: center;
     margin-right: 8px;
@@ -53,7 +63,7 @@ export const CircularProgressWrapper = styled.div`
 export const TitleWrapper = styled(Typography)`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
-    grid-area: title;
+
     font-size: 12px;
     font-weight: 500;
     line-height: 1.3;
@@ -61,13 +71,12 @@ export const TitleWrapper = styled(Typography)`
 `;
 export const TimeWrapper = styled(Typography)`
     display: flex;
-    grid-area: time;
+
     font-size: 11px;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
 export const ValueWrapper = styled.div`
     display: flex;
-    grid-area: earnings;
     gap: 3px;
     font-weight: 500;
     justify-content: flex-end;
@@ -78,7 +87,7 @@ export const Chip = styled.div`
     text-align: center;
     font-size: 9px;
     font-weight: 700;
-    align-self: stretch;
+    align-self: center;
     justify-content: center;
     align-items: center;
     border-radius: 50px;
@@ -96,6 +105,7 @@ export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
 
 export const ValueChangeWrapper = styled.div<{ $isPositiveValue?: boolean }>`
     display: flex;
+    line-height: 11px;
     color: ${({ theme, $isPositiveValue }) =>
         $isPositiveValue ? theme.palette.success.main : theme.palette.error.main};
 `;
