@@ -20,35 +20,45 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf, sync::Arc, time::Duration};
 
 use anyhow::Error;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::{Receiver, Sender};
 
-use crate::progress_trackers::ProgressStepper;
+use crate::{progress_trackers::ProgressStepper, tasks_tracker::TaskTrackerUtil};
 
-use super::setup_manager::PhaseStatus;
+use super::setup_manager::{PhaseStatus, SetupPhase};
+
+#[derive(Clone)]
+pub struct SetupConfiguration {
+    pub listeners_for_required_phases_statuses: Vec<Receiver<PhaseStatus>>,
+    pub setup_timeout_duration: Option<Duration>,
+    pub soft_retires: Option<u8>,
+    pub hard_retires: Option<u8>,
+}
 
 pub trait SetupPhaseImpl {
     type AppConfiguration: Clone + Default;
     type SetupOutput: Clone + Default + Send + Sync;
 
-    async fn new(app_handle: AppHandle) -> Self;
+    async fn new(
+        app_handle: AppHandle,
+        task_tracker_util: TaskTrackerUtil,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self;
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
     async fn hard_reset(&self) -> Result<(), Error>;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
-    async fn setup(
-        self: Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    );
+    async fn setup(self: Arc<Self>);
     async fn setup_inner(&self) -> Result<Option<Self::SetupOutput>, Error>;
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
         payload: Option<Self::SetupOutput>,
     ) -> Result<(), Error>;
+    fn get_phase_id() -> SetupPhase;
     fn get_app_handle(&self) -> &AppHandle;
     fn get_app_dirs(&self) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
         let data_dir = self

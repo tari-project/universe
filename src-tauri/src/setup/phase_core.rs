@@ -42,12 +42,15 @@ use crate::{
         ProgressSetupCorePlan, ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::TasksTrackers,
+    tasks_tracker::{TaskTrackerUtil, TasksTrackers},
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
 };
 
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use super::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+};
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
@@ -65,19 +68,30 @@ pub struct CoreSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
+    setup_configuration: SetupConfiguration,
+    task_tracker_util: TaskTrackerUtil,
+    status_sender: Sender<PhaseStatus>,
 }
 
 impl SetupPhaseImpl for CoreSetupPhase {
     type AppConfiguration = CoreSetupPhaseAppConfiguration;
     type SetupOutput = CoreSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle) -> Self {
+    async fn new(
+        app_handle: AppHandle,
+        task_tracker_util: TaskTrackerUtil,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(app_handle)),
             app_configuration: CoreSetupPhase::load_app_configuration()
                 .await
                 .unwrap_or_default(),
+            setup_configuration: configuration,
+            status_sender,
+            task_tracker_util,
         }
     }
 

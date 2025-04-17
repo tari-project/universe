@@ -27,6 +27,7 @@ use super::{
     phase_unknown::UnknownSetupPhase,
     phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl,
+    utils::phase_builder::PhaseBuilder,
 };
 use crate::{
     configs::{
@@ -40,7 +41,7 @@ use crate::{
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
-    tasks_tracker::TasksTrackers,
+    tasks_tracker::{TaskTrackerUtil, TasksTrackers},
     utils::system_status::SystemStatus,
     UniverseAppState,
 };
@@ -49,6 +50,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
     sync::{Arc, LazyLock},
+    time::Duration,
 };
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -82,6 +84,16 @@ impl Display for SetupPhase {
 }
 
 impl SetupPhase {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SetupPhase::Core => "Core",
+            SetupPhase::Wallet => "Wallet",
+            SetupPhase::Hardware => "Hardware",
+            SetupPhase::Node => "Node",
+            SetupPhase::Unknown => "Unknown",
+        }
+    }
+
     pub fn all() -> Vec<SetupPhase> {
         vec![
             SetupPhase::Core,
@@ -295,10 +307,13 @@ impl SetupManager {
     }
 
     async fn setup_core_phase(&self, app_handle: AppHandle) {
-        let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
-        core_phase_setup
-            .setup(self.core_phase_status.clone(), vec![])
+        let core_phase_setup = PhaseBuilder::new()
+            .with_soft_retires(3)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
             .await;
+        let core_phase_setup = Arc::new(core_phase_setup);
+        core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
