@@ -93,6 +93,7 @@ export const Chip = styled.div`
     text-transform: uppercase;
     border-radius: 50px;
     background-color: ${({ theme }) => theme.colors.green[700]};
+    color: #fff; // no theming needed,should always be white
     height: 14px;
     padding: 0 7px;
 `;
