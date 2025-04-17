@@ -51,6 +51,7 @@ use tokio::{
     select,
     sync::{watch::Sender, Mutex},
 };
+use tokio_util::sync::CancellationToken;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
@@ -157,8 +158,8 @@ pub struct SetupManager {
     is_mining_unlocked: Mutex<bool>,
     is_initial_setup_finished: Mutex<bool>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
-    pub hardware_phase_output: Sender<HardwareSetupPhaseOutput>,
     app_handle: Mutex<Option<AppHandle>>,
+    cancellation_token: Mutex<CancellationToken>,
 }
 
 impl SetupManager {
@@ -266,6 +267,8 @@ impl SetupManager {
         let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
         let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
 
+        let cacellation_token = self.cancellation_token.lock().await.clone();
+
         TasksTrackers::current()
             .common
             .get_task_tracker()
@@ -353,6 +356,10 @@ impl SetupManager {
                     }
 
                         select! {
+                        _ = cacellation_token.cancelled() => {
+                            info!(target: LOG_TARGET, "Cancellation token triggered, exiting unlock conditions loop");
+                            break;
+                        }
                         _ = shutdown_signal.wait() => { break; }
                         _ = core_phase_status_subscriber.changed() => { continue; }
                         _ = hardware_phase_status_subscriber.changed() => { continue; }
@@ -365,6 +372,10 @@ impl SetupManager {
     }
 
     async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
+        // As we are shutting down the phases one by one which could lead to unwanted unlocks
+        self.cancellation_token.lock().await.cancel();
+
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
@@ -401,6 +412,9 @@ impl SetupManager {
                 }
             }
         }
+
+        *self.cancellation_token.lock().await = CancellationToken::new();
+        self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
