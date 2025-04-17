@@ -52,6 +52,7 @@ use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
+use futures_util::TryFutureExt;
 use keyring::Entry;
 use log::{debug, error, info, warn};
 use monero_address_creator::Seed as MoneroSeed;
@@ -1453,15 +1454,17 @@ pub async fn start_mining<'r>(
         info!(target: LOG_TARGET, "1. Starting gpu miner");
 
         let source = if p2pool_enabled {
-            let p2pool_port = state.p2pool_manager.grpc_port().await;
-            GpuNodeSource::P2Pool { port: p2pool_port }
+            let use_local = state.node_manager.is_local_current().await.unwrap_or(false);
+            let grpc_address = state.p2pool_manager.get_grpc_address(use_local).await;
+            GpuNodeSource::P2Pool {
+                grpc_address: grpc_address.to_string(),
+            }
         } else {
             let grpc_address = state
                 .node_manager
                 .get_grpc_address()
                 .await
                 .map_err(|e| e.to_string())?;
-
             GpuNodeSource::BaseNode {
                 grpc_address: grpc_address.to_string(),
             }

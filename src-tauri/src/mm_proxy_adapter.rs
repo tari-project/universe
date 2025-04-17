@@ -44,7 +44,7 @@ pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
     pub base_node_grpc_address: String,
-    pub p2pool_grpc_port: u16,
+    pub p2pool_node_grpc_address: String,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
     pub use_monero_fail: bool,
@@ -57,9 +57,9 @@ impl MergeMiningProxyConfig {
         self.base_node_grpc_address = grpc_address;
     }
 
-    pub fn set_to_use_p2pool(&mut self, port: u16) {
+    pub fn set_to_use_p2pool(&mut self, grpc_address: String) {
         self.p2pool_enabled = true;
-        self.p2pool_grpc_port = port;
+        self.p2pool_node_grpc_address = grpc_address;
     }
 }
 
@@ -161,7 +161,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             args.push("-p".to_string());
             args.push(format!(
                 "merge_mining_proxy.p2pool_node_grpc_address={}",
-                format!("http://127.0.0.1:{}", config.p2pool_grpc_port)
+                config.p2pool_node_grpc_address
             ));
         }
 

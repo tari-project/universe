@@ -206,14 +206,14 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
 
+        let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
         if self.app_configuration.p2pool_enabled {
             progress_stepper
                 .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
                 .await;
 
-            let base_node_grpc = state.node_manager.get_grpc_address().await?;
             let p2pool_config = P2poolConfig::builder()
-                .with_base_node(base_node_grpc)
+                .with_base_node(base_node_grpc_address.clone())
                 .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
                 .with_cpu_benchmark_hashrate(Some(
                     state.cpu_miner.read().await.benchmarked_hashrate,
@@ -236,13 +236,16 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .await;
 
-        let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
-        let p2pool_port = state.p2pool_manager.grpc_port().await;
+        let use_local_p2pool_node = state.node_manager.is_local_current().await.unwrap_or(false);
+        let p2pool_node_grpc_address = state
+            .p2pool_manager
+            .get_grpc_address(use_local_p2pool_node)
+            .await;
         state
             .mm_proxy_manager
             .start(StartConfig {
                 base_node_grpc_address,
-                p2pool_port,
+                p2pool_node_grpc_address,
                 base_path: data_dir.clone(),
                 config_path: config_dir.clone(),
                 log_path: log_dir.clone(),
