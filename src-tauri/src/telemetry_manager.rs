@@ -30,6 +30,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node::node_adapter::BaseNodeStatus;
+use crate::node::node_manager::NodeManager;
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
@@ -207,6 +208,7 @@ pub struct TelemetryManager {
     p2pool_status: watch::Receiver<Option<P2poolStats>>,
     tor_status: watch::Receiver<Option<TorStatus>>,
     process_stats_collector: ProcessStatsCollector,
+    node_manager: NodeManager,
 }
 
 impl TelemetryManager {
@@ -220,6 +222,7 @@ impl TelemetryManager {
         p2pool_status: watch::Receiver<Option<P2poolStats>>,
         tor_status: watch::Receiver<Option<TorStatus>>,
         process_stats_collector: ProcessStatsCollector,
+        node_manager: NodeManager,
     ) -> Self {
         let cancellation_token = CancellationToken::new();
         Self {
@@ -232,6 +235,7 @@ impl TelemetryManager {
             p2pool_status,
             tor_status,
             process_stats_collector,
+            node_manager,
         }
     }
 
@@ -304,6 +308,7 @@ impl TelemetryManager {
         let network = self.node_network;
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
+        let node_manager = self.node_manager.clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = interval(timeout);
 
@@ -319,7 +324,7 @@ impl TelemetryManager {
                         if allow_telemetry {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
-                                &tor_status, network, uptime, &stats_collector).await;
+                                &tor_status, network, uptime, &stats_collector, &node_manager).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
                         }
@@ -350,6 +355,7 @@ async fn get_telemetry_data(
     network: Option<Network>,
     started: Instant,
     stats_collector: &ProcessStatsCollector,
+    node_manager: &NodeManager,
 ) -> Result<TelemetryData, TelemetryManagerError> {
     let BaseNodeStatus {
         block_height,
@@ -447,6 +453,11 @@ async fn get_telemetry_data(
 
     let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
+    let is_orphan = node_manager
+        .check_if_is_orphan_chain(false)
+        .await
+        .unwrap_or(false);
+    extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
         ConfigMining::content()

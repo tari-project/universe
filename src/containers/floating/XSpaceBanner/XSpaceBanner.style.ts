@@ -10,9 +10,10 @@ export const BannerContent = styled(m.div)`
     z-index: 99999;
     display: flex;
     align-items: center;
-    padding: 0.3rem 0.3rem;
-    border-radius: 9999px;
-    max-width: 30rem;
+    padding: 8px 10px;
+    border-radius: 15px;
+    max-width: 243px;
+    height: 54px;
     background-color: #000;
     color: #fff;
     cursor: pointer;
@@ -26,9 +27,7 @@ export const BannerContent = styled(m.div)`
 export const FlexWrapper = styled(m.div)`
     display: flex;
     align-items: center;
-    gap: 12px;
-    row-gap: 12px;
-    column-gap: 12px;
+    overflow: hidden;
 `;
 
 export const IconContainer = styled(m.div)`
@@ -36,9 +35,28 @@ export const IconContainer = styled(m.div)`
     align-items: center;
     justify-content: center;
     background-color: white;
-    border-radius: 9999px;
-    padding: 0.5rem;
-    font-size: 0.875rem;
+    border-radius: 8px;
+    width: 38px;
+    height: 38px;
+`;
+
+export const DateLabel = styled(m.span)`
+    color: #ffffffb2;
+    font-family: Poppins;
+    font-weight: 500;
+    font-size: 11px;
+    leading-trim: Cap height;
+    line-height: 17px;
+    letter-spacing: 1%;
+`;
+
+export const ContentContainer = styled(m.div)`
+    display: flex;
+    gap: 2px;
+    flex-direction: column;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
 `;
 
 export const TitleContainer = styled(m.div)`
@@ -48,15 +66,37 @@ export const TitleContainer = styled(m.div)`
     row-gap: 12px;
     overflow: hidden;
     text-overflow: ellipsis;
+    position: relative;
+    &::before,
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 20px;
+        z-index: 2;
+        pointer-events: none;
+    }
+    &::before {
+        left: 0;
+        background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    }
+    &::after {
+        right: 0;
+        background: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+    }
 `;
 
 export const Title = styled(m.span)`
-    font-weight: 500;
     white-space: nowrap;
-    max-width: 200px;
+    max-width: 168px;
     min-width: 100px;
-    font-size: 0.875rem;
     width: 100%;
+    font-family: Poppins;
+    font-weight: 500;
+    font-size: 12px;
+    line-height: 17px;
+    letter-spacing: 1%;
 `;
 
 export const LiveBadgeWrapper = styled(m.div)`
@@ -64,28 +104,41 @@ export const LiveBadgeWrapper = styled(m.div)`
     justify-content: space-evenly;
     align-items: center;
     background-color: #ef4444;
-    padding: 4px 12px;
-    border-radius: 9999px;
-    font-size: 0.875rem;
+    padding: 1px 7px;
+    border-radius: 12px;
     gap: 12px;
 `;
 
 export const LiveBadgeText = styled(m.div)`
-    font-weight: 700;
+    font-family: Poppins;
+    font-weight: 600;
+    font-size: 10px;
+    leading-trim: Cap height;
+    line-height: 17px;
+    letter-spacing: 1%;
 `;
 
-export const LiveBadgePoint = styled(m.div)`
-    background-color: white;
-    border-radius: 9999px;
-    width: 0.725rem;
-    height: 0.725rem;
+export const LiveWrapper = styled(m.div)`
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    row-gap: 12px;
+    column-gap: 12px;
 `;
 
-export const TimeBadge = styled(m.div)`
-    background-color: white;
-    color: black;
-    font-weight: 1000;
-    padding: 4px 12px;
-    border-radius: 9999px;
-    font-size: 0.875rem;
+export const JoinSpaceWrapper = styled(m.div)`
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: 30px;
+    border: 1px solid #ffffff33;
+    padding: 0px 5px;
+    font-family: Poppins;
+    font-weight: 600;
+    font-size: 10px;
+    leading-trim: Cap height;
+    line-height: 17px;
+    letter-spacing: 1%;
 `;

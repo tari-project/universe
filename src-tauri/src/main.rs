@@ -1052,6 +1052,7 @@ fn main() {
         p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
         stats_collector.build(),
+        node_manager.clone(),
     );
 
     let updates_manager = UpdatesManager::new();
