@@ -21,11 +21,8 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{
-    phase_core::CoreSetupPhase,
-    phase_hardware::{HardwareSetupPhase, HardwareSetupPhaseOutput},
-    phase_node::NodeSetupPhase,
-    phase_unknown::UnknownSetupPhase,
-    phase_wallet::WalletSetupPhase,
+    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
+    phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
     trait_setup_phase::SetupPhaseImpl,
 };
 use crate::{
