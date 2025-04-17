@@ -29,7 +29,7 @@
   "debug-info": "Déboguer",
   "disconnect": "Se déconnecter de l\"Airdrop",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Échec de la récupération des ponts Tor. Vérifiez votre connexion Internet ou réessayez plus tard.",
     "invalid-bridge": "La configuration du pont est invalide",
     "invalid-control-port": "La configuration du port de contrôle est invalide"
   },
@@ -57,7 +57,7 @@
   "inviteCode": "Code d\"invitation",
   "is-on-orphan-chain": "Vous semblez être connecté à une branche secondaire, et non à la chaîne principale. Tout bloc que vous gagnez pourrait être invalidé.",
   "last-block-added-time": "Heure du dernier bloc ajouté à la chaîne",
-  "local-node-sync-progress": "Local node syncing progress",
+  "local-node-sync-progress": "Progression de la synchronisation du nœud local",
   "logs": "Journaux",
   "low-hash-rate-warning": "Votre hashrate est très bas. Essayez de fermer toutes les applications sauf Tari Universe",
   "mine-on-app-start": {
@@ -66,7 +66,7 @@
   },
   "miners": "Mineurs",
   "mining-toggle-warning": "Le minage sera suspendu pendant que les modifications prennent effet.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Nœud Minotari",
   "monero-address": {
     "placeholder": "Entrez l\"adresse Monero",
     "title": "Adresse Monero"
@@ -74,9 +74,9 @@
   "monero-seed-words": "Mots de récupération Monero",
   "network": "Réseau",
   "no-entry-guard": "Aucun Entry Guard connecté !",
-  "node-connection-address": "Connection address",
-  "node-public-address": "Public address",
-  "node-public-key": "Public key",
+  "node-connection-address": "Adresse de connexion",
+  "node-public-address": "Adresse publique",
+  "node-public-key": "Clé publique",
   "node-type": "Type",
   "not-connected-to-tari": "Non connecté au réseau Tari",
   "open-logs-directory": "Ouvrir le répertoire des journaux",
