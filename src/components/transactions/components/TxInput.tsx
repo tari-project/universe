@@ -15,7 +15,7 @@ import { AnimatePresence } from 'motion/react';
 
 type TxInputBase = Omit<InputHTMLAttributes<HTMLInputElement>, 'name'>;
 export interface TxInputProps extends TxInputBase {
-    value: string;
+    value?: string | number;
     onChange: (e: ChangeEvent<HTMLInputElement>) => void;
     onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
     name: string;
@@ -77,7 +77,6 @@ export function TxInput({
                     ref={ref}
                     id={name}
                     name={name}
-                    type="text"
                     value={displayValue}
                     onChange={onChange}
                     onBlur={handleBlur}

@@ -66,7 +66,7 @@ use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddressFeatures;
-use tari_core::transactions::tari_amount::MicroMinotari;
+use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
@@ -1736,9 +1736,24 @@ pub fn verify_address_for_send(
 }
 
 #[tauri::command]
-pub fn format_micro_minotari(amount: String) -> Result<String, String> {
-    let mm_amount = MicroMinotari::from_str(&amount).map_err(|e| e.to_string())?;
-    Ok(format!("{}", mm_amount))
+pub fn validate_minotari_amount(
+    amount: String,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), InvokeError> {
+    let t_amount = Minotari::from_str(&amount).map_err(|e| e.to_string())?;
+    let m_amount = MicroMinotari::from(t_amount);
+
+    let balance = state
+        .wallet_state_watch_rx
+        .borrow()
+        .clone()
+        .and_then(|state| state.balance);
+
+    let available_balance = balance.expect("Could not get balance").available_balance;
+    match m_amount.cmp(&available_balance) {
+        std::cmp::Ordering::Less => Ok(()),
+        _ => Err(InvokeError::from("Insufficient balance".to_string())),
+    }
 }
 
 #[tauri::command]
