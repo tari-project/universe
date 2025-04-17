@@ -5,6 +5,7 @@ import {
     PortalCopy,
     PortalWrapper,
     TopArea,
+    WalletAddress,
     WalletConnectHeader,
     WalletConnectionOverlay,
     WalletConnectionsContainer,
@@ -13,6 +14,8 @@ import '@reown/appkit-wallet-button/react';
 import { useWalletStore } from '@app/store';
 import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions';
 import { WagmiProvider } from 'wagmi';
+import { useDisconnect } from '@reown/appkit/react';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { wagmiAdapter } from './wagmi.config';
 import { CrossIcon } from '@app/components/svgs/crossIconSvg';
@@ -29,6 +32,7 @@ const queryClient = new QueryClient();
 export const WalletConnections = () => {
     const walletConnectionsModalIsOpen = useWalletStore((state) => state.wallet_connect_modal_open);
     const { allAccounts } = useAppKitAccount({ namespace: 'eip155' });
+    const { disconnect } = useDisconnect();
     const { connect } = useAppKitWallet({
         onSuccess() {
             // ...
@@ -58,7 +62,7 @@ export const WalletConnections = () => {
                                 exit={{ opacity: 0, y: -100 }}
                             >
                                 <TopArea>
-                                    <IconContainer>
+                                    <IconContainer onClick={() => setWalletConnectModalOpen(false)}>
                                         <CrossIcon />
                                     </IconContainer>
                                 </TopArea>
@@ -67,8 +71,9 @@ export const WalletConnections = () => {
                                 ) : (
                                     <>
                                         <WalletConnectHeader>{'Connected Wallets'}</WalletConnectHeader>
+                                        <button onClick={() => disconnect({})}>{'Disconnect'}</button>
                                         {allAccounts.map((account) => (
-                                            <TopArea key={account.address}>{account.address}</TopArea>
+                                            <WalletAddress key={account.address}>{account.address}</WalletAddress>
                                         ))}
                                     </>
                                 )}
@@ -86,7 +91,7 @@ export const WalletConnections = () => {
                                         <span>{'Metamask'}</span>
                                     </button>
                                     <Divider />
-                                    <button onClick={() => connect('phantom')}>
+                                    <button onClick={() => connect('walletConnect')}>
                                         <img src={Phantom} alt="Phantom" />
                                         <span>{'Phantom'}</span>
                                     </button>

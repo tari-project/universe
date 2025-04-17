@@ -44,6 +44,7 @@ export const TopArea = styled.div`
 `;
 
 export const IconContainer = styled.div`
+    cursor: pointer;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -123,4 +124,12 @@ export const PortalCopy = styled.div`
         color: rgba(0, 0, 0, 0.5);
         margin: 0;
     }
+`;
+
+export const WalletAddress = styled.div`
+    ellipsis: true;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 80%;
 `;
