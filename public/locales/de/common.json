@@ -1,5 +1,6 @@
 {
   "cancel": "Abbrechen",
+  "close": "Schließen",
   "close-tari-universe": "Tari Universe schließen",
   "connection": "Verbindung",
   "continue": "Fortsetzen",
@@ -9,6 +10,7 @@
   "disconnect": "Trennen",
   "hashrate": "Hashrate",
   "installation-problem": "Installationsproblem",
+  "join_the_space": "Dem Space beitreten",
   "max-temperature": "Maximaltemperatur",
   "minimize": "Minimieren",
   "mode": "Modus",
@@ -24,11 +26,10 @@
   "testnet": "Testnet",
   "unknown": "Unbekannt",
   "unminimize": "Wiederherstellen",
+  "update": "Aktualisieren",
   "usage": "Nutzung",
   "utilization": "Auslastung",
   "version": "Version",
   "versions": "Versionen",
-  "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert.",
-  "close": "Schließen",
-  "update": "Aktualisieren"
+  "webgl-not-supported": "WebGL wird nicht unterstützt. Visueller Modus deaktiviert."
 }
