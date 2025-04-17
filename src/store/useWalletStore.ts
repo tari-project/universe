@@ -59,10 +59,10 @@ export const useWalletStore = create<WalletStoreState>()(() => ({
 }));
 
 // Temporary solution until we use excess_sig to track pending transactions
-export const addPendingTransaction = (payload: { amount: string; destination: string; paymentId: string }) => {
+export const addPendingTransaction = (payload: { amount: number; destination: string; paymentId: string }) => {
     const transaction: PendingTransaction = {
         tx_id: Date.now(),
-        amount: Number(payload.amount.replace(/[Tt]$/, '000000')),
+        amount: Number(payload.amount) * 1_000_000,
         dest_address: payload.destination,
         payment_id: payload.paymentId,
         direction: 2,
