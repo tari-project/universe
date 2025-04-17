@@ -20,22 +20,17 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env::temp_dir, sync::LazyLock, time::SystemTime};
+use std::{sync::LazyLock, time::SystemTime};
 
-use anyhow::Error;
-use dirs::config_dir;
 use getset::{Getters, Setters};
-use log::{info, warn};
-use monero_address_creator::network::Mainnet;
-use monero_address_creator::Seed as MoneroSeed;
+use log::error;
 use serde::{Deserialize, Serialize};
-use tauri::AppHandle;
+use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
 use crate::{
-    consts::DEFAULT_MONERO_ADDRESS,
-    credential_manager::{Credential, CredentialManager},
-    AppConfig, APPLICATION_FOLDER_ID,
+    events_manager::EventsManager, internal_wallet::InternalWallet,
+    utils::wallet_utils::create_monereo_address, AppConfig, UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -97,38 +92,47 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn create_monereo_address() -> Result<String, Error> {
-        let config_dir = config_dir()
-            .unwrap_or_else(|| {
-                warn!("Failed to get config directory, using temp dir");
-                temp_dir()
-            })
-            .join(APPLICATION_FOLDER_ID);
+    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let mut config = Self::current().write().await;
+        let state = app_handle.state::<UniverseAppState>();
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
 
-        let cm = CredentialManager::default_with_dir(config_dir);
+        config.handle_old_config_migration(old_config);
+        config.load_app_handle(app_handle.clone()).await;
 
-        if let Ok(cred) = cm.get_credentials().await {
-            if let Some(seed) = cred.monero_seed {
-                info!(target: LOG_TARGET, "Found monero seed in credential manager");
-                let seed = MoneroSeed::new(seed);
-                return Ok(seed
-                    .to_address::<Mainnet>()
-                    .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()));
+        EventsManager::handle_config_wallet_loaded(&app_handle, config.content.clone()).await;
+        drop(config);
+        // Think about better place for this
+        // This must happend before InternalWallet::load_or_create !!!
+        if ConfigWallet::content().await.monero_address().is_empty() {
+            if let Ok(monero_address) = create_monereo_address().await {
+                let _unused = ConfigWallet::update_field(
+                    ConfigWalletContent::set_generated_monero_address,
+                    monero_address,
+                )
+                .await;
             }
         }
 
-        let monero_seed = MoneroSeed::generate()?;
-        let cred = Credential {
-            tari_seed_passphrase: None,
-            monero_seed: Some(*monero_seed.inner()),
+        match InternalWallet::load_or_create(old_config_path.clone()).await {
+            Ok(wallet) => {
+                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
+                state
+                    .wallet_manager
+                    .set_view_private_key_and_spend_key(
+                        wallet.get_view_key(),
+                        wallet.get_spend_key(),
+                    )
+                    .await;
+                *state.tari_address.write().await = wallet.get_tari_address();
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
+            }
         };
-
-        info!(target: LOG_TARGET, "Setting monero seed in credential manager");
-        cm.set_credentials(&cred).await?;
-
-        Ok(monero_seed
-            .to_address::<Mainnet>()
-            .unwrap_or(DEFAULT_MONERO_ADDRESS.to_string()))
     }
 }
 
@@ -142,7 +146,7 @@ impl ConfigImpl for ConfigWallet {
 
     fn new() -> Self {
         Self {
-            content: ConfigWallet::_initialize_config_content(),
+            content: ConfigWallet::_load_or_create(),
             app_handle: RwLock::new(None),
         }
     }
