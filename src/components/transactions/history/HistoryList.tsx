@@ -9,7 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 
-const HistoryList = () => {
+const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
     const is_transactions_history_loading = useWalletStore((s) => s.is_transactions_history_loading);
     const newestTxIdOnInitialFetch = useWalletStore((s) => s.newestTxIdOnInitialFetch);
@@ -77,6 +77,6 @@ const HistoryList = () => {
             {listMarkup}
         </ListWrapper>
     );
-};
+});
 
-export default memo(HistoryList);
+export default HistoryList;

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 
 import { AnimatePresence } from 'motion/react';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
@@ -15,7 +15,7 @@ import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useUIStore } from '@app/store';
 
-export default function WalletBalanceMarkup() {
+const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
     const {
@@ -86,4 +86,6 @@ export default function WalletBalanceMarkup() {
             {!isWalletScanning && balanceVis}
         </WalletBalanceContainer>
     );
-}
+});
+
+export default WalletBalanceMarkup;

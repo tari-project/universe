@@ -1,5 +1,8 @@
-import { WalletSidebarContent } from '@app/components/transactions';
+import { memo } from 'react';
+import WalletSidebarContent from '@app/components/transactions/WalletSidebarContent.tsx';
 
-export default function WalletSection() {
+const WalletSection = memo(function WalletSection() {
     return <WalletSidebarContent />;
-}
+});
+
+export default WalletSection;
