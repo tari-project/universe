@@ -46,9 +46,13 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
-export const HeaderImg = styled.img`
+export const HeaderGraphic = styled.div`
     width: min(360px, 32vh);
+    user-select: none;
     max-width: 100%;
+    video {
+        max-width: 100%;
+    }
 `;
 
 export const ActionContent = styled(m.div)`
