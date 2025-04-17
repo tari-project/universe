@@ -1,36 +1,36 @@
 {
-  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
-  "empty-tx": "No transactions found",
+  "confirmation-message": "Ihre Transaktion wurde übermittelt!\nSie wird in Ihrer Historie angezeigt, nachdem einige Blöcke gemined wurden.",
+  "empty-tx": "Keine Transaktionen gefunden",
   "history": {
-    "label-rewards": "My rewards"
+    "label-rewards": "Meine Belohnungen"
   },
-  "my_tari": "My Tari",
-  "new": "New",
+  "my_tari": "Mein Tari",
+  "new": "Neu",
   "receive": {
     "label-address": "My Address"
   },
   "send": {
-    "cta-send": "Send Tari",
-    "error-invalid-address": "The address is invalid",
-    "error-invalid-amount": "The amount is invalid",
-    "error-message": "Error sending transaction: ",
-    "field-address": "address",
-    "field-amount": "amount",
-    "field-message": "message",
-    "label-address": "Tari Wallet Address",
-    "label-amount": "Amount",
-    "label-message": "Payment ID",
-    "placeholder-address": "Enter address",
-    "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "cta-send": "Tari senden",
+    "error-invalid-address": "Die Adresse ist ungültig",
+    "error-invalid-amount": "Der Betrag ist ungültig",
+    "error-message": "Fehler beim Senden der Transaktion: ",
+    "field-address": "Adresse",
+    "field-amount": "Betrag",
+    "field-message": "Nachricht",
+    "label-address": "Tari-Wallet-Adresse",
+    "label-amount": "Betrag",
+    "label-message": "Zahlungs-ID",
+    "placeholder-address": "Adresse eingeben",
+    "placeholder-amount": 100,
+    "placeholder-message": "Nachricht eingeben",
+    "required": "Das Feld {{fieldName}} ist erforderlich"
   },
   "tabs": {
-    "history": "History",
-    "receive": "Receive",
-    "send": "Send"
+    "history": "Verlauf",
+    "receive": "Empfangen",
+    "send": "Senden"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning..",
-  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-is-scanning": "Wallet wird gescannt..",
+  "wallet-scanning-with-progress": "Wallet wird gescannt: {{scanned}}/{{total}} ({{percent}}%)"
 }

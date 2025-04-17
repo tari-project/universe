@@ -29,7 +29,7 @@
   "debug-info": "Debug",
   "disconnect": "Putuskan dari Airdrop",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Gagal mengambil jembatan Tor. Periksa koneksi internet Anda atau coba lagi nanti.",
     "invalid-bridge": "Konfigurasi jembatan tidak valid",
     "invalid-control-port": "Konfigurasi Port Kontrol tidak valid"
   },
@@ -57,7 +57,7 @@
   "inviteCode": "Kode Undangan",
   "is-on-orphan-chain": "Anda tampaknya terhubung ke cabang, bukan rantai utama. Blok yang Anda menangkan mungkin akan dibatalkan.",
   "last-block-added-time": "Waktu blok terakhir ditambahkan ke rantai",
-  "local-node-sync-progress": "Local node syncing progress",
+  "local-node-sync-progress": "Kemajuan sinkronisasi node lokal",
   "logs": "Log",
   "low-hash-rate-warning": "Hashrate Anda sangat rendah. Coba tutup semua aplikasi selain Tari Universe",
   "mine-on-app-start": {
@@ -66,7 +66,7 @@
   },
   "miners": "Penambang",
   "mining-toggle-warning": "Penambangan akan dijeda saat perubahan diterapkan.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Node Minotari",
   "monero-address": {
     "placeholder": "Masukkan alamat Monero",
     "title": "Alamat Monero"
@@ -74,10 +74,10 @@
   "monero-seed-words": "Kata Kunci Pemulihan Monero",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
-  "node-connection-address": "Connection address",
-  "node-public-address": "Public address",
-  "node-public-key": "Public key",
-  "node-type": "Type",
+  "node-connection-address": "Alamat koneksi",
+  "node-public-address": "Alamat publik",
+  "node-public-key": "Kunci publik",
+  "node-type": "Jenis",
   "not-connected-to-tari": "Tidak terhubung ke Jaringan Tari",
   "open-logs-directory": "Buka direktori log",
   "p2pool-chain-tip": "Ujung rantai",
