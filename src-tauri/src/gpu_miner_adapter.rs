@@ -51,7 +51,7 @@ const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 
 pub enum GpuNodeSource {
     BaseNode { grpc_address: String },
-    P2Pool { port: u16 },
+    P2Pool { grpc_address: String },
 }
 
 pub(crate) struct GpuMinerAdapter {
@@ -141,7 +141,7 @@ impl ProcessAdapter for GpuMinerAdapter {
 
         let tari_node_address = match self.node_source.as_ref() {
             Some(GpuNodeSource::BaseNode { grpc_address }) => grpc_address.clone(),
-            Some(GpuNodeSource::P2Pool { port }) => format!("http://127.0.0.1:{}", port),
+            Some(GpuNodeSource::P2Pool { grpc_address }) => grpc_address.clone(),
             None => {
                 return Err(anyhow!("GpuMinerAdapter node_source is not set"));
             }
