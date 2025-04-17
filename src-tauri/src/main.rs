@@ -1054,7 +1054,6 @@ fn main() {
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
-        app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
         gpu_status_rx.clone(),
@@ -1067,7 +1066,7 @@ fn main() {
     let updates_manager = UpdatesManager::new();
     let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
 
-    let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    let feedback = Feedback::new(app_in_memory_config.clone());
 
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
