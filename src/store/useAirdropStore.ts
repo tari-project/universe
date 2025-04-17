@@ -83,8 +83,19 @@ interface MiningPoint {
     blockHeight: string;
     reward: number;
 }
-//////////////////////////////////////////
 
+export type MessageType = 'info' | 'warning' | 'error';
+
+export interface CommunityMessage {
+    id: string;
+    message: string;
+    isVisible: boolean;
+    createdAt: string;
+    textHtml: string;
+    type: MessageType;
+}
+
+//////////////////////////////////////////
 export interface AirdropStoreState {
     authUuid?: string;
     airdropTokens?: AirdropTokens;
@@ -95,6 +106,9 @@ export interface AirdropStoreState {
     bonusTiers?: BonusTier[];
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
+    pollingEnabled?: boolean;
+    orphanChainUiEnabled?: boolean;
+    communityMessages?: CommunityMessage[];
 }
 
 const initialState: AirdropStoreState = {
@@ -106,6 +120,7 @@ const initialState: AirdropStoreState = {
     bonusTiers: undefined,
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
+    pollingEnabled: undefined,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));
