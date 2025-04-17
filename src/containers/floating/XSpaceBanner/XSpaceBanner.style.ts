@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 // don't need theming for this file as the colours are the same in dark/light mode (black and white)
 
@@ -36,7 +36,7 @@ export const IconContainer = styled(m.div)`
     justify-content: center;
     background-color: white;
     border-radius: 8px;
-    width: 38px;
+    min-width: 38px;
     height: 38px;
 `;
 
@@ -59,7 +59,7 @@ export const ContentContainer = styled(m.div)`
     overflow: hidden;
 `;
 
-export const TitleContainer = styled(m.div)`
+export const TitleContainer = styled(m.div)<{ $hasTextOverflow: boolean }>`
     display: flex;
     align-items: center;
     justify-content: space-evenly;
@@ -67,24 +67,28 @@ export const TitleContainer = styled(m.div)`
     overflow: hidden;
     text-overflow: ellipsis;
     position: relative;
-    &::before,
-    &::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        bottom: 0;
-        width: 20px;
-        z-index: 2;
-        pointer-events: none;
-    }
-    &::before {
-        left: 0;
-        background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-    }
-    &::after {
-        right: 0;
-        background: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
-    }
+    ${({ $hasTextOverflow }) =>
+        $hasTextOverflow &&
+        css`
+            &::before,
+            &::after {
+                content: '';
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                width: 20px;
+                z-index: 2;
+                pointer-events: none;
+            }
+            &::before {
+                left: 0;
+                background: linear-gradient(to right, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            }
+            &::after {
+                right: 0;
+                background: linear-gradient(to left, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 100%);
+            }
+        `}
 `;
 
 export const Title = styled(m.span)`
