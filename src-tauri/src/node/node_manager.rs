@@ -511,6 +511,10 @@ pub async fn start_status_forwarding_thread(
     mut remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     mut shutdown_signal: ShutdownSignal,
 ) -> Result<(), anyhow::Error> {
+    // Keep track of last status to compare for meaningful changes
+    let mut last_local_status: Option<BaseNodeStatus> = None;
+    let mut last_remote_status: Option<BaseNodeStatus> = None;
+
     TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
         loop {
             tokio::select! {
@@ -523,10 +527,20 @@ pub async fn start_status_forwarding_thread(
                     let is_local_current = node_manager.is_local_current().await;
                     if is_local_current.unwrap_or(false) {
                         let status = *local_node_watch_rx.borrow();
+                        let should_log = match last_local_status {
+                            Some(last) => {
+                                status.block_height != last.block_height ||
+                                status.is_synced != last.is_synced
+                            },
+                            None => true,
+                        };
+
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
-                        } else {
-                            info!(target: LOG_TARGET, "Forwarded local BaseNodeStatus: {:?}", status);
+                        }
+                        if should_log {
+                            info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
+                            last_local_status = Some(status);
                         }
                     }
                 }
@@ -535,10 +549,20 @@ pub async fn start_status_forwarding_thread(
                     let is_remote_current = node_manager.is_remote_current().await;
                     if is_remote_current.unwrap_or(false) {
                         let status = *remote_node_watch_rx.borrow();
+                        let should_log = match last_remote_status {
+                            Some(last) => {
+                                status.block_height != last.block_height ||
+                                status.is_synced != last.is_synced
+                            },
+                            None => true, // First status update always gets logged
+                        };
+
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
-                        } else {
-                            info!(target: LOG_TARGET, "Forwarded remote BaseNodeStatus: {:?}", status);
+                        }
+                        if should_log {
+                            info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {:?}", status);
+                            last_remote_status = Some(status);
                         }
                     }
                 }
