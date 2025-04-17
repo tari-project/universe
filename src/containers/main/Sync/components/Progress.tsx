@@ -58,7 +58,7 @@ export default function Progress() {
     return (
         <Wrapper>
             <LinearProgress variant="large" value={setupProgress} />
-            <Percentage>{`${setupProgress}%`}</Percentage>
+            {setupProgress ? <Percentage>{`${setupProgress}%`}</Percentage> : null}
             <Label>{setUpText}</Label>
         </Wrapper>
     );
