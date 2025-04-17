@@ -109,7 +109,7 @@ i18n.use(HttpBackend)
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
-        debug: process.env.NODE_ENV === 'development',
+        // debug: process.env.NODE_ENV === 'development',
         lng: Language.EN,
         compatibilityJSON: 'v4',
         fallbackLng: Language.EN,

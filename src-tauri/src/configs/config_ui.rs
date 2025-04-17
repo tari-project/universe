@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::DisplayMode;
+use crate::{app_config::DisplayMode, events_manager::EventsManager};
 
 use std::{sync::LazyLock, time::SystemTime};
 
@@ -91,6 +91,23 @@ pub struct ConfigUI {
     app_handle: RwLock<Option<AppHandle>>,
 }
 
+impl ConfigUI {
+    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+        let mut config = Self::current().write().await;
+        config.load_app_handle(app_handle.clone()).await;
+        config.handle_old_config_migration(old_config);
+
+        EventsManager::handle_config_ui_loaded(&app_handle, config.content.clone()).await;
+        drop(config);
+
+        let _unused = Self::update_field(
+            ConfigUIContent::propose_system_language,
+            "en-US".to_string(),
+        )
+        .await;
+    }
+}
+
 impl ConfigImpl for ConfigUI {
     type Config = ConfigUIContent;
     type OldConfig = AppConfig;
@@ -101,7 +118,7 @@ impl ConfigImpl for ConfigUI {
 
     fn new() -> Self {
         Self {
-            content: ConfigUI::_initialize_config_content(),
+            content: ConfigUI::_load_or_create(),
             app_handle: RwLock::new(None),
         }
     }
