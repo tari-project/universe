@@ -1,36 +1,36 @@
 {
-  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
-  "empty-tx": "No transactions found",
+  "confirmation-message": "आपका लेन-देन सबमिट कर दिया गया है!\nकुछ ब्लॉकों के माइनिंग के बाद यह आपके इतिहास में दिखाई देगा।",
+  "empty-tx": "कोई लेन-देन नहीं मिला",
   "history": {
-    "label-rewards": "My rewards"
+    "label-rewards": "मेरे पुरस्कार"
   },
-  "my_tari": "My Tari",
-  "new": "New",
+  "my_tari": "मेरा तारी",
+  "new": "नया",
   "receive": {
     "label-address": "My Address"
   },
   "send": {
-    "cta-send": "Send Tari",
-    "error-invalid-address": "The address is invalid",
-    "error-invalid-amount": "The amount is invalid",
-    "error-message": "Error sending transaction: ",
-    "field-address": "address",
-    "field-amount": "amount",
-    "field-message": "message",
-    "label-address": "Tari Wallet Address",
-    "label-amount": "Amount",
-    "label-message": "Payment ID",
-    "placeholder-address": "Enter address",
-    "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "cta-send": "तारी भेजें",
+    "error-invalid-address": "पता अमान्य है",
+    "error-invalid-amount": "राशि अमान्य है",
+    "error-message": "लेन-देन भेजने में त्रुटि: ",
+    "field-address": "पता",
+    "field-amount": "राशि",
+    "field-message": "संदेश",
+    "label-address": "तारी वॉलेट पता",
+    "label-amount": "राशि",
+    "label-message": "भुगतान आईडी",
+    "placeholder-address": "पता दर्ज करें",
+    "placeholder-amount": 100,
+    "placeholder-message": "संदेश दर्ज करें",
+    "required": "{{fieldName}} फ़ील्ड आवश्यक है"
   },
   "tabs": {
-    "history": "History",
-    "receive": "Receive",
-    "send": "Send"
+    "history": "इतिहास",
+    "receive": "प्राप्त करें",
+    "send": "भेजें"
   },
-  "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning..",
-  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
+  "tari": "तारी",
+  "wallet-is-scanning": "वॉलेट स्कैन कर रहा है..",
+  "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)"
 }

@@ -1,36 +1,36 @@
 {
-  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
-  "empty-tx": "No transactions found",
+  "confirmation-message": "Jou transaksie is ingedien!\nDit sal in jou geskiedenis verskyn nadat \"n paar blokke gemyn is.",
+  "empty-tx": "Geen transaksies gevind nie",
   "history": {
-    "label-rewards": "My rewards"
+    "label-rewards": "My belonings"
   },
   "my_tari": "My Tari",
-  "new": "New",
+  "new": "Nuut",
   "receive": {
     "label-address": "My Address"
   },
   "send": {
-    "cta-send": "Send Tari",
-    "error-invalid-address": "The address is invalid",
-    "error-invalid-amount": "The amount is invalid",
-    "error-message": "Error sending transaction: ",
-    "field-address": "address",
-    "field-amount": "amount",
-    "field-message": "message",
-    "label-address": "Tari Wallet Address",
-    "label-amount": "Amount",
-    "label-message": "Payment ID",
-    "placeholder-address": "Enter address",
-    "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "cta-send": "Stuur Tari",
+    "error-invalid-address": "Die adres is ongeldig",
+    "error-invalid-amount": "Die bedrag is ongeldig",
+    "error-message": "Fout met stuur van transaksie: ",
+    "field-address": "adres",
+    "field-amount": "bedrag",
+    "field-message": "boodskap",
+    "label-address": "Tari Beursie Adres",
+    "label-amount": "Bedrag",
+    "label-message": "Betaling ID",
+    "placeholder-address": "Voer adres in",
+    "placeholder-amount": 100,
+    "placeholder-message": "Voer boodskap in",
+    "required": "Die {{fieldName}} veld is vereis"
   },
   "tabs": {
-    "history": "History",
-    "receive": "Receive",
-    "send": "Send"
+    "history": "Geskiedenis",
+    "receive": "Ontvang",
+    "send": "Stuur"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning..",
-  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-is-scanning": "Beursie skandeer..",
+  "wallet-scanning-with-progress": "Beursie skandeer: {{scanned}}/{{total}} ({{percent}}%)"
 }

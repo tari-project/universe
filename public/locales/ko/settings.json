@@ -29,7 +29,7 @@
   "debug-info": "디버그",
   "disconnect": "에어드롭 연결 해제",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Tor 브리지를 가져오지 못했습니다. 인터넷 연결을 확인하거나 나중에 다시 시도하세요.",
     "invalid-bridge": "브리지 구성 설정이 잘못되었습니다",
     "invalid-control-port": "제어 포트 구성 설정이 잘못되었습니다"
   },
@@ -57,7 +57,7 @@
   "inviteCode": "초대 코드",
   "is-on-orphan-chain": "당신은 포크에 연결된 것 같으며, 메인 체인이 아닙니다. 당신이 획득한 블록은 무효화될 수 있습니다.",
   "last-block-added-time": "마지막 블록 체인 추가 시간",
-  "local-node-sync-progress": "Local node syncing progress",
+  "local-node-sync-progress": "로컬 노드 동기화 진행",
   "logs": "로그",
   "low-hash-rate-warning": "해시레이트가 매우 낮습니다. Tari Universe 외의 모든 앱을 닫아보세요",
   "mine-on-app-start": {
@@ -66,7 +66,7 @@
   },
   "miners": "마이너",
   "mining-toggle-warning": "변경 사항이 적용되는 동안 채굴이 일시 중지됩니다.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Minotari 노드",
   "monero-address": {
     "placeholder": "모네로 주소 입력",
     "title": "모네로 주소"
@@ -74,10 +74,10 @@
   "monero-seed-words": "모네로 시드 단어",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
-  "node-connection-address": "Connection address",
-  "node-public-address": "Public address",
-  "node-public-key": "Public key",
-  "node-type": "Type",
+  "node-connection-address": "연결 주소",
+  "node-public-address": "공개 주소",
+  "node-public-key": "공개 키",
+  "node-type": "유형",
   "not-connected-to-tari": "Tari 네트워크에 연결되지 않음",
   "open-logs-directory": "로그 디렉토리 열기",
   "p2pool-chain-tip": "체인의 끝",

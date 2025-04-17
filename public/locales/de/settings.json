@@ -29,7 +29,7 @@
   "debug-info": "Debuggen",
   "disconnect": "Von Airdrop trennen",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Abrufen der Tor-Brücken fehlgeschlagen. Überprüfen Sie Ihre Internetverbindung oder versuchen Sie es später erneut.",
     "invalid-bridge": "Bridge-Konfiguration ist ungültig",
     "invalid-control-port": "Steuerport-Konfiguration ist ungültig"
   },
@@ -57,7 +57,7 @@
   "inviteCode": "Einladungscode",
   "is-on-orphan-chain": "Sie scheinen mit einem Fork verbunden zu sein und nicht mit der Hauptkette. Alle gewonnenen Blöcke könnten ungültig werden.",
   "last-block-added-time": "Letzte Blockzeit, die zur Kette hinzugefügt wurde",
-  "local-node-sync-progress": "Local node syncing progress",
+  "local-node-sync-progress": "Synchronisierungsfortschritt des lokalen Knotens",
   "logs": "Protokolle",
   "low-hash-rate-warning": "Ihre Hashrate ist sehr niedrig. Versuchen Sie, alle Apps außer Tari Universe zu schließen",
   "mine-on-app-start": {
@@ -66,7 +66,7 @@
   },
   "miners": "Miner",
   "mining-toggle-warning": "Mining wird pausiert, während die Änderungen wirksam werden.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Minotari-Knoten",
   "monero-address": {
     "placeholder": "Gib die Monero-Adresse ein",
     "title": "Monero-Adresse"
@@ -74,10 +74,10 @@
   "monero-seed-words": "Monero Seed-Wörter",
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
-  "node-connection-address": "Connection address",
-  "node-public-address": "Public address",
-  "node-public-key": "Public key",
-  "node-type": "Type",
+  "node-connection-address": "Verbindungsadresse",
+  "node-public-address": "Öffentliche Adresse",
+  "node-public-key": "Öffentlicher Schlüssel",
+  "node-type": "Typ",
   "not-connected-to-tari": "Nicht mit dem Tari-Netzwerk verbunden",
   "open-logs-directory": "Protokollverzeichnis öffnen",
   "p2pool-chain-tip": "Spitze der Ketten",

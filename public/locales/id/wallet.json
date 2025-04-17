@@ -1,36 +1,36 @@
 {
-  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
-  "empty-tx": "No transactions found",
+  "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
+  "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
-    "label-rewards": "My rewards"
+    "label-rewards": "Hadiah saya"
   },
-  "my_tari": "My Tari",
-  "new": "New",
+  "my_tari": "Tari Saya",
+  "new": "Baru",
   "receive": {
     "label-address": "My Address"
   },
   "send": {
-    "cta-send": "Send Tari",
-    "error-invalid-address": "The address is invalid",
-    "error-invalid-amount": "The amount is invalid",
-    "error-message": "Error sending transaction: ",
-    "field-address": "address",
-    "field-amount": "amount",
-    "field-message": "message",
-    "label-address": "Tari Wallet Address",
-    "label-amount": "Amount",
-    "label-message": "Payment ID",
-    "placeholder-address": "Enter address",
-    "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "cta-send": "Kirim Tari",
+    "error-invalid-address": "Alamat tidak valid",
+    "error-invalid-amount": "Jumlah tidak valid",
+    "error-message": "Kesalahan mengirim transaksi: ",
+    "field-address": "alamat",
+    "field-amount": "jumlah",
+    "field-message": "pesan",
+    "label-address": "Alamat Dompet Tari",
+    "label-amount": "Jumlah",
+    "label-message": "ID Pembayaran",
+    "placeholder-address": "Masukkan alamat",
+    "placeholder-amount": 100,
+    "placeholder-message": "Masukkan pesan",
+    "required": "Kolom {{fieldName}} diperlukan"
   },
   "tabs": {
-    "history": "History",
-    "receive": "Receive",
-    "send": "Send"
+    "history": "Riwayat",
+    "receive": "Terima",
+    "send": "Kirim"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning..",
-  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-is-scanning": "Dompet sedang memindai..",
+  "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)"
 }

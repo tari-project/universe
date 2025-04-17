@@ -1,36 +1,36 @@
 {
-  "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
-  "empty-tx": "No transactions found",
+  "confirmation-message": "您的交易已提交！\n在挖掘几个区块后，它将显示在您的历史记录中。",
+  "empty-tx": "未找到交易",
   "history": {
-    "label-rewards": "My rewards"
+    "label-rewards": "我的奖励"
   },
-  "my_tari": "My Tari",
-  "new": "New",
+  "my_tari": "我的 Tari",
+  "new": "新建",
   "receive": {
     "label-address": "My Address"
   },
   "send": {
-    "cta-send": "Send Tari",
-    "error-invalid-address": "The address is invalid",
-    "error-invalid-amount": "The amount is invalid",
-    "error-message": "Error sending transaction: ",
-    "field-address": "address",
-    "field-amount": "amount",
-    "field-message": "message",
-    "label-address": "Tari Wallet Address",
-    "label-amount": "Amount",
-    "label-message": "Payment ID",
-    "placeholder-address": "Enter address",
-    "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
-    "required": "The {{fieldName}} field is required"
+    "cta-send": "发送 Tari",
+    "error-invalid-address": "地址无效",
+    "error-invalid-amount": "金额无效",
+    "error-message": "发送交易错误：",
+    "field-address": "地址",
+    "field-amount": "金额",
+    "field-message": "消息",
+    "label-address": "Tari 钱包地址",
+    "label-amount": "金额",
+    "label-message": "支付 ID",
+    "placeholder-address": "输入地址",
+    "placeholder-amount": 100,
+    "placeholder-message": "输入消息",
+    "required": "{{fieldName}} 字段是必需的"
   },
   "tabs": {
-    "history": "History",
-    "receive": "Receive",
-    "send": "Send"
+    "history": "历史",
+    "receive": "接收",
+    "send": "发送"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet is scanning..",
-  "wallet-scanning-with-progress": "Wallet is scanning: {{scanned}}/{{total}} ({{percent}}%)"
+  "wallet-is-scanning": "钱包正在扫描..",
+  "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)"
 }
