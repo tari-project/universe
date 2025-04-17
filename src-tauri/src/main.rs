@@ -158,15 +158,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    TasksTrackers::current()
-        .common
-        .get_task_tracker()
-        .await
-        .spawn(async move {
-            let _ = EventsManager::handle_internal_wallet_loaded_or_created(&move_app).await;
-        });
-
-    let move_app = app.clone();
     TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
