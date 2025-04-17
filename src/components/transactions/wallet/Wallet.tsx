@@ -20,6 +20,7 @@ import { usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { Wrapper } from './wallet.styles.ts';
+import { memo } from 'react';
 
 interface Props {
     section: string;
@@ -28,7 +29,7 @@ interface Props {
 
 const environment = import.meta.env.MODE;
 
-export default function Wallet({ section, setSection }: Props) {
+const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const { t } = useTranslation(['wallet', 'common', 'sidebar']);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
@@ -90,4 +91,6 @@ export default function Wallet({ section, setSection }: Props) {
             </BottomNavWrapper>
         </Wrapper>
     );
-}
+});
+
+export default Wallet;

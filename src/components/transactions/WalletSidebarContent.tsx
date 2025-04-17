@@ -2,7 +2,7 @@ import { Send } from './send/Send';
 import { Receive } from './receive/Receive';
 import Wallet from './wallet/Wallet';
 import { SectionAnimation, WalletGreyBox, WalletSections } from './WalletSidebarContent.styles.ts';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 
 const sectionAnimation = {
@@ -11,9 +11,8 @@ const sectionAnimation = {
     exit: { opacity: 0 },
 };
 
-export function WalletSidebarContent() {
+const WalletSidebarContent = memo(function WalletSidebarContent() {
     const [section, setSection] = useState('history');
-
     return (
         <WalletSections>
             <WalletGreyBox>
@@ -37,4 +36,6 @@ export function WalletSidebarContent() {
             </WalletGreyBox>
         </WalletSections>
     );
-}
+});
+
+export default WalletSidebarContent;
