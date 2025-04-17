@@ -33,7 +33,6 @@ use tokio::sync::RwLock;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::app_config::AppConfig;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
@@ -43,18 +42,11 @@ const LOG_TARGET: &str = "tari::universe::feedback";
 
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    config: Arc<RwLock<AppConfig>>,
 }
 
 impl Feedback {
-    pub fn new(
-        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-        config: Arc<RwLock<AppConfig>>,
-    ) -> Self {
-        Self {
-            in_memory_config,
-            config,
-        }
+    pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
+        Self { in_memory_config }
     }
 
     /// Build zip file
@@ -159,12 +151,8 @@ impl Feedback {
             None
         };
 
-        let jwt = self
-            .config
-            .read()
-            .await
-            .airdrop_tokens()
-            .map(|tokens| tokens.token);
+        let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
+        let jwt = airdrop_tokens.map(|tokens| tokens.token);
 
         // Send the POST request
         let mut req = reqwest::Client::new().post(feedback_url).multipart(form);
