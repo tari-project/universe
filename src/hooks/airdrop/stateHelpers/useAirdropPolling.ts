@@ -44,26 +44,30 @@ export const useAirdropPolling = () => {
     }, [fetchFeatureFlagDebounced]);
 
     useEffect(() => {
-        if (!pollingEnabled) return;
-        fetchAirdropDataDebounced();
-        const interval = setInterval(async () => {
-            fetchAirdropDataDebounced();
-        }, 1000 * 60); // Once every minute
-        return () => clearInterval(interval);
-    }, [fetchAirdropDataDebounced, pollingEnabled]);
-
-    useEffect(() => {
         const unlistenPromises: Promise<UnlistenFn>[] = [];
+        let interval: NodeJS.Timeout;
+
+        // Re-fetch flags on focus
         unlistenPromises.push(listen('tauri://focus', fetchPollingFeatureFlag));
+
         if (pollingEnabled) {
+            // Re-fetch data on focus
             unlistenPromises.push(listen('tauri://focus', fetchAirdropDataDebounced));
+
+            // Start polling
+            interval = setInterval(async () => {
+                fetchAirdropDataDebounced();
+            }, 1000 * 60); // Once every minute
         }
         return () => {
-            for (const unlisten of unlistenPromises) {
-                unlisten.then((unlisten) => unlisten());
+            if (interval) {
+                clearInterval(interval);
             }
             if (airdropTimeoutRef.current) {
                 clearTimeout(airdropTimeoutRef.current);
+            }
+            for (const unlisten of unlistenPromises) {
+                unlisten.then((unlisten) => unlisten());
             }
         };
     }, [fetchAirdropDataDebounced, pollingEnabled]);
