@@ -51,10 +51,10 @@ const XSpaceEventBanner = () => {
     }, [latestXSpaceEvent]);
 
     useEffect(() => {
-        if (titleRef.current && containerRef.current) {
-            const titleWidth = titleRef.current.scrollWidth;
-            const containerWidth = containerRef.current.clientWidth;
-            setIsTextTooLong(titleWidth > containerWidth);
+        const isTextTooLong = (latestXSpaceEvent?.text.length || 0) > 25;
+        setIsTextTooLong(isTextTooLong);
+        if (isTextTooLong && titleRef.current && containerRef.current) {
+            const titleWidth = titleRef.current.scrollWidth || 0;
             setTransitionPixelWidth(titleWidth / 2);
         }
     }, [latestXSpaceEvent]); // Re-run the effect when the event changes
@@ -114,7 +114,7 @@ const XSpaceEventBanner = () => {
                                 </DateLabel>
                             )}
 
-                            <TitleContainer ref={containerRef}>
+                            <TitleContainer ref={containerRef} $hasTextOverflow={isTextTooLong}>
                                 <Title
                                     ref={titleRef}
                                     animate={
