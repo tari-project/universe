@@ -27,11 +27,6 @@ export const Message = styled(motion.div)<{ $type: MessageType; $isSidebarOpen: 
 
     ${({ $type }) => {
         switch ($type) {
-            case 'info':
-                return css`
-                    background: white;
-                    border-color: black;
-                `;
             case 'warning':
                 return css`
                     background: #fff1ec;
@@ -42,12 +37,16 @@ export const Message = styled(motion.div)<{ $type: MessageType; $isSidebarOpen: 
                     background: #f9a391;
                     border-color: #ff5733;
                 `;
+            case 'info':
             default:
-                return 'white';
+                return css`
+                    background: white;
+                    border-color: black;
+                `;
         }
     }};
 
-    padding-horizontal: 16px;
+    padding-inline: 16px;
     align-items: center;
 
     a {
@@ -57,7 +56,7 @@ export const Message = styled(motion.div)<{ $type: MessageType; $isSidebarOpen: 
     }
 `;
 
-export const CloseButton = styled.div`
+export const CloseButton = styled.button`
     cursor: pointer;
     position: absolute;
     top: 50%;
@@ -71,6 +70,13 @@ export const CloseButton = styled.div`
     justify-content: center;
     align-items: center;
     pointer-events: all;
+    border: none;
+    outline: none;
+
+    &:focus-visible {
+        outline: 2px solid blue;
+        outline-offset: 2px;
+    }
 
     svg {
         width: 16px;
