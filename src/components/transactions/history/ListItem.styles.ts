@@ -8,7 +8,7 @@ export const ItemWrapper = styled(m.div)`
     align-items: center;
     width: 100%;
     border-radius: 10px;
-
+    padding: 6px 0;
     flex-direction: column;
     overflow: hidden;
     position: relative;
@@ -38,7 +38,7 @@ export const ContentWrapper = styled.div`
 
 export const Content = styled.div`
     display: flex;
-    gap: 6px;
+    gap: 4px;
     flex-direction: row;
     align-items: center;
     height: 100%;
@@ -90,6 +90,7 @@ export const Chip = styled.div`
     align-self: center;
     justify-content: center;
     align-items: center;
+    text-transform: uppercase;
     border-radius: 50px;
     background-color: ${({ theme }) => theme.colors.green[700]};
     height: 14px;
@@ -191,10 +192,13 @@ export const GemImage = styled.img`
 `;
 
 export const InfoWrapper = styled.div`
+    width: 100%;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    padding: 2px 10px;
+    margin-top: 8px;
+    padding: 8px 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
 `;
 export const InfoItemWrapper = styled.div`
     display: flex;

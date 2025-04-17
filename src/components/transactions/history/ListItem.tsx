@@ -48,11 +48,11 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status
                 </BlockInfoWrapper>
             </Content>
             <Content>
-                {chip && (
+                {chip ? (
                     <Chip>
                         <Typography>{chip}</Typography>
                     </Chip>
-                )}
+                ) : null}
 
                 <ValueWrapper>
                     <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
