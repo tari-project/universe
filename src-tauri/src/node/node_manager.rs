@@ -537,7 +537,8 @@ pub async fn start_status_forwarding_thread(
 
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
-                        } else if should_log {
+                        }
+                        if should_log {
                             info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
                             last_local_status = Some(status);
                         }
@@ -558,7 +559,8 @@ pub async fn start_status_forwarding_thread(
 
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward remote BaseNodeStatus via base_node_watch_tx");
-                        } else if should_log {
+                        }
+                        if should_log {
                             info!(target: LOG_TARGET, "Forwarded Remote BaseNodeStatus: {:?}", status);
                             last_remote_status = Some(status);
                         }
