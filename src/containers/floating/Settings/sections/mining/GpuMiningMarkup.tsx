@@ -1,9 +1,8 @@
 import { useCallback, useMemo } from 'react';
-import { useAppStateStore } from '@app/store/appStateStore.ts';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
 import { useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import {
     SettingsGroup,
     SettingsGroupAction,
@@ -12,12 +11,13 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { setGpuMiningEnabled } from '@app/store';
+import { setGpuMiningEnabled, useConfigMiningStore } from '@app/store';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const isGpuMiningEnabled = useAppConfigStore((s) => s.gpu_mining_enabled);
-    const isSettingUp = useAppStateStore((s) => !s.setupComplete);
+    const isSettingUp = useSetupStore((s) => !s.miningUnlocked);
+    const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
 
     const isGPUMiningAvailable = useMemo(() => {

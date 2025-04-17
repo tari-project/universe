@@ -16,6 +16,7 @@ import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCo
 import { memo } from 'react';
 import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
+import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -36,6 +37,7 @@ const FloatingElements = memo(function FloatingElements() {
             <ReleaseNotesDialog />
             <ResumeApplicationModal />
             <XSpaceEventBanner />
+            <CustomPowerLevelsDialogContainer />
             {environment === 'development' && <AdminUI />}
         </FloatingTree>
     );

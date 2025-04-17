@@ -10,12 +10,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { useAppConfigStore } from '@app/store/useAppConfigStore.ts';
-import { setShouldAlwaysUseSystemLanguage } from '@app/store';
+import { setShouldAlwaysUseSystemLanguage, useConfigUIStore } from '@app/store';
 
 export default function LanguageSettings() {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const shouldAlwaysUseSystemLanguage = useAppConfigStore((s) => s.should_always_use_system_language);
+    const shouldAlwaysUseSystemLanguage = useConfigUIStore((s) => s.should_always_use_system_language);
 
     return (
         <SettingsGroupWrapper>

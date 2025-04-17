@@ -84,12 +84,26 @@ const errorDarkAlpha = {
     90: 'rgba(97,40,32,0.9)',
 };
 
+const greyscaleAlpha = {
+    5: 'rgba(96, 96, 96, 0.05)',
+    10: 'rgba(96, 96, 96, 0.1)',
+    20: 'rgba(96, 96, 96, 0.2)',
+    30: 'rgba(96, 96, 96, 0.3)',
+    40: 'rgba(96, 96, 96, 0.4)',
+    50: 'rgba(96, 96, 96, 0.5)',
+    60: 'rgba(96, 96, 96, 0.6)',
+    70: 'rgba(96, 96, 96, 0.7)',
+    80: 'rgba(96, 96, 96, 0.8)',
+    90: 'rgba(96, 96, 96, 0.9)',
+};
+
 export const colorsAlpha = {
     lightAlpha,
     darkAlpha,
     tariPurpleAlpha,
     warningDarkAlpha,
     errorDarkAlpha,
+    greyscaleAlpha,
 };
 
 export type ColoursAlpha = typeof colorsAlpha;

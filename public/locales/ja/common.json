@@ -1,4 +1,5 @@
 {
+  "back": "Back",
   "cancel": "キャンセル",
   "close": "閉じる",
   "close-tari-universe": "Tari Universeを閉じる",
@@ -16,9 +17,11 @@
   "mode": "モード",
   "not-installed-in-applications-directory": "おっと！Tari Universe はアプリケーションディレクトリに配置する必要があります。そこにインストールしてもらえますか？",
   "please-try-again-later": "後でもう一度お試しください。問題が続く場合は、お問い合わせください。",
+  "received": "Received",
   "resources": "リソース",
   "restart": "再起動",
   "seconds": "秒",
+  "sent": "Sent",
   "shutting-down": "シャットダウン中..",
   "submit": "送信",
   "tari-universe": "Tari Universe",

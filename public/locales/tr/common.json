@@ -1,4 +1,5 @@
 {
+  "back": "Back",
   "cancel": "İptal",
   "close": "Kapat",
   "close-tari-universe": "Tari Evreni\"ni Kapat",
@@ -16,9 +17,11 @@
   "mode": "Mod",
   "not-installed-in-applications-directory": "Hata! Tari Universe, Uygulamalar dizininde bulunmalıdır. Oraya kurmayı düşünür müsünüz?",
   "please-try-again-later": "Lütfen daha sonra tekrar deneyin. Sorun devam ederse, lütfen bizimle iletişime geçin.",
+  "received": "Received",
   "resources": "Kaynaklar",
   "restart": "Yeniden Başlat",
   "seconds": "saniye",
+  "sent": "Sent",
   "shutting-down": "Kapatılıyor..",
   "submit": "Onayla",
   "tari-universe": "Tari Evreni",

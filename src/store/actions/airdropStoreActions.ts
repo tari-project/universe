@@ -8,7 +8,7 @@ import {
     BonusTier,
     setAirdropTokensInConfig,
     useAirdropStore,
-    useAppConfigStore,
+    useConfigCoreStore,
     UserDetails,
     UserEntryPoints,
     UserPoints,
@@ -85,7 +85,7 @@ const fetchBackendInMemoryConfig = async () => {
 const getExistingTokens = async () => {
     const localStorageTokens = localStorage.getItem('airdrop-store');
     const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-    const storedTokens = useAppConfigStore.getState().airdrop_tokens || parsedStorageTokens;
+    const storedTokens = useConfigCoreStore.getState().airdrop_tokens || parsedStorageTokens;
     if (storedTokens) {
         try {
             if (!storedTokens?.token || !storedTokens?.refreshToken) {
@@ -123,8 +123,12 @@ export const airdropSetup = async () => {
         console.error('Error in airdropSetup: ', error);
     }
 };
-export const handleAirdropLogout = async () => {
-    removeSocket();
+export const handleAirdropLogout = async (isUserLogout = false) => {
+    if (!isUserLogout) {
+        removeSocket();
+    } else {
+        console.info('User logout | removing airdrop tokens');
+    }
     await setAirdropTokens(undefined);
 };
 
@@ -202,19 +206,17 @@ export const fetchAllUserData = async () => {
         return await handleAirdropRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
-            onError: handleAirdropLogout,
+            onError: () => handleAirdropLogout(),
         })
             .then((data) => {
                 if (data?.user?.id) {
                     setUserDetails(data);
                     return data.user;
                 } else {
-                    console.error('Error fetching user details, logging out');
                     handleAirdropLogout();
                 }
             })
             .catch(() => {
-                console.error('Error fetching user details, logging out');
                 handleAirdropLogout();
             });
     };
