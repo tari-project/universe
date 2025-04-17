@@ -563,12 +563,12 @@ impl SetupManager {
         EventsManager::handle_lock_mining(&app_handle).await;
     }
 
-    pub async fn lock_mining_switching(&self, app_handle: AppHandle) {
+    async fn lock_mining_switching(&self, app_handle: AppHandle) {
         *self.is_switching_to_local.lock().await = true;
         self.lock_mining(app_handle).await;
     }
 
-    pub async fn unlock_mining_switching(&self, app_handle: AppHandle) {
+    async fn unlock_mining_switching(&self, app_handle: AppHandle) {
         *self.is_switching_to_local.lock().await = false;
         self.unlock_mining(app_handle).await;
     }
@@ -632,7 +632,7 @@ impl SetupManager {
             .await;
 
             self.setup_wallet_phase(app_handle.clone()).await;
-            let _ = self.setup_unknown_phase(app_handle.clone()).await.await;
+            drop(self.setup_unknown_phase(app_handle.clone()).await.await);
             self.unlock_mining_switching(app_handle).await;
         } else {
             error!(target: LOG_TARGET, "Failed to reset phases after switching to Local Node: app_handle not defined");
