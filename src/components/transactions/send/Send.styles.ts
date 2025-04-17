@@ -58,11 +58,3 @@ export const DividerIcon = styled.div`
     color: #fff;
     border: ${({ theme }) => (theme.mode === 'dark' ? '4px solid #2E2E2E' : '4px solid #fff')};
 `;
-
-export const ErrorMessageWrapper = styled.div`
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-
-    color: ${({ theme }) => theme.palette.error.main};
-`;
