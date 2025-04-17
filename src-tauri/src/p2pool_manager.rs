@@ -221,10 +221,10 @@ impl P2poolManager {
                 .as_ref()
                 .map(|c| c.grpc_port)
                 .unwrap_or_default();
-            return format!("http://127.0.0.1:{}", grpc_port);
+            format!("http://127.0.0.1:{}", grpc_port)
         } else {
             let network = Network::get_current_or_user_setting_or_default();
-            return format!("https://grpc-p2pool.{}.tari.com:443", network);
+            format!("https://grpc-p2pool.{}.tari.com:443", network)
         }
     }
 
