@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.847",
+    "version": "0.9.900",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
