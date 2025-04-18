@@ -1,12 +1,13 @@
 import Disconnected from '@app/containers/main/Reconnect/Disconnected.tsx';
 import DisconnectedSevere from '@app/containers/main/Reconnect/DisconnectedSevere.tsx';
 import { useUIStore } from '@app/store';
-import { ConnectionStatusPayload, formatSecondsToMmSs, useCountdown } from '@app/hooks';
+import { formatSecondsToMmSs, useCountdown } from '@app/hooks';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { listen } from '@tauri-apps/api/event';
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
+import { ConnectionStatusPayload } from '@app/types/events-payloads';
 
 const retryBackoff = [60, 120, 240];
 
@@ -30,7 +31,7 @@ export default function DisconnectWrapper() {
     }, [attempt, connectionStatus, startCountdown, stopCountdown]);
 
     useEffect(() => {
-        const reconnectingListener = listen('reconnecting', ({ payload }: { payload: ConnectionStatusPayload }) => {
+        const reconnectingListener = listen('ConnectionStatus', ({ payload }: { payload: ConnectionStatusPayload }) => {
             if (payload === 'Failed') {
                 stopCountdown();
                 const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
@@ -47,8 +48,22 @@ export default function DisconnectWrapper() {
             }
         });
 
+        const criticalErrorListener = listen('CriticalError', () => {
+            stopCountdown();
+            const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
+            if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
+                setConnectionStatus('disconnected-severe');
+                setIsReconnectOnCooldown(false);
+                startCountdown(300);
+                return;
+            }
+            setAttempt(currentAttempt);
+            startCountdown(retryBackoff[currentAttempt]);
+        });
+
         return () => {
             reconnectingListener.then((unlisten) => unlisten());
+            criticalErrorListener.then((unlisten) => unlisten());
         };
     }, [attempt, connectionStatus, setAttempt, startCountdown, stopCountdown]);
 

@@ -514,7 +514,6 @@ impl SetupManager {
 
     async fn handle_restart_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Restart Finished");
-        // let _unused = initialize_frontend_updates(&app_handle).await;
         EventsManager::handle_connection_status_changed(
             &app_handle,
             ConnectionStatusPayload::Succeed,

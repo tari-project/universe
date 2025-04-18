@@ -20,7 +20,10 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useUIStore.setState({ isWebglNotSupported });
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
-export const setConnectionStatus = (connectionStatus: CONNECTION_STATUS) => useUIStore.setState({ connectionStatus });
+export const setConnectionStatus = (connectionStatus: CONNECTION_STATUS) => {
+    console.error('setConnectionStatus called with:', connectionStatus);
+    return useUIStore.setState({ connectionStatus });
+};
 export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setState({ isReconnecting });
 
 export const toggleHideWalletBalance = () =>

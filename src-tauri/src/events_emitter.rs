@@ -535,7 +535,7 @@ impl EventsEmitter {
             payload: connection_status,
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
-            error!(target: LOG_TARGET, "Failed to emit ReconnectingInProgress event: {:?}", e);
+            error!(target: LOG_TARGET, "Failed to emit ConnectionStatus event: {:?}", e);
         }
     }
 }
