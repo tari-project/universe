@@ -14,6 +14,7 @@ import {
 import {
     handleAskForRestart,
     handleCloseSplashscreen,
+    handleConnectionStatusChanged,
     setConnectionStatus,
     setIsReconnecting,
     setShowExternalDependenciesDialog,
@@ -24,6 +25,7 @@ import {
     handleShowRelesaeNotes,
     loadExternalDependencies,
     setCriticalProblem,
+    setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
@@ -67,7 +69,6 @@ const LOG_EVENT_TYPES = [
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
-    const connectionStatus = useUIStore((state) => state.connectionStatus);
     function handleLogUpdate(newEvent: BackendStateUpdateEvent) {
         if (LOG_EVENT_TYPES.includes(newEvent.event_type)) {
             const isEqual = deepEqual(eventRef.current, newEvent);
@@ -78,7 +79,6 @@ const useTauriEventsListener = () => {
         }
     }
     useEffect(() => {
-        console.error('mouting listener with connection status: ', connectionStatus);
         const setupListener = async () => {
             // Set up the event listener
             const unlisten = await listen(
@@ -155,15 +155,7 @@ const useTauriEventsListener = () => {
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
                         case 'CriticalProblem':
-                            console.error('ConnectionStatus:', connectionStatus);
-                            console.error('Critical problem payload:', event.payload);
-                            if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
-                                // Assume reconnecting Failed
-                                setIsReconnecting(false);
-                            } else {
-                                console.error('Critical problem with connected status');
-                                setCriticalProblem(event.payload);
-                            }
+                            setCriticalProblemTest(event.payload);
                             break;
                         case 'MissingApplications':
                             loadExternalDependencies(event.payload);
@@ -199,16 +191,7 @@ const useTauriEventsListener = () => {
                             updateWalletScanningProgress(event.payload);
                             break;
                         case 'ConnectionStatus':
-                            console.error(event);
-                            if (event.payload === 'InProgress') {
-                                setIsReconnecting(true);
-                            } else if (event.payload === 'Succeed') {
-                                setIsReconnecting(false);
-                                setConnectionStatus('connected');
-                            } else if (event.payload === 'Failed') {
-                                console.error('Connection failed');
-                                setIsReconnecting(false);
-                            }
+                            handleConnectionStatusChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
@@ -233,10 +216,9 @@ const useTauriEventsListener = () => {
         });
 
         return () => {
-            console.error('useTauriEventsListener unmounted');
             unlistenFunction?.();
         };
-    }, [connectionStatus]);
+    }, []);
 };
 
 export default useTauriEventsListener;

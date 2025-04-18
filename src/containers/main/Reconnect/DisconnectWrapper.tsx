@@ -7,7 +7,7 @@ import { listen } from '@tauri-apps/api/event';
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
-import { ConnectionStatusPayload } from '@app/types/events-payloads';
+import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state';
 
 const retryBackoff = [60, 120, 240];
 
@@ -31,8 +31,33 @@ export default function DisconnectWrapper() {
     }, [attempt, connectionStatus, startCountdown, stopCountdown]);
 
     useEffect(() => {
-        const reconnectingListener = listen('ConnectionStatus', ({ payload }: { payload: ConnectionStatusPayload }) => {
-            if (payload === 'Failed') {
+        const reconnectingListener = listen(
+            BACKEND_STATE_UPDATE,
+            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                if (event.event_type !== 'ConnectionStatus') return;
+                if (event.payload === 'Failed') {
+                    stopCountdown();
+                    const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
+                    if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
+                        setConnectionStatus('disconnected-severe');
+                        setIsReconnectOnCooldown(false);
+                        startCountdown(300);
+                        return;
+                    }
+                    setAttempt(currentAttempt);
+                    startCountdown(retryBackoff[currentAttempt]);
+                } else if (event.payload === 'Succeed') {
+                    stopCountdown();
+                }
+            }
+        );
+
+        const criticalErrorListener = listen(
+            BACKEND_STATE_UPDATE,
+            ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
+                if (event.event_type !== 'CriticalProblem') return;
+                if (connectionStatus === 'connected') return;
+                console.warn('Failed to reconnect');
                 stopCountdown();
                 const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
                 if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
@@ -43,23 +68,8 @@ export default function DisconnectWrapper() {
                 }
                 setAttempt(currentAttempt);
                 startCountdown(retryBackoff[currentAttempt]);
-            } else if (payload === 'Succeed') {
-                stopCountdown();
             }
-        });
-
-        const criticalErrorListener = listen('CriticalError', () => {
-            stopCountdown();
-            const currentAttempt = Math.min(attempt + 1, retryBackoff.length);
-            if (connectionStatus === 'disconnected' && currentAttempt === retryBackoff.length) {
-                setConnectionStatus('disconnected-severe');
-                setIsReconnectOnCooldown(false);
-                startCountdown(300);
-                return;
-            }
-            setAttempt(currentAttempt);
-            startCountdown(retryBackoff[currentAttempt]);
-        });
+        );
 
         return () => {
             reconnectingListener.then((unlisten) => unlisten());

@@ -2,8 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
-import { setDialogToShow } from '../index.ts';
+import { CriticalProblemPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { setDialogToShow, useUIStore } from '../index.ts';
 import { SetupPhase } from '@app/types/backend-state.ts';
 import {
     updateCoreSetupPhaseInfo,
@@ -12,7 +12,7 @@ import {
     updateUnknownSetupPhaseInfo,
     updateWalletSetupPhaseInfo,
 } from './setupStoreActions.ts';
-import { setShowResumeAppModal } from './uiStoreActions.ts';
+import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -52,6 +52,15 @@ export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
+export const setCriticalProblemTest = (payload?: CriticalProblemPayload) => {
+    const connectionStatus = useUIStore.getState().connectionStatus;
+    if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
+        // Assume reconnecting Failed
+        setIsReconnecting(false);
+    } else {
+        setCriticalProblem(payload);
+    }
+};
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
 export const setError = (error: string | undefined, log = false) => {

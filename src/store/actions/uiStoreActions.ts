@@ -3,6 +3,7 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
+import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
@@ -20,8 +21,17 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useUIStore.setState({ isWebglNotSupported });
 };
 export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
+export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
+    if (connectionStatus === 'InProgress') {
+        setIsReconnecting(true);
+    } else if (connectionStatus === 'Succeed') {
+        setIsReconnecting(false);
+        setConnectionStatus('connected');
+    } else if (connectionStatus === 'Failed') {
+        setIsReconnecting(false);
+    }
+};
 export const setConnectionStatus = (connectionStatus: CONNECTION_STATUS) => {
-    console.error('setConnectionStatus called with:', connectionStatus);
     return useUIStore.setState({ connectionStatus });
 };
 export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setState({ isReconnecting });
