@@ -27,6 +27,7 @@ use std::time::Duration;
 use dirs::data_local_dir;
 use futures_util::future::FusedFuture;
 use log::{error, info, warn};
+use tari_common::configuration::Network;
 use tokio::sync::{watch, RwLock};
 use tokio::time::sleep;
 
@@ -43,7 +44,7 @@ const LOG_TARGET: &str = "tari::universe::p2pool_manager";
 
 #[derive(Clone)]
 pub struct P2poolConfig {
-    pub grpc_port: u16,
+    pub grpc_port: u16, // Local
     pub stats_server_port: u16,
     pub base_node_address: String,
     pub cpu_benchmark_hashrate: Option<u64>,
@@ -234,14 +235,20 @@ impl P2poolManager {
         Ok(exit_code)
     }
 
-    pub async fn grpc_port(&self) -> u16 {
-        let process_watcher = self.watcher.read().await;
-        process_watcher
-            .adapter
-            .config
-            .as_ref()
-            .map(|c| c.grpc_port)
-            .unwrap_or_default()
+    pub async fn get_grpc_address(&self, use_local: bool) -> String {
+        if use_local {
+            let process_watcher = self.watcher.read().await;
+            let grpc_port = process_watcher
+                .adapter
+                .config
+                .as_ref()
+                .map(|c| c.grpc_port)
+                .unwrap_or_default();
+            format!("http://127.0.0.1:{}", grpc_port)
+        } else {
+            let network = Network::get_current_or_user_setting_or_default();
+            format!("https://grpc-p2pool.{}.tari.com:443", network)
+        }
     }
 
     pub async fn stats_server_port(&self) -> u16 {

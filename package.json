@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.847",
+    "version": "0.9.900",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -15,9 +15,9 @@
         "knip": "knip"
     },
     "dependencies": {
-        "@floating-ui/react": "^0.27.5",
+        "@floating-ui/react": "^0.27.7",
         "@lottiefiles/dotlottie-react": "^0.13.2",
-        "@tari-project/tari-tower": "^0.0.30",
+        "@tari-project/tari-tower": "^0.0.31",
         "@tauri-apps/api": "^2.4.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
         "@tauri-apps/plugin-os": "^2.2.1",
@@ -28,7 +28,7 @@
         "i18next-browser-languagedetector": "^8.0.4",
         "i18next-http-backend": "^3.0.2",
         "linkify-react": "^4.2.0",
-        "motion": "^12.5.0",
+        "motion": "^12.7.0",
         "react": "^18.3.1",
         "react-dom": "^18.2.0",
         "react-hook-form": "^7.54.2",
@@ -48,7 +48,7 @@
         "@nabla/vite-plugin-eslint": "^2.0.5",
         "@taplo/cli": "^0.7.0",
         "@tauri-apps/cli": "^2.4.0",
-        "@types/node": "^22.13.13",
+        "@types/node": "^22.14.1",
         "@types/react": "^18.3.20",
         "@types/react-dom": "^18.3.5",
         "@types/uuid": "^10.0.0",
@@ -56,17 +56,17 @@
         "@vitejs/plugin-react": "^4.3.4",
         "babel-plugin-styled-components": "^2.1.4",
         "eslint": "^9.23.0",
-        "eslint-config-prettier": "^10.1.1",
+        "eslint-config-prettier": "^10.1.2",
         "eslint-plugin-i18next": "^6.1.1",
         "eslint-plugin-prettier": "^5.2.5",
         "eslint-plugin-react": "^7.37.3",
         "eslint-plugin-react-compiler": "^19.0.0-beta-30d8a17-20250209",
         "eslint-plugin-react-hooks": "^5.2.0",
-        "knip": "^5.46.0",
+        "knip": "^5.50.3",
         "prettier": "^3.5.3",
         "react-qrcode-logo": "^3.0.0",
         "typescript": "^5.8.2",
-        "typescript-eslint": "^8.28.0",
-        "vite": "^6.2.3"
+        "typescript-eslint": "^8.29.1",
+        "vite": "^6.2.6"
     }
 }

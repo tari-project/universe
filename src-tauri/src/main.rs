@@ -158,15 +158,6 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
     let move_app = app.clone();
-    TasksTrackers::current()
-        .common
-        .get_task_tracker()
-        .await
-        .spawn(async move {
-            let _ = EventsManager::handle_internal_wallet_loaded_or_created(&move_app).await;
-        });
-
-    let move_app = app.clone();
     TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
 
@@ -1054,7 +1045,6 @@ fn main() {
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
-        app_config.clone(),
         app_in_memory_config.clone(),
         Some(Network::default()),
         gpu_status_rx.clone(),
@@ -1062,12 +1052,13 @@ fn main() {
         p2pool_stats_rx.clone(),
         tor_watch_rx.clone(),
         stats_collector.build(),
+        node_manager.clone(),
     );
 
     let updates_manager = UpdatesManager::new();
     let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
 
-    let feedback = Feedback::new(app_in_memory_config.clone(), app_config.clone());
+    let feedback = Feedback::new(app_in_memory_config.clone());
 
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
@@ -1291,7 +1282,7 @@ fn main() {
             commands::frontend_ready,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
-            commands::format_micro_minotari,
+            commands::validate_minotari_amount,
             commands::trigger_phases_restart,
         ])
         .build(tauri::generate_context!())

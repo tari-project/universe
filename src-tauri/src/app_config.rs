@@ -25,6 +25,7 @@ use crate::gpu_miner::EngineType;
 use semver::Version;
 use std::{path::PathBuf, time::SystemTime};
 use sys_locale::get_locale;
+use tauri::{AppHandle, Manager};
 
 use crate::credential_manager::CredentialManager;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
@@ -361,6 +362,30 @@ impl AppConfig {
         false
     }
 
+    pub async fn initialize_for_migration(&mut self, app_handle: AppHandle) -> Option<AppConfig> {
+        let old_config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+
+        let _unused = self
+            .load_or_create(old_config_path.clone())
+            .await
+            .map_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to load or create app config: {}", e);
+            });
+
+        let old_config_content = if self.is_file_exists(old_config_path.clone()) {
+            Some(self.clone())
+        } else {
+            None
+        };
+
+        self.move_out_of_original_location(old_config_path).await;
+
+        old_config_content
+    }
+
     pub async fn load_or_create(&mut self, config_path: PathBuf) -> Result<(), anyhow::Error> {
         let file: PathBuf = config_path.join("app_config.json");
         self.config_file = Some(file.clone());
@@ -488,46 +513,57 @@ impl AppConfig {
     }
 
     pub fn mmproxy_monero_nodes(&self) -> &Vec<String> {
+        warn!(target: LOG_TARGET, "Accessed Old config | mmproxy_monero_nodes");
         &self.mmproxy_monero_nodes
     }
 
     pub fn mmproxy_use_monero_fail(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | mmproxy_use_monero_fail");
         self.mmproxy_use_monero_fail
     }
 
     pub fn eco_mode_cpu_options(&self) -> &Vec<String> {
+        warn!(target: LOG_TARGET, "Accessed Old config | eco_mode_cpu_options");
         &self.eco_mode_cpu_options
     }
 
     pub fn ludicrous_mode_cpu_options(&self) -> &Vec<String> {
+        warn!(target: LOG_TARGET, "Accessed Old config | ludicrous_mode_cpu_options");
         &self.ludicrous_mode_cpu_options
     }
 
     pub fn created_at(&self) -> Option<DateTime<Utc>> {
+        warn!(target: LOG_TARGET, "Accessed Old config | created_at");
         self.created_at
     }
 
     pub fn custom_mode_cpu_options(&self) -> &Vec<String> {
+        warn!(target: LOG_TARGET, "Accessed Old config | custom_mode_cpu_options");
         &self.custom_mode_cpu_options
     }
 
     pub fn eco_mode_cpu_threads(&self) -> Option<u32> {
+        warn!(target: LOG_TARGET, "Accessed Old config | eco_mode_cpu_threads");
         self.eco_mode_cpu_threads
     }
 
     pub fn ludicrous_mode_cpu_threads(&self) -> Option<u32> {
+        warn!(target: LOG_TARGET, "Accessed Old config | ludicrous_mode_cpu_threads");
         self.ludicrous_mode_cpu_threads
     }
 
     pub fn anon_id(&self) -> &str {
+        warn!(target: LOG_TARGET, "Accessed Old config | anon_id");
         &self.anon_id
     }
 
     pub fn last_changelog_version(&self) -> &str {
+        warn!(target: LOG_TARGET, "Accessed Old config | last_changelog_version");
         &self.last_changelog_version
     }
 
     pub fn gpu_engine(&self) -> EngineType {
+        warn!(target: LOG_TARGET, "Accessed Old config | gpu_engine");
         match EngineType::from_string(&self.gpu_engine) {
             Ok(engine) => engine,
             Err(_) => EngineType::OpenCL,
@@ -540,6 +576,7 @@ impl AppConfig {
         custom_max_cpu_usage: Option<u32>,
         custom_max_gpu_usage: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
+        debug!(target: LOG_TARGET, "Setting mode to {}", mode);
         let new_mode = match mode.as_str() {
             "Eco" => MiningMode::Eco,
             "Ludicrous" => MiningMode::Ludicrous,
@@ -555,6 +592,7 @@ impl AppConfig {
         Ok(())
     }
     pub async fn set_display_mode(&mut self, display_mode: String) -> Result<(), anyhow::Error> {
+        debug!(target: LOG_TARGET, "Setting display mode to {}", display_mode);
         let new_display_mode = match display_mode.as_str() {
             "system" => DisplayMode::System,
             "dark" => DisplayMode::Dark,
@@ -567,22 +605,27 @@ impl AppConfig {
     }
 
     pub fn display_mode(&self) -> DisplayMode {
+        warn!(target: LOG_TARGET, "Accessed Old config | display_mode");
         self.display_mode
     }
 
     pub fn mode(&self) -> MiningMode {
+        warn!(target: LOG_TARGET, "Accessed Old config | mode");
         self.mode
     }
 
     pub fn keyring_accessed(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | keyring_accessed");
         self.keyring_accessed
     }
 
     pub fn custom_gpu_usage(&self) -> Vec<GpuThreads> {
+        warn!(target: LOG_TARGET, "Accessed Old config | custom_gpu_usage");
         self.custom_max_gpu_usage.clone()
     }
 
     pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
+        warn!(target: LOG_TARGET, "Accessed Old config | airdrop_tokens");
         self.airdrop_tokens.clone()
     }
 
@@ -590,6 +633,7 @@ impl AppConfig {
         &mut self,
         airdrop_tokens: Option<AirdropTokens>,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_airdrop_tokens");
         self.airdrop_tokens = airdrop_tokens;
         self.update_config_file().await?;
         Ok(())
@@ -599,12 +643,14 @@ impl AppConfig {
         &mut self,
         custom_max_gpu_usage: Vec<GpuThreads>,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_max_gpu_usage");
         self.custom_max_gpu_usage = custom_max_gpu_usage.clone();
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn custom_cpu_usage(&self) -> Option<u32> {
+        warn!(target: LOG_TARGET, "Accessed Old config | custom_cpu_usage");
         self.custom_max_cpu_usage
     }
 
@@ -612,42 +658,50 @@ impl AppConfig {
         &mut self,
         custom_max_cpu_usage: u32,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_max_cpu_usage");
         self.custom_max_cpu_usage = Some(custom_max_cpu_usage);
         self.update_config_file().await?;
         Ok(())
     }
 
     pub async fn set_cpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_cpu_mining_enabled");
         self.cpu_mining_enabled = enabled;
         self.update_config_file().await?;
         Ok(self.cpu_mining_enabled)
     }
 
     pub async fn set_gpu_mining_enabled(&mut self, enabled: bool) -> Result<bool, anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_gpu_mining_enabled");
         self.gpu_mining_enabled = enabled;
         self.update_config_file().await?;
         Ok(self.gpu_mining_enabled)
     }
 
     pub fn cpu_mining_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | cpu_mining_enabled");
         self.cpu_mining_enabled
     }
 
     pub fn gpu_mining_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | gpu_mining_enabled");
         self.gpu_mining_enabled
     }
 
     pub fn p2pool_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | p2pool_enabled");
         self.p2pool_enabled
     }
 
     pub async fn set_p2pool_enabled(&mut self, p2pool_enabled: bool) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_p2pool_enabled");
         self.p2pool_enabled = p2pool_enabled;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub async fn set_visual_mode(&mut self, visual_mode: bool) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_visual_mode");
         self.visual_mode = visual_mode;
         self.update_config_file().await?;
         Ok(())
@@ -671,12 +725,14 @@ impl AppConfig {
         &mut self,
         show_experimental_settings: bool,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_show_experimental_settings");
         self.show_experimental_settings = show_experimental_settings;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn should_auto_launch(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | should_auto_launch");
         self.should_auto_launch
     }
 
@@ -684,6 +740,7 @@ impl AppConfig {
         &mut self,
         should_auto_launch: bool,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_should_auto_launch");
         self.should_auto_launch = should_auto_launch;
         self.update_config_file().await?;
         Ok(())
@@ -693,12 +750,14 @@ impl AppConfig {
         &mut self,
         mine_on_app_start: bool,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_mine_on_app_start");
         self.mine_on_app_start = mine_on_app_start;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn mine_on_app_start(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | mine_on_app_start");
         self.mine_on_app_start
     }
 
@@ -706,20 +765,24 @@ impl AppConfig {
         &mut self,
         allow_telemetry: bool,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_allow_telemetry");
         self.allow_telemetry = allow_telemetry;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn allow_telemetry(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | allow_telemetry");
         self.allow_telemetry
     }
 
     pub fn monero_address(&self) -> &str {
+        warn!(target: LOG_TARGET, "Accessed Old config | monero_address");
         &self.monero_address
     }
 
     pub async fn set_monero_address(&mut self, address: String) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_monero_address");
         self.monero_address_is_generated = false;
         self.monero_address = address;
         self.update_config_file().await?;
@@ -727,10 +790,12 @@ impl AppConfig {
     }
 
     pub fn monero_address_is_generated(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | monero_address_is_generated");
         self.monero_address_is_generated
     }
 
     pub fn last_binaries_update_timestamp(&self) -> SystemTime {
+        warn!(target: LOG_TARGET, "Accessed Old config | last_binaries_update_timestamp");
         self.last_binaries_update_timestamp
     }
 
@@ -738,6 +803,7 @@ impl AppConfig {
         &mut self,
         timestamp: SystemTime,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_last_binaries_update_timestamp");
         self.last_binaries_update_timestamp = timestamp;
         self.update_config_file().await?;
         Ok(())
@@ -747,12 +813,14 @@ impl AppConfig {
         &mut self,
         language: String,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_application_language");
         self.application_language = language;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn application_language(&self) -> String {
+        warn!(target: LOG_TARGET, "Accessed Old config | application_language");
         self.application_language.clone()
     }
 
@@ -760,12 +828,14 @@ impl AppConfig {
         &mut self,
         should_always_use_system_language: bool,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_should_always_use_system_language");
         self.should_always_use_system_language = should_always_use_system_language;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub async fn propose_system_language(&mut self) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | propose_system_language");
         if self.has_system_language_been_proposed | !self.should_always_use_system_language {
             Ok(())
         } else {
@@ -779,48 +849,59 @@ impl AppConfig {
     }
 
     pub fn should_always_use_system_language(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | should_always_use_system_language");
         self.should_always_use_system_language
     }
 
     pub fn has_system_language_been_proposed(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | has_system_language_been_proposed");
         self.has_system_language_been_proposed
     }
 
     pub fn paper_wallet_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | paper_wallet_enabled");
         self.paper_wallet_enabled
     }
 
     pub fn custom_power_levels_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | custom_power_levels_enabled");
         self.custom_power_levels_enabled
     }
 
     pub fn sharing_enabled(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | sharing_enabled");
         self.sharing_enabled
     }
 
     pub fn visual_mode(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | visual_mode");
         self.visual_mode
     }
 
     pub fn show_experimental_settings(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | show_experimental_settings");
         self.show_experimental_settings
     }
 
     pub fn use_tor(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | use_tor");
         self.use_tor
     }
 
     pub async fn set_use_tor(&mut self, use_tor: bool) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_use_tor");
         self.use_tor = use_tor;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn auto_update(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | auto_update");
         self.auto_update
     }
 
     pub async fn set_auto_update(&mut self, auto_update: bool) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_auto_update");
         self.auto_update = auto_update;
         self.update_config_file().await?;
         Ok(())
@@ -831,6 +912,7 @@ impl AppConfig {
         use_monero_fail: bool,
         monero_nodes: Vec<String>,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_monerod_config");
         self.mmproxy_use_monero_fail = use_monero_fail;
         self.mmproxy_monero_nodes = monero_nodes;
         self.update_config_file().await?;
@@ -838,6 +920,7 @@ impl AppConfig {
     }
 
     pub fn p2pool_stats_server_port(&self) -> Option<u16> {
+        warn!(target: LOG_TARGET, "Accessed Old config | p2pool_stats_server_port");
         self.p2pool_stats_server_port
     }
 
@@ -845,16 +928,19 @@ impl AppConfig {
         &mut self,
         port: Option<u16>,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_p2pool_stats_server_port");
         self.p2pool_stats_server_port = port;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn pre_release(&self) -> bool {
+        warn!(target: LOG_TARGET, "Accessed Old config | pre_release");
         self.pre_release
     }
 
     pub async fn set_pre_release(&mut self, pre_release: bool) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_pre_release");
         self.pre_release = pre_release;
         self.update_config_file().await?;
         Ok(())
@@ -864,18 +950,21 @@ impl AppConfig {
         &mut self,
         version: String,
     ) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_last_changelog_version");
         self.last_changelog_version = version;
         self.update_config_file().await?;
         Ok(())
     }
 
     pub async fn set_gpu_engine(&mut self, engine: &str) -> Result<(), anyhow::Error> {
+        warn!(target: LOG_TARGET, "Accessed Old config | set_gpu_engine");
         self.gpu_engine = engine.to_string();
         self.update_config_file().await?;
         Ok(())
     }
 
     pub fn remote_base_node_address(&self) -> Option<String> {
+        warn!(target: LOG_TARGET, "Accessed Old config | remote_base_node_address");
         self.remote_base_node_address.clone()
     }
 

@@ -183,7 +183,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
                     sentry::capture_message(&error_message, sentry::Level::Error);
                     EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                         .await;
-
                 }
                 result = self.setup_inner() => {
                     match result {

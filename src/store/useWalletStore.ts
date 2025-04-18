@@ -1,6 +1,7 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 interface PendingTransaction {
     tx_id: number;
@@ -58,10 +59,10 @@ export const useWalletStore = create<WalletStoreState>()(() => ({
 }));
 
 // Temporary solution until we use excess_sig to track pending transactions
-export const addPendingTransaction = (payload: { amount: string; destination: string; paymentId: string }) => {
+export const addPendingTransaction = (payload: { amount: number; destination: string; paymentId: string }) => {
     const transaction: PendingTransaction = {
         tx_id: Date.now(),
-        amount: Number(payload.amount.replace(/[Tt]$/, '000000')),
+        amount: Number(payload.amount) * 1_000_000,
         dest_address: payload.destination,
         payment_id: payload.paymentId,
         direction: 2,
@@ -79,6 +80,11 @@ export const updateWalletScanningProgress = (payload: {
     total_height: number;
     progress: number;
 }) => {
+    const currentWalletScanState = useWalletStore.getState().wallet_scanning;
+    const { is_scanning: _, ...currentScanData } = currentWalletScanState;
+    const isEqual = deepEqual(payload, currentScanData);
+    if (isEqual) return;
+
     const is_scanning = payload.scanned_height < payload.total_height;
     useWalletStore.setState({
         wallet_scanning: {

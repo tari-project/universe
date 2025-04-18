@@ -277,7 +277,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     async fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
-        payload: Option<HardwareSetupPhaseOutput>,
+        _payload: Option<HardwareSetupPhaseOutput>,
     ) -> Result<(), Error> {
         sender.send(PhaseStatus::Success).ok();
         self.progress_stepper
@@ -287,12 +287,6 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await;
 
         EventsManager::handle_hardware_phase_finished(&self.app_handle, true).await;
-
-        if let Some(payload) = payload {
-            let _unused = SetupManager::get_instance()
-                .hardware_phase_output
-                .send(payload);
-        }
         Ok(())
     }
 }

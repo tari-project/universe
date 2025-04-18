@@ -57,6 +57,7 @@ use tokio::{
     select,
     sync::{watch::Sender, Mutex},
 };
+use tokio_util::sync::CancellationToken;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
@@ -173,8 +174,8 @@ pub struct SetupManager {
     is_mining_unlocked: Mutex<bool>,
     is_initial_setup_finished: Mutex<bool>,
     phases_to_restart_queue: Mutex<Vec<SetupPhase>>,
-    pub hardware_phase_output: Sender<HardwareSetupPhaseOutput>,
     app_handle: Mutex<Option<AppHandle>>,
+    cancellation_token: Mutex<CancellationToken>,
 }
 
 impl SetupManager {
@@ -190,19 +191,6 @@ impl SetupManager {
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
-
-        let old_config_path = app_handle
-            .path()
-            .app_config_dir()
-            .expect("Could not get config dir");
-
-        let _unused = state
-            .config
-            .write()
-            .await
-            .load_or_create(old_config_path.clone())
-            .await;
-        let old_config = state.config.read().await;
 
         let _unused = state
             .telemetry_manager
@@ -229,79 +217,17 @@ impl SetupManager {
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
 
-        let old_config_content = if old_config.is_file_exists(old_config_path.clone()) {
-            Some(old_config.clone())
-        } else {
-            None
-        };
-
-        let mut config_core = ConfigCore::current().write().await;
-        config_core.handle_old_config_migration(old_config_content.clone());
-        config_core.load_app_handle(app_handle.clone()).await;
-        drop(config_core);
-
-        ConfigWallet::current()
+        let old_config_content = state
+            .config
             .write()
             .await
-            .handle_old_config_migration(old_config_content.clone());
-        ConfigWallet::current()
-            .write()
-            .await
-            .load_app_handle(app_handle.clone())
+            .initialize_for_migration(app_handle.clone())
             .await;
 
-        // This must happend before InternalWallet::load_or_create !!!
-        if ConfigWallet::content().await.monero_address().is_empty() {
-            if let Ok(monero_address) = ConfigWallet::create_monereo_address().await {
-                let _unused = ConfigWallet::update_field(
-                    ConfigWalletContent::set_generated_monero_address,
-                    monero_address,
-                )
-                .await;
-            }
-        }
-
-        match InternalWallet::load_or_create(old_config_path.clone()).await {
-            Ok(wallet) => {
-                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
-                state
-                    .wallet_manager
-                    .set_view_private_key_and_spend_key(
-                        wallet.get_view_key(),
-                        wallet.get_spend_key(),
-                    )
-                    .await;
-                *state.tari_address.write().await = wallet.get_tari_address();
-            }
-            Err(e) => {
-                error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
-            }
-        };
-
-        let mut config_mining = ConfigMining::current().write().await;
-        config_mining.handle_old_config_migration(old_config_content.clone());
-        config_mining.load_app_handle(app_handle.clone()).await;
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config_mining._get_content());
-
-        drop(config_mining);
-
-        let mut config_ui = ConfigUI::current().write().await;
-        config_ui.handle_old_config_migration(old_config_content.clone());
-        config_ui.load_app_handle(app_handle.clone()).await;
-        drop(config_ui);
-
-        old_config
-            .move_out_of_original_location(old_config_path)
-            .await;
-
-        EventsManager::handle_config_core_loaded(&app_handle).await;
-        EventsManager::handle_config_mining_loaded(&app_handle).await;
-        EventsManager::handle_config_ui_loaded(&app_handle).await;
-        EventsManager::handle_config_wallet_loaded(&app_handle).await;
+        ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
@@ -359,6 +285,8 @@ impl SetupManager {
         let mut node_phase_status_subscriber = self.node_phase_status.subscribe();
         let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
         let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+
+        let cacellation_token = self.cancellation_token.lock().await.clone();
 
         TasksTrackers::current()
             .common
@@ -447,6 +375,10 @@ impl SetupManager {
                     }
 
                         select! {
+                        _ = cacellation_token.cancelled() => {
+                            info!(target: LOG_TARGET, "Cancellation token triggered, exiting unlock conditions loop");
+                            break;
+                        }
                         _ = shutdown_signal.wait() => { break; }
                         _ = core_phase_status_subscriber.changed() => { continue; }
                         _ = hardware_phase_status_subscriber.changed() => { continue; }
@@ -459,6 +391,10 @@ impl SetupManager {
     }
 
     async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+        // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
+        // As we are shutting down the phases one by one which could lead to unwanted unlocks
+        self.cancellation_token.lock().await.cancel();
+
         for phase in phases {
             match phase {
                 SetupPhase::Core => {
@@ -495,6 +431,9 @@ impl SetupManager {
                 }
             }
         }
+
+        *self.cancellation_token.lock().await = CancellationToken::new();
+        self.wait_for_unlock_conditions(app_handle.clone()).await;
     }
 
     async fn resume_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {

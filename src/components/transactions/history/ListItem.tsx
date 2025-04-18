@@ -16,6 +16,8 @@ import {
     StatusWrapper,
     CircularProgressWrapper,
     Chip,
+    BlockInfoWrapper,
+    Content,
 } from './ListItem.styles.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
@@ -32,28 +34,34 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status
     const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
-            <StatusWrapper>
+            <Content>
                 {isPending && (
-                    <CircularProgressWrapper>
-                        <CircularProgress />
-                    </CircularProgressWrapper>
+                    <StatusWrapper>
+                        <CircularProgressWrapper>
+                            <CircularProgress />
+                        </CircularProgressWrapper>
+                    </StatusWrapper>
                 )}
-            </StatusWrapper>
-            <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
-            <TimeWrapper variant="p">{time}</TimeWrapper>
-
-            <ValueWrapper>
-                {chip && (
+                <BlockInfoWrapper>
+                    <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
+                    <TimeWrapper variant="p">{time}</TimeWrapper>
+                </BlockInfoWrapper>
+            </Content>
+            <Content>
+                {chip ? (
                     <Chip>
                         <Typography>{chip}</Typography>
                     </Chip>
-                )}
-                <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
-                    {isPositiveValue ? `+` : `-`}
-                </ValueChangeWrapper>
-                {value}
-                <CurrencyText>{`tXTM`}</CurrencyText>
-            </ValueWrapper>
+                ) : null}
+
+                <ValueWrapper>
+                    <ValueChangeWrapper $isPositiveValue={isPositiveValue}>
+                        {isPositiveValue ? `+` : `-`}
+                    </ValueChangeWrapper>
+                    {value}
+                    <CurrencyText>{`tXTM`}</CurrencyText>
+                </ValueWrapper>
+            </Content>
         </ContentWrapper>
     );
 });

@@ -34,22 +34,36 @@ export function FormField({
     const labelT = t(`send.label`, { context: name });
     const placeholderT = t(`send.placeholder`, { context: name });
 
+    const amountRules =
+        name === 'amount'
+            ? {
+                  pattern: /^[0-9]+$/,
+              }
+            : undefined;
+    const rules = {
+        required: {
+            value: required,
+            message: t('send.required', { fieldName: name }),
+        },
+        amountRules,
+    };
+
     return (
         <Controller
             control={control}
             name={name as InputName}
-            rules={{
-                required: {
-                    value: required,
-                    message: t('send.required', { fieldName: name }),
-                },
-            }}
-            render={({ field: { ref: _ref, name, ...rest }, fieldState }) => {
+            rules={rules}
+            render={({ field: { ref: _ref, name, value, ...rest }, fieldState }) => {
                 return (
                     <TxInput
                         {...rest}
                         name={name}
                         onChange={(e) => {
+                            const value = e.target.value;
+                            const valueIsNaN = isNaN(Number(value));
+                            if (name === 'amount' && valueIsNaN) {
+                                return;
+                            }
                             rest.onChange(e);
                             if (handleChange) {
                                 handleChange(e, name as InputName);
@@ -63,7 +77,8 @@ export function FormField({
                         errorMessage={errorText || fieldState.error?.message}
                         autoFocus={autoFocus}
                         truncateOnBlur={truncateOnBlur}
-                        truncateText={truncateOnBlur && rest.value ? String(rest.value) : undefined}
+                        value={value}
+                        truncateText={truncateOnBlur && value ? String(value) : undefined}
                         isValid={isValid}
                     />
                 );

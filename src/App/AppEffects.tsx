@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 
 import setupLogger from '../utils/shared-logger';
 
