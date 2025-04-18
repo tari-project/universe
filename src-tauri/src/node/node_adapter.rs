@@ -175,7 +175,32 @@ impl NodeAdapterService {
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {
-                break Ok(());
+                if sync_progress.local_height >= sync_progress.tip_height {
+                    break Ok(());
+                } else {
+                    // Report to sentry that we have initial sync achieved but local height is lower than tip height
+                    let error_msg =
+                        "Initial sync achieved but local height is lower than tip height"
+                            .to_string();
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    let extra = vec![
+                        (
+                            "local_height".to_string(),
+                            json!(sync_progress.local_height.to_string()),
+                        ),
+                        (
+                            "tip_height".to_string(),
+                            json!(sync_progress.tip_height.to_string()),
+                        ),
+                    ];
+                    sentry::capture_event(Event {
+                        message: Some(error_msg),
+                        level: sentry::Level::Error,
+                        culprit: Some("node-sync-inconsistency".to_string()),
+                        extra: extra.into_iter().collect(),
+                        ..Default::default()
+                    });
+                }
             }
 
             let mut progress_params: HashMap<String, String> = HashMap::new();
