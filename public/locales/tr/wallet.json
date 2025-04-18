@@ -7,7 +7,7 @@
   "my_tari": "Benim Tari",
   "new": "Yeni",
   "receive": {
-    "label-address": "My Address"
+    "label-address": "Wallet Address"
   },
   "send": {
     "cta-send": "Tari Gönder",

@@ -7,7 +7,7 @@
   "my_tari": "मेरा तारी",
   "new": "नया",
   "receive": {
-    "label-address": "My Address"
+    "label-address": "Wallet Address"
   },
   "send": {
     "cta-send": "तारी भेजें",

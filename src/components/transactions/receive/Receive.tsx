@@ -1,12 +1,15 @@
-import { Address } from '@app/components/wallet/Address.tsx';
 import { Wrapper } from './receive.styles';
 import { AddressQRCode } from '@app/components/wallet/AddressQRCode.tsx';
+import { CopyAddress } from '@app/components/wallet/CopyAddress';
+import { useState } from 'react';
 
 export function Receive() {
+    const [useEmoji, setUseEmoji] = useState(false);
+
     return (
         <Wrapper>
-            <Address />
-            <AddressQRCode />
+            <AddressQRCode useEmoji={useEmoji} setUseEmoji={setUseEmoji} />
+            <CopyAddress useEmoji={useEmoji} />
         </Wrapper>
     );
 }

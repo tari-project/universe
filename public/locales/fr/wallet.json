@@ -7,7 +7,7 @@
   "my_tari": "Mon Tari",
   "new": "Nouveau",
   "receive": {
-    "label-address": "My Address"
+    "label-address": "Wallet Address"
   },
   "send": {
     "cta-send": "Envoyer Tari",

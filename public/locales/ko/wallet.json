@@ -7,7 +7,7 @@
   "my_tari": "내 Tari",
   "new": "새로운",
   "receive": {
-    "label-address": "My Address"
+    "label-address": "Wallet Address"
   },
   "send": {
     "cta-send": "Tari 보내기",

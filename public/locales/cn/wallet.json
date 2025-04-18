@@ -7,7 +7,7 @@
   "my_tari": "我的 Tari",
   "new": "新建",
   "receive": {
-    "label-address": "My Address"
+    "label-address": "Wallet Address"
   },
   "send": {
     "cta-send": "发送 Tari",

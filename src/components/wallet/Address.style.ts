@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
+import { m } from 'motion/react';
 
 export const QRContainer = styled.div`
     display: flex;
@@ -10,14 +11,21 @@ export const QRContainer = styled.div`
     background: ${({ theme }) => theme.colors.greyscale[950]};
     padding: 15px;
     gap: 10px;
-    overflow: hidden;
+
     align-items: center;
 `;
 export const AddressContainer = styled.div`
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+
     gap: 8px;
+
+    border-radius: 15px;
+    background: #fff;
+    padding: 10px 15px;
+    width: 100%;
+
+    position: relative;
 `;
 
 export const ContentWrapper = styled.div`
@@ -28,7 +36,7 @@ export const ContentWrapper = styled.div`
 `;
 export const EmojiAddressWrapper = styled.div`
     p {
-        font-size: 14px;
+        font-size: 22px;
     }
     span {
         font-size: 20px;
@@ -66,4 +74,80 @@ export const Label = styled(Typography).attrs({
 })`
     font-weight: 500;
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+`;
+
+export const CopyAddressButton = styled.button`
+    border-radius: 32px;
+    background: #523df1;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 60px;
+    width: 100%;
+
+    padding: 12px 22px;
+
+    color: #fff;
+    font-family: Poppins, sans-serif;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 26px;
+    letter-spacing: 0.46px;
+`;
+
+export const Tooltip = styled(m.div)`
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0px 4px 34px 0px rgba(0, 0, 0, 0.15);
+
+    position: absolute;
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+
+    padding: 15px;
+    width: 270px;
+    margin-right: 12px;
+
+    &::after {
+        content: '';
+        position: absolute;
+        right: -8px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 0;
+        height: 0;
+        border-top: 8px solid transparent;
+        border-bottom: 8px solid transparent;
+        border-left: 8px solid #fff;
+    }
+`;
+
+export const TooltipTitle = styled.div`
+    color: #000;
+    font-family: Poppins, sans-serif;
+    font-size: 14px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: 13px;
+`;
+
+export const TooltipText = styled.div`
+    color: #000;
+    font-family: Poppins, sans-serif;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 108.333%;
+
+    p {
+        margin-bottom: 10px;
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+    }
 `;
