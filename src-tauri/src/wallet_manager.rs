@@ -28,6 +28,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;
@@ -219,10 +220,8 @@ impl WalletManager {
     pub async fn wait_for_initial_wallet_scan(
         &self,
         app: &AppHandle,
-        block_height: u64,
+        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Result<(), WalletManagerError> {
-        log::info!(target: LOG_TARGET, "Starting initial wallet scan to height {}", block_height);
-
         if self.is_initial_scan_completed() {
             log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
             return Ok(());
@@ -232,12 +231,14 @@ impl WalletManager {
         if !process_watcher.is_running() {
             return Err(WalletManagerError::WalletNotStarted);
         }
-        let state_receiver = process_watcher.adapter.state_broadcast.subscribe();
+        let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
         let app_clone = app.clone();
         drop(process_watcher);
+
+        let node_status_watch_rx_progress = node_status_watch_rx.clone();
         // Start a background task to monitor the wallet state and emit scan progress updates
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut state_rx = state_receiver;
+            let mut wallet_state_rx = wallet_state_receiver;
             let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
             loop {
@@ -246,21 +247,16 @@ impl WalletManager {
                         log::info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
                         break;
                     }
-                    result = state_rx.changed() => {
-                        if result.is_err() {
-                            log::warn!(target: LOG_TARGET, "Failed to get wallet state update");
-                            break;
-                        }
-
+                    _ = wallet_state_rx.changed() => {
+                        let current_target_height = node_status_watch_rx_progress.borrow().block_height;
                         let (scanned_height, progress) = {
-                            if let Some(state) = &*state_rx.borrow() {
-                                let scanned_height = state.scanned_height;
-                                let progress = if block_height > 0 {
-                                    (scanned_height as f64 / block_height as f64 * 100.0).min(100.0)
+                            if let Some(wallet_state) = &*wallet_state_rx.borrow() {
+                                let progress = if current_target_height > 0 {
+                                    (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
                                 } else {
                                     0.0
                                 };
-                                (scanned_height, progress)
+                                (wallet_state.scanned_height, progress)
                             } else {
                                 continue;
                             }
@@ -270,9 +266,12 @@ impl WalletManager {
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 &app_clone,
                                 scanned_height,
-                                block_height,
+                                current_target_height,
                                 progress,
                             ).await;
+                        }
+                        if progress >= 100.0 {
+                            break;
                         }
                     }
                 }
@@ -281,38 +280,62 @@ impl WalletManager {
 
         let app_clone2 = app.clone();
         let wallet_manager = self.clone();
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            match wallet_manager
-                .wait_for_scan_to_height(block_height, None)
-                .await
-            {
-                Ok(scanned_wallet_state) => {
-                    if let Some(balance) = scanned_wallet_state.balance {
-                        log::info!(
-                            target: LOG_TARGET,
-                            "Initial wallet scan complete. Available balance: {}",
-                            balance.available_balance
-                        );
-                        EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
-                        EventsEmitter::emit_init_wallet_scanning_progress(
-                            &app_clone2,
-                            block_height,
-                            block_height,
-                            100.0,
-                        ).await;
+        let node_status_watch_rx_scan = node_status_watch_rx.clone();
 
-                        wallet_manager.initial_scan_completed
-                            .store(true, std::sync::atomic::Ordering::Relaxed);
-                    } else {
-                        log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+            loop {
+                let current_target_height = node_status_watch_rx_scan.borrow().block_height;
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet initial scan task");
+                        return Ok(());
                     }
-                    Ok(())
-                }
-                Err(e) => {
-                    log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
-                    Err(e)
+                    result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
+                        match result {
+                            Ok(scanned_wallet_state) => {
+                                let latest_height = node_status_watch_rx_scan.borrow().block_height;
+                                if latest_height > current_target_height {
+                                    log::info!(target: LOG_TARGET,
+                                        "Node height increased from {} to {} while initial scanning, continuing..",
+                                        current_target_height, latest_height);
+                                    continue;
+                                }
+
+                                // Scan completed to current target height
+                                if let Some(balance) = scanned_wallet_state.balance {
+                                    log::info!(
+                                        target: LOG_TARGET,
+                                        "Initial wallet scan complete up to {} block height. Available balance: {}",
+                                        latest_height,
+                                        balance.available_balance
+                                    );
+                                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+                                    EventsEmitter::emit_init_wallet_scanning_progress(
+                                        &app_clone2,
+                                        current_target_height,
+                                        current_target_height,
+                                        100.0,
+                                    ).await;
+
+                                    wallet_manager.initial_scan_completed
+                                        .store(true, std::sync::atomic::Ordering::Relaxed);
+                                } else {
+                                    log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                                }
+                                break;
+                            }
+                            Err(e) => {
+                                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
+                                return Err(e);
+                            }
+                        }
+                    }
                 }
             }
+
+            Ok(())
         });
 
         Ok(())
