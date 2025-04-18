@@ -14,9 +14,10 @@ export default function useSocketEvents() {
     const handleWsUserIdEvent = useHandleWsUserIdEvent();
     const handleWsGlobalEvent = useHandleWsGlobalEvent();
     const [socketConnection, setSocketConnection] = useState(socket);
+    const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
 
     useEffect(() => {
-        if (!userId || !airdropToken || !socketConnection) return;
+        if (!userId || !airdropToken || !socketConnection || pollingEnabled) return;
         function onConnectError(error: Error) {
             console.error('Error connecting to websocket:', error);
         }
@@ -30,10 +31,10 @@ export default function useSocketEvents() {
             socketConnection?.off('disconnect', onDisconnect);
             socketConnection?.off('connect_error', onConnectError);
         };
-    }, [airdropToken, userId, socketConnection]);
+    }, [airdropToken, userId, socketConnection, pollingEnabled]);
 
     useEffect(() => {
-        if (!userId) return;
+        if (!userId || pollingEnabled) return;
 
         if (!socketConnection && airdropApiUrl && airdropToken) {
             const newSocket = initialiseSocket(airdropApiUrl, airdropToken);
@@ -61,5 +62,13 @@ export default function useSocketEvents() {
             socketConnection?.off(userId, handleWsUserIdEvent);
             socketConnection?.off(GLOBAL_EVENT_NAME, handleWsGlobalEvent);
         };
-    }, [socketConnection, airdropApiUrl, airdropToken, handleWsGlobalEvent, handleWsUserIdEvent, userId]);
+    }, [
+        socketConnection,
+        airdropApiUrl,
+        airdropToken,
+        userId,
+        pollingEnabled,
+        handleWsGlobalEvent,
+        handleWsUserIdEvent,
+    ]);
 }

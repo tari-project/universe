@@ -5,11 +5,12 @@ import LogIn from './LogIn.tsx';
 import { Wrapper } from './items.style';
 import { useAirdropStore } from '@app/store';
 import useAirdropWebsocket from '@app/hooks/airdrop/ws/useAirdropWebsocket.ts';
-import { useXSpaceEventRefresh } from '@app/hooks/airdrop/stateHelpers/useXSpaceEventRefresh.ts';
+import { useAirdropPolling } from '@app/hooks/airdrop/stateHelpers/useAirdropPolling.ts';
+import { CommunityMessages } from './components/CommunityMessages/CommunityMessages.tsx';
 
 function LoggedInItems() {
     useAirdropWebsocket();
-    useXSpaceEventRefresh();
+    useAirdropPolling();
     return (
         <>
             <Invite />
@@ -21,5 +22,10 @@ function LoggedInItems() {
 
 export function AirdropSidebarItems() {
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
-    return <Wrapper>{isLoggedIn ? <LoggedInItems /> : <LogIn />}</Wrapper>;
+    return (
+        <Wrapper>
+            {isLoggedIn ? <LoggedInItems /> : <LogIn />}
+            <CommunityMessages />
+        </Wrapper>
+    );
 }
