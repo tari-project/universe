@@ -32,11 +32,17 @@ export const Cover = styled(m.div)`
     cursor: pointer;
 `;
 
-export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number }>`
+export const BoxWrapper = styled(m.div)`
     width: 100%;
     max-width: 481px;
 
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     flex-shrink: 0;
+    gap: 20px;
+
+    padding: 30px;
 
     border-radius: 20px;
     background: rgba(255, 255, 255, 0.75);
@@ -45,29 +51,31 @@ export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number 
 
     position: relative;
     z-index: 1;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 30px;
-
-    padding: 50px;
 `;
 
 export const CloseButton = styled('button')`
     cursor: pointer;
-    position: absolute;
-    top: -20px;
-    left: 100%;
-    margin-left: 5px;
+
     transition: transform 0.2s ease;
-    color: rgba(255, 255, 255, 0.5);
-    transition:
-        color 0.2s ease,
-        transform 0.2s ease;
+    height: 31px;
 
     &:hover {
-        color: #fff;
         transform: scale(1.1);
     }
+`;
+
+export const TopWrapper = styled('div')`
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+`;
+
+export const Title = styled('div')`
+    color: #000;
+    font-family: Poppins, sans-serif;
+    font-size: 18px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 31px;
 `;
