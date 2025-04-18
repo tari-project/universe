@@ -128,6 +128,10 @@ impl WalletAdapter {
             let tx = message.transaction.ok_or_else(|| {
                 WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
             })?;
+            if tx.status == 14 || tx.status == 7 {
+                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN and REJECTED
+                continue;
+            }
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
                 source_address: tx.source_address.to_hex(),

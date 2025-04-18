@@ -29,7 +29,7 @@
   "debug-info": "Отладка",
   "disconnect": "Отключиться от Airdrop",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Не удалось получить мосты Tor. Проверьте подключение к интернету или попробуйте позже.",
     "invalid-bridge": "Конфигурация моста недействительна",
     "invalid-control-port": "Конфигурация порта управления недействительна"
   },
@@ -57,7 +57,7 @@
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, что Вы подключены к форку, а не к основной цепочке. Любые выигранные Вами блоки могут быть аннулированы.",
   "last-block-added-time": "Время добавления последнего блока в цепь",
-  "local-node-sync-progress": "Local node syncing progress",
+  "local-node-sync-progress": "Прогресс синхронизации локального узла",
   "logs": "Логи",
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
   "mine-on-app-start": {
@@ -66,7 +66,7 @@
   },
   "miners": "Майнеры",
   "mining-toggle-warning": "Майнинг будет приостановлен, пока изменения вступят в силу.",
-  "minotari-node": "Minotari Node",
+  "minotari-node": "Узел Minotari",
   "monero-address": {
     "placeholder": "Введите адрес Monero",
     "title": "Адрес Monero"
@@ -74,10 +74,10 @@
   "monero-seed-words": "Секретные слова Monero",
   "network": "Сеть",
   "no-entry-guard": "Нет подключения к Entry Guard!",
-  "node-connection-address": "Connection address",
-  "node-public-address": "Public address",
-  "node-public-key": "Public key",
-  "node-type": "Type",
+  "node-connection-address": "Адрес подключения",
+  "node-public-address": "Публичный адрес",
+  "node-public-key": "Публичный ключ",
+  "node-type": "Тип",
   "not-connected-to-tari": "Не подключено к сети Tari",
   "open-logs-directory": "Открыть папку с логами",
   "p2pool-chain-tip": "Конец цепей",

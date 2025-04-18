@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
 
 import setupLogger from '../utils/shared-logger';
 
@@ -20,13 +19,6 @@ setupLogger();
 export default function AppEffects() {
     useEffect(() => {
         async function initialize() {
-            await invoke('frontend_ready')
-                .then(() => {
-                    console.info('Successfully called frontend_ready');
-                })
-                .catch((e) => {
-                    console.error('Failed to call frontend_ready: ', e);
-                });
             await setMiningNetwork();
             await airdropSetup();
         }

@@ -109,6 +109,6 @@ declare module '@tauri-apps/api/core' {
         param: 'verify_address_for_send',
         payload: { address: string; sendingMethod?: number }
     ): Promise<void>;
-    function invoke(param: 'format_micro_minotari', payload: { amount: string }): Promise<string>;
+    function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
 }

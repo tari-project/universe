@@ -18,7 +18,7 @@ import { FormField } from './FormField.tsx';
 import { BottomWrapper, DividerIcon, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 import { HeaderLabel, TabHeader } from '../components/Tabs/tab.styles.ts';
 
-const defaultValues = { message: '', address: '', amount: '' };
+const defaultValues = { message: '', address: '', amount: undefined };
 
 interface Props {
     section: string;
@@ -31,10 +31,12 @@ export function Send({ setSection }: Props) {
 
     const [isAddressValid, setIsAddressValid] = useState(false);
 
-    const { control, handleSubmit, reset, formState, setError, setValue, clearErrors } = useForm<SendInputs>({
-        defaultValues,
-        mode: 'all',
-    });
+    const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
+        {
+            defaultValues,
+            mode: 'all',
+        }
+    );
 
     const { isSubmitted, isSubmitting, isValid, errors, isSubmitSuccessful } = formState;
 
@@ -86,7 +88,8 @@ export function Send({ setSection }: Props) {
     );
 
     function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        setValue(name, e.target.value, { shouldValidate: true });
+        const value = e.target.value;
+        setValue(name, value, { shouldValidate: true });
         clearErrors(name);
     }
 
@@ -112,8 +115,9 @@ export function Send({ setSection }: Props) {
         if (amount.length === 0) return;
 
         try {
-            await invoke('format_micro_minotari', { amount });
-        } catch (_error) {
+            await invoke('validate_minotari_amount', { amount });
+        } catch (error) {
+            console.error('Error in validateAmount:', error);
             setError('amount', { message: t('send.error-invalid-amount') });
         }
     };
@@ -123,9 +127,11 @@ export function Send({ setSection }: Props) {
         validateAddress(address);
     };
 
-    const handleAmountBlur = (e: FocusEvent<HTMLInputElement>) => {
-        const amount = e.target.value;
-        validateAmount(amount);
+    const handleAmountBlur = () => {
+        const amount = getValues().amount;
+        if (amount) {
+            validateAmount(amount.toString());
+        }
     };
 
     return (

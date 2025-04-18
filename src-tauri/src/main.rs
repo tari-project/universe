@@ -1283,7 +1283,7 @@ fn main() {
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
-            commands::format_micro_minotari,
+            commands::validate_minotari_amount,
             commands::trigger_phases_restart,
         ])
         .build(tauri::generate_context!())
