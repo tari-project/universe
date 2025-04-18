@@ -217,6 +217,7 @@ impl WalletManager {
             })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn wait_for_initial_wallet_scan(
         &self,
         app: &AppHandle,
