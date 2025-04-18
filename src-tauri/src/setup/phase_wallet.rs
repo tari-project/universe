@@ -214,10 +214,9 @@ impl SetupPhaseImpl for WalletSetupPhase {
         drop(spend_wallet_manager);
 
         let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let node_status = *node_status_watch_rx.borrow();
         state
             .wallet_manager
-            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status.block_height)
+            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status_watch_rx)
             .await?;
 
         Ok(None)
