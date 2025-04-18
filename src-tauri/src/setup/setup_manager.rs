@@ -258,6 +258,7 @@ impl SetupManager {
             .await;
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let mut core_phase_status_subscriber = self.core_phase_status.subscribe();
         let mut hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();

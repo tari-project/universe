@@ -157,5 +157,6 @@ pub struct InitWalletScanningProgressPayload {
 pub enum ConnectionStatusPayload {
     InProgress,
     Succeed,
+    #[allow(dead_code)]
     Failed,
 }
