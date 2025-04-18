@@ -2,10 +2,17 @@
 import { useUIStore } from '@app/store/useUIStore';
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 
-import { handleNewBlock, setFlareAnimationType, useBlockchainVisualisationStore } from '@app/store';
+import {
+    handleNewBlock,
+    setFlareAnimationType,
+    useBlockchainVisualisationStore,
+    useShellOfSecretsStore,
+} from '@app/store';
 import { setConnectionStatus } from '@app/store/actions/uiStoreActions.ts';
 
 export function OtherUIGroup() {
+    const showWidget = useShellOfSecretsStore((s) => s.showWidget);
+    const setShowWidget = useShellOfSecretsStore((s) => s.setShowWidget);
     const connectionStatus = useUIStore((s) => s.connectionStatus);
     const height = useBlockchainVisualisationStore((s) => s.displayBlockHeight);
     const dummyNewBlock = {
@@ -43,6 +50,9 @@ export function OtherUIGroup() {
             <ButtonGroup>
                 <Button onClick={() => addDummyBlocks()}>Add New Dummy Blocks</Button>
                 <Button onClick={shiftConnectionStatus}>Change connection status</Button>
+                <Button onClick={() => setShowWidget(!showWidget)} $isActive={showWidget}>
+                    SoS Widget
+                </Button>
             </ButtonGroup>
             <CategoryLabel>Gem animations</CategoryLabel>
             {/* TODO: add the other sections if we want */}

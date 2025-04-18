@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -29,11 +31,11 @@ use semver::Version;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
-use tokio::sync::RwLock;
+use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
 use super::adapter_github::GithubReleasesAdapter;
@@ -41,6 +43,8 @@ use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
+
+const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
 
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
@@ -77,13 +81,13 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
 }
 
 pub struct BinaryResolver {
-    managers: HashMap<Binaries, BinaryManager>,
+    managers: HashMap<Binaries, Mutex<BinaryManager>>,
 }
 
 impl BinaryResolver {
     #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
-        let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
+        let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
 
         let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
 
@@ -103,19 +107,19 @@ impl BinaryResolver {
 
         binary_manager.insert(
             Binaries::Xmrig,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
                 // Some("xmrig-6.22.0".to_string()),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::GpuMiner,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -125,12 +129,12 @@ impl BinaryResolver {
                 }),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -140,12 +144,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::MinotariNode,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -155,12 +159,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::Wallet,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -170,12 +174,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::ShaP2pool,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -185,18 +189,18 @@ impl BinaryResolver {
                 }),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::Tor,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
                 None,
                 true,
-            ),
+            )),
         );
 
         Self {
@@ -208,17 +212,38 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
+    async fn should_check_for_update() -> bool {
+        let now = SystemTime::now();
+
+        let should_check_for_update = now
+            .duration_since(*ConfigCore::content().await.last_binaries_update_timestamp())
+            .unwrap_or(Duration::from_secs(0))
+            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
+
+        if should_check_for_update {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_last_binaries_update_timestamp,
+                now,
+            )
+            .await;
+        }
+
+        should_check_for_update
+    }
+
+    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
 
         let version = manager
+            .lock()
+            .await
             .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
 
-        let base_dir = manager.get_base_dir().map_err(|error| {
+        let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
                 "No base directory for binary {}, Error: {}",
                 binary.name(),
@@ -226,7 +251,7 @@ impl BinaryResolver {
             )
         })?;
 
-        if let Some(sub_folder) = manager.binary_subfolder() {
+        if let Some(sub_folder) = manager.lock().await.binary_subfolder() {
             return Ok(base_dir
                 .join(sub_folder)
                 .join(binary.binary_file_name(version)));
@@ -235,15 +260,14 @@ impl BinaryResolver {
     }
 
     pub async fn initialize_binary_timeout(
-        &mut self,
+        &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
         timeout_channel: Receiver<String>,
     ) -> Result<(), Error> {
         match timeout(
             Duration::from_secs(60 * 5),
-            self.initialize_binary(binary, progress_tracker.clone(), should_check_for_update),
+            self.initialize_binary(binary, progress_tracker.clone()),
         )
         .await
         {
@@ -259,15 +283,18 @@ impl BinaryResolver {
     }
 
     pub async fn initialize_binary(
-        &mut self,
+        &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
     ) -> Result<(), Error> {
-        let manager = self
+        let mut manager = self
             .managers
-            .get_mut(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
+
+        let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
 
@@ -313,14 +340,16 @@ impl BinaryResolver {
     }
 
     pub async fn update_binary(
-        &mut self,
+        &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        let manager = self
+        let mut manager = self
             .managers
-            .get_mut(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
 
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
@@ -362,14 +391,17 @@ impl BinaryResolver {
         Ok(())
     }
 
-    pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
+    pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         self.managers
             .get(&binary)
-            .and_then(|manager| manager.get_used_version())
+            .expect(format!("Couldn't find manager for binary: {}", binary.name()).as_str())
+            .lock()
+            .await
+            .get_used_version()
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
-        let version = self.get_binary_version(binary);
+        let version = self.get_binary_version(binary).await;
         version
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())

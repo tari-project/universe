@@ -23,6 +23,14 @@ export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ admi
 export const setConnectionStatus = (connectionStatus: CONNECTION_STATUS) => useUIStore.setState({ connectionStatus });
 export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setState({ isReconnecting });
 
+export const toggleHideWalletBalance = () =>
+    useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
+export const setSidebarOpen = (sidebarOpen: boolean) => useUIStore.setState({ sidebarOpen });
+export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
+export const handleAskForRestart = () => {
+    setDialogToShow('restart');
+};
+export const setShowResumeAppModal = (showResumeAppModal: boolean) => useUIStore.setState({ showResumeAppModal });
 export const animationLightBg = [
     { property: 'bgColor1', value: '#ffffff' },
     { property: 'bgColor2', value: '#d0d0d0' },

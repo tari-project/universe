@@ -1,57 +1,47 @@
-import { Language } from '@app/i18initializer';
-import { displayMode, modeType } from '../store/types';
-
 export interface TorConfig {
     control_port: number;
     use_bridges: boolean;
     bridges: string[];
 }
 
-interface WindowSettings {
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-}
-
-export interface AppConfig {
-    allow_telemetry: boolean;
-    anon_id: string;
-    application_language: Language;
-    auto_update: boolean;
-    config_file?: string;
-    config_version: number;
-    cpu_mining_enabled: boolean;
-    custom_max_cpu_usage: number;
-    custom_max_gpu_usage: GpuThreads[];
-    custom_power_levels_enabled: boolean;
-    display_mode: displayMode;
-    gpu_mining_enabled: boolean;
-    has_system_language_been_proposed: boolean;
-    last_binaries_update_timestamp: string;
-    mine_on_app_start: boolean;
-    mmproxy_monero_nodes: string[];
-    mmproxy_use_monero_fail: boolean;
-    mode: modeType;
-    monero_address: string;
-    p2pool_enabled: boolean;
-    paper_wallet_enabled: boolean;
-    sharing_enabled: boolean;
-    should_always_use_system_language: boolean;
-    should_auto_launch: boolean;
-    use_tor: boolean;
-    visual_mode: boolean;
-    window_settings: WindowSettings;
-    show_experimental_settings: boolean;
-    monero_address_is_generated?: boolean;
-    created_at: string;
-    p2pool_stats_server_port: number | null;
-    pre_release: boolean;
-    airdrop_tokens?: {
-        token: string;
-        refreshToken: string;
-    };
-}
+// export interface AppConfig {
+//     allow_telemetry: boolean;
+//     anon_id: string;
+//     application_language: Language;
+//     auto_update: boolean;
+//     config_file?: string;
+//     config_version: number;
+//     cpu_mining_enabled: boolean;
+//     custom_max_cpu_usage: number;
+//     custom_max_gpu_usage: GpuThreads[];
+//     custom_power_levels_enabled: boolean;
+//     display_mode: displayMode;
+//     gpu_mining_enabled: boolean;
+//     has_system_language_been_proposed: boolean;
+//     last_binaries_update_timestamp: string;
+//     mine_on_app_start: boolean;
+//     mmproxy_monero_nodes: string[];
+//     mmproxy_use_monero_fail: boolean;
+//     mode: modeType;
+//     monero_address: string;
+//     p2pool_enabled: boolean;
+//     paper_wallet_enabled: boolean;
+//     sharing_enabled: boolean;
+//     should_always_use_system_language: boolean;
+//     should_auto_launch: boolean;
+//     use_tor: boolean;
+//     visual_mode: boolean;
+//     window_settings: WindowSettings;
+//     show_experimental_settings: boolean;
+//     monero_address_is_generated?: boolean;
+//     created_at: string;
+//     p2pool_stats_server_port: number | null;
+//     pre_release: boolean;
+//     airdrop_tokens?: {
+//         token: string;
+//         refreshToken: string;
+//     };
+// }
 
 export enum ExternalDependencyStatus {
     Installed = 'Installed',
