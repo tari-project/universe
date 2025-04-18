@@ -35,23 +35,12 @@ const AUTH_COMMAND: &str = "AUTHENTICATE\r\n";
 const CIRCUIT_QUERY: &str = "GETINFO status/circuit-established\r\n";
 const NETWORK_QUERY: &str = "GETINFO network-liveness\r\n";
 
-#[derive(Clone, Copy, Debug, Serialize)]
+#[derive(Default, Clone, Copy, Debug, Serialize)]
 pub(crate) struct TorStatus {
     pub bootstrap_phase: u8,
     pub is_bootstrapped: bool,
     pub network_liveness: bool,
     pub circuit_ok: bool,
-}
-
-impl Default for TorStatus {
-    fn default() -> Self {
-        Self {
-            bootstrap_phase: 0,
-            is_bootstrapped: false,
-            network_liveness: false,
-            circuit_ok: false,
-        }
-    }
 }
 
 pub(crate) struct TorControlClient {

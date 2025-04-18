@@ -318,7 +318,7 @@ impl StatusMonitor for TorStatusMonitor {
         let client = TorControlClient::new(self.control_port);
         match timeout(std::time::Duration::from_secs(5), client.get_info()).await {
             Ok(Ok(status)) => {
-                let _res = self.status_broadcast.send(status.clone());
+                let _res = self.status_broadcast.send(status);
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {

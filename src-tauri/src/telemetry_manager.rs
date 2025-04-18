@@ -377,7 +377,7 @@ async fn get_telemetry_data(
         .ok();
 
     let p2pool_stats = p2pool_latest_status.borrow().clone();
-    let tor_status = tor_latest_status.borrow().clone();
+    let tor_status = *tor_latest_status.borrow();
 
     let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu_miner_status.hash_rate);
