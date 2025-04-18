@@ -25,35 +25,44 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
+use anyhow::anyhow;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
+use tauri_plugin_sentry::sentry;
 use tokio::sync::{watch, RwLock};
+
+const LOG_TARGET: &str = "tari::universe::tor_manager";
+const STARTUP_TIMEOUT: u64 = 180; // 3mins
 
 pub(crate) struct TorManager {
     watcher: Arc<RwLock<ProcessWatcher<TorAdapter>>>,
+    status_watch_rx: watch::Receiver<TorStatus>,
 }
 
 impl Clone for TorManager {
     fn clone(&self) -> Self {
         Self {
             watcher: self.watcher.clone(),
+            status_watch_rx: self.status_watch_rx.clone(),
         }
     }
 }
 
 impl TorManager {
     pub fn new(
-        status_broadcast: watch::Sender<Option<TorStatus>>,
+        status_broadcast: watch::Sender<TorStatus>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
+        let status_watch_rx = status_broadcast.subscribe();
         let adapter = TorAdapter::new(status_broadcast);
         let mut process_watcher = ProcessWatcher::new(adapter, stats_collector.take_tor());
-        process_watcher.expected_startup_time = Duration::from_secs(120);
+        process_watcher.expected_startup_time = Duration::from_secs(STARTUP_TIMEOUT);
         process_watcher.health_timeout = Duration::from_secs(9);
         process_watcher.poll_time = Duration::from_secs(10);
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
+            status_watch_rx,
         }
     }
 
@@ -101,6 +110,32 @@ impl TorManager {
 
                 return Err(e);
             }
+        }
+
+        // Ensure node is fully bootstrapped
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut tor_status_watch_rx = self.status_watch_rx.clone();
+
+        loop {
+            tokio::select! {
+                _ = tokio::time::sleep(Duration::from_secs(STARTUP_TIMEOUT)) => {
+                    let err_msg = format!("Waiting for Tor to be ready timed out after {}", STARTUP_TIMEOUT);
+                    log::error!(target: LOG_TARGET, "{}", err_msg);
+                    sentry::capture_message(&err_msg, sentry::Level::Error);
+                    return Err(anyhow!(err_msg))
+                }
+                _ = tor_status_watch_rx.changed() => {
+                    let tor_status = *tor_status_watch_rx.borrow();
+                    log::info!(target: LOG_TARGET, "Waiting for Tor bootstrap: {}%", tor_status.bootstrap_phase);
+                    if tor_status.is_bootstrapped && tor_status.network_liveness && tor_status.circuit_ok {
+                        break;
+                    }
+                }
+                _ = shutdown_signal.wait() => {
+                    log::warn!(target: LOG_TARGET, "Shutdown signal received, stopping wait_ready for Tor");
+                    break;
+                }
+            };
         }
 
         Ok(())

@@ -44,6 +44,7 @@ use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
+use tor_control_client::TorStatus;
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
@@ -1039,7 +1040,7 @@ fn main() {
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let (tor_watch_tx, tor_watch_rx) = watch::channel(None);
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
