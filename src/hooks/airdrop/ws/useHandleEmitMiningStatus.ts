@@ -2,6 +2,7 @@ import { useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { socket } from '@app/utils/socket.ts';
 import { useAirdropStore, useConfigCoreStore, useMiningMetricsStore, useMiningStore } from '@app/store';
+import { handleAirdropRequest } from '../utils/useHandleRequest';
 
 const MINING_EVENT_NAME = 'mining-status';
 const MINING_EVENT_INTERVAL_MS = 15 * 1000;
@@ -11,6 +12,7 @@ function useHandleEmitMiningStatus() {
     const appId = useConfigCoreStore((state) => state.anon_id);
     const network = useMiningStore((state) => state.network);
     const userId = useAirdropStore((s) => s.userDetails?.user?.id);
+    const pollingEnabled = useAirdropStore((s) => s.pollingEnabled);
 
     return useCallback(
         ({ isMining }: { isMining: boolean }) => {
@@ -28,19 +30,34 @@ function useHandleEmitMiningStatus() {
                 data: transformed,
             })
                 .then(async (signatureData) => {
-                    if (signatureData && socket) {
-                        await socket.timeout(5000).emitWithAck(MINING_EVENT_NAME, {
-                            data: payload,
-                            signature: signatureData.signature,
-                            pubKey: signatureData.pubKey,
-                        });
+                    if (signatureData) {
+                        if (pollingEnabled) {
+                            handleAirdropRequest({
+                                path: '/miner/mining-status',
+                                method: 'POST',
+                                body: {
+                                    data: payload,
+                                    signature: signatureData.signature,
+                                    pubKey: signatureData.pubKey,
+                                },
+                                onError: (e) => {
+                                    console.error('Error sending mining status to BE: ', e);
+                                },
+                            });
+                        } else if (socket) {
+                            await socket.timeout(5000).emitWithAck(MINING_EVENT_NAME, {
+                                data: payload,
+                                signature: signatureData.signature,
+                                pubKey: signatureData.pubKey,
+                            });
+                        }
                     }
                 })
                 .catch((e) => {
                     console.error('Error signing ws data: ', e);
                 });
         },
-        [appId, blockHeight, network, userId, version]
+        [appId, blockHeight, network, pollingEnabled, userId, version]
     );
 }
 

@@ -6,6 +6,7 @@ import {
     AnimationType,
     BackendInMemoryConfig,
     BonusTier,
+    CommunityMessage,
     setAirdropTokensInConfig,
     useAirdropStore,
     useConfigCoreStore,
@@ -200,6 +201,76 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
         return r;
     });
 };
+
+export async function fetchPollingFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/polling',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ pollingEnabled: response.access });
+        // Let the BE know we're using the polling feature for mining proofs
+        // invoke('set_airdrop_polling', { pollingEnabled: response.access });
+    }
+
+    return response;
+}
+
+export async function fetchOrphanChainUiFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/orphan-chain-ui',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ orphanChainUiEnabled: response.access });
+    }
+
+    return response;
+}
+
+export async function fetchCommunityMessages() {
+    const response = await handleAirdropRequest<CommunityMessage[] | null>({
+        publicRequest: true,
+        path: '/miner/community-message',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ communityMessages: response });
+    }
+
+    return response;
+}
+
+export async function fetchLatestXSpaceEvent() {
+    const response = await handleAirdropRequest<XSpaceEvent | null>({
+        publicRequest: true,
+        path: '/miner/x-space-events/latest',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ latestXSpaceEvent: response });
+    }
+
+    return response;
+}
 
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
