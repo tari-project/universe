@@ -518,7 +518,8 @@ impl SetupManager {
         EventsManager::handle_connection_status_changed(
             &app_handle,
             ConnectionStatusPayload::Succeed,
-        );
+        )
+        .await;
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {

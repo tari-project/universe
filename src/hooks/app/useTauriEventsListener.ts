@@ -14,6 +14,8 @@ import {
 import {
     handleAskForRestart,
     handleCloseSplashscreen,
+    setConnectionStatus,
+    setIsReconnecting,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
@@ -176,6 +178,17 @@ const useTauriEventsListener = () => {
                             break;
                         case 'InitWalletScanningProgress':
                             updateWalletScanningProgress(event.payload);
+                            break;
+                        case 'ConnectionStatus':
+                            console.error(event);
+                            if (event.payload === 'InProgress') {
+                                setIsReconnecting(true);
+                            } else if (event.payload === 'Succeed') {
+                                setIsReconnecting(false);
+                                setConnectionStatus('connected');
+                            } else if (event.payload === 'Failed') {
+                                setIsReconnecting(false);
+                            }
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

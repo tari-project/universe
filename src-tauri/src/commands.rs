@@ -1714,19 +1714,7 @@ pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     .await;
     let sm = SetupManager::get_instance();
     sm.add_phases_to_restart_queue(SetupPhase::all()).await;
-
     sm.restart_phases_from_queue(app_handle).await;
-    // sm.shutdown_phases();
-
-    // match resume_res {
-    //     Ok(_) => {
-    //         drop(app_handle.emit("reconnecting", ReconnectStatus::Succeed));
-    //     }
-    //     Err(e) => {
-    //         drop(app_handle.emit("reconnecting", ReconnectStatus::Failed));
-    //         return Err(e.to_string());
-    //     }
-    // }
     Ok(())
 }
 
