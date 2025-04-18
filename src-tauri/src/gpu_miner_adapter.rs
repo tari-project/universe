@@ -187,7 +187,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
-            "1".to_string(),
+            "5".to_string(),
             "--engine".to_string(),
             self.curent_selected_engine.to_string(),
         ];
