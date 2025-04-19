@@ -1,13 +1,14 @@
 import { QRContainer } from './Address.style.ts';
-import { useMiningStore, usePaperWalletStore, useWalletStore } from '@app/store';
+import { useMiningStore, useWalletStore } from '@app/store';
 import { QRCode } from 'react-qrcode-logo';
-import { Button } from '@app/components/elements/buttons/Button';
-import { useTranslation } from 'react-i18next';
-import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
+import { Address } from './Address.tsx';
 
-export function AddressQRCode() {
-    const { t } = useTranslation('sidebar');
-    const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
+interface Props {
+    useEmoji: boolean;
+    setUseEmoji: (c: boolean) => void;
+}
+
+export function AddressQRCode({ useEmoji, setUseEmoji }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const network = useMiningStore((state) => state.network);
 
@@ -28,15 +29,7 @@ export function AddressQRCode() {
                 style={{ borderRadius: 10, width: '100%', height: '100%' }}
             />
 
-            <SyncTooltip
-                title={t('paper-wallet-tooltip-title')}
-                text={t('paper-wallet-tooltip-message')}
-                trigger={
-                    <Button fluid onClick={() => setShowPaperWalletModal(true)}>
-                        {t('paper-wallet-button')}
-                    </Button>
-                }
-            />
+            <Address useEmoji={useEmoji} setUseEmoji={setUseEmoji} />
         </QRContainer>
     );
 }
