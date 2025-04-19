@@ -1,7 +1,7 @@
-import { QRContainer } from '../../wallet/Address.style.ts';
+import { QRContainer } from './Address.style.ts';
 import { useMiningStore, useWalletStore } from '@app/store';
 import { QRCode } from 'react-qrcode-logo';
-import { Address } from '../../wallet/Address.tsx';
+import { Address } from './Address.tsx';
 
 interface Props {
     useEmoji: boolean;

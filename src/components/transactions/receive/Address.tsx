@@ -11,7 +11,7 @@ import {
     Tooltip,
     TooltipText,
     TooltipTitle,
-} from '../../wallet/Address.style.ts';
+} from './Address.style.ts';
 
 import YatHand from '/assets/img/yat_hand.png';
 
