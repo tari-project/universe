@@ -1,7 +1,7 @@
 import { useWalletStore } from '@app/store';
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
-import { CopyAddressButton } from './Address.style';
+import { CopyAddressButton } from '../../wallet/Address.style';
 
 export function CopyAddress({ useEmoji }: { useEmoji: boolean }) {
     const { t } = useTranslation('wallet');

@@ -7,7 +7,12 @@
   "my_tari": "Moje Tari",
   "new": "Nowy",
   "receive": {
-    "label-address": "Wallet Address"
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-title": "Emoji ID",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used jako alternatywa dla regularnego adresu txn do wysyłania i odbierania XTM.",
+    "tooltip-emoji-id-text2": "Wsparcie Yat wkrótce!",
+    "copy-address": "Skopiuj adres",
+    "copy-address-success": "Skopiowano!"
   },
   "send": {
     "cta-send": "Wyślij Tari",
