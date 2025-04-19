@@ -1,6 +1,7 @@
 import {
     BackgroundNodeSyncUpdatePayload,
     ConnectedPeersUpdatePayload,
+    ConnectionStatusPayload,
     CriticalProblemPayload,
     DetectedAvailableGpuEngines,
     DetectedDevicesPayload,
@@ -168,4 +169,8 @@ export type BackendStateUpdateEvent =
               total_height: number;
               progress: number;
           };
+      }
+    | {
+          event_type: 'ConnectionStatus';
+          payload: ConnectionStatusPayload;
       };

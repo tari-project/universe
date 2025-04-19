@@ -8,7 +8,8 @@ const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicro
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 
-export type AdminShow = 'setup' | 'main' | 'shutdown' | 'orphanChainWarning' | null;
+export type AdminShow = 'setup' | 'main' | 'shutdown' | null;
+export type CONNECTION_STATUS = 'connected' | 'disconnected' | 'disconnected-severe';
 const _SIDEBAR_TYPES = ['mining', 'wallet'] as const;
 
 type SidebarTypeTuple = typeof _SIDEBAR_TYPES;
@@ -25,6 +26,8 @@ interface UIStoreState {
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
     adminShow?: AdminShow;
+    connectionStatus?: CONNECTION_STATUS;
+    isReconnecting?: boolean;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -40,6 +43,8 @@ const initialState: UIStoreState = {
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    connectionStatus: 'connected',
+    isReconnecting: false,
     showSplashscreen: true,
     hideWalletBalance: false,
     showResumeAppModal: false,
