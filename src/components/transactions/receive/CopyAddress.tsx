@@ -14,7 +14,7 @@ export function CopyAddress({ useEmoji }: { useEmoji: boolean }) {
     }
 
     return (
-        <CopyAddressButton onClick={handleCopyClick}>
+        <CopyAddressButton onClick={handleCopyClick} $isCopied={isCopied}>
             {!isCopied ? t('receive.copy-address') : t('receive.copy-address-success')}
         </CopyAddressButton>
     );

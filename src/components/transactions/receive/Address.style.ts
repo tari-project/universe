@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { convertHexToRGBA } from '@app/utils';
 import { m } from 'motion/react';
@@ -51,6 +51,14 @@ export const AddressWrapper = styled.div`
     width: 100%;
     height: 34px;
     gap: 10px;
+
+    color: #111;
+    font-family: Poppins, sans-serif;
+    font-size: 22px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: normal;
+    letter-spacing: -1.76px;
 `;
 
 export const ToggleWrapper = styled.div`
@@ -76,7 +84,7 @@ export const Label = styled(Typography).attrs({
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
 `;
 
-export const CopyAddressButton = styled.button`
+export const CopyAddressButton = styled.button<{ $isCopied: boolean }>`
     border-radius: 32px;
     background: #523df1;
 
@@ -96,6 +104,14 @@ export const CopyAddressButton = styled.button`
     font-weight: 600;
     line-height: 26px;
     letter-spacing: 0.46px;
+
+    transition: background 0.2s ease;
+
+    ${({ $isCopied }) =>
+        $isCopied &&
+        css`
+            background: #19ad34;
+        `}
 `;
 
 export const Tooltip = styled(m.div)`

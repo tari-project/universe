@@ -52,14 +52,6 @@ export function Address({ useEmoji, setUseEmoji }: Props) {
         </EmojiAddressWrapper>
     );
 
-    const addressMarkup = useEmoji ? (
-        emojiMarkup
-    ) : (
-        <Typography title={walletAddress} variant="h4">
-            {displayAddress}
-        </Typography>
-    );
-
     const textOptionMarkup = <TextOption>{`Tx`}</TextOption>;
     const emojiOptionMarkup = (
         <ImgOption>
@@ -71,7 +63,7 @@ export function Address({ useEmoji, setUseEmoji }: Props) {
         <AddressContainer>
             <Label>{t('receive.label-address')}</Label>
             <ContentWrapper>
-                <AddressWrapper>{addressMarkup}</AddressWrapper>
+                <AddressWrapper>{useEmoji ? emojiMarkup : displayAddress}</AddressWrapper>
                 <ToggleWrapper>
                     <ToggleSwitch
                         checked={useEmoji}
