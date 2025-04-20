@@ -18,6 +18,7 @@ export interface TxInputProps extends TxInputBase {
     value?: string | number;
     onChange: (e: ChangeEvent<HTMLInputElement>) => void;
     onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+    onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
     name: string;
     placeholder: string;
     icon?: ReactNode;
@@ -28,12 +29,14 @@ export interface TxInputProps extends TxInputBase {
     truncateOnBlur?: boolean;
     truncateText?: string;
     isValid?: boolean;
+    disabled?: boolean;
 }
 
 export function TxInput({
     value,
     onChange,
     onBlur,
+    onFocus,
     name,
     placeholder,
     icon,
@@ -44,14 +47,15 @@ export function TxInput({
     truncateOnBlur,
     truncateText,
     isValid,
+    disabled = false,
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
     const ref = useRef<HTMLInputElement | null>(null);
 
-    const handleFocus = () => {
+    const handleFocus = (e: FocusEvent<HTMLInputElement>) => {
         setIsFocused(true);
-        ref.current?.focus();
+        onFocus?.(e);
     };
 
     const handleBlur = (e: FocusEvent<HTMLInputElement>) => {
@@ -67,7 +71,12 @@ export function TxInput({
             : value;
 
     return (
-        <Wrapper key={name} onClick={handleFocus} $hasError={!!errorMessage}>
+        <Wrapper
+            key={name}
+            onClick={() => ref.current?.focus()}
+            $hasError={!!errorMessage}
+            $disabled={disabled && !isFocused}
+        >
             {accent && <AccentWrapper>{accent}</AccentWrapper>}
             {label && <Label>{label}</Label>}
             <ContentWrapper>

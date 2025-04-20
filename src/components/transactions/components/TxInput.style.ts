@@ -2,13 +2,15 @@ import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { m } from 'motion/react';
 
-export const Wrapper = styled.div<{ $hasError?: boolean }>`
+export const Wrapper = styled.div<{ $hasError?: boolean; $disabled?: boolean }>`
     display: flex;
     flex-direction: column;
     position: relative;
     width: 100%;
     padding: 20px 20px 10px 20px;
     border-radius: 20px;
+    opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
+    transition: opacity 0.2s ease-in-out;
 
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
 

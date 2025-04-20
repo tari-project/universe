@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useForm } from 'react-hook-form';
-import { FaArrowDown } from 'react-icons/fa6';
 
 import { addPendingTransaction, setError as setStoreError } from '@app/store';
 
@@ -15,7 +14,7 @@ import type { InputName, SendInputs } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
-import { BottomWrapper, DividerIcon, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { BottomWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 
 const defaultValues = { message: '', address: '', amount: undefined };
 
@@ -29,6 +28,8 @@ export function Send({ setSection }: Props) {
     const [showConfirmation, setShowConfirmation] = useState(false);
 
     const [isAddressValid, setIsAddressValid] = useState(false);
+    const [isAddressEmpty, setIsAddressEmpty] = useState(true);
+    const [focusedField, setFocusedField] = useState<InputName | null>(null);
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
         {
@@ -93,9 +94,11 @@ export function Send({ setSection }: Props) {
     }
 
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        setValue(name, e.target.value, { shouldValidate: true });
+        const value = e.target.value;
+        setValue(name, value, { shouldValidate: true });
         clearErrors(name);
         setIsAddressValid(false);
+        setIsAddressEmpty(value.length === 0);
     }
 
     const validateAddress = async (address: string) => {
@@ -133,6 +136,26 @@ export function Send({ setSection }: Props) {
         }
     };
 
+    const handleFieldFocus = (name: InputName) => {
+        setFocusedField(name);
+    };
+
+    const handleFieldBlur = () => {
+        setFocusedField(null);
+    };
+
+    // Determine if a field should be disabled (greyed out)
+    const shouldDisableField = (fieldName: InputName) => {
+        // Address field is never disabled
+        if (fieldName === 'address') return false;
+
+        // If the field is focused, it's not disabled
+        if (focusedField === fieldName) return false;
+
+        // If address is empty and this is another field, disable it
+        return isAddressEmpty && fieldName !== 'address';
+    };
+
     return (
         <Wrapper $isLoading={isSubmitting}>
             <StyledForm onSubmit={handleSubmit(handleSend)}>
@@ -141,7 +164,11 @@ export function Send({ setSection }: Props) {
                         control={control}
                         name="address"
                         handleChange={handleAddressChange}
-                        onBlur={handleAddressBlur}
+                        onBlur={(e) => {
+                            handleAddressBlur(e);
+                            handleFieldBlur();
+                        }}
+                        onFocus={() => handleFieldFocus('address')}
                         required
                         autoFocus
                         truncateOnBlur
@@ -152,17 +179,24 @@ export function Send({ setSection }: Props) {
                     <FormField
                         control={control}
                         name="amount"
-                        onBlur={handleAmountBlur}
+                        onBlur={(e) => {
+                            handleAmountBlur();
+                            handleFieldBlur();
+                        }}
+                        onFocus={() => handleFieldFocus('amount')}
                         required
                         icon={<TariOutlineSVG />}
-                        accent={
-                            <DividerIcon>
-                                <FaArrowDown size={18} />
-                            </DividerIcon>
-                        }
+                        disabled={shouldDisableField('amount')}
                     />
 
-                    <FormField control={control} name="message" handleChange={handleChange} />
+                    <FormField
+                        control={control}
+                        name="message"
+                        handleChange={handleChange}
+                        onBlur={handleFieldBlur}
+                        onFocus={() => handleFieldFocus('message')}
+                        disabled={shouldDisableField('message')}
+                    />
                 </FormFieldsWrapper>
                 <BottomWrapper>
                     <Button

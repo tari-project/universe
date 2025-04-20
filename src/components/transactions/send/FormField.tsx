@@ -9,6 +9,7 @@ interface FormFieldProps {
     control: Control<SendInputs>;
     handleChange?: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
     onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+    onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
     icon?: ReactNode;
     accent?: ReactNode;
     required?: boolean;
@@ -16,6 +17,7 @@ interface FormFieldProps {
     truncateOnBlur?: boolean;
     isValid?: boolean;
     errorText?: string;
+    disabled?: boolean;
 }
 export function FormField({
     control,
@@ -27,8 +29,10 @@ export function FormField({
     autoFocus,
     truncateOnBlur,
     onBlur,
+    onFocus,
     isValid,
     errorText,
+    disabled = false,
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
@@ -70,6 +74,7 @@ export function FormField({
                             }
                         }}
                         onBlur={onBlur || undefined}
+                        onFocus={onFocus || undefined}
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}
@@ -80,6 +85,7 @@ export function FormField({
                         value={value}
                         truncateText={truncateOnBlur && value ? String(value) : undefined}
                         isValid={isValid}
+                        disabled={disabled}
                     />
                 );
             }}
