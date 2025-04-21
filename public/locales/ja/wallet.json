@@ -7,14 +7,15 @@
   "my_tari": "私のTari",
   "new": "新規",
   "receive": {
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
     "label-address": "Wallet Address",
-    "tooltip-emoji-id-title": "Emoji ID",
     "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
     "tooltip-emoji-id-text2": "Yat support coming soon!",
-    "copy-address": "Copy Address",
-    "copy-address-success": "Copied!"
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "cta-review": "Review",
     "cta-send": "Tariを送信",
     "error-invalid-address": "アドレスが無効です",
     "error-invalid-amount": "金額が無効です",
@@ -24,10 +25,10 @@
     "field-message": "メッセージ",
     "label-address": "Tariウォレットアドレス",
     "label-amount": "金額",
-    "label-message": "支払いID",
+    "label-message": "Transaction Description (Optional)",
     "placeholder-address": "アドレスを入力",
     "placeholder-amount": 100,
-    "placeholder-message": "メッセージを入力",
+    "placeholder-message": "Message",
     "required": "{{fieldName}}フィールドは必須です"
   },
   "tabs": {

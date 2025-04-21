@@ -9,6 +9,8 @@ import {
     AccentWrapper,
     CheckIconWrapper,
     ErrorText,
+    LabelWrapper,
+    SecondaryText,
 } from './TxInput.style.ts';
 import CheckIcon from './CheckIcon.tsx';
 import { AnimatePresence } from 'motion/react';
@@ -24,12 +26,17 @@ export interface TxInputProps extends TxInputBase {
     icon?: ReactNode;
     accent?: ReactNode;
     label?: string;
+    secondaryField?: ReactNode;
+    secondaryText?: string;
+    miniButton?: ReactNode;
+    isSecondary?: boolean;
     errorMessage?: string;
     autoFocus?: boolean;
     truncateOnBlur?: boolean;
     truncateText?: string;
     isValid?: boolean;
     disabled?: boolean;
+    as?: 'input' | 'textarea';
 }
 
 export function TxInput({
@@ -42,12 +49,17 @@ export function TxInput({
     icon,
     accent,
     label,
+    secondaryField,
+    secondaryText,
+    miniButton,
+    isSecondary,
     errorMessage,
     autoFocus,
     truncateOnBlur,
     truncateText,
     isValid,
     disabled = false,
+    as = 'input',
     ...rest
 }: TxInputProps) {
     const [isFocused, setIsFocused] = useState(false);
@@ -71,18 +83,18 @@ export function TxInput({
             : value;
 
     return (
-        <Wrapper
-            key={name}
-            onClick={() => ref.current?.focus()}
-            $hasError={!!errorMessage}
-            $disabled={disabled && !isFocused}
-        >
+        <Wrapper key={name} $hasError={!!errorMessage} $disabled={disabled} $isSecondary={isSecondary}>
             {accent && <AccentWrapper>{accent}</AccentWrapper>}
-            {label && <Label>{label}</Label>}
+
+            <LabelWrapper>
+                {label && <Label onClick={() => ref.current?.focus()}>{label}</Label>}
+                {miniButton && <>{miniButton}</>}
+            </LabelWrapper>
+
             <ContentWrapper>
                 {icon ? <IconWrapper>{icon}</IconWrapper> : null}
                 <StyledInput
-                    as="input"
+                    as={as}
                     ref={ref}
                     id={name}
                     name={name}
@@ -95,6 +107,7 @@ export function TxInput({
                     $hasIcon={!!icon}
                     {...rest}
                     aria-errormessage={errorMessage}
+                    $isSecondary={isSecondary}
                 />
 
                 {isValid && !isFocused && (
@@ -103,6 +116,9 @@ export function TxInput({
                     </CheckIconWrapper>
                 )}
             </ContentWrapper>
+
+            {secondaryText && <SecondaryText>{secondaryText}</SecondaryText>}
+
             <AnimatePresence>
                 {errorMessage && (
                     <ErrorText
@@ -114,6 +130,8 @@ export function TxInput({
                     </ErrorText>
                 )}
             </AnimatePresence>
+
+            {secondaryField && <>{secondaryField}</>}
         </Wrapper>
     );
 }

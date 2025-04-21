@@ -7,14 +7,15 @@
   "my_tari": "My Tari",
   "new": "New",
   "receive": {
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
     "label-address": "Wallet Address",
-    "tooltip-emoji-id-title": "Emoji ID",
     "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
     "tooltip-emoji-id-text2": "Yat support coming soon!",
-    "copy-address": "Copy Address",
-    "copy-address-success": "Copied!"
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "cta-review": "Review",
     "cta-send": "Send Tari",
     "error-invalid-address": "The address is invalid",
     "error-invalid-amount": "The amount is invalid",
@@ -24,10 +25,10 @@
     "field-message": "message",
     "label-address": "Tari Wallet Address",
     "label-amount": "Amount",
-    "label-message": "Payment ID",
+    "label-message": "Transaction Description (Optional)",
     "placeholder-address": "Enter address",
     "placeholder-amount": "100",
-    "placeholder-message": "Enter message",
+    "placeholder-message": "Message",
     "required": "The {{fieldName}} field is required"
   },
   "tabs": {

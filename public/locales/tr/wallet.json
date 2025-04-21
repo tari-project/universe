@@ -7,14 +7,15 @@
   "my_tari": "Benim Tari",
   "new": "Yeni",
   "receive": {
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
     "label-address": "Wallet Address",
-    "tooltip-emoji-id-title": "Emoji ID",
     "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
     "tooltip-emoji-id-text2": "Yat support coming soon!",
-    "copy-address": "Copy Address",
-    "copy-address-success": "Copied!"
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "cta-review": "Review",
     "cta-send": "Tari Gönder",
     "error-invalid-address": "Adres geçersiz",
     "error-invalid-amount": "Tutar geçersiz",
@@ -24,10 +25,10 @@
     "field-message": "mesaj",
     "label-address": "Tari Cüzdan Adresi",
     "label-amount": "Tutar",
-    "label-message": "Ödeme Kimliği",
+    "label-message": "Transaction Description (Optional)",
     "placeholder-address": "Adres girin",
     "placeholder-amount": 100,
-    "placeholder-message": "Mesaj girin",
+    "placeholder-message": "Message",
     "required": "{{fieldName}} alanı gereklidir"
   },
   "tabs": {

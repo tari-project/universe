@@ -29,7 +29,6 @@ export function Send({ setSection }: Props) {
 
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
-    const [focusedField, setFocusedField] = useState<InputName | null>(null);
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
         {
@@ -136,26 +135,6 @@ export function Send({ setSection }: Props) {
         }
     };
 
-    const handleFieldFocus = (name: InputName) => {
-        setFocusedField(name);
-    };
-
-    const handleFieldBlur = () => {
-        setFocusedField(null);
-    };
-
-    // Determine if a field should be disabled (greyed out)
-    const shouldDisableField = (fieldName: InputName) => {
-        // Address field is never disabled
-        if (fieldName === 'address') return false;
-
-        // If the field is focused, it's not disabled
-        if (focusedField === fieldName) return false;
-
-        // If address is empty and this is another field, disable it
-        return isAddressEmpty && fieldName !== 'address';
-    };
-
     return (
         <Wrapper $isLoading={isSubmitting}>
             <StyledForm onSubmit={handleSubmit(handleSend)}>
@@ -164,11 +143,7 @@ export function Send({ setSection }: Props) {
                         control={control}
                         name="address"
                         handleChange={handleAddressChange}
-                        onBlur={(e) => {
-                            handleAddressBlur(e);
-                            handleFieldBlur();
-                        }}
-                        onFocus={() => handleFieldFocus('address')}
+                        onBlur={handleAddressBlur}
                         required
                         autoFocus
                         truncateOnBlur
@@ -179,23 +154,36 @@ export function Send({ setSection }: Props) {
                     <FormField
                         control={control}
                         name="amount"
-                        onBlur={(e) => {
-                            handleAmountBlur();
-                            handleFieldBlur();
-                        }}
-                        onFocus={() => handleFieldFocus('amount')}
+                        onBlur={handleAmountBlur}
                         required
                         icon={<TariOutlineSVG />}
-                        disabled={shouldDisableField('amount')}
-                    />
-
-                    <FormField
-                        control={control}
-                        name="message"
-                        handleChange={handleChange}
-                        onBlur={handleFieldBlur}
-                        onFocus={() => handleFieldFocus('message')}
-                        disabled={shouldDisableField('message')}
+                        disabled={isAddressEmpty}
+                        secondaryField={
+                            <FormField
+                                control={control}
+                                name="message"
+                                handleChange={handleChange}
+                                disabled={isAddressEmpty}
+                                isSecondary={true}
+                            />
+                        }
+                        secondaryText={`Balance 2,512,239.21 XTM`}
+                        miniButton={
+                            <Button
+                                variant="outlined"
+                                size="xs"
+                                color="grey"
+                                backgroundColor="transparent"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    setValue('amount', 2512239.21, { shouldValidate: true });
+                                    clearErrors('amount');
+                                }}
+                            >
+                                {`Max`}
+                            </Button>
+                        }
                     />
                 </FormFieldsWrapper>
                 <BottomWrapper>
@@ -205,8 +193,9 @@ export function Send({ setSection }: Props) {
                         fluid
                         loader={<CircularProgress />}
                         isLoading={isSubmitting}
+                        size="xlarge"
                     >
-                        {t('send.cta-send')}
+                        {t('send.cta-review')}
                     </Button>
                 </BottomWrapper>
             </StyledForm>

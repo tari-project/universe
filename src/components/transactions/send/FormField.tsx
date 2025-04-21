@@ -18,6 +18,11 @@ interface FormFieldProps {
     isValid?: boolean;
     errorText?: string;
     disabled?: boolean;
+    secondaryField?: ReactNode;
+    secondaryText?: string;
+    miniButton?: ReactNode;
+    isSecondary?: boolean;
+    as?: 'input' | 'textarea';
 }
 export function FormField({
     control,
@@ -33,6 +38,11 @@ export function FormField({
     isValid,
     errorText,
     disabled = false,
+    secondaryField,
+    secondaryText,
+    miniButton,
+    isSecondary,
+    as = 'input',
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
@@ -86,6 +96,11 @@ export function FormField({
                         truncateText={truncateOnBlur && value ? String(value) : undefined}
                         isValid={isValid}
                         disabled={disabled}
+                        secondaryField={secondaryField}
+                        secondaryText={secondaryText}
+                        miniButton={miniButton}
+                        isSecondary={isSecondary}
+                        as={as}
                     />
                 );
             }}
