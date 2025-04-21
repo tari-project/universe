@@ -29,11 +29,8 @@ use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
-    ab_test_selector::{self, ABTestSelector},
-    app_config::AirdropTokens,
-    events_manager::EventsManager,
-    internal_wallet::generate_password,
-    AppConfig,
+    ab_test_selector::ABTestSelector, app_config::AirdropTokens, events_manager::EventsManager,
+    internal_wallet::generate_password, AppConfig,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -91,7 +88,7 @@ impl Default for ConfigCoreContent {
             use_tor: true,
             allow_telemetry: true,
             last_binaries_update_timestamp: SystemTime::now(),
-            anon_id: anon_id,
+            anon_id,
             ab_group: ab_test_selector,
             should_auto_launch: false,
             mmproxy_use_monero_failover: false,
