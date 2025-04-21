@@ -179,6 +179,7 @@ export function Send({ setSection }: Props) {
                                         size="xs"
                                         color="grey"
                                         backgroundColor="transparent"
+                                        type="button"
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
