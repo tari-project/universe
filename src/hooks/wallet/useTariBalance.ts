@@ -11,6 +11,7 @@ function useTariBalance() {
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
     const formattedBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLongBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
+    const numericBalance = Number(((calculated_balance || 0) / 1000000).toFixed(2));
 
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const balanceDisplayValue = useMemo(
@@ -42,6 +43,8 @@ function useTariBalance() {
         toggleBalanceFormat,
         showLongBalance,
         shouldAnimateBalance,
+        calculated_balance,
+        numericBalance,
     };
 }
 

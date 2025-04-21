@@ -15,6 +15,7 @@ import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 
 const defaultValues = { message: '', address: '', amount: undefined };
 
@@ -29,6 +30,8 @@ export function Send({ setSection }: Props) {
 
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
+
+    const { formattedLongBalance, isWalletScanning, numericBalance } = useTariBalance();
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
         {
@@ -167,22 +170,26 @@ export function Send({ setSection }: Props) {
                                 isSecondary={true}
                             />
                         }
-                        secondaryText={`Balance 2,512,239.21 XTM`}
+                        secondaryText={!isWalletScanning ? `Balance ${formattedLongBalance} XTM` : ''}
                         miniButton={
-                            <Button
-                                variant="outlined"
-                                size="xs"
-                                color="grey"
-                                backgroundColor="transparent"
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setValue('amount', 2512239.21, { shouldValidate: true });
-                                    clearErrors('amount');
-                                }}
-                            >
-                                {`Max`}
-                            </Button>
+                            <>
+                                {!isWalletScanning && (
+                                    <Button
+                                        variant="outlined"
+                                        size="xs"
+                                        color="grey"
+                                        backgroundColor="transparent"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            clearErrors('amount');
+                                            setValue('amount', numericBalance, { shouldValidate: true });
+                                        }}
+                                    >
+                                        {`Max`}
+                                    </Button>
+                                )}
+                            </>
                         }
                     />
                 </FormFieldsWrapper>
@@ -195,7 +202,7 @@ export function Send({ setSection }: Props) {
                         isLoading={isSubmitting}
                         size="xlarge"
                     >
-                        {t('send.cta-review')}
+                        {t('send.cta-send')}
                     </Button>
                 </BottomWrapper>
             </StyledForm>
