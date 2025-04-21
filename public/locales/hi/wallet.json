@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "तारी भेजें",
     "error-invalid-address": "पता अमान्य है",
@@ -26,6 +27,7 @@
     "label-address": "तारी वॉलेट पता",
     "label-amount": "राशि",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "पता दर्ज करें",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

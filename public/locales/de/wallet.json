@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "Tari senden",
     "error-invalid-address": "Die Adresse ist ungültig",
@@ -26,6 +27,7 @@
     "label-address": "Tari-Wallet-Adresse",
     "label-amount": "Betrag",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "Adresse eingeben",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

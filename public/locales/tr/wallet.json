@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "Tari Gönder",
     "error-invalid-address": "Adres geçersiz",
@@ -26,6 +27,7 @@
     "label-address": "Tari Cüzdan Adresi",
     "label-amount": "Tutar",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "Adres girin",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

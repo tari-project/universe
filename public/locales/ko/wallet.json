@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "Tari 보내기",
     "error-invalid-address": "주소가 유효하지 않음",
@@ -26,6 +27,7 @@
     "label-address": "Tari 지갑 주소",
     "label-amount": "금액",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "주소 입력",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

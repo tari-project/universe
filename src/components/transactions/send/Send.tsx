@@ -170,7 +170,7 @@ export function Send({ setSection }: Props) {
                                 isSecondary={true}
                             />
                         }
-                        secondaryText={!isWalletScanning ? `Balance ${formattedLongBalance} XTM` : ''}
+                        secondaryText={!isWalletScanning ? `${t('send.balance')} ${formattedLongBalance} XTM` : ''}
                         miniButton={
                             <>
                                 {!isWalletScanning && (
@@ -186,7 +186,7 @@ export function Send({ setSection }: Props) {
                                             setValue('amount', numericBalance, { shouldValidate: true });
                                         }}
                                     >
-                                        {`Max`}
+                                        {t('send.max')}
                                     </Button>
                                 )}
                             </>

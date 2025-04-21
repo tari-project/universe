@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "Tariを送信",
     "error-invalid-address": "アドレスが無効です",
@@ -26,6 +27,7 @@
     "label-address": "Tariウォレットアドレス",
     "label-amount": "金額",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "アドレスを入力",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

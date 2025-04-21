@@ -15,6 +15,7 @@
     "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
     "cta-review": "Review",
     "cta-send": "Kirim Tari",
     "error-invalid-address": "Alamat tidak valid",
@@ -26,6 +27,7 @@
     "label-address": "Alamat Dompet Tari",
     "label-amount": "Jumlah",
     "label-message": "Transaction Description (Optional)",
+    "max": "Max",
     "placeholder-address": "Masukkan alamat",
     "placeholder-amount": 100,
     "placeholder-message": "Message",
