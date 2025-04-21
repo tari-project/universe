@@ -366,7 +366,7 @@ async fn get_telemetry_data(
 
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
-
+    let config = ConfigCore::content().await;
     let gpu_hardware_parameters = HardwareStatusMonitor::current()
         .get_gpu_public_properties()
         .await
@@ -437,13 +437,13 @@ async fn get_telemetry_data(
         } else {
             (None, vec![])
         }; //TODO refactor - now is JUST WIP to meet the String type
+
+    let mining_config = ConfigMining::content().await;
     let version = env!("CARGO_PKG_VERSION").to_string();
-    let gpu_mining_used = *ConfigMining::content().await.gpu_mining_enabled()
-        && gpu_make.is_some()
-        && gpu_hash_rate.is_some();
-    let cpu_resource_used = *ConfigMining::content().await.cpu_mining_enabled()
-        && cpu_make.is_some()
-        && cpu_hash_rate.is_some();
+    let gpu_mining_used =
+        *mining_config.gpu_mining_enabled() && gpu_make.is_some() && gpu_hash_rate.is_some();
+    let cpu_resource_used =
+        *mining_config.cpu_mining_enabled() && cpu_make.is_some() && cpu_hash_rate.is_some();
     let resource_used = match (gpu_mining_used, cpu_resource_used) {
         (true, true) => TelemetryResource::CpuGpu,
         (true, false) => TelemetryResource::Gpu,
@@ -451,7 +451,7 @@ async fn get_telemetry_data(
         (false, false) => TelemetryResource::None,
     };
 
-    let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled() && p2pool_stats.is_some();
+    let p2pool_enabled = *config.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
     let is_orphan = node_manager
         .check_if_is_orphan_chain(false)
@@ -460,25 +460,19 @@ async fn get_telemetry_data(
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
     extra_data.insert(
         "config_cpu_enabled".to_string(),
-        ConfigMining::content()
-            .await
-            .cpu_mining_enabled()
-            .to_string(),
+        mining_config.cpu_mining_enabled().to_string(),
     );
     extra_data.insert(
         "config_gpu_enabled".to_string(),
-        ConfigMining::content()
-            .await
-            .gpu_mining_enabled()
-            .to_string(),
+        mining_config.gpu_mining_enabled().to_string(),
     );
     extra_data.insert(
         "config_p2pool_enabled".to_string(),
-        ConfigCore::content().await.is_p2pool_enabled().to_string(),
+        config.is_p2pool_enabled().to_string(),
     );
     extra_data.insert(
         "config_tor_enabled".to_string(),
-        ConfigCore::content().await.use_tor().to_string(),
+        config.use_tor().to_string(),
     );
     let mut squad = None;
     if let Some(stats) = p2pool_stats.as_ref() {
@@ -565,6 +559,7 @@ async fn get_telemetry_data(
         num_connections.to_string(),
     );
     extra_data.insert("current_os".to_string(), std::env::consts::OS.to_string());
+    extra_data.insert("ab_test".to_string(), config.ab_group().to_string());
 
     add_process_stats(
         &mut extra_data,
@@ -639,11 +634,11 @@ async fn get_telemetry_data(
     }
 
     let data = TelemetryData {
-        app_id: ConfigCore::content().await.anon_id().to_string(),
+        app_id: config.anon_id().to_string(),
         block_height,
         is_mining_active,
         network: network.map(|n| n.into()),
-        mode: (*ConfigMining::content().await.mode()).into(),
+        mode: (*mining_config.mode()).into(),
         cpu_hash_rate,
         cpu_utilization,
         cpu_make,

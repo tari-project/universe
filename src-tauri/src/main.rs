@@ -88,6 +88,7 @@ use crate::wallet_manager::WalletManager;
 #[cfg(target_os = "macos")]
 use utils::macos_utils::is_app_in_applications_folder;
 
+mod ab_test_selector;
 mod airdrop;
 mod app_config;
 mod app_in_memory_config;
