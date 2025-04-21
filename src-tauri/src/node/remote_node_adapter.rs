@@ -27,8 +27,11 @@ use tokio_util::task::TaskTracker;
 use tonic::async_trait;
 
 use crate::{
-    node::node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
-    node::node_manager::NodeType,
+    ab_test_selector::ABTestSelector,
+    node::{
+        node_adapter::{NodeAdapter, NodeAdapterService, NodeStatusMonitor},
+        node_manager::NodeType,
+    },
     process_adapter::{ProcessAdapter, ProcessInstanceTrait},
     BaseNodeStatus,
 };
@@ -44,6 +47,7 @@ const LOG_TARGET: &str = "tari::universe::remote_node_adapter";
 pub(crate) struct RemoteNodeAdapter {
     pub grpc_address: Option<(String, u16)>,
     pub(crate) use_tor: bool,
+    ab_group: ABTestSelector,
     status_broadcast: watch::Sender<BaseNodeStatus>,
 }
 
@@ -53,6 +57,7 @@ impl RemoteNodeAdapter {
             grpc_address: None,
             status_broadcast,
             use_tor: false,
+            ab_group: ABTestSelector::GroupA,
         }
     }
 
@@ -110,6 +115,10 @@ impl NodeAdapter for RemoteNodeAdapter {
 
     fn use_tor(&mut self, use_tor: bool) {
         self.use_tor = use_tor;
+    }
+
+    fn set_ab_group(&mut self, ab_group: ABTestSelector) {
+        self.ab_group = ab_group;
     }
 
     fn set_tor_control_port(&mut self, _tor_control_port: Option<u16>) {

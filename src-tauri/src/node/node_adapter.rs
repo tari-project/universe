@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_manager::NodeType;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
 use anyhow::{anyhow, Error};
@@ -61,6 +62,7 @@ pub trait NodeAdapter {
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
+    fn set_ab_group(&mut self, ab_group: ABTestSelector);
 }
 
 #[derive(Debug, Clone)]
