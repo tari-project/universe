@@ -44,16 +44,3 @@ export const BottomWrapper = styled.div`
     flex-direction: column;
     justify-content: flex-end;
 `;
-
-export const DividerIcon = styled.div`
-    width: 34px;
-    height: 34px;
-    background: linear-gradient(0deg, #1c264a 0%, #050c32 100%);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    color: #fff;
-    border: ${({ theme }) => (theme.mode === 'dark' ? '4px solid #2E2E2E' : '4px solid #fff')};
-`;
