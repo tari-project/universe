@@ -41,20 +41,20 @@ export const useUiMiningStateMachine = () => {
 
         const attemptStop = () => {
             if (animationStatus === 'not-started') {
-                console.debug(getTowerLogPrefix('debug'), `Animation stopped: status=${animationStatus}`);
+                console.info(getTowerLogPrefix('info'), `Animation stopped: status=${animationStatus}`);
                 return;
             }
 
             if (retryCount >= maxRetries) {
-                console.debug(
-                    getTowerLogPrefix('debug'),
+                console.info(
+                    getTowerLogPrefix('info'),
                     `Animation Stop failed after ${maxRetries} retries: status=${animationStatus}`
                 );
                 return;
             }
 
-            console.debug(
-                getTowerLogPrefix('debug'),
+            console.info(
+                getTowerLogPrefix('info'),
                 `Animation Stop attempt ${retryCount + 1}/${maxRetries}: status=${animationStatus}`
             );
             setAnimationState('stop');
