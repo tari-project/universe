@@ -105,7 +105,7 @@ const LocalNodeSync = memo(function LocalNodeSync() {
         <SettingsGroupWrapper>
             <SyncWrapper>
                 <InfoWrapper>
-                    <Typography variant="h6">{`Tari Universe is still syncing. This won’t affect your mining experience.`}</Typography>
+                    <Typography variant="h6">{t('local-node-sync')}</Typography>
                     {title && <Typography variant="p">{`${title}...`}</Typography>}
                 </InfoWrapper>
                 <ProgressWrapper>

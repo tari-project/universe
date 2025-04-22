@@ -2,6 +2,7 @@
   "any_moment_now": "किसी भी क्षण",
   "block-sync": "Syncing blocks",
   "header-sync": "Syncing headers",
+  "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
   "phase-core-critical-problem-description": "कोर सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
   "phase-core-critical-problem-title": "कोर सेटअप विफल",

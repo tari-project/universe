@@ -2,6 +2,7 @@
   "any_moment_now": "D\"un moment à l\"autre",
   "block-sync": "Syncing blocks",
   "header-sync": "Syncing headers",
+  "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
   "phase-core-critical-problem-description": "La configuration du noyau est essentielle pour l\"application. Veuillez essayer de redémarrer l\"application. Si le problème persiste, veuillez contacter le support.",
   "phase-core-critical-problem-title": "Échec de la configuration du noyau",

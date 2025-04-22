@@ -2,6 +2,7 @@
   "any_moment_now": "随时",
   "block-sync": "Syncing blocks",
   "header-sync": "Syncing headers",
+  "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
   "phase-core-critical-problem-description": "核心设置对应用程序至关重要。请尝试重新启动应用程序。如果问题仍然存在，请联系支持。",
   "phase-core-critical-problem-title": "核心设置失败",
