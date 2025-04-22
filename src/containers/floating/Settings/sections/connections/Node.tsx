@@ -10,7 +10,6 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
-import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads.ts';
 
 const getNodeType = (nodeType?: NodeType) => {
     if (!nodeType) return 'N/A';
@@ -22,6 +21,7 @@ const getNodeType = (nodeType?: NodeType) => {
 export default function Node() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { node_type, node_identity, node_connection_address } = useNodeStore();
+    console.debug(`node_connection_address= `, node_connection_address);
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
