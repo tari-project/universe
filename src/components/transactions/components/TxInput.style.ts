@@ -27,7 +27,8 @@ export const Wrapper = styled.div<{ $hasError?: boolean; $disabled?: boolean; $i
             margin-top: 10px;
             padding: 20px 0 0 0;
             border: none;
-            border-top: 1px solid rgba(0, 0, 0, 0.25);
+            border-top: 1px solid
+                ${({ theme }) => (theme.mode === 'dark' ? `rgba(255, 255, 255, 0.05)` : `rgba(0, 0, 0, 0.25)`)};
             border-radius: 0;
             background-color: transparent;
         `}
@@ -127,7 +128,8 @@ export const LabelWrapper = styled.div`
 `;
 
 export const SecondaryText = styled.div`
-    color: rgba(0, 0, 0, 0.5);
+    color: ${({ theme }) => (theme.mode === 'dark' ? `rgba(255, 255, 255, 0.25)` : `rgba(0, 0, 0, 0.5)`)};
+
     font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;

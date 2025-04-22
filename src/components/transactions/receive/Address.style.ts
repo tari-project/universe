@@ -81,7 +81,7 @@ export const Label = styled(Typography).attrs({
     variant: 'p',
 })`
     font-weight: 500;
-    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
+    color: rgba(0, 0, 0, 0.5);
 `;
 
 export const CopyAddressButton = styled.button<{ $isCopied: boolean }>`

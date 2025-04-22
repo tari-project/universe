@@ -45,12 +45,14 @@ export const BoxWrapper = styled(m.div)`
     padding: 30px;
 
     border-radius: 20px;
-    background: rgba(255, 255, 255, 0.75);
+    background:;
     box-shadow: 0px 4px 74px 0px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(27px);
 
     position: relative;
     z-index: 1;
+
+    background: ${({ theme }) => (theme.mode === 'dark' ? `rgba(46, 46, 46, 0.75)` : `rgba(255, 255, 255, 0.75)`)};
 `;
 
 export const CloseButton = styled('button')`
@@ -69,10 +71,11 @@ export const TopWrapper = styled('div')`
     justify-content: space-between;
     align-items: center;
     width: 100%;
+
+    ${({ theme }) => (theme.mode === 'dark' ? `#fff` : `#000`)};
 `;
 
 export const Title = styled('div')`
-    color: #000;
     font-family: Poppins, sans-serif;
     font-size: 18px;
     font-style: normal;
