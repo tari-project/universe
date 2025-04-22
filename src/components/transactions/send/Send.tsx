@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useEffect, useState, FocusEvent } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
@@ -16,6 +16,7 @@ import { FormField } from './FormField.tsx';
 
 import { BottomWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 
 const defaultValues = { message: '', address: '', amount: undefined };
 
@@ -27,7 +28,8 @@ interface Props {
 export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
-
+    const [address, setAddress] = useState('');
+    const debouncedAddress = useDebouncedValue(address, 250);
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
 
@@ -57,6 +59,26 @@ export function Send({ setSection }: Props) {
             };
         }
     }, [isSubmitted, isSubmitSuccessful, errors, reset]);
+
+    const validateAddress = useCallback(
+        async (address: string) => {
+            if (address.length === 0) return;
+
+            try {
+                await invoke('verify_address_for_send', { address });
+                setIsAddressValid(true);
+            } catch (_error) {
+                setIsAddressValid(false);
+                setError('address', { message: t('send.error-invalid-address') });
+            }
+        },
+        [setError, t]
+    );
+    useEffect(() => {
+        if (debouncedAddress?.length > 3) {
+            validateAddress(debouncedAddress);
+        }
+    }, [debouncedAddress, validateAddress]);
 
     const handleSend = useCallback(
         async (data: SendInputs) => {
@@ -96,24 +118,11 @@ export function Send({ setSection }: Props) {
     }
 
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        const value = e.target.value;
+        const value = e.target.value.trim();
+        setAddress(value);
         setValue(name, value, { shouldValidate: true });
-        clearErrors(name);
-        setIsAddressValid(false);
         setIsAddressEmpty(value.length === 0);
     }
-
-    const validateAddress = async (address: string) => {
-        if (address.length === 0) return;
-
-        try {
-            await invoke('verify_address_for_send', { address });
-            setIsAddressValid(true);
-        } catch (_error) {
-            setIsAddressValid(false);
-            setError('address', { message: t('send.error-invalid-address') });
-        }
-    };
 
     const validateAmount = async (amount: string) => {
         if (amount.length === 0) return;
@@ -127,8 +136,8 @@ export function Send({ setSection }: Props) {
         }
     };
 
-    const handleAddressBlur = (e: FocusEvent<HTMLInputElement>) => {
-        const address = e.target.value;
+    const handleAddressBlur = () => {
+        const address = getValues().address;
         validateAddress(address);
     };
 
