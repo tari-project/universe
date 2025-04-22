@@ -412,17 +412,12 @@ impl NodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        let duration = std::time::Duration::from_secs(5);
-        match timeout(duration, self.node_service.get_network_state()).await {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
-                    if status.num_connections == 0
-                        // Remote Node always returns 0 connections
-                        && self.node_type != NodeType::Remote
-                        && self.node_type != NodeType::RemoteUntilLocal
-                    {
+                    if status.num_connections == 0 {
                         warn!(
                             "{:?} Node Health Check Warning: No connections | status: {:?}",
                             self.node_type,
@@ -430,25 +425,6 @@ impl StatusMonitor for NodeStatusMonitor {
                         );
                         return HealthStatus::Warning;
                     }
-                    // if self
-                    //     .last_block_time
-                    //     .load(std::sync::atomic::Ordering::SeqCst)
-                    //     == status.block_time
-                    // {
-                    //     if uptime.as_secs() > 1200
-                    //         && EpochTime::now()
-                    //             .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
-                    //             .unwrap_or(EpochTime::from(0))
-                    //             .as_u64()
-                    //             > 1200
-                    //     {
-                    //         warn!(target: LOG_TARGET, "Base node height has not changed in twenty minutes");
-                    //         return HealthStatus::Warning;
-                    //     }
-                    // } else {
-                    //     self.last_block_time
-                    //         .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
-                    // }
                     HealthStatus::Healthy
                 }
                 Err(e) => {
@@ -466,8 +442,8 @@ impl StatusMonitor for NodeStatusMonitor {
                 );
                 match self.node_service.get_identity().await {
                     Ok(identity) => {
-                        info!(target: LOG_TARGET, "{:?} Node hecking base node identity success: {:?}", self.node_type, identity);
-                        return HealthStatus::Healthy;
+                        info!(target: LOG_TARGET, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
+                        return HealthStatus::Warning;
                     }
                     Err(e) => {
                         warn!(

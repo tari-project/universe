@@ -200,18 +200,25 @@ pub struct MergeMiningProxyStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        if self
-            .get_version()
-            .await
-            .inspect_err(
-                |e| warn!(target: LOG_TARGET, "Failed to get version during health check: {}", e),
-            )
-            .is_ok()
-        {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Warning
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.get_version()).await {
+            Ok(result) => match result {
+                Ok(_) => HealthStatus::Healthy,
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to get version during health check: {}", e
+                    );
+                    HealthStatus::Warning
+                }
+            },
+            Err(_) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "Mmproxy Version check timed out after {:?}", timeout_duration
+                );
+                HealthStatus::Warning
+            }
         }
     }
 }
