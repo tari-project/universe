@@ -19,10 +19,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     position: relative;
     font-size: inherit;
     transition: all 0.25s ease-in-out;
-    -webkit-user-select: none;
+    user-select: none;
+
     &:active {
         opacity: 0.8;
     }
+
     &:disabled {
         opacity: 0.5;
         pointer-events: none;
@@ -91,6 +93,11 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     height: 50px;
                     width: ${$fluid ? '100%' : '190px'};
+                `;
+            case 'xlarge':
+                return css`
+                    height: 60px;
+                    width: ${$fluid ? '100%' : 'min-content'};
                 `;
             case 'medium':
             default:

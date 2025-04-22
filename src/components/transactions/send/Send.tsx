@@ -1,9 +1,8 @@
-import { ChangeEvent, useCallback, useEffect, useState, FocusEvent } from 'react';
+import { ChangeEvent, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence } from 'motion/react';
 import { invoke } from '@tauri-apps/api/core';
 import { useForm } from 'react-hook-form';
-import { FaArrowDown } from 'react-icons/fa6';
 
 import { addPendingTransaction, setError as setStoreError } from '@app/store';
 
@@ -15,8 +14,9 @@ import type { InputName, SendInputs } from './types.ts';
 import { Confirmation } from './Confirmation.tsx';
 import { FormField } from './FormField.tsx';
 
-import { BottomWrapper, DividerIcon, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
-import { HeaderLabel, TabHeader } from '../components/Tabs/tab.styles.ts';
+import { BottomWrapper, FormFieldsWrapper, StyledForm, Wrapper } from './Send.styles';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 
 const defaultValues = { message: '', address: '', amount: undefined };
 
@@ -28,8 +28,12 @@ interface Props {
 export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
-
+    const [address, setAddress] = useState('');
+    const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressValid, setIsAddressValid] = useState(false);
+    const [isAddressEmpty, setIsAddressEmpty] = useState(true);
+
+    const { isWalletScanning, numericAvailableBalance } = useTariBalance();
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
         {
@@ -55,6 +59,24 @@ export function Send({ setSection }: Props) {
             };
         }
     }, [isSubmitted, isSubmitSuccessful, errors, reset]);
+
+    const validateAddress = useCallback(
+        async (address: string) => {
+            if (address.length === 0) return;
+
+            try {
+                await invoke('verify_address_for_send', { address });
+                setIsAddressValid(true);
+            } catch (_error) {
+                setIsAddressValid(false);
+                setError('address', { message: t('send.error-invalid-address') });
+            }
+        },
+        [setError, t]
+    );
+    useEffect(() => {
+        validateAddress(debouncedAddress);
+    }, [debouncedAddress, validateAddress]);
 
     const handleSend = useCallback(
         async (data: SendInputs) => {
@@ -94,99 +116,110 @@ export function Send({ setSection }: Props) {
     }
 
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        setValue(name, e.target.value, { shouldValidate: true });
-        clearErrors(name);
-        setIsAddressValid(false);
+        const value = e.target.value.replace(/\s/g, '');
+        setAddress(value);
+        setValue(name, value, { shouldValidate: true });
+        setIsAddressEmpty(value.length === 0);
     }
-
-    const validateAddress = async (address: string) => {
-        if (address.length === 0) return;
-
-        try {
-            await invoke('verify_address_for_send', { address });
-            setIsAddressValid(true);
-        } catch (_error) {
-            setIsAddressValid(false);
-            setError('address', { message: t('send.error-invalid-address') });
-        }
-    };
 
     const validateAmount = async (amount: string) => {
         if (amount.length === 0) return;
 
         try {
             await invoke('validate_minotari_amount', { amount });
+            clearErrors('amount');
         } catch (error) {
             console.error('Error in validateAmount:', error);
             setError('amount', { message: t('send.error-invalid-amount') });
         }
     };
 
-    const handleAddressBlur = (e: FocusEvent<HTMLInputElement>) => {
-        const address = e.target.value;
+    const handleAddressBlur = () => {
+        const address = getValues().address;
         validateAddress(address);
     };
 
     const handleAmountBlur = () => {
         const amount = getValues().amount;
         if (amount) {
-            validateAmount(amount.toString());
+            validateAmount(amount.toString().trim());
         }
     };
 
     return (
-        <>
-            <TabHeader $noBorder>
-                <HeaderLabel>{`${t('tabs.send')}  ${t('tari')}`}</HeaderLabel>
-                <Button size="xs" variant="outlined" onClick={() => setSection('history')}>
-                    {t('common:back')}
-                </Button>
-            </TabHeader>
+        <Wrapper $isLoading={isSubmitting}>
+            <StyledForm onSubmit={handleSubmit(handleSend)}>
+                <FormFieldsWrapper>
+                    <FormField
+                        control={control}
+                        name="address"
+                        handleChange={handleAddressChange}
+                        onBlur={handleAddressBlur}
+                        required
+                        autoFocus
+                        truncateOnBlur
+                        isValid={isAddressValid}
+                        errorText={errors.address?.message}
+                    />
 
-            <Wrapper $isLoading={isSubmitting}>
-                <StyledForm onSubmit={handleSubmit(handleSend)}>
-                    <FormFieldsWrapper>
-                        <FormField
-                            control={control}
-                            name="address"
-                            handleChange={handleAddressChange}
-                            onBlur={handleAddressBlur}
-                            required
-                            autoFocus
-                            truncateOnBlur
-                            isValid={isAddressValid}
-                            errorText={errors.address?.message}
-                        />
-
-                        <FormField control={control} name="message" handleChange={handleChange} />
-
-                        <FormField
-                            control={control}
-                            name="amount"
-                            onBlur={handleAmountBlur}
-                            required
-                            icon={<TariOutlineSVG />}
-                            accent={
-                                <DividerIcon>
-                                    <FaArrowDown size={18} />
-                                </DividerIcon>
-                            }
-                        />
-                    </FormFieldsWrapper>
-                    <BottomWrapper>
-                        <Button
-                            disabled={isSubmitting || !isValid}
-                            type="submit"
-                            fluid
-                            loader={<CircularProgress />}
-                            isLoading={isSubmitting}
-                        >
-                            {t('send.cta-send')}
-                        </Button>
-                    </BottomWrapper>
-                </StyledForm>
-                <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
-            </Wrapper>
-        </>
+                    <FormField
+                        control={control}
+                        name="amount"
+                        onBlur={handleAmountBlur}
+                        required
+                        icon={<TariOutlineSVG />}
+                        disabled={isAddressEmpty}
+                        secondaryField={
+                            <FormField
+                                control={control}
+                                name="message"
+                                handleChange={handleChange}
+                                disabled={isAddressEmpty}
+                                isSecondary={true}
+                            />
+                        }
+                        secondaryText={
+                            !isWalletScanning ? `${t('send.max-available')} ${numericAvailableBalance} XTM` : ''
+                        }
+                        miniButton={
+                            <>
+                                {!isWalletScanning && (
+                                    <Button
+                                        variant="outlined"
+                                        size="xs"
+                                        color="grey"
+                                        backgroundColor="transparent"
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setValue('amount', numericAvailableBalance, {
+                                                shouldValidate: true,
+                                            });
+                                            handleAmountBlur();
+                                        }}
+                                    >
+                                        {t('send.max')}
+                                    </Button>
+                                )}
+                            </>
+                        }
+                    />
+                </FormFieldsWrapper>
+                <BottomWrapper>
+                    <Button
+                        disabled={isSubmitting || !isValid}
+                        type="submit"
+                        fluid
+                        loader={<CircularProgress />}
+                        isLoading={isSubmitting}
+                        size="xlarge"
+                    >
+                        {t('send.cta-send')}
+                    </Button>
+                </BottomWrapper>
+            </StyledForm>
+            <AnimatePresence>{showConfirmation && <Confirmation />}</AnimatePresence>
+        </Wrapper>
     );
 }
