@@ -45,7 +45,6 @@ export const BoxWrapper = styled(m.div)`
     padding: 30px;
 
     border-radius: 20px;
-    background:;
     box-shadow: 0px 4px 74px 0px rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(27px);
 
