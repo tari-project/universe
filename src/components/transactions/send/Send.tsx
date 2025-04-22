@@ -29,7 +29,7 @@ export function Send({ setSection }: Props) {
     const { t } = useTranslation('wallet');
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [address, setAddress] = useState('');
-    const debouncedAddress = useDebouncedValue(address, 250);
+    const debouncedAddress = useDebouncedValue(address, 350);
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
 
@@ -116,7 +116,7 @@ export function Send({ setSection }: Props) {
     }
 
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
-        const value = e.target.value.trim();
+        const value = e.target.value.replace(/\s/g, '');
         setAddress(value);
         setValue(name, value, { shouldValidate: true });
         setIsAddressEmpty(value.length === 0);
