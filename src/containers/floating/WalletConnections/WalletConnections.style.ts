@@ -60,9 +60,10 @@ export const ContentWrapper = styled.div`
     background: white;
     border-radius: 24px;
     padding: 24px;
-    gap: 2px;
+    min-width: 480px;
 
     button {
+        cursor: pointer<F12>
         border-radius: 12px;
         display: flex;
         align-items: center;
@@ -74,9 +75,9 @@ export const ContentWrapper = styled.div`
         font-weight: 600;
         font-size: 14px;
         line-height: 100%;
-        padding: 12px;
+        padding: 10px 12px;
         img {
-            width: 30px;
+            width: 25px;
         }
         &:hover {
             background: #f5f5f5;
@@ -89,41 +90,6 @@ export const Divider = styled.div`
     height: 1px;
     background: rgba(0, 0, 0, 0.1);
     margin-top: 20px;
-`;
-
-export const PortalWrapper = styled.div`
-    padding: 15px;
-    border-radius: 15px;
-    background: #ebebeb;
-    display: flex;
-    gap: 14px;
-    align-items: center;
-    cursor: pointer;
-    &:hover {
-        background: #f5f5f5;
-    }
-`;
-
-export const PortalCopy = styled.div`
-    display: flex;
-    flex-direction: column;
-    h3 {
-        font-family: Poppins;
-        font-weight: 600;
-        font-size: 14px;
-        line-height: 100%;
-        color: black;
-        margin: 0;
-        margin-bottom: 5px;
-    }
-    span {
-        font-family: Poppins;
-        font-weight: 400;
-        font-size: 12px;
-        line-height: 100%;
-        color: rgba(0, 0, 0, 0.5);
-        margin: 0;
-    }
 `;
 
 export const WalletAddress = styled.div`
