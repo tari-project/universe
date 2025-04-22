@@ -10,7 +10,6 @@ import { CommunityMessages } from './components/CommunityMessages/CommunityMessa
 
 function LoggedInItems() {
     useAirdropWebsocket();
-    useAirdropPolling();
     return (
         <>
             <Invite />
@@ -22,6 +21,7 @@ function LoggedInItems() {
 
 export function AirdropSidebarItems() {
     const isLoggedIn = useAirdropStore((s) => !!s.airdropTokens);
+    useAirdropPolling();
     return (
         <Wrapper>
             {isLoggedIn ? <LoggedInItems /> : <LogIn />}

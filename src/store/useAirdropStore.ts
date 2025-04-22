@@ -107,7 +107,7 @@ export interface AirdropStoreState {
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
     pollingEnabled?: boolean;
-    orphanChainUiEnabled?: boolean;
+    orphanChainUiDisabled?: boolean;
     communityMessages?: CommunityMessage[];
 }
 
