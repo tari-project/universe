@@ -28,6 +28,7 @@
     "label-amount": "금액",
     "label-message": "Transaction Description (Optional)",
     "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "주소 입력",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

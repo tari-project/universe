@@ -31,7 +31,7 @@ export function Send({ setSection }: Props) {
     const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
 
-    const { formattedLongBalance, isWalletScanning, numericBalance } = useTariBalance();
+    const { isWalletScanning, numericAvailableBalance } = useTariBalance();
 
     const { control, handleSubmit, reset, formState, setError, setValue, clearErrors, getValues } = useForm<SendInputs>(
         {
@@ -120,6 +120,7 @@ export function Send({ setSection }: Props) {
 
         try {
             await invoke('validate_minotari_amount', { amount });
+            clearErrors('amount');
         } catch (error) {
             console.error('Error in validateAmount:', error);
             setError('amount', { message: t('send.error-invalid-amount') });
@@ -134,7 +135,7 @@ export function Send({ setSection }: Props) {
     const handleAmountBlur = () => {
         const amount = getValues().amount;
         if (amount) {
-            validateAmount(amount.toString());
+            validateAmount(amount.toString().trim());
         }
     };
 
@@ -170,7 +171,9 @@ export function Send({ setSection }: Props) {
                                 isSecondary={true}
                             />
                         }
-                        secondaryText={!isWalletScanning ? `${t('send.balance')} ${formattedLongBalance} XTM` : ''}
+                        secondaryText={
+                            !isWalletScanning ? `${t('send.max-available')} ${numericAvailableBalance} XTM` : ''
+                        }
                         miniButton={
                             <>
                                 {!isWalletScanning && (
@@ -183,8 +186,8 @@ export function Send({ setSection }: Props) {
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            clearErrors('amount');
-                                            setValue('amount', numericBalance, { shouldValidate: true });
+                                            setValue('amount', numericAvailableBalance, { shouldValidate: true });
+                                            handleAmountBlur();
                                         }}
                                     >
                                         {t('send.max')}

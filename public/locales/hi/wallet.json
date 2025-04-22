@@ -28,6 +28,7 @@
     "label-amount": "राशि",
     "label-message": "Transaction Description (Optional)",
     "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "पता दर्ज करें",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

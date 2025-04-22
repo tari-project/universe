@@ -98,7 +98,7 @@ export function TxInput({
                     ref={ref}
                     id={name}
                     name={name}
-                    value={displayValue}
+                    value={displayValue ?? ''}
                     onChange={onChange}
                     onBlur={handleBlur}
                     onFocus={handleFocus}

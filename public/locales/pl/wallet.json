@@ -28,6 +28,7 @@
     "label-amount": "Kwota",
     "label-message": "Transaction Description (Optional)",
     "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "Wpisz adres",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

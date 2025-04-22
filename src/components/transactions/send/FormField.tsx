@@ -78,9 +78,10 @@ export function FormField({
                             if (name === 'amount' && valueIsNaN) {
                                 return;
                             }
-                            rest.onChange(e);
                             if (handleChange) {
                                 handleChange(e, name as InputName);
+                            } else {
+                                rest.onChange(e);
                             }
                         }}
                         onBlur={onBlur || undefined}

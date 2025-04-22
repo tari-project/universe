@@ -28,6 +28,7 @@
     "label-amount": "Betrag",
     "label-message": "Transaction Description (Optional)",
     "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "Adresse eingeben",
     "placeholder-amount": 100,
     "placeholder-message": "Message",

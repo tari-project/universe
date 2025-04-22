@@ -8,10 +8,12 @@ function useTariBalance() {
     const [showLongBalance, setShowLongBalance] = useState(false);
     const [shouldAnimateBalance, setShouldAnimateBalance] = useState(true);
 
+    const balance = useWalletStore((s) => s.balance);
     const calculated_balance = useWalletStore((s) => s.calculated_balance);
+
     const formattedBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLongBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
-    const numericBalance = Number(((calculated_balance || 0) / 1000000).toFixed(2));
+    const numericAvailableBalance = Number(Math.floor(balance?.available_balance || 0) / 1000000).toFixed(2);
 
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const balanceDisplayValue = useMemo(
@@ -44,7 +46,7 @@ function useTariBalance() {
         showLongBalance,
         shouldAnimateBalance,
         calculated_balance,
-        numericBalance,
+        numericAvailableBalance,
     };
 }
 
