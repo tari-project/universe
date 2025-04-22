@@ -124,7 +124,7 @@ pub enum HealthStatus {
 
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
-    async fn check_health(&self, uptime: Duration) -> HealthStatus;
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus;
 }
 
 // TODO: Rename to ProcessInstance

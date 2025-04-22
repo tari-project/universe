@@ -7,9 +7,16 @@
   "my_tari": "내 Tari",
   "new": "새로운",
   "receive": {
-    "label-address": "My Address"
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
+    "tooltip-emoji-id-text2": "Yat support coming soon!",
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
+    "cta-review": "Review",
     "cta-send": "Tari 보내기",
     "error-invalid-address": "주소가 유효하지 않음",
     "error-invalid-amount": "금액이 유효하지 않음",
@@ -19,10 +26,12 @@
     "field-message": "메시지",
     "label-address": "Tari 지갑 주소",
     "label-amount": "금액",
-    "label-message": "결제 ID",
+    "label-message": "Transaction Description (Optional)",
+    "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "주소 입력",
     "placeholder-amount": 100,
-    "placeholder-message": "메시지 입력",
+    "placeholder-message": "Message",
     "required": "{{fieldName}} 필드는 필수입니다"
   },
   "tabs": {
