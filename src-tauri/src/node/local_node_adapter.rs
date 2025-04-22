@@ -274,7 +274,7 @@ impl ProcessAdapter for LocalNodeAdapter {
             ));
             args.push("-p".to_string());
             args.push(
-                "base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string(),
+                "base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string(),
             );
             if let Some(mut tor_control_port) = self.tor_control_port {
                 // macos uses libtor, so will be 9051
