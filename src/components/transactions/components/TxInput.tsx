@@ -108,9 +108,10 @@ export function TxInput({
                     {...rest}
                     aria-errormessage={errorMessage}
                     $isSecondary={isSecondary}
+                    $hasValidityIcon={isValid}
                 />
 
-                {isValid && !isFocused && (
+                {isValid && (
                     <CheckIconWrapper initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }}>
                         <CheckIcon />
                     </CheckIconWrapper>
