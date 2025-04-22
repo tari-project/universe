@@ -7,9 +7,16 @@
   "my_tari": "我的 Tari",
   "new": "新建",
   "receive": {
-    "label-address": "My Address"
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
+    "tooltip-emoji-id-text2": "Yat support coming soon!",
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
+    "cta-review": "Review",
     "cta-send": "发送 Tari",
     "error-invalid-address": "地址无效",
     "error-invalid-amount": "金额无效",
@@ -19,10 +26,12 @@
     "field-message": "消息",
     "label-address": "Tari 钱包地址",
     "label-amount": "金额",
-    "label-message": "支付 ID",
+    "label-message": "Transaction Description (Optional)",
+    "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "输入地址",
     "placeholder-amount": 100,
-    "placeholder-message": "输入消息",
+    "placeholder-message": "Message",
     "required": "{{fieldName}} 字段是必需的"
   },
   "tabs": {
