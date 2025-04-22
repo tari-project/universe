@@ -12,47 +12,6 @@ import {
 import { NodeType, useNodeStore } from '@app/store/useNodeStore.ts';
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads.ts';
 
-export function BackgroundNodeSyncProgress({ lastUpdate }: { lastUpdate: BackgroundNodeSyncUpdatePayload }) {
-    const { t } = useTranslation(['setup-progresses', 'setup-view'], { useSuspense: false });
-    if (!lastUpdate) return null;
-
-    switch (lastUpdate.step) {
-        case 'Startup':
-            return (
-                <Typography>
-                    {t('title.waiting-for-initial-sync', {
-                        initial_connected_peers: lastUpdate.initial_connected_peers,
-                        required_peers: lastUpdate.required_peers,
-                    })}
-                </Typography>
-            );
-        case 'Header':
-            return (
-                <Typography>
-                    {t('title.waiting-for-header-sync', {
-                        local_header_height: lastUpdate.local_header_height,
-                        tip_header_height: lastUpdate.tip_header_height,
-                        local_block_height: lastUpdate.local_block_height,
-                        tip_block_height: lastUpdate.tip_block_height,
-                    })}
-                </Typography>
-            );
-        case 'Block':
-            return (
-                <Typography>
-                    {t('title.waiting-for-block-sync', {
-                        local_header_height: lastUpdate.local_header_height,
-                        tip_header_height: lastUpdate.tip_header_height,
-                        local_block_height: lastUpdate.local_block_height,
-                        tip_block_height: lastUpdate.tip_block_height,
-                    })}
-                </Typography>
-            );
-        default:
-            return null;
-    }
-}
-
 const getNodeType = (nodeType?: NodeType) => {
     if (!nodeType) return 'N/A';
     if (nodeType == 'LocalAfterRemote') return 'Local';
@@ -62,8 +21,7 @@ const getNodeType = (nodeType?: NodeType) => {
 
 export default function Node() {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const { node_type, node_identity, node_connection_address, backgroundNodeSyncLastUpdate } = useNodeStore();
-
+    const { node_type, node_identity, node_connection_address } = useNodeStore();
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>
@@ -99,20 +57,6 @@ export default function Node() {
                             </Stack>
                         </Stack>
                     </SettingsGroupContent>
-                    {backgroundNodeSyncLastUpdate?.step && node_type == 'RemoteUntilLocal' && (
-                        <SettingsGroupContent>
-                            <SettingsGroupTitle>
-                                <Typography variant="h6">{t('local-node-sync-progress')}</Typography>
-                            </SettingsGroupTitle>
-                            <SettingsGroupContent>
-                                <Stack direction="column" alignItems="flex-start">
-                                    <Stack direction="row">
-                                        <BackgroundNodeSyncProgress lastUpdate={backgroundNodeSyncLastUpdate} />
-                                    </Stack>
-                                </Stack>
-                            </SettingsGroupContent>
-                        </SettingsGroupContent>
-                    )}
                 </SettingsGroupContent>
             </SettingsGroup>
         </SettingsGroupWrapper>
