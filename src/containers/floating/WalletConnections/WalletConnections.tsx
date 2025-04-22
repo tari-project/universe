@@ -91,7 +91,7 @@ export const WalletConnections = () => {
                                         <span>{'Metamask'}</span>
                                     </button>
                                     <Divider />
-                                    <button onClick={() => connect('walletConnect')}>
+                                    <button onClick={() => connect('phantom')}>
                                         <img src={Phantom} alt="Phantom" />
                                         <span>{'Phantom'}</span>
                                     </button>
