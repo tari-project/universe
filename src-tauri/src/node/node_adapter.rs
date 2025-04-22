@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_manager::NodeType;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
 use anyhow::{anyhow, Error};
@@ -61,6 +62,7 @@ pub trait NodeAdapter {
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
+    fn set_ab_group(&mut self, ab_group: ABTestSelector);
 }
 
 #[derive(Debug, Clone)]
@@ -175,7 +177,32 @@ impl NodeAdapterService {
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {
-                break Ok(());
+                if sync_progress.local_height >= sync_progress.tip_height {
+                    break Ok(());
+                } else {
+                    // Report to sentry that we have initial sync achieved but local height is lower than tip height
+                    let error_msg =
+                        "Initial sync achieved but local height is lower than tip height"
+                            .to_string();
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    let extra = vec![
+                        (
+                            "local_height".to_string(),
+                            json!(sync_progress.local_height.to_string()),
+                        ),
+                        (
+                            "tip_height".to_string(),
+                            json!(sync_progress.tip_height.to_string()),
+                        ),
+                    ];
+                    sentry::capture_event(Event {
+                        message: Some(error_msg),
+                        level: sentry::Level::Error,
+                        culprit: Some("node-sync-inconsistency".to_string()),
+                        extra: extra.into_iter().collect(),
+                        ..Default::default()
+                    });
+                }
             }
 
             let mut progress_params: HashMap<String, String> = HashMap::new();

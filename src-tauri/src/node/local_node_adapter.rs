@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_adapter::{
     BaseNodeStatus, NodeAdapter, NodeAdapterService, NodeStatusMonitor,
 };
@@ -76,6 +77,7 @@ pub(crate) struct LocalNodeAdapter {
     pub(crate) use_pruned_mode: bool,
     pub(crate) tor_control_port: Option<u16>,
     required_initial_peers: u32,
+    pub(crate) ab_test_group: ABTestSelector,
 }
 
 impl LocalNodeAdapter {
@@ -90,6 +92,7 @@ impl LocalNodeAdapter {
             required_initial_peers: 3,
             use_tor: false,
             tor_control_port: None,
+            ab_test_group: ABTestSelector::GroupA,
         }
     }
 
@@ -145,6 +148,10 @@ impl NodeAdapter for LocalNodeAdapter {
 
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>) {
         self.tor_control_port = tor_control_port;
+    }
+
+    fn set_ab_group(&mut self, ab_test_group: ABTestSelector) {
+        self.ab_test_group = ab_test_group;
     }
 }
 
@@ -266,9 +273,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 self.tcp_listener_port
             ));
             args.push("-p".to_string());
-            args.push(
-                "base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=false".to_string(),
-            );
+            args.push("base_node.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
             if let Some(mut tor_control_port) = self.tor_control_port {
                 // macos uses libtor, so will be 9051
                 if cfg!(target_os = "macos") {
@@ -300,6 +305,18 @@ impl ProcessAdapter for LocalNodeAdapter {
                 "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com,seeds.{key}.tari.com",
                 key = network.as_key_str(),
             ));
+        }
+
+        // AB testing
+        if self.ab_test_group == ABTestSelector::GroupB {
+            info!(target: LOG_TARGET, "Using AB test group B");
+
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.num_neighbouring_nodes=4".to_string());
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.num_random_nodes=8".to_string());
+        } else {
+            info!(target: LOG_TARGET, "Using AB test group A");
         }
 
         #[cfg(target_os = "windows")]
