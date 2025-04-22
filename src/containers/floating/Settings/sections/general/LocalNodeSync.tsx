@@ -1,10 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { memo, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useNodeStore } from '@app/store/useNodeStore.ts';
-import { useTranslation } from 'react-i18next';
-import Progress from '@app/containers/main/Sync/components/Progress.tsx';
 import { SettingsGroupWrapper } from '@app/containers/floating/Settings/components/SettingsGroup.styles.ts';
 
 const SyncWrapper = styled.div`
