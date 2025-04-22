@@ -9,6 +9,7 @@ interface FormFieldProps {
     control: Control<SendInputs>;
     handleChange?: (e: ChangeEvent<HTMLInputElement>, name: InputName) => void;
     onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
+    onFocus?: (e: FocusEvent<HTMLInputElement>) => void;
     icon?: ReactNode;
     accent?: ReactNode;
     required?: boolean;
@@ -16,6 +17,12 @@ interface FormFieldProps {
     truncateOnBlur?: boolean;
     isValid?: boolean;
     errorText?: string;
+    disabled?: boolean;
+    secondaryField?: ReactNode;
+    secondaryText?: string;
+    miniButton?: ReactNode;
+    isSecondary?: boolean;
+    as?: 'input' | 'textarea';
 }
 export function FormField({
     control,
@@ -27,8 +34,15 @@ export function FormField({
     autoFocus,
     truncateOnBlur,
     onBlur,
+    onFocus,
     isValid,
     errorText,
+    disabled = false,
+    secondaryField,
+    secondaryText,
+    miniButton,
+    isSecondary,
+    as = 'input',
 }: FormFieldProps) {
     const { t } = useTranslation('wallet');
     const labelT = t(`send.label`, { context: name });
@@ -64,12 +78,14 @@ export function FormField({
                             if (name === 'amount' && valueIsNaN) {
                                 return;
                             }
-                            rest.onChange(e);
                             if (handleChange) {
                                 handleChange(e, name as InputName);
+                            } else {
+                                rest.onChange(e);
                             }
                         }}
                         onBlur={onBlur || undefined}
+                        onFocus={onFocus || undefined}
                         placeholder={placeholderT}
                         label={labelT}
                         icon={icon}
@@ -80,6 +96,12 @@ export function FormField({
                         value={value}
                         truncateText={truncateOnBlur && value ? String(value) : undefined}
                         isValid={isValid}
+                        disabled={disabled}
+                        secondaryField={secondaryField}
+                        secondaryText={secondaryText}
+                        miniButton={miniButton}
+                        isSecondary={isSecondary}
+                        as={as}
                     />
                 );
             }}

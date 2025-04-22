@@ -7,9 +7,16 @@
   "my_tari": "मेरा तारी",
   "new": "नया",
   "receive": {
-    "label-address": "My Address"
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
+    "tooltip-emoji-id-text2": "Yat support coming soon!",
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
+    "cta-review": "Review",
     "cta-send": "तारी भेजें",
     "error-invalid-address": "पता अमान्य है",
     "error-invalid-amount": "राशि अमान्य है",
@@ -19,10 +26,12 @@
     "field-message": "संदेश",
     "label-address": "तारी वॉलेट पता",
     "label-amount": "राशि",
-    "label-message": "भुगतान आईडी",
+    "label-message": "Transaction Description (Optional)",
+    "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "पता दर्ज करें",
     "placeholder-amount": 100,
-    "placeholder-message": "संदेश दर्ज करें",
+    "placeholder-message": "Message",
     "required": "{{fieldName}} फ़ील्ड आवश्यक है"
   },
   "tabs": {
