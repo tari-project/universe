@@ -7,9 +7,16 @@
   "my_tari": "Mein Tari",
   "new": "Neu",
   "receive": {
-    "label-address": "My Address"
+    "copy-address": "Adresse kopieren",
+    "copy-address-success": "Kopiert!",
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used als alternative zu Ihrer regulären Transaktionsadresse, um XTM zu senden und zu empfangen.",
+    "tooltip-emoji-id-text2": "Yat-Unterstützung kommt bald!",
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
+    "cta-review": "Review",
     "cta-send": "Tari senden",
     "error-invalid-address": "Die Adresse ist ungültig",
     "error-invalid-amount": "Der Betrag ist ungültig",
@@ -19,10 +26,12 @@
     "field-message": "Nachricht",
     "label-address": "Tari-Wallet-Adresse",
     "label-amount": "Betrag",
-    "label-message": "Zahlungs-ID",
+    "label-message": "Transaction Description (Optional)",
+    "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "Adresse eingeben",
     "placeholder-amount": 100,
-    "placeholder-message": "Nachricht eingeben",
+    "placeholder-message": "Message",
     "required": "Das Feld {{fieldName}} ist erforderlich"
   },
   "tabs": {

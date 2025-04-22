@@ -7,9 +7,16 @@
   "my_tari": "Tari Saya",
   "new": "Baru",
   "receive": {
-    "label-address": "My Address"
+    "copy-address": "Copy Address",
+    "copy-address-success": "Copied!",
+    "label-address": "Wallet Address",
+    "tooltip-emoji-id-text": "This is your Emoji ID. It can be used as an alternative to your regular txn address to send and receive XTM.",
+    "tooltip-emoji-id-text2": "Yat support coming soon!",
+    "tooltip-emoji-id-title": "Emoji ID"
   },
   "send": {
+    "balance": "Balance",
+    "cta-review": "Review",
     "cta-send": "Kirim Tari",
     "error-invalid-address": "Alamat tidak valid",
     "error-invalid-amount": "Jumlah tidak valid",
@@ -19,10 +26,12 @@
     "field-message": "pesan",
     "label-address": "Alamat Dompet Tari",
     "label-amount": "Jumlah",
-    "label-message": "ID Pembayaran",
+    "label-message": "Transaction Description (Optional)",
+    "max": "Max",
+    "max-available": "Available balance",
     "placeholder-address": "Masukkan alamat",
     "placeholder-amount": 100,
-    "placeholder-message": "Masukkan pesan",
+    "placeholder-message": "Message",
     "required": "Kolom {{fieldName}} diperlukan"
   },
   "tabs": {
