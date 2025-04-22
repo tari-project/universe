@@ -413,7 +413,7 @@ impl NodeStatusMonitor {
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
     async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        let duration = std::time::Duration::from_secs(5);
+        let duration = std::time::Duration::from_secs(3);
         match timeout(duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {

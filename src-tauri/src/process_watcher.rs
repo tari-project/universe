@@ -258,7 +258,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
         let mut inner_shutdown2 = inner_shutdown.clone();
         let mut app_shutdown2 = global_shutdown_signal.clone();
         let current_uptime = uptime.elapsed();
-        if let Ok(inner) = timeout(health_timeout, async {
+        match timeout(health_timeout, async {
             select! {
                 r = status_monitor3.check_health(current_uptime) => r,
                 // Watch for shutdown signals
@@ -270,7 +270,7 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
         .inspect_err(
             |_| error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name),
         ) {
-            match inner {
+            Ok(inner) => match inner {
                 HealthStatus::Healthy => {
                     *warning_count = 0;
                     is_healthy = true;
@@ -287,6 +287,16 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
                 }
                 HealthStatus::Unhealthy => {
                     warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
+                }
+            },
+            Err(_) => {
+                // timeout
+                *warning_count += 1;
+                if *warning_count > 10 {
+                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
+                    *warning_count = 0;
+                } else {
+                    is_healthy = true;
                 }
             }
         }
