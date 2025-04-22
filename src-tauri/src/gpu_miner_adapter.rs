@@ -263,7 +263,7 @@ impl StatusMonitor for GpuMinerStatusMonitor {
             Err(_) => {
                 warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
                 let _ = self.gpu_raw_status_broadcast.send(None);
-                return HealthStatus::Unhealthy;
+                return HealthStatus::Warning;
             }
         };
 
