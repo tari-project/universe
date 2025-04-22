@@ -1,6 +1,5 @@
 import styled, { css } from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { convertHexToRGBA } from '@app/utils';
 import { m } from 'motion/react';
 
 export const QRContainer = styled.div`
