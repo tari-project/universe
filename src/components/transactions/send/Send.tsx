@@ -186,7 +186,9 @@ export function Send({ setSection }: Props) {
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setValue('amount', numericAvailableBalance, { shouldValidate: true });
+                                            setValue('amount', numericAvailableBalance, {
+                                                shouldValidate: true,
+                                            });
                                             handleAmountBlur();
                                         }}
                                     >

@@ -13,7 +13,7 @@ function useTariBalance() {
 
     const formattedBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT);
     const formattedLongBalance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_LONG);
-    const numericAvailableBalance = Number(Math.floor(balance?.available_balance || 0) / 1000000).toFixed(2);
+    const numericAvailableBalance = Number(Math.floor((balance?.available_balance || 0) / 1_000_000).toFixed(2));
 
     const isWalletScanning = useWalletStore((s) => s.wallet_scanning?.is_scanning);
     const balanceDisplayValue = useMemo(
