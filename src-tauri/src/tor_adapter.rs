@@ -314,9 +314,9 @@ pub(crate) struct TorStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let client = TorControlClient::new(self.control_port);
-        match timeout(std::time::Duration::from_secs(5), client.get_info()).await {
+        match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
                 let _res = self.status_broadcast.send(status);
                 if status.is_bootstrapped && status.network_liveness {

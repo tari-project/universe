@@ -460,15 +460,24 @@ impl Clone for WalletStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.get_status().await {
-            Ok(s) => {
-                let _result = self.state_broadcast.send(Some(s));
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
-                HealthStatus::Unhealthy
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.get_status()).await {
+            Ok(status_result) => match status_result {
+                Ok(s) => {
+                    let _result = self.state_broadcast.send(Some(s));
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_error) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "Wallet health check timed out after {:?}", timeout_duration
+                );
+                HealthStatus::Warning
             }
         }
     }
