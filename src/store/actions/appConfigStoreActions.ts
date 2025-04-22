@@ -5,6 +5,7 @@ import {
     AirdropTokens,
     useConfigCoreStore,
     useConfigMiningStore,
+    useConfigPortalStore,
     useConfigUIStore,
     useConfigWalletStore,
     useMiningMetricsStore,
@@ -15,7 +16,7 @@ import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { ConfigCore, ConfigMining, ConfigPortal, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -47,6 +48,10 @@ export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
 };
 export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
     useConfigMiningStore.setState(miningConfig);
+};
+
+export const handleConfigPortalLoaded = (portalConfig: ConfigPortal) => {
+    useConfigPortalStore.setState(portalConfig);
 };
 
 export const setAirdropTokensInConfig = (

@@ -27,6 +27,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::configs::config_mining::ConfigMiningContent;
+use crate::configs::config_portal::ConfigPortalContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -278,6 +279,10 @@ impl EventsManager {
 
     pub async fn handle_config_wallet_loaded(app: &AppHandle, payload: ConfigWalletContent) {
         EventsEmitter::emit_wallet_config_loaded(app, payload).await;
+    }
+
+    pub async fn handle_config_portal_loaded(app: &AppHandle, payload: ConfigPortalContent) {
+        EventsEmitter::emit_portal_config_loaded(app, payload).await;
     }
 
     pub async fn handle_background_node_sync_update(

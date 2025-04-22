@@ -27,8 +27,8 @@ use super::{
 };
 use crate::{
     configs::{
-        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet,
+        config_core::ConfigCore, config_mining::ConfigMining, config_portal::ConfigPortal,
+        config_ui::ConfigUI, config_wallet::ConfigWallet,
     },
     events_manager::EventsManager,
     initialize_frontend_updates,
@@ -209,6 +209,7 @@ impl SetupManager {
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigPortal::initialize(app_handle).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }

@@ -54,3 +54,42 @@ export interface ConfigMining {
     cpu_mining_enabled: boolean;
     gpu_engine: string;
 }
+
+export interface ConfigPortal {
+    created_at: string;
+    id: string;
+    level_db_name: string;
+    portal: EthereumChainConfig;
+    native_chains: NativeChainsConfig;
+}
+
+export interface EthereumChainConfig {
+    id: number;
+    name: string;
+    native_currency: NativeCurrencyConfig;
+    rpc_urls: RpcUrlsConfig;
+}
+
+export interface NativeCurrencyConfig {
+    decimals: number;
+    name: string;
+    symbol: string;
+}
+
+export interface RpcUrlsConfig {
+    http: string;
+    websocket: string;
+}
+
+export interface NativeChainsConfig {
+    ethereum: EthereumChainConfig;
+    lightning: LightningChainConfig;
+}
+
+export interface LightningChainConfig {
+    hub_id: string;
+    hub_socket: string;
+    url: string;
+    path_tls_cert: string;
+    path_macaroon: string;
+}

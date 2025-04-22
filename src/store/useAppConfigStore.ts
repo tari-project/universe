@@ -1,4 +1,11 @@
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
+import {
+    ConfigCore,
+    ConfigMining,
+    ConfigPortal,
+    ConfigUI,
+    ConfigWallet,
+    EthereumChainConfig,
+} from '@app/types/configs';
 import { create } from './create';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
@@ -59,6 +66,36 @@ const configUIInitialState: UIConfigStoreState = {
     visual_mode: true,
 };
 
+const emptyEthereumConfig: EthereumChainConfig = {
+    id: 0,
+    name: '',
+    native_currency: {
+        decimals: 0,
+        name: '',
+        symbol: '',
+    },
+    rpc_urls: {
+        http: '',
+        websocket: '',
+    },
+};
+const configPortalInitialState: ConfigPortal = {
+    created_at: '',
+    id: '',
+    level_db_name: '',
+    portal: emptyEthereumConfig,
+    native_chains: {
+        ethereum: emptyEthereumConfig,
+        lightning: {
+            hub_id: '',
+            hub_socket: '',
+            url: '',
+            path_tls_cert: '',
+            path_macaroon: '',
+        },
+    },
+};
+
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
     ...configCoreInitialState,
 }));
@@ -73,4 +110,8 @@ export const useConfigMiningStore = create<ConfigMining>()(() => ({
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigPortalStore = create<ConfigPortal>()(() => ({
+    ...configPortalInitialState,
 }));

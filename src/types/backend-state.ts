@@ -17,7 +17,7 @@ import {
     NetworkStatus,
     WalletBalance,
 } from './app-status.ts';
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from './configs.ts';
+import { ConfigCore, ConfigMining, ConfigPortal, ConfigUI, ConfigWallet } from './configs.ts';
 
 export enum SetupPhase {
     Core = 'Core',
@@ -148,6 +148,10 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ConfigMiningLoaded';
           payload: ConfigMining;
+      }
+    | {
+          event_type: 'ConfigPortalLoaded';
+          payload: ConfigPortal;
       }
     | {
           event_type: 'RestartingPhases';
