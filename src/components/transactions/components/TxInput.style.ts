@@ -52,9 +52,9 @@ export const AccentWrapper = styled.div`
     transform: translate(-50%, -10px);
 `;
 
-export const StyledInput = styled.input<{ $hasIcon?: boolean; $isSecondary?: boolean }>`
+export const StyledInput = styled.input<{ $hasIcon?: boolean; $isSecondary?: boolean; $hasValidityIcon?: boolean }>`
     display: flex;
-    padding: ${({ $hasIcon }) => ($hasIcon ? `6px 0 6px 34px` : `6px 0 6px`)};
+    padding: 6px 0 6px;
     width: 100%;
     font-size: 1.4rem;
     letter-spacing: -1px;
@@ -79,6 +79,18 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean; $isSecondary?: boo
             &::placeholder {
                 font-size: 1rem;
             }
+        `}
+
+    ${({ $hasIcon }) =>
+        $hasIcon &&
+        css`
+            padding: 6px 0 6px 34px;
+        `}
+    
+    ${({ $hasValidityIcon }) =>
+        $hasValidityIcon &&
+        css`
+            padding: 6px 34px 6px 0;
         `}
 `;
 
@@ -106,7 +118,9 @@ export const Label = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const CheckIconWrapper = styled(m.div)`
+    position: absolute;
     pointer-events: none;
+    right: 0;
     width: 25px;
     height: 25px;
 `;

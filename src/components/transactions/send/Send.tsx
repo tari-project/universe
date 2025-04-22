@@ -75,9 +75,7 @@ export function Send({ setSection }: Props) {
         [setError, t]
     );
     useEffect(() => {
-        if (debouncedAddress?.length > 3) {
-            validateAddress(debouncedAddress);
-        }
+        validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
     const handleSend = useCallback(
