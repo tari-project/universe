@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -21,7 +21,7 @@ export const Wrapper = styled('div')`
     padding: 40px;
 `;
 
-export const Cover = styled(m.div)`
+export const Cover = styled(m.div)<{ $noClose?: boolean }>`
     position: fixed;
     width: 100%;
     height: 100%;
@@ -30,6 +30,12 @@ export const Cover = styled(m.div)`
     background: rgba(0, 0, 0, 0.5);
     z-index: 0;
     cursor: pointer;
+
+    ${({ $noClose }) =>
+        $noClose &&
+        css`
+            cursor: default;
+        `}
 `;
 
 export const BoxWrapper = styled(m.div)`
