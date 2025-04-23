@@ -160,6 +160,7 @@ impl NodeAdapterService {
         let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?;
+        let mut sync_to_tip = 0;
 
         loop {
             if shutdown_signal.is_triggered() {
@@ -176,8 +177,18 @@ impl NodeAdapterService {
                 .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
+            if sync_progress.tip_height > sync_to_tip {
+                sync_to_tip = sync_progress.tip_height;
+            }
+
             if tip_res.initial_sync_achieved {
-                if sync_progress.local_height >= sync_progress.tip_height {
+                let synced_best_block_height = tip_res
+                    .metadata
+                    .as_ref()
+                    .map(|m| m.best_block_height)
+                    .unwrap_or_default();
+
+                if synced_best_block_height >= sync_to_tip {
                     break Ok(());
                 } else {
                     // Report to sentry that we have initial sync achieved but local height is lower than tip height
