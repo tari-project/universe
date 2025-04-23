@@ -34,6 +34,7 @@ use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
+use tokio::time::{sleep, timeout};
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
@@ -158,6 +159,7 @@ impl NodeManager {
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         if self.is_local().await? {
+            info!("Starting local node");
             self.configure_adapter(
                 self.local_node_watcher.clone(),
                 self.is_local_current().await?,
@@ -177,6 +179,7 @@ impl NodeManager {
             .await?;
         }
         if self.is_remote().await? {
+            info!("Starting remote node");
             self.configure_adapter(
                 self.remote_node_watcher.clone(),
                 self.is_remote_current().await?,
@@ -301,7 +304,9 @@ impl NodeManager {
                 )
                 .await
             {
-                Ok(_) => {
+                Ok(synced_height) => {
+                    // let remote_height = self.
+                    info!("synced height: {}", synced_height);
                     return Ok(());
                 }
                 Err(e) => match e {
@@ -540,6 +545,7 @@ pub async fn start_status_forwarding_thread(
                             None => true,
                         };
 
+                        info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                         }
@@ -686,12 +692,22 @@ async fn monitor_local_node_sync_and_switch(
                         .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
                         .await
                     {
-                        Ok(_) => {
+                        Ok(synced_height) => {
+                            let remote_node_height = (*node_manager.remote_node_watch_rx.borrow()).block_height;
+                            if synced_height + 50 < remote_node_height {
+                                warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
+                                sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
+                                continue;
+                            }
+                            sleep(Duration::from_secs(30)).await;
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
+
                         }
-                        Err(NodeStatusMonitorError::NodeNotStarted) => {}
+                        Err(NodeStatusMonitorError::NodeNotStarted) => {
+                            info!(target: LOG_TARGET, "Local node not started, waiting...");
+                        }
                         Err(e) => {
                             error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                         }
