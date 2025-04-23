@@ -15,6 +15,8 @@ export const WalletConnectionOverlay = styled(motion.div)`
 `;
 
 export const WalletConnectionsContainer = styled.div`
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     background: rgba(255, 255, 255, 0.7);
@@ -48,6 +50,7 @@ export const TopArea = styled.div`
 `;
 
 export const IconContainer = styled.div`
+    color: black;
     cursor: pointer;
     display: flex;
     justify-content: center;

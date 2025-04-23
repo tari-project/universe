@@ -8,12 +8,12 @@ import { m } from 'motion/react';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { wagmiAdapter } from './config/wagmi.config';
-import { CrossIcon } from '@app/components/svgs/crossIconSvg';
 import { ConnectWallet } from './sections/ConnectWallet/ConnectWallet';
 import { useAppKitAccount } from '@reown/appkit/react';
 import { useEffect, useMemo } from 'react';
 import { WalletContents } from './sections/WalletContents/WalletContents';
 import { Swap } from './sections/Swap/Swap';
+import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
 
 const queryClient = new QueryClient();
 
@@ -63,15 +63,15 @@ export const WalletConnections = () => {
                             >
                                 <TopArea>
                                     <IconContainer onClick={() => setWalletConnectModalOpen(false)}>
-                                        <CrossIcon />
+                                        <CloseIcon />
                                     </IconContainer>
                                 </TopArea>
                                 <AnimatePresence mode="wait">
                                     <m.div
-                                        initial={{ x: '-100%' }}
-                                        animate={{ x: 0 }}
-                                        exit={{ x: '100%' }}
-                                        transition={{ duration: 0.3, ease: 'linear' }}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.2, ease: 'linear' }}
                                         key={swapStep}
                                     >
                                         {stepMarkup}

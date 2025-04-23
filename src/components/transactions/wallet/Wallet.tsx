@@ -19,8 +19,9 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { Wrapper } from './wallet.styles.ts';
+import { BuyTariButton, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
+import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions.ts';
 
 interface Props {
     section: string;
@@ -53,9 +54,10 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             <HistoryList />
 
-            <BottomNavWrapper>
-                {environment === 'development' ? (
-                    <>
+            {environment === 'development' ? (
+                <>
+                    <BuyTariButton onClick={() => setWalletConnectModalOpen(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
+                    <BottomNavWrapper>
                         <NavButton
                             onClick={() => setSection('send')}
                             $isActive={section === 'send'}
@@ -76,8 +78,10 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                                 {t('tabs.receive')}
                             </NavButtonContent>
                         </NavButton>
-                    </>
-                ) : (
+                    </BottomNavWrapper>
+                </>
+            ) : (
+                <BottomNavWrapper>
                     <SyncTooltip
                         title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
                         text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
@@ -87,8 +91,8 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                             </Button>
                         }
                     />
-                )}
-            </BottomNavWrapper>
+                </BottomNavWrapper>
+            )}
         </Wrapper>
     );
 });

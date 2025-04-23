@@ -3,7 +3,7 @@ import { WalletActionButton as StyledButton } from './WalletButton.styles';
 interface WalletButtonProps {
     children: React.ReactNode;
     onClick?: () => void;
-    variant?: 'primary' | 'secondary' | 'error';
+    variant?: 'primary' | 'secondary' | 'error' | 'success';
     size?: 'small' | 'medium' | 'large';
     disabled?: boolean;
 }

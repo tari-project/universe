@@ -111,7 +111,7 @@ export const Swap = () => {
                         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
                     </NewOutputAmount>
                     <WalletButton
-                        variant="primary"
+                        variant="success"
                         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
                         size="medium"
                     >
@@ -132,11 +132,11 @@ export const Swap = () => {
             </SwapDetails>
 
             <WalletButton
-                variant="secondary"
+                variant="primary"
                 onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
                 size="large"
             >
-                {'Cancel'}
+                {'Approve & Buy'}
             </WalletButton>
         </>
     );
