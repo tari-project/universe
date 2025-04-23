@@ -350,7 +350,7 @@ impl NodeAdapterService {
                 .iter()
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
-                let local_block = block_scan_blocks.iter().find(|b| b.0 == block_scan_block.0);
+                let local_block = local_blocks.iter().find(|b| b.0 == block_scan_block.0);
                 error!(target: LOG_TARGET, "Miner is stuck on orphan chain. Block at height: {} and hash: {} does not exist locally", block_scan_block.0, block_scan_block.1);
                 if let Some(local_block) = local_block {
                     error!(target: LOG_TARGET, "Local block at height: {} and hash: {}", local_block.0, local_block.1);
