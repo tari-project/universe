@@ -32,15 +32,10 @@ use anyhow::Error;
 use log::info;
 use std::collections::HashMap;
 use std::path::PathBuf;
-<<<<<<< HEAD
-use std::time::Duration;
-use tari_common::configuration::Network;
-=======
 use std::str::FromStr;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
->>>>>>> origin
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::hex::Hex;
@@ -108,21 +103,14 @@ impl SpendWalletAdapter {
 
     pub async fn send_one_sided_to_stealth_address(
         &mut self,
-<<<<<<< HEAD
-        amount: String,
-=======
         _amount: String,
->>>>>>> origin
         destination: String,
         payment_id: Option<String>,
     ) -> Result<(), Error> {
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
-<<<<<<< HEAD
-=======
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
->>>>>>> origin
         let commands = vec![
             ExecutionCommand::new("recovery")
                 .with_extra_args(vec!["--recovery".to_string()])

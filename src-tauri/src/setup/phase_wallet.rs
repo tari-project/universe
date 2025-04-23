@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
@@ -37,23 +37,21 @@ use crate::{
     UniverseAppState,
 };
 use anyhow::Error;
-use log::{error, info, warn};
+use log::info;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{
-        watch::{self, Receiver, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{self, Receiver, Sender},
+    Mutex,
 };
 
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use super::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::setup_default_adapter::SetupDefaultAdapter,
+};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-const SOFT_RESTART_LIMIT: u8 = 2;
-const MAX_RESTART_LIMIT: u8 = 3;
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseOutput {}
 
@@ -67,22 +65,68 @@ pub struct WalletSetupPhase {
     progress_stepper: Mutex<ProgressStepper>,
     #[allow(dead_code)]
     app_configuration: WalletSetupPhaseAppConfiguration,
+    setup_configuration: SetupConfiguration,
+    status_sender: Sender<PhaseStatus>,
 }
 
 impl SetupPhaseImpl for WalletSetupPhase {
     type AppConfiguration = WalletSetupPhaseAppConfiguration;
     type SetupOutput = WalletSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle) -> Self {
+    async fn new(
+        app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle.clone())),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
+            setup_configuration: configuration,
+            status_sender,
         }
     }
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_max_soft_restarts(&self) -> u8 {
+        self.setup_configuration.soft_retires.unwrap_or(0)
+    }
+
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+
+    fn get_phase_name(&self) -> SetupPhase {
+        SetupPhase::Core
+    }
+
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().wallet_phase.get_signal().await
+    }
+
+    fn get_status_sender(&self) -> Sender<PhaseStatus> {
+        self.status_sender.clone()
+    }
+
+    fn get_timeout_duration(&self) -> Duration {
+        self.setup_configuration
+            .setup_timeout_duration
+            .unwrap_or(Duration::from_secs(0))
+    }
+
+    async fn get_task_tracker(&self) -> tokio_util::task::TaskTracker {
+        TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await
+    }
+    fn get_max_hard_restarts(&self) -> u8 {
+        self.setup_configuration.hard_retires.unwrap_or(0)
     }
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
@@ -114,84 +158,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
         Ok(())
     }
 
-    async fn setup(
-        self: Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Wallet);
-        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                        return;
-                    }
-                }
-            };
-
-            let mut restart_counter: u8 = 0;
-            loop {
-                if restart_counter.eq(&MAX_RESTART_LIMIT) {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Wallet, MAX_RESTART_LIMIT);
-                    let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Wallet, MAX_RESTART_LIMIT);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
-                        .await;
-                    break;
-                }
-
-                if restart_counter.eq(&SOFT_RESTART_LIMIT) {
-                    info!(target: LOG_TARGET, "[ {} Phase ] All soft restart attempts failed", SetupPhase::Wallet);
-                    info!(target: LOG_TARGET, "[ {} Phase ] Executing hard restart", SetupPhase::Wallet);
-                    let _unused = self.hard_reset().await.map_err(|e| {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Wallet, e);
-                        let error_message = format!("[ {} Phase ] Hard reset failed: {:?}", SetupPhase::Wallet, e);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                    });
-                };
-
-                let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
-                tokio::select! {
-                    _ = setup_timeout => {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
-                            .await;
-
-                    }
-                    result = self.setup_inner() => {
-                        match result {
-                            Ok(payload) => {
-                                info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Wallet);
-                                let _unused = self.finalize_setup(status_sender.clone(),payload).await;
-                                break;
-                            }
-                            Err(error) => {
-                                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                                let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
-                                sentry::capture_message(&error_message, sentry::Level::Error);
-                                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
-                                    .await;
-                            }
-                        }
-                    }
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
-                        break;
-                    }
-                };
-
-                restart_counter += 1;
-                info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Wallet, restart_counter, MAX_RESTART_LIMIT);
-            }
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     async fn setup_inner(&self) -> Result<Option<WalletSetupPhaseOutput>, Error> {
+        info!(target: LOG_TARGET, "Starting wallet setup phase");
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();

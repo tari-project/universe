@@ -30,10 +30,7 @@ use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
 use crate::node::node_adapter::BaseNodeStatus;
-<<<<<<< HEAD
-=======
 use crate::node::node_manager::NodeManager;
->>>>>>> origin
 use crate::p2pool::models::P2poolStats;
 use crate::process_stats_collector::ProcessStatsCollector;
 use crate::process_utils::retry_with_backoff;
@@ -311,23 +308,12 @@ impl TelemetryManager {
         let network = self.node_network;
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
-<<<<<<< HEAD
-=======
         let node_manager = self.node_manager.clone();
->>>>>>> origin
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = interval(timeout);
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
-<<<<<<< HEAD
-                tokio::select! {
-                    _ = interval.tick() => {
-                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
-                        let telemetry_collection_enabled = config_cloned.read().await.allow_telemetry();
-                        let airdrop_access_token = config_cloned.read().await.airdrop_tokens().map(|tokens| tokens.token);
-                        if telemetry_collection_enabled {
-=======
                 let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
                 let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
 
@@ -336,7 +322,6 @@ impl TelemetryManager {
                         debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         if allow_telemetry {
->>>>>>> origin
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                             let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
                                 &tor_status, network, uptime, &stats_collector, &node_manager).await;

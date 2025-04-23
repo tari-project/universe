@@ -3,12 +3,9 @@ use std::time::Duration;
 use tauri::AppHandle;
 use tokio::sync::watch::{Receiver, Sender};
 
-use crate::{
-    setup::{
-        setup_manager::PhaseStatus,
-        trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
-    },
-    tasks_tracker::TaskTrackerUtil,
+use crate::setup::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
 pub struct PhaseBuilder {
@@ -55,12 +52,6 @@ impl PhaseBuilder {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
     ) -> T {
-        T::new(
-            app_handle,
-            TaskTrackerUtil::new(T::get_phase_id().as_str()),
-            status_sender,
-            self.configuration.clone(),
-        )
-        .await
+        T::new(app_handle, status_sender, self.configuration.clone()).await
     }
 }

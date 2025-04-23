@@ -21,27 +21,19 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use super::{
-    phase_core::CoreSetupPhase,
-    phase_hardware::{HardwareSetupPhase, HardwareSetupPhaseOutput},
-    phase_node::NodeSetupPhase,
-    phase_unknown::UnknownSetupPhase,
-    phase_wallet::WalletSetupPhase,
-    trait_setup_phase::SetupPhaseImpl,
-    utils::phase_builder::PhaseBuilder,
+    phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
+    phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
+    trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
     configs::{
-        config_core::ConfigCore,
-        config_mining::ConfigMining,
-        config_ui::ConfigUI,
-        config_wallet::{ConfigWallet, ConfigWalletContent},
-        trait_config::ConfigImpl,
+        config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
+        config_wallet::ConfigWallet,
     },
     events_manager::EventsManager,
     initialize_frontend_updates,
-    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
-    tasks_tracker::{TaskTrackerUtil, TasksTrackers},
+    tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
     UniverseAppState,
 };
@@ -49,7 +41,7 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
     time::Duration,
 };
 use tauri::{AppHandle, Manager};
@@ -85,16 +77,6 @@ impl Display for SetupPhase {
 }
 
 impl SetupPhase {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            SetupPhase::Core => "Core",
-            SetupPhase::Wallet => "Wallet",
-            SetupPhase::Hardware => "Hardware",
-            SetupPhase::Node => "Node",
-            SetupPhase::Unknown => "Unknown",
-        }
-    }
-
     pub fn all() -> Vec<SetupPhase> {
         vec![
             SetupPhase::Core,
@@ -238,45 +220,53 @@ impl SetupManager {
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
             .await;
-        let core_phase_setup = Arc::new(core_phase_setup);
+        // let core_phase_setup = Arc::new(core_phase_setup);
         core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
-        let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-        hardware_phase_setup
-            .setup(self.hardware_phase_status.clone(), vec![])
+        let hardware_phase_setup = PhaseBuilder::new()
+            .with_soft_retires(2)
+            .with_hard_retires(1)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<HardwareSetupPhase>(app_handle.clone(), self.hardware_phase_status.clone())
             .await;
+        hardware_phase_setup.setup().await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
-        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
-        node_phase_setup
-            .setup(self.node_phase_status.clone(), vec![])
+        let node_phase_setup = PhaseBuilder::new()
+            .with_soft_retires(2)
+            .with_hard_retires(1)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
             .await;
+        node_phase_setup.setup().await;
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
-        let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-        wallet_phase_setup
-            .setup(
-                self.wallet_phase_status.clone(),
-                vec![self.node_phase_status.subscribe()],
-            )
+        let wallet_phase_setup = PhaseBuilder::new()
+            .with_soft_retires(2)
+            .with_hard_retires(1)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
+            .build::<WalletSetupPhase>(app_handle.clone(), self.wallet_phase_status.clone())
             .await;
+        wallet_phase_setup.setup().await;
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
-        let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-        unknown_phase_setup
-            .setup(
-                self.unknown_phase_status.clone(),
-                vec![
-                    self.node_phase_status.subscribe(),
-                    self.hardware_phase_status.subscribe(),
-                ],
-            )
+        let unknown_phase_setup = PhaseBuilder::new()
+            .with_soft_retires(2)
+            .with_hard_retires(1)
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![
+                self.node_phase_status.subscribe(),
+                self.hardware_phase_status.subscribe(),
+            ])
+            .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
             .await;
+        unknown_phase_setup.setup().await;
     }
 
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {

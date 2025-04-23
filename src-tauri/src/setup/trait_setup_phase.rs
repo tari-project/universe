@@ -20,13 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{path::PathBuf, sync::Arc, time::Duration};
+use std::{path::PathBuf, time::Duration};
 
 use anyhow::Error;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::watch::{Receiver, Sender};
+use tokio_util::task::TaskTracker;
 
-use crate::{progress_trackers::ProgressStepper, tasks_tracker::TaskTrackerUtil};
+use crate::progress_trackers::ProgressStepper;
 
 use super::setup_manager::{PhaseStatus, SetupPhase};
 
@@ -44,22 +46,35 @@ pub trait SetupPhaseImpl {
 
     async fn new(
         app_handle: AppHandle,
-        task_tracker_util: TaskTrackerUtil,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
     ) -> Self;
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper;
-    async fn hard_reset(&self) -> Result<(), Error>;
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error>;
-    async fn setup(self: Arc<Self>);
-    async fn setup_inner(&self) -> Result<Option<Self::SetupOutput>, Error>;
-    async fn finalize_setup(
+    async fn setup(self);
+    fn setup_inner(
+        &self,
+    ) -> impl std::future::Future<Output = Result<Option<Self::SetupOutput>, Error>> + std::marker::Send;
+    fn finalize_setup(
         &self,
         sender: Sender<PhaseStatus>,
         payload: Option<Self::SetupOutput>,
-    ) -> Result<(), Error>;
-    fn get_phase_id() -> SetupPhase;
+    ) -> impl std::future::Future<Output = Result<(), Error>> + std::marker::Send;
     fn get_app_handle(&self) -> &AppHandle;
+    async fn get_task_tracker(&self) -> TaskTracker;
+    async fn get_shutdown_signal(&self) -> ShutdownSignal;
+    fn get_phase_name(&self) -> SetupPhase;
+    fn get_status_sender(&self) -> Sender<PhaseStatus>;
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>>;
+    fn get_max_soft_restarts(&self) -> u8;
+    fn get_timeout_duration(&self) -> Duration;
+    fn get_max_hard_restarts(&self) -> u8;
+    fn get_sum_of_restarts(&self) -> u8 {
+        self.get_max_soft_restarts() + self.get_max_hard_restarts()
+    }
+    fn hard_reset(
+        &self,
+    ) -> impl std::future::Future<Output = Result<(), Error>> + std::marker::Send;
     fn get_app_dirs(&self) -> Result<(PathBuf, PathBuf, PathBuf), Error> {
         let data_dir = self
             .get_app_handle()

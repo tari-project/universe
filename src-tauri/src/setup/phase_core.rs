@@ -20,17 +20,14 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
-use log::{error, info, warn};
+use log::error;
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
-use tokio::{
-    select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+use tokio::sync::{
+    watch::{Receiver, Sender},
+    Mutex,
 };
 
 use crate::{
@@ -42,7 +39,7 @@ use crate::{
         ProgressSetupCorePlan, ProgressStepper,
     },
     setup::setup_manager::SetupPhase,
-    tasks_tracker::{TaskTrackerUtil, TasksTrackers},
+    tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
 };
@@ -50,11 +47,10 @@ use crate::{
 use super::{
     setup_manager::PhaseStatus,
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::setup_default_adapter::SetupDefaultAdapter,
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-const MAX_RESTART_LIMIT: u8 = 3;
 
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseOutput {}
@@ -69,7 +65,6 @@ pub struct CoreSetupPhase {
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
-    task_tracker_util: TaskTrackerUtil,
     status_sender: Sender<PhaseStatus>,
 }
 
@@ -79,7 +74,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     async fn new(
         app_handle: AppHandle,
-        task_tracker_util: TaskTrackerUtil,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
     ) -> Self {
@@ -91,12 +85,47 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 .unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
-            task_tracker_util,
         }
     }
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_max_soft_restarts(&self) -> u8 {
+        self.setup_configuration.soft_retires.unwrap_or(0)
+    }
+
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+
+    fn get_phase_name(&self) -> SetupPhase {
+        SetupPhase::Core
+    }
+
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().core_phase.get_signal().await
+    }
+
+    fn get_status_sender(&self) -> Sender<PhaseStatus> {
+        self.status_sender.clone()
+    }
+
+    fn get_timeout_duration(&self) -> Duration {
+        self.setup_configuration
+            .setup_timeout_duration
+            .unwrap_or(Duration::from_secs(0))
+    }
+
+    async fn get_task_tracker(&self) -> tokio_util::task::TaskTracker {
+        TasksTrackers::current().core_phase.get_task_tracker().await
+    }
+
+    fn get_max_hard_restarts(&self) -> u8 {
+        self.setup_configuration.hard_retires.unwrap_or(0)
     }
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
@@ -124,72 +153,8 @@ impl SetupPhaseImpl for CoreSetupPhase {
         Ok(())
     }
 
-    async fn setup(
-        self: Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
-        TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
-            let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                        return;
-                    }
-                }
-            };
-            let mut restart_counter: u8 = 0;
-            loop {
-                if restart_counter.eq(&MAX_RESTART_LIMIT) {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup failed after {} attempts", SetupPhase::Core, MAX_RESTART_LIMIT);
-                    let error_message = format!("[ {} Phase ] Setup failed after {} attempts", SetupPhase::Core, MAX_RESTART_LIMIT);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
-                        .await;
-                    break;
-                }
-
-                let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
-                tokio::select! {
-                    _ = setup_timeout => {
-                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
-                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
-                        sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
-                            .await;
-
-                    }
-                    result = self.setup_inner() => {
-                        match result {
-                            Ok(payload) => {
-                                info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Core);
-                                let _unused = self.finalize_setup(status_sender.clone(),payload).await;
-                                break;
-                            }
-                            Err(error) => {
-                                error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
-                                let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
-                                sentry::capture_message(&error_message, sentry::Level::Error);
-                                EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
-                                    .await;
-                            }
-                        }
-                    }
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
-                        break;
-                    }
-                };
-
-
-                restart_counter += 1;
-                info!(target: LOG_TARGET, "[ {} Phase ] Restarting setup process | attempt: {} / {}", SetupPhase::Core, restart_counter, MAX_RESTART_LIMIT);
-            }
-
-        });
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]
