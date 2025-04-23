@@ -191,7 +191,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>();
 
         // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
+        let (tx, _) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
         let binary_resolver = BinaryResolver::current().read().await;
 
@@ -201,7 +201,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
                 .await;
             binary_resolver
-                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
+                .initialize_binary(Binaries::Tor, progress.clone())
                 .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
@@ -211,7 +211,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .await;
         binary_resolver
-            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::MinotariNode, progress.clone())
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {

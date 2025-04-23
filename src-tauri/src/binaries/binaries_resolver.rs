@@ -259,6 +259,7 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
+    #[allow(dead_code)]
     pub async fn initialize_binary_timeout(
         &self,
         binary: Binaries,

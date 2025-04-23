@@ -169,7 +169,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>();
 
         // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
+        let (tx, _) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
@@ -181,7 +181,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::Wallet, progress.clone())
             .await?;
 
         progress_stepper

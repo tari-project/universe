@@ -193,7 +193,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
+        let (tx, _) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
@@ -205,7 +205,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::MergeMiningProxy, progress.clone())
             .await?;
 
         progress_stepper
@@ -215,7 +215,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::ShaP2pool, progress.clone())
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;

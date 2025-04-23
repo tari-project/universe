@@ -176,7 +176,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         let state = self.app_handle.state::<UniverseAppState>();
 
         // TODO Remove once not needed
-        let (tx, rx) = watch::channel("".to_string());
+        let (tx, _) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
@@ -188,7 +188,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::GpuMiner, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::GpuMiner, progress.clone())
             .await?;
 
         progress_stepper
@@ -198,7 +198,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary_timeout(Binaries::Xmrig, progress.clone(), rx.clone())
+            .initialize_binary(Binaries::Xmrig, progress.clone())
             .await?;
 
         progress_stepper
