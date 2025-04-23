@@ -22,7 +22,7 @@ const ThirdCircle = styled(Circle)`
 
 const LoadingDots: React.FC = () => {
     return (
-        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
             <Circle cx="4" cy="12" r="3" />
             <SecondCircle cx="12" cy="12" r="3" />
             <ThirdCircle cx="20" cy="12" r="3" />

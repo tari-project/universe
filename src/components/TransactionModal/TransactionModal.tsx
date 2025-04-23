@@ -1,3 +1,4 @@
+import { ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
 import CloseIcon from './icons/CloseIcon';
 import { BoxWrapper, CloseButton, Cover, Title, TopWrapper, Wrapper } from './styles';
@@ -5,7 +6,7 @@ import { BoxWrapper, CloseButton, Cover, Title, TopWrapper, Wrapper } from './st
 interface Props {
     show: boolean;
     handleClose: () => void;
-    children: React.ReactNode;
+    children: ReactNode;
     title?: string;
     noClose?: boolean;
 }

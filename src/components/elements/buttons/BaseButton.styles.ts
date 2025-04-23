@@ -68,7 +68,7 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 
                     &:disabled {
                         opacity: 1;
-                        background-color: #bbb;
+                        background-color: ${theme.palette.contrastAlpha};
                     }
                 `;
             case 'purple':

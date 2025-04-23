@@ -10,9 +10,8 @@ export const Wrapper = styled.div`
 export const WhiteBox = styled.div`
     width: 100%;
     border-radius: 15px;
-    background: #fff;
+    background-color: ${({ theme }) => theme.palette.background.default};
     padding: 15px;
-
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -36,7 +35,6 @@ export const WhiteBoxValue = styled.div`
 `;
 
 export const Amount = styled.div`
-    color: #090719;
     font-size: 30px;
     font-style: normal;
     font-weight: 600;
@@ -46,7 +44,6 @@ export const Amount = styled.div`
 `;
 
 export const Currency = styled.div`
-    color: #000;
     font-size: 12px;
     font-style: normal;
     font-weight: 500;
@@ -75,7 +72,7 @@ export const Entry = styled.div`
 `;
 
 export const Label = styled.div`
-    color: #000;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-size: 12px;
     font-style: normal;
     font-weight: 500;
@@ -85,7 +82,6 @@ export const Label = styled.div`
 `;
 
 export const Value = styled.div<{ $status?: SendStatus }>`
-    color: #090719;
     font-size: 14px;
     font-style: normal;
     font-weight: 500;
@@ -117,7 +113,6 @@ export const Value = styled.div<{ $status?: SendStatus }>`
 `;
 
 export const ValueRight = styled.div`
-    color: #000;
     font-size: 10px;
     font-style: normal;
     font-weight: 500;
@@ -141,7 +136,6 @@ export const StatusHero = styled.div`
 export const IconWrapper = styled.div`
     width: 50px;
     height: 50px;
-
     svg {
         width: 100%;
     }
@@ -150,7 +144,6 @@ export const IconWrapper = styled.div`
 export const TextWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    gap: 0px;
     align-items: center;
     justify-content: center;
 `;
@@ -164,7 +157,6 @@ export const Title = styled.div`
 `;
 
 export const Text = styled.div`
-    color: rgba(9, 7, 25, 0.7);
     text-align: center;
     font-size: 12px;
     font-style: normal;

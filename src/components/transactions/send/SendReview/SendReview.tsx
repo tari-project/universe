@@ -49,7 +49,6 @@ export function SendReview({
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
-
     useEffect(() => {
         let timer: NodeJS.Timeout;
 
@@ -66,6 +65,7 @@ export function SendReview({
         };
     }, [status, setStatus]);
 
+    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.TXTM_LONG);
     return (
         <Wrapper>
             {status === 'reviewing' ? (
@@ -75,7 +75,7 @@ export function SendReview({
 
                         <WhiteBoxValue>
                             <TariPurpleLogo />
-                            <Amount>{formatNumber(amount || 0, FormatPreset.TXTM_LONG)}</Amount>
+                            <Amount>{formattedAmount}</Amount>
                             <Currency>{`XTM`}</Currency>
                         </WhiteBoxValue>
                     </WhiteBox>
