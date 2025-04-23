@@ -131,32 +131,29 @@ impl NodeAdapter for RemoteNodeAdapter {
             let node_identity = node_service.get_identity().await?;
             let public_key = node_identity.public_key.clone();
 
-            if self.use_tor {
-                for address in &node_identity.public_addresses {
-                    if address.contains("/onion") {
-                        return Ok((public_key, address.clone()));
-                    }
-                }
-                return Err(anyhow::anyhow!("No onion address found for remote node"));
-            } else {
-                for address in &node_identity.public_addresses {
-                    if address.starts_with("/ip4/") {
-                        return Ok((public_key, address.clone()));
-                    }
-                }
-                for address in &node_identity.public_addresses {
-                    if address.starts_with("/ip6/") {
-                        return Ok((public_key, address.clone()));
-                    }
-                }
-                // If we got here, no suitable address was found
-                return Err(anyhow::anyhow!(
-                    "No suitable IP address found for remote node"
-                ));
+            if let Some(addr) = node_identity
+                .public_addresses
+                .iter()
+                .find(|addr| addr.starts_with("/ip4/"))
+            {
+                return Ok((public_key, addr.clone()));
             }
-        } else {
-            Err(anyhow::anyhow!("Remote node service is not available"))
+            if let Some(addr) = node_identity
+                .public_addresses
+                .iter()
+                .find(|addr| addr.starts_with("/ip6/"))
+            {
+                return Ok((public_key, addr.clone()));
+            }
+            // Take any address if IPv4 or IPv6 not found
+            if let Some(addr) = node_identity.public_addresses.first() {
+                return Ok((public_key, addr.clone()));
+            }
+
+            return Err(anyhow::anyhow!("No address found for remote node"));
         }
+
+        Err(anyhow::anyhow!("Remote node service is not available"))
     }
 }
 
