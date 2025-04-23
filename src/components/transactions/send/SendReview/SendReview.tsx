@@ -71,7 +71,7 @@ export function SendReview({
             {status === 'reviewing' ? (
                 <>
                     <WhiteBox>
-                        <WhiteBoxLabel>{`You are sending`}</WhiteBoxLabel>
+                        <WhiteBoxLabel>{t('send.review-label')}</WhiteBoxLabel>
 
                         <WhiteBoxValue>
                             <TariPurpleLogo />
@@ -82,26 +82,26 @@ export function SendReview({
 
                     <ListWrapper>
                         <Entry>
-                            <Label>{`Destination address`}</Label>
+                            <Label>{t('send.destination-address')}</Label>
                             <Value>{address}</Value>
                         </Entry>
 
                         {message && (
                             <Entry>
-                                <Label>{`Transaction Description`}</Label>
+                                <Label>{t('send.transaction-description')}</Label>
                                 <Value>{message}</Value>
                             </Entry>
                         )}
 
                         <Entry>
-                            <Label>{`Network Fee`}</Label>
+                            <Label>{t('send.network-fee')}</Label>
                             <Value>
                                 {networkFee} <ValueRight>{feePercentage}%</ValueRight>
                             </Value>
                         </Entry>
 
                         <Entry>
-                            <Label>{`Estimated completion time`}</Label>
+                            <Label>{t('send.estimated-completion-time')}</Label>
                             <Value>{`8 mins`}</Value>
                         </Entry>
                     </ListWrapper>
@@ -126,8 +126,8 @@ export function SendReview({
                                 <ProcessingIcon />
                             </IconWrapper>
                             <TextWrapper>
-                                <Title>{`Your XTM is on the way!`}</Title>
-                                <Text>{`Your transfer is processing. This can take a few minutes.`}</Text>
+                                <Title>{t('send.processing-title')}</Title>
+                                <Text>{t('send.processing-text')}</Text>
                             </TextWrapper>
                         </StatusHero>
                     )}
@@ -138,11 +138,11 @@ export function SendReview({
                                 <CompletedIcon />
                             </IconWrapper>
                             <TextWrapper>
-                                <Title>{`You’re Done!`}</Title>
+                                <Title>{t('send.completed-title')}</Title>
                                 <Text>
-                                    {`Your transfer is now complete.`}
+                                    {t('send.completed-text')}
                                     <br />
-                                    <strong>{`1,000,000 XTM`}</strong> {`has been sent to`}{' '}
+                                    <strong>{`1,000,000 XTM`}</strong> {t('send.completed-amount-sent')}{' '}
                                     <strong>{`0x12345..12789`}</strong>
                                     {`.`}
                                 </Text>
@@ -152,31 +152,31 @@ export function SendReview({
 
                     <ListWrapper>
                         <Entry>
-                            <Label>{`Status`}</Label>
+                            <Label>{t('send.status')}</Label>
                             <Value $status={status}>
                                 {status === 'processing' ? t('send.processing') : t('send.completed')}
                             </Value>
                         </Entry>
 
                         <Entry>
-                            <Label>{`Total Fees`}</Label>
+                            <Label>{t('send.total-fees')}</Label>
                             <Value>0.03%</Value>
                         </Entry>
 
                         <Entry>
-                            <Label>{`Destination address`}</Label>
+                            <Label>{t('send.destination-address')}</Label>
                             <Value>{address}</Value>
                         </Entry>
 
                         {message && (
                             <Entry>
-                                <Label>{`Transaction Description`}</Label>
+                                <Label>{t('send.transaction-description')}</Label>
                                 <Value>{message}</Value>
                             </Entry>
                         )}
 
                         <Entry>
-                            <Label>{`Transaction ID`}</Label>
+                            <Label>{t('send.transaction-id')}</Label>
                             <Value>
                                 {status === 'processing' && <LoadingDots />}
                                 {status === 'completed' && `FXK8324SDAS`}
@@ -184,7 +184,7 @@ export function SendReview({
                         </Entry>
 
                         <Entry>
-                            <Label>{`Tari Txn`}</Label>
+                            <Label>{t('send.tari-txn')}</Label>
                             <Value>
                                 {status === 'processing' && <LoadingDots />}
                                 {status === 'completed' && `0x12345..12789`}
@@ -194,13 +194,13 @@ export function SendReview({
 
                     {status === 'processing' && (
                         <Button type="button" fluid size="xlarge" variant="purple" disabled={true}>
-                            {`Processing Transaction...`}
+                            {t('send.processing-button')}
                         </Button>
                     )}
 
                     {status === 'completed' && (
                         <Button type="button" fluid size="xlarge" variant="purple" onClick={handleClose}>
-                            {`Done`}
+                            {t('send.done-button')}
                         </Button>
                     )}
                 </>

@@ -156,7 +156,7 @@ export function Send({ section, setSection }: Props) {
         }
 
         if (status === 'reviewing') {
-            return 'Review transaction';
+            return t('send.review-title');
         }
 
         return `${t('tabs.send')} ${t('tari')}`;
