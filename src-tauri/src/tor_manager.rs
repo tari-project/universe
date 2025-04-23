@@ -112,7 +112,8 @@ impl TorManager {
     }
 
     pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
-        let watcher = self.watcher.read().await;
+        let mut watcher = self.watcher.write().await;
+        watcher.stop().await?;
         if watcher.is_running() {
             error!(target: LOG_TARGET, "Tor is running, cannot clear local files");
         }

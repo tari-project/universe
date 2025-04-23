@@ -215,9 +215,13 @@ impl NodeManager {
 
     pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
         if self.is_local().await.ok().is_some_and(|is_local| is_local) {
-            let watcher = self.local_node_watcher.read().await;
-            if watcher.as_ref().is_some_and(|watcher| watcher.is_running()) {
-                error!(target: LOG_TARGET, "Local node is running, cannot clear local files");
+            let mut watcher = self.local_node_watcher.write().await;
+            if let Some(watcher) = watcher.as_mut() {
+                watcher.stop().await?;
+
+                if watcher.is_running() {
+                    error!(target: LOG_TARGET, "Local node is running, cannot clear local files");
+                }
             }
 
             if let Some(local_dir) = data_local_dir() {
@@ -233,18 +237,6 @@ impl NodeManager {
                     })?;
                 }
             };
-        };
-
-        if self
-            .is_remote()
-            .await
-            .ok()
-            .is_some_and(|is_remote| is_remote)
-        {
-            let watcher = self.remote_node_watcher.read().await;
-            if watcher.as_ref().is_some_and(|watcher| watcher.is_running()) {
-                error!(target: LOG_TARGET, "Remote node is running, cannot clear local files");
-            }
         };
 
         Ok(())

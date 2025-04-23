@@ -22,7 +22,7 @@
 
 use std::time::Duration;
 
-use log::error;
+use log::{error, info};
 use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
 use tokio::sync::{
@@ -159,6 +159,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<Option<CoreSetupPhaseOutput>, anyhow::Error> {
+        info!(target: LOG_TARGET, "[{}] Starting setup inner", self.get_phase_name());
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 

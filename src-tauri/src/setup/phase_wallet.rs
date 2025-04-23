@@ -163,13 +163,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<Option<WalletSetupPhaseOutput>, Error> {
-        info!(target: LOG_TARGET, "Starting wallet setup phase");
+        info!(target: LOG_TARGET, "[{}] Starting setup inner", self.get_phase_name());
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         // TODO Remove once not needed
-        let (tx, _) = watch::channel("".to_string());
+        let (tx, rx) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
@@ -181,7 +181,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary(Binaries::Wallet, progress.clone())
+            .initialize_binary_timeout(Binaries::Wallet, progress.clone(), rx.clone())
             .await?;
 
         progress_stepper

@@ -186,12 +186,13 @@ impl SetupPhaseImpl for NodeSetupPhase {
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<Option<NodeSetupPhaseOutput>, Error> {
+        info!(target: LOG_TARGET, "[{}] Starting setup inner", self.get_phase_name());
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
 
         // TODO Remove once not needed
-        let (tx, _) = watch::channel("".to_string());
+        let (tx, rx) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
         let binary_resolver = BinaryResolver::current().read().await;
 
@@ -201,7 +202,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor))
                 .await;
             binary_resolver
-                .initialize_binary(Binaries::Tor, progress.clone())
+                .initialize_binary_timeout(Binaries::Tor, progress.clone(), rx.clone())
                 .await?;
         } else {
             progress_stepper.skip_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesTor));
@@ -211,7 +212,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::BinariesNode))
             .await;
         binary_resolver
-            .initialize_binary(Binaries::MinotariNode, progress.clone())
+            .initialize_binary_timeout(Binaries::MinotariNode, progress.clone(), rx.clone())
             .await?;
 
         if self.app_configuration.use_tor && !cfg!(target_os = "macos") {

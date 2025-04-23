@@ -180,7 +180,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     }
 
     async fn setup_inner(&self) -> Result<Option<UnknownSetupPhaseOutput>, Error> {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
+        info!(target: LOG_TARGET, "[{}] Starting setup inner", self.get_phase_name());
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -193,7 +193,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         // TODO Remove once not needed
-        let (tx, _) = watch::channel("".to_string());
+        let (tx, rx) = watch::channel("".to_string());
         let progress = ProgressTracker::new(self.app_handle.clone(), Some(tx));
 
         let binary_resolver = BinaryResolver::current().read().await;
@@ -205,7 +205,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary(Binaries::MergeMiningProxy, progress.clone())
+            .initialize_binary_timeout(Binaries::MergeMiningProxy, progress.clone(), rx.clone())
             .await?;
 
         progress_stepper
@@ -215,7 +215,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .await;
 
         binary_resolver
-            .initialize_binary(Binaries::ShaP2pool, progress.clone())
+            .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
