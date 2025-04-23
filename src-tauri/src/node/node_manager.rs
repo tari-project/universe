@@ -38,6 +38,8 @@ use tokio::sync::RwLock;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events_manager::EventsManager;
 use crate::node::node_adapter::{
     NodeAdapter, NodeAdapterService, NodeIdentity, NodeStatusMonitorError,
@@ -257,6 +259,9 @@ impl NodeManager {
         if let Some(node_watcher) = node_watcher.as_mut() {
             node_watcher.adapter.use_tor(use_tor);
             node_watcher.adapter.set_tor_control_port(tor_control_port);
+            let ab_group = *ConfigCore::content().await.ab_group();
+            node_watcher.adapter.set_ab_group(ab_group);
+
             if let Some(remote_grpc_address) = remote_grpc_address {
                 node_watcher.adapter.set_grpc_address(remote_grpc_address)?;
             }

@@ -187,7 +187,7 @@ impl ProcessAdapter for GpuMinerAdapter {
             "--log-dir".to_string(),
             log_dir.to_string_lossy().to_string(),
             "--template-timeout-secs".to_string(),
-            "1".to_string(),
+            "5".to_string(),
             "--engine".to_string(),
             self.curent_selected_engine.to_string(),
         ];
@@ -257,18 +257,30 @@ pub struct GpuMinerStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for GpuMinerStatusMonitor {
-    async fn check_health(&self, uptime: Duration) -> HealthStatus {
-        if let Ok(status) = self.status().await {
-            let _result = self.gpu_raw_status_broadcast.send(Some(status.clone()));
-            // GPU returns 0 for first 10 seconds until it has an average
-            if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
-                HealthStatus::Healthy
-            } else {
-                HealthStatus::Warning
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        let status = match tokio::time::timeout(timeout_duration, self.status()).await {
+            Ok(inner) => inner,
+            Err(_) => {
+                warn!(target: LOG_TARGET, "Timeout error in GpuMinerAdapter check_health");
+                let _ = self.gpu_raw_status_broadcast.send(None);
+                return HealthStatus::Warning;
             }
-        } else {
-            let _result = self.gpu_raw_status_broadcast.send(None);
-            HealthStatus::Unhealthy
+        };
+
+        match status {
+            Ok(status) => {
+                let _ = self.gpu_raw_status_broadcast.send(Some(status.clone()));
+                // GPU returns 0 for first 10 seconds until it has an average
+                if status.hash_rate > 0.0 || uptime.as_secs() < 11 {
+                    HealthStatus::Healthy
+                } else {
+                    HealthStatus::Warning
+                }
+            }
+            Err(_) => {
+                let _ = self.gpu_raw_status_broadcast.send(None);
+                HealthStatus::Unhealthy
+            }
         }
     }
 }

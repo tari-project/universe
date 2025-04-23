@@ -20,6 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::ab_test_selector::ABTestSelector;
 use crate::node::node_manager::NodeType;
 use crate::process_adapter::{HealthStatus, StatusMonitor};
 use anyhow::{anyhow, Error};
@@ -61,6 +62,7 @@ pub trait NodeAdapter {
     async fn get_connection_details(&self) -> Result<(RistrettoPublicKey, String), anyhow::Error>;
     fn use_tor(&mut self, use_tor: bool);
     fn set_tor_control_port(&mut self, tor_control_port: Option<u16>);
+    fn set_ab_group(&mut self, ab_group: ABTestSelector);
 }
 
 #[derive(Debug, Clone)]
@@ -175,7 +177,32 @@ impl NodeAdapterService {
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
             if tip_res.initial_sync_achieved {
-                break Ok(());
+                if sync_progress.local_height >= sync_progress.tip_height {
+                    break Ok(());
+                } else {
+                    // Report to sentry that we have initial sync achieved but local height is lower than tip height
+                    let error_msg =
+                        "Initial sync achieved but local height is lower than tip height"
+                            .to_string();
+                    error!(target: LOG_TARGET, "{}", error_msg);
+                    let extra = vec![
+                        (
+                            "local_height".to_string(),
+                            json!(sync_progress.local_height.to_string()),
+                        ),
+                        (
+                            "tip_height".to_string(),
+                            json!(sync_progress.tip_height.to_string()),
+                        ),
+                    ];
+                    sentry::capture_event(Event {
+                        message: Some(error_msg),
+                        level: sentry::Level::Error,
+                        culprit: Some("node-sync-inconsistency".to_string()),
+                        extra: extra.into_iter().collect(),
+                        ..Default::default()
+                    });
+                }
             }
 
             let mut progress_params: HashMap<String, String> = HashMap::new();
@@ -385,17 +412,12 @@ impl NodeStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        let duration = std::time::Duration::from_secs(5);
-        match timeout(duration, self.node_service.get_network_state()).await {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
                     let _res = self.status_broadcast.send(status);
-                    if status.num_connections == 0
-                        // Remote Node always returns 0 connections
-                        && self.node_type != NodeType::Remote
-                        && self.node_type != NodeType::RemoteUntilLocal
-                    {
+                    if status.num_connections == 0 {
                         warn!(
                             "{:?} Node Health Check Warning: No connections | status: {:?}",
                             self.node_type,
@@ -403,25 +425,6 @@ impl StatusMonitor for NodeStatusMonitor {
                         );
                         return HealthStatus::Warning;
                     }
-                    // if self
-                    //     .last_block_time
-                    //     .load(std::sync::atomic::Ordering::SeqCst)
-                    //     == status.block_time
-                    // {
-                    //     if uptime.as_secs() > 1200
-                    //         && EpochTime::now()
-                    //             .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
-                    //             .unwrap_or(EpochTime::from(0))
-                    //             .as_u64()
-                    //             > 1200
-                    //     {
-                    //         warn!(target: LOG_TARGET, "Base node height has not changed in twenty minutes");
-                    //         return HealthStatus::Warning;
-                    //     }
-                    // } else {
-                    //     self.last_block_time
-                    //         .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
-                    // }
                     HealthStatus::Healthy
                 }
                 Err(e) => {
@@ -439,8 +442,8 @@ impl StatusMonitor for NodeStatusMonitor {
                 );
                 match self.node_service.get_identity().await {
                     Ok(identity) => {
-                        info!(target: LOG_TARGET, "{:?} Node hecking base node identity success: {:?}", self.node_type, identity);
-                        return HealthStatus::Healthy;
+                        info!(target: LOG_TARGET, "{:?} Node checking base node identity success: {:?}", self.node_type, identity);
+                        return HealthStatus::Warning;
                     }
                     Err(e) => {
                         warn!(

@@ -29,8 +29,8 @@ use tauri::AppHandle;
 use tokio::sync::RwLock;
 
 use crate::{
-    app_config::AirdropTokens, events_manager::EventsManager, internal_wallet::generate_password,
-    AppConfig,
+    ab_test_selector::ABTestSelector, app_config::AirdropTokens, events_manager::EventsManager,
+    internal_wallet::generate_password, AppConfig,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -50,6 +50,7 @@ pub struct ConfigCoreContent {
     allow_telemetry: bool,
     last_binaries_update_timestamp: SystemTime,
     anon_id: String,
+    ab_group: ABTestSelector,
     should_auto_launch: bool,
     mmproxy_use_monero_failover: bool,
     mmproxy_monero_nodes: Vec<String>,
@@ -67,6 +68,18 @@ impl Default for ConfigCoreContent {
             "https://grpc.{}.tari.com:443",
             Network::get_current_or_user_setting_or_default().as_key_str()
         );
+        let anon_id = generate_password(20);
+        let ab_test_selector = anon_id
+            .chars()
+            .nth(0)
+            .map(|c| {
+                if (c as u32) % 2 == 0 {
+                    ABTestSelector::GroupA
+                } else {
+                    ABTestSelector::GroupB
+                }
+            })
+            .unwrap_or(ABTestSelector::GroupA);
 
         Self {
             was_config_migrated: false,
@@ -75,7 +88,8 @@ impl Default for ConfigCoreContent {
             use_tor: true,
             allow_telemetry: true,
             last_binaries_update_timestamp: SystemTime::now(),
-            anon_id: generate_password(20),
+            anon_id,
+            ab_group: ab_test_selector,
             should_auto_launch: false,
             mmproxy_use_monero_failover: false,
             mmproxy_monero_nodes: vec![],

@@ -1,5 +1,6 @@
 import { BackgroundNodeSyncUpdatePayload } from '@app/types/events-payloads';
 import { create } from './create';
+import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 export type NodeType = 'Local' | 'Remote' | 'RemoteUntilLocal' | 'LocalAfterRemote';
 export interface NodeIdentity {
@@ -27,6 +28,17 @@ export const useNodeStore = create<NodeStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setNodeStoreState = (newState: Partial<NodeStoreState>) => {
+export const setNodeTypeState = (newState: Partial<NodeStoreState>) => {
     useNodeStore.setState((state) => ({ ...state, ...newState }));
+};
+
+export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundNodeSyncUpdatePayload) => {
+    useNodeStore.setState((currentState) => {
+        const current = currentState.backgroundNodeSyncLastUpdate;
+        const isEqual = deepEqual(current, backgroundNodeSyncLastUpdate);
+
+        if (isEqual) return currentState;
+
+        return { backgroundNodeSyncLastUpdate };
+    });
 };
