@@ -4,7 +4,7 @@ interface WalletButtonProps {
     children: React.ReactNode;
     onClick?: () => void;
     variant?: 'primary' | 'secondary' | 'error' | 'success';
-    size?: 'small' | 'medium' | 'large';
+    size?: 'small' | 'medium' | 'large' | 'xl';
     disabled?: boolean;
 }
 

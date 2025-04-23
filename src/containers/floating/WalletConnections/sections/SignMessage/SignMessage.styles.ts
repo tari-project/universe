@@ -53,6 +53,7 @@ export const StatusWrapper = styled.div`
 `;
 
 export const LoadingDots = styled.span`
+    color: currentColor;
     display: inline-block;
     width: 24px;
     text-align: left;

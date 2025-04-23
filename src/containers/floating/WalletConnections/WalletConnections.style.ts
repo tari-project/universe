@@ -5,7 +5,7 @@ export const WalletConnectionOverlay = styled(motion.div)`
     position: fixed;
     inset: 0;
     z-index: 100;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.3);
     display: flex;
     align-items: center;
     justify-content: center;

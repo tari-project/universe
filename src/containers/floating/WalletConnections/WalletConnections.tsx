@@ -15,6 +15,7 @@ import { WalletContents } from './sections/WalletContents/WalletContents';
 import { Swap } from './sections/Swap/Swap';
 import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
 import { SignMessage } from './sections/SignMessage/SignMessage';
+import { ProcessingTransaction } from './sections/ProcessingTransaction/ProcessingTransaction';
 
 const queryClient = new QueryClient();
 
@@ -44,7 +45,7 @@ export const WalletConnections = () => {
             case SwapStep.SignMessage:
                 return <SignMessage />;
             case SwapStep.Progress:
-                return <Swap />;
+                return <ProcessingTransaction />;
             default:
                 return null;
         }

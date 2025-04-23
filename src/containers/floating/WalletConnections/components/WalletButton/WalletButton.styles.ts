@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 export const WalletActionButton = styled.button<{
     $disabled?: boolean;
     $variant?: 'primary' | 'secondary' | 'error' | 'success';
-    $size?: 'small' | 'medium' | 'large';
+    $size?: 'small' | 'medium' | 'large' | 'xl';
 }>`
     display: flex;
     align-items: center;
@@ -20,7 +20,6 @@ export const WalletActionButton = styled.button<{
     letter-spacing: 0.46px;
     text-transform: capitalize;
 
-    ${({ $disabled }) => $disabled && 'opacity: 0.5;'}
     ${({ $variant }) => {
         switch ($variant) {
             case 'success':
@@ -72,6 +71,13 @@ export const WalletActionButton = styled.button<{
                     font-size: 14px;
                     line-height: 26px;
                 `;
+            case 'xl':
+                return css`
+                    width: 100%;
+                    padding: 17px 24px;
+                    font-size: 14px;
+                    line-height: 26px;
+                `;
             default:
                 return css`
                     padding: 1px 12px;
@@ -80,4 +86,11 @@ export const WalletActionButton = styled.button<{
                 `;
         }
     }}
+
+    ${({ $disabled }) =>
+        $disabled &&
+        css`
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0.5;
+        `}
 `;

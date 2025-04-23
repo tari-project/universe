@@ -7,7 +7,7 @@ import { SwapStep } from '@app/store';
 export const SignMessage = () => {
     useEffect(() => {
         setTimeout(() => {
-            setWalletConnectModalStep(SwapStep.Swap);
+            setWalletConnectModalStep(SwapStep.Progress);
         }, 5000);
     }, []);
     return (
