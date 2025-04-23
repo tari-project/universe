@@ -68,15 +68,21 @@ export const StyledButton = styled.button<ButtonStyleProps>`
 
                     &:disabled {
                         opacity: 1;
-                        background-color: #a9a9ad;
+                        background-color: #bbb;
                     }
                 `;
             case 'purple':
                 return css`
                     background-color: ${theme.colors.blue[600]};
                     color: #fff;
+
                     &:hover:not(:disabled) {
                         background-color: ${theme.colors.blue[700]};
+                    }
+
+                    &:disabled {
+                        opacity: 1;
+                        background-color: #bbb;
                     }
                 `;
             case 'primary':

@@ -17,13 +17,7 @@ const WalletSidebarContent = memo(function WalletSidebarContent() {
                 </WalletGreyBox>
             </WalletSections>
 
-            <TransactionModal
-                show={section === 'send'}
-                title={`${t('tabs.send')}  ${t('tari')}`}
-                handleClose={() => setSection('history')}
-            >
-                <Send section={section} setSection={setSection} />
-            </TransactionModal>
+            <Send section={section} setSection={setSection} />
 
             <TransactionModal
                 show={section === 'receive'}
