@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import { SendStatus } from '../Send';
+import { SendStatus } from '../SendModal';
 
 export const Wrapper = styled.div`
     display: flex;

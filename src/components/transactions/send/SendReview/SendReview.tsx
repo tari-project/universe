@@ -1,6 +1,5 @@
 import { Button } from '@app/components/elements/buttons/Button';
 import TariPurpleLogo from './icons/TariPurpleLogo';
-
 import {
     Wrapper,
     WhiteBox,
@@ -21,11 +20,12 @@ import {
 } from './styles';
 import { useTranslation } from 'react-i18next';
 import { formatNumber, FormatPreset } from '@app/utils';
-import { SendStatus } from '../Send';
+
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
 import LoadingDots from './icons/LoadingDots';
 import { useEffect } from 'react';
+import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 
 interface Props {
     status: SendStatus;
@@ -106,15 +106,7 @@ export function SendReview({
                         </Entry>
                     </ListWrapper>
 
-                    <Button
-                        type="button"
-                        fluid
-                        size="xlarge"
-                        variant="green"
-                        onClick={() => {
-                            setStatus('processing');
-                        }}
-                    >
+                    <Button type="submit" fluid size="xlarge" variant="green">
                         {t('send.cta-confirm')}
                     </Button>
                 </>

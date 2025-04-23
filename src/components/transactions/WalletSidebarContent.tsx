@@ -1,10 +1,11 @@
-import { Send } from './send/Send';
+// import { Send } from './send/Send';
 import { Receive } from './receive/Receive';
 import Wallet from './wallet/Wallet';
 import { WalletGreyBox, WalletSections } from './WalletSidebarContent.styles.ts';
 import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
+import SendModal from '@app/components/transactions/send/SendModal.tsx';
 
 const WalletSidebarContent = memo(function WalletSidebarContent() {
     const { t } = useTranslation('wallet');
@@ -17,7 +18,7 @@ const WalletSidebarContent = memo(function WalletSidebarContent() {
                 </WalletGreyBox>
             </WalletSections>
 
-            <Send section={section} setSection={setSection} />
+            <SendModal section={section} setSection={setSection} />
 
             <TransactionModal
                 show={section === 'receive'}

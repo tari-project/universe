@@ -1,17 +1,31 @@
 import { ReactNode } from 'react';
 import { AnimatePresence } from 'motion/react';
+import { IoArrowBack } from 'react-icons/io5';
 import CloseIcon from './icons/CloseIcon';
-import { BoxWrapper, CloseButton, Cover, Title, TopWrapper, Wrapper } from './styles';
+
+import { BoxWrapper, TopButton, Cover, Title, TopWrapper, Wrapper } from './styles';
 
 interface Props {
     show: boolean;
-    handleClose: () => void;
+    handleClose?: () => void;
+    handleBack?: () => void;
     children: ReactNode;
     title?: string;
     noClose?: boolean;
 }
 
-export default function TransactionModal({ show, title, children, handleClose, noClose }: Props) {
+export default function TransactionModal({ show, title, children, handleBack, handleClose, noClose }: Props) {
+    const backIcon = handleBack ? (
+        <TopButton onClick={handleBack}>
+            <IoArrowBack />
+        </TopButton>
+    ) : null;
+
+    const closeIcon = handleClose ? (
+        <TopButton onClick={handleClose}>
+            <CloseIcon />
+        </TopButton>
+    ) : null;
     return (
         <AnimatePresence>
             {show && (
@@ -24,9 +38,8 @@ export default function TransactionModal({ show, title, children, handleClose, n
                         {Boolean(title) && (
                             <TopWrapper>
                                 <Title>{title}</Title>
-                                <CloseButton onClick={handleClose}>
-                                    <CloseIcon />
-                                </CloseButton>
+                                {backIcon}
+                                {closeIcon}
                             </TopWrapper>
                         )}
 

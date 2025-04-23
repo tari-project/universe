@@ -52,7 +52,7 @@ export const BoxWrapper = styled(m.div)`
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.paper, 0.65)};
 `;
 
-export const CloseButton = styled('button')`
+export const TopButton = styled('button')`
     cursor: pointer;
 
     transition: transform 0.2s ease;
