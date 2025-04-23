@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime};
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
-use log::{error, info};
+use log::{error, info, warn};
 use minotari_node_grpc_client::grpc::Peer;
 use serde_json::json;
 use tari_common::configuration::Network;
@@ -288,10 +288,16 @@ impl NodeManager {
         }
 
         let local_blocks = status_monitor.get_historical_blocks(heights).await?;
+
         for block_scan_block in &block_scan_blocks {
+            if block_scan_block.0 > local_tip {
+                info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
+                continue;
+            }
             if !local_blocks
-                .iter()
-                .any(|local_block| block_scan_block.1 == local_block.1)
+                .get(&block_scan_block.0)
+                .map(|l| l == &block_scan_block.1)
+                .unwrap_or(false)
             {
                 if report_to_sentry {
                     let error_msg = "Orphan chain detected".to_string();
@@ -318,6 +324,8 @@ impl NodeManager {
                         ..Default::default()
                     });
                 }
+                warn!(target: LOG_TARGET, "Orphan chain detected. Local node did not have this block. Local height: {} - {}: {} - {}", local_tip, local_blocks.get(&block_scan_block.0).map(|s| s.as_str()).unwrap_or("None"), block_scan_block.0, block_scan_block.1, );
+
                 return Ok(true);
             }
         }

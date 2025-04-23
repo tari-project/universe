@@ -420,7 +420,7 @@ impl MinotariNodeStatusMonitor {
     pub async fn get_historical_blocks(
         &self,
         heights: Vec<u64>,
-    ) -> Result<Vec<(u64, String)>, Error> {
+    ) -> Result<HashMap<u64, String>, Error> {
         let mut client =
             BaseNodeGrpcClient::connect(format!("http://127.0.0.1:{}", self.grpc_port)).await?;
 
@@ -429,7 +429,7 @@ impl MinotariNodeStatusMonitor {
             .await?
             .into_inner();
 
-        let mut blocks: Vec<(u64, String)> = Vec::new();
+        let mut blocks = HashMap::new();
         while let Some(block) = res.message().await? {
             let BlockHeader { height, hash, .. } = block
                 .block
@@ -442,7 +442,7 @@ impl MinotariNodeStatusMonitor {
                 acc
             });
 
-            blocks.push((height, hash));
+            blocks.insert(height, hash);
         }
         Ok(blocks)
     }
