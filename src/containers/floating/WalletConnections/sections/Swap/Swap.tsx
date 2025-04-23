@@ -176,7 +176,7 @@ export const Swap = () => {
 
             <WalletButton
                 variant="primary"
-                onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
+                onClick={() => setWalletConnectModalStep(SwapStep.SignMessage)}
                 size="large"
             >
                 {'Approve & Buy'}

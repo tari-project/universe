@@ -14,6 +14,7 @@ import { useEffect, useMemo } from 'react';
 import { WalletContents } from './sections/WalletContents/WalletContents';
 import { Swap } from './sections/Swap/Swap';
 import CloseIcon from '@app/components/GreenModal/icons/CloseIcon';
+import { SignMessage } from './sections/SignMessage/SignMessage';
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,10 @@ export const WalletConnections = () => {
             case SwapStep.WalletContents:
                 return <WalletContents />;
             case SwapStep.Swap:
+                return <Swap />;
+            case SwapStep.SignMessage:
+                return <SignMessage />;
+            case SwapStep.Progress:
                 return <Swap />;
             default:
                 return null;

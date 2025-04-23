@@ -19,7 +19,7 @@ const metadata = {
 const networks = [mainnet, arbitrum, base, scroll, polygon];
 
 // 4. Create Wagmi Adapter
-const wagmiAdapter = new WagmiAdapter({
+export const wagmiAdapter = new WagmiAdapter({
     networks,
     projectId,
     // ssr: true,
