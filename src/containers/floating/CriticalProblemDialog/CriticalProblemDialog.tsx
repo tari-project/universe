@@ -35,7 +35,10 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
     }, []);
 
     return (
-        <Dialog open={!!criticalProblem}>
+        <Dialog
+            //open={!!criticalProblem}
+            open={false}
+        >
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4} style={{ maxWidth: '480px' }}>

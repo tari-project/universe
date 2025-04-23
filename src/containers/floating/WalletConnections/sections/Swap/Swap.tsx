@@ -5,8 +5,10 @@ import { SwapStep } from '@app/store';
 import {
     NewOutputAmount,
     NewOutputWrapper,
+    PoweredBy,
     SelectedChain,
     SelectedChainInfo,
+    SwapAmountInput,
     SwapDetails,
     SwapDetailsItemWrapper,
     SwapDetailsKey,
@@ -20,9 +22,10 @@ import {
 import { useAccount, useBalance } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import { QuestionMarkIcon } from '../../icons/elements/QuestionMarkIcon';
+import PortalLogo from '../../icons/PortalLogo.png';
 
 export const Swap = () => {
     const dataAcc = useAccount();
@@ -34,6 +37,33 @@ export const Swap = () => {
             width: 10,
         });
     }, [accountBalance?.symbol]);
+
+    const [amount, setAmount] = useState<string>('');
+    const [targetAmount, setTargetAmount] = useState<string>('');
+
+    const handleNumberInput = (value: string, setter: (value: string) => void) => {
+        // Allow empty input
+        if (value === '') {
+            setter('');
+            return;
+        }
+
+        // Only allow numbers and one decimal point
+        const regex = /^\d*\.?\d*$/;
+        if (!regex.test(value)) return;
+
+        // // Handle leading zeros
+        // if (value.length > 1 && value[0] === '0') {
+        //     // Allow if it's a decimal number (0.)
+        //     if (value[1] !== '.' && value !== '0') return;
+        // }
+
+        // Limit decimal places to 8
+        const parts = value.split('.');
+        if (parts[1] && parts[1].length > 8) return;
+
+        setter(value);
+    };
 
     const items = [
         {
@@ -81,7 +111,14 @@ export const Swap = () => {
             <SwapOption>
                 <span> {'Sell'} </span>
                 <SwapOptionAmount>
-                    <span className="amount">{'0.00'}</span>
+                    <SwapAmountInput
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        onChange={(e) => handleNumberInput(e.target.value, setAmount)}
+                        onBlur={() => setAmount((amount) => Number(amount).toString())}
+                        value={amount}
+                    />
                     <SwapOptionCurrency>
                         {getIcon({ simbol: accountBalance?.symbol || '', width: 10 })}
                         <span>{accountBalance?.symbol}</span>
@@ -96,7 +133,13 @@ export const Swap = () => {
             <SwapOption>
                 <span> {'Receive'} </span>
                 <SwapOptionAmount>
-                    <span className="amount">{'0.00'}</span>
+                    <SwapAmountInput
+                        type="text"
+                        inputMode="decimal"
+                        placeholder="0.00"
+                        onChange={(e) => handleNumberInput(e.target.value, setTargetAmount)}
+                        value={targetAmount}
+                    />
                     <SwapOptionCurrency>
                         {getIcon({ simbol: 'xtm', width: 15 })}
                         <span>{'XTM'}</span>
@@ -138,6 +181,10 @@ export const Swap = () => {
             >
                 {'Approve & Buy'}
             </WalletButton>
+            <PoweredBy>
+                {'Powered by'}
+                <img src={PortalLogo} alt="Portal to Bitcoin" width={50} />
+            </PoweredBy>
         </>
     );
 };

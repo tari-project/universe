@@ -21,7 +21,7 @@ export const WalletConnectionsContainer = styled.div`
     flex-direction: column;
     background: rgba(255, 255, 255, 0.7);
     box-shadow: 0px 4px 74px 0px #00000026;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(50px);
     border-radius: 20px;
     padding: 20px;
     min-width: 400px;

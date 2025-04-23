@@ -93,6 +93,19 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
+export const SwapAmountInput = styled.input`
+    color: black;
+    font-family: Alliance No.1;
+    font-weight: 700;
+    font-size: 12.85px;
+    line-height: 100%;
+    letter-spacing: -2%;
+    width: 100%;
+    &:focus {
+        outline: none;
+    }
+`;
+
 export const SwapDirectionWrapper = styled.div`
     width: 40px;
     height: 40px;
@@ -160,4 +173,17 @@ export const NewOutputAmount = styled.div`
     display: flex;
     flex-direction: column;
     gap: 4px;
+`;
+
+export const PoweredBy = styled.div`
+    color: #7f8599;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    font-family: Poppins;
+    font-weight: 500;
+    font-size: 12px;
 `;
