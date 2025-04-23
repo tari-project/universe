@@ -245,6 +245,7 @@ impl WalletManager {
         drop(process_watcher);
 
         let node_status_watch_rx_progress = node_status_watch_rx.clone();
+        let initial_scan_completed = self.initial_scan_completed.clone();
         // Start a background task to monitor the wallet state and emit scan progress updates
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             let mut wallet_state_rx = wallet_state_receiver;
@@ -270,17 +271,18 @@ impl WalletManager {
                                 continue;
                             }
                         };
+                        if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
 
                         if scanned_height > 0 {
+                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 &app_clone,
                                 scanned_height,
                                 current_target_height,
                                 progress,
                             ).await;
-                        }
-                        if progress >= 100.0 {
-                            break;
                         }
                     }
                 }

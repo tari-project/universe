@@ -253,7 +253,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 2 {
+                                    if zero_scanned_height_count >= 10 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }
