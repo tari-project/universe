@@ -106,7 +106,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     fn get_phase_name(&self) -> SetupPhase {
-        SetupPhase::Core
+        SetupPhase::Node
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {

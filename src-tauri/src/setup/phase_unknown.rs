@@ -105,7 +105,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
     }
 
     fn get_phase_name(&self) -> SetupPhase {
-        SetupPhase::Core
+        SetupPhase::Unknown
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {

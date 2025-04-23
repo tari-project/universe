@@ -103,7 +103,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
     }
 
     fn get_phase_name(&self) -> SetupPhase {
-        SetupPhase::Core
+        SetupPhase::Hardware
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {

@@ -102,7 +102,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
     }
 
     fn get_phase_name(&self) -> SetupPhase {
-        SetupPhase::Core
+        SetupPhase::Wallet
     }
 
     async fn get_shutdown_signal(&self) -> ShutdownSignal {
