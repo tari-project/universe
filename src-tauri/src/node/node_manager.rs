@@ -34,7 +34,7 @@ use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
-use tokio::time::{sleep, timeout};
+use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
@@ -159,7 +159,6 @@ impl NodeManager {
         let task_tracker = TasksTrackers::current().node_phase.get_task_tracker().await;
 
         if self.is_local().await? {
-            info!("Starting local node");
             self.configure_adapter(
                 self.local_node_watcher.clone(),
                 self.is_local_current().await?,
@@ -179,7 +178,6 @@ impl NodeManager {
             .await?;
         }
         if self.is_remote().await? {
-            info!("Starting remote node");
             self.configure_adapter(
                 self.remote_node_watcher.clone(),
                 self.is_remote_current().await?,
@@ -304,9 +302,7 @@ impl NodeManager {
                 )
                 .await
             {
-                Ok(synced_height) => {
-                    // let remote_height = self.
-                    info!("synced height: {}", synced_height);
+                Ok(_) => {
                     return Ok(());
                 }
                 Err(e) => match e {
@@ -545,7 +541,6 @@ pub async fn start_status_forwarding_thread(
                             None => true,
                         };
 
-                        info!(target: LOG_TARGET, "Forwarded Local BaseNodeStatus: {:?}", status);
                         if base_node_watch_tx.send(status).is_err() {
                             error!(target: LOG_TARGET, "Failed to forward local BaseNodeStatus via base_node_watch_tx");
                         }
