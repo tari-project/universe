@@ -3,6 +3,14 @@ import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions } from './actions/walletStoreActions.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
+export enum SwapStep {
+    ConnectWallet,
+    WalletContents,
+    Swap,
+    SignMessage,
+    Progress,
+}
+
 interface PendingTransaction {
     tx_id: number;
     amount: number;
@@ -26,6 +34,8 @@ interface WalletStoreState {
     has_more_transactions: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
+    wallet_connect_modal_open: boolean;
+    swap_step: SwapStep;
     wallet_scanning: {
         is_scanning: boolean;
         scanned_height: number;
@@ -46,6 +56,8 @@ const initialState: WalletStoreState = {
     is_reward_history_loading: false,
     is_transactions_history_loading: false,
     is_wallet_importing: false,
+    wallet_connect_modal_open: false,
+    swap_step: SwapStep.ConnectWallet,
     wallet_scanning: {
         is_scanning: true,
         scanned_height: 0,
