@@ -16,6 +16,7 @@
   },
   "send": {
     "balance": "Balance",
+    "cta-confirm": "Confirm & send",
     "cta-review": "Review",
     "cta-send": "Stuur Tari",
     "error-invalid-address": "Die adres is ongeldig",

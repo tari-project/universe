@@ -16,6 +16,7 @@
   },
   "send": {
     "balance": "Balance",
+    "cta-confirm": "Confirm & send",
     "cta-review": "Review",
     "cta-send": "Envoyer Tari",
     "error-invalid-address": "L\"adresse est invalide",

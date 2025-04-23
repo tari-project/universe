@@ -16,6 +16,7 @@
   },
   "send": {
     "balance": "Balance",
+    "cta-confirm": "Confirm & send",
     "cta-review": "Review",
     "cta-send": "发送 Tari",
     "error-invalid-address": "地址无效",

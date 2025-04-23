@@ -16,6 +16,7 @@
   },
   "send": {
     "balance": "Balance",
+    "cta-confirm": "Confirm & send",
     "cta-review": "Review",
     "cta-send": "Tari 보내기",
     "error-invalid-address": "주소가 유효하지 않음",
