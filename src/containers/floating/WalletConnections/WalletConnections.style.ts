@@ -14,7 +14,7 @@ export const WalletConnectionOverlay = styled(motion.div)`
     justify-content: center;
 `;
 
-export const WalletConnectionsContainer = styled(motion.div)`
+export const WalletConnectionsContainer = styled.div`
     display: flex;
     flex-direction: column;
     background: rgba(255, 255, 255, 0.7);
@@ -24,6 +24,7 @@ export const WalletConnectionsContainer = styled(motion.div)`
     padding: 20px;
     min-width: 400px;
     min-height: 340px;
+    overflow-x: hidden;
 `;
 
 export const WalletConnectHeader = styled.div`
@@ -35,6 +36,9 @@ export const WalletConnectHeader = styled.div`
     line-height: 31px;
     color: black;
     padding-left: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 `;
 
 export const TopArea = styled.div`
@@ -61,27 +65,27 @@ export const ContentWrapper = styled.div`
     border-radius: 24px;
     padding: 24px;
     min-width: 480px;
+`;
 
-    button {
-        cursor: pointer<F12>
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        width: 100%;
-        background: white;
-        color: black;
-        gap: 16px;
-        font-family: Poppins;
-        font-weight: 600;
-        font-size: 14px;
-        line-height: 100%;
-        padding: 10px 12px;
-        img {
-            width: 25px;
-        }
-        &:hover {
-            background: #f5f5f5;
-        }
+export const ConnectButton = styled.button`
+    cursor: pointer;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: white;
+    color: black;
+    gap: 16px;
+    font-family: Poppins;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 100%;
+    padding: 10px 12px;
+    img {
+        width: 25px;
+    }
+    &:hover {
+        background: #f5f5f5;
     }
 `;
 
@@ -93,6 +97,7 @@ export const Divider = styled.div`
 `;
 
 export const WalletAddress = styled.div`
+    color: black;
     ellipsis: true;
     overflow: hidden;
     text-overflow: ellipsis;
