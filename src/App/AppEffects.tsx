@@ -20,13 +20,6 @@ export default function AppEffects() {
         async function initialize() {
             await setMiningNetwork();
             await airdropSetup();
-            await invoke('frontend_ready')
-                .then(() => {
-                    console.info('Successfully called frontend_ready');
-                })
-                .catch((e) => {
-                    console.error('Failed to call frontend_ready: ', e);
-                });
         }
         void initialize();
     }, []);
