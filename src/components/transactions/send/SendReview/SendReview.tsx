@@ -19,13 +19,14 @@ import {
     Text,
 } from './styles';
 import { useTranslation } from 'react-i18next';
-import { formatNumber, FormatPreset } from '@app/utils';
+import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
 import LoadingDots from './icons/LoadingDots';
 import { useEffect } from 'react';
 import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
+import { useWalletStore } from '@app/store';
 
 interface Props {
     status: SendStatus;
@@ -49,23 +50,18 @@ export function SendReview({
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
+    const latestPendingTx = useWalletStore((s) => s.pending_transactions?.[0]);
+    const latestTx = useWalletStore((s) => s.transactions?.[0]);
+
     useEffect(() => {
-        let timer: NodeJS.Timeout;
-
-        if (status === 'processing') {
-            timer = setTimeout(() => {
-                setStatus('completed');
-            }, 5000);
+        if (status !== 'processing' || !latestTx || !latestPendingTx) return;
+        if (latestTx.timestamp === latestPendingTx?.timestamp) {
+            setStatus('completed');
         }
-
-        return () => {
-            if (timer) {
-                clearTimeout(timer);
-            }
-        };
-    }, [status, setStatus]);
+    }, [status, setStatus, latestTx, latestPendingTx]);
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.TXTM_LONG);
+    const formattedAddress = truncateMiddle(address, 5);
     return (
         <Wrapper>
             {status === 'reviewing' ? (
@@ -134,8 +130,8 @@ export function SendReview({
                                 <Text>
                                     {t('send.completed-text')}
                                     <br />
-                                    <strong>{`1,000,000 XTM`}</strong> {t('send.completed-amount-sent')}{' '}
-                                    <strong>{`0x12345..12789`}</strong>
+                                    <strong>{`${formattedAmount} XTM`}</strong> {t('send.completed-amount-sent')}{' '}
+                                    <strong>{formattedAddress}</strong>
                                     {`.`}
                                 </Text>
                             </TextWrapper>
@@ -171,7 +167,7 @@ export function SendReview({
                             <Label>{t('send.transaction-id')}</Label>
                             <Value>
                                 {status === 'processing' && <LoadingDots />}
-                                {status === 'completed' && `FXK8324SDAS`}
+                                {status === 'completed' && latestTx?.tx_id}
                             </Value>
                         </Entry>
 

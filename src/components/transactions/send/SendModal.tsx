@@ -32,6 +32,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     };
 
     function handleClose() {
+        console.debug('closing');
         resetForm();
         setSection('history');
     }
@@ -93,7 +94,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
             title={getModalTitle()}
             handleClose={status !== 'reviewing' ? handleClose : undefined}
             handleBack={status === 'reviewing' ? handleBack : undefined}
-            noClose={preventModalClose}
+            // noClose={preventModalClose}
         >
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
