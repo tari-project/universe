@@ -67,7 +67,7 @@ export const StyledInput = styled.input<{ $hasIcon?: boolean; $isSecondary?: boo
     }
 
     &::placeholder {
-        color: ${({ theme }) => theme.palette.text.shadow};
+        color: ${({ theme }) => theme.palette.text.disabled};
         font-size: 1.4rem;
     }
 
