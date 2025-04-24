@@ -12,7 +12,7 @@
     "bundle": {
         "windows": {
             "wix": {
-                "template": "../tari-win-bundler/custom.wxs"
+                "template": "/tari-win-bundler/custom.wxs"
             }
         },
         "active": true,
