@@ -23,7 +23,6 @@
 use std::{collections::HashMap, time::Duration};
 
 use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
-use crate::node::node_manager::NodeType;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
