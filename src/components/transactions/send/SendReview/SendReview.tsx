@@ -30,8 +30,8 @@ export function SendReview({
     amount,
     address,
     message,
-    networkFee,
-    feePercentage,
+    //networkFee,
+    //feePercentage,
     handleClose,
 }: Props) {
     const { t } = useTranslation('wallet');
@@ -44,6 +44,23 @@ export function SendReview({
             setStatus('completed');
         }
     }, [status, setStatus, latestTx, latestPendingTx]);
+
+    // This is temporary, delete when we have a real processing state
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+
+        if (status === 'processing') {
+            timer = setTimeout(() => {
+                setStatus('completed');
+            }, 5000);
+        }
+
+        return () => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+        };
+    }, [status, setStatus]);
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.TXTM_LONG);
     const formattedAddress = truncateMiddle(address, 5);
