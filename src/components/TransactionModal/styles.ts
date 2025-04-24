@@ -1,6 +1,5 @@
 import * as m from 'motion/react-m';
 import styled, { css } from 'styled-components';
-import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled('div')`
     position: fixed;
