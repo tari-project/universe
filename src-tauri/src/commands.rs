@@ -51,6 +51,7 @@ use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
+use crate::node::node_manager::NodeType;
 use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
@@ -1762,5 +1763,13 @@ pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), 
         .restart_phases_from_queue(app_handle)
         .await;
 
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_node_type(node_type: NodeType) -> Result<(), InvokeError> {
+    ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type)
+        .await
+        .map_err(InvokeError::from_anyhow)?;
     Ok(())
 }

@@ -11,10 +11,10 @@ export function ThemeGroup() {
             <CategoryLabel>Theme</CategoryLabel>
             <ButtonGroup>
                 <Button onClick={() => setUITheme('light')} $isActive={theme === 'light'}>
-                    Light Theme
+                    Light
                 </Button>
                 <Button onClick={() => setUITheme('dark')} $isActive={theme === 'dark'}>
-                    Dark Theme
+                    Dark
                 </Button>
             </ButtonGroup>
         </>

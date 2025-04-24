@@ -1,5 +1,6 @@
 import { modeType } from '@app/store';
 import { GpuThreads } from './app-status';
+import { NodeType } from '@app/store/useNodeStore.ts';
 
 export interface ConfigCore {
     created_at: string;
@@ -20,6 +21,7 @@ export interface ConfigCore {
         refreshToken: string;
     };
     remote_base_node_address: string;
+    node_type?: NodeType;
 }
 export interface ConfigWallet {
     created_at: string;

@@ -27,7 +27,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -63,7 +63,7 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
     Local,
     Remote,

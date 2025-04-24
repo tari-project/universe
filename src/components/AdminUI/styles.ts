@@ -38,7 +38,7 @@ export const MenuWrapper = styled(m.div)`
     top: 20px;
     right: 30px;
     z-index: 99999;
-    max-width: 380px;
+    max-width: 420px;
 `;
 
 export const MenuContent = styled(m.div)`
@@ -50,7 +50,7 @@ export const MenuContent = styled(m.div)`
     flex-direction: column;
     gap: 10px;
 
-    min-width: 260px;
+    min-width: 320px;
     max-height: calc(100vh - 100px);
     overflow-y: auto;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
