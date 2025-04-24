@@ -340,7 +340,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
-            let mut has_send_error = false;
 
             loop {
                 tokio::select! {
@@ -348,16 +347,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         let state = app_handle_clone.state::<UniverseAppState>().inner();
                         let check_if_orphan = state
                             .node_manager
-                            .check_if_is_orphan_chain(!has_send_error)
+                            .check_if_is_orphan_chain()
                             .await;
                         match check_if_orphan {
                             Ok(is_stuck) => {
-                                if is_stuck {
-                                    error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                                }
-                                if is_stuck && !has_send_error {
-                                    has_send_error = true;
-                                }
                                 EventsManager::handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
                             .await;
                             }
