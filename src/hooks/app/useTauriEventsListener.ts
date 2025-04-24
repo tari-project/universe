@@ -161,9 +161,11 @@ const useTauriEventsListener = () => {
                             setNetworkStatus(event.payload);
                             break;
                         case `NodeTypeUpdate`:
+                            console.debug('NodeTypeUpdate', event.payload);
                             setNodeTypeState(event.payload);
                             break;
                         case 'RestartingPhases':
+                            console.debug('RestartingPhases', event.payload);
                             handleRestartingPhases(event.payload);
                             break;
                         case 'AskForRestart':

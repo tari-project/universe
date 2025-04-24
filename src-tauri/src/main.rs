@@ -30,6 +30,7 @@ use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
+use node::node_manager::NodeType;
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
@@ -317,18 +318,13 @@ fn main() {
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
-
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let app_config_raw_clone = app_config_raw.clone();
-    let node_type_config = app_config_raw_clone.node_type.clone();
-
     let node_manager = NodeManager::new(
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
         shutdown.to_signal(),
-        node_type_config,
+        // TODO: Decide who and how controls it
+        NodeType::RemoteUntilLocal,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
@@ -377,6 +373,8 @@ fn main() {
         .into(),
     );
 
+    let app_config_raw = AppConfig::new();
+    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);

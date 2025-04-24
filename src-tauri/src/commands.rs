@@ -1767,9 +1767,38 @@ pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), 
 }
 
 #[tauri::command]
-pub async fn set_node_type(node_type: NodeType) -> Result<(), InvokeError> {
-    ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type)
-        .await
-        .map_err(InvokeError::from_anyhow)?;
+pub async fn set_node_type(
+    node_type: String,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), InvokeError> {
+    info!(target: LOG_TARGET, "[set_node_type] with new node type: {:?}", node_type.clone());
+    let str_type: String = node_type.clone();
+
+    let node_type_from_str = match str_type.as_str() {
+        "Local" => NodeType::Local,
+        "Remote" => NodeType::Remote,
+        "RemoteUntilLocal" => NodeType::RemoteUntilLocal,
+        "LocalAfterRemote" => NodeType::LocalAfterRemote,
+        _ => NodeType::Local,
+    };
+
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_node_type,
+        node_type_from_str.clone(),
+        vec![SetupPhase::Wallet, SetupPhase::Node, SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    state
+        .node_manager
+        .set_node_type(node_type_from_str.clone())
+        .await;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
     Ok(())
 }

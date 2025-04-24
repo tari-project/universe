@@ -22,6 +22,8 @@
 
 use std::{collections::HashMap, time::Duration};
 
+use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use crate::node::node_manager::NodeType;
 use crate::{
     binaries::{Binaries, BinaryResolver},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
@@ -49,8 +51,6 @@ use tokio::{
     },
     time::{interval, Interval},
 };
-
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
@@ -164,7 +164,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 _ = shutdown_signal.wait() => {
                     warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
                 }
-            };
+            }
         });
     }
 

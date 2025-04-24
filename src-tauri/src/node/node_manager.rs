@@ -63,8 +63,9 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
+    #[default]
     Local,
     Remote,
     RemoteUntilLocal,
@@ -97,6 +98,7 @@ pub struct NodeManager {
 }
 
 impl NodeManager {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         stats_collector: &mut ProcessStatsCollectorBuilder,
         local_node_adapter: LocalNodeAdapter,
@@ -141,6 +143,12 @@ impl NodeManager {
             remote_node_watch_rx,
             local_node_db_cleared: Arc::new(AtomicBool::new(false)),
         }
+    }
+
+    pub async fn set_node_type(&self, new_node_type: NodeType) {
+        let node_type = self.node_type.clone();
+        let mut node_type = node_type.write().await;
+        *node_type = new_node_type;
     }
 
     #[allow(clippy::too_many_arguments)]
