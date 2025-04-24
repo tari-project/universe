@@ -170,7 +170,12 @@ impl MmProxyManager {
         for i in 0..90 {
             if lock.is_running() {
                 if let Some(status) = lock.status_monitor.as_ref() {
-                    if status.check_health(start_time.elapsed()).await == HealthStatus::Healthy {
+                    if status
+                        // Not sure what timeout to use
+                        .check_health(start_time.elapsed(), std::time::Duration::from_secs(10))
+                        .await
+                        == HealthStatus::Healthy
+                    {
                         info!(target: LOG_TARGET, "MM proxy is healthy");
                         return Ok(());
                     } else {

@@ -34,7 +34,7 @@ use tokio::task::JoinHandle;
 
 use tokio::select;
 use tokio::sync::watch;
-use tokio::time::{sleep, timeout};
+use tokio::time::sleep;
 use tokio::time::{Instant, MissedTickBehavior};
 use tokio_util::task::TaskTracker;
 
@@ -258,36 +258,29 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
         let mut inner_shutdown2 = inner_shutdown.clone();
         let mut app_shutdown2 = global_shutdown_signal.clone();
         let current_uptime = uptime.elapsed();
-        if let Ok(inner) = timeout(health_timeout, async {
-            select! {
-                r = status_monitor3.check_health(current_uptime) => r,
-                // Watch for shutdown signals
-                _ = inner_shutdown2.wait() => HealthStatus::Healthy,
-                _ = app_shutdown2.wait() => HealthStatus::Healthy
+
+        match select! {
+            r = status_monitor3.check_health(current_uptime, health_timeout) => r,
+            // Watch for shutdown signals
+            _ = inner_shutdown2.wait() => HealthStatus::Healthy,
+            _ = app_shutdown2.wait() => HealthStatus::Healthy
+        } {
+            HealthStatus::Healthy => {
+                *warning_count = 0;
+                is_healthy = true;
             }
-        })
-        .await
-        .inspect_err(
-            |_| error!(target: LOG_TARGET, "{} is not healthy: health check timed out", name),
-        ) {
-            match inner {
-                HealthStatus::Healthy => {
+            HealthStatus::Warning => {
+                stats.num_warnings += 1;
+                *warning_count += 1;
+                if *warning_count > 10 {
+                    error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
                     *warning_count = 0;
+                } else {
                     is_healthy = true;
                 }
-                HealthStatus::Warning => {
-                    stats.num_warnings += 1;
-                    *warning_count += 1;
-                    if *warning_count > 10 {
-                        error!(target: LOG_TARGET, "{} is not healthy. Health check returned warning", name);
-                        *warning_count = 0;
-                    } else {
-                        is_healthy = true;
-                    }
-                }
-                HealthStatus::Unhealthy => {
-                    warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
-                }
+            }
+            HealthStatus::Unhealthy => {
+                warn!(target: LOG_TARGET, "{} is not healthy. Health check returned false", name);
             }
         }
     } else {
