@@ -77,7 +77,7 @@ export function SendReview({
 
         {
             label: t('send.total-fees'),
-            value: '0.03%',
+            value: `${feePercentage}%`,
         },
 
         {
@@ -95,6 +95,7 @@ export function SendReview({
         {
             label: t('send.tari-txn'),
             value: status === 'processing' ? <LoadingDots /> : `0x12345..12789`,
+            externalLink: status === 'processing' ? undefined : `#`,
         },
     ];
 

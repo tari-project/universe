@@ -15,6 +15,10 @@ export const Wrapper = styled('div')`
     overflow: hidden;
     overflow-y: auto;
     padding: 40px;
+
+    @media (max-height: 800px) {
+        align-items: flex-start;
+    }
 `;
 
 export const Cover = styled(m.div)<{ $noClose?: boolean }>`

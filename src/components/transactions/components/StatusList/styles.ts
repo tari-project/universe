@@ -34,7 +34,7 @@ export const Value = styled.div<{ $status?: SendStatus }>`
     font-size: 14px;
     font-style: normal;
     font-weight: 500;
-    line-height: 116.7%;
+    line-height: 122%;
     letter-spacing: -0.42px;
 
     display: flex;
@@ -71,4 +71,12 @@ export const ValueRight = styled.div`
     opacity: 0.5;
     margin-left: auto;
     text-align: right;
+`;
+
+export const ExternalLink = styled.a`
+    color: inherit;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
 `;
