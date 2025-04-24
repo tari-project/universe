@@ -1,4 +1,5 @@
 ./tari-win-bundler/Bundle.wxs
+./tari-win-bundler/custom.wxs
 ./tari-win-bundler/Tari Universe.wixproj
 ./tari-win-bundler/Tari Universe.wixproj.user
 ./tari-win-bundler/Theme.wxl
