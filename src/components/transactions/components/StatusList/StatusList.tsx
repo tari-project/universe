@@ -21,7 +21,7 @@ export function StatusList({ entries }: Props) {
         <Wrapper>
             {entries
                 .filter((entry) => Boolean(entry.value))
-                .map(({ label, value, valueRight, status, helpText, externalLink }, index) => (
+                .map(({ label, value, valueRight, status, externalLink }, index) => (
                     <Entry key={index}>
                         <Label>{label}</Label>
                         <Value $status={status}>
