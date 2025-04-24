@@ -1,9 +1,8 @@
 import { LinearProgress } from '@app/components/elements/LinearProgress.tsx';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useMemo } from 'react';
+import { useCurrentPhaseDetails } from './useCurrentPhaseDetails';
 import { useProgressCountdown } from './useProgressCountdown';
 
 const Wrapper = styled.div`
@@ -22,44 +21,28 @@ const Label = styled(Typography).attrs({ variant: 'p' })`
     font-weight: 400;
     color: ${({ theme }) => theme.palette.text.default};
 `;
+
+export const Timer = styled(Typography).attrs({ variant: 'p' })`
+    white-space: pre;
+    color: ${({ theme }) => theme.palette.text.secondary};
+`;
+
 export default function Progress() {
     const { t } = useTranslation('setup-progresses');
-    const corePhaseInfoPayload = useSetupStore((state) => state.core_phase_setup_payload);
-    const hardwarePhaseInfoPayload = useSetupStore((state) => state.hardware_phase_setup_payload);
-    const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
-    const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
-    const { countdown } = useProgressCountdown(120);
-
-    const currentPhaseToShow = useMemo(() => {
-        if (hardwarePhaseInfoPayload?.is_complete && Boolean(unknownPhaseInfoPayload)) {
-            return unknownPhaseInfoPayload;
-        }
-
-        if (nodePhaseInfoPayload?.is_complete && Boolean(hardwarePhaseInfoPayload)) {
-            return hardwarePhaseInfoPayload;
-        }
-
-        if (corePhaseInfoPayload?.is_complete && Boolean(nodePhaseInfoPayload)) {
-            return nodePhaseInfoPayload;
-        }
-
-        return corePhaseInfoPayload;
-    }, [corePhaseInfoPayload, hardwarePhaseInfoPayload, nodePhaseInfoPayload, unknownPhaseInfoPayload]);
-
-    const setupProgress = currentPhaseToShow?.progress;
+    const { setupPhaseTitle, setupTitle, setupProgress, setupParams } = useCurrentPhaseDetails();
+    const { countdownText } = useProgressCountdown();
 
     const setUpText =
-        countdown === 1
-            ? `${countdown} ${t('second_remaining')}`
-            : countdown > 1
-              ? `${countdown} ${t('seconds_remaining')}`
-              : t('any_moment_now');
+        setupTitle && setupPhaseTitle
+            ? `${t(`phase-title.${setupPhaseTitle}`)} | ${t(`title.${setupTitle}`, { ...setupParams })}`
+            : '';
 
     return (
         <Wrapper>
             <LinearProgress variant="large" value={setupProgress} />
             {setupProgress ? <Percentage>{`${setupProgress}%`}</Percentage> : null}
             <Label>{setUpText}</Label>
+            <Timer>{countdownText}</Timer>
         </Wrapper>
     );
 }

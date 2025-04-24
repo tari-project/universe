@@ -1,6 +1,7 @@
 {
   "any_moment_now": "Enige oomblik nou",
   "block-sync": "Syncing blocks",
+  "calculating_time": "Calculating time remaining...",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
@@ -21,6 +22,7 @@
   "phase-unknown-critical-problem-title": "Mynopstelling Misluk",
   "phase-wallet-critical-problem-description": "Beursie-opstelling is krities vir die toepassing. Probeer asseblief die toepassing herbegin. As die probleem voortduur, kontak asseblief ondersteuning.",
   "phase-wallet-critical-problem-title": "Beursie-opstelling Misluk",
+  "remaining": "remaining",
   "second_remaining": "sekonde oor",
   "seconds_remaining": "sekondes oor",
   "title": {

@@ -205,6 +205,8 @@ impl SetupManager {
             .initialize_for_migration(app_handle.clone())
             .await;
 
+        EventsManager::handle_node_type_update(&app_handle).await;
+
         ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
