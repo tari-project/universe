@@ -10,11 +10,6 @@
         "devUrl": "http://localhost:1420"
     },
     "bundle": {
-        "windows": {
-            "wix": {
-                "template": "/tari-win-bundler/custom.wxs"
-            }
-        },
         "active": true,
         "targets": "all",
         "macOS": {
