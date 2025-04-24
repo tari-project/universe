@@ -46,10 +46,10 @@ export const BoxWrapper = styled(m.div)`
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(27px);
+
     position: relative;
     z-index: 1;
-    background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.paper, 0.65)};
+    background-color: ${({ theme }) => theme.palette.background.splash};
 `;
 
 export const TopButton = styled('button')`

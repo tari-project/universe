@@ -87,14 +87,13 @@ export default function SendModal({ section, setSection }: SendModalProps) {
         }
         return `${t('tabs.send')} ${t('tari')}`;
     };
-    const preventModalClose = status === 'processing' || status === 'completed';
+
     return (
         <TransactionModal
             show={section === 'send'}
             title={getModalTitle()}
             handleClose={status !== 'reviewing' ? handleClose : undefined}
             handleBack={status === 'reviewing' ? handleBack : undefined}
-            // noClose={preventModalClose}
         >
             <FormProvider {...methods}>
                 <Wrapper $isLoading={methods.formState.isSubmitting}>

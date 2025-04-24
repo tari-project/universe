@@ -62,6 +62,7 @@ export function SendReview({
 
     const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.TXTM_LONG);
     const formattedAddress = truncateMiddle(address, 5);
+
     return (
         <Wrapper>
             {status === 'reviewing' ? (
