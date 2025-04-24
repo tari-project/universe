@@ -48,18 +48,6 @@ export const BlockInfoWrapper = styled.div`
     display: flex;
     flex-direction: column;
 `;
-export const StatusWrapper = styled.div`
-    display: flex;
-    align-items: center;
-    margin-right: 8px;
-`;
-export const CircularProgressWrapper = styled.div`
-    height: 25px;
-    width: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-`;
 export const TitleWrapper = styled(Typography)`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
