@@ -13,35 +13,23 @@ import {
     ValueChangeWrapper,
     ValueWrapper,
     CurrencyText,
-    StatusWrapper,
-    CircularProgressWrapper,
     Chip,
     BlockInfoWrapper,
     Content,
 } from './ListItem.styles.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { TransactionStatus } from '@app/types/transactions.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 
-const BaseItem = memo(function BaseItem({ title, time, value, type, chip, status, onClick }: BaseItemProps) {
+const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
     // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
     const isPositiveValue = type !== 'sent';
-    const isPending = status === TransactionStatus.Broadcast;
     const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
             <Content>
-                {isPending && (
-                    <StatusWrapper>
-                        <CircularProgressWrapper>
-                            <CircularProgress />
-                        </CircularProgressWrapper>
-                    </StatusWrapper>
-                )}
                 <BlockInfoWrapper>
                     <TitleWrapper title={title}>{displayTitle}</TitleWrapper>
                     <TimeWrapper variant="p">{time}</TimeWrapper>
