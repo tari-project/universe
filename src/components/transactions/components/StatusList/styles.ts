@@ -13,7 +13,7 @@ export const Entry = styled.div`
     gap: 3px;
 
     padding: 15px 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: ${({ theme }) => `1px solid ${theme.colorsAlpha.greyscaleAlpha[20]}`};
 
     &:first-child {
         padding-top: 0;

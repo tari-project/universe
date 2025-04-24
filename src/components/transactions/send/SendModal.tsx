@@ -32,10 +32,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
     };
 
     function handleClose() {
-        console.debug('closing');
         resetForm();
         setSection('history');
     }
+
     function handleBack() {
         setStatus('fields');
     }
