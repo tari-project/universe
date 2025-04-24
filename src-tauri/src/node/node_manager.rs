@@ -318,11 +318,9 @@ impl NodeManager {
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
         if self.is_remote().await? {
-            wait_ready_for_node_process(&self.remote_node_watcher).await?;
             ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
         }
         if self.is_local().await? {
-            wait_ready_for_node_process(&self.local_node_watcher).await?;
             ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
         }
 
@@ -595,6 +593,7 @@ where
                 .as_ref()
                 .and_then(|watcher| watcher.adapter.get_service())
         } {
+            wait_ready_for_node_process(node_watcher).await?;
             match service.get_identity().await {
                 Ok(_) => {
                     return Ok(());
