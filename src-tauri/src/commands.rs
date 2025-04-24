@@ -1773,16 +1773,7 @@ pub async fn set_node_type(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<(), InvokeError> {
     info!(target: LOG_TARGET, "[set_node_type] with new node type: {:?}", node_type.clone());
-    let str_type: String = node_type.clone();
-
-    let node_type_from_str = match str_type.as_str() {
-        "Local" => NodeType::Local,
-        "Remote" => NodeType::Remote,
-        "RemoteUntilLocal" => NodeType::RemoteUntilLocal,
-        "LocalAfterRemote" => NodeType::LocalAfterRemote,
-        _ => NodeType::Local,
-    };
-
+    let node_type_from_str = NodeType::from_string(&node_type).map_err(|e| e.to_string())?;
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_node_type,
         node_type_from_str.clone(),

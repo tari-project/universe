@@ -28,7 +28,6 @@ use sys_locale::get_locale;
 use tauri::{AppHandle, Manager};
 
 use crate::credential_manager::CredentialManager;
-use crate::node::node_manager::NodeType;
 use crate::{consts::DEFAULT_MONERO_ADDRESS, internal_wallet::generate_password};
 use anyhow::anyhow;
 use chrono::{DateTime, Utc};
@@ -121,8 +120,6 @@ pub struct AppConfigFromFile {
     gpu_engine: String,
     #[serde(default)]
     remote_base_node_address: Option<String>,
-    #[serde(default = "default_node_type")]
-    node_type: NodeType,
 }
 
 impl Default for AppConfigFromFile {
@@ -168,7 +165,6 @@ impl Default for AppConfigFromFile {
             airdrop_tokens: None,
             gpu_engine: default_gpu_engine(),
             remote_base_node_address: None,
-            node_type: default_node_type(),
         }
     }
 }
@@ -290,8 +286,7 @@ pub struct AppConfig {
     last_changelog_version: String,             // CORE
     airdrop_tokens: Option<AirdropTokens>,      // CORE
     gpu_engine: String,                         // Mining
-    remote_base_node_address: Option<String>,   // CORE
-    pub node_type: NodeType,                    // CORE
+    remote_base_node_address: Option<String>,
 }
 
 #[allow(dead_code)]
@@ -340,7 +335,6 @@ impl AppConfig {
             airdrop_tokens: None,
             gpu_engine: EngineType::OpenCL.to_string(),
             remote_base_node_address: None,
-            node_type: NodeType::Local,
         }
     }
 
@@ -461,7 +455,6 @@ impl AppConfig {
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.gpu_engine = config.gpu_engine;
                 self.remote_base_node_address = config.remote_base_node_address;
-                self.node_type = config.node_type;
 
                 // KEYRING_ACCESSED.store(
                 //     config.keyring_accessed,
@@ -1026,7 +1019,6 @@ impl AppConfig {
             airdrop_tokens: self.airdrop_tokens.clone(),
             gpu_engine: self.gpu_engine.clone(),
             remote_base_node_address: self.remote_base_node_address.clone(),
-            node_type: self.node_type.clone(),
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
@@ -1136,8 +1128,4 @@ fn default_p2pool_stats_server_port() -> Option<u16> {
 
 fn default_changelog_version() -> String {
     Version::new(0, 0, 0).to_string()
-}
-
-fn default_node_type() -> NodeType {
-    NodeType::Local
 }

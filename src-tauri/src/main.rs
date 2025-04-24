@@ -30,7 +30,7 @@ use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
-use node::node_manager::NodeType;
+
 use p2pool::models::Connections;
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
@@ -75,6 +75,8 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
@@ -318,13 +320,16 @@ fn main() {
     let (base_node_watch_tx, base_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (local_node_watch_tx, local_node_watch_rx) = watch::channel(BaseNodeStatus::default());
     let (remote_node_watch_tx, remote_node_watch_rx) = watch::channel(BaseNodeStatus::default());
+
+    let config = block_on(ConfigCore::content());
+    let config_node_type = config.node_type().clone();
+
     let node_manager = NodeManager::new(
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
         shutdown.to_signal(),
-        // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        config_node_type,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,

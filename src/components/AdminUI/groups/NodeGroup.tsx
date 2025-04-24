@@ -7,7 +7,7 @@ export function NodeGroup() {
     const node_type = useNodeStore((s) => s.node_type);
 
     function handleChangeNode(nodeType: NodeType) {
-        invoke('set_node_type', { nodeType }).then(console.debug).catch(console.error);
+        invoke('set_node_type', { nodeType }).catch(console.error);
     }
 
     return (
@@ -25,12 +25,6 @@ export function NodeGroup() {
                     onClick={() => handleChangeNode('RemoteUntilLocal')}
                 >
                     RemoteUntilLocal
-                </Button>
-                <Button
-                    $isActive={node_type === 'LocalAfterRemote'}
-                    onClick={() => handleChangeNode('LocalAfterRemote')}
-                >
-                    LocalAfterRemote
                 </Button>
             </ButtonGroup>
         </>

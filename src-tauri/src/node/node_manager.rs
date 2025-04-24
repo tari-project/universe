@@ -82,6 +82,14 @@ impl NodeType {
     pub fn is_remote(&self) -> bool {
         matches!(self, NodeType::Remote | NodeType::RemoteUntilLocal)
     }
+    pub fn from_string(node_type: &str) -> Result<NodeType, anyhow::Error> {
+        match node_type {
+            "Local" => Ok(NodeType::Local),
+            "Remote" => Ok(NodeType::Remote),
+            "RemoteUntilLocal" => Ok(NodeType::RemoteUntilLocal),
+            _ => Err(anyhow::anyhow!("Invalid node type")),
+        }
+    }
 }
 
 #[derive(Clone)]
