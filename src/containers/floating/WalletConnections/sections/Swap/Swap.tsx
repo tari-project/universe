@@ -19,15 +19,18 @@ import {
     SwapOptionAmount,
     SwapOptionCurrency,
 } from './Swap.styles';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useSignMessage } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
 import { useMemo, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import { QuestionMarkIcon } from '../../icons/elements/QuestionMarkIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
+import { SignMessage } from '../SignMessage/SignMessage';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 export const Swap = () => {
+    const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
     const dataAcc = useAccount();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
     const activeChainIcon = useMemo(() => {
@@ -37,6 +40,23 @@ export const Swap = () => {
             width: 10,
         });
     }, [accountBalance?.symbol]);
+
+    const handleConfirm = () => {
+        setSignMessageModalOpen(true);
+        signMessageAsync({ message: 'Hello sign this test message' })
+            .then(() => setWalletConnectModalStep(SwapStep.Progress))
+            .catch(() => {
+                addToast({
+                    title: 'Error',
+                    text: 'Something went wrong',
+                    type: 'error',
+                });
+                setWalletConnectModalStep(SwapStep.ConnectWallet);
+            });
+    };
+
+    const addToast = useToastStore((s) => s.addToast);
+    const { signMessageAsync } = useSignMessage();
 
     const [amount, setAmount] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<string>('');
@@ -93,6 +113,10 @@ export const Swap = () => {
             helpData: 'You will receive XTM in (Tari wallet address)',
         },
     ];
+
+    if (signMessageModalOpen) {
+        return <SignMessage />;
+    }
 
     return (
         <>
@@ -174,11 +198,7 @@ export const Swap = () => {
                 ))}
             </SwapDetails>
 
-            <WalletButton
-                variant="primary"
-                onClick={() => setWalletConnectModalStep(SwapStep.SignMessage)}
-                size="large"
-            >
+            <WalletButton variant="primary" onClick={handleConfirm} size="large">
                 {'Approve & Buy'}
             </WalletButton>
             <PoweredBy>

@@ -13,6 +13,7 @@ import { useEffect, useState } from 'react';
 import { SuccessIcon } from '../../icons/elements/SuccessIcon';
 import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
+import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions';
 
 type Status = 'processing' | 'success' | 'error';
 
@@ -24,7 +25,7 @@ export const ProcessingTransaction = () => {
     useEffect(() => {
         setTimeout(() => {
             setStatus('success');
-        }, 2000);
+        }, 6000);
     }, []);
 
     const loadingDots = (
@@ -73,7 +74,12 @@ export const ProcessingTransaction = () => {
                 ))}
             </ProcessingDetailsWrapper>
 
-            <WalletButton variant="primary" size="xl" disabled={status === 'processing'}>
+            <WalletButton
+                variant="primary"
+                size="xl"
+                disabled={status === 'processing'}
+                onClick={() => setWalletConnectModalOpen(false)}
+            >
                 {status === 'processing' ? 'Processing transaction' : 'Done'}
                 {status === 'processing' ? loadingDots : null}
             </WalletButton>

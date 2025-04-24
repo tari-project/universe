@@ -1,15 +1,7 @@
 import { HeaderWrapper, StatusWrapper, LoadingDots } from './SignMessage.styles';
 import Metamask from '../../icons/mm-fox';
-import { useEffect } from 'react';
-import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-import { SwapStep } from '@app/store';
 
 export const SignMessage = () => {
-    useEffect(() => {
-        setTimeout(() => {
-            setWalletConnectModalStep(SwapStep.Progress);
-        }, 5000);
-    }, []);
     return (
         <>
             <HeaderWrapper>

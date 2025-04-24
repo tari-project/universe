@@ -1,6 +1,5 @@
 import { AnimatePresence } from 'motion/react';
 import { IconContainer, TopArea, WalletConnectionOverlay, WalletConnectionsContainer } from './WalletConnections.style';
-import '@reown/appkit-wallet-button/react';
 import { SwapStep, useWalletStore } from '@app/store';
 import { setWalletConnectModalOpen, setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
 import { WagmiProvider } from 'wagmi';
