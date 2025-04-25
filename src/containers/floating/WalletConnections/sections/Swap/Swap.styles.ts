@@ -37,7 +37,7 @@ export const SelectedChainInfo = styled.div`
 `;
 
 export const SwapOption = styled.div`
-    min-width: 470px;
+    width: 100%;
     margin-top: 5px;
     padding: 20px;
     display: flex;
