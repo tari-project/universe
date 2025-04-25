@@ -975,8 +975,6 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let shutdown = Shutdown::new();
-
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
@@ -988,7 +986,6 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
         // TODO: Decide who and how controls it
         NodeType::RemoteUntilLocal,
         base_node_watch_tx,
