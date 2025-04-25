@@ -74,6 +74,8 @@
   "monero-seed-words": "Секретные слова Monero",
   "network": "Сеть",
   "no-entry-guard": "Нет подключения к Entry Guard!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Адрес подключения",
   "node-public-address": "Публичный адрес",
   "node-public-key": "Публичный ключ",

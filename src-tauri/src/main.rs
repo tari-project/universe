@@ -985,8 +985,9 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        shutdown.to_signal(),
+        // This value is later overriden when retrieved from config
+        NodeType::Local,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
@@ -1282,6 +1283,7 @@ fn main() {
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
+            commands::set_node_type
         ])
         .build(tauri::generate_context!())
         .inspect_err(
