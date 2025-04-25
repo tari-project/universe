@@ -19,8 +19,8 @@ export const useProgressCountdown = () => {
                 // Calculate for header sync
                 if (step === 'Header' && local_header_height != null && tip_header_height != null) {
                     const remainingHeaders = Number(tip_header_height) - Number(local_header_height);
-                    const estimatedMinutes = remainingHeaders * 0.002866666667;
-                    setCountdown(Math.ceil(estimatedMinutes * 60 * 2 + 60)); // Convert to seconds(double for blocks sync after)
+                    const estimatedMinutes = (remainingHeaders + Number(tip_block_height)) * 0.002866666667 + 1;
+                    setCountdown(Math.ceil(estimatedMinutes * 60)); // Convert to seconds
                     return;
                 }
                 // Calculate for block sync
