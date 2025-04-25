@@ -1,13 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { NodeType, useNodeStore } from '@app/store/useNodeStore';
+import { useNodeStore } from '@app/store/useNodeStore';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
-
-const getNodeType = (nodeType?: NodeType) => {
-    if (nodeType === 'LocalAfterRemote') return 'Local';
-    if (nodeType === 'RemoteUntilLocal') return 'Remote';
-    return nodeType;
-};
+import { getNodeType } from './Progress';
 
 export const useProgressCountdown = () => {
     const { t } = useTranslation('setup-progresses');
