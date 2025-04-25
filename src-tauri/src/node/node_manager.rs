@@ -34,6 +34,7 @@ use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
@@ -681,12 +682,22 @@ async fn monitor_local_node_sync_and_switch(
                         .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
                         .await
                     {
-                        Ok(_) => {
+                        Ok(synced_height) => {
+                            let remote_node_height = (*node_manager.remote_node_watch_rx.borrow()).block_height;
+                            if synced_height + 50 < remote_node_height {
+                                warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
+                                sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
+                                continue;
+                            }
+                            sleep(Duration::from_secs(30)).await;
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
+
                         }
-                        Err(NodeStatusMonitorError::NodeNotStarted) => {}
+                        Err(NodeStatusMonitorError::NodeNotStarted) => {
+                            info!(target: LOG_TARGET, "Local node not started, waiting...");
+                        }
                         Err(e) => {
                             error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                         }
