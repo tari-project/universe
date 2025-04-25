@@ -74,6 +74,8 @@
   "monero-seed-words": "Monero シードワード",
   "network": "ネットワーク",
   "no-entry-guard": "エントリーガードが接続されていません！",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "接続アドレス",
   "node-public-address": "公開アドレス",
   "node-public-key": "公開鍵",

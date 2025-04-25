@@ -1,5 +1,5 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const Wrapper = styled('div')`
     position: fixed;
@@ -8,53 +8,54 @@ export const Wrapper = styled('div')`
     top: 0;
     left: 0;
     z-index: 99999;
-
     display: flex;
     justify-content: center;
     align-items: center;
-
     pointer-events: all;
-
     overflow: hidden;
     overflow-y: auto;
-
     padding: 40px;
+
+    @media (max-height: 800px) {
+        align-items: flex-start;
+    }
 `;
 
-export const Cover = styled(m.div)`
+export const Cover = styled(m.div)<{ $noClose?: boolean }>`
     position: fixed;
     width: 100%;
     height: 100%;
     top: 0;
     left: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: ${({ theme }) => theme.colorsAlpha.darkAlpha[50]};
     z-index: 0;
     cursor: pointer;
+
+    ${({ $noClose }) =>
+        $noClose &&
+        css`
+            cursor: default;
+        `}
 `;
 
 export const BoxWrapper = styled(m.div)`
     width: 100%;
     max-width: 481px;
-
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
     flex-shrink: 0;
     gap: 20px;
-
     padding: 30px;
-
     border-radius: 20px;
-    box-shadow: 0px 4px 74px 0px rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(27px);
+    box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
 
     position: relative;
     z-index: 1;
-
-    background: ${({ theme }) => (theme.mode === 'dark' ? `rgba(46, 46, 46, 0.75)` : `rgba(255, 255, 255, 0.75)`)};
+    background-color: ${({ theme }) => theme.palette.background.splash};
 `;
 
-export const CloseButton = styled('button')`
+export const TopButton = styled('button')`
     cursor: pointer;
 
     transition: transform 0.2s ease;

@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use getset::{Getters, Setters};
+use log::warn;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::LazyLock, time::SystemTime};
@@ -28,6 +29,7 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::node::node_manager::NodeType;
 use crate::{
     ab_test_selector::ABTestSelector, app_config::AirdropTokens, events_manager::EventsManager,
     internal_wallet::generate_password, AppConfig,
@@ -60,6 +62,17 @@ pub struct ConfigCoreContent {
     last_changelog_version: Version,
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
+    node_type: NodeType,
+}
+
+fn default_monero_nodes() -> Vec<String> {
+    vec![
+        "https://xmr-01.tari.com".to_string(),
+        "https://xmr-waw.tari.com".to_string(),
+        "https://xmr-sbg.tari.com".to_string(),
+        "https://xmr-gra.tari.com".to_string(),
+        "https://xmr-bhs.tari.com".to_string(),
+    ]
 }
 
 impl Default for ConfigCoreContent {
@@ -92,13 +105,14 @@ impl Default for ConfigCoreContent {
             ab_group: ab_test_selector,
             should_auto_launch: false,
             mmproxy_use_monero_failover: false,
-            mmproxy_monero_nodes: vec![],
+            mmproxy_monero_nodes: default_monero_nodes(),
             auto_update: true,
             p2pool_stats_server_port: None,
             pre_release: false,
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
+            node_type: NodeType::Local,
         }
     }
 }
@@ -114,6 +128,10 @@ impl ConfigCore {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         config.handle_old_config_migration(old_config);
+        if config.content.mmproxy_monero_nodes.is_empty() {
+            warn!("Empty list of monero nodes for mmproxy found. Using default list");
+            config.content.mmproxy_monero_nodes = default_monero_nodes();
+        }
 
         EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
     }

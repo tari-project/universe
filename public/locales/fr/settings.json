@@ -74,6 +74,8 @@
   "monero-seed-words": "Mots de récupération Monero",
   "network": "Réseau",
   "no-entry-guard": "Aucun Entry Guard connecté !",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Adresse de connexion",
   "node-public-address": "Adresse publique",
   "node-public-key": "Clé publique",

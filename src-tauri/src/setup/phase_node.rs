@@ -54,6 +54,7 @@ use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
+const LOCAL_NODE_SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 60); // 60 Minutes
 
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseOutput {}
@@ -126,7 +127,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
 
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let state = self.app_handle.state::<UniverseAppState>();
+            let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
+            let timeout_duration = if is_local_node {
+                LOCAL_NODE_SETUP_TIMEOUT_DURATION
+            } else {
+                SETUP_TIMEOUT_DURATION
+            };
+            let setup_timeout = tokio::time::sleep(timeout_duration);
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
                 select! {
@@ -272,7 +280,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         );
         let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
-            None,
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
         );
 
         TasksTrackers::current()
@@ -340,7 +348,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
         let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
             let mut interval: Interval = interval(Duration::from_secs(30));
-            let mut has_send_error = false;
 
             loop {
                 tokio::select! {
@@ -348,16 +355,10 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         let state = app_handle_clone.state::<UniverseAppState>().inner();
                         let check_if_orphan = state
                             .node_manager
-                            .check_if_is_orphan_chain(!has_send_error)
+                            .check_if_is_orphan_chain()
                             .await;
                         match check_if_orphan {
                             Ok(is_stuck) => {
-                                if is_stuck {
-                                    error!(target: LOG_TARGET, "Miner is stuck on orphan chain");
-                                }
-                                if is_stuck && !has_send_error {
-                                    has_send_error = true;
-                                }
                                 EventsManager::handle_stuck_on_orphan_chain(&app_handle_clone, is_stuck)
                             .await;
                             }

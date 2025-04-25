@@ -57,6 +57,11 @@ export const NavButton = styled(Button).attrs({
     &:hover {
         opacity: 0.85;
     }
+
+    &:disabled {
+        opacity: 0.2;
+        pointer-events: none;
+    }
 `;
 export const StyledIconButton = styled(IconButton)`
     border-radius: 50%;

@@ -1,6 +1,7 @@
 {
   "any_moment_now": "Sebentar lagi",
   "block-sync": "Syncing blocks",
+  "calculating_time": "Calculating time remaining...",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
@@ -21,6 +22,7 @@
   "phase-unknown-critical-problem-title": "Pengaturan Penambangan Gagal",
   "phase-wallet-critical-problem-description": "Pengaturan dompet sangat penting untuk aplikasi ini. Silakan coba mulai ulang aplikasi. Jika masalah berlanjut, silakan hubungi dukungan.",
   "phase-wallet-critical-problem-title": "Pengaturan Dompet Gagal",
+  "remaining": "remaining",
   "second_remaining": "detik tersisa",
   "seconds_remaining": "detik tersisa",
   "title": {
