@@ -74,6 +74,8 @@
   "monero-seed-words": "모네로 시드 단어",
   "network": "네트워크",
   "no-entry-guard": "엔트리 가드가 연결되지 않았습니다!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "연결 주소",
   "node-public-address": "공개 주소",
   "node-public-key": "공개 키",
