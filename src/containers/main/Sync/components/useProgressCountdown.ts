@@ -69,10 +69,10 @@ export const useProgressCountdown = () => {
             const hasValidEstimate =
                 (nodeSetupParams?.step === 'Header' &&
                     nodeSetupParams?.local_header_height != null &&
-                    Number(nodeSetupParams?.tip_header_height) > 0) ||
+                    nodeSetupParams?.tip_header_height != null) ||
                 (nodeSetupParams?.step === 'Block' &&
                     nodeSetupParams?.local_block_height != null &&
-                    Number(nodeSetupParams?.tip_block_height) > 0);
+                    nodeSetupParams?.tip_block_height != null);
 
             if (!hasValidEstimate) {
                 return t('calculating_time');
