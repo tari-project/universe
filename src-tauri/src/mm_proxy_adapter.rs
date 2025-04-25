@@ -154,10 +154,11 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
 
         let shuffled_nodes = &mut config.monero_nodes.clone();
         shuffled_nodes.shuffle(&mut thread_rng());
-        for node in shuffled_nodes {
-            args.push("-p".to_string());
-            args.push(format!("merge_mining_proxy.monerod_url={}", node));
-        }
+        args.push("-p".to_string());
+        args.push(format!(
+            "merge_mining_proxy.monerod_url=[{}]",
+            shuffled_nodes.join(",")
+        ));
 
         if config.p2pool_enabled {
             args.push("-p".to_string());
