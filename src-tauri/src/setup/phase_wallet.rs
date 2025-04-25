@@ -147,7 +147,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                     }
                 }
                 _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Core);
+                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Wallet);
                 }
             };
         });
