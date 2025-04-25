@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useCurrentPhaseDetails } from './useCurrentPhaseDetails';
 import { useProgressCountdown } from './useProgressCountdown';
-import { NodeType, useNodeStore } from '@app/store/useNodeStore';
+import { useNodeStore } from '@app/store/useNodeStore';
 
 const Wrapper = styled.div`
     display: flex;
@@ -28,17 +28,11 @@ export const Timer = styled(Typography).attrs({ variant: 'p' })`
     color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
-export const getNodeType = (nodeType?: NodeType) => {
-    if (nodeType === 'LocalAfterRemote') return 'Local';
-    if (nodeType === 'RemoteUntilLocal') return 'Remote';
-    return nodeType;
-};
-
 export default function Progress() {
     const { t } = useTranslation('setup-progresses');
     const { setupPhaseTitle, setupTitle, setupProgress, setupParams } = useCurrentPhaseDetails();
     const { countdownText } = useProgressCountdown();
-    const nodeType = useNodeStore((s) => getNodeType(s.node_type));
+    const nodeType = useNodeStore((s) => s.node_type);
 
     const setUpText =
         setupTitle && setupPhaseTitle
@@ -49,7 +43,7 @@ export default function Progress() {
         <Wrapper>
             <LinearProgress variant="large" value={setupProgress} />
             {setupProgress ? <Percentage>{`${setupProgress}%`}</Percentage> : null}
-            {nodeType == 'Local' && <Label>{setUpText}</Label>}
+            {nodeType === 'Local' && <Label>{setUpText}</Label>}
             <Timer>{countdownText}</Timer>
         </Wrapper>
     );

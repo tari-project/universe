@@ -2,13 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNodeStore } from '@app/store/useNodeStore';
 import { useTranslation } from 'react-i18next';
 import { useSetupStore } from '@app/store/useSetupStore';
-import { getNodeType } from './Progress';
 
 export const useProgressCountdown = () => {
     const { t } = useTranslation('setup-progresses');
     const isNodePhaseCompleted = useSetupStore((state) => Boolean(state.node_phase_setup_payload?.is_complete));
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
-    const nodeType = useNodeStore((s) => getNodeType(s.node_type));
+    const nodeType = useNodeStore((s) => s.node_type);
 
     const [countdown, setCountdown] = useState(nodeType === 'Remote' ? 120 : 60);
 
@@ -37,7 +36,7 @@ export const useProgressCountdown = () => {
 
     useEffect(() => {
         // Only count down for remote node or local node with completed phase
-        if (nodeType === 'Remote' || isNodePhaseCompleted) {
+        if (nodeType !== 'Local' || isNodePhaseCompleted) {
             const interval = setInterval(() => {
                 setCountdown((prevCountdown) => {
                     if (prevCountdown > 0) {
@@ -66,7 +65,7 @@ export const useProgressCountdown = () => {
     };
 
     const countdownText = useMemo(() => {
-        if (nodeType !== 'Remote' && !isNodePhaseCompleted) {
+        if (nodeType === 'Local' && !isNodePhaseCompleted) {
             const hasValidEstimate =
                 (nodeSetupParams?.step === 'Header' &&
                     nodeSetupParams?.local_header_height != null &&
@@ -80,14 +79,14 @@ export const useProgressCountdown = () => {
             }
         }
 
-        if (countdown === 1) {
-            return `${countdown} ${t('second_remaining')}`;
-        }
         if (countdown > 60) {
             return `${formatTime(countdown)} ${t('remaining')}`;
         }
         if (countdown > 1) {
             return `${countdown} ${t('seconds_remaining')}`;
+        }
+        if (countdown === 1) {
+            return `${countdown} ${t('second_remaining')}`;
         }
         return t('any_moment_now');
     }, [nodeType, countdown, isNodePhaseCompleted, nodeSetupParams, t]);
