@@ -57,7 +57,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
