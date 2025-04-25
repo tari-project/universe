@@ -34,6 +34,7 @@ use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
@@ -323,11 +324,9 @@ impl NodeManager {
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
         if self.is_remote().await? {
-            wait_ready_for_node_process(&self.remote_node_watcher).await?;
             ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
         }
         if self.is_local().await? {
-            wait_ready_for_node_process(&self.local_node_watcher).await?;
             ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
         }
 
@@ -595,6 +594,7 @@ where
                 .as_ref()
                 .and_then(|watcher| watcher.adapter.get_service())
         } {
+            wait_ready_for_node_process(node_watcher).await?;
             match service.get_identity().await {
                 Ok(_) => {
                     return Ok(());
@@ -686,12 +686,22 @@ async fn monitor_local_node_sync_and_switch(
                         .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
                         .await
                     {
-                        Ok(_) => {
+                        Ok(synced_height) => {
+                            let remote_node_height = (*node_manager.remote_node_watch_rx.borrow()).block_height;
+                            if synced_height + 50 < remote_node_height {
+                                warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
+                                sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
+                                continue;
+                            }
+                            sleep(Duration::from_secs(30)).await;
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
+
                         }
-                        Err(NodeStatusMonitorError::NodeNotStarted) => {}
+                        Err(NodeStatusMonitorError::NodeNotStarted) => {
+                            info!(target: LOG_TARGET, "Local node not started, waiting...");
+                        }
                         Err(e) => {
                             error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                         }

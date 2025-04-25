@@ -63,6 +63,7 @@ pub struct WalletAdapter {
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
+    pub(crate) wallet_birthday: Option<u16>,
     completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
@@ -81,6 +82,7 @@ impl WalletAdapter {
             tcp_listener_port,
             grpc_port,
             state_broadcast,
+            wallet_birthday: None,
             completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
@@ -251,7 +253,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 2 {
+                                    if zero_scanned_height_count >= 10 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }
@@ -364,6 +366,16 @@ impl ProcessAdapter for WalletAdapter {
                     .ok_or_else(|| anyhow::anyhow!("Base node address not set"))?
             ),
         ];
+
+        match self.wallet_birthday {
+            Some(wallet_birthday) => {
+                args.push("--birthday".to_string());
+                args.push(wallet_birthday.to_string());
+            }
+            None => {
+                warn!(target: LOG_TARGET, "Wallet birthday not specified - wallet will scan from genesis block");
+            }
+        }
 
         let peer_data_folder = working_dir
             .join(Network::get_current_or_user_setting_or_default().to_string())
