@@ -2,7 +2,9 @@
   "confirmation-message": "Ihre Transaktion wurde übermittelt!\nSie wird in Ihrer Historie angezeigt, nachdem einige Blöcke gemined wurden.",
   "empty-tx": "Keine Transaktionen gefunden",
   "history": {
-    "label-rewards": "Meine Belohnungen"
+    "label-rewards": "Meine Belohnungen",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "Mein Tari",
   "new": "Neu",

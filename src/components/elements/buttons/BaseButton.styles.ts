@@ -112,6 +112,11 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     padding: 0 8px;
                     font-size: 10px;
                 `;
+            case 'smaller':
+                return css`
+                    padding: 4px 12px;
+                    font-size: 12px;
+                `;
             case 'small':
                 return css`
                     padding: 6px 12px;

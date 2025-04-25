@@ -2,7 +2,9 @@
   "confirmation-message": "Ваша транзакция отправлена!\nОна появится в вашей истории после добычи нескольких блоков.",
   "empty-tx": "Транзакции не найдены",
   "history": {
-    "label-rewards": "Мои награды"
+    "label-rewards": "Мои награды",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "Мой Tari",
   "new": "Новый",

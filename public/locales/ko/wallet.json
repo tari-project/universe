@@ -2,7 +2,9 @@
   "confirmation-message": "거래가 제출되었습니다!\n몇 개의 블록을 채굴한 후 기록에 표시됩니다.",
   "empty-tx": "거래를 찾을 수 없음",
   "history": {
-    "label-rewards": "내 보상"
+    "label-rewards": "내 보상",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "내 Tari",
   "new": "새로운",

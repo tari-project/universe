@@ -2,7 +2,9 @@
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
-    "label-rewards": "Ödüllerim"
+    "label-rewards": "Ödüllerim",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "Benim Tari",
   "new": "Yeni",

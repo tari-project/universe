@@ -2,7 +2,9 @@
   "confirmation-message": "Twoja transakcja została przesłana!\nPojawi się w historii po wykopaniu kilku bloków.",
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
-    "label-rewards": "Moje nagrody"
+    "label-rewards": "Moje nagrody",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "Moje Tari",
   "new": "Nowy",
