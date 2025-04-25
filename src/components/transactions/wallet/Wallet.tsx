@@ -21,7 +21,10 @@ import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { BuyTariButton, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
+
 import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions.ts';
+import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+
 
 interface Props {
     section: string;
@@ -33,10 +36,11 @@ const environment = import.meta.env.MODE;
 const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const { t } = useTranslation(['wallet', 'common', 'sidebar']);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-    const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
-
+    const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const displayAddress = truncateMiddle(walletAddress, 4);
+
+    const { isWalletScanning } = useTariBalance();
 
     return (
         <Wrapper>
@@ -62,6 +66,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                             onClick={() => setSection('send')}
                             $isActive={section === 'send'}
                             aria-selected={section === 'send'}
+                            disabled={isWalletScanning}
                         >
                             <NavButtonContent>
                                 <SendSVG />

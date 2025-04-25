@@ -381,14 +381,9 @@ impl NodeManager {
         Err(anyhow::anyhow!("grpc_address not set"))
     }
 
-    pub async fn check_if_is_orphan_chain(
-        &self,
-        report_to_sentry: bool,
-    ) -> Result<bool, anyhow::Error> {
+    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
         let current_service = self.get_current_service().await?;
-        current_service
-            .check_if_is_orphan_chain(report_to_sentry)
-            .await
+        current_service.check_if_is_orphan_chain().await
     }
 
     pub async fn list_connected_peers(&self) -> Result<Vec<String>, anyhow::Error> {
