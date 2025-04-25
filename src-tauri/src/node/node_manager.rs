@@ -198,19 +198,19 @@ impl NodeManager {
         }
 
         let node_type = self.get_node_type().await?;
-        if matches!(node_type, NodeType::RemoteUntilLocal) {
-            self.switch_to_local_when_synced(shutdown_signal.clone(), app_handle)
-                .await?;
-        }
         start_status_forwarding_thread(
             self.clone(),
             self.base_node_watch_tx.clone(),
             self.local_node_watch_rx.clone(),
             self.remote_node_watch_rx.clone(),
-            shutdown_signal,
+            shutdown_signal.clone(),
         )
         .await?;
         self.wait_ready().await?;
+        if matches!(node_type, NodeType::RemoteUntilLocal) {
+            self.switch_to_local_when_synced(shutdown_signal, app_handle)
+                .await?;
+        }
 
         Ok(())
     }
