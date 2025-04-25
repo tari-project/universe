@@ -1,40 +1,10 @@
 import { styled } from 'styled-components';
-import * as motion from 'motion/react-m';
-
-export const WalletConnectionOverlay = styled(motion.div)`
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    background-color: rgba(0, 0, 0, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
-
-export const WalletConnectionsContainer = styled.div`
-    max-height: calc(100vh - 20px);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    background: rgba(255, 255, 255, 0.7);
-    box-shadow: 0px 4px 74px 0px #00000026;
-    backdrop-filter: blur(50px);
-    border-radius: 20px;
-    padding: 20px;
-    min-width: 400px;
-    min-height: 340px;
-    overflow-x: hidden;
-`;
 
 export const WalletConnectHeader = styled.div`
     margin-bottom: 20px;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 21px;
-    leading-trim: Cap height;
     line-height: 31px;
     color: black;
     padding-left: 15px;
@@ -43,31 +13,13 @@ export const WalletConnectHeader = styled.div`
     align-items: center;
 `;
 
-export const TopArea = styled.div`
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-`;
-
-export const IconContainer = styled.div`
-    color: black;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.5);
-`;
-
 export const ContentWrapper = styled.div`
     display: flex;
     flex-direction: column;
     background: white;
     border-radius: 24px;
     padding: 24px;
-    min-width: 480px;
+    width: 100%;
 `;
 
 export const ConnectButton = styled.button`
@@ -79,7 +31,7 @@ export const ConnectButton = styled.button`
     background: white;
     color: black;
     gap: 16px;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 14px;
     line-height: 100%;
@@ -101,7 +53,6 @@ export const Divider = styled.div`
 
 export const WalletAddress = styled.div`
     color: black;
-    ellipsis: true;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

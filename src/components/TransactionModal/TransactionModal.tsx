@@ -35,13 +35,11 @@ export default function TransactionModal({ show, title, children, handleBack, ha
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                     >
-                        {Boolean(title) && (
-                            <TopWrapper>
-                                <Title>{title}</Title>
-                                {backIcon}
-                                {closeIcon}
-                            </TopWrapper>
-                        )}
+                        <TopWrapper>
+                            {title ? <Title>{title}</Title> : <div />}
+                            {backIcon}
+                            {closeIcon}
+                        </TopWrapper>
 
                         {children}
                     </BoxWrapper>

@@ -1,4 +1,4 @@
-import { ContentWrapper, WalletAddress, WalletConnectHeader } from '../../WalletConnections.style';
+import { ContentWrapper, WalletAddress } from '../../WalletConnections.style';
 import { useDisconnect } from '@reown/appkit/react';
 import MMFox from '../../icons/mm-fox';
 import { useAccount, useBalance } from 'wagmi';
@@ -53,7 +53,6 @@ export const WalletContents = () => {
 
     return (
         <WalletContentsContainer>
-            <WalletConnectHeader>{'Wallet connected'}</WalletConnectHeader>
             <ConnectedWalletWrapper>
                 <WalletButton variant="error" onClick={() => disconnect()}>
                     {'Disconnect'}
