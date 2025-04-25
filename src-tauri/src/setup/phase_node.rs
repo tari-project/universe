@@ -54,6 +54,7 @@ use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
 const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
+const LOCAL_NODE_SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 60); // 60 Minutes
 
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseOutput {}
@@ -126,7 +127,14 @@ impl SetupPhaseImpl for NodeSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
 
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
+            let state = self.app_handle.state::<UniverseAppState>();
+            let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
+            let timeout_duration = if is_local_node {
+                LOCAL_NODE_SETUP_TIMEOUT_DURATION
+            } else {
+                SETUP_TIMEOUT_DURATION
+            };
+            let setup_timeout = tokio::time::sleep(timeout_duration);
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
                 select! {
