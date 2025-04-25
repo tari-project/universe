@@ -28,6 +28,7 @@ use tari_common::configuration::Network;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
+use crate::node::node_manager::NodeType;
 use crate::{
     ab_test_selector::ABTestSelector, app_config::AirdropTokens, events_manager::EventsManager,
     internal_wallet::generate_password, AppConfig,
@@ -60,6 +61,7 @@ pub struct ConfigCoreContent {
     last_changelog_version: Version,
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
+    node_type: NodeType,
 }
 
 impl Default for ConfigCoreContent {
@@ -99,6 +101,7 @@ impl Default for ConfigCoreContent {
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
             remote_base_node_address,
+            node_type: NodeType::Local,
         }
     }
 }

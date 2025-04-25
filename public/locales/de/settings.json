@@ -74,6 +74,8 @@
   "monero-seed-words": "Monero Seed-Wörter",
   "network": "Netzwerk",
   "no-entry-guard": "Kein Eingangswächter verbunden!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Verbindungsadresse",
   "node-public-address": "Öffentliche Adresse",
   "node-public-key": "Öffentlicher Schlüssel",

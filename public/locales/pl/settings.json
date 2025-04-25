@@ -75,6 +75,8 @@
   "monero-seed-words": "Słowa kluczowe Monero",
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Adres połączenia",
   "node-public-address": "Adres publiczny",
   "node-public-key": "Klucz publiczny",
