@@ -27,7 +27,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
@@ -64,7 +64,7 @@ pub enum NodeManagerError {
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
     Local,
     Remote,
@@ -110,21 +110,21 @@ impl NodeManager {
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
         let mut local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> = None;
-        if node_type.is_local() {
-            local_node_watcher = Some(construct_process_watcher(
-                stats_broadcast.clone(),
-                local_node_adapter.clone(),
-                node_type.is_local(),
-            ));
-        }
+        // if node_type.is_local() {
+        local_node_watcher = Some(construct_process_watcher(
+            stats_broadcast.clone(),
+            local_node_adapter.clone(),
+            node_type.is_local(),
+        ));
+        // }
         let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
-        if node_type.is_remote() {
-            remote_node_watcher = Some(construct_process_watcher(
-                stats_broadcast,
-                remote_node_adapter.clone(),
-                node_type.is_local(),
-            ));
-        }
+        // if node_type.is_remote() {
+        remote_node_watcher = Some(construct_process_watcher(
+            stats_broadcast,
+            remote_node_adapter.clone(),
+            node_type.is_local(),
+        ));
+        // }
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => Box::new(local_node_adapter),
@@ -243,6 +243,11 @@ impl NodeManager {
             }
         }
         Ok(())
+    }
+
+    pub async fn set_node_type(&self, new_node_type: NodeType) {
+        let mut node_type = self.node_type.write().await;
+        *node_type = new_node_type;
     }
 
     async fn switch_to_local_when_synced(
