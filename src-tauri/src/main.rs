@@ -985,7 +985,6 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
         // This value is later overriden when retrieved from config
         NodeType::Local,
         base_node_watch_tx,

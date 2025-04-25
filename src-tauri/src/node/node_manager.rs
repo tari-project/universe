@@ -107,22 +107,18 @@ impl NodeManager {
         remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
-        let mut local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> = None;
-        // if node_type.is_local() {
-        local_node_watcher = Some(construct_process_watcher(
-            stats_broadcast.clone(),
-            local_node_adapter.clone(),
-            node_type.is_local(),
-        ));
-        // }
-        let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
-        // if node_type.is_remote() {
-        remote_node_watcher = Some(construct_process_watcher(
-            stats_broadcast,
-            remote_node_adapter.clone(),
-            node_type.is_local(),
-        ));
-        // }
+        let local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> =
+            Some(construct_process_watcher(
+                stats_broadcast.clone(),
+                local_node_adapter.clone(),
+                node_type.is_local(),
+            ));
+        let remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> =
+            Some(construct_process_watcher(
+                stats_broadcast,
+                remote_node_adapter.clone(),
+                node_type.is_local(),
+            ));
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => Box::new(local_node_adapter),
