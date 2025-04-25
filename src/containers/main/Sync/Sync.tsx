@@ -16,7 +16,7 @@ import {
 
 export default function Sync() {
     const isMac = type() === 'macos';
-    const videoSrc = `/assets/video/coin_cube.${isMac ? 'mov' : 'webm'}`;
+    const videoSrc = `/assets/video/coin_loader.${isMac ? 'mov' : 'webm'}`;
     return (
         <Wrapper>
             <Content>

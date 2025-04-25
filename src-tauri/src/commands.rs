@@ -40,6 +40,7 @@ use crate::gpu_miner::EngineType;
 use crate::gpu_miner_adapter::{GpuMinerStatus, GpuNodeSource};
 use crate::gpu_status_file::GpuStatus;
 use crate::internal_wallet::{InternalWallet, PaperWalletConfig};
+use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
@@ -1758,6 +1759,38 @@ pub fn validate_minotari_amount(
 
 #[tauri::command]
 pub async fn trigger_phases_restart(app_handle: tauri::AppHandle) -> Result<(), InvokeError> {
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_node_type(
+    mut node_type: NodeType,
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), InvokeError> {
+    // map LocalAfterRemote or unknown value to Local
+    if node_type != NodeType::Local
+        && node_type != NodeType::RemoteUntilLocal
+        && node_type != NodeType::Remote
+    {
+        node_type = NodeType::Local;
+    }
+
+    info!(target: LOG_TARGET, "[set_node_type] with new node type: {:?}", node_type);
+    ConfigCore::update_field_requires_restart(
+        ConfigCoreContent::set_node_type,
+        node_type.clone(),
+        vec![SetupPhase::Wallet, SetupPhase::Node, SetupPhase::Unknown],
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+
+    state.node_manager.set_node_type(node_type.clone()).await;
+
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)
         .await;

@@ -26,11 +26,11 @@ import {
 } from '@floating-ui/react';
 import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 
-export interface SelectOption {
+export interface SelectOption<T = string> {
     label: string;
     selectedLabel?: string;
     iconSrc?: string;
-    value: string;
+    value: T;
 }
 
 interface Props {

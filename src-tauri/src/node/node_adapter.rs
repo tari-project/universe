@@ -38,7 +38,7 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::sync::atomic::AtomicU64;
-use std::sync::Arc;
+use std::sync::{Arc, Once};
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
@@ -156,14 +156,14 @@ impl NodeAdapterService {
         progress_params_tx: &watch::Sender<HashMap<String, String>>,
         progress_percentage_tx: &watch::Sender<f64>,
         shutdown_signal: ShutdownSignal,
-    ) -> Result<(), NodeStatusMonitorError> {
+    ) -> Result<u64, NodeStatusMonitorError> {
         let mut client = BaseNodeGrpcClient::connect(self.connection_address.clone())
             .await
             .map_err(|_e| NodeStatusMonitorError::NodeNotStarted)?;
 
         loop {
             if shutdown_signal.is_triggered() {
-                break Ok(());
+                return Ok(0);
             }
 
             let tip = client
@@ -174,36 +174,9 @@ impl NodeAdapterService {
                 .get_sync_progress(Empty {})
                 .await
                 .map_err(|e| NodeStatusMonitorError::UnknownError(e.into()))?;
+
             let tip_res = tip.into_inner();
             let sync_progress = sync_progress.into_inner();
-            if tip_res.initial_sync_achieved {
-                if sync_progress.local_height >= sync_progress.tip_height {
-                    break Ok(());
-                } else {
-                    // Report to sentry that we have initial sync achieved but local height is lower than tip height
-                    let error_msg =
-                        "Initial sync achieved but local height is lower than tip height"
-                            .to_string();
-                    error!(target: LOG_TARGET, "{}", error_msg);
-                    let extra = vec![
-                        (
-                            "local_height".to_string(),
-                            json!(sync_progress.local_height.to_string()),
-                        ),
-                        (
-                            "tip_height".to_string(),
-                            json!(sync_progress.tip_height.to_string()),
-                        ),
-                    ];
-                    sentry::capture_event(Event {
-                        message: Some(error_msg),
-                        level: sentry::Level::Error,
-                        culprit: Some("node-sync-inconsistency".to_string()),
-                        extra: extra.into_iter().collect(),
-                        ..Default::default()
-                    });
-                }
-            }
 
             let mut progress_params: HashMap<String, String> = HashMap::new();
             let mut percentage = 0f64;
@@ -280,6 +253,15 @@ impl NodeAdapterService {
             progress_percentage_tx.send(percentage).ok();
             progress_params_tx.send(progress_params).ok();
 
+            if tip_res.initial_sync_achieved {
+                info!(target: LOG_TARGET, "Initial sync achieved");
+                let tip_height = match tip_res.metadata {
+                    Some(metadata) => metadata.best_block_height,
+                    None => 0,
+                };
+                return Ok(tip_height);
+            }
+
             tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
         }
     }
@@ -318,10 +300,8 @@ impl NodeAdapterService {
         Ok(connected_peers)
     }
 
-    pub async fn check_if_is_orphan_chain(
-        &self,
-        report_to_sentry: bool,
-    ) -> Result<bool, anyhow::Error> {
+    pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
+        static REPORT_TO_SENTRY: Once = Once::new();
         let BaseNodeStatus {
             is_synced,
             block_height: local_tip,
@@ -352,23 +332,28 @@ impl NodeAdapterService {
                 .iter()
                 .any(|local_block| block_scan_block.1 == local_block.1)
             {
-                if report_to_sentry {
+                let local_block = local_blocks.iter().find(|b| b.0 == block_scan_block.0);
+                error!(target: LOG_TARGET, "Miner is stuck on orphan chain. Block at height: {} and hash: {} does not exist locally", block_scan_block.0, block_scan_block.1);
+                if let Some(local_block) = local_block {
+                    error!(target: LOG_TARGET, "Local block at height: {} and hash: {}", local_block.0, local_block.1);
+                }
+                REPORT_TO_SENTRY.call_once(|| {
                     let error_msg = "Orphan chain detected".to_string();
-                    let extra = vec![
-                        (
-                            "block_scan_block_height".to_string(),
-                            json!(block_scan_block.0.to_string()),
-                        ),
-                        (
-                            "block_scan_block_hash".to_string(),
-                            json!(block_scan_block.1.clone()),
-                        ),
-                        (
-                            "block_scan_tip_height".to_string(),
-                            json!(block_scan_tip.to_string()),
-                        ),
-                        ("local_tip_height".to_string(), json!(local_tip.to_string())),
+                    let mut extra = vec![
+                        ("block_scan_block_height", block_scan_block.0.to_string()),
+                        ("block_scan_block_hash", block_scan_block.1.clone()),
+                        ("block_scan_tip_height", block_scan_tip.to_string()),
+                        ("local_tip_height", local_tip.to_string()),
                     ];
+
+                    if let Some(local_block) = local_block {
+                        extra.push(("local_block_height", local_block.0.to_string()));
+                        extra.push(("local_block_hash", local_block.1.clone()));
+                    };
+                    let extra = extra
+                        .into_iter()
+                        .map(|(k, v)| (k.to_string(), json!(v)))
+                        .collect::<Vec<_>>();
                     sentry::capture_event(Event {
                         message: Some(error_msg),
                         level: sentry::Level::Error,
@@ -376,7 +361,7 @@ impl NodeAdapterService {
                         extra: extra.into_iter().collect(),
                         ..Default::default()
                     });
-                }
+                });
                 return Ok(true);
             }
         }
