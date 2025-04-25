@@ -21,6 +21,7 @@
   "resources": "Resources",
   "restart": "Restart",
   "seconds": "seconds",
+  "send-logs": "Send Logs",
   "sent": "Sent",
   "shutting-down": "Shutting down..",
   "submit": "Submit",
