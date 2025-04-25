@@ -47,7 +47,10 @@ pub struct ChanneledStepUpdate {
 impl ChanneledStepUpdate {
     pub async fn send_update(&self, params: HashMap<String, String>, current_step_percentage: f64) {
         let resolved_percentage = self.step_percentage
-            + (self.next_step_percentage.unwrap_or(100.0) - self.step_percentage)
+            + (self
+                .next_step_percentage
+                .unwrap_or(100.0 * (1.0 - self.step.get_phase_percentage_multiplyer()))
+                - self.step_percentage)
                 * current_step_percentage;
 
         EventsManager::handle_progress_tracker_update(

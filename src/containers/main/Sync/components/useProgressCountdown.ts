@@ -9,7 +9,7 @@ export const useProgressCountdown = () => {
     const nodeSetupParams = useSetupStore((state) => state.node_phase_setup_payload?.title_params);
     const nodeType = useNodeStore((s) => s.node_type);
 
-    const [countdown, setCountdown] = useState(nodeType === 'Remote' ? 120 : 60);
+    const [countdown, setCountdown] = useState(nodeType !== 'Local' ? 120 : 60);
 
     useEffect(() => {
         if (nodeType === 'Local') {

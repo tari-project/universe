@@ -114,14 +114,14 @@ impl ProgressStep for ProgressSetupNodePlan {
 
     fn get_progress_weight(&self) -> u8 {
         match self {
-            ProgressSetupNodePlan::BinariesTor => 2,
-            ProgressSetupNodePlan::BinariesNode => 2,
+            ProgressSetupNodePlan::BinariesTor => 1,
+            ProgressSetupNodePlan::BinariesNode => 1,
             ProgressSetupNodePlan::StartTor => 1,
             ProgressSetupNodePlan::StartingNode => 1,
-            ProgressSetupNodePlan::WaitingForInitialSync => 1,
-            ProgressSetupNodePlan::WaitingForHeaderSync => 1,
-            ProgressSetupNodePlan::WaitingForBlockSync => 1,
-            ProgressSetupNodePlan::Done => 1,
+            ProgressSetupNodePlan::WaitingForInitialSync => 2,
+            ProgressSetupNodePlan::WaitingForHeaderSync => 2,
+            ProgressSetupNodePlan::WaitingForBlockSync => 4,
+            ProgressSetupNodePlan::Done => 6,
         }
     }
 
@@ -359,10 +359,10 @@ impl ProgressPlans {
     pub fn get_phase_percentage_multiplyer(&self) -> f64 {
         match self {
             ProgressPlans::Core(_) => 0.2,
-            ProgressPlans::Node(_) => 0.1,
-            ProgressPlans::Hardware(_) => 0.3,
+            ProgressPlans::Node(_) => 0.4,
+            ProgressPlans::Hardware(_) => 0.1,
             ProgressPlans::Wallet(_) => 0.1,
-            ProgressPlans::Unknown(_) => 0.3,
+            ProgressPlans::Unknown(_) => 0.1,
         }
     }
 
@@ -370,9 +370,9 @@ impl ProgressPlans {
         match self {
             ProgressPlans::Core(_) => 0.0,
             ProgressPlans::Node(_) => 20.0,
-            ProgressPlans::Hardware(_) => 30.0,
-            ProgressPlans::Wallet(_) => 60.0,
-            ProgressPlans::Unknown(_) => 70.0,
+            ProgressPlans::Hardware(_) => 60.0,
+            ProgressPlans::Wallet(_) => 80.0,
+            ProgressPlans::Unknown(_) => 90.0,
         }
     }
 }

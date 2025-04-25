@@ -272,7 +272,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
         );
         let wait_for_block_sync_tracker = progress_stepper.channel_step_range_updates(
             ProgressPlans::Node(ProgressSetupNodePlan::WaitingForBlockSync),
-            None,
+            Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
         );
 
         TasksTrackers::current()
