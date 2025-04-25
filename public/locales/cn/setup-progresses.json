@@ -1,6 +1,7 @@
 {
   "any_moment_now": "随时",
   "block-sync": "Syncing blocks",
+  "calculating_time": "Calculating time remaining...",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
@@ -21,6 +22,7 @@
   "phase-unknown-critical-problem-title": "挖矿设置失败",
   "phase-wallet-critical-problem-description": "钱包设置对应用程序至关重要。请尝试重新启动应用程序。如果问题仍然存在，请联系支持。",
   "phase-wallet-critical-problem-title": "钱包设置失败",
+  "remaining": "remaining",
   "second_remaining": "剩余秒数",
   "seconds_remaining": "剩余秒数",
   "title": {
