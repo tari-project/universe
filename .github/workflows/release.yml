@@ -283,10 +283,12 @@ jobs:
             # release
             export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
             export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
+            export TARI_UNIVERSE_UPGRADE_CODE=ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37
           else
             # Beta / Other
             export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
             export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{ env.BETA_STRING }} - ${{ env.BETA_DATE }}"
+            export TARI_UNIVERSE_UPGRADE_CODE=ab60939d-f2b8-5b6e-a7af-bd0d5cf13e21
           fi
           export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
@@ -295,6 +297,7 @@ jobs:
           echo "TARI_UNIVERSE_BUNDLER_NAME=${TARI_UNIVERSE_BUNDLER_NAME}" >> $GITHUB_ENV
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME is ${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}"
           echo "TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME=${TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME}" >> $GITHUB_ENV
+          echo "TARI_UNIVERSE_UPGRADE_CODE is ${TARI_UNIVERSE_UPGRADE_CODE}"
 
           dotnet tool install --global wix --version 5.0.2
           wix extension add WixToolset.Util.wixext/5.0.2
