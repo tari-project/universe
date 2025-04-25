@@ -8,7 +8,7 @@ import { useAppStateStore } from '@app/store/appStateStore';
 import { invoke } from '@tauri-apps/api/core';
 
 import { memo, useCallback, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
 const CriticalProblemDialog = memo(function CriticalProblemDialog() {
@@ -69,7 +69,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                 </Stack>
             );
         }
-        return isSubmittingLogs ? <CircularProgress /> : t('send-logs');
+        return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
     }, [logsSubmissionId, isSubmittingLogs, isCopied, t]);
 
     return (
