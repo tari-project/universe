@@ -31,6 +31,8 @@ use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 // use log::warn;
 use reqwest::Client;
 use serde_json::json;
@@ -150,7 +152,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
         ];
 
-        for node in &config.monero_nodes {
+        let shuffled_nodes = &mut config.monero_nodes.clone();
+        shuffled_nodes.shuffle(&mut thread_rng());
+        for node in shuffled_nodes {
             args.push("-p".to_string());
             args.push(format!("merge_mining_proxy.monerod_url={}", node));
         }
