@@ -121,7 +121,7 @@ export const Swap = () => {
     return (
         <>
             <WalletConnectHeader>
-                <span>{'Review'}</span>
+                <span />
                 <SelectedChain>
                     {activeChainIcon}
                     <SelectedChainInfo>

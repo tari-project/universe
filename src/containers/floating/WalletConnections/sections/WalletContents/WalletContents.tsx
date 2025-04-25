@@ -53,7 +53,6 @@ export const WalletContents = () => {
 
     return (
         <WalletContentsContainer>
-            <WalletConnectHeader>{'Wallet connected'}</WalletConnectHeader>
             <ConnectedWalletWrapper>
                 <WalletButton variant="error" onClick={() => disconnect()}>
                     {'Disconnect'}
