@@ -1,6 +1,7 @@
 {
   "any_moment_now": "D\"un moment à l\"autre",
   "block-sync": "Syncing blocks",
+  "calculating_time": "Calculating time remaining...",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
@@ -21,6 +22,7 @@
   "phase-unknown-critical-problem-title": "Échec de la configuration du minage",
   "phase-wallet-critical-problem-description": "La configuration du portefeuille est essentielle pour l\"application. Veuillez essayer de redémarrer l\"application. Si le problème persiste, veuillez contacter le support.",
   "phase-wallet-critical-problem-title": "Échec de la configuration du portefeuille",
+  "remaining": "remaining",
   "second_remaining": "seconde restante",
   "seconds_remaining": "secondes restantes",
   "title": {

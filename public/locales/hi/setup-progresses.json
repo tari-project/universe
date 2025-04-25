@@ -1,6 +1,7 @@
 {
   "any_moment_now": "किसी भी क्षण",
   "block-sync": "Syncing blocks",
+  "calculating_time": "Calculating time remaining...",
   "header-sync": "Syncing headers",
   "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
   "network-peers": "Connecting to network peers",
@@ -21,6 +22,7 @@
   "phase-unknown-critical-problem-title": "माइनिंग सेटअप विफल",
   "phase-wallet-critical-problem-description": "वॉलेट सेटअप एप्लिकेशन के लिए महत्वपूर्ण है। कृपया एप्लिकेशन को पुनः आरंभ करने का प्रयास करें। यदि समस्या बनी रहती है, तो कृपया समर्थन से संपर्क करें।",
   "phase-wallet-critical-problem-title": "वॉलेट सेटअप विफल",
+  "remaining": "remaining",
   "second_remaining": "सेकंड शेष",
   "seconds_remaining": "सेकंड शेष",
   "title": {

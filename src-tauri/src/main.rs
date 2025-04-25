@@ -57,7 +57,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -975,8 +974,6 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let shutdown = Shutdown::new();
-
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
@@ -988,7 +985,6 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
         // This value is later overriden when retrieved from config
         NodeType::Local,
         base_node_watch_tx,

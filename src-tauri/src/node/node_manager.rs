@@ -90,7 +90,6 @@ pub struct NodeManager {
     local_node_watcher: Arc<RwLock<Option<ProcessWatcher<LocalNodeAdapter>>>>,
     remote_node_watcher: Arc<RwLock<Option<ProcessWatcher<RemoteNodeAdapter>>>>,
     current_adapter: Arc<RwLock<Box<dyn NodeAdapter + Send + Sync>>>,
-    shutdown: ShutdownSignal,
     base_node_watch_tx: watch::Sender<BaseNodeStatus>,
     local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
@@ -102,29 +101,24 @@ impl NodeManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
         local_node_adapter: LocalNodeAdapter,
         remote_node_adapter: RemoteNodeAdapter,
-        shutdown: ShutdownSignal,
         node_type: NodeType,
         base_node_watch_tx: watch::Sender<BaseNodeStatus>,
         local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
         remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
-        let mut local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> = None;
-        // if node_type.is_local() {
-        local_node_watcher = Some(construct_process_watcher(
-            stats_broadcast.clone(),
-            local_node_adapter.clone(),
-            node_type.is_local(),
-        ));
-        // }
-        let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
-        // if node_type.is_remote() {
-        remote_node_watcher = Some(construct_process_watcher(
-            stats_broadcast,
-            remote_node_adapter.clone(),
-            node_type.is_local(),
-        ));
-        // }
+        let local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> =
+            Some(construct_process_watcher(
+                stats_broadcast.clone(),
+                local_node_adapter.clone(),
+                node_type.is_local(),
+            ));
+        let remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> =
+            Some(construct_process_watcher(
+                stats_broadcast,
+                remote_node_adapter.clone(),
+                node_type.is_local(),
+            ));
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => Box::new(local_node_adapter),
@@ -136,7 +130,6 @@ impl NodeManager {
             local_node_watcher: Arc::new(RwLock::new(local_node_watcher)),
             remote_node_watcher: Arc::new(RwLock::new(remote_node_watcher)),
             current_adapter: Arc::new(RwLock::new(current_adapter)),
-            shutdown,
             base_node_watch_tx,
             local_node_watch_rx,
             remote_node_watch_rx,
@@ -297,13 +290,14 @@ impl NodeManager {
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
                 .wait_synced(
                     progress_params_tx,
                     progress_percentage_tx,
-                    self.shutdown.clone(),
+                    shutdown_signal.clone(),
                 )
                 .await
             {
@@ -677,13 +671,14 @@ async fn monitor_local_node_sync_and_switch(
             info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
         }
         _ = async {
+            let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for _ in 0..100 {
                 if let Some(local_node_service) = {
                     let local_node_watcher = node_manager.local_node_watcher.read().await;
                     local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_service())
                 } {
                     match local_node_service
-                        .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
+                        .wait_synced(&progress_params_tx, &progress_percentage_tx, shutdown_signal.clone())
                         .await
                     {
                         Ok(synced_height) => {
