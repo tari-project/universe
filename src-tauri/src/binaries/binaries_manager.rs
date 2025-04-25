@@ -579,4 +579,41 @@ impl BinaryManager {
             })
             .map_err(|e| anyhow!("Error getting binary folder. Error: {:?}", e))
     }
+
+    pub async fn delete_binary_files(&self) -> Result<(), Error> {
+        let version = self.get_used_version();
+        debug!(target: LOG_TARGET,"Deleting binary files for version: {:?}", version);
+
+        let version = match version {
+            Some(version) => version,
+            None => {
+                warn!(target: LOG_TARGET, "No version selected for binary: {:?}", self.binary_name);
+                return Err(anyhow!(format!(
+                    "No version selected for binary: {:?}",
+                    self.binary_name
+                )));
+            }
+        };
+
+        let binary_folder = self
+            .adapter
+            .get_binary_folder()
+            .map_err(|e| anyhow!("Error getting binary folder. Error: {:?}", e))?;
+
+        let version_folder = binary_folder.join(version.to_string());
+
+        if version_folder.exists() {
+            std::fs::remove_dir_all(version_folder).map_err(|e| {
+                anyhow!(
+                    "Error removing binary files for version: {:?}. Error: {:?}",
+                    version,
+                    e
+                )
+            })?;
+        } else {
+            warn!(target: LOG_TARGET, "Version folder does not exist");
+        }
+
+        Ok(())
+    }
 }

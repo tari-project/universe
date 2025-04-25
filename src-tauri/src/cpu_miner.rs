@@ -176,6 +176,15 @@ impl CpuMiner {
         Ok(())
     }
 
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let watcher = self.watcher.read().await;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "Cpu miner is running, cannot clear local files");
+        }
+
+        Ok(())
+    }
+
     pub async fn start_benchmarking(
         &mut self,
         duration: Duration,

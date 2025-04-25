@@ -259,6 +259,7 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
+    #[allow(dead_code)]
     pub async fn initialize_binary_timeout(
         &self,
         binary: Binaries,
@@ -405,5 +406,16 @@ impl BinaryResolver {
         version
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())
+    }
+
+    pub async fn remove_binary(&self, binary: Binaries) -> Result<(), Error> {
+        let manager = self
+            .managers
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
+
+        manager.delete_binary_files().await
     }
 }

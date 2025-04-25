@@ -25,7 +25,10 @@ use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::{TorAdapter, TorConfig};
 use crate::tor_control_client::TorStatus;
+use crate::APPLICATION_FOLDER_ID;
 use anyhow::anyhow;
+use dirs::data_local_dir;
+use log::error;
 use std::time::Duration;
 use std::{path::PathBuf, sync::Arc};
 use tauri_plugin_sentry::sentry;
@@ -137,6 +140,27 @@ impl TorManager {
                 }
             };
         }
+
+        Ok(())
+    }
+
+    pub async fn clear_local_files(&self) -> Result<(), anyhow::Error> {
+        let mut watcher = self.watcher.write().await;
+        watcher.stop().await?;
+        if watcher.is_running() {
+            error!(target: LOG_TARGET, "Tor is running, cannot clear local files");
+        }
+
+        if let Some(local_dir) = data_local_dir() {
+            let node_dir = local_dir.join(APPLICATION_FOLDER_ID).join("tor-data");
+
+            if node_dir.exists() {
+                std::fs::remove_dir_all(&node_dir).map_err(|e| {
+                    error!(target: LOG_TARGET, "Failed to remove tor directory: {}", e);
+                    anyhow::anyhow!("Failed to remove tor directory: {}", e)
+                })?;
+            }
+        };
 
         Ok(())
     }

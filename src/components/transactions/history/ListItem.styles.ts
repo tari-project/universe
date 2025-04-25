@@ -51,7 +51,6 @@ export const BlockInfoWrapper = styled.div`
 export const TitleWrapper = styled(Typography)`
     display: flex;
     color: ${({ theme }) => theme.palette.text.primary};
-
     font-size: 12px;
     font-weight: 500;
     line-height: 1.3;
@@ -59,7 +58,6 @@ export const TitleWrapper = styled(Typography)`
 `;
 export const TimeWrapper = styled(Typography)`
     display: flex;
-
     font-size: 11px;
     color: ${({ theme }) => theme.palette.text.secondary};
 `;

@@ -39,10 +39,9 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use tari_shutdown::ShutdownSignal;
 use tauri::{AppHandle, Manager};
-use tauri_plugin_sentry::sentry;
 use tokio::{
-    select,
     sync::{
         watch::{self, Receiver, Sender},
         Mutex,
@@ -50,11 +49,13 @@ use tokio::{
     time::{interval, Interval},
 };
 
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use super::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+    utils::setup_default_adapter::SetupDefaultAdapter,
+};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseOutput {}
 
@@ -68,22 +69,66 @@ pub struct NodeSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: NodeSetupPhaseAppConfiguration,
+    setup_configuration: SetupConfiguration,
+    status_sender: Sender<PhaseStatus>,
 }
 
 impl SetupPhaseImpl for NodeSetupPhase {
     type AppConfiguration = NodeSetupPhaseAppConfiguration;
     type SetupOutput = NodeSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle) -> Self {
+    async fn new(
+        app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle)),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
+            setup_configuration: configuration,
+            status_sender,
         }
     }
 
     fn get_app_handle(&self) -> &AppHandle {
         &self.app_handle
+    }
+
+    fn get_max_soft_restarts(&self) -> u8 {
+        self.setup_configuration.soft_retires.unwrap_or(0)
+    }
+
+    fn get_phase_dependencies(&self) -> Vec<Receiver<PhaseStatus>> {
+        self.setup_configuration
+            .listeners_for_required_phases_statuses
+            .clone()
+    }
+
+    fn get_phase_name(&self) -> SetupPhase {
+        SetupPhase::Node
+    }
+
+    async fn get_shutdown_signal(&self) -> ShutdownSignal {
+        TasksTrackers::current().node_phase.get_signal().await
+    }
+
+    fn get_status_sender(&self) -> Sender<PhaseStatus> {
+        self.status_sender.clone()
+    }
+
+    fn get_timeout_duration(&self) -> Duration {
+        self.setup_configuration
+            .setup_timeout_duration
+            .unwrap_or(Duration::from_secs(0))
+    }
+
+    async fn get_task_tracker(&self) -> tokio_util::task::TaskTracker {
+        TasksTrackers::current().node_phase.get_task_tracker().await
+    }
+
+    fn get_max_hard_restarts(&self) -> u8 {
+        self.setup_configuration.hard_retires.unwrap_or(0)
     }
 
     fn create_progress_stepper(app_handle: AppHandle) -> ProgressStepper {
@@ -118,58 +163,30 @@ impl SetupPhaseImpl for NodeSetupPhase {
         })
     }
 
-    async fn setup(
-        self: std::sync::Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
-        info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
+    async fn hard_reset(&self) -> Result<(), anyhow::Error> {
+        let state = self.app_handle.state::<UniverseAppState>();
+        let binary_resolver = BinaryResolver::current().read().await;
+        let (data_dir, _, _) = self.get_app_dirs()?;
 
-        TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
-            let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
-                select! {
-                    _ = subscriber.wait_for(|value| value.is_success()) => {}
-                    _ = shutdown_signal.wait() => {
-                        warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
-                        return;
-                    }
-                }
-            };
-            tokio::select! {
-                _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
-                        .await;
-                }
-                result = self.setup_inner() => {
-                    match result {
-                        Ok(payload) => {
-                            info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Node);
-                            let __unused = self.finalize_setup(status_sender,payload).await;
-                        }
-                        Err(error) => {
-                            error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
-                            let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
-                            sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
-                                .await;
-                        }
-                    }
-                }
-                _ = shutdown_signal.wait() => {
-                    warn!(target: LOG_TARGET, "[ {} Phase ] Setup cancelled", SetupPhase::Node);
-                }
-            };
-        });
+        state.tor_manager.clear_local_files().await?;
+        state.node_manager.clean_data_folder(&data_dir).await?;
+        state.node_manager.clear_local_files().await?;
+
+        binary_resolver.remove_binary(Binaries::Tor).await?;
+        binary_resolver
+            .remove_binary(Binaries::MinotariNode)
+            .await?;
+
+        Ok(())
+    }
+
+    async fn setup(self) {
+        let _unused = SetupDefaultAdapter::setup(self).await;
     }
 
     #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<Option<NodeSetupPhaseOutput>, Error> {
+        info!(target: LOG_TARGET, "[{}] Starting setup inner", self.get_phase_name());
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
