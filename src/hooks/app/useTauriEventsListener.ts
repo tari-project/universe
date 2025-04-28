@@ -34,7 +34,7 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
 } from '@app/store/actions/setupStoreActions';
-import { setBackgroundNodeState, setNodeTypeState } from '@app/store/useNodeStore';
+import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
@@ -161,7 +161,7 @@ const useTauriEventsListener = () => {
                             setNetworkStatus(event.payload);
                             break;
                         case `NodeTypeUpdate`:
-                            setNodeTypeState(event.payload);
+                            setNodeStoreState(event.payload);
                             break;
                         case 'RestartingPhases':
                             handleRestartingPhases(event.payload);

@@ -16,7 +16,7 @@ import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
-import { NodeType } from '../useNodeStore.ts';
+import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -284,10 +284,12 @@ export const setVisualMode = (enabled: boolean) => {
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = useConfigCoreStore.getState().node_type;
     useConfigCoreStore.setState({ node_type: nodeType });
+    updateNodeTypeForNodeStore(nodeType);
 
     invoke('set_node_type', { nodeType: nodeType }).catch((e) => {
         console.error('Could not set node type', e);
         setError('Could not change node type');
         useConfigCoreStore.setState({ node_type: previousNodeType });
+        updateNodeTypeForNodeStore(nodeType);
     });
 };
