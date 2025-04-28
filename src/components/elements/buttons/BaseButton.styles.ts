@@ -19,10 +19,12 @@ export const StyledButton = styled.button<ButtonStyleProps>`
     position: relative;
     font-size: inherit;
     transition: all 0.25s ease-in-out;
-    -webkit-user-select: none;
+    user-select: none;
+
     &:active {
         opacity: 0.8;
     }
+
     &:disabled {
         opacity: 0.5;
         pointer-events: none;
@@ -53,6 +55,34 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     &:hover:not(:disabled) {
                         background-color: ${theme.palette.action.hover.accent};
                         box-shadow: none;
+                    }
+                `;
+            case 'green':
+                return css`
+                    background-color: #019e53;
+                    color: #fff;
+
+                    &:hover:not(:disabled) {
+                        background-color: #00bc62;
+                    }
+
+                    &:disabled {
+                        opacity: 1;
+                        background-color: ${theme.palette.contrastAlpha};
+                    }
+                `;
+            case 'purple':
+                return css`
+                    background-color: ${theme.colors.blue[600]};
+                    color: #fff;
+
+                    &:hover:not(:disabled) {
+                        background-color: ${theme.colors.blue[700]};
+                    }
+
+                    &:disabled {
+                        opacity: 1;
+                        background-color: #bbb;
                     }
                 `;
             case 'primary':
@@ -91,6 +121,11 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                 return css`
                     height: 50px;
                     width: ${$fluid ? '100%' : '190px'};
+                `;
+            case 'xlarge':
+                return css`
+                    height: 60px;
+                    width: ${$fluid ? '100%' : 'min-content'};
                 `;
             case 'medium':
             default:

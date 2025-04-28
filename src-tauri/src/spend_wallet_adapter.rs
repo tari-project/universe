@@ -259,7 +259,7 @@ pub struct DummyStatusMonitor;
 #[async_trait]
 impl StatusMonitor for DummyStatusMonitor {
     // Question: What actually should be here?
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, _timeout_duration: Duration) -> HealthStatus {
         HealthStatus::Healthy
     }
 }

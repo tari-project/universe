@@ -63,6 +63,7 @@ pub struct WalletAdapter {
     pub(crate) tcp_listener_port: u16,
     pub(crate) grpc_port: u16,
     pub(crate) state_broadcast: watch::Sender<Option<WalletState>>,
+    pub(crate) wallet_birthday: Option<u16>,
     completed_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
     coinbase_transactions_stream: Mutex<Option<Streaming<GetCompletedTransactionsResponse>>>,
 }
@@ -81,6 +82,7 @@ impl WalletAdapter {
             tcp_listener_port,
             grpc_port,
             state_broadcast,
+            wallet_birthday: None,
             completed_transactions_stream: Mutex::new(None),
             coinbase_transactions_stream: Mutex::new(None),
         }
@@ -251,7 +253,7 @@ impl WalletAdapter {
                             if let Some(network) = &state.network {
                                 if matches!(network.status, ConnectivityStatus::Online(3..)) {
                                     zero_scanned_height_count += 1;
-                                    if zero_scanned_height_count >= 2 {
+                                    if zero_scanned_height_count >= 10 {
                                         warn!(target: LOG_TARGET, "Wallet scanned before gRPC service started");
                                         return Ok(state);
                                     }
@@ -365,6 +367,16 @@ impl ProcessAdapter for WalletAdapter {
             ),
         ];
 
+        match self.wallet_birthday {
+            Some(wallet_birthday) => {
+                args.push("--birthday".to_string());
+                args.push(wallet_birthday.to_string());
+            }
+            None => {
+                warn!(target: LOG_TARGET, "Wallet birthday not specified - wallet will scan from genesis block");
+            }
+        }
+
         let peer_data_folder = working_dir
             .join(Network::get_current_or_user_setting_or_default().to_string())
             .join("peer_db");
@@ -460,15 +472,24 @@ impl Clone for WalletStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for WalletStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.get_status().await {
-            Ok(s) => {
-                let _result = self.state_broadcast.send(Some(s));
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
-                HealthStatus::Unhealthy
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.get_status()).await {
+            Ok(status_result) => match status_result {
+                Ok(s) => {
+                    let _result = self.state_broadcast.send(Some(s));
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Wallet health check failed: {}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_error) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "Wallet health check timed out after {:?}", timeout_duration
+                );
+                HealthStatus::Warning
             }
         }
     }

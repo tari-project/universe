@@ -44,6 +44,7 @@ use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
+use tor_control_client::TorStatus;
 use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
@@ -56,7 +57,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -974,8 +974,6 @@ fn main() {
     ));
     let _guard = minidump::init(&client);
 
-    let shutdown = Shutdown::new();
-
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
     // and addresses once the different services have been started.
@@ -987,9 +985,8 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
-        // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        // This value is later overriden when retrieved from config
+        NodeType::Local,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
@@ -1040,7 +1037,7 @@ fn main() {
 
     let app_config_raw = AppConfig::new();
     let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
-    let (tor_watch_tx, tor_watch_rx) = watch::channel(None);
+    let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
 
@@ -1285,6 +1282,7 @@ fn main() {
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
+            commands::set_node_type
         ])
         .build(tauri::generate_context!())
         .inspect_err(

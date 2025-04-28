@@ -207,21 +207,35 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.stats_client.stats().await {
-            Ok(stats) => {
-                if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 * 10 {
-                    warn!(target: LOG_TARGET, "P2pool last gossip message was more than 10 minutes ago, health check failed");
-                    return HealthStatus::Unhealthy;
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.stats_client.stats()).await {
+            Ok(stats_result) => match stats_result {
+                Ok(stats) => {
+                    let time_since_last_gossip =
+                        EpochTime::now().as_u64() - stats.last_gossip_message.as_u64();
+                    if time_since_last_gossip > 60 * 10 {
+                        warn!(
+                            target: LOG_TARGET,
+                            "P2pool last gossip message was more than 10 minutes ago, health check warning"
+                        );
+                        return HealthStatus::Warning;
+                    }
+
+                    let _unused = self.latest_status_broadcast.send(Some(stats));
+                    HealthStatus::Healthy
                 }
-
-                let _unused = self.latest_status_broadcast.send(Some(stats));
-
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
-                HealthStatus::Unhealthy
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_err) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "P2pool health check timed out after {:?}",
+                    timeout_duration
+                );
+                HealthStatus::Warning
             }
         }
     }

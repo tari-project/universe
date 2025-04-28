@@ -206,7 +206,7 @@ pub struct TelemetryManager {
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
     p2pool_status: watch::Receiver<Option<P2poolStats>>,
-    tor_status: watch::Receiver<Option<TorStatus>>,
+    tor_status: watch::Receiver<TorStatus>,
     process_stats_collector: ProcessStatsCollector,
     node_manager: NodeManager,
 }
@@ -220,7 +220,7 @@ impl TelemetryManager {
         gpu_status: watch::Receiver<GpuMinerStatus>,
         node_status: watch::Receiver<BaseNodeStatus>,
         p2pool_status: watch::Receiver<Option<P2poolStats>>,
-        tor_status: watch::Receiver<Option<TorStatus>>,
+        tor_status: watch::Receiver<TorStatus>,
         process_stats_collector: ProcessStatsCollector,
         node_manager: NodeManager,
     ) -> Self {
@@ -351,7 +351,7 @@ async fn get_telemetry_data(
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
     p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
-    tor_latest_status: &watch::Receiver<Option<TorStatus>>,
+    tor_latest_status: &watch::Receiver<TorStatus>,
     network: Option<Network>,
     started: Instant,
     stats_collector: &ProcessStatsCollector,
@@ -377,7 +377,7 @@ async fn get_telemetry_data(
         .ok();
 
     let p2pool_stats = p2pool_latest_status.borrow().clone();
-    let tor_status = tor_latest_status.borrow().clone();
+    let tor_status = *tor_latest_status.borrow();
 
     let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
     let cpu_hash_rate = Some(cpu_miner_status.hash_rate);
@@ -454,7 +454,7 @@ async fn get_telemetry_data(
     let p2pool_enabled = *config.is_p2pool_enabled() && p2pool_stats.is_some();
     let mut extra_data = HashMap::new();
     let is_orphan = node_manager
-        .check_if_is_orphan_chain(false)
+        .check_if_is_orphan_chain()
         .await
         .unwrap_or(false);
     extra_data.insert("is_orphan".to_string(), is_orphan.to_string());
@@ -492,21 +492,22 @@ async fn get_telemetry_data(
         squad = Some(stats.squad.clone());
     }
 
-    if let Some(stats) = tor_status.as_ref() {
-        extra_data.insert(
-            "tor_bootstrap_phase".to_string(),
-            stats.bootstrap_phase.to_string(),
-        );
-        extra_data.insert(
-            "tor_is_bootstrapped".to_string(),
-            stats.is_bootstrapped.to_string(),
-        );
-        extra_data.insert(
-            "tor_network_liveness".to_string(),
-            stats.network_liveness.to_string(),
-        );
-        extra_data.insert("tor_circuit_ok".to_string(), stats.circuit_ok.to_string());
-    }
+    extra_data.insert(
+        "tor_bootstrap_phase".to_string(),
+        tor_status.bootstrap_phase.to_string(),
+    );
+    extra_data.insert(
+        "tor_is_bootstrapped".to_string(),
+        tor_status.is_bootstrapped.to_string(),
+    );
+    extra_data.insert(
+        "tor_network_liveness".to_string(),
+        tor_status.network_liveness.to_string(),
+    );
+    extra_data.insert(
+        "tor_circuit_ok".to_string(),
+        tor_status.circuit_ok.to_string(),
+    );
 
     if !all_cpus.is_empty() {
         extra_data.insert("all_cpus".to_string(), all_cpus.join(","));

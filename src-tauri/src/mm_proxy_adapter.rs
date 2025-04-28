@@ -31,6 +31,8 @@ use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 // use log::warn;
 use reqwest::Client;
 use serde_json::json;
@@ -150,10 +152,13 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
         ];
 
-        for node in &config.monero_nodes {
-            args.push("-p".to_string());
-            args.push(format!("merge_mining_proxy.monerod_url={}", node));
-        }
+        let shuffled_nodes = &mut config.monero_nodes.clone();
+        shuffled_nodes.shuffle(&mut thread_rng());
+        args.push("-p".to_string());
+        args.push(format!(
+            "merge_mining_proxy.monerod_url=[{}]",
+            shuffled_nodes.join(",")
+        ));
 
         if config.p2pool_enabled {
             args.push("-p".to_string());
@@ -200,18 +205,25 @@ pub struct MergeMiningProxyStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        if self
-            .get_version()
-            .await
-            .inspect_err(
-                |e| warn!(target: LOG_TARGET, "Failed to get version during health check: {}", e),
-            )
-            .is_ok()
-        {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Warning
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.get_version()).await {
+            Ok(result) => match result {
+                Ok(_) => HealthStatus::Healthy,
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to get version during health check: {}", e
+                    );
+                    HealthStatus::Warning
+                }
+            },
+            Err(_) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "Mmproxy Version check timed out after {:?}", timeout_duration
+                );
+                HealthStatus::Warning
+            }
         }
     }
 }

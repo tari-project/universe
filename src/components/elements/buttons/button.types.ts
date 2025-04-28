@@ -4,8 +4,8 @@ import { ThemeColourGroup } from '@app/theme/palettes/colors.ts';
 type ButtonColor = 'transparent' | 'primary' | 'secondary' | 'gradient' | 'error' | 'warning' | 'info' | 'grey';
 type ButtonBackgroundColor = 'transparent' | ThemeColourGroup;
 
-export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient';
-export type ButtonSize = 'xs' | 'small' | 'medium' | 'large';
+export type ButtonVariant = 'primary' | 'secondary' | 'outlined' | 'gradient' | 'green' | 'purple';
+export type ButtonSize = 'xs' | 'small' | 'medium' | 'large' | 'xlarge';
 
 export type IconPosition = 'end' | 'start' | 'hug';
 
