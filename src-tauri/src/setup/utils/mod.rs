@@ -20,12 +20,16 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-pub mod setup_manager;
-mod trait_setup_phase;
-mod utils;
+use std::{future::pending, time::Duration};
 
-mod phase_core;
-mod phase_hardware;
-mod phase_node;
-mod phase_unknown;
-mod phase_wallet;
+pub mod phase_builder;
+
+pub async fn conditional_sleeper(duration: Option<Duration>) -> Option<()> {
+    match duration {
+        Some(duration) => Some(tokio::time::sleep(duration).await),
+        None => {
+            pending::<()>().await;
+            None
+        }
+    }
+}
