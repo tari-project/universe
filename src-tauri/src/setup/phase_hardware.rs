@@ -56,7 +56,6 @@ use super::{
 };
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
 pub struct HardwareSetupPhaseOutput {}

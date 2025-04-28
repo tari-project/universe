@@ -41,7 +41,7 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
     time::Duration,
 };
 use tauri::{AppHandle, Manager};
