@@ -1784,12 +1784,13 @@ pub async fn set_node_type(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_node_type,
         node_type.clone(),
-        vec![SetupPhase::Wallet, SetupPhase::Node, SetupPhase::Unknown],
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
     state.node_manager.set_node_type(node_type.clone()).await;
+    EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)

@@ -6,6 +6,7 @@ export type PhaseTitle = 'setup-core' | 'setup-local-node' | 'setup-hardware' | 
 const initialState: SetupState = {
     miningUnlocked: false,
     walletUnlocked: false,
+    hardwarePhaseFinished: false,
     appUnlocked: false,
     core_phase_setup_payload: undefined,
     hardware_phase_setup_payload: undefined,

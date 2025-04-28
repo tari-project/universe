@@ -23,7 +23,7 @@
 use super::{
     phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
     phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
-    trait_setup_phase::SetupPhaseImpl,
+    trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
     configs::{
@@ -41,7 +41,8 @@ use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
+    time::Duration,
 };
 use tauri::{AppHandle, Manager};
 use tokio::{
@@ -221,47 +222,56 @@ impl SetupManager {
     }
 
     async fn setup_core_phase(&self, app_handle: AppHandle) {
-        let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
-        core_phase_setup
-            .setup(self.core_phase_status.clone(), vec![])
+        let core_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
             .await;
+        core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
-        let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-        hardware_phase_setup
-            .setup(self.hardware_phase_status.clone(), vec![])
+        let hardware_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<HardwareSetupPhase>(app_handle.clone(), self.hardware_phase_status.clone())
             .await;
+        hardware_phase_setup.setup().await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
-        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
-        node_phase_setup
-            .setup(self.node_phase_status.clone(), vec![])
+        let state = app_handle.state::<UniverseAppState>();
+        let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
+        let timeout_duration = if is_local_node {
+            Duration::from_secs(60 * 60) // 60 Minutes
+        } else {
+            Duration::from_secs(60 * 10) // 10 Minutes
+        };
+
+        let node_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(timeout_duration)
+            .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
             .await;
+        node_phase_setup.setup().await;
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
-        let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-        wallet_phase_setup
-            .setup(
-                self.wallet_phase_status.clone(),
-                vec![self.node_phase_status.subscribe()],
-            )
+        let wallet_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
+            .build::<WalletSetupPhase>(app_handle.clone(), self.wallet_phase_status.clone())
             .await;
+        wallet_phase_setup.setup().await;
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
-        let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-        unknown_phase_setup
-            .setup(
-                self.unknown_phase_status.clone(),
-                vec![
-                    self.node_phase_status.subscribe(),
-                    self.hardware_phase_status.subscribe(),
-                ],
-            )
+        let unknown_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![
+                self.node_phase_status.subscribe(),
+                self.hardware_phase_status.subscribe(),
+            ])
+            .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
             .await;
+        unknown_phase_setup.setup().await;
     }
 
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {

@@ -131,6 +131,7 @@ impl ConfigCore {
         if config.content.mmproxy_monero_nodes.is_empty() {
             warn!("Empty list of monero nodes for mmproxy found. Using default list");
             config.content.mmproxy_monero_nodes = default_monero_nodes();
+            let _unused = Self::_save_config(config.content.clone());
         }
 
         EventsManager::handle_config_core_loaded(&app_handle, config.content.clone()).await;
@@ -198,6 +199,7 @@ impl ConfigImpl for ConfigCore {
                 airdrop_tokens: old_config.airdrop_tokens(),
                 ..Default::default()
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }
