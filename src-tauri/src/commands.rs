@@ -1793,14 +1793,37 @@ pub async fn set_node_type(
         node_type = NodeType::Local;
     }
 
-    info!(target: LOG_TARGET, "[set_node_type] with new node type: {:?}", node_type);
-    ConfigCore::update_field_requires_restart(
-        ConfigCoreContent::set_node_type,
-        node_type.clone(),
-        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let prev_node_type = state
+        .node_manager
+        .get_node_type()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "[set_node_type] from {:?} to: {:?}", prev_node_type, node_type);
+
+    let is_current_local = state
+        .node_manager
+        .is_local_current()
+        .await
+        .map_err(|e| e.to_string())?;
+    if is_current_local && node_type != NodeType::Remote {
+        // No need to restart any process
+        ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type.clone())
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+
+        if node_type == NodeType::RemoteUntilLocal {
+            // Skip connection with the Remote
+            node_type = NodeType::LocalAfterRemote
+        }
+    } else {
+        ConfigCore::update_field_requires_restart(
+            ConfigCoreContent::set_node_type,
+            node_type.clone(),
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+        )
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    }
 
     state.node_manager.set_node_type(node_type.clone()).await;
     EventsManager::handle_node_type_update(&app_handle).await;
