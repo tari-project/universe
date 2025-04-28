@@ -28,22 +28,22 @@ use tari_common::configuration::Network;
 use tari_shutdown::Shutdown;
 use tauri::AppHandle;
 use tokio::{
-    sync::{broadcast, watch, RwLock},
+    sync::{broadcast, watch},
     time,
 };
 
 use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
     websocket_manager::WebsocketMessage,
-    AppConfig, BaseNodeStatus, GpuMinerStatus,
+    BaseNodeStatus, GpuMinerStatus,
 };
 const LOG_TARGET: &str = "tari::universe::websocket_events_manager";
 static INTERVAL_DURATION: std::time::Duration = Duration::from_secs(15);
 
 pub struct WebsocketEventsManager {
     app: Option<AppHandle>,
-    app_config: Arc<RwLock<AppConfig>>,
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
     node_latest_status: watch::Receiver<BaseNodeStatus>,
@@ -56,7 +56,6 @@ pub struct WebsocketEventsManager {
 
 impl WebsocketEventsManager {
     pub fn new(
-        app_config: Arc<RwLock<AppConfig>>,
         app_id: String,
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
@@ -73,7 +72,6 @@ impl WebsocketEventsManager {
             app_id,
             websocket_tx_channel: Arc::new(websocket_tx_channel),
             app: None,
-            app_config,
             close_channel_tx,
             is_started: Arc::new(Mutex::new(false)),
         }
@@ -108,7 +106,6 @@ impl WebsocketEventsManager {
             .map(|handle| handle.package_info().version.clone())
             .expect("no app version present in WebsocketEventsManager")
             .to_string();
-        let app_config_clone = self.app_config.clone();
         let websocket_tx_channel_clone = self.websocket_tx_channel.clone();
         let close_channel_tx = self.close_channel_tx.clone();
 
@@ -120,10 +117,10 @@ impl WebsocketEventsManager {
 
             tokio::spawn(async move {
                 loop {
-                    let jwt_token = app_config_clone
-                        .read()
+                    let jwt_token = ConfigCore::content()
                         .await
                         .airdrop_tokens()
+                        .clone()
                         .map(|tokens| tokens.token);
                     let mut shutdown_signal = shutdown.clone().to_signal();
                     tokio::select! {

@@ -24,7 +24,7 @@ use crate::binaries::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo,
 };
 use crate::download_utils::download_file_with_retries;
-use crate::progress_tracker::ProgressTracker;
+use crate::progress_tracker_old::ProgressTracker;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::Error;
 use async_trait::async_trait;

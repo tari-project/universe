@@ -21,7 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use std::sync::Arc;
-use tokio::time;
+use tokio::{select, time};
 
 use anyhow::anyhow;
 use log::{error, info, warn};
@@ -31,8 +31,11 @@ use tauri::{Emitter, Url};
 use tauri_plugin_updater::{Update, UpdaterExt};
 use tokio::sync::RwLock;
 
-use crate::{app_config::AppConfig, utils::system_status::SystemStatus};
-use tari_shutdown::ShutdownSignal;
+use crate::{
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    tasks_tracker::TasksTrackers,
+    utils::{app_flow_utils::FrontendReadyChannel, system_status::SystemStatus},
+};
 use tokio::time::Duration;
 const LOG_TARGET: &str = "tari::universe::updates_manager";
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -75,40 +78,43 @@ pub struct AskForUpdatePayload {
 
 #[derive(Clone)]
 pub struct UpdatesManager {
-    config: Arc<RwLock<AppConfig>>,
     update: Arc<RwLock<Option<Update>>>,
-    app_shutdown: ShutdownSignal,
 }
 
 impl UpdatesManager {
-    pub fn new(config: Arc<RwLock<AppConfig>>, app_shutdown: ShutdownSignal) -> Self {
+    pub fn new() -> Self {
         Self {
-            config,
             update: Arc::new(RwLock::new(None)),
-            app_shutdown,
         }
     }
 
     pub async fn init_periodic_updates(&self, app: tauri::AppHandle) -> Result<(), anyhow::Error> {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let app_clone = app.clone();
         let self_clone = self.clone();
 
-        tauri::async_runtime::spawn(async move {
-            let mut interval = time::interval(Duration::from_secs(3600));
-
-            loop {
-                if self_clone.app_shutdown.is_triggered() && self_clone.app_shutdown.is_triggered()
-                {
-                    break;
-                };
-
-                interval.tick().await;
-
-                if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
-                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
-                }
-            }
-        });
+        let mut interval = time::interval(Duration::from_secs(3600));
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        TasksTrackers::current()
+            .common
+            .get_task_tracker()
+            .await
+            .spawn(async move {
+                loop {
+                        select! {
+                            _ = shutdown_signal.wait() => {
+                                info!(target: LOG_TARGET, "Shutdown signal received. Stopping periodic updates.");
+                                break;
+                            }
+                            _ = interval.tick() => {
+                                info!(target: LOG_TARGET, "Periodic update check triggered.");
+                                 if let Err(e) = self_clone.try_update(app_clone.clone(), false, false).await {
+                                    error!(target: LOG_TARGET, "Error checking for updates: {:?}", e);
+                                }
+                            }
+                        }
+                    }
+                });
 
         Ok(())
     }
@@ -124,8 +130,7 @@ impl UpdatesManager {
                 let version = update.version.clone();
                 info!(target: LOG_TARGET, "try_update: Update available: {:?}", version);
                 *self.update.write().await = Some(update);
-                let is_auto_update = self.config.read().await.auto_update();
-
+                let is_auto_update = *ConfigCore::content().await.auto_update();
                 let is_screen_locked = *SystemStatus::current().get_sleep_mode_watcher().borrow();
 
                 if is_screen_locked && is_auto_update {
@@ -165,7 +170,7 @@ impl UpdatesManager {
         app: tauri::AppHandle,
         enable_downgrade: bool,
     ) -> Result<Option<Update>, anyhow::Error> {
-        let is_pre_release = self.config.read().await.pre_release();
+        let is_pre_release = *ConfigCore::content().await.pre_release();
         let updates_url = self.get_updates_url(is_pre_release);
 
         let builder = app

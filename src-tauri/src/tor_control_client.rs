@@ -23,6 +23,7 @@
 use anyhow::anyhow;
 use log::warn;
 use regex::Regex;
+use serde::Serialize;
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     net::TcpStream,
@@ -34,7 +35,7 @@ const AUTH_COMMAND: &str = "AUTHENTICATE\r\n";
 const CIRCUIT_QUERY: &str = "GETINFO status/circuit-established\r\n";
 const NETWORK_QUERY: &str = "GETINFO network-liveness\r\n";
 
-#[derive(Debug, Clone)]
+#[derive(Default, Clone, Copy, Debug, Serialize)]
 pub(crate) struct TorStatus {
     pub bootstrap_phase: u8,
     pub is_bootstrapped: bool,
@@ -103,8 +104,6 @@ impl TorControlClient {
         if let Some(response) = reader.next_line().await? {
             if response.contains("circuit-established=1") {
                 circuit_ok = true;
-            } else {
-                warn!(target: LOG_TARGET, "Circuit status not up: {}", response);
             }
             let _s250_ok = reader.next_line().await?;
         }

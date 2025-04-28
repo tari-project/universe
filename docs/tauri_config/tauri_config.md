@@ -8,9 +8,10 @@
 
 Because the [`@tari-project/tari-tower`](https://www.npmjs.com/package/@tari-project/tari-tower) package inlines its assets and has three.js x WebGL scripts, we need CSP sources for it.
 
-- `worker-src` enables dynamic script loading
+- `worker-src` enables dynamic script loading from the tower package
 - `blob:`, `'application/octet-stream'`, and `base64:` sources allow inlined textures and models
-- `script-src` and `script-src-elem`
+- `script-src` and `script-src-elem` with `'unsafe-eval'` for WebGL and dynamic script execution
+- `img-src` includes the tower package CDN for loading 3D assets
 
 ---
 
@@ -28,13 +29,18 @@ Because the [`@tari-project/tari-tower`](https://www.npmjs.com/package/@tari-pro
 - `'unsafe-inline'` in `style-src`
 - `dangerousDisableAssetCspModification` for style injection
 
-### Twitter Profile images
+### Profile Images
 
 because we added `img-src` for images (to handle the animation's inlined assets) we need to add a source for twitter (didn't want to leave it open-ended for just any images)
+We need to support profile pictures from multiple sources:
 
 - `https://*.twimg.com` - Twitter profile picture domain
+- `https://*.googleusercontent.com` - Google profile picture domain
+- `data:`, `blob:`, and `base64:` for handling inlined images
 
 ### Others worth noting i.e. don't remove
 
 - `'self'` - Local application connections
 - `tauri:` and `ipc:` - Internal Tauri and inter-process communication
+- `https:` in `default-src` and `connect-src` - Maintained for backward compatibility
+- `object-src` with `data:` and `blob:` - Required for handling binary data

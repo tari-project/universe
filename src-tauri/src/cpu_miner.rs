@@ -23,17 +23,20 @@
 use crate::app_config::MiningMode;
 use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
+use crate::configs::config_mining::ConfigMiningContent;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::xmrig::http_api::models::Summary;
 use crate::xmrig_adapter::{XmrigAdapter, XmrigNodeConnection};
-use crate::{BaseNodeStatus, CpuMinerConfig};
+use crate::BaseNodeStatus;
 use log::{debug, error, warn};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
+use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
@@ -43,11 +46,33 @@ use tokio::time::{sleep, timeout};
 const LOG_TARGET: &str = "tari::universe::cpu_miner";
 const ECO_MODE_CPU_USAGE: u32 = 30;
 
+pub struct CpuMinerConfig {
+    pub node_connection: CpuMinerConnection,
+    pub tari_address: TariAddress,
+    pub eco_mode_xmrig_options: Vec<String>,
+    pub ludicrous_mode_xmrig_options: Vec<String>,
+    pub custom_mode_xmrig_options: Vec<String>,
+    pub eco_mode_cpu_percentage: Option<u32>,
+    pub ludicrous_mode_cpu_percentage: Option<u32>,
+}
+
+impl CpuMinerConfig {
+    pub fn load_from_config_mining(&mut self, config_mining_content: &ConfigMiningContent) {
+        self.custom_mode_xmrig_options = config_mining_content.custom_mode_cpu_options().clone();
+        self.eco_mode_cpu_percentage = *config_mining_content.eco_mode_cpu_threads();
+        self.ludicrous_mode_cpu_percentage = *config_mining_content.ludicrous_mode_cpu_threads();
+        self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
+        self.ludicrous_mode_xmrig_options =
+            config_mining_content.ludicrous_mode_cpu_options().clone();
+    }
+}
+
 pub(crate) struct CpuMiner {
     watcher: Arc<RwLock<ProcessWatcher<XmrigAdapter>>>,
     cpu_miner_status_watch_tx: watch::Sender<CpuMinerStatus>,
     summary_watch_rx: watch::Receiver<Option<Summary>>,
     node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    pub benchmarked_hashrate: u64,
 }
 
 impl CpuMiner {
@@ -64,6 +89,7 @@ impl CpuMiner {
             cpu_miner_status_watch_tx,
             summary_watch_rx,
             node_status_watch_rx,
+            benchmarked_hashrate: 0,
         }
     }
 
@@ -128,12 +154,19 @@ impl CpuMiner {
                 MiningMode::Custom => cpu_miner_config.custom_mode_xmrig_options.clone(),
             };
 
+            let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+            let task_tracker = TasksTrackers::current()
+                .hardware_phase
+                .get_task_tracker()
+                .await;
+
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         }
@@ -145,12 +178,17 @@ impl CpuMiner {
 
     pub async fn start_benchmarking(
         &mut self,
-        app_shutdown: ShutdownSignal,
         duration: Duration,
         base_path: PathBuf,
         config_path: PathBuf,
         log_dir: PathBuf,
-    ) -> Result<u64, anyhow::Error> {
+    ) -> Result<(), anyhow::Error> {
+        let shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .hardware_phase
+            .get_task_tracker()
+            .await;
+
         let max_cpu_available = thread::available_parallelism();
         let max_cpu_available = match max_cpu_available {
             Ok(available_cpus) => u32::try_from(available_cpus.get()).unwrap_or(1),
@@ -165,11 +203,12 @@ impl CpuMiner {
             lock.adapter.extra_options = vec![];
 
             lock.start(
-                app_shutdown.clone(),
                 base_path.clone(),
                 config_path.clone(),
                 log_dir.clone(),
                 Binaries::Xmrig,
+                shutdown_signal.clone(),
+                task_tracker,
             )
             .await?;
         }
@@ -192,7 +231,7 @@ impl CpuMiner {
                     error!(target: LOG_TARGET, "Failed to get status for xmrig for benchmarking");
                     // Stop the miner before returning
                     self.stop().await?;
-                    return Ok(0);
+                    return Ok(());
                 }
             }
         };
@@ -203,7 +242,7 @@ impl CpuMiner {
             let mut max_hashrate = 0f64;
 
             loop {
-                if app_shutdown.is_triggered() {
+                if shutdown_signal.is_triggered() {
                     break;
                 }
 
@@ -232,7 +271,8 @@ impl CpuMiner {
         // Stop the miner
         self.stop().await?;
 
-        Ok(result)
+        self.benchmarked_hashrate = result;
+        Ok(())
     }
 
     pub async fn stop(&mut self) -> Result<(), anyhow::Error> {
@@ -248,7 +288,7 @@ impl CpuMiner {
         let lock = self.watcher.read().await;
         lock.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)
@@ -259,11 +299,11 @@ impl CpuMiner {
         let mut summary_watch_rx = self.summary_watch_rx.clone();
         let node_status_watch_rx = self.node_status_watch_rx.clone();
 
-        tauri::async_runtime::spawn(async move {
+        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
             loop {
                 select! {
                     _ = summary_watch_rx.changed() => {
-                        let node_status = node_status_watch_rx.borrow().clone();
+                        let node_status = *node_status_watch_rx.borrow();
                         let xmrig_summary = summary_watch_rx.borrow().clone();
 
                         let cpu_status = match xmrig_summary {

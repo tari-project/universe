@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import {
@@ -11,10 +10,11 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { setAllowTelemetry } from '@app/store/actions/appConfigStoreActions.ts';
+import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
 
 export default function AirdropPermissionSettings() {
     const { t } = useTranslation(['airdrop'], { useSuspense: false });
-    const allowTelemetry = useAppConfigStore((s) => s.allow_telemetry);
+    const allowTelemetry = useConfigCoreStore((s) => s.allow_telemetry);
 
     const handleChange = useCallback(async () => {
         await setAllowTelemetry(!allowTelemetry);

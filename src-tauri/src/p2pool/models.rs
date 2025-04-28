@@ -125,7 +125,7 @@ pub struct PeerInfo {
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]
 pub(crate) struct ConnectedPeerInfo {
     pub peer_id: String,
-    pub peer_info: PeerInfo,
+    pub peer_info: Option<PeerInfo>,
     pub last_grey_list_reason: Option<String>,
     pub last_ping: Option<u64>,
 }

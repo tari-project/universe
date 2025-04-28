@@ -1,4 +1,4 @@
-import { useAirdropStore, useAppStateStore } from '@app/store';
+import { useAirdropStore } from '@app/store';
 import { listen } from '@tauri-apps/api/event';
 import { useCallback, useEffect } from 'react';
 import { useHandleWsUserIdEvent } from './useHandleWsUserIdEvent';
@@ -6,6 +6,7 @@ import { GLOBAL_EVENT_NAME, WebsocketGlobalEvent, WebsocketUserEvent } from '@ap
 import { useHandleWsGlobalEvent } from './useHandleWsGlobalEvent';
 import './useSendWsMessage'; // dummy import to bypass knip
 import { initialiseSocket } from '@app/utils/socket';
+import { useSetupStore } from '@app/store/useSetupStore';
 
 export interface WebsocketEventType {
     event: string;
@@ -30,7 +31,7 @@ export default function useAirdropWebsocket() {
     const userEventHandler = useHandleWsUserIdEvent();
     const globalEventHandler = useHandleWsGlobalEvent();
     const startWebsocket = useSetupWebsocket();
-    const setupComplete = useAppStateStore((s) => s.setupComplete);
+    const setupComplete = useSetupStore((s) => s.appUnlocked);
 
     useEffect(() => {
         if (setupComplete) {
