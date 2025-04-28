@@ -1800,22 +1800,19 @@ pub async fn set_node_type(
         .map_err(|e| e.to_string())?;
     info!(target: LOG_TARGET, "[set_node_type] from {:?} to: {:?}", prev_node_type, node_type);
 
-    let is_current_local = state
-        .node_manager
-        .is_local_current()
-        .await
-        .map_err(|e| e.to_string())?;
+    let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
     if is_current_local && node_type != NodeType::Remote {
-        // No need to restart any process
+        info!(target: LOG_TARGET, "[set_node_type] Local node is already running, no restart needed for node_type: {:?}", node_type);
         ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type.clone())
             .await
             .map_err(InvokeError::from_anyhow)?;
 
         if node_type == NodeType::RemoteUntilLocal {
-            // Skip connection with the Remote
+            info!(target: LOG_TARGET, "[set_node_type] Converting RemoteUntilLocal to LocalAfterRemote since local node is running");
             node_type = NodeType::LocalAfterRemote
         }
     } else {
+        info!(target: LOG_TARGET, "[set_node_type] Restarting required phases for node_type: {:?}", node_type);
         ConfigCore::update_field_requires_restart(
             ConfigCoreContent::set_node_type,
             node_type.clone(),
