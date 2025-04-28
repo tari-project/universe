@@ -33,7 +33,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::setup_manager::SetupPhase,
+    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -44,17 +44,18 @@ use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
     sync::{
-        watch::{self, Receiver, Sender},
+        watch::{self, Sender},
         Mutex,
     },
     time::{interval, Interval},
 };
 
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use super::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+};
 
 static LOG_TARGET: &str = "tari::universe::phase_hardware";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
-const LOCAL_NODE_SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 60); // 60 Minutes
 
 #[derive(Clone, Default)]
 pub struct NodeSetupPhaseOutput {}
@@ -69,17 +70,24 @@ pub struct NodeSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: NodeSetupPhaseAppConfiguration,
+    setup_configuration: SetupConfiguration,
+    status_sender: Sender<PhaseStatus>,
 }
 
 impl SetupPhaseImpl for NodeSetupPhase {
     type AppConfiguration = NodeSetupPhaseAppConfiguration;
-    type SetupOutput = NodeSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle) -> Self {
+    async fn new(
+        app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(Self::create_progress_stepper(app_handle)),
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
+            setup_configuration: configuration,
+            status_sender,
         }
     }
 
@@ -119,23 +127,12 @@ impl SetupPhaseImpl for NodeSetupPhase {
         })
     }
 
-    async fn setup(
-        self: std::sync::Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    async fn setup(mut self) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Node);
 
         TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
-            let state = self.app_handle.state::<UniverseAppState>();
-            let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
-            let timeout_duration = if is_local_node {
-                LOCAL_NODE_SETUP_TIMEOUT_DURATION
-            } else {
-                SETUP_TIMEOUT_DURATION
-            };
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
+            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
                 select! {
                     _ = subscriber.wait_for(|value| value.is_success()) => {}
                     _ = shutdown_signal.wait() => {
@@ -145,18 +142,20 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 }
             };
             tokio::select! {
-                _ = tokio::time::sleep(timeout_duration) => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
+                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                   if result.is_some() {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Node.get_critical_problem_title()), Some(SetupPhase::Node.get_critical_problem_description()))
                         .await;
+                    }
                 }
                 result = self.setup_inner() => {
                     match result {
-                        Ok(payload) => {
+                        Ok(_) => {
                             info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Node);
-                            let __unused = self.finalize_setup(status_sender,payload).await;
+                            let __unused = self.finalize_setup().await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Node,error);
@@ -176,7 +175,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn setup_inner(&self) -> Result<Option<NodeSetupPhaseOutput>, Error> {
+    async fn setup_inner(&self) -> Result<(), Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let (data_dir, config_dir, log_dir) = self.get_app_dirs()?;
         let state = self.app_handle.state::<UniverseAppState>();
@@ -326,15 +325,11 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
             .await?;
 
-        Ok(None)
+        Ok(())
     }
 
-    async fn finalize_setup(
-        &self,
-        sender: Sender<PhaseStatus>,
-        _payload: Option<NodeSetupPhaseOutput>,
-    ) -> Result<(), Error> {
-        sender.send(PhaseStatus::Success).ok();
+    async fn finalize_setup(&self) -> Result<(), Error> {
+        self.status_sender.send(PhaseStatus::Success).ok();
         self.progress_stepper
             .lock()
             .await
