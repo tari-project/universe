@@ -289,7 +289,6 @@ impl NodeManager {
         progress_params_tx: &watch::Sender<HashMap<String, String>>,
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
-        self.wait_ready().await?;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         loop {
             let current_service = self.get_current_service().await?;
@@ -591,6 +590,7 @@ where
             wait_ready_for_node_process(node_watcher).await?;
             match service.get_identity().await {
                 Ok(_) => {
+                    wait_ready_for_node_process(node_watcher).await?;
                     return Ok(());
                 }
                 Err(err) => {
