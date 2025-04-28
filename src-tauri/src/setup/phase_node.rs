@@ -134,7 +134,6 @@ impl SetupPhaseImpl for NodeSetupPhase {
             } else {
                 SETUP_TIMEOUT_DURATION
             };
-            let setup_timeout = tokio::time::sleep(timeout_duration);
             let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for subscriber in &mut flow_subscribers.iter_mut() {
                 select! {
@@ -146,7 +145,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                 }
             };
             tokio::select! {
-                _ = setup_timeout => {
+                _ = tokio::time::sleep(timeout_duration) => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Node);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Node);
                     sentry::capture_message(&error_message, sentry::Level::Error);
