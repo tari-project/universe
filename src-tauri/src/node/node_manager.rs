@@ -60,6 +60,8 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
+    #[error("Maximum failed requests exceeded")]
+    MaxFailedRequestsExceeded,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
@@ -291,6 +293,8 @@ impl NodeManager {
     ) -> Result<(), anyhow::Error> {
         self.wait_ready().await?;
         let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut failed_request_counter = 0;
+        static MAX_FAILED_REQUESTS: u32 = 10;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
@@ -309,7 +313,12 @@ impl NodeManager {
                         continue;
                     }
                     _ => {
-                        return Err(NodeManagerError::UnknownError(e.into()).into());
+                        failed_request_counter += 1;
+                        if failed_request_counter >= MAX_FAILED_REQUESTS {
+                            return Err(NodeManagerError::MaxFailedRequestsExceeded.into());
+                        }
+                        sleep(Duration::from_millis(100)).await;
+                        continue;
                     }
                 },
             }
@@ -692,7 +701,6 @@ async fn monitor_local_node_sync_and_switch(
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
-
                         }
                         Err(NodeStatusMonitorError::NodeNotStarted) => {
                             info!(target: LOG_TARGET, "Local node not started, waiting...");
