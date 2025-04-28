@@ -61,6 +61,9 @@ export const handleMiningLocked = async () => {
         await stopMining();
     }
 };
+export const handleHardwarePhaseFinished = async () => {
+    useSetupStore.setState({ hardwarePhaseFinished: true });
+};
 
 export const updateCoreSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ core_phase_setup_payload: payload });

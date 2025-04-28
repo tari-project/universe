@@ -20,17 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::Arc, time::Duration};
-
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
-    sync::{
-        watch::{Receiver, Sender},
-        Mutex,
-    },
+    sync::{watch::Sender, Mutex},
 };
 
 use crate::{
@@ -41,16 +36,18 @@ use crate::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
     },
-    setup::setup_manager::SetupPhase,
+    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
     tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
 };
 
-use super::{setup_manager::PhaseStatus, trait_setup_phase::SetupPhaseImpl};
+use super::{
+    setup_manager::PhaseStatus,
+    trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
+};
 
 static LOG_TARGET: &str = "tari::universe::phase_core";
-const SETUP_TIMEOUT_DURATION: Duration = Duration::from_secs(60 * 10); // 10 Minutes
 
 #[derive(Clone, Default)]
 pub struct CoreSetupPhaseOutput {}
@@ -64,19 +61,26 @@ pub struct CoreSetupPhase {
     app_handle: AppHandle,
     progress_stepper: Mutex<ProgressStepper>,
     app_configuration: CoreSetupPhaseAppConfiguration,
+    setup_configuration: SetupConfiguration,
+    status_sender: Sender<PhaseStatus>,
 }
 
 impl SetupPhaseImpl for CoreSetupPhase {
     type AppConfiguration = CoreSetupPhaseAppConfiguration;
-    type SetupOutput = CoreSetupPhaseOutput;
 
-    async fn new(app_handle: AppHandle) -> Self {
+    async fn new(
+        app_handle: AppHandle,
+        status_sender: Sender<PhaseStatus>,
+        configuration: SetupConfiguration,
+    ) -> Self {
         Self {
             app_handle: app_handle.clone(),
             progress_stepper: Mutex::new(CoreSetupPhase::create_progress_stepper(app_handle)),
             app_configuration: CoreSetupPhase::load_app_configuration()
                 .await
                 .unwrap_or_default(),
+            setup_configuration: configuration,
+            status_sender,
         }
     }
 
@@ -105,16 +109,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
         })
     }
 
-    async fn setup(
-        self: Arc<Self>,
-        status_sender: Sender<PhaseStatus>,
-        mut flow_subscribers: Vec<Receiver<PhaseStatus>>,
-    ) {
+    async fn setup(mut self) {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Core);
         TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(SETUP_TIMEOUT_DURATION);
             let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
-            for subscriber in &mut flow_subscribers.iter_mut() {
+            for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
                 select! {
                     _ = subscriber.wait_for(|value| value.is_success()) => {}
                     _ = shutdown_signal.wait() => {
@@ -124,19 +123,20 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 }
             };
             tokio::select! {
-                _ = setup_timeout => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                    if result.is_some() {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
                         .await;
-
+                    }
                 }
                 result = self.setup_inner() => {
                     match result {
-                        Ok(payload) => {
+                        Ok(_) => {
                             info!(target: LOG_TARGET, "[ {} Phase ] Setup completed successfully", SetupPhase::Core);
-                            let _unused = self.finalize_setup(status_sender,payload).await;
+                            let _unused = self.finalize_setup().await;
                         }
                         Err(error) => {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
@@ -155,7 +155,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn setup_inner(&self) -> Result<Option<CoreSetupPhaseOutput>, anyhow::Error> {
+    async fn setup_inner(&self) -> Result<(), anyhow::Error> {
         let mut progress_stepper = self.progress_stepper.lock().await;
         let state = self.app_handle.state::<UniverseAppState>();
 
@@ -198,15 +198,11 @@ impl SetupPhaseImpl for CoreSetupPhase {
             .run_speed_test_with_timeout(&self.app_handle)
             .await;
 
-        Ok(None)
+        Ok(())
     }
 
-    async fn finalize_setup(
-        &self,
-        sender: Sender<PhaseStatus>,
-        _payload: Option<CoreSetupPhaseOutput>,
-    ) -> Result<(), anyhow::Error> {
-        sender.send(PhaseStatus::Success).ok();
+    async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
+        self.status_sender.send(PhaseStatus::Success).ok();
 
         self.progress_stepper
             .lock()

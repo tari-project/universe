@@ -16,9 +16,9 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 const GpuMiningMarkup = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
-    const isSettingUp = useSetupStore((s) => !s.miningUnlocked);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const gpuDevicesHardware = useMiningMetricsStore((s) => s.gpu_devices);
+    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
 
     const isGPUMiningAvailable = useMemo(() => {
         if (!gpuDevicesHardware) return false;
@@ -46,7 +46,7 @@ const GpuMiningMarkup = () => {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isGpuMiningEnabled}
-                        disabled={isSettingUp}
+                        disabled={!isHardwarePhaseFinished}
                         onChange={handleGpuMiningEnabled}
                     />
                 </SettingsGroupAction>
