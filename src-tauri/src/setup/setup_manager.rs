@@ -30,6 +30,7 @@ use crate::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
+    events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
@@ -274,6 +275,7 @@ impl SetupManager {
         unknown_phase_setup.setup().await;
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let mut core_phase_status_subscriber = self.core_phase_status.subscribe();
         let mut hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
@@ -369,6 +371,12 @@ impl SetupManager {
                             .await;
                     }
 
+                    if is_app_unlocked
+                    && is_wallet_unlocked
+                    && is_mining_unlocked
+                    && is_initial_setup_finished {
+                        SetupManager::get_instance().handle_restart_finished(app_handle.clone()).await;
+                    }
                         select! {
                         _ = cacellation_token.cancelled() => {
                             info!(target: LOG_TARGET, "Cancellation token triggered, exiting unlock conditions loop");
@@ -522,6 +530,15 @@ impl SetupManager {
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 
+    async fn handle_restart_finished(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Restart Finished");
+        EventsManager::handle_connection_status_changed(
+            &app_handle,
+            ConnectionStatusPayload::Succeed,
+        )
+        .await;
+    }
+
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.pre_setup(app_handle.clone()).await;
         *self.app_handle.lock().await = Some(app_handle.clone());
@@ -575,12 +592,10 @@ impl SetupManager {
                         last_state = current_state;
                     }
                     _ = shutdown_signal.wait() => {
-                    break;
+                        break;
+                    }
                 }
             }
-
-            }
-
         });
     }
 
