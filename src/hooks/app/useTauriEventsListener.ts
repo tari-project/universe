@@ -29,6 +29,7 @@ import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletSc
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
+    handleHardwarePhaseFinished,
     handleMiningLocked,
     handleMiningUnlocked,
     handleWalletLocked,
@@ -79,6 +80,7 @@ const useTauriEventsListener = () => {
                         case 'CorePhaseFinished':
                             break;
                         case 'HardwarePhaseFinished':
+                            await handleHardwarePhaseFinished();
                             break;
                         case 'NodePhaseFinished':
                             break;
