@@ -34,7 +34,7 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::setup_manager::SetupPhase,
+    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
     tasks_tracker::TasksTrackers,
     UniverseAppState,
 };
@@ -133,12 +133,14 @@ impl SetupPhaseImpl for HardwareSetupPhase {
                 }
             };
             tokio::select! {
-                _ = tokio::time::sleep(self.setup_configuration.setup_timeout_duration.unwrap_or_default()) => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
+                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                    if let Some(_) = result {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Hardware);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Hardware);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Hardware.get_critical_problem_title()), Some(SetupPhase::Hardware.get_critical_problem_description()))
                         .await;
+                    }
                 }
                 result = self.setup_inner() => {
                     match result {

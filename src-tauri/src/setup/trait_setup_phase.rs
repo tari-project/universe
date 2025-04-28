@@ -40,7 +40,7 @@ impl Default for SetupConfiguration {
     fn default() -> Self {
         Self {
             listeners_for_required_phases_statuses: vec![],
-            setup_timeout_duration: Some(Duration::from_secs(60 * 10)), // 10 Minutes
+            setup_timeout_duration: None,
         }
     }
 }

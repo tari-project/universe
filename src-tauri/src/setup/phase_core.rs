@@ -36,7 +36,7 @@ use crate::{
         progress_plans::ProgressPlans, progress_stepper::ProgressStepperBuilder,
         ProgressSetupCorePlan, ProgressStepper,
     },
-    setup::setup_manager::SetupPhase,
+    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
     tasks_tracker::TasksTrackers,
     utils::{network_status::NetworkStatus, platform_utils::PlatformUtils},
     UniverseAppState,
@@ -123,13 +123,14 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 }
             };
             tokio::select! {
-                _ = tokio::time::sleep(self.setup_configuration.setup_timeout_duration.unwrap_or_default()) => {
-                    error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
-                    let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
-                    sentry::capture_message(&error_message, sentry::Level::Error);
-                    EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
+                    if let Some(_) = result {
+                        error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
+                        let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
+                        sentry::capture_message(&error_message, sentry::Level::Error);
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
                         .await;
-
+                    }
                 }
                 result = self.setup_inner() => {
                     match result {
