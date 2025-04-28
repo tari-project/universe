@@ -164,6 +164,7 @@ impl ConfigImpl for ConfigMining {
                 cpu_mining_enabled: old_config.cpu_mining_enabled(),
                 ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }

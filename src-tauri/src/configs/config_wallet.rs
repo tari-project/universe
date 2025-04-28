@@ -192,6 +192,7 @@ impl ConfigImpl for ConfigWallet {
                 monero_address: old_config.monero_address().to_string(),
                 monero_address_is_generated: old_config.monero_address_is_generated(),
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }
