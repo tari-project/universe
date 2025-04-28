@@ -66,6 +66,7 @@ pub enum EventType {
     ConfigUILoaded,
     ConfigWalletLoaded,
     ConfigMiningLoaded,
+    ConfigPortalLoaded,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
 }

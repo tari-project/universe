@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LazyMotion, domAnimation, AnimatePresence } from 'motion/react';
 
-import { useShuttingDown } from '../hooks';
+import { PortalSdkProvider, useShuttingDown } from '../hooks';
 
 import { setError, setIsWebglNotSupported } from '../store/actions';
 import { GlobalReset, GlobalStyle } from '../theme/GlobalStyle.ts';
@@ -65,13 +65,15 @@ export default function App() {
 
     return (
         <ThemeProvider>
-            <GlobalReset />
-            <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
-            <LazyMotion features={domAnimation} strict>
-                <FloatingElements />
-                <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
-            </LazyMotion>
-            <canvas id={TOWER_CANVAS_ID} />
+            <PortalSdkProvider>
+                <GlobalReset />
+                <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
+                <LazyMotion features={domAnimation} strict>
+                    <FloatingElements />
+                    <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                </LazyMotion>
+                <canvas id={TOWER_CANVAS_ID} />
+            </PortalSdkProvider>
         </ThemeProvider>
     );
 }

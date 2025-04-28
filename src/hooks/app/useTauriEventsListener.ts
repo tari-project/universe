@@ -38,6 +38,7 @@ import { setBackgroundNodeState, setNodeTypeState } from '@app/store/useNodeStor
 import {
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
+    handleConfigPortalLoaded,
     handleConfigUILoaded,
     handleConfigWalletLoaded,
 } from '@app/store/actions/appConfigStoreActions';
@@ -131,6 +132,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConfigMiningLoaded':
                             handleConfigMiningLoaded(event.payload);
+                            break;
+                        case 'ConfigPortalLoaded':
+                            handleConfigPortalLoaded(event.payload);
                             break;
                         case 'ConfigUILoaded':
                             await handleConfigUILoaded(event.payload);
