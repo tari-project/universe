@@ -30,19 +30,10 @@ use crate::progress_trackers::ProgressStepper;
 
 use super::setup_manager::PhaseStatus;
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct SetupConfiguration {
     pub listeners_for_required_phases_statuses: Vec<Receiver<PhaseStatus>>,
     pub setup_timeout_duration: Option<Duration>,
-}
-
-impl Default for SetupConfiguration {
-    fn default() -> Self {
-        Self {
-            listeners_for_required_phases_statuses: vec![],
-            setup_timeout_duration: None,
-        }
-    }
 }
 
 pub trait SetupPhaseImpl {

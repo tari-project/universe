@@ -124,7 +124,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
             };
             tokio::select! {
                 result = conditional_sleeper(self.setup_configuration.setup_timeout_duration) => {
-                    if let Some(_) = result {
+                    if result.is_some() {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
                         sentry::capture_message(&error_message, sentry::Level::Error);
