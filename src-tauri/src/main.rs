@@ -1289,6 +1289,7 @@ fn main() {
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
+            commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
