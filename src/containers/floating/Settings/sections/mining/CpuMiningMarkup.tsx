@@ -12,13 +12,13 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { setCpuMiningEnabled } from '@app/store/actions/appConfigStoreActions.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 export default function CpuMiningSettings() {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const isCpuMiningEnabled = useConfigMiningStore((s) => s.cpu_mining_enabled);
-    const isSettingUp = useSetupStore((s) => !s.miningUnlocked);
+    const isHardwarePhaseFinished = useSetupStore((s) => s.hardwarePhaseFinished);
 
     const handleCpuMiningEnabled = useCallback(async () => {
         await setCpuMiningEnabled(!isCpuMiningEnabled);
@@ -36,7 +36,7 @@ export default function CpuMiningSettings() {
                 <SettingsGroupAction>
                     <ToggleSwitch
                         checked={isCpuMiningEnabled}
-                        disabled={isSettingUp}
+                        disabled={!isHardwarePhaseFinished}
                         onChange={handleCpuMiningEnabled}
                     />
                 </SettingsGroupAction>

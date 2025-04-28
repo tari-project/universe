@@ -57,7 +57,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -227,9 +226,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+    TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
@@ -965,6 +964,17 @@ fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
 
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
+
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry::ClientOptions {
@@ -974,8 +984,6 @@ fn main() {
         },
     ));
     let _guard = minidump::init(&client);
-
-    let shutdown = Shutdown::new();
 
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
@@ -988,9 +996,8 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
-        // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        // This value is later overriden when retrieved from config
+        NodeType::Local,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
@@ -1287,6 +1294,7 @@ fn main() {
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
+            commands::set_node_type
         ])
         .build(tauri::generate_context!())
         .inspect_err(

@@ -39,12 +39,13 @@ import {
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
+    handleHardwarePhaseFinished,
     handleMiningLocked,
     handleMiningUnlocked,
     handleWalletLocked,
     handleWalletUnlocked,
 } from '@app/store/actions/setupStoreActions';
-import { setBackgroundNodeState, setNodeTypeState } from '@app/store/useNodeStore';
+import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
     handleConfigCoreLoaded,
     handleConfigMiningLoaded,
@@ -89,6 +90,7 @@ const useTauriEventsListener = () => {
                         case 'CorePhaseFinished':
                             break;
                         case 'HardwarePhaseFinished':
+                            await handleHardwarePhaseFinished();
                             break;
                         case 'NodePhaseFinished':
                             break;
@@ -174,7 +176,7 @@ const useTauriEventsListener = () => {
                             setNetworkStatus(event.payload);
                             break;
                         case `NodeTypeUpdate`:
-                            setNodeTypeState(event.payload);
+                            setNodeStoreState(event.payload);
                             break;
                         case 'RestartingPhases':
                             handleRestartingPhases(event.payload);

@@ -13,6 +13,7 @@ import {
     updateWalletSetupPhaseInfo,
 } from './setupStoreActions.ts';
 import { setIsReconnecting, setShowResumeAppModal } from './uiStoreActions.ts';
+import { useSetupStore } from '../useSetupStore.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -99,8 +100,10 @@ export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
         return;
     }
 
-    setDialogToShow(undefined);
-    setShowResumeAppModal(true);
+    if (useSetupStore.getState().appUnlocked) {
+        setDialogToShow(undefined);
+        setShowResumeAppModal(true);
+    }
     setIsSettingsOpen(false);
 
     for (const phase of phasesToRestart) {
