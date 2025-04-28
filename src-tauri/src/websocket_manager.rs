@@ -31,8 +31,6 @@ use log::{error, info};
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Value;
-use tari_shutdown::Shutdown;
-use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tauri::Emitter;
 use tauri::Manager;
@@ -53,6 +51,7 @@ use urlencoding::encode;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::trait_config::ConfigImpl;
+use crate::tasks_tracker::TasksTrackers;
 
 const LOG_TARGET: &str = "tari::universe::websocket";
 
@@ -104,7 +103,6 @@ pub struct WebsocketManager {
     app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     app: Option<AppHandle>,
     message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
-    shutdown: Shutdown,
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
@@ -115,7 +113,6 @@ impl WebsocketManager {
     pub fn new(
         app_in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
         websocket_manager_rx: mpsc::Receiver<WebsocketMessage>,
-        shutdown: Shutdown,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
         app_id: String,
@@ -125,7 +122,6 @@ impl WebsocketManager {
             app_in_memory_config,
             app: None,
             message_receiver_channel: Arc::new(Mutex::new(websocket_manager_rx)),
-            shutdown,
             status_update_channel_tx,
             status_update_channel_rx,
             close_channel_tx,
@@ -233,8 +229,7 @@ impl WebsocketManager {
         let config_cloned = in_memory_config.clone();
         let app_cloned = self.app.clone().ok_or(WebsocketError::MissingAppHandle)?;
         let receiver_channel = self.message_receiver_channel.clone();
-        let shutdown = self.shutdown.clone();
-        let mut shutdown_signal = shutdown.to_signal();
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let status_update_channel_tx = self.status_update_channel_tx.clone();
         let mut status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
             self.status_update_channel_rx.clone();
@@ -252,7 +247,6 @@ impl WebsocketManager {
 
                         if let Ok(connection) = connection_res {
                             WebsocketManager::listen(connection,app_cloned.clone(),
-                                shutdown.clone(),
                                 receiver_channel.clone(),
                                 status_update_channel_tx.clone(),
                                 close_channel_tx.clone()).await
@@ -296,27 +290,25 @@ impl WebsocketManager {
     pub async fn listen(
         connection_stream: WebSocketStream<MaybeTlsStream<TcpStream>>,
         app: AppHandle,
-        shutdown: Shutdown,
         message_receiver_channel: Arc<Mutex<mpsc::Receiver<WebsocketMessage>>>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     ) {
         let (write_stream, read_stream) = connection_stream.split();
         info!(target:LOG_TARGET,"listening to websocket events");
+        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
-        let mut shutdown_signal = shutdown.to_signal();
         let close_channel_tx_sender = close_channel_tx.clone();
         let close_channel_tx_receiver = close_channel_tx.clone();
-        let shutdown_cloned = shutdown.clone();
 
         let _ = status_update_channel_tx.send(WebsocketManagerStatusMessage::Connected);
 
         tokio::select! {
             _= tauri::async_runtime::spawn(async move {
-                receiver_task(app, read_stream, close_channel_tx_receiver.clone(), shutdown.clone().to_signal()).await;
+                receiver_task(app, read_stream, close_channel_tx_receiver.clone()).await;
             })=>{},
             _=tauri::async_runtime::spawn(async move {
-                drop(sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone(), shutdown_cloned.to_signal()).await);
+                drop(sender_task(message_receiver_channel, write_stream, close_channel_tx_sender.clone()).await);
             })=>{},
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 return;
@@ -336,8 +328,8 @@ async fn sender_task(
         Message,
     >,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
-    mut shutdown_signal: ShutdownSignal,
 ) -> Result<(), WebsocketError> {
+    let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
     info!(target:LOG_TARGET,"websocket_manager: tx loop initialized...");
     let mut receiver = receiver_channel.lock().await;
     loop {
@@ -379,8 +371,8 @@ async fn receiver_task(
     app: AppHandle,
     mut read_stream: futures::stream::SplitStream<WebSocketStream<MaybeTlsStream<TcpStream>>>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
-    mut shutdown_signal: ShutdownSignal,
 ) {
+    let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
     info!(target:LOG_TARGET,"websocket_manager: rx loop initialized...");
     loop {
         tokio::select! {

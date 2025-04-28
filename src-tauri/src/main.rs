@@ -1084,7 +1084,6 @@ fn main() {
     let websocket_manager = Arc::new(RwLock::new(WebsocketManager::new(
         app_in_memory_config.clone(),
         websocket_message_rx,
-        shutdown.clone(),
         websocket_manager_status_tx.clone(),
         websocket_manager_status_rx.clone(),
         app_id.clone(),
@@ -1095,7 +1094,6 @@ fn main() {
         cpu_miner_status_watch_rx.clone(),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
-        shutdown.clone(),
         websocket_message_tx.clone(),
     );
 

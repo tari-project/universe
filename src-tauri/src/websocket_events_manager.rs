@@ -25,7 +25,6 @@ use std::{sync::Arc, time::Duration};
 use futures::lock::Mutex;
 use log::{error, info};
 use tari_common::configuration::Network;
-use tari_shutdown::Shutdown;
 use tauri::AppHandle;
 use tokio::{
     sync::{broadcast, watch},
@@ -36,6 +35,7 @@ use crate::{
     airdrop::decode_jwt_claims_without_exp,
     commands::{sign_ws_data, CpuMinerStatus, SignWsDataResponse},
     configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    tasks_tracker::TasksTrackers,
     websocket_manager::WebsocketMessage,
     BaseNodeStatus, GpuMinerStatus,
 };
@@ -47,7 +47,6 @@ pub struct WebsocketEventsManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
     node_latest_status: watch::Receiver<BaseNodeStatus>,
-    shutdown: Shutdown,
     app_id: String,
     websocket_tx_channel: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
@@ -60,7 +59,6 @@ impl WebsocketEventsManager {
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
         node_latest_status: watch::Receiver<BaseNodeStatus>,
-        shutdown: Shutdown,
         websocket_tx_channel: tokio::sync::mpsc::Sender<WebsocketMessage>,
     ) -> Self {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
@@ -68,7 +66,6 @@ impl WebsocketEventsManager {
             cpu_miner_status_watch_rx,
             gpu_latest_miner_stats,
             node_latest_status,
-            shutdown,
             app_id,
             websocket_tx_channel: Arc::new(websocket_tx_channel),
             app: None,
@@ -95,7 +92,6 @@ impl WebsocketEventsManager {
 
     pub async fn emit_interval_ws_events(&mut self) -> Result<(), anyhow::Error> {
         let mut interval = time::interval(INTERVAL_DURATION);
-        let shutdown = self.shutdown.clone();
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
@@ -122,7 +118,7 @@ impl WebsocketEventsManager {
                         .airdrop_tokens()
                         .clone()
                         .map(|tokens| tokens.token);
-                    let mut shutdown_signal = shutdown.clone().to_signal();
+                    let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
                     tokio::select! {
                       _= interval.tick() => {
                             if let Some(jwt)= jwt_token{
