@@ -247,7 +247,7 @@ impl SetupManager {
         };
 
         let node_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(timeout_duration) // 10 minutes
+            .with_setup_timeout_duration(timeout_duration)
             .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
             .await;
         node_phase_setup.setup().await;
