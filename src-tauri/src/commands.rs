@@ -1707,6 +1707,19 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
+pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+    EventsManager::handle_connection_status_changed(
+        &app_handle,
+        crate::events::ConnectionStatusPayload::InProgress,
+    )
+    .await;
+    let sm = SetupManager::get_instance();
+    sm.add_phases_to_restart_queue(SetupPhase::all()).await;
+    sm.restart_phases_from_queue(app_handle).await;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     state: tauri::State<'_, UniverseAppState>,
     amount: String,

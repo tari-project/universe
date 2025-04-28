@@ -224,7 +224,7 @@ export async function fetchPollingFeatureFlag() {
 export async function fetchOrphanChainUiFeatureFlag() {
     const response = await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
-        path: '/features/orphan-chain-ui',
+        path: '/features/orphan-chain-ui-disabled',
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
@@ -232,7 +232,7 @@ export async function fetchOrphanChainUiFeatureFlag() {
     });
 
     if (response) {
-        useAirdropStore.setState({ orphanChainUiEnabled: response.access });
+        useAirdropStore.setState({ orphanChainUiDisabled: response.access });
     }
 
     return response;
