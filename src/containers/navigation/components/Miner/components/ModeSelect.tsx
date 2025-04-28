@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 
 import { modeType } from '@app/store/types';
 import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
 import { setDialogToShow } from '@app/store/actions/uiStoreActions.ts';
 import { changeMiningMode, setCustomLevelsDialogOpen } from '@app/store/actions/miningStoreActions.ts';
@@ -22,8 +21,6 @@ interface ModeSelectProps {
 }
 const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectProps) {
     const { t } = useTranslation('common', { useSuspense: false });
-    const isSettingUp = useSetupStore((s) => !s.appUnlocked);
-    const isMiningUnlocked = useSetupStore((s) => s.miningUnlocked);
     const mode = useConfigMiningStore((s) => s.mode);
     const isCPUMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
@@ -69,8 +66,7 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
 
     const selectMarkup = (
         <Select
-            disabled={!isMiningUnlocked || (isSettingUp && !isMininimal)}
-            loading={!isMiningUnlocked || isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
+            loading={isChangingMode || (isMining && (isMiningLoading || !isMiningControlsEnabled))}
             onChange={handleChange}
             selectedValue={mode}
             options={tabOptions}

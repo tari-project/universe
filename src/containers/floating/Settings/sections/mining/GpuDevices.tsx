@@ -15,19 +15,17 @@ import { useMiningMetricsStore } from '@app/store/useMiningMetricsStore.ts';
 import { GpuDevice } from '@app/types/app-status.ts';
 import { toggleDeviceExclusion } from '@app/store/actions/miningStoreActions.ts';
 import { useMiningStore } from '@app/store/useMiningStore.ts';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
 
 const GpuDevices = memo(function GpuDevices() {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
-    const miningAllowed = useSetupStore((s) => s.miningUnlocked);
     const gpuDevices = useMiningMetricsStore((s) => s.gpu_devices);
     const isGPUMining = useMiningMetricsStore((s) => s.gpu_mining_status.is_mining);
 
     const miningInitiated = useMiningStore((s) => s.miningInitiated);
     const isGpuMiningEnabled = useConfigMiningStore((s) => s.gpu_mining_enabled);
     const isExcludingGpuDevices = useMiningStore((s) => s.isExcludingGpuDevices);
-    const isDisabled = isExcludingGpuDevices || isGPUMining || miningInitiated || !miningAllowed || !isGpuMiningEnabled;
+    const isDisabled = isExcludingGpuDevices || isGPUMining || miningInitiated || !isGpuMiningEnabled;
 
     const handleSetExcludedDevice = useCallback(async (device: GpuDevice) => {
         await toggleDeviceExclusion(device.device_index, !device.settings.is_excluded);
