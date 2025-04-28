@@ -1,10 +1,10 @@
 {
   "any_moment_now": "В любой момент",
-  "block-sync": "Syncing blocks",
-  "calculating_time": "Calculating time remaining...",
-  "header-sync": "Syncing headers",
-  "local-node-sync": "Tari Universe is still syncing. This won’t affect your mining experience.",
-  "network-peers": "Connecting to network peers",
+  "block-sync": "Синхронизация блоков",
+  "calculating_time": "Расчет оставшегося времени...",
+  "header-sync": "Синхронизация заголовков",
+  "local-node-sync": "Tari Universe все еще синхронизируется. Это не повлияет на Ваш процесс майнинга."
+  "network-peers": "Подключение к сетевым пирам",
   "phase-core-critical-problem-description": "Настройка ядра критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
   "phase-core-critical-problem-title": "Ошибка настройки ядра",
   "phase-hardware-critical-problem-description": "Настройка оборудования критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
@@ -22,7 +22,7 @@
   "phase-unknown-critical-problem-title": "Ошибка настройки майнинга",
   "phase-wallet-critical-problem-description": "Настройка кошелька критически важна для приложения. Пожалуйста, попробуйте перезапустить приложение. Если проблема не исчезнет, обратитесь в службу поддержки.",
   "phase-wallet-critical-problem-title": "Ошибка настройки кошелька",
-  "remaining": "remaining",
+  "remaining": "осталось",
   "second_remaining": "осталась секунда",
   "seconds_remaining": "осталось секунд",
   "title": {
@@ -45,8 +45,8 @@
     "start-tor": "Запуск Tor",
     "start-wallet": "Запуск кошелька",
     "starting-node": "Запуск узла Minotari",
-    "waiting-for-block-sync": "Waiting for block sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced.",
-    "waiting-for-header-sync": "Waiting for header sync. {{local_header_height}}/{{tip_header_height}} headers and {{local_block_height}}/{{tip_block_height}} blocks synced. ",
+    "waiting-for-block-sync": "Ожидание синхронизации блоков. {{local_header_height}}/{{tip_header_height}} заголовков и {{local_block_height}}/{{tip_block_height}} блоков синхронизировано.",
+    "waiting-for-header-sync": "Ожидание синхронизации заголовков. {{local_header_height}}/{{tip_header_height}} заголовков и {{local_block_height}}/{{tip_block_height}} блоков синхронизировано. ",
     "waiting-for-initial-sync": "Подключение к сетевым узлам {{initial_connected_peers}}/{{required_peers}}"
   }
 }

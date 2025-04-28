@@ -128,7 +128,6 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup", SetupPhase::Unknown);
 
         TasksTrackers::current().unknown_phase.get_task_tracker().await.spawn(async move {
-            let setup_timeout = tokio::time::sleep(self.setup_configuration.setup_timeout_duration.unwrap_or_default());
             let mut shutdown_signal = TasksTrackers::current().unknown_phase.get_signal().await;
             for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
                 select! {
@@ -140,7 +139,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 }
             };
             tokio::select! {
-                _ = setup_timeout => {
+                _ = tokio::time::sleep(self.setup_configuration.setup_timeout_duration.unwrap_or_default()) => {
                     error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                     sentry::capture_message(&error_message, sentry::Level::Error);
