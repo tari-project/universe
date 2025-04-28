@@ -211,7 +211,7 @@ impl SetupManager {
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigPortal::initialize(app_handle).await;
+        ConfigPortal::initialize(app_handle.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
