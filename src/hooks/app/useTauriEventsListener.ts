@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { emit, listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
@@ -14,6 +14,9 @@ import {
 import {
     handleAskForRestart,
     handleCloseSplashscreen,
+    handleConnectionStatusChanged,
+    setConnectionStatus,
+    setIsReconnecting,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
@@ -22,10 +25,17 @@ import {
     handleShowRelesaeNotes,
     loadExternalDependencies,
     setCriticalProblem,
+    setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import {
+    refreshTransactions,
+    setWalletAddress,
+    setWalletBalance,
+    updateWalletScanningProgress,
+    useUIStore,
+} from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -147,7 +157,7 @@ const useTauriEventsListener = () => {
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
                         case 'CriticalProblem':
-                            setCriticalProblem(event.payload);
+                            setCriticalProblemTest(event.payload);
                             break;
                         case 'MissingApplications':
                             loadExternalDependencies(event.payload);
@@ -155,6 +165,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'StuckOnOrphanChain':
                             setIsStuckOnOrphanChain(event.payload);
+                            if (event.payload) {
+                                setConnectionStatus('disconnected');
+                            }
                             break;
                         case 'ShowReleaseNotes':
                             handleShowRelesaeNotes(event.payload);
@@ -176,6 +189,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'InitWalletScanningProgress':
                             updateWalletScanningProgress(event.payload);
+                            break;
+                        case 'ConnectionStatus':
+                            handleConnectionStatusChanged(event.payload);
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));
