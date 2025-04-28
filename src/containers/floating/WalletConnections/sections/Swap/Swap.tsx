@@ -26,7 +26,7 @@ import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
 import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
-import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
+import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 
 export const Swap = () => {
     const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
@@ -84,7 +84,7 @@ export const Swap = () => {
         setter(value);
     };
 
-    const items = [
+    const items: StatusListEntry[] = [
         {
             label: 'Network fee',
             value: '$0.06',
