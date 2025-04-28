@@ -20,16 +20,12 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 use log::{error, info, warn};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
     select,
-    sync::{
-        watch::Sender,
-        Mutex,
-    },
+    sync::{watch::Sender, Mutex},
 };
 
 use crate::{
@@ -118,7 +114,6 @@ impl SetupPhaseImpl for CoreSetupPhase {
         TasksTrackers::current().core_phase.get_task_tracker().await.spawn(async move {
             let setup_timeout = tokio::time::sleep(self.setup_configuration.setup_timeout_duration.unwrap_or_default());
             let mut shutdown_signal = TasksTrackers::current().core_phase.get_signal().await;
-            
             for subscriber in &mut self.setup_configuration.listeners_for_required_phases_statuses.iter_mut() {
                 select! {
                     _ = subscriber.wait_for(|value| value.is_success()) => {}
@@ -206,9 +201,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
         Ok(())
     }
 
-    async fn finalize_setup(
-        &self
-    ) -> Result<(), anyhow::Error> {
+    async fn finalize_setup(&self) -> Result<(), anyhow::Error> {
         self.status_sender.send(PhaseStatus::Success).ok();
 
         self.progress_stepper
