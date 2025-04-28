@@ -10,7 +10,6 @@ import {
     SelectedChainInfo,
     SwapAmountInput,
     SwapDetails,
-    SwapDetailsItemWrapper,
     SwapDetailsKey,
     SwapDetailsValue,
     SwapDirection,
@@ -24,10 +23,10 @@ import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
 import { useMemo, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
-import { QuestionMarkIcon } from '../../icons/elements/QuestionMarkIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
 import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
+import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 
 export const Swap = () => {
     const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
@@ -85,32 +84,32 @@ export const Swap = () => {
         setter(value);
     };
 
-    const items = [
+    const items: StatusListEntry[] = [
         {
-            key: 'Network fee',
+            label: 'Network fee',
             value: '$0.06',
-            valueRightSide: 'Fees 0.02%',
-            helpData: 'Fees 0.02%',
+            valueRight: 'Fees 0.02%',
+            helpText: 'Fees 0.02%',
         },
         {
-            key: 'Network Cost',
+            label: 'Network Cost',
             value: '0x12345..12789',
-            helpData: 'Fees 0.02%',
+            helpText: 'Fees 0.02%',
         },
         {
-            key: 'You will receive XTM in (Tari wallet address)',
+            label: 'You will receive XTM in (Tari wallet address)',
             value: 'FA12345..12789',
-            helpData: 'You will receive XTM in (Tari wallet address)',
+            helpText: 'You will receive XTM in (Tari wallet address)',
         },
         {
-            key: 'Slippage',
+            label: 'Slippage',
             value: '0.50%',
-            helpData: 'You will receive XTM in (Tari wallet address)',
+            helpText: 'You will receive XTM in (Tari wallet address)',
         },
         {
-            key: 'Price Impact',
+            label: 'Price Impact',
             value: '0.08%',
-            helpData: 'You will receive XTM in (Tari wallet address)',
+            helpText: 'You will receive XTM in (Tari wallet address)',
         },
     ];
 
@@ -132,6 +131,7 @@ export const Swap = () => {
                     </SelectedChainInfo>
                 </SelectedChain>
             </WalletConnectHeader>
+
             <SwapOption>
                 <span> {'Sell'} </span>
                 <SwapOptionAmount>
@@ -186,21 +186,13 @@ export const Swap = () => {
                     </WalletButton>
                 </NewOutputWrapper>
 
-                {items.map((item, index) => (
-                    <SwapDetailsItemWrapper key={`${item.key}-${index}`}>
-                        <SwapDetailsKey>
-                            {item.key} {item.helpData && <QuestionMarkIcon width={15} />}
-                        </SwapDetailsKey>
-                        <SwapDetailsValue>
-                            <div>{item.value}</div> <span>{item.valueRightSide}</span>
-                        </SwapDetailsValue>
-                    </SwapDetailsItemWrapper>
-                ))}
+                <StatusList entries={items} />
             </SwapDetails>
 
-            <WalletButton variant="primary" onClick={handleConfirm} size="large">
+            <WalletButton variant="primary" onClick={handleConfirm} size="xl">
                 {'Approve & Buy'}
             </WalletButton>
+
             <PoweredBy>
                 {'Powered by'}
                 <img src={PortalLogo} alt="Portal to Bitcoin" width={50} />

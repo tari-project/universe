@@ -1,19 +1,14 @@
-import {
-    HeaderWrapper,
-    LoadingDots,
-    ProcessingDetailsWrapper,
-    ProcessingItemDetailKey,
-    ProcessingItemDetailValue,
-    ProcessingItemDetailWrapper,
-    StatusValue,
-} from './ProcessingTransaction.styles';
-import { LoadingClock } from '../../icons/elements/LoadingClock';
+import { ProcessingDetailsWrapper, StatusValue } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import { useEffect, useState } from 'react';
-import { SuccessIcon } from '../../icons/elements/SuccessIcon';
 import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions';
+import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
+import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
+import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
+import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
+import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
 type Status = 'processing' | 'success' | 'error';
 
@@ -28,50 +23,40 @@ export const ProcessingTransaction = () => {
         }, 6000);
     }, []);
 
-    const loadingDots = (
-        <LoadingDots>
-            <span>.</span>
-            <span>.</span>
-            <span>.</span>
-        </LoadingDots>
-    );
-    const statusItems = [
+    const statusItems: StatusListEntry[] = [
         {
-            key: 'Status',
-            value: <StatusValue $status={status}> {status === 'success' ? 'Completed' : 'Processing'} </StatusValue>,
+            label: 'Status',
+            value: <StatusValue $status={status}>{status === 'success' ? 'Completed' : 'Processing'}</StatusValue>,
         },
         {
-            key: 'Total Fees',
+            label: 'Total Fees',
             value: '0.03%',
         },
         {
-            key: 'Swap id',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+            label: 'Swap id',
+            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
         },
         {
-            key: 'Ethereum Txn',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+            label: 'Ethereum Txn',
+            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
         },
         {
-            key: 'Tari Txn',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+            label: 'Tari Txn',
+            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
         },
     ];
+
     return (
         <>
-            <HeaderWrapper>
-                {status === 'success' ? <SuccessIcon width="65" /> : <LoadingClock width="65" />}
-                <h3>{'Your XTM is on the way!'}</h3>
-                <p>{'Your purchase is processing. This can take a few minutes.'}</p>
-            </HeaderWrapper>
+            <StatusHero
+                icon={status === 'success' ? <CompletedIcon /> : <ProcessingIcon />}
+                title={'Your XTM is on the way!'}
+            >
+                {'Your purchase is processing. This can take a few minutes.'}
+            </StatusHero>
 
             <ProcessingDetailsWrapper>
-                {statusItems.map((item, index) => (
-                    <ProcessingItemDetailWrapper key={`${item.key}-${index}`}>
-                        <ProcessingItemDetailKey>{item.key}</ProcessingItemDetailKey>
-                        <ProcessingItemDetailValue>{item.value}</ProcessingItemDetailValue>
-                    </ProcessingItemDetailWrapper>
-                ))}
+                <StatusList entries={statusItems} />
             </ProcessingDetailsWrapper>
 
             <WalletButton
@@ -81,7 +66,7 @@ export const ProcessingTransaction = () => {
                 onClick={() => setWalletConnectModalOpen(false)}
             >
                 {status === 'processing' ? 'Processing transaction' : 'Done'}
-                {status === 'processing' ? loadingDots : null}
+                {status === 'processing' ? <LoadingDots /> : null}
             </WalletButton>
         </>
     );

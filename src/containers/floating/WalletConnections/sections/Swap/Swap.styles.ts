@@ -18,7 +18,7 @@ export const SelectedChainInfo = styled.div`
     flex-direction: column;
 
     .chain {
-        font-family: Poppins;
+        font-family: Poppins, sans-serif;
         font-weight: 600;
         font-size: 10px;
         line-height: 100%;
@@ -27,7 +27,7 @@ export const SelectedChainInfo = styled.div`
     }
 
     .address {
-        font-family: Poppins;
+        font-family: Poppins, sans-serif;
         font-weight: 600;
         font-size: 13px;
         line-height: 100%;
@@ -117,21 +117,14 @@ export const SwapDirectionWrapper = styled.div`
 
 export const SwapDetails = styled.div`
     margin-top: 20px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: column;
-`;
-
-export const SwapDetailsItemWrapper = styled.div`
-    border-top: 2px solid #0000001a;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 15px 0;
 `;
 
 export const SwapDetailsKey = styled.div`
     color: rgba(0, 0, 0, 0.6);
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 11px;
     line-height: 130%;
@@ -143,7 +136,7 @@ export const SwapDetailsKey = styled.div`
 
 export const SwapDetailsValue = styled.div`
     color: black;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 14px;
     line-height: 117%;
@@ -151,7 +144,7 @@ export const SwapDetailsValue = styled.div`
     display: flex;
     justify-content: space-between;
     span {
-        font-family: Poppins;
+        font-family: Poppins, sans-serif;
         font-weight: 500;
         font-size: 10px;
         line-height: 100%;
@@ -177,13 +170,13 @@ export const NewOutputAmount = styled.div`
 
 export const PoweredBy = styled.div`
     color: #7f8599;
-    padding: 20px;
+    padding: 20px 20px 0 20px;
     display: flex;
     justify-content: center;
     align-items: center;
     gap: 5px;
 
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 12px;
 `;
