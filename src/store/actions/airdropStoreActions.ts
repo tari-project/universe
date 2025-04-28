@@ -125,9 +125,7 @@ export const airdropSetup = async () => {
     }
 };
 export const handleAirdropLogout = async (isUserLogout = false) => {
-    if (!isUserLogout) {
-        removeSocket();
-    } else {
+    if (isUserLogout) {
         console.info('User logout | removing airdrop tokens');
     }
     await setAirdropTokens(undefined);
@@ -164,6 +162,8 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        removeSocket();
+
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
