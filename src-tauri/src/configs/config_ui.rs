@@ -98,8 +98,6 @@ impl ConfigUI {
         config.handle_old_config_migration(old_config);
 
         EventsManager::handle_config_ui_loaded(&app_handle, config.content.clone()).await;
-        drop(config);
-
         let _unused = Self::update_field(
             ConfigUIContent::propose_system_language,
             "en-US".to_string(),
@@ -162,6 +160,7 @@ impl ConfigImpl for ConfigUI {
                 visual_mode: old_config.visual_mode(),
                 show_experimental_settings: old_config.show_experimental_settings(),
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }
