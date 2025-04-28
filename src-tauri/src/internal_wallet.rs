@@ -82,7 +82,7 @@ impl InternalWallet {
                     config.config_path = Some(file_parent.to_path_buf());
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
-                    if let Err(e) = cm.migrate(&config) {
+                    if let Err(e) = cm.migrate(&config).await {
                         warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
                     }
 
@@ -135,23 +135,7 @@ impl InternalWallet {
         wallet_balance: Option<WalletBalance>,
         auth_uuid: Option<String>,
     ) -> Result<PaperWalletConfig, anyhow::Error> {
-        let path = match &self.config.config_path {
-            Some(p) => p.clone(),
-            None => return Err(anyhow!("No config path found")),
-        };
-
-        let path_parent = path
-            .parent()
-            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
-
-        let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
-            .get_credentials()?
-            .tari_seed_passphrase;
-
-        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
-            .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
-
+        let seed = self.get_seed().await?;
         let raw_passphrase = phraze::generate_a_passphrase(5, "-", false, &MNEMONIC_ENGLISH_WORDS);
         let seed_file = seed.encipher(Some(SafePassword::from(&raw_passphrase)))?;
         let seed_words_encrypted_base58 = seed_file.to_monero_base58();
@@ -206,12 +190,12 @@ impl InternalWallet {
         };
 
         let cm = CredentialManager::default_with_dir(path);
-        let passphrase = match cm.get_credentials() {
+        let passphrase = match cm.get_credentials().await {
             Ok(mut creds) => match creds.tari_seed_passphrase {
                 Some(p) => Some(p),
                 None => {
                     creds.tari_seed_passphrase = Some(SafePassword::from(generate_password(32)));
-                    cm.set_credentials(&creds)?;
+                    cm.set_credentials(&creds).await?;
                     creds.tari_seed_passphrase
                 }
             },
@@ -220,7 +204,7 @@ impl InternalWallet {
                     tari_seed_passphrase: Some(SafePassword::from(generate_password(32))),
                     monero_seed: None,
                 };
-                cm.set_credentials(&credentials)?;
+                cm.set_credentials(&credentials).await?;
                 credentials.tari_seed_passphrase
             }
             Err(_) => {
@@ -280,22 +264,8 @@ impl InternalWallet {
         ))
     }
 
-    pub fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
-        let path = match &self.config.config_path {
-            Some(p) => match p.parent() {
-                Some(p) => p.to_path_buf(),
-                None => return Err(anyhow!("No config path found")),
-            },
-            None => return Err(anyhow!("No config path found")),
-        };
-
-        let passphrase = CredentialManager::default_with_dir(path)
-            .get_credentials()?
-            .tari_seed_passphrase;
-
-        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
-            .map_err(|e| anyhow!(e.to_string()))?;
-        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
+    pub async fn decrypt_seed_words(&self) -> Result<SeedWords, anyhow::Error> {
+        let seed = self.get_seed().await?;
         let seed_words = seed.to_mnemonic(MnemonicLanguage::English, None)?;
         Ok(seed_words)
     }
@@ -305,6 +275,30 @@ impl InternalWallet {
     }
     pub fn get_spend_key(&self) -> String {
         self.config.spend_public_key_hex.clone()
+    }
+
+    async fn get_seed(&self) -> Result<CipherSeed, anyhow::Error> {
+        let path = match &self.config.config_path {
+            Some(p) => p.clone(),
+            None => return Err(anyhow!("No config path found")),
+        };
+        let path_parent = path
+            .parent()
+            .ok_or_else(|| anyhow!("Failed to get parent directory of wallet config file"))?;
+        let passphrase = CredentialManager::default_with_dir(path_parent.to_path_buf())
+            .get_credentials()
+            .await?
+            .tari_seed_passphrase;
+        let seed_binary = Vec::<u8>::from_monero_base58(&self.config.seed_words_encrypted_base58)
+            .map_err(|e| anyhow!(e.to_string()))?;
+        let seed = CipherSeed::from_enciphered_bytes(&seed_binary, passphrase)?;
+
+        Ok(seed)
+    }
+
+    pub async fn get_birthday(&self) -> Result<u16, anyhow::Error> {
+        let seed = self.get_seed().await?;
+        Ok(seed.birthday())
     }
 
     #[allow(dead_code)]

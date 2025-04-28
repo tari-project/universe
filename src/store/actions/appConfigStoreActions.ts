@@ -1,20 +1,22 @@
 import { invoke } from '@tauri-apps/api/core';
-import { changeLanguage } from 'i18next';
+import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import {
     AirdropTokens,
-    sidebarTowerOffset,
-    TOWER_CANVAS_ID,
-    useAppConfigStore,
+    useConfigCoreStore,
+    useConfigMiningStore,
+    useConfigUIStore,
+    useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
 } from '../index.ts';
-import { pauseMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
+import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
 import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
-import { loadTowerAnimation } from '@tari-project/tari-tower';
+import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { NodeType } from '../useNodeStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -22,28 +24,32 @@ interface SetModeProps {
     customCpuLevels?: number;
 }
 
-export const fetchAppConfig = async () => {
+export const handleConfigCoreLoaded = (coreConfig: ConfigCore) => {
+    useConfigCoreStore.setState(coreConfig);
+};
+export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {
+    useConfigWalletStore.setState(walletConfig);
+};
+export const handleConfigUILoaded = async (uiConfig: ConfigUI) => {
+    useConfigUIStore.setState(uiConfig);
+    const configTheme = uiConfig.display_mode?.toLowerCase();
+    if (configTheme) {
+        setUITheme(configTheme as displayMode);
+    }
     try {
-        const appConfig = await invoke('get_app_config');
-        useAppConfigStore.setState(appConfig);
-        const configTheme = appConfig.display_mode?.toLowerCase();
-        if (configTheme) {
-            setUITheme(configTheme as displayMode);
+        if (i18next.language !== uiConfig.application_language) {
+            console.info('Current language is', i18next.language);
+            console.info('Changing language to', uiConfig.application_language);
+            await changeLanguage(uiConfig.application_language);
         }
-        if (appConfig.visual_mode) {
-            try {
-                await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
-            } catch (e) {
-                console.error('Error at loadTowerAnimation:', e);
-                useAppConfigStore.setState({ visual_mode: false });
-            }
-        }
-
-        return appConfig;
     } catch (e) {
-        console.error('Could not get app config:', e);
+        console.error('Could not set UI config:', e);
     }
 };
+export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
+    useConfigMiningStore.setState(miningConfig);
+};
+
 export const setAirdropTokensInConfig = (
     airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined
 ) => {
@@ -56,21 +62,21 @@ export const setAirdropTokensInConfig = (
 
     invoke('set_airdrop_tokens', { airdropTokens })
         .then(() => {
-            useAppConfigStore.setState({ airdrop_tokens: airdropTokensParam });
+            useConfigCoreStore.setState({ airdrop_tokens: airdropTokensParam });
         })
         .catch((e) => console.error('Failed to store airdrop tokens: ', e));
 };
 export const setAllowTelemetry = async (allowTelemetry: boolean) => {
-    useAppConfigStore.setState({ allow_telemetry: allowTelemetry });
+    useConfigCoreStore.setState({ allow_telemetry: allowTelemetry });
     invoke('set_allow_telemetry', { allowTelemetry }).catch((e) => {
         console.error('Could not set telemetry mode to ', allowTelemetry, e);
         setError('Could not change telemetry mode');
-        useAppConfigStore.setState({ allow_telemetry: !allowTelemetry });
+        useConfigCoreStore.setState({ allow_telemetry: !allowTelemetry });
     });
 };
 export const setApplicationLanguage = async (applicationLanguage: Language) => {
-    const prevApplicationLanguage = useAppConfigStore.getState().application_language;
-    useAppConfigStore.setState({ application_language: applicationLanguage });
+    const prevApplicationLanguage = useConfigUIStore.getState().application_language;
+    useConfigUIStore.setState({ application_language: applicationLanguage });
     invoke('set_application_language', { applicationLanguage })
         .then(() => {
             changeLanguage(applicationLanguage);
@@ -78,19 +84,19 @@ export const setApplicationLanguage = async (applicationLanguage: Language) => {
         .catch((e) => {
             console.error('Could not set application language', e);
             setError('Could not change application language');
-            useAppConfigStore.setState({ application_language: prevApplicationLanguage });
+            useConfigUIStore.setState({ application_language: prevApplicationLanguage });
         });
 };
 export const setAutoUpdate = async (autoUpdate: boolean) => {
-    useAppConfigStore.setState({ auto_update: autoUpdate });
+    useConfigCoreStore.setState({ auto_update: autoUpdate });
     invoke('set_auto_update', { autoUpdate }).catch((e) => {
         console.error('Could not set auto update', e);
         setError('Could not change auto update');
-        useAppConfigStore.setState({ auto_update: !autoUpdate });
+        useConfigCoreStore.setState({ auto_update: !autoUpdate });
     });
 };
 export const setCpuMiningEnabled = async (enabled: boolean) => {
-    useAppConfigStore.setState({ cpu_mining_enabled: enabled });
+    useConfigMiningStore.setState({ cpu_mining_enabled: enabled });
     const miningInitiated = useMiningStore.getState().miningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
@@ -109,22 +115,22 @@ export const setCpuMiningEnabled = async (enabled: boolean) => {
         .catch((e) => {
             console.error('Could not set CPU mining enabled', e);
             setError('Could not change CPU mining enabled');
-            useAppConfigStore.setState({ cpu_mining_enabled: !enabled });
+            useConfigMiningStore.setState({ cpu_mining_enabled: !enabled });
             if (miningInitiated && !cpuMining && !gpuMining) {
                 void stopMining();
             }
         });
 };
-export const setCustomStatsServerPort = async (port: number | null) => {
-    useAppConfigStore.setState({ p2pool_stats_server_port: port });
+export const setCustomStatsServerPort = async (port?: number) => {
+    useConfigCoreStore.setState({ p2pool_stats_server_port: port });
     invoke('set_p2pool_stats_server_port', { port }).catch((e) => {
         console.error('Could not set p2pool stats server port', e);
         setError('Could not change p2pool stats server port');
-        useAppConfigStore.setState({ p2pool_stats_server_port: port });
+        useConfigCoreStore.setState({ p2pool_stats_server_port: port });
     });
 };
 export const setGpuMiningEnabled = async (enabled: boolean) => {
-    useAppConfigStore.setState({ gpu_mining_enabled: enabled });
+    useConfigMiningStore.setState({ gpu_mining_enabled: enabled });
     const miningInitiated = useMiningStore.getState().miningInitiated;
     const cpuMining = useMiningMetricsStore.getState().cpu_mining_status.is_mining;
     const gpuMining = useMiningMetricsStore.getState().gpu_mining_status.is_mining;
@@ -152,122 +158,136 @@ export const setGpuMiningEnabled = async (enabled: boolean) => {
     } catch (e) {
         console.error('Could not set GPU mining enabled', e);
         setError('Could not change GPU mining enabled');
-        useAppConfigStore.setState({ gpu_mining_enabled: !enabled });
+        useConfigMiningStore.setState({ gpu_mining_enabled: !enabled });
         if (miningInitiated && !cpuMining && !gpuMining) {
             void stopMining();
         }
     }
 };
 export const setMineOnAppStart = async (mineOnAppStart: boolean) => {
-    useAppConfigStore.setState({ mine_on_app_start: mineOnAppStart });
+    useConfigMiningStore.setState({ mine_on_app_start: mineOnAppStart });
     invoke('set_mine_on_app_start', { mineOnAppStart }).catch((e) => {
         console.error('Could not set mine on app start', e);
         setError('Could not change mine on app start');
-        useAppConfigStore.setState({ mine_on_app_start: !mineOnAppStart });
+        useConfigMiningStore.setState({ mine_on_app_start: !mineOnAppStart });
     });
 };
 export const setMode = async (params: SetModeProps) => {
     const { mode, customGpuLevels, customCpuLevels } = params;
-    const prevMode = useAppConfigStore.getState().mode;
-    useAppConfigStore.setState({ mode, custom_max_cpu_usage: customCpuLevels, custom_max_gpu_usage: customGpuLevels });
+    const prevMode = useConfigMiningStore.getState().mode;
+    useConfigMiningStore.setState({
+        mode,
+        custom_max_cpu_usage: customCpuLevels,
+        custom_max_gpu_usage: customGpuLevels,
+    });
     console.info('Setting mode', mode, customCpuLevels, customGpuLevels);
     invoke('set_mode', { mode, customCpuUsage: customCpuLevels, customGpuUsage: customGpuLevels }).catch((e) => {
         console.error('Could not set mode', e);
         setError('Could not change mode');
-        useAppConfigStore.setState({ mode: prevMode });
+        useConfigMiningStore.setState({ mode: prevMode });
     });
 };
 export const setMoneroAddress = async (moneroAddress: string) => {
-    const prevMoneroAddress = useAppConfigStore.getState().monero_address;
-    useAppConfigStore.setState({ monero_address: moneroAddress });
-    invoke('set_monero_address', { moneroAddress }).catch((e) => {
-        console.error('Could not set Monero address', e);
-        setError('Could not change Monero address');
-        useAppConfigStore.setState({ monero_address: prevMoneroAddress });
-    });
+    const prevMoneroAddress = useConfigWalletStore.getState().monero_address;
+    useConfigWalletStore.setState({ monero_address: moneroAddress });
+    useConfigWalletStore.setState({ monero_address_is_generated: false });
+    invoke('set_monero_address', { moneroAddress })
+        .then(() => {
+            restartMining();
+        })
+        .catch((e) => {
+            console.error('Could not set Monero address', e);
+            setError('Could not change Monero address');
+            useConfigWalletStore.setState({ monero_address: prevMoneroAddress });
+        });
 };
 export const setMonerodConfig = async (useMoneroFail: boolean, moneroNodes: string[]) => {
-    const prevMoneroNodes = useAppConfigStore.getState().mmproxy_monero_nodes;
-    useAppConfigStore.setState({ mmproxy_use_monero_fail: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
+    const prevMoneroNodes = useConfigCoreStore.getState().mmproxy_monero_nodes;
+    useConfigCoreStore.setState({ mmproxy_use_monero_failover: useMoneroFail, mmproxy_monero_nodes: moneroNodes });
     invoke('set_monerod_config', { useMoneroFail, moneroNodes }).catch((e) => {
         console.error('Could not set monerod config', e);
         setError('Could not change monerod config');
-        useAppConfigStore.setState({ mmproxy_use_monero_fail: !useMoneroFail, mmproxy_monero_nodes: prevMoneroNodes });
+        useConfigCoreStore.setState({
+            mmproxy_use_monero_failover: !useMoneroFail,
+            mmproxy_monero_nodes: prevMoneroNodes,
+        });
     });
 };
 export const setP2poolEnabled = async (p2poolEnabled: boolean) => {
-    useAppConfigStore.setState({ p2pool_enabled: p2poolEnabled });
+    useConfigCoreStore.setState({ is_p2pool_enabled: p2poolEnabled });
     invoke('set_p2pool_enabled', { p2poolEnabled }).catch((e) => {
         console.error('Could not set P2pool enabled', e);
         setError('Could not change P2pool enabled');
-        useAppConfigStore.setState({ p2pool_enabled: !p2poolEnabled });
+        useConfigCoreStore.setState({ is_p2pool_enabled: !p2poolEnabled });
     });
 };
 export const setPreRelease = async (preRelease: boolean) => {
-    useAppConfigStore.setState({ pre_release: preRelease });
+    useConfigCoreStore.setState({ pre_release: preRelease });
     invoke('set_pre_release', { preRelease }).catch((e) => {
         console.error('Could not set pre release', e);
         setError('Could not change pre release');
-        useAppConfigStore.setState({ pre_release: !preRelease });
+        useConfigCoreStore.setState({ pre_release: !preRelease });
     });
 };
 export const setShouldAlwaysUseSystemLanguage = async (shouldAlwaysUseSystemLanguage: boolean) => {
-    useAppConfigStore.setState({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
+    useConfigUIStore.setState({ should_always_use_system_language: shouldAlwaysUseSystemLanguage });
     invoke('set_should_always_use_system_language', { shouldAlwaysUseSystemLanguage }).catch((e) => {
         console.error('Could not set should always use system language', e);
         setError('Could not change system language');
-        useAppConfigStore.setState({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
+        useConfigUIStore.setState({ should_always_use_system_language: !shouldAlwaysUseSystemLanguage });
     });
 };
 export const setShouldAutoLaunch = async (shouldAutoLaunch: boolean) => {
-    useAppConfigStore.setState({ should_auto_launch: shouldAutoLaunch });
+    useConfigCoreStore.setState({ should_auto_launch: shouldAutoLaunch });
     invoke('set_should_auto_launch', { shouldAutoLaunch }).catch((e) => {
         console.error('Could not set auto launch', e);
         setError('Could not change auto launch');
-        useAppConfigStore.setState({ should_auto_launch: !shouldAutoLaunch });
+        useConfigCoreStore.setState({ should_auto_launch: !shouldAutoLaunch });
     });
 };
 export const setShowExperimentalSettings = async (showExperimentalSettings: boolean) => {
-    useAppConfigStore.setState({ show_experimental_settings: showExperimentalSettings });
+    useConfigUIStore.setState({ show_experimental_settings: showExperimentalSettings });
     invoke('set_show_experimental_settings', { showExperimentalSettings }).catch((e) => {
         console.error('Could not set show experimental settings', e);
         setError('Could not change experimental settings');
-        useAppConfigStore.setState({ show_experimental_settings: !showExperimentalSettings });
+        useConfigUIStore.setState({ show_experimental_settings: !showExperimentalSettings });
     });
 };
-export const setTheme = async (themeArg: displayMode) => {
-    const display_mode = themeArg?.toLowerCase() as displayMode;
-    const prevTheme = useAppConfigStore.getState().display_mode;
 
-    setUITheme(themeArg);
-    useAppConfigStore.setState({ display_mode });
+export const setDisplayMode = async (displayMode: displayMode) => {
+    const previousDisplayMode = useConfigUIStore.getState().display_mode;
+    useConfigUIStore.setState({ display_mode: displayMode });
 
-    const shouldUpdateConfigTheme = display_mode !== prevTheme;
-
-    if (shouldUpdateConfigTheme) {
-        invoke('set_display_mode', { displayMode: display_mode as displayMode }).catch((e) => {
-            console.error('Could not set theme', e);
-            setError('Could not change theme');
-            if (prevTheme) {
-                useAppConfigStore.setState({ display_mode: prevTheme });
-                setUITheme(prevTheme);
-            }
-        });
-    }
+    invoke('set_display_mode', { displayMode: displayMode as displayMode }).catch((e) => {
+        console.error('Could not set theme', e);
+        setError('Could not change theme');
+        useConfigUIStore.setState({ display_mode: previousDisplayMode });
+    });
 };
+
 export const setUseTor = async (useTor: boolean) => {
-    useAppConfigStore.setState({ use_tor: useTor });
+    useConfigCoreStore.setState({ use_tor: useTor });
     invoke('set_use_tor', { useTor }).catch((e) => {
         console.error('Could not set use Tor', e);
         setError('Could not change Tor usage');
-        useAppConfigStore.setState({ use_tor: !useTor });
+        useConfigCoreStore.setState({ use_tor: !useTor });
     });
 };
 export const setVisualMode = (enabled: boolean) => {
-    useAppConfigStore.setState({ visual_mode: enabled });
+    useConfigUIStore.setState({ visual_mode: enabled });
     invoke('set_visual_mode', { enabled }).catch((e) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
-        useAppConfigStore.setState({ visual_mode: !enabled });
+        useConfigUIStore.setState({ visual_mode: !enabled });
+    });
+};
+export const setNodeType = async (nodeType: NodeType) => {
+    const previousNodeType = useConfigCoreStore.getState().node_type;
+    useConfigCoreStore.setState({ node_type: nodeType });
+
+    invoke('set_node_type', { nodeType: nodeType }).catch((e) => {
+        console.error('Could not set node type', e);
+        setError('Could not change node type');
+        useConfigCoreStore.setState({ node_type: previousNodeType });
     });
 };

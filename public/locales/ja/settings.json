@@ -29,7 +29,7 @@
   "debug-info": "デバッグ",
   "disconnect": "エアドロップから切断",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Torブリッジの取得に失敗しました。インターネット接続を確認するか、後でもう一度お試しください。",
     "invalid-bridge": "ブリッジ設定が無効です",
     "invalid-control-port": "コントロールポートの設定が無効です"
   },
@@ -57,6 +57,7 @@
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "local-node-sync-progress": "ローカルノードの同期進行状況",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
   "mine-on-app-start": {
@@ -65,6 +66,7 @@
   },
   "miners": "マイナー",
   "mining-toggle-warning": "変更が適用される間、マイニングは一時停止されます。",
+  "minotari-node": "Minotariノード",
   "monero-address": {
     "placeholder": "Moneroアドレスを入力",
     "title": "Moneroアドレス"
@@ -72,6 +74,12 @@
   "monero-seed-words": "Monero シードワード",
   "network": "ネットワーク",
   "no-entry-guard": "エントリーガードが接続されていません！",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
+  "node-connection-address": "接続アドレス",
+  "node-public-address": "公開アドレス",
+  "node-public-key": "公開鍵",
+  "node-type": "タイプ",
   "not-connected-to-tari": "Tariネットワークに接続されていません",
   "open-logs-directory": "ログディレクトリを開く",
   "p2pool-chain-tip": "チェーンの先端",

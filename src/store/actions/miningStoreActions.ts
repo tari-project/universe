@@ -6,8 +6,10 @@ import { useMiningMetricsStore } from '../useMiningMetricsStore.ts';
 import { useMiningStore } from '../useMiningStore.ts';
 import { modeType } from '../types.ts';
 import { setGpuMiningEnabled, setMode } from './appConfigStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { setError } from './appStateStoreActions.ts';
+import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
+import { useSetupStore } from '@app/store/useSetupStore.ts';
+import { useConfigMiningStore } from '../useAppConfigStore.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -20,7 +22,7 @@ export const changeMiningMode = async (params: ChangeMiningModeArgs) => {
     console.info(`Changing mode to ${mode}...`);
     const metricsState = useMiningMetricsStore.getState();
     useMiningStore.setState({ isChangingMode: true });
-    useMiningMetricsStore.getState().handleMiningModeChange();
+    handleMiningModeChange();
 
     if (metricsState.cpu_mining_status.is_mining || metricsState.gpu_mining_status.is_mining) {
         console.info('Pausing mining...');
@@ -61,7 +63,6 @@ export const pauseMining = async () => {
     } catch (e) {
         console.error('Failed to pause (stop) mining: ', e);
         setError(e as string);
-        useMiningStore.setState({ miningInitiated: true });
     }
 };
 export const restartMining = async () => {
@@ -103,8 +104,8 @@ export const setEngine = async (engine) => {
 
 export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     useMiningStore.setState((state) => {
-        const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-        const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
+        const gpu_mining_enabled = useConfigMiningStore.getState().gpu_mining_enabled;
+        const cpu_mining_enabled = useConfigMiningStore.getState().cpu_mining_enabled;
         return {
             miningControlsEnabled:
                 state.isChangingMode || (!gpu_mining_enabled && !cpu_mining_enabled) ? false : miningControlsEnabled,
@@ -121,8 +122,10 @@ export const setMiningNetwork = async () => {
     }
 };
 export const startMining = async () => {
-    console.info('Mining starting....');
+    if (!useSetupStore.getState().miningUnlocked) return;
+
     useMiningStore.setState({ miningInitiated: true });
+    console.info('Mining starting....');
     useBlockchainVisualisationStore
         .getState()
         .setDisplayBlockTime({ daysString: '', hoursString: '', minutes: '00', seconds: '00' });
@@ -166,7 +169,7 @@ export const toggleDeviceExclusion = async (deviceIndex: number, excluded: boole
         if (isAllExcluded) {
             setGpuMiningEnabled(false);
         }
-        useMiningMetricsStore.getState().setGpuDevices(updatedDevices);
+        setGpuDevices(updatedDevices);
         if (useMiningStore.getState().miningInitiated) {
             console.info('Restarting mining...');
             await startMining();

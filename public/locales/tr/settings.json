@@ -29,7 +29,7 @@
   "debug-info": "Hata Ayıklama",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Tor köprüleri alınamadı. İnternet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.",
     "invalid-bridge": "Köprü yapılandırması geçersiz",
     "invalid-control-port": "Kontrol Portu yapılandırması geçersiz"
   },
@@ -57,6 +57,7 @@
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "local-node-sync-progress": "Yerel düğüm senkronizasyon ilerlemesi",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
   "mine-on-app-start": {
@@ -65,6 +66,7 @@
   },
   "miners": "Madenciler",
   "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
+  "minotari-node": "Minotari Düğümü",
   "monero-address": {
     "placeholder": "Monero adresini girin",
     "title": "Monero Adresi"
@@ -72,6 +74,12 @@
   "monero-seed-words": "Monero Seed Kelimeleri",
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
+  "node-connection-address": "Bağlantı adresi",
+  "node-public-address": "Genel adres",
+  "node-public-key": "Genel anahtar",
+  "node-type": "Tür",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "open-logs-directory": "Günlükler dizinini açın",
   "p2pool-chain-tip": "Zincir ucu",

@@ -34,6 +34,7 @@ use tauri_plugin_sentry::sentry;
 use tokio::runtime::Handle;
 use tokio::select;
 use tokio::task::JoinHandle;
+use tokio_util::task::TaskTracker;
 
 use crate::process_killer::kill_process;
 use crate::process_utils::launch_child_process;
@@ -42,6 +43,7 @@ const LOG_TARGET: &str = "tari::universe::process_adapter";
 
 pub(crate) trait ProcessAdapter {
     type StatusMonitor: StatusMonitor;
+    type ProcessInstance: ProcessInstanceTrait;
 
     // fn spawn(&self) -> Result<(Receiver<()>, TInstance), anyhow::Error>;
     fn spawn_inner(
@@ -51,7 +53,7 @@ pub(crate) trait ProcessAdapter {
         log_folder: PathBuf,
         binary_version_path: PathBuf,
         is_first_start: bool,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error>;
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error>;
     fn name(&self) -> &str;
 
     fn spawn(
@@ -61,7 +63,7 @@ pub(crate) trait ProcessAdapter {
         log_folder: PathBuf,
         binary_version_path: PathBuf,
         is_first_start: bool,
-    ) -> Result<(ProcessInstance, Self::StatusMonitor), anyhow::Error> {
+    ) -> Result<(Self::ProcessInstance, Self::StatusMonitor), anyhow::Error> {
         self.spawn_inner(
             base_folder,
             config_folder,
@@ -73,6 +75,7 @@ pub(crate) trait ProcessAdapter {
 
     fn pid_file_name(&self) -> &str;
 
+    #[allow(dead_code)]
     fn pid_file_exisits(&self, base_folder: PathBuf) -> bool {
         std::path::Path::new(&base_folder)
             .join(self.pid_file_name())
@@ -121,7 +124,17 @@ pub enum HealthStatus {
 
 #[async_trait]
 pub(crate) trait StatusMonitor: Clone + Sync + Send + 'static {
-    async fn check_health(&self, uptime: Duration) -> HealthStatus;
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus;
+}
+
+// TODO: Rename to ProcessInstance
+#[async_trait]
+pub(crate) trait ProcessInstanceTrait: Sync + Send + 'static {
+    fn ping(&self) -> bool;
+    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error>;
+    async fn stop(&mut self) -> Result<i32, anyhow::Error>;
+    fn is_shutdown_triggered(&self) -> bool;
+    async fn wait(&mut self) -> Result<i32, anyhow::Error>;
 }
 
 #[derive(Clone)]
@@ -140,15 +153,16 @@ pub(crate) struct ProcessInstance {
     pub startup_spec: ProcessStartupSpec,
 }
 
-impl ProcessInstance {
-    pub fn ping(&self) -> bool {
+#[async_trait]
+impl ProcessInstanceTrait for ProcessInstance {
+    fn ping(&self) -> bool {
         self.handle
             .as_ref()
             .map(|m| !m.is_finished())
             .unwrap_or_else(|| false)
     }
 
-    pub async fn start(&mut self) -> Result<(), anyhow::Error> {
+    async fn start(&mut self, task_tracker: TaskTracker) -> Result<(), anyhow::Error> {
         if self.handle.is_some() {
             warn!(target: LOG_TARGET, "Process is already running");
             return Ok(());
@@ -164,10 +178,10 @@ impl ProcessInstance {
             return Ok(());
         };
 
-        self.handle = Some(tokio::spawn(async move {
+        self.handle = Some(task_tracker.spawn(async move {
             crate::download_utils::set_permissions(&spec.file_path).await?;
             // start
-            info!(target: LOG_TARGET, "Launching {} node", spec.name);
+            info!(target: LOG_TARGET, "Launching process for: {}", spec.name);
             let mut child = launch_child_process(
                 &spec.file_path,
                 spec.data_dir.as_path(),
@@ -202,7 +216,7 @@ impl ProcessInstance {
                     }
                 },
             };
-            info!(target: LOG_TARGET, "Stopping {} node with exit code: {}", spec.name, exit_code);
+            info!(target: LOG_TARGET, "Stopping {} process with exit code: {}", spec.name, exit_code);
 
             if let Err(error) = fs::remove_file(spec.data_dir.join(spec.pid_file_name)) {
                 warn!(target: LOG_TARGET, "Could not clear {}'s pid file: {:?}", spec.name, error);
@@ -213,12 +227,25 @@ impl ProcessInstance {
         Ok(())
     }
 
-    pub async fn stop(&mut self) -> Result<i32, anyhow::Error> {
+    async fn stop(&mut self) -> Result<i32, anyhow::Error> {
         self.shutdown.trigger();
         let handle = self.handle.take();
         handle
             .ok_or_else(|| anyhow!("Handle is not present"))?
             .await?
+    }
+
+    fn is_shutdown_triggered(&self) -> bool {
+        self.shutdown.is_triggered()
+    }
+
+    async fn wait(&mut self) -> Result<i32, anyhow::Error> {
+        let handle = self.handle.take();
+
+        match handle {
+            Some(handle) => handle.await?,
+            None => Err(anyhow!("No process handle available")),
+        }
     }
 }
 

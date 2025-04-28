@@ -68,6 +68,7 @@ impl P2poolAdapter {
 
 impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     fn spawn_inner(
         &self,
@@ -105,7 +106,7 @@ impl ProcessAdapter for P2poolAdapter {
                 });
             }
             if fs::exists(data_dir.join("block_cache_backup"))? {
-                let _unused = fs::remove_file(data_dir.join("block_cache_backup")).inspect_err(
+                let _unused = fs::remove_dir_all(data_dir.join("block_cache_backup")).inspect_err(
                     |e| warn!(target: LOG_TARGET, "Failed to remove block cache backup file: {}", e),
                 ).inspect(|_| {
                     info!(target: LOG_TARGET, "Removed block cache backup file");
@@ -206,21 +207,35 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.stats_client.stats().await {
-            Ok(stats) => {
-                if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 * 10 {
-                    warn!(target: LOG_TARGET, "P2pool last gossip message was more than 10 minutes ago, health check failed");
-                    return HealthStatus::Unhealthy;
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.stats_client.stats()).await {
+            Ok(stats_result) => match stats_result {
+                Ok(stats) => {
+                    let time_since_last_gossip =
+                        EpochTime::now().as_u64() - stats.last_gossip_message.as_u64();
+                    if time_since_last_gossip > 60 * 10 {
+                        warn!(
+                            target: LOG_TARGET,
+                            "P2pool last gossip message was more than 10 minutes ago, health check warning"
+                        );
+                        return HealthStatus::Warning;
+                    }
+
+                    let _unused = self.latest_status_broadcast.send(Some(stats));
+                    HealthStatus::Healthy
                 }
-
-                let _unused = self.latest_status_broadcast.send(Some(stats));
-
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
-                HealthStatus::Unhealthy
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_err) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "P2pool health check timed out after {:?}",
+                    timeout_duration
+                );
+                HealthStatus::Warning
             }
         }
     }

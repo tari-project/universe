@@ -20,19 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::node_manager::NodeManager;
-use crate::node_manager::NodeManagerError;
+use crate::events_emitter::EventsEmitter;
+use crate::internal_wallet::InternalWallet;
+use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
+use crate::tasks_tracker::TasksTrackers;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
+use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use std::time::Duration;
 use tari_shutdown::ShutdownSignal;
+use tauri::AppHandle;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
+
+static LOG_TARGET: &str = "tari::universe::wallet_manager";
 
 #[derive(thiserror::Error, Debug)]
 pub enum WalletManagerError {
@@ -47,6 +55,7 @@ pub enum WalletManagerError {
 pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
     node_manager: NodeManager,
+    initial_scan_completed: Arc<AtomicBool>,
 }
 
 impl Clone for WalletManager {
@@ -54,6 +63,7 @@ impl Clone for WalletManager {
         Self {
             watcher: self.watcher.clone(),
             node_manager: self.node_manager.clone(),
+            initial_scan_completed: self.initial_scan_completed.clone(),
         }
     }
 }
@@ -64,15 +74,13 @@ impl WalletManager {
         wallet_state_watch_tx: watch::Sender<Option<WalletState>>,
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
-        // TODO: wire up to front end
-        let use_tor = false;
-
-        let adapter = WalletAdapter::new(use_tor, wallet_state_watch_tx);
+        let adapter = WalletAdapter::new(wallet_state_watch_tx);
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             node_manager,
+            initial_scan_completed: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -82,13 +90,18 @@ impl WalletManager {
         base_path: PathBuf,
         config_path: PathBuf,
         log_path: PathBuf,
+        use_tor: bool,
+        connect_with_local_node: bool,
     ) -> Result<(), WalletManagerError> {
+        let shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+        let task_tracker = TasksTrackers::current()
+            .wallet_phase
+            .get_task_tracker()
+            .await;
+
         self.node_manager.wait_ready().await?;
-        let node_identity = self.node_manager.get_identity().await?;
-        let base_node_tcp_port = self.node_manager.get_tcp_listener_port().await;
 
         let mut process_watcher = self.watcher.write().await;
-
         if process_watcher.is_running()
             || app_shutdown.is_terminated()
             || app_shutdown.is_triggered()
@@ -96,16 +109,24 @@ impl WalletManager {
             return Ok(());
         }
 
-        process_watcher.adapter.base_node_public_key = Some(node_identity.public_key.clone());
-        process_watcher.adapter.base_node_address =
-            Some(format!("/ip4/127.0.0.1/tcp/{}", base_node_tcp_port));
+        let (public_key, public_address) = self.node_manager.get_connection_details().await?;
+        process_watcher.adapter.base_node_public_key = Some(public_key.clone());
+        process_watcher.adapter.base_node_address = Some(public_address.clone());
+        process_watcher.adapter.use_tor(use_tor);
+        process_watcher
+            .adapter
+            .connect_with_local_node(connect_with_local_node);
+        process_watcher.adapter.wallet_birthday =
+            self.get_wallet_birthday(config_path.clone()).await.ok();
+
         process_watcher
             .start(
-                app_shutdown,
                 base_path,
                 config_path,
                 log_path,
                 crate::binaries::Binaries::Wallet,
+                shutdown_signal,
+                task_tracker,
             )
             .await?;
         process_watcher.wait_ready().await?;
@@ -122,6 +143,32 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
+    pub fn is_initial_scan_completed(&self) -> bool {
+        self.initial_scan_completed
+            .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+        internal_wallet.get_birthday().await
+    }
+
+    pub async fn get_transactions_history(
+        &self,
+        continuation: bool,
+        limit: Option<u32>,
+    ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        process_watcher
+            .adapter
+            .get_transactions_history(continuation, limit)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
     pub async fn get_coinbase_transactions(
         &self,
         continuation: bool,
@@ -129,9 +176,7 @@ impl WalletManager {
     ) -> Result<Vec<TransactionInfo>, WalletManagerError> {
         let process_watcher = self.watcher.read().await;
         process_watcher
-            .status_monitor
-            .as_ref()
-            .ok_or_else(|| WalletManagerError::WalletNotStarted)?
+            .adapter
             .get_coinbase_transactions(continuation, limit)
             .await
             .map_err(|e| match e {
@@ -140,19 +185,191 @@ impl WalletManager {
             })
     }
 
+    pub async fn wait_for_scan_to_height(
+        &self,
+        block_height: u64,
+        timeout: Option<Duration>,
+    ) -> Result<WalletState, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+
+        process_watcher
+            .adapter
+            .wait_for_scan_to_height(block_height, timeout)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    pub async fn find_coinbase_transaction_for_block(
+        &self,
+        block_height: u64,
+    ) -> Result<Option<TransactionInfo>, WalletManagerError> {
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+
+        process_watcher
+            .adapter
+            .find_coinbase_transaction_for_block(block_height)
+            .await
+            .map_err(|e| match e {
+                WalletStatusMonitorError::WalletNotStarted => WalletManagerError::WalletNotStarted,
+                _ => WalletManagerError::UnknownError(e.into()),
+            })
+    }
+
+    #[allow(clippy::too_many_lines)]
+    pub async fn wait_for_initial_wallet_scan(
+        &self,
+        app: &AppHandle,
+        node_status_watch_rx: watch::Receiver<BaseNodeStatus>,
+    ) -> Result<(), WalletManagerError> {
+        if self.is_initial_scan_completed() {
+            log::info!(target: LOG_TARGET, "Initial wallet scan already completed, skipping");
+            return Ok(());
+        }
+
+        let process_watcher = self.watcher.read().await;
+        if !process_watcher.is_running() {
+            return Err(WalletManagerError::WalletNotStarted);
+        }
+        let wallet_state_receiver = process_watcher.adapter.state_broadcast.subscribe();
+        let app_clone = app.clone();
+        drop(process_watcher);
+
+        let node_status_watch_rx_progress = node_status_watch_rx.clone();
+        let initial_scan_completed = self.initial_scan_completed.clone();
+        // Start a background task to monitor the wallet state and emit scan progress updates
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            let mut wallet_state_rx = wallet_state_receiver;
+            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+            loop {
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping status forwarding thread");
+                        break;
+                    }
+                    _ = wallet_state_rx.changed() => {
+                        let current_target_height = node_status_watch_rx_progress.borrow().block_height;
+                        let (scanned_height, progress) = {
+                            if let Some(wallet_state) = &*wallet_state_rx.borrow() {
+                                let progress = if current_target_height > 0 {
+                                    (wallet_state.scanned_height as f64 / current_target_height as f64 * 100.0).min(100.0)
+                                } else {
+                                    0.0
+                                };
+                                (wallet_state.scanned_height, progress)
+                            } else {
+                                continue;
+                            }
+                        };
+                        if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
+
+                        if scanned_height > 0 {
+                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
+                            EventsEmitter::emit_init_wallet_scanning_progress(
+                                &app_clone,
+                                scanned_height,
+                                current_target_height,
+                                progress,
+                            ).await;
+                        }
+                    }
+                }
+            }
+        });
+
+        let app_clone2 = app.clone();
+        let wallet_manager = self.clone();
+        let node_status_watch_rx_scan = node_status_watch_rx.clone();
+
+        TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+            let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
+
+            loop {
+                let current_target_height = node_status_watch_rx_scan.borrow().block_height;
+                tokio::select! {
+                    _ = shutdown_signal.wait() => {
+                        log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet initial scan task");
+                        return Ok(());
+                    }
+                    result = wallet_manager.wait_for_scan_to_height(current_target_height, None) => {
+                        match result {
+                            Ok(scanned_wallet_state) => {
+                                let latest_height = node_status_watch_rx_scan.borrow().block_height;
+                                if latest_height > current_target_height {
+                                    log::info!(target: LOG_TARGET,
+                                        "Node height increased from {} to {} while initial scanning, continuing..",
+                                        current_target_height, latest_height);
+                                    continue;
+                                }
+
+                                // Scan completed to current target height
+                                if let Some(balance) = scanned_wallet_state.balance {
+                                    log::info!(
+                                        target: LOG_TARGET,
+                                        "Initial wallet scan complete up to {} block height. Available balance: {}",
+                                        latest_height,
+                                        balance.available_balance
+                                    );
+                                    EventsEmitter::emit_wallet_balance_update(&app_clone2, balance).await;
+                                    EventsEmitter::emit_init_wallet_scanning_progress(
+                                        &app_clone2,
+                                        current_target_height,
+                                        current_target_height,
+                                        100.0,
+                                    ).await;
+
+                                    wallet_manager.initial_scan_completed
+                                        .store(true, std::sync::atomic::Ordering::Relaxed);
+                                } else {
+                                    log::warn!(target: LOG_TARGET, "Wallet Balance is None after initial scanning");
+                                }
+                                break;
+                            }
+                            Err(e) => {
+                                log::error!(target: LOG_TARGET, "Error during initial wallet scan: {}", e);
+                                return Err(e);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Ok(())
+        });
+
+        Ok(())
+    }
+
+    #[allow(dead_code)]
     pub async fn stop(&self) -> Result<i32, WalletManagerError> {
+        // Reset the initial scan flag
+        self.initial_scan_completed
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+
         let mut process_watcher = self.watcher.write().await;
         process_watcher
             .stop()
             .await
             .map_err(WalletManagerError::UnknownError)
     }
-
+    #[allow(dead_code)]
     pub async fn is_running(&self) -> bool {
         let process_watcher = self.watcher.read().await;
         process_watcher.is_running()
     }
-
+    #[allow(dead_code)]
     pub async fn is_pid_file_exists(&self, base_path: PathBuf) -> bool {
         let lock = self.watcher.read().await;
         lock.is_pid_file_exists(base_path)

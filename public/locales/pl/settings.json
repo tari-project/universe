@@ -30,7 +30,7 @@
   "debug-info": "Informacje debugowania",
   "disconnect": "Odłącz od Airdrop",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "Nie udało się pobrać mostów Tor. Sprawdź połączenie internetowe lub spróbuj ponownie później.",
     "invalid-bridge": "Konfiguracja mostu jest nieprawidłowa",
     "invalid-control-port": "Konfiguracja portu kontrolnego jest nieprawidłowa"
   },
@@ -58,6 +58,7 @@
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "local-node-sync-progress": "Postęp synchronizacji lokalnego węzła",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
   "mine-on-app-start": {
@@ -66,6 +67,7 @@
   },
   "miners": "Górnicy",
   "mining-toggle-warning": "Wydobycie zostanie wstrzymane, gdy zmiany wejdą w życie.",
+  "minotari-node": "Węzeł Minotari",
   "monero-address": {
     "placeholder": "Wprowadź address Monero",
     "title": "Address Monero"
@@ -73,6 +75,12 @@
   "monero-seed-words": "Słowa kluczowe Monero",
   "network": "Sieć",
   "no-entry-guard": "Brak połączenia z Entry Guardami!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
+  "node-connection-address": "Adres połączenia",
+  "node-public-address": "Adres publiczny",
+  "node-public-key": "Klucz publiczny",
+  "node-type": "Typ",
   "not-connected-to-tari": "Nie połączono z siecią Tari",
   "not-connected-to-tari-network": null,
   "open-logs-directory": "Otwórz katalog logów",

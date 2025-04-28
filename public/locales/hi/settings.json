@@ -29,7 +29,7 @@
   "debug-info": "डीबग",
   "disconnect": "एयरड्रॉप से डिस्कनेक्ट करें",
   "errors": {
-    "fetch-tor-bridges": "Failed to fetch Tor bridges. Check your internet connection or try again later.",
+    "fetch-tor-bridges": "टोर ब्रिज प्राप्त करने में विफल। अपनी इंटरनेट कनेक्शन की जाँच करें या बाद में पुनः प्रयास करें।",
     "invalid-bridge": "ब्रिज कॉन्फ़िगरेशन अमान्य है",
     "invalid-control-port": "कंट्रोल पोर्ट कॉन्फ़िगरेशन अमान्य है"
   },
@@ -57,6 +57,7 @@
   "inviteCode": "आमंत्रण कोड",
   "is-on-orphan-chain": "आप एक फोर्क से जुड़े हुए प्रतीत होते हैं, और मुख्य चेन से नहीं। आपके द्वारा जीते गए किसी भी ब्लॉक को अमान्य किया जा सकता है।",
   "last-block-added-time": "श्रृंखला में जोड़ा गया अंतिम ब्लॉक समय",
+  "local-node-sync-progress": "स्थानीय नोड सिंकिंग प्रगति",
   "logs": "लॉग्स",
   "low-hash-rate-warning": "आपकी हैश रेट बहुत कम है। Tari Universe के अलावा सभी ऐप्स को बंद करने का प्रयास करें",
   "mine-on-app-start": {
@@ -65,6 +66,7 @@
   },
   "miners": "माइनर्स",
   "mining-toggle-warning": "परिवर्तनों के प्रभावी होने के दौरान माइनिंग रोक दी जाएगी।",
+  "minotari-node": "मिनोटारी नोड",
   "monero-address": {
     "placeholder": "मोनरो पता दर्ज करें",
     "title": "मोनरो पता"
@@ -72,6 +74,12 @@
   "monero-seed-words": "मोनरो सीड शब्द",
   "network": "नेटवर्क",
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
+  "node-connection-address": "कनेक्शन पता",
+  "node-public-address": "सार्वजनिक पता",
+  "node-public-key": "सार्वजनिक कुंजी",
+  "node-type": "प्रकार",
   "not-connected-to-tari": "Tari नेटवर्क से जुड़ा नहीं",
   "open-logs-directory": "लॉग्स निर्देशिका खोलें",
   "p2pool-chain-tip": "श्रृंखलाओं की नोक",

@@ -1,7 +1,6 @@
 import { io } from 'socket.io-client';
 
-import { useAppConfigStore, useMiningStore } from '@app/store';
-import { invoke } from '@tauri-apps/api/core';
+import { useConfigCoreStore, useMiningStore } from '@app/store';
 
 type DisconnectDescription =
     | Error
@@ -20,7 +19,7 @@ export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
 const version = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
 
 const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
-    const appId = useAppConfigStore.getState().anon_id;
+    const appId = useConfigCoreStore.getState().anon_id;
     const miningNetwork = useMiningStore.getState().network;
     const wsOptions = {
         auth: {
@@ -33,7 +32,6 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
         secure: true,
     };
 
-    invoke('start_mining_status').catch(console.error);
     socket = io(airdropApiUrl, wsOptions);
     console.info('Socket initialised');
     socket.connect();
@@ -42,7 +40,6 @@ const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
 
 function removeSocket() {
     socket?.disconnect();
-    invoke('stop_mining_status').catch(console.error);
     socket = null;
     console.info('Socket removed');
 }

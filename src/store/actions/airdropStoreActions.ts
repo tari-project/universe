@@ -6,9 +6,10 @@ import {
     AnimationType,
     BackendInMemoryConfig,
     BonusTier,
+    CommunityMessage,
     setAirdropTokensInConfig,
     useAirdropStore,
-    useAppConfigStore,
+    useConfigCoreStore,
     UserDetails,
     UserEntryPoints,
     UserPoints,
@@ -85,7 +86,7 @@ const fetchBackendInMemoryConfig = async () => {
 const getExistingTokens = async () => {
     const localStorageTokens = localStorage.getItem('airdrop-store');
     const parsedStorageTokens = localStorageTokens ? JSON.parse(localStorageTokens) : undefined;
-    const storedTokens = useAppConfigStore.getState().airdrop_tokens || parsedStorageTokens;
+    const storedTokens = useConfigCoreStore.getState().airdrop_tokens || parsedStorageTokens;
     if (storedTokens) {
         try {
             if (!storedTokens?.token || !storedTokens?.refreshToken) {
@@ -123,8 +124,12 @@ export const airdropSetup = async () => {
         console.error('Error in airdropSetup: ', error);
     }
 };
-export const handleAirdropLogout = async () => {
-    removeSocket();
+export const handleAirdropLogout = async (isUserLogout = false) => {
+    if (!isUserLogout) {
+        removeSocket();
+    } else {
+        console.info('User logout | removing airdrop tokens');
+    }
     await setAirdropTokens(undefined);
 };
 
@@ -147,6 +152,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
 
         if (airdropApiUrl && authToken) {
             initialiseSocket(airdropApiUrl, authToken);
+            invoke('start_mining_status').catch(console.error);
         }
     } else {
         // User not connected
@@ -156,6 +162,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        invoke('stop_mining_status').catch(console.error);
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
@@ -197,24 +204,92 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
+export async function fetchPollingFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/polling',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ pollingEnabled: response.access });
+        // Let the BE know we're using the polling feature for mining proofs
+        // invoke('set_airdrop_polling', { pollingEnabled: response.access });
+    }
+
+    return response;
+}
+
+export async function fetchOrphanChainUiFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/orphan-chain-ui',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ orphanChainUiEnabled: response.access });
+    }
+
+    return response;
+}
+
+export async function fetchCommunityMessages() {
+    const response = await handleAirdropRequest<CommunityMessage[] | null>({
+        publicRequest: true,
+        path: '/miner/community-message',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ communityMessages: response });
+    }
+
+    return response;
+}
+
+export async function fetchLatestXSpaceEvent() {
+    const response = await handleAirdropRequest<XSpaceEvent | null>({
+        publicRequest: true,
+        path: '/miner/x-space-events/latest',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (response) {
+        useAirdropStore.setState({ latestXSpaceEvent: response });
+    }
+
+    return response;
+}
+
 export const fetchAllUserData = async () => {
     const fetchUserDetails = async () => {
         return await handleAirdropRequest<UserDetails>({
             path: '/user/details',
             method: 'GET',
-            onError: handleAirdropLogout,
+            onError: () => handleAirdropLogout(),
         })
             .then((data) => {
                 if (data?.user?.id) {
                     setUserDetails(data);
                     return data.user;
                 } else {
-                    console.error('Error fetching user details, logging out');
                     handleAirdropLogout();
                 }
             })
             .catch(() => {
-                console.error('Error fetching user details, logging out');
                 handleAirdropLogout();
             });
     };

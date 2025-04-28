@@ -1,12 +1,19 @@
 import { invoke } from '@tauri-apps/api/core';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
-import { startMining } from './miningStoreActions.ts';
-import { useAppConfigStore } from '../useAppConfigStore.ts';
 import { useAppStateStore } from '../appStateStore.ts';
-import { setAnimationState } from '@tari-project/tari-tower';
 import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
-import { ResumingAllProcessesPayload } from '@app/hooks/app/useListenForAppResuming.ts';
+import { ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
+import { setDialogToShow } from '../index.ts';
+import { SetupPhase } from '@app/types/backend-state.ts';
+import {
+    updateCoreSetupPhaseInfo,
+    updateHardwareSetupPhaseInfo,
+    updateNodeSetupPhaseInfo,
+    updateUnknownSetupPhaseInfo,
+    updateWalletSetupPhaseInfo,
+} from './setupStoreActions.ts';
+import { setShowResumeAppModal } from './uiStoreActions.ts';
+import { useSetupStore } from '../useSetupStore.ts';
 
 export const fetchApplicationsVersions = async () => {
     try {
@@ -41,10 +48,10 @@ export const fetchExternalDependencies = async () => {
         console.error('Error loading missing external dependencies', error);
     }
 };
+export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
+    useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
-export const setAppResumePayload = (appResumePayload: ResumingAllProcessesPayload) =>
-    useAppStateStore.setState({ appResumePayload });
 export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
 export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
     useAppStateStore.setState({ criticalProblem });
@@ -60,31 +67,7 @@ export const setIsAppUpdateAvailable = (isAppUpdateAvailable: boolean) =>
 export const setIsSettingsOpen = (value: boolean) => useAppStateStore.setState({ isSettingsOpen: value });
 export const setIssueReference = (issueReference: string) => useAppStateStore.setState({ issueReference });
 export const setReleaseNotes = (releaseNotes: string) => useAppStateStore.setState({ releaseNotes });
-export const setSetupComplete = async () => {
-    // Proceed with auto mining when enabled
-    const mine_on_app_start = useAppConfigStore.getState().mine_on_app_start;
-    const cpu_mining_enabled = useAppConfigStore.getState().cpu_mining_enabled;
-    const gpu_mining_enabled = useAppConfigStore.getState().gpu_mining_enabled;
-    const visual_mode = useAppConfigStore.getState().visual_mode;
-    if (visual_mode) {
-        try {
-            setAnimationState('showVisual');
-        } catch (error) {
-            console.error('Failed to set animation state:', error);
-        }
-    }
-    if (mine_on_app_start && (cpu_mining_enabled || gpu_mining_enabled)) {
-        await startMining();
-    }
-    useAppStateStore.setState({ setupComplete: true });
-};
-export const setSetupParams = (setupTitleParams: Record<string, string>) =>
-    useAppStateStore.setState((current) => {
-        const isEqual = deepEqual(current.setupTitleParams, setupTitleParams);
-        return { setupTitleParams: isEqual ? current.setupTitleParams : setupTitleParams };
-    });
-export const setSetupProgress = (setupProgress: number) => useAppStateStore.setState({ setupProgress });
-export const setSetupTitle = (setupTitle: string) => useAppStateStore.setState({ setupTitle });
+
 export const updateApplicationsVersions = async () => {
     try {
         await invoke('update_applications');
@@ -95,3 +78,44 @@ export const updateApplicationsVersions = async () => {
 };
 
 export const setNetworkStatus = (networkStatus: NetworkStatus) => useAppStateStore.setState({ networkStatus });
+export const handleShowRelesaeNotes = (payload: ShowReleaseNotesPayload) => {
+    setReleaseNotes(payload.release_notes || '');
+    setIsAppUpdateAvailable(payload.is_app_update_available);
+    if (payload.should_show_dialog) {
+        setDialogToShow('releaseNotes');
+    }
+};
+
+export const handleRestartingPhases = async (phasesToRestart: SetupPhase[]) => {
+    if (phasesToRestart.length === 0) {
+        return;
+    }
+
+    if (useSetupStore.getState().appUnlocked) {
+        setDialogToShow(undefined);
+        setShowResumeAppModal(true);
+    }
+    setIsSettingsOpen(false);
+
+    for (const phase of phasesToRestart) {
+        switch (phase) {
+            case SetupPhase.Core:
+                updateCoreSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Node:
+                updateNodeSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Hardware:
+                updateHardwareSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Unknown:
+                updateUnknownSetupPhaseInfo(undefined);
+                break;
+            case SetupPhase.Wallet:
+                updateWalletSetupPhaseInfo(undefined);
+                break;
+            default:
+                break;
+        }
+    }
+};

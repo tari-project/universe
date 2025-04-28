@@ -91,6 +91,7 @@ impl XmrigAdapter {
 
 impl ProcessAdapter for XmrigAdapter {
     type StatusMonitor = XmrigStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     fn spawn_inner(
         &self,
@@ -189,16 +190,23 @@ pub struct XmrigStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for XmrigStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.summary().await {
-            Ok(s) => {
-                let _result = self.summary_broadcast.send(Some(s));
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.summary()).await {
+            Ok(summary_result) => match summary_result {
+                Ok(s) => {
+                    let _result = self.summary_broadcast.send(Some(s));
+                    HealthStatus::Healthy
+                }
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to get xmrig summary: {}", e);
+                    let _result = self.summary_broadcast.send(None);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_error) => {
+                warn!(target: LOG_TARGET, "Timeout while getting xmrig summary");
                 let _result = self.summary_broadcast.send(None);
-                HealthStatus::Unhealthy
+                HealthStatus::Warning
             }
         }
     }

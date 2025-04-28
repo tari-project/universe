@@ -1,3 +1,15 @@
+🌟 TARI UNIVERSE 0.9.849
+
+_April 23, 2025_
+
+🚀 Hey Tari Fam,
+The Testnet has been reset! A quick reminder:
+- 1️⃣ You may still see a fork message for 30 minutes—please don’t worry, it will go away
+- 2️⃣ Your tXTM balance has been reset to 0
+- 3️⃣ Your Gems are SAFU! The network reset only impacts your tXTM balance
+
+--
+
 🌟 TARI UNIVERSE v0.9.841 — The Shell Stirs
 
 _April 9, 2025_

@@ -20,6 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
+use crate::configs::trait_config::ConfigImpl;
 use crate::internal_wallet::WalletConfig;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
@@ -59,8 +61,6 @@ const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 const KEYCHAIN_USERNAME_LEGACY: &str = "internal_wallet";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 
-pub static KEYRING_ACCESSED: AtomicBool = AtomicBool::new(false);
-
 pub struct CredentialManager {
     service_name: String,
     username: String,
@@ -88,9 +88,9 @@ impl CredentialManager {
         )
     }
 
-    pub fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
+    pub async fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
         // Shortcut and do nothing if we already have new credential format
-        let creds = self.get_credentials();
+        let creds = self.get_credentials().await;
         if let Ok(creds) = &creds {
             info!(target: LOG_TARGET, "Found credentials");
             if creds.tari_seed_passphrase.is_some() {
@@ -123,7 +123,7 @@ impl CredentialManager {
                 },
             };
 
-            self.set_credentials(&credential)?;
+            self.set_credentials(&credential).await?;
         }
 
         Ok(())
@@ -133,10 +133,10 @@ impl CredentialManager {
         self.fallback_mode.load(Ordering::SeqCst) || self.fallback_file().exists()
     }
 
-    fn set_fallback_mode(&self) -> bool {
+    async fn set_fallback_mode(&self) -> bool {
         // Only allow shifting to fallback mode if the keyring hasn't been successfully stored to.
         // If it already contains data, the user must provide access to the existing data.
-        if !Self::has_keyring_been_accessed() {
+        if !*ConfigWallet::content().await.keyring_accessed() {
             self.fallback_mode.store(true, Ordering::SeqCst);
             return true;
         }
@@ -144,15 +144,7 @@ impl CredentialManager {
         false
     }
 
-    fn has_keyring_been_accessed() -> bool {
-        KEYRING_ACCESSED.load(Ordering::SeqCst)
-    }
-
-    fn set_keyring_accessed() {
-        KEYRING_ACCESSED.store(true, Ordering::SeqCst);
-    }
-
-    pub fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
+    pub async fn set_credentials(&self, credential: &Credential) -> Result<(), CredentialError> {
         if self.use_fallback() {
             self.save_to_file(credential)?;
             return Ok(());
@@ -160,11 +152,13 @@ impl CredentialManager {
 
         match self.save_to_keyring(credential) {
             Ok(_) => {
-                Self::set_keyring_accessed();
+                let _unused =
+                    ConfigWallet::update_field(ConfigWalletContent::set_keyring_accessed, true)
+                        .await;
                 Ok(())
             }
             Err(CredentialError::Keyring(e)) => {
-                if self.set_fallback_mode() {
+                if self.set_fallback_mode().await {
                     self.save_to_file(credential)?;
                     Ok(())
                 } else {
@@ -175,18 +169,20 @@ impl CredentialManager {
         }
     }
 
-    pub fn get_credentials(&self) -> Result<Credential, CredentialError> {
+    pub async fn get_credentials(&self) -> Result<Credential, CredentialError> {
         if self.use_fallback() {
             return self.load_from_file();
         }
 
         match self.load_from_keyring() {
             Ok(credential) => {
-                Self::set_keyring_accessed();
+                let _unused =
+                    ConfigWallet::update_field(ConfigWalletContent::set_keyring_accessed, true)
+                        .await;
                 Ok(credential)
             }
             Err(CredentialError::Keyring(_)) => {
-                if self.set_fallback_mode() {
+                if self.set_fallback_mode().await {
                     self.load_from_file()
                 } else {
                     Err(CredentialError::PreviouslyUsedKeyring)
