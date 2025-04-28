@@ -162,7 +162,7 @@ impl WebsocketEventsManager {
         app_version: String,
         jwt_token: String,
     ) -> Option<WebsocketMessage> {
-        let BaseNodeStatus { block_height, .. } = node_latest_status.borrow().clone();
+        let BaseNodeStatus { block_height, .. } = *node_latest_status.borrow();
 
         let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
