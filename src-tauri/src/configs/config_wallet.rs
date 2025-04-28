@@ -102,9 +102,8 @@ impl ConfigWallet {
 
         config.handle_old_config_migration(old_config);
         config.load_app_handle(app_handle.clone()).await;
-
-        EventsManager::handle_config_wallet_loaded(&app_handle, config.content.clone()).await;
         drop(config);
+
         // Think about better place for this
         // This must happend before InternalWallet::load_or_create !!!
         if ConfigWallet::content().await.monero_address().is_empty() {
@@ -135,6 +134,12 @@ impl ConfigWallet {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);
             }
         };
+
+        EventsManager::handle_config_wallet_loaded(
+            &app_handle,
+            Self::current().write().await.content.clone(),
+        )
+        .await;
     }
 }
 
@@ -187,6 +192,7 @@ impl ConfigImpl for ConfigWallet {
                 monero_address: old_config.monero_address().to_string(),
                 monero_address_is_generated: old_config.monero_address_is_generated(),
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }

@@ -13,7 +13,11 @@ import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 
-export function SendForm() {
+interface Props {
+    isBack?: boolean;
+}
+
+export function SendForm({ isBack }: Props) {
     const { t } = useTranslation('wallet');
 
     const [address, setAddress] = useState('');
@@ -57,11 +61,18 @@ export function SendForm() {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
+    useEffect(() => {
+        const address = getValues().address;
+        setIsAddressEmpty(address.length === 0);
+        void validateAddress(address);
+    }, [getValues, validateAddress]);
+
     function handleChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
         const value = e.target.value;
         setValue(name, value, { shouldValidate: true });
         clearErrors(name);
     }
+
     function handleAddressChange(e: ChangeEvent<HTMLInputElement>, name: InputName) {
         const value = e.target.value.replace(/\s/g, '');
         setAddress(value);
@@ -90,7 +101,7 @@ export function SendForm() {
                     handleChange={handleAddressChange}
                     onBlur={handleAddressBlur}
                     required
-                    autoFocus
+                    autoFocus={!isBack}
                     truncateOnBlur
                     isValid={isAddressValid}
                     errorText={errors.address?.message}
@@ -103,6 +114,7 @@ export function SendForm() {
                     required
                     icon={<TariOutlineSVG />}
                     disabled={isAddressEmpty}
+                    autoFocus={isBack}
                     secondaryField={
                         <FormField
                             control={control}

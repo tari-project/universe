@@ -74,6 +74,8 @@
   "monero-seed-words": "Monero Seed Kelimeleri",
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Bağlantı adresi",
   "node-public-address": "Genel adres",
   "node-public-key": "Genel anahtar",

@@ -1,6 +1,6 @@
 ﻿<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs" xmlns:bal="http://wixtoolset.org/schemas/v4/wxs/bal" xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
-	<Bundle Name="Tari Universe" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37" IconSourceFile="tari-win-bundler/resources/icon.ico" DisableModify="yes" ParentName="Tari Universe" >
-		<OptionalUpdateRegistration Name="Tari Universe"  />
+	<Bundle Name="$(env.TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME)" Version="$(env.TARI_UNIVERSE_APP_VERSION)" Manufacturer="Tari Labs, LLC" UpgradeCode="$(env.TARI_UNIVERSE_UPGRADE_CODE)" IconSourceFile="tari-win-bundler/resources/icon.ico">
+		<OptionalUpdateRegistration Name="$(env.TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME)"  />
 		
 		<!-- <Log Disable="no" Extension=".txt" PathVariable=".\logs\log.txt" /> -->
 		

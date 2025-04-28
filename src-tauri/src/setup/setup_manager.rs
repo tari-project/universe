@@ -28,7 +28,7 @@ use super::{
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet,
+        config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events_manager::EventsManager,
     initialize_frontend_updates,
@@ -238,11 +238,17 @@ impl SetupManager {
                 }
             });
         });
+        EventsManager::handle_node_type_update(&app_handle).await;
 
         ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
+
+        let node_type = ConfigCore::content().await.node_type().clone();
+        info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
+        state.node_manager.set_node_type(node_type).await;
+        EventsManager::handle_node_type_update(&app_handle).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }

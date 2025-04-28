@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::events_emitter::EventsEmitter;
+use crate::internal_wallet::InternalWallet;
 use crate::node::node_manager::{NodeManager, NodeManagerError};
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
@@ -115,6 +116,8 @@ impl WalletManager {
         process_watcher
             .adapter
             .connect_with_local_node(connect_with_local_node);
+        process_watcher.adapter.wallet_birthday =
+            self.get_wallet_birthday(config_path.clone()).await.ok();
 
         process_watcher
             .start(
@@ -143,6 +146,11 @@ impl WalletManager {
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
+    }
+
+    pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
+        let internal_wallet = InternalWallet::load_or_create(config_path).await?;
+        internal_wallet.get_birthday().await
     }
 
     pub async fn get_transactions_history(
@@ -237,6 +245,7 @@ impl WalletManager {
         drop(process_watcher);
 
         let node_status_watch_rx_progress = node_status_watch_rx.clone();
+        let initial_scan_completed = self.initial_scan_completed.clone();
         // Start a background task to monitor the wallet state and emit scan progress updates
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             let mut wallet_state_rx = wallet_state_receiver;
@@ -262,17 +271,18 @@ impl WalletManager {
                                 continue;
                             }
                         };
+                        if initial_scan_completed.load(std::sync::atomic::Ordering::Relaxed) {
+                            break;
+                        }
 
                         if scanned_height > 0 {
+                            log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 &app_clone,
                                 scanned_height,
                                 current_target_height,
                                 progress,
                             ).await;
-                        }
-                        if progress >= 100.0 {
-                            break;
                         }
                     }
                 }

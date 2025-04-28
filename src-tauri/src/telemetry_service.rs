@@ -95,7 +95,7 @@ impl TelemetryService {
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         self.version = app_version;
-        let mut cancellation_token = self.cancellation_token.clone();
+        let cancellation_token = self.cancellation_token.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
         let telemetry_api_url = in_memory_config_cloned
             .read()

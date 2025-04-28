@@ -74,6 +74,8 @@
   "monero-seed-words": "मोनरो सीड शब्द",
   "network": "नेटवर्क",
   "no-entry-guard": "कोई एंट्री गार्ड कनेक्ट नहीं है!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "कनेक्शन पता",
   "node-public-address": "सार्वजनिक पता",
   "node-public-key": "सार्वजनिक कुंजी",
