@@ -1328,6 +1328,7 @@ fn main() {
             commands::frontend_ready,
             commands::websocket_connect,
             commands::websocket_close,
+            commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,

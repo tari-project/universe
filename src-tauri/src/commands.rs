@@ -1752,6 +1752,19 @@ pub async fn websocket_connect(
 }
 
 #[tauri::command]
+pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+    EventsManager::handle_connection_status_changed(
+        &app_handle,
+        crate::events::ConnectionStatusPayload::InProgress,
+    )
+    .await;
+    let sm = SetupManager::get_instance();
+    sm.add_phases_to_restart_queue(SetupPhase::all()).await;
+    sm.restart_phases_from_queue(app_handle).await;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     state: tauri::State<'_, UniverseAppState>,
     amount: String,
@@ -1864,12 +1877,13 @@ pub async fn set_node_type(
     ConfigCore::update_field_requires_restart(
         ConfigCoreContent::set_node_type,
         node_type.clone(),
-        vec![SetupPhase::Wallet, SetupPhase::Node, SetupPhase::Unknown],
+        vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
     )
     .await
     .map_err(InvokeError::from_anyhow)?;
 
     state.node_manager.set_node_type(node_type.clone()).await;
+    EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)
