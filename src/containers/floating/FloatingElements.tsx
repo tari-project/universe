@@ -17,6 +17,7 @@ import { memo } from 'react';
 import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationModal.tsx';
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
+import WarmupDialog from './Warmup/WarmupDialog.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -39,6 +40,8 @@ const FloatingElements = memo(function FloatingElements() {
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
             {environment === 'development' && <AdminUI />}
+            {/*TODO: add real FF*/}
+            {environment === 'development' && <WarmupDialog />}
         </FloatingTree>
     );
 });

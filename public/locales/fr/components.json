@@ -20,14 +20,20 @@
     "title": "Notes de version"
   },
   "resume-app-modal": {
-    "title": "Reprise de l\"Univers Tari",
+    "finishing-resume": "Fin de la reprise...",
     "resuming-all-processes": "Reprise de tous les processus...",
-    "resuming-tor": "Reprise de Tor...",
+    "resuming-mm-proxy": "Reprise du proxy MM...",
     "resuming-node": "Reprise du nœud...",
+    "resuming-p2pool": "Reprise de P2Pool...",
+    "resuming-tor": "Reprise de Tor...",
     "resuming-wallet": "Reprise du portefeuille...",
     "syncing-node": "Synchronisation du nœud...",
-    "resuming-p2pool": "Reprise de P2Pool...",
-    "resuming-mm-proxy": "Reprise du proxy MM...",
-    "finishing-resume": "Fin de la reprise..."
+    "title": "Reprise de l\"Univers Tari"
+  },
+  "warmupDialog": {
+    "copy": "The Warm Up phase is a temporary period at the start of network activation, expected to last 15 days.\nDuring this time, the network is still stabilizing, and some irregular behavior is normal. You may experience fluctuations in block times, temporary disconnects, or syncing issues. In some cases, your node might end up on a temporary fork and need to reconnect to the main chain.\nMiners are still earning XTM during this phase. This period allows the system to calibrate as more miners and nodes come online, helping iron out edge cases and ensure the network is resilient under real-world conditions. No action is needed unless your node becomes stuck. Restarting or resyncing will usually resolve it. After the warm-up period, the network will transition into a more stable and predictable state.",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "The network is starting",
+    "title": "Warm up phase"
   }
 }
