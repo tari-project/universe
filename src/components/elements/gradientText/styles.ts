@@ -2,15 +2,11 @@ import styled, { keyframes } from 'styled-components';
 
 export const AnimatedGradientText = styled.div`
     position: relative;
-    margin: 0 auto;
     display: flex;
     max-width: fit-content;
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    border-radius: 1.25rem;
-    font-weight: 500;
-    backdrop-filter: blur(10px);
     transition: box-shadow 0.5s ease-out;
     overflow: hidden;
     cursor: pointer;
