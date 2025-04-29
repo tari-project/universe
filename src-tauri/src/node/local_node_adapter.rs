@@ -177,19 +177,28 @@ impl ProcessAdapter for LocalNodeAdapter {
         let migration_file = network_dir.join("migrations.json");
         let mut migration_info = MinotariNodeMigrationInfo::load_or_create(&migration_file)?;
 
-        if migration_info.version < 1 {
+        if migration_info.version < 2 {
             // Delete the peer info db.
             let peer_db_dir = network_dir.join("peer_db");
+            let node_db_dir = network_dir.join("data");
 
-            info!(target: LOG_TARGET, "Node migration v1: removing peer db at {:?}", peer_db_dir);
+            info!(target: LOG_TARGET, "Node migration v2: removing peer db at {:?}", peer_db_dir);
 
             if peer_db_dir.exists() {
                 let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
                     warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
                 });
             }
-            info!(target: LOG_TARGET, "Node Migration v1 complete");
-            migration_info.version = 1;
+
+            info!(target: LOG_TARGET, "Node migration v2: removing node db at {:?}", node_db_dir);
+            if node_db_dir.exists() {
+                let _unused = fs::remove_dir_all(node_db_dir).inspect_err(|e| {
+                    warn!(target: LOG_TARGET, "Failed to remove node db: {:?}", e);
+                });
+            }
+
+            info!(target: LOG_TARGET, "Node Migration v2 complete");
+            migration_info.version = 2;
         }
         migration_info.save(&migration_file)?;
 
