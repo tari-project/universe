@@ -56,6 +56,7 @@ pub struct WalletManager {
     watcher: Arc<RwLock<ProcessWatcher<WalletAdapter>>>,
     node_manager: NodeManager,
     initial_scan_completed: Arc<AtomicBool>,
+    grpc_port: u16,
 }
 
 impl Clone for WalletManager {
@@ -64,6 +65,7 @@ impl Clone for WalletManager {
             watcher: self.watcher.clone(),
             node_manager: self.node_manager.clone(),
             initial_scan_completed: self.initial_scan_completed.clone(),
+            grpc_port: self.grpc_port,
         }
     }
 }
@@ -75,13 +77,19 @@ impl WalletManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
     ) -> Self {
         let adapter = WalletAdapter::new(wallet_state_watch_tx);
+        let grpc_port = adapter.grpc_port;
         let process_watcher = ProcessWatcher::new(adapter, stats_collector.take_wallet());
 
         Self {
             watcher: Arc::new(RwLock::new(process_watcher)),
             node_manager,
             initial_scan_completed: Arc::new(AtomicBool::new(false)),
+            grpc_port,
         }
+    }
+
+    pub fn grpc_port(&self) -> u16 {
+        self.grpc_port
     }
 
     pub async fn ensure_started(

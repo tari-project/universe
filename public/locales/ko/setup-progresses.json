@@ -35,6 +35,7 @@
     "binaries-wallet": "지갑 바이너리 준비 중",
     "detect-gpu": "GPU 감지 중",
     "done": "완료",
+    "grpc-web-proxy": "gRPC 웹 프록시 시작 중",
     "initialize-application-modules": "플랫폼 필수 조건 초기화 중",
     "initialize-spending-wallet": "지출 지갑 초기화 중",
     "mm-proxy": "병합 채굴 프록시 시작 중",

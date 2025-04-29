@@ -35,6 +35,7 @@
     "binaries-wallet": "Wallet-Binärdatei wird vorbereitet",
     "detect-gpu": "GPUs werden erkannt",
     "done": "Fertig",
+    "grpc-web-proxy": "gRPC-Web-Proxy wird gestartet",
     "initialize-application-modules": "Plattform-Voraussetzungen werden initialisiert",
     "initialize-spending-wallet": "Ausgaben-Wallet wird initialisiert",
     "mm-proxy": "Merge Mining Proxy wird gestartet",

@@ -239,6 +239,7 @@ pub enum ProgressSetupUnknownPlan {
     BinariesMergeMiningProxy,
     P2Pool,
     MMProxy,
+    GrpcWebProxy,
     Done,
 }
 
@@ -255,6 +256,7 @@ impl ProgressStep for ProgressSetupUnknownPlan {
             ProgressSetupUnknownPlan::BinariesMergeMiningProxy => 2,
             ProgressSetupUnknownPlan::P2Pool => 1,
             ProgressSetupUnknownPlan::MMProxy => 1,
+            ProgressSetupUnknownPlan::GrpcWebProxy => 1,
             ProgressSetupUnknownPlan::Done => 1,
         }
     }
@@ -267,6 +269,7 @@ impl ProgressStep for ProgressSetupUnknownPlan {
             }
             ProgressSetupUnknownPlan::P2Pool => "p2pool".to_string(),
             ProgressSetupUnknownPlan::MMProxy => "mm-proxy".to_string(),
+            ProgressSetupUnknownPlan::GrpcWebProxy => "grpc-web-proxy".to_string(),
             ProgressSetupUnknownPlan::Done => "done".to_string(),
         }
     }

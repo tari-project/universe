@@ -35,6 +35,7 @@
     "binaries-wallet": "Cüzdan İkili Dosyası Hazırlanıyor",
     "detect-gpu": "GPU\"lar Tespit Ediliyor",
     "done": "Tamamlandı",
+    "grpc-web-proxy": "gRPC Web Proxy Başlatılıyor",
     "initialize-application-modules": "Platform Ön Koşulları Başlatılıyor",
     "initialize-spending-wallet": "Harcama Cüzdanı Başlatılıyor",
     "mm-proxy": "Birleştirme Madenciliği Proxy\"si Başlatılıyor",

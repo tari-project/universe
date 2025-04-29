@@ -23,6 +23,7 @@
 mod adapter_github;
 mod adapter_tor;
 mod adapter_xmrig;
+mod binaries_grpcwebproxy;
 mod binaries_manager;
 
 pub mod binaries_list;

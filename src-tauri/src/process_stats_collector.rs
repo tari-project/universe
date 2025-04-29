@@ -39,6 +39,8 @@ pub(crate) struct ProcessStatsCollectorBuilder {
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_tx: Option<Sender<ProcessWatcherStats>>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    grpc_web_proxy_tx: Option<Sender<ProcessWatcherStats>>,
+    grpc_web_proxy_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollectorBuilder {
@@ -53,6 +55,8 @@ impl ProcessStatsCollectorBuilder {
         let (p2pool_tx, p2pool_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (tor_tx, tor_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
         let (wallet_tx, wallet_rx) = tokio::sync::watch::channel(ProcessWatcherStats::default());
+        let (grpc_web_proxy_tx, grpc_web_proxy_rx) =
+            tokio::sync::watch::channel(ProcessWatcherStats::default());
 
         Self {
             cpu_miner_tx: Some(cpu_miner_tx),
@@ -69,6 +73,8 @@ impl ProcessStatsCollectorBuilder {
             tor_rx,
             wallet_tx: Some(wallet_tx),
             wallet_rx,
+            grpc_web_proxy_tx: Some(grpc_web_proxy_tx),
+            grpc_web_proxy_rx,
         }
     }
 
@@ -112,6 +118,12 @@ impl ProcessStatsCollectorBuilder {
             .expect("Cannot take wallet more than once")
     }
 
+    pub fn take_grpc_web_proxy(&mut self) -> Sender<ProcessWatcherStats> {
+        self.grpc_web_proxy_tx
+            .take()
+            .expect("Cannot take wallet more than once")
+    }
+
     pub fn build(self) -> ProcessStatsCollector {
         ProcessStatsCollector {
             cpu_miner_rx: self.cpu_miner_rx,
@@ -121,6 +133,7 @@ impl ProcessStatsCollectorBuilder {
             p2pool_rx: self.p2pool_rx,
             tor_rx: self.tor_rx,
             wallet_rx: self.wallet_rx,
+            grpc_web_proxy_rx: self.grpc_web_proxy_rx,
         }
     }
 }
@@ -134,6 +147,7 @@ pub(crate) struct ProcessStatsCollector {
     p2pool_rx: Receiver<ProcessWatcherStats>,
     tor_rx: Receiver<ProcessWatcherStats>,
     wallet_rx: Receiver<ProcessWatcherStats>,
+    grpc_web_proxy_rx: Receiver<ProcessWatcherStats>,
 }
 
 impl ProcessStatsCollector {
@@ -162,5 +176,9 @@ impl ProcessStatsCollector {
 
     pub fn get_wallet_stats(&self) -> ProcessWatcherStats {
         self.wallet_rx.borrow().clone()
+    }
+
+    pub fn get_grps_web_proxy_stats(&self) -> ProcessWatcherStats {
+        self.grpc_web_proxy_rx.borrow().clone()
     }
 }

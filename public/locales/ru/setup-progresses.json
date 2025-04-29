@@ -35,6 +35,7 @@
     "binaries-wallet": "Подготовка бинарного файла кошелька",
     "detect-gpu": "Обнаружение GPU",
     "done": "Готово",
+    "grpc-web-proxy": "Запуск gRPC Web прокси",
     "initialize-application-modules": "Инициализация предварительных условий платформы",
     "initialize-spending-wallet": "Инициализация кошелька для трат",
     "mm-proxy": "Запуск прокси для объединенного майнинга",

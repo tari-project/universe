@@ -33,6 +33,7 @@ pub enum Binaries {
     ShaP2pool,
     GpuMiner,
     Tor,
+    GrpcWebProxy,
 }
 
 impl Binaries {
@@ -45,6 +46,7 @@ impl Binaries {
             Binaries::ShaP2pool => "sha-p2pool",
             Binaries::GpuMiner => "glytex",
             Binaries::Tor => "tor",
+            Binaries::GrpcWebProxy => "grpcwebproxy",
         }
     }
 
@@ -57,6 +59,7 @@ impl Binaries {
             "sha-p2pool" => Binaries::ShaP2pool,
             "glytex" => Binaries::GpuMiner,
             "tor" => Binaries::Tor,
+            "grpcwebproxy" => Binaries::GrpcWebProxy,
             _ => panic!("Unknown binary name: {}", name),
         }
     }
@@ -91,6 +94,10 @@ impl Binaries {
                 let file_name = "tor";
                 PathBuf::from(file_name)
             }
+            Binaries::GrpcWebProxy => {
+                let file_name = "grpcwebproxy";
+                PathBuf::from(file_name)
+            }
         }
     }
 
@@ -104,6 +111,7 @@ impl Binaries {
             Binaries::ShaP2pool,
             Binaries::GpuMiner,
             Binaries::Tor,
+            Binaries::GrpcWebProxy,
         ]
         .iter()
         .copied()

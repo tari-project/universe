@@ -35,6 +35,7 @@
     "binaries-wallet": "准备钱包二进制文件",
     "detect-gpu": "检测 GPU",
     "done": "完成",
+    "grpc-web-proxy": "启动 gRPC Web 代理",
     "initialize-application-modules": "初始化平台先决条件",
     "initialize-spending-wallet": "初始化支出钱包",
     "mm-proxy": "启动合并挖矿代理",

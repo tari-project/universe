@@ -24,8 +24,13 @@ use std::time::Duration;
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore,
+        config_portal::{ConfigPortal, GrpcWebWalletConfig},
+        trait_config::ConfigImpl,
+    },
     events_manager::EventsManager,
+    grpcwebproxy_manager::GrpcWebProxyConfig,
     p2pool_manager::P2poolConfig,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -65,6 +70,7 @@ pub struct UnknownSetupPhaseAppConfiguration {
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
+    grpc_web_wallet: GrpcWebWalletConfig,
 }
 
 pub struct UnknownSetupPhase {
@@ -97,6 +103,9 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             .add_step(ProgressPlans::Unknown(
                 ProgressSetupUnknownPlan::BinariesP2pool,
             ))
+            .add_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::GrpcWebProxy,
+            ))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
             .add_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::Done))
@@ -108,12 +117,14 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let p2pool_stats_server_port = *ConfigCore::content().await.p2pool_stats_server_port();
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
+        let grpc_web_wallet = ConfigPortal::content().await.grpc_web_wallet().clone();
 
         Ok(UnknownSetupPhaseAppConfiguration {
             p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
+            grpc_web_wallet,
         })
     }
 
@@ -205,6 +216,30 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         binary_resolver
             .initialize_binary_timeout(Binaries::ShaP2pool, progress.clone(), rx.clone())
             .await?;
+
+        progress_stepper
+            .resolve_step(ProgressPlans::Unknown(
+                ProgressSetupUnknownPlan::GrpcWebProxy,
+            ))
+            .await;
+
+        binary_resolver
+            .initialize_binary_timeout(Binaries::GrpcWebProxy, progress.clone(), rx.clone())
+            .await?;
+
+        state
+            .grpc_web_proxy_manager
+            .start(
+                GrpcWebProxyConfig {
+                    grpc_web_port: self.app_configuration.grpc_web_wallet.grpc_web_port,
+                    grpc_port: state.wallet_manager.grpc_port(),
+                },
+                data_dir.clone(),
+                config_dir.clone(),
+                log_dir.clone(),
+            )
+            .await?;
+        state.grpc_web_proxy_manager.wait_ready().await?;
 
         let base_node_grpc_address = state.node_manager.get_grpc_address().await?;
         if self.app_configuration.p2pool_enabled {

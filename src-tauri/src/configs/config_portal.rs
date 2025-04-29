@@ -39,7 +39,6 @@ static INSTANCE: LazyLock<RwLock<ConfigPortal>> =
 #[derive(Getters, Setters)]
 #[getset(get = "pub", set = "pub")]
 pub struct ConfigPortalContent {
-    //was_config_migrated: bool,
     created_at: SystemTime,
     /// The unique identifier of the SDK instance
     id: String,
@@ -48,6 +47,7 @@ pub struct ConfigPortalContent {
     /// Portal chain config
     portal: EthereumChainConfig,
     native_chains: NativeChainsConfig,
+    grpc_web_wallet: GrpcWebWalletConfig,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -123,6 +123,19 @@ impl Default for LightningChainConfig {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct GrpcWebWalletConfig {
+    pub grpc_web_port: u16,
+}
+
+impl Default for GrpcWebWalletConfig {
+    fn default() -> Self {
+        Self {
+            grpc_web_port: 28183,
+        }
+    }
+}
+
 impl Default for ConfigPortalContent {
     fn default() -> Self {
         Self {
@@ -143,6 +156,7 @@ impl Default for ConfigPortalContent {
                 },
             },
             native_chains: Default::default(),
+            grpc_web_wallet: Default::default(),
         }
     }
 }

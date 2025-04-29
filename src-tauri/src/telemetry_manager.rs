@@ -595,6 +595,12 @@ async fn get_telemetry_data(
         "wallet",
     );
 
+    add_process_stats(
+        &mut extra_data,
+        stats_collector.get_grps_web_proxy_stats(),
+        "grpc_web_proxy",
+    );
+
     let (download_speed, upload_speed, latency) = *NetworkStatus::current()
         .get_network_speeds_receiver()
         .borrow();

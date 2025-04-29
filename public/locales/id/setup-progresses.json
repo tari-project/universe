@@ -35,6 +35,7 @@
     "binaries-wallet": "Menyiapkan Binary Dompet",
     "detect-gpu": "Mendeteksi GPU",
     "done": "Selesai",
+    "grpc-web-proxy": "Memulai gRPC Web Proxy",
     "initialize-application-modules": "Memulai Prasyarat Platform",
     "initialize-spending-wallet": "Memulai Dompet Pengeluaran",
     "mm-proxy": "Memulai Proxy Merge Mining",

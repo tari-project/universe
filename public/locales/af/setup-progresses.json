@@ -35,6 +35,7 @@
     "binaries-wallet": "Bereiding van Beursie Binêr",
     "detect-gpu": "Bespeur GPU\"s",
     "done": "Klaar",
+    "grpc-web-proxy": "Begin gRPC Web Proksie",
     "initialize-application-modules": "Initialiseer Platform Voorvereistes",
     "initialize-spending-wallet": "Initialiseer Bestedingsbeursie",
     "mm-proxy": "Begin Saamsmelt Myn Proksie",

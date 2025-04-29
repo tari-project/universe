@@ -35,6 +35,7 @@
     "binaries-wallet": "Préparation du binaire du portefeuille",
     "detect-gpu": "Détection des GPU",
     "done": "Terminé",
+    "grpc-web-proxy": "Démarrage du proxy gRPC Web",
     "initialize-application-modules": "Initialisation des prérequis de la plateforme",
     "initialize-spending-wallet": "Initialisation du portefeuille de dépenses",
     "mm-proxy": "Démarrage du proxy de fusion minière",

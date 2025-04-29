@@ -27,6 +27,7 @@ use commands::CpuMinerStatus;
 use cpu_miner::CpuMinerConfig;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
+use grpcwebproxy_manager::GrpcWebProxyManager;
 use log::{error, info, warn};
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
@@ -109,6 +110,8 @@ mod github;
 mod gpu_miner;
 mod gpu_miner_adapter;
 mod gpu_status_file;
+mod grpcwebproxy_adapter;
+mod grpcwebproxy_manager;
 mod hardware;
 mod internal_wallet;
 mod mm_proxy_adapter;
@@ -951,6 +954,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    grpc_web_proxy_manager: GrpcWebProxyManager,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1040,6 +1044,7 @@ fn main() {
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
+    let grpc_web_proxy_manager = GrpcWebProxyManager::new(&mut stats_collector);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
@@ -1076,6 +1081,7 @@ fn main() {
         gpu_miner: gpu_miner.clone(),
         cpu_miner_config: cpu_config.clone(),
         mm_proxy_manager: mm_proxy_manager.clone(),
+        grpc_web_proxy_manager,
         node_manager,
         wallet_manager,
         spend_wallet_manager: Arc::new(RwLock::new(spend_wallet_manager)),

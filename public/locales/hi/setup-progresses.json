@@ -35,6 +35,7 @@
     "binaries-wallet": "वॉलेट बाइनरी तैयार कर रहे हैं",
     "detect-gpu": "जीपीयू का पता लगा रहे हैं",
     "done": "समाप्त",
+    "grpc-web-proxy": "gRPC वेब प्रॉक्सी शुरू कर रहे हैं",
     "initialize-application-modules": "प्लेटफ़ॉर्म पूर्वापेक्षाएँ प्रारंभ कर रहे हैं",
     "initialize-spending-wallet": "खर्च वॉलेट प्रारंभ कर रहे हैं",
     "mm-proxy": "मर्ज माइनिंग प्रॉक्सी शुरू कर रहे हैं",

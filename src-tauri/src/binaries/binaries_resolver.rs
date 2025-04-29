@@ -41,6 +41,7 @@ use tokio::time::timeout;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
+use super::binaries_grpcwebproxy::GrpcWebProxyVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
@@ -200,6 +201,17 @@ impl BinaryResolver {
                 Box::new(TorReleaseAdapter {}),
                 None,
                 true,
+            )),
+        );
+
+        binary_manager.insert(
+            Binaries::GrpcWebProxy,
+            Mutex::new(BinaryManager::new(
+                Binaries::GrpcWebProxy.name().to_string(),
+                Some("grpcwebproxy".to_string()),
+                Box::new(GrpcWebProxyVersionApiAdapter {}),
+                None,
+                false,
             )),
         );
 
