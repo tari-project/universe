@@ -226,9 +226,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+    TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
@@ -964,6 +964,17 @@ fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
 
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
+
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry::ClientOptions {
@@ -1278,6 +1289,7 @@ fn main() {
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
+            commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
