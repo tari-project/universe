@@ -181,20 +181,23 @@ impl ProcessAdapter for LocalNodeAdapter {
             // Delete the peer info db.
             let peer_db_dir = network_dir.join("peer_db");
             let node_db_dir = network_dir.join("data");
+            let config_dir = network_dir.join("config");
+            let libtor_dir = network_dir.join("libtor");
 
-            info!(target: LOG_TARGET, "Node migration v2: removing peer db at {:?}", peer_db_dir);
+            let dirs = vec![
+                peer_db_dir.clone(),
+                node_db_dir.clone(),
+                config_dir.clone(),
+                libtor_dir.clone(),
+            ];
 
-            if peer_db_dir.exists() {
-                let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
-                    warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
-                });
-            }
-
-            info!(target: LOG_TARGET, "Node migration v2: removing node db at {:?}", node_db_dir);
-            if node_db_dir.exists() {
-                let _unused = fs::remove_dir_all(node_db_dir).inspect_err(|e| {
-                    warn!(target: LOG_TARGET, "Failed to remove node db: {:?}", e);
-                });
+            for dir in dirs {
+                if dir.exists() {
+                    info!(target: LOG_TARGET, "Node migration v2: removing directory at {:?}", dir);
+                    let _unused = fs::remove_dir_all(dir).inspect_err(|e| {
+                        warn!(target: LOG_TARGET, "Failed to remove directory: {:?}", e);
+                    });
+                }
             }
 
             info!(target: LOG_TARGET, "Node Migration v2 complete");
