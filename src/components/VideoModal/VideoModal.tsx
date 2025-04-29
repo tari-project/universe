@@ -16,7 +16,7 @@ export function VideoModal({ src, open, onOpenChange }: VideoModalProps) {
                     <CTA onClick={onOpenChange}>
                         <IoClose />
                     </CTA>
-                    <Video autoPlay loop src={src}></Video>
+                    <Video autoPlay src={src} controls></Video>
                 </Wrapper>
             </DialogContent>
         </Dialog>
