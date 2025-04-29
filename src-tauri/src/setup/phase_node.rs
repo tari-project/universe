@@ -324,7 +324,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
             .await?;
         progress_handle.abort();
-        let _ = progress_handle.await;
+        let _unused = progress_handle.await;
 
         Ok(())
     }
