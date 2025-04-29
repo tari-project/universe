@@ -1210,12 +1210,18 @@ fn main() {
             // It exists for people who ran 0.9.803 and ended up on a fork
             // Everyone needs a clean node db for 0.9.804, so lets wipe the db once, write this file
             // and not require people to clear the db multiple times. Once we know nobody is on
-            // a version 0.9.803 or before
-            let feb_17_fork_reset = config_path.join("20250217-node-db-clean");
-            if !feb_17_fork_reset.exists() {
+            // a version 0.9.803 or before]
+            let data_path = app
+                .path()
+                .app_data_dir()
+                .expect("Could not get data dir");
+
+            let april_30_fork_reset = data_path.join("20250430-node-db-clean");
+            if !april_30_fork_reset.exists() {
                 let network = Network::default().as_key_str();
 
-                let node_data_db = config_path.join("node").join(network).join("data");
+                let node_data_db = data_path.join("node").join(network).join("data");
+                let peer_db = data_path.join("node").join(network).join("peer_db");
 
                 // They may not exist. This could be first run.
                 if node_data_db.exists() {
@@ -1224,8 +1230,14 @@ fn main() {
                     }
                 }
 
-                create_dir_all(&config_path).map_err(|e| e.to_string())?;
-                File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
+                if peer_db.exists() {
+                    if let Err(e) = remove_dir_all(peer_db) {
+                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
+                    }
+                }
+
+                create_dir_all(&data_path).map_err(|e| e.to_string())?;
+                File::create(april_30_fork_reset).map_err(|e| e.to_string())?;
             }
 
             Ok(())
