@@ -6,7 +6,7 @@ Hey fam 👋,
 
 We’re excited to drop the BIGGEST update we’ve ever released 💥
 
-Introducing “The Surge of Soon”, the first release candidate of Tari Universe (v0.9.90).
+Introducing “The Surge of Soon”, the first release candidate of Tari Universe (v0.9.90x).
 
 This release is a huge step forward. One of the biggest pieces of feedback we hear from the Tari community is about the pain of startup and initialization. Until now, there have been three major frustrations:
 
