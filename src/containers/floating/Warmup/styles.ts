@@ -5,7 +5,7 @@ export const Wrapper = styled.div`
     flex-flow: column;
     width: min(420px, 40vw);
     align-items: center;
-    padding: min(0.1vmin + 1.4rem, 30px);
+    padding: min(0.1vmin + 0.5rem, 30px);
     gap: 20px;
 `;
 

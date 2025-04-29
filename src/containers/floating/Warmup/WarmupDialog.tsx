@@ -33,7 +33,7 @@ const WarmupDialog = function WarmupDialogs() {
                     <HeaderWrapper>
                         <BlocksSVG />
                         <GraphicWrapper>
-                            <img src={track} alt="zzzoooom" />
+                            <img src={track} alt="Modal header background image" />
                         </GraphicWrapper>
                         <HeaderTextWrapper>
                             <TagLine>{t('warmupDialog.tag-line')}</TagLine>

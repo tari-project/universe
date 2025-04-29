@@ -19,6 +19,7 @@ export const Content = styled(m.div)`
     will-change: width;
     width: min(100%, 80vw);
     display: grid;
+    grid-auto-columns: 100%;
     grid-template-rows: min-content max-content auto;
     overflow: hidden;
     place-content: space-between;

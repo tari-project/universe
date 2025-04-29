@@ -8,7 +8,8 @@ export const DashboardBanner = styled.div`
     justify-content: space-between;
     background: ${({ theme }) => theme.palette.background.secondary};
     border-radius: 15px;
-    padding: 0 20px;
+    padding: 0 10px;
+    gap: 10px;
     pointer-events: auto;
 
     span {
@@ -26,6 +27,18 @@ export const FlexSection = styled.div`
     display: flex;
     width: fit-content;
     gap: 20px;
+`;
+
+export const BodyCopy = styled.div`
+    display: flex;
+    text-align: right;
+    justify-content: end;
+    align-items: center;
+    color: ${({ theme }) => theme.colors.greyscale[100]};
+    flex-wrap: wrap;
+    strong {
+        color: #ffab25; // TODO: add new colours to theme
+    }
 `;
 
 export const TagLine = styled.div`
