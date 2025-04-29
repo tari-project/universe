@@ -8,6 +8,7 @@ import {
     HeaderWrapper,
     Heading,
     TagLine,
+    VideoCTA,
     Wrapper,
 } from './styles.ts';
 import GradientText from '@app/components/elements/gradientText/GradientText.tsx';
@@ -16,8 +17,11 @@ import track from '/assets/img/track.gif';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { BlocksSVG } from './BlocksSVG.tsx';
+import { useState } from 'react';
+import { VideoModal } from '@app/components/VideoModal/VideoModal.tsx';
 
 const WarmupDialog = function WarmupDialogs() {
+    const [expandPlayer, setExpandPlayer] = useState(false);
     const { t } = useTranslation('components');
     const open = useUIStore((s) => s.dialogToShow === 'warmup');
     function handleClose() {
@@ -27,33 +31,42 @@ const WarmupDialog = function WarmupDialogs() {
     const paragrpahs = bodyCopy.split('\n');
 
     return (
-        <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent>
-                <Wrapper>
-                    <HeaderWrapper>
-                        <BlocksSVG />
-                        <GraphicWrapper>
-                            <img src={track} alt="zzzoooom" />
-                        </GraphicWrapper>
-                        <HeaderTextWrapper>
-                            <TagLine>{t('warmupDialog.tag-line')}</TagLine>
-                            <GradientText>
-                                <Heading>{t('warmupDialog.title')}</Heading>
-                            </GradientText>
-                        </HeaderTextWrapper>
-                    </HeaderWrapper>
-                    <ContentWrapper>
-                        <Typography variant="h5">{t('warmupDialog.subtitle')}</Typography>
-                        {paragrpahs.map((p) => (
-                            <Typography key={p.slice(0, 10)}>{p}</Typography>
-                        ))}
-                    </ContentWrapper>
-                    <Button type="submit" fluid size="xlarge" variant="yellow" onClick={handleClose}>
-                        <CTACopy>{t('releaseNotesDialog.close')}</CTACopy>
-                    </Button>
-                </Wrapper>
-            </DialogContent>
-        </Dialog>
+        <>
+            <Dialog open={true} onOpenChange={handleClose}>
+                <DialogContent>
+                    <Wrapper>
+                        <HeaderWrapper>
+                            <VideoCTA onClick={() => setExpandPlayer(true)}>
+                                <BlocksSVG />
+                            </VideoCTA>
+                            <GraphicWrapper>
+                                <img src={track} alt="zzzoooom" />
+                            </GraphicWrapper>
+                            <HeaderTextWrapper>
+                                <TagLine>{t('warmupDialog.tag-line')}</TagLine>
+                                <GradientText>
+                                    <Heading>{t('warmupDialog.title')}</Heading>
+                                </GradientText>
+                            </HeaderTextWrapper>
+                        </HeaderWrapper>
+                        <ContentWrapper>
+                            <Typography variant="h5">{t('warmupDialog.subtitle')}</Typography>
+                            {paragrpahs.map((p) => (
+                                <Typography key={p.slice(0, 10)}>{p}</Typography>
+                            ))}
+                        </ContentWrapper>
+                        <Button type="submit" fluid size="xlarge" variant="yellow" onClick={handleClose}>
+                            <CTACopy>{t('releaseNotesDialog.close')}</CTACopy>
+                        </Button>
+                    </Wrapper>
+                </DialogContent>
+            </Dialog>
+            <VideoModal
+                open={expandPlayer}
+                onOpenChange={() => setExpandPlayer((c) => !c)}
+                src="https://static.tari.com/Tari-Announcement-BG.mp4"
+            />
+        </>
     );
 };
 

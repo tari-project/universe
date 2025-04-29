@@ -5,6 +5,7 @@ import { useSetupStore } from '@app/store/useSetupStore.ts';
 import Sync from '@app/containers/main/Sync/Sync.tsx';
 import { useConfigUIStore } from '@app/store';
 import Banner from '@app/containers/main/Banner/Banner.tsx';
+const environment = import.meta.env.MODE;
 
 export default function MainView() {
     const visualMode = useConfigUIStore((s) => s.visual_mode);
@@ -13,10 +14,10 @@ export default function MainView() {
     return (
         <DashboardContainer $disableBackground={isSettingUp}>
             {!visualMode && !isSettingUp && <Background />}
-            <Banner />
+            {/*TODO: add real FF*/}
+            {environment === 'development' && <Banner />}
             <DashboardContent>
                 <SidebarNavigation />
-
                 {isSettingUp ? <Sync /> : <Dashboard />}
             </DashboardContent>
         </DashboardContainer>

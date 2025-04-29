@@ -40,8 +40,7 @@ const FloatingElements = memo(function FloatingElements() {
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
             {environment === 'development' && <AdminUI />}
-            {/*TODO: add real FF*/}
-            {environment === 'development' && <WarmupDialog />}
+            <WarmupDialog />
         </FloatingTree>
     );
 });
