@@ -238,6 +238,19 @@ export async function fetchOrphanChainUiFeatureFlag() {
     return response;
 }
 
+export async function fetchUiSendRecvFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/ui-send-recv',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
+    return response;
+}
+
 export async function fetchCommunityMessages() {
     const response = await handleAirdropRequest<CommunityMessage[] | null>({
         publicRequest: true,
