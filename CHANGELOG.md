@@ -1,3 +1,23 @@
+🚀 TARI UNIVERSE v0.9.907 “RC1” — The Surge of Soon
+
+_April 29, 2025_
+
+Hey fam 👋,
+
+We’re excited to drop the BIGGEST update we’ve ever released 💥
+
+Introducing “The Surge of Soon”, the first release candidate of Tari Universe (v0.9.90).
+
+This release is a huge step forward. One of the biggest pieces of feedback we hear from the Tari community is about the pain of startup and initialization. Until now, there have been three major frustrations:
+
+- 1️⃣ You can’t access settings, sign into airdrop, or do anything else while the app is starting up
+- 2️⃣ It can take up to 3 hours for a new user to begin mining
+- 3️⃣ Many community members can’t get the app to load at all due to startup-related errors
+
+The Surge of Soon tackles these mission-critical issues head-on. You can now access Settings ⚙️ and sign into Airdrop 🎁 while the app is loading. And VERY SOON all Tari Universe users will now be able to go from launching the app to mining in 120 seconds or less 🏎️🏁
+
+--
+
 🌟 TARI UNIVERSE 0.9.849
 
 _April 23, 2025_
