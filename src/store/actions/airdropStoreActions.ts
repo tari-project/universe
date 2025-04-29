@@ -7,6 +7,7 @@ import {
     BackendInMemoryConfig,
     BonusTier,
     CommunityMessage,
+    initialAirdropStoreState,
     setAirdropTokensInConfig,
     useAirdropStore,
     useConfigCoreStore,
@@ -51,6 +52,7 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    uiSendRecvEnabled: false,
 };
 
 const fetchBackendInMemoryConfig = async () => {
@@ -60,7 +62,7 @@ const fetchBackendInMemoryConfig = async () => {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
 
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState: AirdropStoreState = {
+        const newState: Partial<AirdropStoreState> = {
             backendInMemoryConfig,
         };
 
