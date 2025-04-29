@@ -7,6 +7,7 @@ export const Wrapper = styled(m.div)`
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: min(10px, 0.75vmin);
     box-sizing: border-box;
     & * {
         pointer-events: all;
@@ -18,27 +19,24 @@ export const Content = styled(m.div)`
     will-change: width;
     width: min(100%, 80vw);
     display: grid;
-    grid-auto-columns: 100%;
-    grid-template-rows: 4fr 2fr 1fr;
-    place-items: stretch;
-    align-content: center;
+    grid-template-rows: min-content max-content auto;
     overflow: hidden;
-    gap: 40px;
-    padding: calc(0.3rem + 1vmin);
+    place-content: space-between;
+    gap: min(40px, 2vh);
     @media (max-height: 955px) {
-        gap: 30px;
+        gap: min(20px, 1vh);
     }
 `;
 
 export const HeaderContent = styled(m.div)`
     display: flex;
-    flex-flow: column;
+    flex-direction: column;
     align-items: center;
     text-align: center;
 `;
 
 export const Heading = styled(Typography).attrs({ variant: 'h1' })`
-    font-size: min(max(28px, 3.25vw), 48px);
+    font-size: min(max(26px, 3vw), 48px);
 `;
 
 export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
@@ -47,7 +45,7 @@ export const SubHeading = styled(Typography).attrs({ variant: 'p' })`
 `;
 
 export const HeaderGraphic = styled.div`
-    width: min(360px, 32vh);
+    width: min(220px, 24vh);
     user-select: none;
     max-width: 100%;
     video {
@@ -67,4 +65,5 @@ export const FooterContent = styled(m.div)`
     display: flex;
     width: 100%;
     align-items: center;
+    padding: 0 0 5px;
 `;

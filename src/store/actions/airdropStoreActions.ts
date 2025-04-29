@@ -13,10 +13,12 @@ import {
     UserDetails,
     UserEntryPoints,
     UserPoints,
+    useUIStore,
 } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 
 interface TokenResponse {
     exp: number;
@@ -119,6 +121,9 @@ export const airdropSetup = async () => {
             console.info('Refreshing airdrop tokens');
             await handleRefreshAirdropTokens();
             await fetchAllUserData();
+            if (useUIStore.getState().showSplashscreen) {
+                handleCloseSplashscreen();
+            }
         }
     } catch (error) {
         console.error('Error in airdropSetup: ', error);

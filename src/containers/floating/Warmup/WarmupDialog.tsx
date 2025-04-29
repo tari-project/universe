@@ -48,7 +48,7 @@ const WarmupDialog = function WarmupDialogs() {
                             <Typography key={p.slice(0, 10)}>{p}</Typography>
                         ))}
                     </ContentWrapper>
-                    <Button type="submit" fluid size="xlarge" variant="yellow">
+                    <Button type="submit" fluid size="xlarge" variant="yellow" onClick={handleClose}>
                         <CTACopy>{t('releaseNotesDialog.close')}</CTACopy>
                     </Button>
                 </Wrapper>
