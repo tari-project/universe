@@ -207,39 +207,40 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-export async function fetchPollingFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
+async function fetchFeatureFlag(route: string) {
+    return await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
-        path: '/features/polling',
+        path: `/features/${route}`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
         },
     });
+}
 
+export async function fetchPollingFeatureFlag() {
+    const response = await fetchFeatureFlag('polling');
     if (response) {
         useAirdropStore.setState({ pollingEnabled: response.access });
         // Let the BE know we're using the polling feature for mining proofs
         // invoke('set_airdrop_polling', { pollingEnabled: response.access });
     }
-
     return response;
 }
 
 export async function fetchOrphanChainUiFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
-        publicRequest: true,
-        path: '/features/orphan-chain-ui-disabled',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
+    const response = await fetchFeatureFlag('orphan-chain-ui-disabled');
     if (response) {
         useAirdropStore.setState({ orphanChainUiDisabled: response.access });
     }
+    return response;
+}
 
+export async function fetchWarmupFeatureFlag() {
+    const response = await fetchFeatureFlag('warmup');
+    if (response) {
+        useUIStore.setState({ showWarmup: response.access });
+    }
     return response;
 }
 
