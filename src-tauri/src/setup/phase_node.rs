@@ -280,7 +280,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
         );
 
-        TasksTrackers::current()
+        let progress_handle = TasksTrackers::current()
             .node_phase
             .get_task_tracker()
             .await
@@ -323,6 +323,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .node_manager
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
             .await?;
+        progress_handle.abort();
+        let _unused = progress_handle.await;
 
         Ok(())
     }
