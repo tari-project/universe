@@ -11,7 +11,7 @@ export const Wrapper = styled.div`
 `;
 
 export const Video = styled.video`
-    width: 100%;
+    width: calc(100% + 2px);
     height: auto;
 `;
 
@@ -25,8 +25,9 @@ export const CTA = styled.button`
     border-radius: 50%;
     width: 24px;
     height: 24px;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(0, 0, 0, 0.45);
     transition: transform 0.2s ease-in;
+    color: ${({ theme }) => theme.colors.greyscale[100]};
     &:hover {
         transform: scale(1.15);
     }

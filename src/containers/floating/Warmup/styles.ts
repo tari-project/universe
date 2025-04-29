@@ -40,6 +40,12 @@ export const HeaderWrapper = styled.div`
     overflow: hidden;
     width: 100%;
     min-height: 136px;
+    svg {
+        position: absolute;
+        z-index: 1;
+        right: 14px;
+        top: 14px;
+    }
 `;
 
 export const ContentWrapper = styled.div`
@@ -80,15 +86,4 @@ export const CTACopy = styled.div`
     text-transform: uppercase;
     font-family: DrukWide, sans-serif;
     font-size: 15px;
-`;
-
-export const VideoCTA = styled.button`
-    position: absolute;
-    z-index: 1;
-    right: 16px;
-    top: 16px;
-    transition: transform 0.2s ease-in;
-    &:hover {
-        transform: scale(1.15);
-    }
 `;
