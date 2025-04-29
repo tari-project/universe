@@ -7,7 +7,6 @@ import {
     BackendInMemoryConfig,
     BonusTier,
     CommunityMessage,
-    initialAirdropStoreState,
     setAirdropTokensInConfig,
     useAirdropStore,
     useConfigCoreStore,
