@@ -88,7 +88,7 @@
         "withGlobalTauri": true,
         "windows": [
             {
-                "title": "Tari Universe",
+                "title": "Tari Universe (Alpha) | Testnet",
                 "label": "main",
                 "width": 1300,
                 "height": 731,
