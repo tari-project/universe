@@ -250,7 +250,9 @@ impl InternalWallet {
             comms_pub_key.clone(),
             network,
             TariAddressFeatures::create_one_sided_only(),
-        );
+            None,
+        )
+        .map_err(|e| anyhow!(e.to_string()))?;
 
         config.tari_address_base58 = tari_address.to_base58();
         config.view_key_private_hex = view_key_private.to_hex();
