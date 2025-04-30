@@ -71,18 +71,18 @@ pub struct CredentialManager {
 
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
-        let fallback_file_exists = fallback_dir.join(FALLBACK_FILE_PATH).exists();
-        let fallback_mode = AtomicBool::new(fallback_file_exists);
+        let new_path = fallback_dir
+            .join(Network::get_current().as_key_str())
+            .join(FALLBACK_FILE_PATH);
 
-        if fallback_file_exists {
-            let new_path = fallback_dir
-                .join(Network::get_current().as_key_str())
-                .join(FALLBACK_FILE_PATH);
+        if fallback_dir.join(FALLBACK_FILE_PATH).exists() {
             if !new_path.exists() {
-                std::fs::rename(fallback_dir.join(FALLBACK_FILE_PATH), new_path.clone())
+                std::fs::copy(fallback_dir.join(FALLBACK_FILE_PATH), new_path.clone())
                     .expect("Failed to rename fallback file");
             }
         }
+
+        let fallback_mode = AtomicBool::new(new_path.exists());
 
         CredentialManager {
             service_name,
