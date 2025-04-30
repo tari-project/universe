@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 export const SelectedChain = styled.div`
     margin-top: 20px;
@@ -106,13 +106,19 @@ export const SwapAmountInput = styled.input`
     }
 `;
 
-export const SwapDirectionWrapper = styled.div`
+export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' }>`
     width: 40px;
     height: 40px;
     border-radius: 10px;
     padding: 5px 0 0 8px;
     background: black;
     border: 4px solid #e5e2e1;
+    transition: transform 0.2s ease-in-out;
+    ${({ $direction }) =>
+        $direction === 'input' &&
+        css`
+            transform: rotate(180deg);
+        `}
 `;
 
 export const SwapDetails = styled.div`

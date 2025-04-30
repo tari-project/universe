@@ -27,9 +27,11 @@ import PortalLogo from '../../icons/PortalLogo.png';
 import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
+import { useSwap } from '@app/hooks/swap/useSwap2';
 
 export const Swap = () => {
     const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
+    const { direction, setDirection } = useSwap();
     const dataAcc = useAccount();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
     const activeChainIcon = useMemo(() => {
@@ -70,12 +72,6 @@ export const Swap = () => {
         // Only allow numbers and one decimal point
         const regex = /^\d*\.?\d*$/;
         if (!regex.test(value)) return;
-
-        // // Handle leading zeros
-        // if (value.length > 1 && value[0] === '0') {
-        //     // Allow if it's a decimal number (0.)
-        //     if (value[1] !== '.' && value !== '0') return;
-        // }
 
         // Limit decimal places to 8
         const parts = value.split('.');
@@ -150,8 +146,8 @@ export const Swap = () => {
                 </SwapOptionAmount>
             </SwapOption>
             <SwapDirection>
-                <SwapDirectionWrapper>
-                    <ArrowIcon width={15} />
+                <SwapDirectionWrapper $direction={direction}>
+                    <ArrowIcon width={15} onClick={() => setDirection(direction === 'input' ? 'output' : 'input')} />
                 </SwapDirectionWrapper>
             </SwapDirection>
             <SwapOption>

@@ -1,6 +1,6 @@
-export const ArrowIcon = ({ width = '100%' }: { width: string | number }) => {
+export const ArrowIcon = ({ width = '100%', onClick }: { width: string | number; onClick?: () => void }) => {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={width} fill="none" viewBox="0 0 12 12">
+        <svg xmlns="http://www.w3.org/2000/svg" width={width} fill="none" viewBox="0 0 12 12" onClick={onClick}>
             <path
                 stroke="#fff"
                 strokeLinecap="round"
