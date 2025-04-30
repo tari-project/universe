@@ -47,7 +47,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
                         {isPositiveValue ? `+` : `-`}
                     </ValueChangeWrapper>
                     {value}
-                    <CurrencyText>{`XTM`}</CurrencyText>
+                    <CurrencyText>{`tXTM`}</CurrencyText>
                 </ValueWrapper>
             </Content>
         </ContentWrapper>

@@ -112,7 +112,7 @@ export default function Miner() {
                             </Typography>
                             <Unit>
                                 <Typography>
-                                    <Trans>XTM/</Trans>
+                                    <Trans>tXTM/</Trans>
                                     {t('day')}
                                 </Typography>
                             </Unit>

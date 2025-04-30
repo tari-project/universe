@@ -96,7 +96,7 @@ export default function CharSpinner({
                 <CharacterWrapper style={{ height: letterHeight * 10 }}>{charMarkup}</CharacterWrapper>
             </SpinnerWrapper>
 
-            {value === `-` ? null : <XTMWrapper>{`XTM`}</XTMWrapper>}
+            {value === `-` ? null : <XTMWrapper>{`tXTM`}</XTMWrapper>}
         </Wrapper>
     );
 }

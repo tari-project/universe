@@ -95,7 +95,7 @@ const ShareRewardModal = memo(function ShareRewardModal() {
                             <Label>{t('share.reward')}</Label>
                             <Value>
                                 <Number>{earningsFormatted}</Number>
-                                <Trans>XTM</Trans>
+                                <Trans>tXTM</Trans>
                             </Value>
                         </RewardWrapper>
                     </ContentWrapper>
