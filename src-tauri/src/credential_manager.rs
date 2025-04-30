@@ -31,6 +31,7 @@ use std::fs::OpenOptions;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
+use tari_common::configuration::Network;
 use tari_utilities::SafePassword;
 use thiserror::Error;
 
@@ -72,6 +73,17 @@ impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
         let fallback_file_exists = fallback_dir.join(FALLBACK_FILE_PATH).exists();
         let fallback_mode = AtomicBool::new(fallback_file_exists);
+
+        if fallback_file_exists {
+            let new_path = fallback_dir
+                .join(Network::get_current().as_key_str())
+                .join(FALLBACK_FILE_PATH);
+            if !new_path.exists() {
+                std::fs::rename(fallback_dir.join(FALLBACK_FILE_PATH), new_path.clone())
+                    .expect("Failed to rename fallback file");
+            }
+        }
+
         CredentialManager {
             service_name,
             username,
@@ -81,11 +93,33 @@ impl CredentialManager {
     }
 
     pub fn default_with_dir(fallback_dir: PathBuf) -> Self {
-        CredentialManager::new(
+        let network_specific_name = format!(
+            "{}_{}",
+            KEYCHAIN_USERNAME,
+            Network::get_current().as_key_str()
+        );
+
+        let new_credential_manager = CredentialManager::new(
+            APPLICATION_FOLDER_ID.into(),
+            network_specific_name.clone(),
+            fallback_dir.clone(),
+        );
+
+        let old_credential_manager = CredentialManager::new(
             APPLICATION_FOLDER_ID.into(),
             KEYCHAIN_USERNAME.into(),
-            fallback_dir,
-        )
+            fallback_dir.clone(),
+        );
+
+        if new_credential_manager.load_from_keyring().is_err() {
+            if let Ok(credential) = old_credential_manager.load_from_keyring() {
+                new_credential_manager
+                    .save_to_keyring(&credential)
+                    .expect("Failed to migrate credentials");
+            }
+        }
+
+        new_credential_manager
     }
 
     pub async fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
@@ -246,6 +280,8 @@ impl CredentialManager {
     }
 
     fn fallback_file(&self) -> PathBuf {
-        self.fallback_dir.join(FALLBACK_FILE_PATH)
+        self.fallback_dir
+            .join(Network::get_current().as_key_str())
+            .join(FALLBACK_FILE_PATH)
     }
 }

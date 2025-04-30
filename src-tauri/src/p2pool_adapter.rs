@@ -70,6 +70,7 @@ impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
     type ProcessInstance = ProcessInstance;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -145,15 +146,24 @@ impl ProcessAdapter for P2poolAdapter {
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
-                envs.insert("TARI_NETWORK".to_string(), "esmeralda".to_string());
+                envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
             }
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
             }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
             }
-        };
+            Network::MainNet => {
+                envs.insert("TARI_NETWORK".to_string(), "mainnet".to_string());
+            }
+            Network::StageNet => {
+                envs.insert("TARI_NETWORK".to_string(), "stagenet".to_string());
+            }
+            Network::LocalNet => {
+                envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
+            }
+        }
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("sha_p2pool.exe".to_string(), binary_version_path.clone())?;
