@@ -12,7 +12,7 @@ const removeDecimals = (value: number, decimals: number) => {
     return value / Math.pow(10, decimals);
 };
 
-const removeTXTMCryptoDecimals = (value: number) => {
+const removeXTMCryptoDecimals = (value: number) => {
     return removeDecimals(value, 6);
 };
 
@@ -54,16 +54,16 @@ const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): str
 
 const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
 
-const formatTXTMCompact = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
+const formatXTMCompact = (value: number) =>
+    formatValue(removeXTMCryptoDecimals(roundCompactDecimals(value)), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
         notation: 'compact',
         style: 'decimal',
     });
 
-const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundToTwoDecimals(value)), {
+const formatXTMLong = (value: number) =>
+    formatValue(removeXTMCryptoDecimals(roundToTwoDecimals(value)), {
         maximumFractionDigits: 2,
         notation: 'standard',
         style: 'decimal',
@@ -82,9 +82,9 @@ export function formatNumber(value: number, preset: FormatPreset): string {
         case FormatPreset.PERCENT:
             return formatPercent(value);
         case FormatPreset.XTM_COMPACT:
-            return formatTXTMCompact(value);
+            return formatXTMCompact(value);
         case FormatPreset.XTM_LONG:
-            return formatTXTMLong(value);
+            return formatXTMLong(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);
         default:
