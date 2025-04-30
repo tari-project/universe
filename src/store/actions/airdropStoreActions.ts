@@ -54,6 +54,7 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    uiSendRecvEnabled: false,
 };
 
 const fetchBackendInMemoryConfig = async () => {
@@ -63,7 +64,7 @@ const fetchBackendInMemoryConfig = async () => {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
 
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState: AirdropStoreState = {
+        const newState: Partial<AirdropStoreState> = {
             backendInMemoryConfig,
         };
 
@@ -131,9 +132,7 @@ export const airdropSetup = async () => {
     }
 };
 export const handleAirdropLogout = async (isUserLogout = false) => {
-    if (!isUserLogout) {
-        removeSocket();
-    } else {
+    if (isUserLogout) {
         console.info('User logout | removing airdrop tokens');
     }
     await setAirdropTokens(undefined);
@@ -148,17 +147,20 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        setAirdropTokensInConfig({
-            token: airdropTokens.token,
-            refreshToken: airdropTokens.refreshToken,
-        });
+        setAirdropTokensInConfig(
+            {
+                token: airdropTokens.token,
+                refreshToken: airdropTokens.refreshToken,
+            },
+            () => {
+                if (airdropApiUrl && authToken) {
+                    initialiseSocket();
+                }
+            }
+        );
 
         const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
         const authToken = airdropTokens?.token;
-
-        if (airdropApiUrl && authToken) {
-            initialiseSocket(airdropApiUrl, authToken);
-        }
     } else {
         // User not connected
         useAirdropStore.setState((currentState) => ({
@@ -167,6 +169,8 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        removeSocket();
+
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
@@ -242,6 +246,12 @@ export async function fetchWarmupFeatureFlag() {
     if (response) {
         useUIStore.setState({ showWarmup: response.access });
     }
+    return response;
+}
+
+export async function fetchUiSendRecvFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_TX);
+    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
     return response;
 }
 

@@ -6,6 +6,7 @@ import {
     fetchOrphanChainUiFeatureFlag,
     fetchPollingFeatureFlag,
     fetchWarmupFeatureFlag,
+    fetchUiSendRecvFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
@@ -31,6 +32,7 @@ export const useAirdropPolling = () => {
     const fetchFeatureFlags = useCallback(() => {
         fetchOrphanChainUiFeatureFlag();
         fetchPollingFeatureFlag();
+        fetchUiSendRecvFeatureFlag();
         fetchWarmupFeatureFlag();
     }, []);
 
