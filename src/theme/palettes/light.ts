@@ -64,6 +64,7 @@ const lightPalette: ThemePalette = {
             paper: '#fff',
             accent: c.grey[100],
             splash: '#e5e5e5',
+            secondary: '#000000',
         },
         success: {
             main: c.success[300],

@@ -5,6 +5,7 @@ import {
     fetchLatestXSpaceEvent,
     fetchOrphanChainUiFeatureFlag,
     fetchPollingFeatureFlag,
+    fetchWarmupFeatureFlag,
     fetchUiSendRecvFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
@@ -32,6 +33,7 @@ export const useAirdropPolling = () => {
         fetchOrphanChainUiFeatureFlag();
         fetchPollingFeatureFlag();
         fetchUiSendRecvFeatureFlag();
+        fetchWarmupFeatureFlag();
     }, []);
 
     const fetchFeatureFlagDebounced = useCallback(() => {

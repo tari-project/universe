@@ -13,10 +13,13 @@ import {
     UserDetails,
     UserEntryPoints,
     UserPoints,
+    useUIStore,
 } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
+import { FEATURES } from '@app/store/consts.ts';
 
 interface TokenResponse {
     exp: number;
@@ -120,6 +123,9 @@ export const airdropSetup = async () => {
             console.info('Refreshing airdrop tokens');
             await handleRefreshAirdropTokens();
             await fetchAllUserData();
+            if (useUIStore.getState().showSplashscreen) {
+                handleCloseSplashscreen();
+            }
         }
     } catch (error) {
         console.error('Error in airdropSetup: ', error);
@@ -206,51 +212,45 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-export async function fetchPollingFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
+async function fetchFeatureFlag(route: string) {
+    return await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
-        path: '/features/polling',
+        path: `/features/${route}`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
         },
     });
+}
 
+export async function fetchPollingFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_POLLING);
     if (response) {
         useAirdropStore.setState({ pollingEnabled: response.access });
         // Let the BE know we're using the polling feature for mining proofs
         // invoke('set_airdrop_polling', { pollingEnabled: response.access });
     }
-
     return response;
 }
 
 export async function fetchOrphanChainUiFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
-        publicRequest: true,
-        path: '/features/orphan-chain-ui-disabled',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_ORPHAN_CHAIN_DISABLED);
     if (response) {
         useAirdropStore.setState({ orphanChainUiDisabled: response.access });
     }
+    return response;
+}
 
+export async function fetchWarmupFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_WARMUP);
+    if (response) {
+        useUIStore.setState({ showWarmup: response.access });
+    }
     return response;
 }
 
 export async function fetchUiSendRecvFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
-        publicRequest: true,
-        path: '/features/ui-send-recv',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_TX);
     useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
     return response;
 }
