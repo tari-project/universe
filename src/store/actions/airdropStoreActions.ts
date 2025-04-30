@@ -51,6 +51,7 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    uiSendRecvEnabled: false,
 };
 
 const fetchBackendInMemoryConfig = async () => {
@@ -60,7 +61,7 @@ const fetchBackendInMemoryConfig = async () => {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
 
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState: AirdropStoreState = {
+        const newState: Partial<AirdropStoreState> = {
             backendInMemoryConfig,
         };
 
@@ -235,6 +236,19 @@ export async function fetchOrphanChainUiFeatureFlag() {
         useAirdropStore.setState({ orphanChainUiDisabled: response.access });
     }
 
+    return response;
+}
+
+export async function fetchUiSendRecvFeatureFlag() {
+    const response = await handleAirdropRequest<{ access: boolean } | null>({
+        publicRequest: true,
+        path: '/features/ui-send-recv',
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+    });
+    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
     return response;
 }
 
