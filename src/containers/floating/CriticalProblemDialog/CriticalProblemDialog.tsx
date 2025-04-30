@@ -52,13 +52,13 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
             console.error('Error sending feedback| handleSendFeedback in CriticalProblemDialog: ', e);
         }
         setIsSubmittingLogs(false);
-    }, []);
+    }, [criticalProblem?.title, t]);
 
     const handleCopyLogsSubmissionId = useCallback(() => {
         if (logsSubmissionId) {
             copyToClipboard(logsSubmissionId);
         }
-    }, [logsSubmissionId, copyToClipboard, setLogsSubmissionId]);
+    }, [logsSubmissionId, copyToClipboard]);
 
     const handleLogsButtonText = useMemo(() => {
         if (logsSubmissionId) {
