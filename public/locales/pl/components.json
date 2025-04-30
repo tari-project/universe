@@ -1,4 +1,9 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
     "integers-only": "Dozwolone są tylko liczby całkowite",
     "invalid": "Nieprawidłowe pole",
@@ -20,14 +25,20 @@
     "title": "Informacje o wydaniu"
   },
   "resume-app-modal": {
-    "title": "Wznawianie Tari Universe",
+    "finishing-resume": "Kończenie wznawiania...",
     "resuming-all-processes": "Wznawianie wszystkich procesów...",
-    "resuming-tor": "Wznawianie Tor...",
+    "resuming-mm-proxy": "Wznawianie MM Proxy...",
     "resuming-node": "Wznawianie węzła...",
+    "resuming-p2pool": "Wznawianie P2Pool...",
+    "resuming-tor": "Wznawianie Tor...",
     "resuming-wallet": "Wznawianie portfela...",
     "syncing-node": "Synchronizowanie węzła...",
-    "resuming-p2pool": "Wznawianie P2Pool...",
-    "resuming-mm-proxy": "Wznawianie MM Proxy...",
-    "finishing-resume": "Kończenie wznawiania..."
+    "title": "Wznawianie Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The Warm Up phase is a temporary period at the start of network activation, expected to last 15 days.\nDuring this time, the network is still stabilizing, and some irregular behavior is normal. You may experience fluctuations in block times, temporary disconnects, or syncing issues. In some cases, your node might end up on a temporary fork and need to reconnect to the main chain.\nMiners are still earning XTM during this phase. This period allows the system to calibrate as more miners and nodes come online, helping iron out edge cases and ensure the network is resilient under real-world conditions. No action is needed unless your node becomes stuck. Restarting or resyncing will usually resolve it. After the warm-up period, the network will transition into a more stable and predictable state.",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "The network is starting",
+    "title": "Warm up phase"
   }
 }

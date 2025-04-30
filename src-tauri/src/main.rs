@@ -49,6 +49,8 @@ use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
+use websocket_events_manager::WebsocketEventsManager;
+use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
 use log4rs::config::RawConfig;
 use std::fs;
@@ -142,6 +144,8 @@ mod updates_manager;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
+mod websocket_events_manager;
+mod websocket_manager;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -951,6 +955,10 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
+    websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
+    websocket_manager: Arc<RwLock<WebsocketManager>>,
+    websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -1004,6 +1012,13 @@ fn main() {
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (websocket_message_tx, websocket_message_rx) =
+        tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+
+    //NOTE DONT use websocket_state_tx anywhere else than WebsocketManager
+    let (websocket_manager_status_tx, websocket_manager_status_rx) =
+        watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
+
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
@@ -1064,6 +1079,24 @@ fn main() {
         node_manager.clone(),
     );
 
+    let app_id = app_config_raw.anon_id().to_string();
+
+    let websocket_manager = Arc::new(RwLock::new(WebsocketManager::new(
+        app_in_memory_config.clone(),
+        websocket_message_rx,
+        websocket_manager_status_tx.clone(),
+        websocket_manager_status_rx.clone(),
+        app_id.clone(),
+    )));
+
+    let websocket_events_manager = WebsocketEventsManager::new(
+        app_id.clone(),
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        websocket_message_tx.clone(),
+    );
+
     let updates_manager = UpdatesManager::new();
     let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
 
@@ -1098,6 +1131,10 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        websocket_message_tx: Arc::new(websocket_message_tx),
+        websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
+        websocket_manager,
+        websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1267,6 +1304,8 @@ fn main() {
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
+            commands::websocket_connect,
+            commands::websocket_close,
             commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
@@ -1296,6 +1335,8 @@ fn main() {
         let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
             error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
         });
+
+
 
         match event {
         tauri::RunEvent::Ready  => {

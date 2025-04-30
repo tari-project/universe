@@ -4,5 +4,5 @@ export const Wrapper = styled.div`
     display: flex;
     flex-direction: column;
     width: 100%;
-    max-height: 400px;
+    max-height: clamp(10vh, 400px, 45vh);
 `;
