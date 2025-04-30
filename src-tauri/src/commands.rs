@@ -50,6 +50,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
+use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
@@ -146,8 +147,8 @@ pub struct CpuMinerConnectionStatus {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct SignWsDataResponse {
-    signature: String,
-    pub_key: String,
+    pub signature: String,
+    pub pub_key: String,
 }
 
 #[tauri::command]
@@ -872,6 +873,7 @@ pub async fn reset_settings<'r>(
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 }
+
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
@@ -1707,6 +1709,49 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
+pub async fn websocket_connect(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+    info!(target: LOG_TARGET, "websocket_connect command accepted");
+
+    if matches!(
+        last_state,
+        WebsocketManagerStatusMessage::Connected | WebsocketManagerStatusMessage::Reconnecting
+    ) {
+        return Ok(());
+    }
+
+    let mut websocket_manger_guard = state.websocket_manager.write().await;
+
+    if !websocket_manger_guard.is_websocket_manager_ready() {
+        warn!(target: LOG_TARGET, "websocket_connect cannot be done as websocket_manager is not ready yet");
+        return Err("websocket manager is not ready".into());
+    }
+
+    websocket_manger_guard
+        .connect()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .emit_interval_ws_events()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_connect command finished");
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
     EventsManager::handle_connection_status_changed(
         &app_handle,
@@ -1736,6 +1781,41 @@ pub async fn send_one_sided_to_stealth_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn websocket_close(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "websocket_close command started");
+
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+
+    if matches!(last_state, WebsocketManagerStatusMessage::Stopped) {
+        return Ok(());
+    }
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .stop_emitting_message()
+        .await;
+
+    state
+        .websocket_manager
+        .write()
+        .await
+        .close_connection()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_close took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_close command finished");
     Ok(())
 }
 
