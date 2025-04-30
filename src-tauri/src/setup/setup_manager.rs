@@ -36,6 +36,7 @@ use crate::{
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
+    websocket_manager::WebsocketMessage,
     UniverseAppState,
 };
 use log::{debug, error, info};
@@ -45,7 +46,7 @@ use std::{
     sync::LazyLock,
     time::Duration,
 };
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex},
@@ -207,6 +208,38 @@ impl SetupManager {
             .initialize_for_migration(app_handle.clone())
             .await;
 
+        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+        websocket_events_manager_guard.set_app_handle(app_handle.clone());
+        drop(websocket_events_manager_guard);
+
+        let mut websocket_manager_write = state.websocket_manager.write().await;
+        websocket_manager_write.set_app_handle(app_handle.clone());
+        drop(websocket_manager_write);
+
+        let webview = app_handle
+            .get_webview_window("main")
+            .expect("main window must exist");
+        let websocket_tx = state.websocket_message_tx.clone();
+        webview.listen("ws-tx", move |event: tauri::Event| {
+            let event_cloned = event.clone();
+            let websocket_tx_clone = websocket_tx.clone();
+
+            tauri::async_runtime::spawn(async move {
+                let message = event_cloned.payload();
+                if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                    .inspect_err(|e| error!("websocket malformatted: {}", e))
+                {
+                    if websocket_tx_clone
+                        .send(message.clone())
+                        .await
+                        .inspect_err(|e| error!("too many messages in websocket send queue {}", e))
+                        .is_ok()
+                    {
+                        log::trace!("websocket message sent {:?}", message);
+                    }
+                }
+            });
+        });
         EventsManager::handle_node_type_update(&app_handle).await;
 
         ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;

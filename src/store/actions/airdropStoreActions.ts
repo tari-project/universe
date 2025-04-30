@@ -126,9 +126,7 @@ export const airdropSetup = async () => {
     }
 };
 export const handleAirdropLogout = async (isUserLogout = false) => {
-    if (!isUserLogout) {
-        removeSocket();
-    } else {
+    if (isUserLogout) {
         console.info('User logout | removing airdrop tokens');
     }
     await setAirdropTokens(undefined);
@@ -143,17 +141,20 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        setAirdropTokensInConfig({
-            token: airdropTokens.token,
-            refreshToken: airdropTokens.refreshToken,
-        });
+        setAirdropTokensInConfig(
+            {
+                token: airdropTokens.token,
+                refreshToken: airdropTokens.refreshToken,
+            },
+            () => {
+                if (airdropApiUrl && authToken) {
+                    initialiseSocket();
+                }
+            }
+        );
 
         const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
         const authToken = airdropTokens?.token;
-
-        if (airdropApiUrl && authToken) {
-            initialiseSocket(airdropApiUrl, authToken);
-        }
     } else {
         // User not connected
         useAirdropStore.setState((currentState) => ({
@@ -162,6 +163,8 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        removeSocket();
+
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
