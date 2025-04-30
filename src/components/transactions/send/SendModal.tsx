@@ -68,7 +68,10 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     destination: data.address,
                     paymentId: data.message,
                 };
-                await invoke('send_one_sided_to_stealth_address', payload);
+                await invoke('send_one_sided_to_stealth_address', {
+                    ...payload,
+                    amount: payload.amount.toString(),
+                });
                 addPendingTransaction(payload);
                 setStatus('completed');
             } catch (error) {
@@ -76,6 +79,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 setError(`root.invoke_error`, {
                     message: `${t('send.error-message')} ${error}`,
                 });
+                setStatus('fields');
             }
         },
         [status, setStatus, setError, t]
