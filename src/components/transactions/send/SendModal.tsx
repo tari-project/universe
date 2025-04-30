@@ -71,7 +71,6 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 await invoke('send_one_sided_to_stealth_address', payload);
                 addPendingTransaction(payload);
                 setStatus('completed');
-                setSection('history');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {
@@ -79,7 +78,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 });
             }
         },
-        [status, setStatus, setSection, setError, t]
+        [status, setStatus, setError, t]
     );
 
     const getModalTitle = () => {
