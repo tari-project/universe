@@ -4,7 +4,7 @@ export enum Network {
     NextNet = 'nextnet',
     LocalNet = 'localnet',
     Igor = 'igor',
-    Esmeralda = 'esmerlada',
+    Esmeralda = 'esmeralda',
 }
 
 export function isTestnet(network: Network | undefined): boolean {
