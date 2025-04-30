@@ -38,9 +38,9 @@ export default function Miner() {
     const totalEarnings = cpu_estimated_earnings + gpu_estimated_earnings;
     const earningsLoading = totalEarnings <= 0 && (isWaitingForCPUHashRate || isWaitingForGPUHashRate);
 
-    const totalEarningsFormatted = formatNumber(totalEarnings, FormatPreset.TXTM_COMPACT);
-    const estimatedBalanceFormatted = formatNumber(cpu_estimated_earnings, FormatPreset.TXTM_COMPACT);
-    const gpuEstimatedEarnings = formatNumber(gpu_estimated_earnings, FormatPreset.TXTM_COMPACT);
+    const totalEarningsFormatted = formatNumber(totalEarnings, FormatPreset.XTM_COMPACT);
+    const estimatedBalanceFormatted = formatNumber(cpu_estimated_earnings, FormatPreset.XTM_COMPACT);
+    const gpuEstimatedEarnings = formatNumber(gpu_estimated_earnings, FormatPreset.XTM_COMPACT);
 
     return (
         <MinerContainer>
@@ -89,7 +89,7 @@ export default function Miner() {
                             </Typography>
                             <Unit>
                                 <Typography>
-                                    <Trans>tXTM/</Trans>
+                                    <Trans>XTM/</Trans>
                                     {t('day')}
                                 </Typography>
                             </Unit>
@@ -112,7 +112,7 @@ export default function Miner() {
                             </Typography>
                             <Unit>
                                 <Typography>
-                                    <Trans>tXTM/</Trans>
+                                    <Trans>XTM/</Trans>
                                     {t('day')}
                                 </Typography>
                             </Unit>

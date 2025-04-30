@@ -58,7 +58,7 @@ impl SystrayItemId {
             SystrayItemId::CpuHashrate => format!("CPU Power: {}", format_hashrate(value)),
             SystrayItemId::GpuHashrate => format!("GPU Power: {}", format_hashrate(value)),
             SystrayItemId::EstimatedEarning => {
-                format!("Est. Earning: {}", format_currency(value, "tXTM/day"))
+                format!("Est. Earning: {}", format_currency(value, "XTM/day"))
             }
             SystrayItemId::MinimizeToggle => "Minimize/Unminimize".to_string(),
         }
@@ -144,7 +144,7 @@ impl SystemTrayManager {
                 "CPU Power: {}\nGPU Power: {}\nEst. earning: {}",
                 format_hashrate(data.cpu_hashrate),
                 format_hashrate(data.gpu_hashrate),
-                format_currency(data.estimated_earning / 1_000_000.0, "tXTM/day")
+                format_currency(data.estimated_earning / 1_000_000.0, "XTM/day")
             )),
         }
     }

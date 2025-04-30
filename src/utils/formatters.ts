@@ -2,8 +2,8 @@ import i18n from 'i18next';
 
 export enum FormatPreset {
     PERCENT = 'percent',
-    TXTM_COMPACT = 'txtm-compact',
-    TXTM_LONG = 'txtm-crypto',
+    XTM_COMPACT = 'xtm-compact',
+    XTM_LONG = 'xtm-crypto',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
 }
@@ -81,9 +81,9 @@ export function formatNumber(value: number, preset: FormatPreset): string {
             });
         case FormatPreset.PERCENT:
             return formatPercent(value);
-        case FormatPreset.TXTM_COMPACT:
+        case FormatPreset.XTM_COMPACT:
             return formatTXTMCompact(value);
-        case FormatPreset.TXTM_LONG:
+        case FormatPreset.XTM_LONG:
             return formatTXTMLong(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);
