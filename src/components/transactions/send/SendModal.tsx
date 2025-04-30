@@ -69,8 +69,8 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     paymentId: data.message,
                 };
                 await invoke('send_one_sided_to_stealth_address', payload);
-
                 addPendingTransaction(payload);
+                setStatus('completed');
                 setSection('history');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
