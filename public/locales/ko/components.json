@@ -1,4 +1,9 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
     "integers-only": "정수만 허용됨",
     "invalid": "잘못된 필드",
@@ -20,14 +25,20 @@
     "title": "릴리스 노트"
   },
   "resume-app-modal": {
-    "title": "Tari Universe 재개 중",
+    "finishing-resume": "재개 완료 중...",
     "resuming-all-processes": "모든 프로세스 재개 중...",
-    "resuming-tor": "Tor 재개 중...",
+    "resuming-mm-proxy": "MM 프록시 재개 중...",
     "resuming-node": "노드 재개 중...",
+    "resuming-p2pool": "P2Pool 재개 중...",
+    "resuming-tor": "Tor 재개 중...",
     "resuming-wallet": "지갑 재개 중...",
     "syncing-node": "노드 동기화 중...",
-    "resuming-p2pool": "P2Pool 재개 중...",
-    "resuming-mm-proxy": "MM 프록시 재개 중...",
-    "finishing-resume": "재개 완료 중..."
+    "title": "Tari Universe 재개 중"
+  },
+  "warmupDialog": {
+    "copy": "The Warm Up phase is a temporary period at the start of network activation, expected to last 15 days.\nDuring this time, the network is still stabilizing, and some irregular behavior is normal. You may experience fluctuations in block times, temporary disconnects, or syncing issues. In some cases, your node might end up on a temporary fork and need to reconnect to the main chain.\nMiners are still earning XTM during this phase. This period allows the system to calibrate as more miners and nodes come online, helping iron out edge cases and ensure the network is resilient under real-world conditions. No action is needed unless your node becomes stuck. Restarting or resyncing will usually resolve it. After the warm-up period, the network will transition into a more stable and predictable state.",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "The network is starting",
+    "title": "Warm up phase"
   }
 }
