@@ -16,7 +16,7 @@ import { useCopyToClipboard } from '@app/hooks/index.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 import { SendSVG } from '@app/assets/icons/send.tsx';
 import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
-import { usePaperWalletStore } from '@app/store';
+import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { Wrapper } from './wallet.styles.ts';
@@ -28,11 +28,10 @@ interface Props {
     setSection: (section: string) => void;
 }
 
-const environment = import.meta.env.MODE;
-
 const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const { t } = useTranslation(['wallet', 'common', 'sidebar']);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
+    const uiSendRecvEnabled = useAirdropStore((s) => s.uiSendRecvEnabled);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const displayAddress = truncateMiddle(walletAddress, 4);
@@ -56,7 +55,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
             <HistoryList />
 
             <BottomNavWrapper>
-                {environment === 'development' ? (
+                {uiSendRecvEnabled ? (
                     <>
                         <NavButton
                             onClick={() => setSection('send')}
