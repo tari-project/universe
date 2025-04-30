@@ -5,7 +5,7 @@ export const Wrapper = styled.div`
     flex-flow: column;
     width: min(420px, 40vw);
     align-items: center;
-    padding: min(0.1vmin + 0.5rem, 30px);
+    padding: min(calc(0.1vmin + 0.5rem), 30px);
     gap: 20px;
 `;
 
@@ -63,7 +63,7 @@ export const ContentWrapper = styled.div`
 `;
 
 export const TagLine = styled.div`
-    color: #fff;
+    color: ${({ theme }) => theme.colors.greyscale[100]};
     text-align: center;
     font-family: 'IBM Plex Sans Hebrew', sans-serif;
     font-size: 10px;

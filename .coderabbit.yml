@@ -1,7 +1,15 @@
-language: "en-US"
+language: 'en-US'
 reviews:
   review_status: false
   collapse_walkthrough: true
   auto_review:
     enabled: true
     drafts: false
+path_instructions:
+  - path: 'public/locales/**/*.json'
+    instructions: |
+      These are localization files. Do not suggest translating English strings to other languages.
+      The workflow for this project is to first add keys with English values across all language files,
+      and then batch update translations for all languages later.
+      Consolidate any translation-related comments into a single comment rather than creating
+      separate ones for each locale file.

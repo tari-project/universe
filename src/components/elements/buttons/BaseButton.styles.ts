@@ -76,11 +76,18 @@ export const StyledButton = styled.button<ButtonStyleProps>`
                     return css`
                         background-color: ${theme.colors.brightGreen[500]};
                         color: ${theme.palette.text.contrast};
+                        &:hover:not(:disabled) {
+                            opacity: 0.9;
+                        }
                     `;
                 } else {
                     return css`
                         background-color: ${theme.palette.contrast};
                         color: ${theme.colors.brightGreen[500]};
+
+                        &:hover:not(:disabled) {
+                            opacity: 0.9;
+                        }
                     `;
                 }
             }

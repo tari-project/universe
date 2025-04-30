@@ -2,15 +2,17 @@ import styled from 'styled-components';
 
 export const DashboardBanner = styled.div`
     width: 100%;
-    height: 76px;
+    max-height: 76px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: ${({ theme }) => theme.palette.background.secondary};
     border-radius: 15px;
-    padding: 0 10px;
+    padding: 10px;
     gap: 10px;
     pointer-events: auto;
+    position: relative;
+    z-index: 1;
 
     span {
         color: ${({ theme }) => theme.palette.text.contrast};
@@ -18,7 +20,7 @@ export const DashboardBanner = styled.div`
         font-size: 17px;
         font-style: italic;
         font-weight: 700;
-        line-height: 94.2%; /* 16.014px */
+        line-height: 0.94;
         text-transform: uppercase;
     }
 `;
@@ -36,6 +38,9 @@ export const BodyCopy = styled.div`
     align-items: center;
     color: ${({ theme }) => theme.colors.greyscale[100]};
     flex-wrap: wrap;
+    h6 {
+        line-height: 0.8;
+    }
     strong {
         color: #ffab25; // TODO: add new colours to theme
     }
@@ -48,7 +53,7 @@ export const TagLine = styled.div`
     font-size: 17px;
     font-style: italic;
     font-weight: 700;
-    line-height: 0.95;
+    line-height: 0.915;
     text-transform: uppercase;
     flex-direction: column;
     span {
@@ -65,7 +70,7 @@ export const VideoPreview = styled.div`
     justify-content: center;
     position: relative;
     height: 46px;
-    color: #ffffff;
+    color: ${({ theme }) => theme.colors.greyscale[100]};
     transition: transform 0.2s ease-in;
     cursor: pointer;
     &:hover {

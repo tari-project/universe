@@ -16,7 +16,7 @@ export function VideoModal({ src, open, onOpenChange }: VideoModalProps) {
                     <CTA onClick={onOpenChange}>
                         <IoClose />
                     </CTA>
-                    <Video autoPlay src={src} controls></Video>
+                    <Video autoPlay src={src} controls playsInline></Video>
                 </Wrapper>
             </DialogContent>
         </Dialog>
