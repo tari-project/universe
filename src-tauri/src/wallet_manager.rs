@@ -31,12 +31,14 @@ use crate::wallet_adapter::WalletStatusMonitorError;
 use crate::wallet_adapter::{WalletAdapter, WalletState};
 use crate::BaseNodeStatus;
 use futures_util::future::FusedFuture;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use std::time::Duration;
+use tari_common::configuration::Network;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
+use tokio::fs;
 use tokio::sync::watch;
 use tokio::sync::RwLock;
 
@@ -151,6 +153,17 @@ impl WalletManager {
     pub async fn get_wallet_birthday(&self, config_path: PathBuf) -> Result<u16, anyhow::Error> {
         let internal_wallet = InternalWallet::load_or_create(config_path).await?;
         internal_wallet.get_birthday().await
+    }
+
+    pub async fn clean_data_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(
+            base_path
+                .join("wallet")
+                .join(Network::get_current().to_string().to_lowercase()),
+        )
+        .await?;
+        log::info!(target: LOG_TARGET, "Cleaning wallet data folder");
+        Ok(())
     }
 
     pub async fn get_transactions_history(
