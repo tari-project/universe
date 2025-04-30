@@ -2,9 +2,9 @@
   "connect": {
     "blackButton": "I have the app",
     "scan": "Scan QR Code",
-    "text": "Download Tari Aurora and track your real-time XTM balance anywhere. Get it now for iOS or Android.",
+    "text": "Download Tari Aurora and track your real-time tXTM balance anywhere. Get it now for iOS or Android.",
     "textButton": "Learn more about Tari Aurora",
-    "title": "Track your XTM balance on your phone"
+    "title": "Track your tXTM balance on your phone"
   },
   "qrcode": {
     "blackButton": "Done",
