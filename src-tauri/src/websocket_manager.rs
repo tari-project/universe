@@ -342,7 +342,7 @@ async fn sender_task(
                     .inspect_err(|e| {
                         error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
                     })?;
-                info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
+                // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET, "exiting websocket_manager sender task");
