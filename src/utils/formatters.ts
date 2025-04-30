@@ -2,8 +2,8 @@ import i18n from 'i18next';
 
 export enum FormatPreset {
     PERCENT = 'percent',
-    TXTM_COMPACT = 'txtm-compact',
-    TXTM_LONG = 'txtm-crypto',
+    XTM_COMPACT = 'xtm-compact',
+    XTM_LONG = 'xtm-crypto',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
 }
@@ -12,7 +12,7 @@ const removeDecimals = (value: number, decimals: number) => {
     return value / Math.pow(10, decimals);
 };
 
-const removeTXTMCryptoDecimals = (value: number) => {
+const removeXTMCryptoDecimals = (value: number) => {
     return removeDecimals(value, 6);
 };
 
@@ -54,16 +54,16 @@ const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): str
 
 const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
 
-const formatTXTMCompact = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
+const formatXTMCompact = (value: number) =>
+    formatValue(removeXTMCryptoDecimals(roundCompactDecimals(value)), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
         notation: 'compact',
         style: 'decimal',
     });
 
-const formatTXTMLong = (value: number) =>
-    formatValue(removeTXTMCryptoDecimals(roundToTwoDecimals(value)), {
+const formatXTMLong = (value: number) =>
+    formatValue(removeXTMCryptoDecimals(roundToTwoDecimals(value)), {
         maximumFractionDigits: 2,
         notation: 'standard',
         style: 'decimal',
@@ -81,10 +81,10 @@ export function formatNumber(value: number, preset: FormatPreset): string {
             });
         case FormatPreset.PERCENT:
             return formatPercent(value);
-        case FormatPreset.TXTM_COMPACT:
-            return formatTXTMCompact(value);
-        case FormatPreset.TXTM_LONG:
-            return formatTXTMLong(value);
+        case FormatPreset.XTM_COMPACT:
+            return formatXTMCompact(value);
+        case FormatPreset.XTM_LONG:
+            return formatXTMLong(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);
         default:

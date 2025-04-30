@@ -10,6 +10,7 @@ import { setError } from './appStateStoreActions.ts';
 import { handleMiningModeChange, setGpuDevices } from '../actions/miningMetricsStoreActions.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '../useAppConfigStore.ts';
+import { Network } from '@app/utils/network.ts';
 
 interface ChangeMiningModeArgs {
     mode: modeType;
@@ -113,7 +114,8 @@ export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
     });
 export const setMiningNetwork = async () => {
     try {
-        const network = (await invoke('get_network', {})) as string;
+        const network = (await invoke('get_network', {})) as Network;
+        console.log(' ======================================== Network: ', network);
         useMiningStore.setState({ network });
     } catch (e) {
         console.error('Could not get network: ', e);

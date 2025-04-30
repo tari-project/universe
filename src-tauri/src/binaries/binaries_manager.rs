@@ -65,8 +65,24 @@ impl BinaryManager {
         should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
-            Network::Esmeralda => include_str!("../../binaries_versions_esmeralda.json"),
+            Network::NextNet => {
+                include_str!("../../binaries-versions/binaries_versions_stagenets.json")
+            }
+            Network::Esmeralda => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::StageNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::MainNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::LocalNet => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::Igor => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
             _ => panic!("Unsupported network"),
         };
         let version_requirements = BinaryManager::read_version_requirements(
