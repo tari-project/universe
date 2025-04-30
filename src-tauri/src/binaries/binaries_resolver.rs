@@ -107,7 +107,6 @@ impl BinaryResolver {
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
                 Network::Igor => ("pre", gpu_miner_testnet_regex),
                 Network::LocalNet => ("pre", gpu_miner_testnet_regex),
-                _ => panic!("Unsupported network"),
             };
 
         binary_manager.insert(

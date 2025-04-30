@@ -224,9 +224,6 @@ impl ProcessAdapter for GpuMinerAdapter {
             Network::LocalNet => {
                 envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
             }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
-            }
         }
 
         #[cfg(target_os = "windows")]

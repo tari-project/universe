@@ -70,6 +70,7 @@ impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
     type ProcessInstance = ProcessInstance;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -161,9 +162,6 @@ impl ProcessAdapter for P2poolAdapter {
             }
             Network::LocalNet => {
                 envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
-            }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
             }
         }
 

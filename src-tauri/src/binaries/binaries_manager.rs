@@ -83,7 +83,6 @@ impl BinaryManager {
             Network::Igor => {
                 include_str!("../../binaries-versions/binaries_versions_testnets.json")
             }
-            _ => panic!("Unsupported network"),
         };
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
