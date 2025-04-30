@@ -2,9 +2,9 @@
     "content": {
         "step-1": "Tari Universe makes it easy to mine Tari tokens on a Mac or PC. The future financial system is accessible to all {{emoji}} {{emoji1}}",
         "step-2": "Tari is a groundbreaking layer 1 blockchain protocol. It is lightning-fast and will power magical user experiences. Tari tokens are the money of the Tari network.",
-        "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (XTM) and gems. This process secures the Tari network.",
-        "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (XTM) have no value. However, gems do!",
-        "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining XTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
+        "step-3": "Mining Tari is a race. The first computer on the network to solve the puzzle will be rewarded in Tari tokens (tXTM) and gems. This process secures the Tari network.",
+        "step-4": "Tari is currently in testnet mode. This is the dress rehearsal before the Tari mainnet launch. Tokens mined now (tXTM) have no value. However, gems do!",
+        "step-5": "Nothing! Once you're synced, you will start mining and earning gems automatically. Earn more gems by mining tXTM and sharing your invite link with friends. The more gems you earn, the larger your future airdrop!",
         "step-6": "Tari is pro-human, pro-freedom, and open-source. It is powered and secured by everyone running Tari Universe. Tari exists because of you. {{emoji}}"
     },
     "footer": {
