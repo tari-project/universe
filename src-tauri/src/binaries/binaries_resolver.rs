@@ -89,20 +89,26 @@ impl BinaryResolver {
     pub fn new() -> Self {
         let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
 
-        let mut gpu_miner_regex = Regex::new(r"opencl.*").ok();
+        let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+        let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let mut gpu_miner_mainnet_regex = Regex::new(r"opencl.*mainnet").ok();
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            gpu_miner_regex = Regex::new(r"combined.*").ok();
+            gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
+            gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            gpu_miner_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
         }
 
-        let tari_prerelease_prefix: &str = match Network::get_current_or_user_setting_or_default() {
-            Network::MainNet => "",
-            Network::StageNet => "",
-            Network::NextNet => "rc",
-            Network::Esmeralda => "pre",
-            Network::Igor => "pre",
-            Network::LocalNet => "pre",
-        };
+        let (tari_prerelease_prefix, gpuminer_specific_name) =
+            match Network::get_current_or_user_setting_or_default() {
+                Network::MainNet => ("", gpu_miner_mainnet_regex),
+                Network::StageNet => ("", gpu_miner_nextnet_regex),
+                Network::NextNet => ("rc", gpu_miner_nextnet_regex),
+                Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
+                Network::LocalNet => ("pre", gpu_miner_testnet_regex),
+                _ => panic!("Unsupported network"),
+            };
 
         binary_manager.insert(
             Binaries::Xmrig,
@@ -124,7 +130,7 @@ impl BinaryResolver {
                 Box::new(GithubReleasesAdapter {
                     repo: "glytex".to_string(),
                     owner: "tari-project".to_string(),
-                    specific_name: gpu_miner_regex,
+                    specific_name: gpuminer_specific_name,
                 }),
                 None,
                 true,
