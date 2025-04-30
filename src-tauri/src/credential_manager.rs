@@ -70,8 +70,7 @@ pub struct CredentialManager {
 
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
-        let file_path = fallback_dir
-            .join(FALLBACK_FILE_PATH);
+        let file_path = fallback_dir.join(FALLBACK_FILE_PATH);
 
         let fallback_mode = AtomicBool::new(file_path.exists());
 
@@ -93,34 +92,36 @@ impl CredentialManager {
         CredentialManager::new(
             APPLICATION_FOLDER_ID.into(),
             network_specific_name.clone(),
-            fallback_dir.join(Network::get_current().as_key_str())
+            fallback_dir.join(Network::get_current().as_key_str()),
         )
     }
 
     pub async fn migrate(&self) -> Result<(), CredentialError> {
         // Shortcut and do nothing if we already have new credential format
         let creds = self.get_credentials().await;
-        match creds {
-            Ok(creds) => {
-                info!(target: LOG_TARGET, "Found credentials");
-                if creds.tari_seed_passphrase.is_some() {
-                    info!(target: LOG_TARGET, "Credentials already migrated. Skipping.");
-                    return Ok(());
-                }
-            },
-            Err(_e) => {
-                info!(target: LOG_TARGET, "No credentials found, migrating credentials");
-                let parent_dir = self.fallback_dir.parent().expect("Failed to get parent directory");
-                let old_credential_manager = CredentialManager::new(
-                    APPLICATION_FOLDER_ID.into(),
-                    KEYCHAIN_USERNAME.into(),
-                    parent_dir.to_path_buf(),
-                );
-
-                if let Ok(credential) = old_credential_manager.get_credentials().await {
-                   self.set_credentials(&credential).await?
-                }
+        if let Ok(creds) = creds {
+            info!(target: LOG_TARGET, "Found credentials");
+            if creds.tari_seed_passphrase.is_some() {
+                info!(target: LOG_TARGET, "Credentials already migrated. Skipping.");
+                return Ok(());
             }
+        };
+
+        info!(target: LOG_TARGET, "No credentials found, migrating credentials");
+        let parent_dir = self.fallback_dir.parent().ok_or_else(|| {
+            CredentialError::Io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Fallback directory has no parent",
+            ))
+        })?;
+        let old_credential_manager = CredentialManager::new(
+            APPLICATION_FOLDER_ID.into(),
+            KEYCHAIN_USERNAME.into(),
+            parent_dir.to_path_buf(),
+        );
+
+        if let Ok(credential) = old_credential_manager.get_credentials().await {
+            self.set_credentials(&credential).await?
         }
 
         Ok(())
@@ -237,7 +238,6 @@ impl CredentialManager {
     }
 
     fn fallback_file(&self) -> PathBuf {
-        self.fallback_dir
-            .join(FALLBACK_FILE_PATH)
+        self.fallback_dir.join(FALLBACK_FILE_PATH)
     }
 }
