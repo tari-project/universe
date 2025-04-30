@@ -1,46 +1,32 @@
-import { io } from 'socket.io-client';
+import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 
-import { useConfigCoreStore, useMiningStore } from '@app/store';
+let socketInitialised = false;
 
-type DisconnectDescription =
-    | Error
-    | {
-          description: string;
-          context?: unknown;
-      };
+listen<string>('ws-status-change', (event) => {
+    if (event.payload === 'Connected' || event.payload === 'Reconnecting') {
+        socketInitialised = true;
+    }
+    if (event.payload === 'Stopped') {
+        socketInitialised = false;
+    }
+    console.info(`websocket status changed: ${event.payload}`);
+});
 
-interface OnDisconnectEventMessage {
-    reason: string;
-    details?: DisconnectDescription;
-}
-
-let socket: ReturnType<typeof io> | null = null;
-export const SUBSCRIBE_EVENT = 'subscribe-to-gem-updates';
-const version = import.meta.env.VITE_TARI_UNIVERSE_VERSION;
-
-const initialiseSocket = (airdropApiUrl: string, airdropToken: string) => {
-    const appId = useConfigCoreStore.getState().anon_id;
-    const miningNetwork = useMiningStore.getState().network;
-    const wsOptions = {
-        auth: {
-            token: airdropToken,
-            appId,
-            network: miningNetwork,
-            version,
-        },
-        transports: ['websocket', 'polling'],
-        secure: true,
-    };
-
-    socket = io(airdropApiUrl, wsOptions);
-    console.info('Socket initialised');
-    socket.connect();
-    return socket;
+const initialiseSocket = () => {
+    if (!socketInitialised) {
+        console.info(`connecting to websocket...`);
+        invoke('websocket_connect').catch((e) => {
+            console.error(e);
+            socketInitialised = false;
+        });
+    }
 };
 
 function removeSocket() {
-    socket?.disconnect();
-    socket = null;
-    console.info('Socket removed');
+    if (socketInitialised) {
+        console.info(`closing websocket connection...`);
+        invoke('websocket_close').catch(console.error);
+    }
 }
-export { socket, initialiseSocket, removeSocket, type OnDisconnectEventMessage };
+export { socketInitialised, initialiseSocket, removeSocket };

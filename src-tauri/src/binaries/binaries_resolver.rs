@@ -90,19 +90,23 @@ impl BinaryResolver {
         let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
 
         let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
-
         let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let mut gpu_miner_mainnet_regex = Regex::new(r"opencl.*mainnet").ok();
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
             gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
             gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            gpu_miner_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
         }
 
         let (tari_prerelease_prefix, gpuminer_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
+                Network::MainNet => ("", gpu_miner_mainnet_regex),
+                Network::StageNet => ("", gpu_miner_nextnet_regex),
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
-                _ => panic!("Unsupported network"),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
+                Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
 
         binary_manager.insert(

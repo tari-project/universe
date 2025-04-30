@@ -51,7 +51,8 @@ export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
 };
 
 export const setAirdropTokensInConfig = (
-    airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined
+    airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined,
+    isSuccessFn?: (airdropTokens: { token: string; refresh_token: string } | undefined) => void
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
@@ -63,6 +64,7 @@ export const setAirdropTokensInConfig = (
     invoke('set_airdrop_tokens', { airdropTokens })
         .then(() => {
             useConfigCoreStore.setState({ airdrop_tokens: airdropTokensParam });
+            isSuccessFn?.(airdropTokens);
         })
         .catch((e) => console.error('Failed to store airdrop tokens: ', e));
 };

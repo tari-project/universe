@@ -1,4 +1,9 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
     "integers-only": "Slegs heelgetalle toegelaat",
     "invalid": "Veld ongeldig",
@@ -20,14 +25,20 @@
     "title": "Vrylatingsnotas"
   },
   "resume-app-modal": {
-    "title": "Hervat Tari Universe",
+    "finishing-resume": "Voltooi Hervat...",
     "resuming-all-processes": "Hervat alle prosesse...",
-    "resuming-tor": "Hervat Tor...",
+    "resuming-mm-proxy": "Hervat MM Proxy...",
     "resuming-node": "Hervat Node...",
+    "resuming-p2pool": "Hervat P2Pool...",
+    "resuming-tor": "Hervat Tor...",
     "resuming-wallet": "Hervat Beursie...",
     "syncing-node": "Sinkroniseer Node...",
-    "resuming-p2pool": "Hervat P2Pool...",
-    "resuming-mm-proxy": "Hervat MM Proxy...",
-    "finishing-resume": "Voltooi Hervat..."
+    "title": "Hervat Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The Warm Up phase is a temporary period at the start of network activation, expected to last 15 days.\nDuring this time, the network is still stabilizing, and some irregular behavior is normal. You may experience fluctuations in block times, temporary disconnects, or syncing issues. In some cases, your node might end up on a temporary fork and need to reconnect to the main chain.\nMiners are still earning XTM during this phase. This period allows the system to calibrate as more miners and nodes come online, helping iron out edge cases and ensure the network is resilient under real-world conditions. No action is needed unless your node becomes stuck. Restarting or resyncing will usually resolve it. After the warm-up period, the network will transition into a more stable and predictable state.",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "The network is starting",
+    "title": "Warm up phase"
   }
 }
