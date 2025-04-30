@@ -36,7 +36,7 @@ export default function Earnings() {
 
     const displayEarnings = replayItem?.amount || recapData?.totalEarnings || earnings;
 
-    const formatted = formatNumber(displayEarnings || 0, FormatPreset.XTM_COMPACT);
+    const formatted = formatNumber(displayEarnings || 0, FormatPreset.TXTM_COMPACT);
 
     const recapText = recapData?.totalEarnings ? (
         <RecapText>

@@ -16,7 +16,7 @@ export default function ProtectIntro({ onButtonClick, isLoading }: Props) {
 
     const calculated_balance = useWalletStore((state) => state.calculated_balance);
     const isWalletScanning = !Number.isFinite(calculated_balance);
-    const formatted_balance = formatNumber(calculated_balance || 0, FormatPreset.XTM_COMPACT); // Wallet still scanning
+    const formatted_balance = formatNumber(calculated_balance || 0, FormatPreset.TXTM_COMPACT); // Wallet still scanning
 
     return (
         <Wrapper>

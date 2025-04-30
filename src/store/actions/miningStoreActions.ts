@@ -115,7 +115,6 @@ export const setMiningControlsEnabled = (miningControlsEnabled: boolean) =>
 export const setMiningNetwork = async () => {
     try {
         const network = (await invoke('get_network', {})) as Network;
-        console.log(' ======================================== Network: ', network);
         useMiningStore.setState({ network });
     } catch (e) {
         console.error('Could not get network: ', e);

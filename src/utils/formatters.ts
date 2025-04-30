@@ -2,8 +2,8 @@ import i18n from 'i18next';
 
 export enum FormatPreset {
     PERCENT = 'percent',
-    XTM_COMPACT = 'xtm-compact',
-    XTM_LONG = 'xtm-crypto',
+    TXTM_COMPACT = 'txtm-compact',
+    TXTM_LONG = 'txtm-crypto',
     DECIMAL_COMPACT = 'decimal-compact',
     COMPACT = 'compact',
 }
@@ -12,7 +12,7 @@ const removeDecimals = (value: number, decimals: number) => {
     return value / Math.pow(10, decimals);
 };
 
-const removeXTMCryptoDecimals = (value: number) => {
+const removeTXTMCryptoDecimals = (value: number) => {
     return removeDecimals(value, 6);
 };
 
@@ -55,7 +55,7 @@ const formatValue = (value: number, options: Intl.NumberFormatOptions = {}): str
 const formatPercent = (value = 0) => formatValue(value, { style: 'percent', maximumFractionDigits: 2 });
 
 const formatXTMCompact = (value: number) =>
-    formatValue(removeXTMCryptoDecimals(roundCompactDecimals(value)), {
+    formatValue(removeTXTMCryptoDecimals(roundCompactDecimals(value)), {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
         notation: 'compact',
@@ -63,7 +63,7 @@ const formatXTMCompact = (value: number) =>
     });
 
 const formatXTMLong = (value: number) =>
-    formatValue(removeXTMCryptoDecimals(roundToTwoDecimals(value)), {
+    formatValue(removeTXTMCryptoDecimals(roundToTwoDecimals(value)), {
         maximumFractionDigits: 2,
         notation: 'standard',
         style: 'decimal',
@@ -81,9 +81,9 @@ export function formatNumber(value: number, preset: FormatPreset): string {
             });
         case FormatPreset.PERCENT:
             return formatPercent(value);
-        case FormatPreset.XTM_COMPACT:
+        case FormatPreset.TXTM_COMPACT:
             return formatXTMCompact(value);
-        case FormatPreset.XTM_LONG:
+        case FormatPreset.TXTM_LONG:
             return formatXTMLong(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);

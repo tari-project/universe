@@ -52,7 +52,7 @@ const ShareRewardModal = memo(function ShareRewardModal() {
     const gemsValue = GIFT_GEMS.toLocaleString();
     const block = item?.mined_in_block_height || 0;
     const reward = item?.amount || 0;
-    const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.XTM_COMPACT).toLowerCase(), [reward]);
+    const earningsFormatted = useMemo(() => formatNumber(reward, FormatPreset.TXTM_COMPACT).toLowerCase(), [reward]);
 
     const shareUrl = `${airdropUrl}/download/${referralCode}?bh=${block}`;
 

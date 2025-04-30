@@ -62,7 +62,7 @@ export function SendReview({
         };
     }, [status, setStatus]);
 
-    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.XTM_LONG);
+    const formattedAmount = formatNumber((amount || 0) * 1_000_000, FormatPreset.TXTM_LONG);
     const formattedAddress = truncateMiddle(address, 5);
 
     const reviewEntries: StatusListEntry[] = [

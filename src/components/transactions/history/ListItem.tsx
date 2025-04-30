@@ -74,7 +74,7 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
     const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
     const earningsFormatted = hideWalletBalance
         ? `***`
-        : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();
+        : formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
     const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
         month: 'short',
         day: '2-digit',
