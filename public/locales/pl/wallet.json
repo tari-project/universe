@@ -2,8 +2,10 @@
   "confirmation-message": "Twoja transakcja została przesłana!\nPojawi się w historii po wykopaniu kilku bloków.",
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
-    "available-balance": "Available Balance",
     "label-rewards": "Moje nagrody",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
     "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Moje Tari",

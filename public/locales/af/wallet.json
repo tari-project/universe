@@ -2,8 +2,10 @@
   "confirmation-message": "Jou transaksie is ingedien!\nDit sal in jou geskiedenis verskyn nadat \"n paar blokke gemyn is.",
   "empty-tx": "Geen transaksies gevind nie",
   "history": {
-    "available-balance": "Available Balance",
     "label-rewards": "My belonings",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
     "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "My Tari",

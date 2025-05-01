@@ -2,8 +2,10 @@
   "confirmation-message": "Ihre Transaktion wurde übermittelt!\nSie wird in Ihrer Historie angezeigt, nachdem einige Blöcke gemined wurden.",
   "empty-tx": "Keine Transaktionen gefunden",
   "history": {
-    "available-balance": "Available Balance",
     "label-rewards": "Meine Belohnungen",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
     "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Mein Tari",

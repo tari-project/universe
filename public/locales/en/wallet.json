@@ -2,8 +2,10 @@
   "confirmation-message": "Your transaction has been submitted!\nIt will show up in your history after mining a few blocks.",
   "empty-tx": "No transactions found",
   "history": {
-    "available-balance": "Available Balance",
     "label-rewards": "My rewards",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
     "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "My Tari",
