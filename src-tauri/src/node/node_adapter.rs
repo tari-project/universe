@@ -28,7 +28,10 @@ use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::{
     BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, SyncState,
 };
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
+use tari_utilities::epoch_time::EpochTime;
+use tokio::fs;
 
 use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
@@ -375,8 +378,8 @@ pub(crate) struct NodeStatusMonitor {
     node_type: NodeType,
     node_service: NodeAdapterService,
     status_broadcast: watch::Sender<BaseNodeStatus>,
-    #[allow(dead_code)]
     last_block_time: Arc<AtomicU64>,
+    base_path: Option<PathBuf>,
 }
 
 impl NodeStatusMonitor {
@@ -385,19 +388,21 @@ impl NodeStatusMonitor {
         node_service: NodeAdapterService,
         status_broadcast: watch::Sender<BaseNodeStatus>,
         last_block_time: Arc<AtomicU64>,
+        base_path: Option<PathBuf>,
     ) -> Self {
         Self {
             node_type,
             node_service,
             status_broadcast,
             last_block_time,
+            base_path,
         }
     }
 }
 
 #[async_trait]
 impl StatusMonitor for NodeStatusMonitor {
-    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+    async fn check_health(&self, uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         match timeout(timeout_duration, self.node_service.get_network_state()).await {
             Ok(res) => match res {
                 Ok(status) => {
@@ -409,6 +414,26 @@ impl StatusMonitor for NodeStatusMonitor {
                             status.clone()
                         );
                         return HealthStatus::Warning;
+                    }
+
+                    if self
+                        .last_block_time
+                        .load(std::sync::atomic::Ordering::SeqCst)
+                        == status.block_time
+                    {
+                        if uptime.as_secs() > 3600
+                            && EpochTime::now()
+                                .checked_sub(EpochTime::from_secs_since_epoch(status.block_time))
+                                .unwrap_or(EpochTime::from(0))
+                                .as_u64()
+                                > 3600
+                        {
+                            warn!(target: LOG_TARGET, "Base node height has not changed in an hour");
+                            return HealthStatus::Unhealthy;
+                        }
+                    } else {
+                        self.last_block_time
+                            .store(status.block_time, std::sync::atomic::Ordering::SeqCst);
                     }
                     HealthStatus::Healthy
                 }
@@ -440,6 +465,33 @@ impl StatusMonitor for NodeStatusMonitor {
                 }
             }
         }
+    }
+
+    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+        if self.node_type == NodeType::Remote {
+            // Do not clear local node files for remote nodes
+            return Ok(());
+        }
+
+        if let Some(ref base_path) = self.base_path {
+            let _unused = fs::remove_dir_all(
+                base_path
+                    .join("node")
+                    .join(Network::get_current().to_string().to_lowercase())
+                    .join("peer_db"),
+            )
+            .await;
+            let _unused = fs::remove_dir_all(
+                base_path
+                    .join("node")
+                    .join(Network::get_current().to_string().to_lowercase())
+                    .join("libtor"),
+            )
+            .await;
+            let _unused = fs::remove_dir_all(base_path.join("tor-data")).await;
+        }
+
+        Ok(())
     }
 }
 
