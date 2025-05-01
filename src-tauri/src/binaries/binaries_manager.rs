@@ -66,7 +66,7 @@ impl BinaryManager {
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
             Network::NextNet => {
-                include_str!("../../binaries-versions/binaries_versions_stagenets.json")
+                include_str!("../../binaries-versions/binaries_versions_nextnet.json")
             }
             Network::Esmeralda => {
                 include_str!("../../binaries-versions/binaries_versions_testnets.json")
