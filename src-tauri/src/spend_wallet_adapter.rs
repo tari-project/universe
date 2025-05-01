@@ -91,6 +91,7 @@ impl SpendWalletAdapter {
         self.log_dir = Some(log_dir);
         self.wallet_binary = Some(wallet_binary);
 
+        let _unused = self.erase_related_data().await;
         std::fs::create_dir_all(self.get_working_dir())?;
         setup_logging(
             &self.get_log_config_file(),
@@ -157,6 +158,7 @@ impl SpendWalletAdapter {
             let exit_code = instance.wait().await?;
 
             if exit_code != 0 {
+                let _unused = self.erase_related_data().await;
                 return Err(anyhow::anyhow!(
                     "Command '{}' failed with exit code: {}",
                     command.name,
