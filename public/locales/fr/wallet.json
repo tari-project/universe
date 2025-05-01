@@ -2,7 +2,9 @@
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
-    "label-rewards": "Mes récompenses"
+    "available-balance": "Available Balance",
+    "label-rewards": "Mes récompenses",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Mon Tari",
   "new": "Nouveau",

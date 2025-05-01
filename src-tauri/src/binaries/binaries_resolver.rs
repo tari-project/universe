@@ -398,7 +398,7 @@ impl BinaryResolver {
     pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         self.managers
             .get(&binary)
-            .expect(format!("Couldn't find manager for binary: {}", binary.name()).as_str())
+            .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .lock()
             .await
             .get_used_version()
