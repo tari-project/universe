@@ -1,4 +1,4 @@
-🔥 TARI UNIVERSE v0.9.912: The Great Ascent (Testnet Reset!)
+🔥 TARI UNIVERSE v0.9.913: The Great Ascent (Testnet Reset!)
 
 _May 1, 2025_
 
