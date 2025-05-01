@@ -2,7 +2,9 @@
   "confirmation-message": "您的交易已提交！\n在挖掘几个区块后，它将显示在您的历史记录中。",
   "empty-tx": "未找到交易",
   "history": {
-    "label-rewards": "我的奖励"
+    "available-balance": "Available Balance",
+    "label-rewards": "我的奖励",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "我的 Tari",
   "new": "新建",

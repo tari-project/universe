@@ -2,7 +2,9 @@
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
-    "label-rewards": "Ödüllerim"
+    "available-balance": "Available Balance",
+    "label-rewards": "Ödüllerim",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Benim Tari",
   "new": "Yeni",

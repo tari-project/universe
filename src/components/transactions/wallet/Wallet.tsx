@@ -55,9 +55,9 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             {uiSendRecvEnabled && !isWalletScanning && (
                 <TabsWarapper>
-                    <TabsTitle>{`Available Balance`}</TabsTitle>
+                    <TabsTitle>{t('history.available-balance')}</TabsTitle>
                     <SyncButton onClick={() => setShowPaperWalletModal(true)}>
-                        {`Sync with Phone`} <ArrowRight />
+                        {t('history.sync-with-phone')} <ArrowRight />
                     </SyncButton>
                 </TabsWarapper>
             )}
