@@ -19,9 +19,10 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { Wrapper } from './wallet.styles.ts';
+import { SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
+import ArrowRight from './ArrowRight.tsx';
 
 interface Props {
     section: string;
@@ -51,6 +52,15 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
             </TabHeader>
 
             <WalletBalanceMarkup />
+
+            {uiSendRecvEnabled && !isWalletScanning && (
+                <TabsWarapper>
+                    <TabsTitle>{`Available Balance`}</TabsTitle>
+                    <SyncButton onClick={() => setShowPaperWalletModal(true)}>
+                        {`Sync with Phone`} <ArrowRight />
+                    </SyncButton>
+                </TabsWarapper>
+            )}
 
             <HistoryList />
 
