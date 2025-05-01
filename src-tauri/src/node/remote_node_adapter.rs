@@ -187,6 +187,7 @@ impl ProcessAdapter for RemoteNodeAdapter {
                 NodeAdapterService::new(address, 1),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
+                None, // Used only by Local Node
             ),
         ))
     }

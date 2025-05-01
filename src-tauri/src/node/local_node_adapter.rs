@@ -342,7 +342,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                     file_path: binary_version_path,
                     envs: None,
                     args,
-                    data_dir,
+                    data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -355,6 +355,7 @@ impl ProcessAdapter for LocalNodeAdapter {
                 ),
                 self.status_broadcast.clone(),
                 Arc::new(AtomicU64::new(0)),
+                Some(data_dir),
             ),
         ))
     }
