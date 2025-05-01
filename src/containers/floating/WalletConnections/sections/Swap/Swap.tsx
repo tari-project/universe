@@ -146,8 +146,11 @@ export const Swap = () => {
                 </SwapOptionAmount>
             </SwapOption>
             <SwapDirection>
-                <SwapDirectionWrapper $direction={direction}>
-                    <ArrowIcon width={15} onClick={() => setDirection(direction === 'input' ? 'output' : 'input')} />
+                <SwapDirectionWrapper
+                    $direction={direction}
+                    onClick={() => setDirection(direction === 'input' ? 'output' : 'input')}
+                >
+                    <ArrowIcon width={15} />
                 </SwapDirectionWrapper>
             </SwapDirection>
             <SwapOption>

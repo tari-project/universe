@@ -110,14 +110,20 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    padding: 5px 0 0 8px;
     background: black;
     border: 4px solid #e5e2e1;
-    transition: transform 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    svg {
+        transition: transform 0.2s ease-in-out;
+    }
     ${({ $direction }) =>
         $direction === 'input' &&
         css`
-            transform: rotate(180deg);
+            svg {
+                transform: rotate(180deg);
+            }
         `}
 `;
 

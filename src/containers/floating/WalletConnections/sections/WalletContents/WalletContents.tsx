@@ -23,6 +23,7 @@ export const WalletContents = () => {
     const dataAcc = useAccount();
 
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
+    console.log(accountBalance);
 
     const walletChainIcon = useMemo(() => {
         if (!accountBalance?.symbol) return null;
@@ -54,7 +55,7 @@ export const WalletContents = () => {
     return (
         <WalletContentsContainer>
             <ConnectedWalletWrapper>
-                <WalletButton variant="error" onClick={() => disconnect()}>
+                <WalletButton variant="error" onClick={() => disconnect}>
                     {'Disconnect'}
                 </WalletButton>
                 <StatusWrapper>

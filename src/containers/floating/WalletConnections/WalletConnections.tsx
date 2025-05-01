@@ -23,6 +23,7 @@ export const WalletConnections = () => {
     const { allAccounts } = useAppKitAccount({ namespace: 'eip155' });
 
     useEffect(() => {
+        console.log('allAccounts', allAccounts);
         if (allAccounts && allAccounts.length > 0) {
             if (swapStep === SwapStep.ConnectWallet) {
                 setWalletConnectModalStep(SwapStep.WalletContents);

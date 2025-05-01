@@ -24,7 +24,7 @@ const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
 };
 
 // Example stablecoin (replace or add more as needed)
-const DAI: Partial<Record<ChainId, Token>> = {
+export const DAI: Partial<Record<ChainId, Token>> = {
     [ChainId.MAINNET]: new Token(
         ChainId.MAINNET,
         '0x6B175474E89094C44Da98b954EedeAC495271d0F',
@@ -60,7 +60,7 @@ const DAI: Partial<Record<ChainId, Token>> = {
 //     // Add other chains where XTM is deployed
 // };
 //
-const XTM = DAI;
+const XTM = WETH9;
 
 // Helper function to convert WalletClient to ethers Signer (v6)
 // Adapt based on your specific wagmi/ethers setup if needed

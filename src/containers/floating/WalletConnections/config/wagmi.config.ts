@@ -4,6 +4,10 @@ import { mainnet, arbitrum, base, scroll, polygon, goerli, sepolia } from '@reow
 
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
+import { createStorage } from 'wagmi';
+
+const storage = createStorage({ storage: localStorage });
+
 // 1. Get projectId from https://cloud.reown.com
 const projectId = 'c523cd3d3e0246530115c1dc2c016852';
 
@@ -22,15 +26,17 @@ const networks = [mainnet, arbitrum, base, scroll, polygon, goerli, sepolia];
 export const wagmiAdapter = new WagmiAdapter({
     networks,
     projectId,
+    storage,
     // ssr: true,
 });
 
 // 5. Create modal
 createAppKit({
     adapters: [wagmiAdapter],
-    networks: [mainnet, arbitrum, base, scroll, polygon],
+    networks: [mainnet, arbitrum, base, scroll, polygon, goerli, sepolia],
     projectId,
     metadata,
+    debug: true,
     features: {
         // analytics: true, // Optional - defaults to your Cloud configuration
     },
