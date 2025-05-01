@@ -1,9 +1,35 @@
+
+🔥 TARI UNIVERSE v0.9.912: The Great Ascent (Testnet Reset!)
+
+_May 1, 2025_
+
+🚀 Hey Tari Fam,
+The Testnet has been reset! These resets help us get everything ready for mainnet. Thanks for your patience and continued support 🙏
+
+⚠️ Quick reminders:
+- 1️⃣ You may still see a fork message for the next 30 minutes — don’t worry, it’ll disappear on its own
+- 2️⃣ Your tXTM balance has been reset to 0
+- 3️⃣ Your Gems are SAFU 💎 — the reset only affects your tXTM balance
+
+✨ WHAT’S NEW
+
+💸 Send & Receive Transactions
+- You can now send and receive tXTM directly from within Tari Universe
+- Share your wallet address with friends and watch it flow in 🔁
+- Review and edit your transactions before sending 📝
+
+🛠️ Other Fixes
+- AppImage installs now work correctly ✅
+- Fixed tower animation stop bug 🏰
+- Smoothed out a few other UI quirks
+
+--
+
 🚀 TARI UNIVERSE v0.9.909 “RC1” — The Surge of Soon
 
 _April 29, 2025_
 
 Hey fam 👋,
-
 We’re excited to drop the BIGGEST update we’ve ever released 💥
 
 Introducing “The Surge of Soon”, the first release candidate of Tari Universe (v0.9.90x).
