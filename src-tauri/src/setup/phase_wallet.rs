@@ -242,6 +242,17 @@ impl SetupPhaseImpl for WalletSetupPhase {
         let app_handle = self.get_app_handle().clone();
 
         if !ConfigUI::content().await.was_staged_security_modal_shown() {
+            let wallet_manager = app_handle
+                .state::<UniverseAppState>()
+                .wallet_manager
+                .clone();
+
+            let mut shutdown_signal = TasksTrackers::current()
+                .wallet_phase
+                .get_signal()
+                .await
+                .clone();
+
             TasksTrackers::current()
                 .wallet_phase
                 .get_task_tracker()
@@ -253,14 +264,21 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         .clone();
 
                     loop {
-                        let wallet_state = wallet_state_watcher.borrow().clone();
 
+                        if shutdown_signal.is_triggered() {
+                            break;
+                        }
+
+                        let wallet_state = wallet_state_watcher.borrow().clone();
+                        info!(target: LOG_TARGET, "Initial scan completed: {:?}", wallet_manager.is_initial_scan_completed());
                         if let Some(wallet_state) = wallet_state {
                             if let Some(balance) = wallet_state.balance {
                                 let balance_sum = balance.available_balance
                                     + balance.pending_incoming_balance
                                     + balance.timelocked_balance;
-                                if balance_sum.gt(&MicroMinotari::zero()) {
+                                if balance_sum.gt(&MicroMinotari::zero())
+                                    && wallet_manager.is_initial_scan_completed()
+                                {
                                     EventsEmitter::show_staged_security_modal(&app_handle).await;
                                     let _unused = ConfigUI::update_field(
                                         ConfigUIContent::set_was_staged_security_modal_shown,
@@ -271,6 +289,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                 }
                             }
                         }
+
+
 
                         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                     }
