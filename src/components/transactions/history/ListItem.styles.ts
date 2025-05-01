@@ -24,6 +24,7 @@ export const HoverWrapper = styled(m.div)`
     transition: background-color 2s ease;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.7)};
     height: 100%;
+    backdrop-filter: blur(5px);
 `;
 
 export const ContentWrapper = styled.div`
@@ -188,33 +189,4 @@ export const GemPill = styled.div`
 
 export const GemImage = styled.img`
     width: 11px;
-`;
-
-export const InfoWrapper = styled.div`
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 8px;
-    padding: 8px 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-`;
-export const InfoItemWrapper = styled.div`
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 3px;
-    font-size: 11px;
-    width: 100%;
-    overflow: hidden;
-    align-items: baseline;
-
-    strong {
-        font-weight: bold;
-    }
-    span {
-        overflow: hidden;
-        font-size: 10px;
-        word-wrap: break-word;
-    }
 `;
