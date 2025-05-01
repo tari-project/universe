@@ -173,4 +173,8 @@ export type BackendStateUpdateEvent =
     | {
           event_type: 'ConnectionStatus';
           payload: ConnectionStatusPayload;
+      }
+    | {
+          event_type: 'ShowStageSecurityModal';
+          payload: undefined;
       };

@@ -45,6 +45,7 @@ import {
     handleConfigWalletLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
+import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
 const LOG_EVENT_TYPES = [
     // 'ResumingAllProcesses',
@@ -184,6 +185,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConnectionStatus':
                             handleConnectionStatusChanged(event.payload);
+                            break;
+                        case 'ShowStageSecurityModal':
+                            handleShowStagedSecurityModal();
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

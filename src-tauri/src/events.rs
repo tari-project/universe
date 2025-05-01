@@ -69,6 +69,7 @@ pub enum EventType {
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
     ConnectionStatus,
+    ShowStageSecurityModal,
 }
 
 #[derive(Clone, Debug, Serialize)]

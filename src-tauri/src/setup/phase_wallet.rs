@@ -21,7 +21,12 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore,
+        config_ui::{ConfigUI, ConfigUIContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     events_manager::EventsManager,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -35,6 +40,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
@@ -232,6 +238,41 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
+
+        let app_handle = self.get_app_handle().clone();
+
+        if !ConfigUI::content().await.was_staged_security_modal_shown() {
+            TasksTrackers::current()
+                .wallet_phase
+                .get_task_tracker()
+                .await
+                .spawn(async move {
+                    let wallet_state_watcher = app_handle
+                        .state::<UniverseAppState>()
+                        .wallet_state_watch_rx
+                        .clone();
+
+                    loop {
+                        let wallet_state = wallet_state_watcher.borrow().clone();
+
+                        if let Some(wallet_state) = wallet_state {
+                            if let Some(balance) = wallet_state.balance {
+                                if balance.available_balance.gt(&MicroMinotari::zero()) {
+                                    EventsEmitter::show_staged_security_modal(&app_handle).await;
+                                    let _unused = ConfigUI::update_field(
+                                        ConfigUIContent::set_was_staged_security_modal_shown,
+                                        true,
+                                    )
+                                    .await;
+                                    break;
+                                }
+                            }
+                        }
+
+                        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                    }
+                });
+        }
 
         EventsManager::handle_wallet_phase_finished(&self.app_handle, true).await;
 

@@ -302,6 +302,17 @@ impl EventsEmitter {
         }
     }
 
+    pub async fn show_staged_security_modal(app_handle: &AppHandle) {
+        let _unused = FrontendReadyChannel::current().wait_for_ready().await;
+        let event = Event {
+            event_type: EventType::ShowStageSecurityModal,
+            payload: (),
+        };
+        if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {
+            error!(target: LOG_TARGET, "Failed to emit ShowStagedSecurityModal event: {:?}", e);
+        }
+    }
+
     #[allow(dead_code)]
     pub async fn emit_gpu_devices_update(
         app_handle: &AppHandle,
