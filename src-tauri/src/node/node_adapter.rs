@@ -28,7 +28,7 @@ use async_trait::async_trait;
 use minotari_node_grpc_client::grpc::{
     BlockHeader, Empty, GetBlocksRequest, GetNetworkStateRequest, SyncState,
 };
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{Duration, SystemTime};
 use tari_utilities::epoch_time::EpochTime;
 use tokio::fs;
