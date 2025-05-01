@@ -2,7 +2,11 @@
   "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
-    "label-rewards": "Hadiah saya"
+    "label-rewards": "Hadiah saya",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Tari Saya",
   "new": "Baru",

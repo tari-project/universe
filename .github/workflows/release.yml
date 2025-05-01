@@ -184,6 +184,12 @@ jobs:
             opencl-headers \
             ocl-icd-opencl-dev
 
+        # We set "bundleMediaFramework" to true, it should bundle into appimage all needed libraries for playing videos
+        # It requires us to set ARCH environment variable
+      - name: BundleMediaFramework fix - [ Linux Appimage ]
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        run: echo "ARCH=$(uname -m)" >> $GITHUB_ENV
+
       - name: Install Dependencies - macOS
         if: startsWith(runner.os,'macOS')
         run: |

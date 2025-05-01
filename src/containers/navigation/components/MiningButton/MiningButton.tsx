@@ -15,7 +15,6 @@ import ButtonOrbitAnimation from '../Miner/components/ButtonOrbitAnimation.tsx';
 import { IconWrapper, StyledButton, ButtonWrapper } from './MiningButton.styles.ts';
 import { useSetupStore } from '@app/store/useSetupStore.ts';
 import { useConfigMiningStore } from '@app/store/index.ts';
-import { setAnimationState } from '@tari-project/tari-tower';
 
 enum MiningButtonStateText {
     STARTED = 'stop-mining',
@@ -47,10 +46,8 @@ export default function MiningButton() {
     const handleClick = useCallback(async () => {
         if (!isMining) {
             await startMining();
-            setAnimationState('start');
         } else {
             await stopMining();
-            setAnimationState('stop');
         }
     }, [isMining]);
 
