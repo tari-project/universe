@@ -22,7 +22,6 @@
 
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::internal_wallet::WalletConfig;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
 use log::info;
