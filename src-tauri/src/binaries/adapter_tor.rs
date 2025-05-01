@@ -41,7 +41,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let platform = get_platform_name();
         let cdn_tor_bundle_url = format!(
-            "https://cdn-universe.tari.com/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz",
+            "https://cdn-universe.tari.com/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
         let mut cdn_responded = false;
@@ -61,10 +61,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         if cdn_responded {
             let version = VersionDownloadInfo {
-                version: "13.5.7".parse().expect("Bad tor version"),
+                version: "14.5.1".parse().expect("Bad tor version"),
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
-                    name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                    name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
                 }],
             };
             return Ok(vec![version]);
@@ -72,10 +72,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
 
         // Tor doesn't have a nice API for this so just return specific ones
         let version = VersionDownloadInfo {
-            version: "13.5.7".parse().expect("Bad tor version"),
+            version: "14.5.1".parse().expect("Bad tor version"),
             assets: vec![VersionAsset {
-                url: format!("https://dist.torproject.org/torbrowser/13.5.7/tor-expert-bundle-{}-13.5.7.tar.gz", platform),
-                name: format!("tor-expert-bundle-{}-13.5.7.tar.gz", platform),
+                url: format!("https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
             }]
         };
         Ok(vec![version])
