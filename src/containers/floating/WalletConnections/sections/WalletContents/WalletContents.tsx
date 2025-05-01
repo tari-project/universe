@@ -53,8 +53,8 @@ export const WalletContents = () => {
 
     const value = useMemo(() => {
         if (!accountBalance?.value) return 0;
-        console.log(accountBalance);
-        return (accountBalance.value / 1000000000000000000n).toString();
+        const factor = 10n ** BigInt(accountBalance.decimals);
+        return (Number(accountBalance.value) / Number(factor)).toString();
     }, [accountBalance]);
 
     return (

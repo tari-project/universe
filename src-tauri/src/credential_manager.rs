@@ -22,7 +22,6 @@
 
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
-use crate::internal_wallet::WalletConfig;
 use crate::APPLICATION_FOLDER_ID;
 use keyring::{Entry, Error as KeyringError};
 use log::info;
@@ -59,7 +58,6 @@ pub enum CredentialError {
 
 const FALLBACK_FILE_PATH: &str = "credentials_backup.bin";
 
-const KEYCHAIN_USERNAME_LEGACY: &str = "internal_wallet";
 const KEYCHAIN_USERNAME: &str = "inner_wallet_credentials";
 
 pub struct CredentialManager {
@@ -71,18 +69,9 @@ pub struct CredentialManager {
 
 impl CredentialManager {
     fn new(service_name: String, username: String, fallback_dir: PathBuf) -> Self {
-        let fallback_file_exists = fallback_dir.join(FALLBACK_FILE_PATH).exists();
-        let fallback_mode = AtomicBool::new(fallback_file_exists);
+        let file_path = fallback_dir.join(FALLBACK_FILE_PATH);
 
-        if fallback_file_exists {
-            let new_path = fallback_dir
-                .join(Network::get_current().as_key_str())
-                .join(FALLBACK_FILE_PATH);
-            if !new_path.exists() {
-                std::fs::rename(fallback_dir.join(FALLBACK_FILE_PATH), new_path.clone())
-                    .expect("Failed to rename fallback file");
-            }
-        }
+        let fallback_mode = AtomicBool::new(file_path.exists());
 
         CredentialManager {
             service_name,
@@ -99,65 +88,39 @@ impl CredentialManager {
             Network::get_current().as_key_str()
         );
 
-        let new_credential_manager = CredentialManager::new(
+        CredentialManager::new(
             APPLICATION_FOLDER_ID.into(),
             network_specific_name.clone(),
-            fallback_dir.clone(),
-        );
-
-        let old_credential_manager = CredentialManager::new(
-            APPLICATION_FOLDER_ID.into(),
-            KEYCHAIN_USERNAME.into(),
-            fallback_dir.clone(),
-        );
-
-        if new_credential_manager.load_from_keyring().is_err() {
-            if let Ok(credential) = old_credential_manager.load_from_keyring() {
-                new_credential_manager
-                    .save_to_keyring(&credential)
-                    .expect("Failed to migrate credentials");
-            }
-        }
-
-        new_credential_manager
+            fallback_dir.join(Network::get_current().as_key_str()),
+        )
     }
 
-    pub async fn migrate(&self, wallet_config: &WalletConfig) -> Result<(), CredentialError> {
+    pub async fn migrate(&self) -> Result<(), CredentialError> {
         // Shortcut and do nothing if we already have new credential format
         let creds = self.get_credentials().await;
-        if let Ok(creds) = &creds {
+        if let Ok(creds) = creds {
             info!(target: LOG_TARGET, "Found credentials");
             if creds.tari_seed_passphrase.is_some() {
                 info!(target: LOG_TARGET, "Credentials already migrated. Skipping.");
                 return Ok(());
             }
-        }
-
-        let passphrase = if wallet_config.passphrase.is_some() {
-            info!(target: LOG_TARGET, "Found wallet passphrase");
-            wallet_config.passphrase.clone()
-        } else if let Ok(legacy) = self.load_from_legacy() {
-            info!(target: LOG_TARGET, "Found legacy keyring passphrase");
-            Some(legacy)
-        } else {
-            info!(target: LOG_TARGET, "No credentials in a new format, and no legacy passphrase found, skipping migration");
-            None
         };
 
-        if let Some(safe_password) = passphrase {
-            info!(target: LOG_TARGET, "Migrating passphrase to new credential format");
-            let credential = match creds {
-                Ok(mut cred) => {
-                    cred.tari_seed_passphrase = Some(safe_password);
-                    cred
-                }
-                Err(_) => Credential {
-                    tari_seed_passphrase: Some(safe_password),
-                    monero_seed: None,
-                },
-            };
+        info!(target: LOG_TARGET, "No credentials found, migrating credentials");
+        let parent_dir = self.fallback_dir.parent().ok_or_else(|| {
+            CredentialError::Io(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Fallback directory has no parent",
+            ))
+        })?;
+        let old_credential_manager = CredentialManager::new(
+            APPLICATION_FOLDER_ID.into(),
+            KEYCHAIN_USERNAME.into(),
+            parent_dir.to_path_buf(),
+        );
 
-            self.set_credentials(&credential).await?;
+        if let Ok(credential) = old_credential_manager.get_credentials().await {
+            self.set_credentials(&credential).await?
         }
 
         Ok(())
@@ -273,15 +236,7 @@ impl CredentialManager {
         Ok(credential)
     }
 
-    fn load_from_legacy(&self) -> Result<SafePassword, CredentialError> {
-        let entry = Entry::new(&self.service_name, KEYCHAIN_USERNAME_LEGACY)?;
-        let pw = SafePassword::from(entry.get_password()?);
-        Ok(pw)
-    }
-
     fn fallback_file(&self) -> PathBuf {
-        self.fallback_dir
-            .join(Network::get_current().as_key_str())
-            .join(FALLBACK_FILE_PATH)
+        self.fallback_dir.join(FALLBACK_FILE_PATH)
     }
 }

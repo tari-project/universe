@@ -2,7 +2,11 @@
   "confirmation-message": "Ваша транзакция отправлена!\nОна появится в Вашей истории после добычи нескольких блоков.",
   "empty-tx": "Транзакции не найдены",
   "history": {
-    "label-rewards": "Мои награды"
+    "label-rewards": "Мои награды",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details",
+    "available-balance": "Available Balance",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Мой Tari",
   "new": "Новый",

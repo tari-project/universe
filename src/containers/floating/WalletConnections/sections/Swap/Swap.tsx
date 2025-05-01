@@ -21,14 +21,19 @@ import {
 import { useAccount, useBalance, useSignMessage } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
 import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
-import { useSwap } from '@app/hooks/swap/useSwap2';
+import { useSwap } from '@app/hooks/swap/useSwap';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce';
+
+enum Field {
+    AMOUNT = 'amount',
+    TARGET = 'target',
+}
 
 export const Swap = () => {
     const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
@@ -61,11 +66,12 @@ export const Swap = () => {
 
     const [amount, setAmount] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<string>('');
-
-    const ammoutDebounced = useDebouncedValue(amount, 500);
-    const targetAmountDebounced = useDebouncedValue(targetAmount, 500);
+    const [lastUpdatedField, setLastUpdatedField] = useState<Field | undefined>();
 
     const { direction, setDirection, getTradeDetails } = useSwap();
+
+    const lastDirection = useRef<string>('input');
+
     useEffect(() => {
         const tradeDetails = getTradeDetails('1000000000000000000');
         tradeDetails.then((details) => {
@@ -76,15 +82,28 @@ export const Swap = () => {
             }
             const midPrice = route.midPrice.toSignificant(6);
             const invertedMidPrice = route.midPrice.invert().toSignificant(6);
-            const executionPrice = trade.executionPrice.toSignificant(6);
-            console.log('details', details);
-            console.log('midPrice', midPrice);
-            console.log('invertedMidPrice', invertedMidPrice);
-            console.log('executionPrice', executionPrice);
-        });
-    }, [ammoutDebounced, targetAmountDebounced]);
+            // const executionPrice = trade.executionPrice.toSignificant(6);
 
-    const handleNumberInput = (value: string, setter: (value: string) => void) => {
+            if (direction !== lastDirection.current) {
+                lastDirection.current = direction;
+                return;
+            }
+
+            const invertedDirection = direction === 'input';
+            const amountConversionRate = invertedDirection ? invertedMidPrice : midPrice;
+            const targetAmountConversionRate = invertedDirection ? midPrice : invertedMidPrice;
+
+            if (lastUpdatedField === Field.AMOUNT) {
+                const newTargetAmount = Number(amount) * Number(targetAmountConversionRate);
+                setTargetAmount(newTargetAmount.toString());
+            } else if (lastUpdatedField === Field.TARGET) {
+                const newAmount = Number(targetAmount) * Number(amountConversionRate);
+                setAmount(newAmount.toString());
+            }
+        });
+    }, [amount, direction, getTradeDetails, lastUpdatedField, targetAmount]);
+
+    const handleNumberInput = (value: string, setter: (value: string) => void, field: Field) => {
         // Allow empty input
         if (value === '') {
             setter('');
@@ -100,6 +119,7 @@ export const Swap = () => {
         if (parts[1] && parts[1].length > 8) return;
 
         setter(value);
+        setLastUpdatedField(field);
     };
 
     const items = [
@@ -157,7 +177,7 @@ export const Swap = () => {
                         type="text"
                         inputMode="decimal"
                         placeholder="0.00"
-                        onChange={(e) => handleNumberInput(e.target.value, setAmount)}
+                        onChange={(e) => handleNumberInput(e.target.value, setAmount, Field.AMOUNT)}
                         onBlur={() => setAmount((amount) => Number(amount).toString())}
                         value={amount}
                     />
@@ -182,7 +202,7 @@ export const Swap = () => {
                         type="text"
                         inputMode="decimal"
                         placeholder="0.00"
-                        onChange={(e) => handleNumberInput(e.target.value, setTargetAmount)}
+                        onChange={(e) => handleNumberInput(e.target.value, setTargetAmount, Field.TARGET)}
                         onBlur={() => setAmount((amount) => Number(amount).toString())}
                         value={targetAmount}
                     />

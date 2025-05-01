@@ -18,8 +18,8 @@ import {
     Content,
 } from './ListItem.styles.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
@@ -38,7 +38,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
             <Content>
                 {chip ? (
                     <Chip>
-                        <Typography>{chip}</Typography>
+                        <span>{chip}</span>
                     </Chip>
                 ) : null}
 
@@ -108,24 +108,43 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
             chip={itemIsNew ? t('new') : ''}
         />
     );
-    const itemHover = isMined ? <ItemHover item={item} /> : null;
-    const itemExpand = !isMined ? <ItemExpand item={item} /> : null;
+
+    const detailsButton = !isMined ? (
+        <Button
+            size="smaller"
+            variant="outlined"
+            onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(true);
+            }}
+        >
+            {t(`history.view-details`)}
+        </Button>
+    ) : null;
 
     return (
-        <ItemWrapper
-            ref={ref}
-            data-index={index}
-            initial={{ opacity: 0 }}
-            animate={inView || expanded ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ height: !isMined && expanded ? 'auto' : 48 }}
-            onMouseEnter={() => setHovering(true)}
-            onMouseLeave={() => setHovering(false)}
-        >
-            <AnimatePresence>{hovering && itemHover}</AnimatePresence>
-            {baseItem}
-            <AnimatePresence>{expanded && itemExpand}</AnimatePresence>
-        </ItemWrapper>
+        <>
+            <ItemWrapper
+                ref={ref}
+                data-index={index}
+                initial={{ opacity: 0 }}
+                animate={inView ? { opacity: 1 } : { opacity: 0 }}
+                style={{ height: 48 }}
+                onMouseEnter={() => setHovering(true)}
+                onMouseLeave={() => setHovering(false)}
+            >
+                <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+                {baseItem}
+            </ItemWrapper>
+            {!isMined && (
+                <ItemExpand
+                    item={item}
+                    expanded={expanded}
+                    setExpanded={setExpanded}
+                    handleClose={() => setExpanded(false)}
+                />
+            )}
+        </>
     );
 });
 
