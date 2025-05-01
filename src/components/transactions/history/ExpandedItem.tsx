@@ -3,7 +3,7 @@ import { TransactionInfo } from '@app/types/app-status.ts';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal.tsx';
 import { StatusList } from '../components/StatusList/StatusList.tsx';
 import { useTranslation } from 'react-i18next';
-import { TransactionDirection } from '@app/types/transactions.ts';
+
 interface Props {
     item: TransactionInfo;
     expanded: boolean;
