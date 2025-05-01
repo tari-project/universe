@@ -264,13 +264,11 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         .clone();
 
                     loop {
-
                         if shutdown_signal.is_triggered() {
                             break;
                         }
 
                         let wallet_state = wallet_state_watcher.borrow().clone();
-                        info!(target: LOG_TARGET, "Initial scan completed: {:?}", wallet_manager.is_initial_scan_completed());
                         if let Some(wallet_state) = wallet_state {
                             if let Some(balance) = wallet_state.balance {
                                 let balance_sum = balance.available_balance
@@ -289,8 +287,6 @@ impl SetupPhaseImpl for WalletSetupPhase {
                                 }
                             }
                         }
-
-
 
                         tokio::time::sleep(std::time::Duration::from_secs(5)).await;
                     }
