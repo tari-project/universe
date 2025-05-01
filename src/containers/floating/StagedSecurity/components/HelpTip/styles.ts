@@ -3,9 +3,9 @@ import styled from 'styled-components';
 
 export const Wrapper = styled(m.div)`
     position: absolute;
-    top: 30px;
-    left: 380px;
-    z-index: 1;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
 
     border-radius: 10px;
     background: ${({ theme }) => theme.palette.base};
