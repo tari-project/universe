@@ -468,6 +468,11 @@ impl StatusMonitor for NodeStatusMonitor {
     }
 
     async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+        if self.node_type == NodeType::Remote {
+            // Do not clear local node files for remote nodes
+            return Ok(());
+        }
+
         if let Some(ref base_path) = self.base_path {
             let _unused = fs::remove_dir_all(
                 base_path
