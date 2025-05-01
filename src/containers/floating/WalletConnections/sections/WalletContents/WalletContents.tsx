@@ -23,7 +23,6 @@ export const WalletContents = () => {
     const dataAcc = useAccount();
 
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
-    console.log(accountBalance);
 
     const walletChainIcon = useMemo(() => {
         if (!accountBalance?.symbol) return null;
@@ -52,6 +51,12 @@ export const WalletContents = () => {
         }
     }, [accountBalance?.symbol]);
 
+    const value = useMemo(() => {
+        if (!accountBalance?.value) return 0;
+        console.log(accountBalance);
+        return (accountBalance.value / 1000000000000000000n).toString();
+    }, [accountBalance]);
+
     return (
         <WalletContentsContainer>
             <ConnectedWalletWrapper>
@@ -68,7 +73,7 @@ export const WalletContents = () => {
                 <WalletValue>
                     {walletChainIcon}
                     <WalletValueRight>
-                        {accountBalance?.value.toString() || 0} {accountBalance?.symbol}
+                        {value} {accountBalance?.symbol}
                     </WalletValueRight>
                 </WalletValue>
             </ContentWrapper>

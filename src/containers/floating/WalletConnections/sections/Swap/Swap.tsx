@@ -21,17 +21,17 @@ import {
 import { useAccount, useBalance, useSignMessage } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
 import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import { useSwap } from '@app/hooks/swap/useSwap2';
+import useDebouncedValue from '@app/hooks/helpers/useDebounce';
 
 export const Swap = () => {
     const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
-    const { direction, setDirection } = useSwap();
     const dataAcc = useAccount();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
     const activeChainIcon = useMemo(() => {
@@ -61,6 +61,28 @@ export const Swap = () => {
 
     const [amount, setAmount] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<string>('');
+
+    const ammoutDebounced = useDebouncedValue(amount, 500);
+    const targetAmountDebounced = useDebouncedValue(targetAmount, 500);
+
+    const { direction, setDirection, getTradeDetails } = useSwap();
+    useEffect(() => {
+        const tradeDetails = getTradeDetails('1000000000000000000');
+        tradeDetails.then((details) => {
+            const { trade, route } = details;
+            if (!trade || !route) {
+                console.error('Could not calculate trade route.');
+                return;
+            }
+            const midPrice = route.midPrice.toSignificant(6);
+            const invertedMidPrice = route.midPrice.invert().toSignificant(6);
+            const executionPrice = trade.executionPrice.toSignificant(6);
+            console.log('details', details);
+            console.log('midPrice', midPrice);
+            console.log('invertedMidPrice', invertedMidPrice);
+            console.log('executionPrice', executionPrice);
+        });
+    }, [ammoutDebounced, targetAmountDebounced]);
 
     const handleNumberInput = (value: string, setter: (value: string) => void) => {
         // Allow empty input
@@ -161,6 +183,7 @@ export const Swap = () => {
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => handleNumberInput(e.target.value, setTargetAmount)}
+                        onBlur={() => setAmount((amount) => Number(amount).toString())}
                         value={targetAmount}
                     />
                     <SwapOptionCurrency>
