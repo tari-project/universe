@@ -22,6 +22,7 @@
 
 use std::path::PathBuf;
 use std::time::Duration;
+use std::collections::HashMap;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -260,6 +261,13 @@ impl ProcessAdapter for TorAdapter {
             format!("notice file {}", log_dir_string),
         ];
 
+        let envs: Option<HashMap<String, String>> = Some([
+            // rust is hard :/
+            // getting borrowed after move error & should only be declared on linux
+            // ("LD_PRELOAD".to_string(), format!("{}/libevent-2.1.so.7", working_dir_string.clone())), 
+            ("LD_PRELOAD".to_string(), "/home/test/.cache/com.tari.universe.alpha/binaries/tor-binaries/esmeralda/14.5.1/tor/libevent-2.1.so.7".to_string()),
+        ].into_iter().collect());
+
         if self.config.use_bridges {
             // Used by tor bridges
             // TODO: This does not work when path has space on windows.
@@ -284,7 +292,7 @@ impl ProcessAdapter for TorAdapter {
                 handle: None,
                 startup_spec: ProcessStartupSpec {
                     file_path: binary_version_path,
-                    envs: None,
+                    envs,
                     args,
                     data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
