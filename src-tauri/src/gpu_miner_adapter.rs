@@ -212,8 +212,17 @@ impl ProcessAdapter for GpuMinerAdapter {
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
             }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
+            }
+            Network::MainNet => {
+                envs.insert("TARI_NETWORK".to_string(), "mainnet".to_string());
+            }
+            Network::StageNet => {
+                envs.insert("TARI_NETWORK".to_string(), "stagenet".to_string());
+            }
+            Network::LocalNet => {
+                envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
             }
         }
 

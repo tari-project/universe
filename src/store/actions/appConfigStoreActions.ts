@@ -16,6 +16,7 @@ import { setUITheme } from './uiStoreActions';
 import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
+import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -50,7 +51,8 @@ export const handleConfigMiningLoaded = (miningConfig: ConfigMining) => {
 };
 
 export const setAirdropTokensInConfig = (
-    airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined
+    airdropTokensParam: Pick<AirdropTokens, 'refreshToken' | 'token'> | undefined,
+    isSuccessFn?: (airdropTokens: { token: string; refresh_token: string } | undefined) => void
 ) => {
     const airdropTokens = airdropTokensParam
         ? {
@@ -62,6 +64,7 @@ export const setAirdropTokensInConfig = (
     invoke('set_airdrop_tokens', { airdropTokens })
         .then(() => {
             useConfigCoreStore.setState({ airdrop_tokens: airdropTokensParam });
+            isSuccessFn?.(airdropTokens);
         })
         .catch((e) => console.error('Failed to store airdrop tokens: ', e));
 };
@@ -278,5 +281,17 @@ export const setVisualMode = (enabled: boolean) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
         useConfigUIStore.setState({ visual_mode: !enabled });
+    });
+};
+export const setNodeType = async (nodeType: NodeType) => {
+    const previousNodeType = useConfigCoreStore.getState().node_type;
+    useConfigCoreStore.setState({ node_type: nodeType });
+    updateNodeTypeForNodeStore(nodeType);
+
+    invoke('set_node_type', { nodeType: nodeType }).catch((e) => {
+        console.error('Could not set node type', e);
+        setError('Could not change node type');
+        useConfigCoreStore.setState({ node_type: previousNodeType });
+        updateNodeTypeForNodeStore(nodeType);
     });
 };

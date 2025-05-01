@@ -18,7 +18,6 @@ import {
     Content,
 } from './ListItem.styles.ts';
 import { useConfigUIStore, useUIStore } from '@app/store';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
@@ -39,7 +38,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
             <Content>
                 {chip ? (
                     <Chip>
-                        <Typography>{chip}</Typography>
+                        <span>{chip}</span>
                     </Chip>
                 ) : null}
 

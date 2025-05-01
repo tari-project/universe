@@ -162,6 +162,7 @@ impl ConfigImpl for ConfigUI {
                 visual_mode: old_config.visual_mode(),
                 show_experimental_settings: old_config.show_experimental_settings(),
             };
+            let _unused = Self::_save_config(self.content.clone());
         } else {
             self.content.set_was_config_migrated(true);
         }

@@ -19,6 +19,8 @@ const defaultValues = { message: '', address: '', amount: undefined };
 export default function SendModal({ section, setSection }: SendModalProps) {
     const { t } = useTranslation('wallet');
     const [status, setStatus] = useState<SendStatus>('fields');
+    const [isBack, setIsBack] = useState(false);
+
     const methods = useForm<SendInputs>({
         defaultValues,
         mode: 'all',
@@ -28,6 +30,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     const resetForm = () => {
         setStatus('fields');
+        setIsBack(false);
         reset();
     };
 
@@ -38,6 +41,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
 
     function handleBack() {
         setStatus('fields');
+        setIsBack(true);
     }
 
     const handleFormSubmit = useCallback(
@@ -64,18 +68,21 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     destination: data.address,
                     paymentId: data.message,
                 };
-                await invoke('send_one_sided_to_stealth_address', payload);
-
+                await invoke('send_one_sided_to_stealth_address', {
+                    ...payload,
+                    amount: payload.amount.toString(),
+                });
                 addPendingTransaction(payload);
-                setSection('history');
+                setStatus('completed');
             } catch (error) {
                 setStoreError(`Error sending transaction: ${error}`);
                 setError(`root.invoke_error`, {
                     message: `${t('send.error-message')} ${error}`,
                 });
+                setStatus('fields');
             }
         },
-        [status, setStatus, setSection, setError, t]
+        [status, setStatus, setError, t]
     );
 
     const getModalTitle = () => {
@@ -99,7 +106,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                 <Wrapper $isLoading={methods.formState.isSubmitting}>
                     <StyledForm onSubmit={methods.handleSubmit(handleFormSubmit)}>
                         {status === 'fields' ? (
-                            <SendForm />
+                            <SendForm isBack={isBack} />
                         ) : (
                             <SendReview
                                 status={status}

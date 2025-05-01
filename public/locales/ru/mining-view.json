@@ -1,12 +1,12 @@
 {
   "connection-to-node-lost": "Соединение с майнером потеряно. Пожалуйста, подождите, пока майнер переподключится, или перезапустите его.",
-  "cpu-power": "ЦП Мощность",
+  "cpu-power": "CPU Мощность",
   "current-block-time": "Текущее время блока",
   "day": "день",
   "estimated-day": "Est tXTM/день",
   "estimated-earnings": "Ожидаемый доход",
   "floor": "Минимум",
-  "gpu-power": "ГПУ Мощность",
+  "gpu-power": "GPU Мощность",
   "mining-button-text": {
     "cancel-mining": "Отмена майнинга",
     "changing-mode": "Изменение режима",

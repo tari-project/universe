@@ -4,7 +4,9 @@
   "history": {
     "label-rewards": "私の報酬",
     "transaction-details": "Transaction Details",
-    "view-details": "View details"
+    "view-details": "View details",
+    "available-balance": "Available Balance",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "私のTari",
   "new": "新規",

@@ -23,27 +23,30 @@
 use super::{
     phase_core::CoreSetupPhase, phase_hardware::HardwareSetupPhase, phase_node::NodeSetupPhase,
     phase_unknown::UnknownSetupPhase, phase_wallet::WalletSetupPhase,
-    trait_setup_phase::SetupPhaseImpl,
+    trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
-        config_wallet::ConfigWallet,
+        config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
+    events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
+    websocket_manager::WebsocketMessage,
     UniverseAppState,
 };
 use log::{debug, error, info};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Display, Formatter},
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
+    time::Duration,
 };
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
     sync::{watch::Sender, Mutex},
@@ -205,58 +208,107 @@ impl SetupManager {
             .initialize_for_migration(app_handle.clone())
             .await;
 
+        let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
+        websocket_events_manager_guard.set_app_handle(app_handle.clone());
+        drop(websocket_events_manager_guard);
+
+        let mut websocket_manager_write = state.websocket_manager.write().await;
+        websocket_manager_write.set_app_handle(app_handle.clone());
+        drop(websocket_manager_write);
+
+        let webview = app_handle
+            .get_webview_window("main")
+            .expect("main window must exist");
+        let websocket_tx = state.websocket_message_tx.clone();
+        webview.listen("ws-tx", move |event: tauri::Event| {
+            let event_cloned = event.clone();
+            let websocket_tx_clone = websocket_tx.clone();
+
+            tauri::async_runtime::spawn(async move {
+                let message = event_cloned.payload();
+                if let Ok(message) = serde_json::from_str::<WebsocketMessage>(message)
+                    .inspect_err(|e| error!("websocket malformatted: {}", e))
+                {
+                    if websocket_tx_clone
+                        .send(message.clone())
+                        .await
+                        .inspect_err(|e| error!("too many messages in websocket send queue {}", e))
+                        .is_ok()
+                    {
+                        log::trace!("websocket message sent {:?}", message);
+                    }
+                }
+            });
+        });
+        EventsManager::handle_node_type_update(&app_handle).await;
+
         ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
         ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
 
+        let node_type = ConfigCore::content().await.node_type().clone();
+        info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
+        state.node_manager.set_node_type(node_type).await;
+        EventsManager::handle_node_type_update(&app_handle).await;
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
     async fn setup_core_phase(&self, app_handle: AppHandle) {
-        let core_phase_setup = Arc::new(CoreSetupPhase::new(app_handle.clone()).await);
-        core_phase_setup
-            .setup(self.core_phase_status.clone(), vec![])
+        let core_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
             .await;
+        core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
-        let hardware_phase_setup = Arc::new(HardwareSetupPhase::new(app_handle.clone()).await);
-        hardware_phase_setup
-            .setup(self.hardware_phase_status.clone(), vec![])
+        let hardware_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .build::<HardwareSetupPhase>(app_handle.clone(), self.hardware_phase_status.clone())
             .await;
+        hardware_phase_setup.setup().await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
-        let node_phase_setup = Arc::new(NodeSetupPhase::new(app_handle.clone()).await);
-        node_phase_setup
-            .setup(self.node_phase_status.clone(), vec![])
+        let state = app_handle.state::<UniverseAppState>();
+        let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
+        let timeout_duration = if is_local_node {
+            Duration::from_secs(60 * 60) // 60 Minutes
+        } else {
+            Duration::from_secs(60 * 10) // 10 Minutes
+        };
+
+        let node_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(timeout_duration)
+            .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
             .await;
+        node_phase_setup.setup().await;
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
-        let wallet_phase_setup = Arc::new(WalletSetupPhase::new(app_handle.clone()).await);
-        wallet_phase_setup
-            .setup(
-                self.wallet_phase_status.clone(),
-                vec![self.node_phase_status.subscribe()],
-            )
+        let wallet_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
+            .build::<WalletSetupPhase>(app_handle.clone(), self.wallet_phase_status.clone())
             .await;
+        wallet_phase_setup.setup().await;
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
-        let unknown_phase_setup = Arc::new(UnknownSetupPhase::new(app_handle.clone()).await);
-        unknown_phase_setup
-            .setup(
-                self.unknown_phase_status.clone(),
-                vec![
-                    self.node_phase_status.subscribe(),
-                    self.hardware_phase_status.subscribe(),
-                ],
-            )
+        let unknown_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(vec![
+                self.node_phase_status.subscribe(),
+                self.hardware_phase_status.subscribe(),
+            ])
+            .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
             .await;
+        unknown_phase_setup.setup().await;
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let mut core_phase_status_subscriber = self.core_phase_status.subscribe();
         let mut hardware_phase_status_subscriber = self.hardware_phase_status.subscribe();
@@ -352,6 +404,12 @@ impl SetupManager {
                             .await;
                     }
 
+                    if is_app_unlocked
+                    && is_wallet_unlocked
+                    && is_mining_unlocked
+                    && is_initial_setup_finished {
+                        SetupManager::get_instance().handle_restart_finished(app_handle.clone()).await;
+                    }
                         select! {
                         _ = cacellation_token.cancelled() => {
                             info!(target: LOG_TARGET, "Cancellation token triggered, exiting unlock conditions loop");
@@ -505,6 +563,15 @@ impl SetupManager {
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 
+    async fn handle_restart_finished(&self, app_handle: AppHandle) {
+        info!(target: LOG_TARGET, "Restart Finished");
+        EventsManager::handle_connection_status_changed(
+            &app_handle,
+            ConnectionStatusPayload::Succeed,
+        )
+        .await;
+    }
+
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.pre_setup(app_handle.clone()).await;
         *self.app_handle.lock().await = Some(app_handle.clone());
@@ -558,12 +625,10 @@ impl SetupManager {
                         last_state = current_state;
                     }
                     _ = shutdown_signal.wait() => {
-                    break;
+                        break;
+                    }
                 }
             }
-
-            }
-
         });
     }
 

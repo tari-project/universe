@@ -37,7 +37,7 @@ use process_stats_collector::ProcessStatsCollectorBuilder;
 use node::remote_node_adapter::RemoteNodeAdapter;
 
 use setup::setup_manager::SetupManager;
-use std::fs::{create_dir_all, remove_dir_all, remove_file, File};
+use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
 use systemtray_manager::{SystemTrayData, SystemTrayManager};
 use tasks_tracker::TasksTrackers;
@@ -49,6 +49,8 @@ use updates_manager::UpdatesManager;
 use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
+use websocket_events_manager::WebsocketEventsManager;
+use websocket_manager::{WebsocketManager, WebsocketManagerStatusMessage, WebsocketMessage};
 
 use log4rs::config::RawConfig;
 use std::fs;
@@ -57,7 +59,6 @@ use std::sync::Arc;
 use std::time::Duration;
 use tari_common::configuration::Network;
 use tari_common_types::tari_address::TariAddress;
-use tari_shutdown::Shutdown;
 use tauri::async_runtime::block_on;
 use tauri::{Manager, RunEvent};
 use tauri_plugin_sentry::{minidump, sentry};
@@ -86,8 +87,6 @@ use crate::p2pool_manager::P2poolManager;
 use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
-#[cfg(target_os = "macos")]
-use utils::macos_utils::is_app_in_applications_folder;
 
 mod ab_test_selector;
 mod airdrop;
@@ -143,6 +142,8 @@ mod updates_manager;
 mod utils;
 mod wallet_adapter;
 mod wallet_manager;
+mod websocket_events_manager;
+mod websocket_manager;
 mod xmrig;
 mod xmrig_adapter;
 
@@ -227,9 +228,9 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
 
     let move_app = app.clone();
 
-    TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
+    TasksTrackers::current().node_phase.get_task_tracker().await.spawn(async move {
         let app_state = move_app.state::<UniverseAppState>().clone();
-        let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
+        let mut shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
         let mut interval = time::interval(Duration::from_secs(10));
 
         loop {
@@ -952,6 +953,10 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
+    websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
+    websocket_manager: Arc<RwLock<WebsocketManager>>,
+    websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -965,6 +970,17 @@ fn main() {
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
 
+    #[cfg(debug_assertions)]
+    {
+        if cfg!(tokio_unstable) {
+            console_subscriber::init();
+        } else {
+            println!(
+                "Tokio console disabled. To enable, run with: RUSTFLAGS=\"--cfg tokio_unstable\""
+            );
+        }
+    }
+
     let client = sentry::init((
         "https://edd6b9c1494eb7fda6ee45590b80bcee@o4504839079002112.ingest.us.sentry.io/4507979991285760",
         sentry::ClientOptions {
@@ -974,8 +990,6 @@ fn main() {
         },
     ));
     let _guard = minidump::init(&client);
-
-    let shutdown = Shutdown::new();
 
     let mut stats_collector = ProcessStatsCollectorBuilder::new();
     // NOTE: Nothing is started at this point, so ports are not known. You can only start settings ports
@@ -988,15 +1002,21 @@ fn main() {
         &mut stats_collector,
         LocalNodeAdapter::new(local_node_watch_tx.clone()),
         RemoteNodeAdapter::new(remote_node_watch_tx.clone()),
-        shutdown.to_signal(),
-        // TODO: Decide who and how controls it
-        NodeType::RemoteUntilLocal,
+        // This value is later overriden when retrieved from config
+        NodeType::Local,
         base_node_watch_tx,
         local_node_watch_rx,
         remote_node_watch_rx,
     );
     let (wallet_state_watch_tx, wallet_state_watch_rx) =
         watch::channel::<Option<WalletState>>(None);
+    let (websocket_message_tx, websocket_message_rx) =
+        tokio::sync::mpsc::channel::<WebsocketMessage>(500);
+
+    //NOTE DONT use websocket_state_tx anywhere else than WebsocketManager
+    let (websocket_manager_status_tx, websocket_manager_status_rx) =
+        watch::channel::<WebsocketManagerStatusMessage>(WebsocketManagerStatusMessage::Stopped);
+
     let (gpu_status_tx, gpu_status_rx) = watch::channel(GpuMinerStatus::default());
     let (cpu_miner_status_watch_tx, cpu_miner_status_watch_rx) =
         watch::channel::<CpuMinerStatus>(CpuMinerStatus::default());
@@ -1057,6 +1077,24 @@ fn main() {
         node_manager.clone(),
     );
 
+    let app_id = app_config_raw.anon_id().to_string();
+
+    let websocket_manager = Arc::new(RwLock::new(WebsocketManager::new(
+        app_in_memory_config.clone(),
+        websocket_message_rx,
+        websocket_manager_status_tx.clone(),
+        websocket_manager_status_rx.clone(),
+        app_id.clone(),
+    )));
+
+    let websocket_events_manager = WebsocketEventsManager::new(
+        app_id.clone(),
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        websocket_message_tx.clone(),
+    );
+
     let updates_manager = UpdatesManager::new();
     let telemetry_service = TelemetryService::new(app_in_memory_config.clone());
 
@@ -1091,6 +1129,10 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        websocket_message_tx: Arc::new(websocket_message_tx),
+        websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
+        websocket_manager,
+        websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
@@ -1199,28 +1241,6 @@ fn main() {
                 })?;
             }
 
-            // TODO: Remove this in a few versions
-            // It exists for people who ran 0.9.803 and ended up on a fork
-            // Everyone needs a clean node db for 0.9.804, so lets wipe the db once, write this file
-            // and not require people to clear the db multiple times. Once we know nobody is on
-            // a version 0.9.803 or before
-            let feb_17_fork_reset = config_path.join("20250217-node-db-clean");
-            if !feb_17_fork_reset.exists() {
-                let network = Network::default().as_key_str();
-
-                let node_data_db = config_path.join("node").join(network).join("data");
-
-                // They may not exist. This could be first run.
-                if node_data_db.exists() {
-                    if let Err(e) = remove_dir_all(node_data_db) {
-                        warn!(target: LOG_TARGET, "Could not clear peer data folder: {}", e);
-                    }
-                }
-
-                create_dir_all(&config_path).map_err(|e| e.to_string())?;
-                File::create(feb_17_fork_reset).map_err(|e| e.to_string())?;
-            }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -1282,10 +1302,14 @@ fn main() {
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
+            commands::websocket_connect,
+            commands::websocket_close,
+            commands::reconnect,
             commands::send_one_sided_to_stealth_address,
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
+            commands::set_node_type
         ])
         .build(tauri::generate_context!())
         .inspect_err(
@@ -1309,6 +1333,8 @@ fn main() {
         let _unused = SystemStatus::current().receive_power_event(&power_monitor).inspect_err(|e| {
             error!(target: LOG_TARGET, "Could not receive power event: {:?}", e)
         });
+
+
 
         match event {
         tauri::RunEvent::Ready  => {

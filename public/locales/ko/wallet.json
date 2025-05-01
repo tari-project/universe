@@ -4,7 +4,9 @@
   "history": {
     "label-rewards": "내 보상",
     "transaction-details": "Transaction Details",
-    "view-details": "View details"
+    "view-details": "View details",
+    "available-balance": "Available Balance",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "내 Tari",
   "new": "새로운",

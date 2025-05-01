@@ -4,7 +4,9 @@
   "history": {
     "label-rewards": "Meine Belohnungen",
     "transaction-details": "Transaction Details",
-    "view-details": "View details"
+    "view-details": "View details",
+    "available-balance": "Available Balance",
+    "sync-with-phone": "Sync with Phone"
   },
   "my_tari": "Mein Tari",
   "new": "Neu",

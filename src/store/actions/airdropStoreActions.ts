@@ -13,10 +13,13 @@ import {
     UserDetails,
     UserEntryPoints,
     UserPoints,
+    useUIStore,
 } from '@app/store';
 import { handleAirdropRequest } from '@app/hooks/airdrop/utils/useHandleRequest.ts';
 import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
+import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
+import { FEATURES } from '@app/store/consts.ts';
 
 interface TokenResponse {
     exp: number;
@@ -51,6 +54,7 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
+    uiSendRecvEnabled: false,
 };
 
 const fetchBackendInMemoryConfig = async () => {
@@ -60,7 +64,7 @@ const fetchBackendInMemoryConfig = async () => {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
 
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
-        const newState: AirdropStoreState = {
+        const newState: Partial<AirdropStoreState> = {
             backendInMemoryConfig,
         };
 
@@ -119,15 +123,16 @@ export const airdropSetup = async () => {
             console.info('Refreshing airdrop tokens');
             await handleRefreshAirdropTokens();
             await fetchAllUserData();
+            if (useUIStore.getState().showSplashscreen) {
+                handleCloseSplashscreen();
+            }
         }
     } catch (error) {
         console.error('Error in airdropSetup: ', error);
     }
 };
 export const handleAirdropLogout = async (isUserLogout = false) => {
-    if (!isUserLogout) {
-        removeSocket();
-    } else {
+    if (isUserLogout) {
         console.info('User logout | removing airdrop tokens');
     }
     await setAirdropTokens(undefined);
@@ -142,17 +147,20 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             },
         });
 
-        setAirdropTokensInConfig({
-            token: airdropTokens.token,
-            refreshToken: airdropTokens.refreshToken,
-        });
+        setAirdropTokensInConfig(
+            {
+                token: airdropTokens.token,
+                refreshToken: airdropTokens.refreshToken,
+            },
+            () => {
+                if (airdropApiUrl && authToken) {
+                    initialiseSocket();
+                }
+            }
+        );
 
         const airdropApiUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
         const authToken = airdropTokens?.token;
-
-        if (airdropApiUrl && authToken) {
-            initialiseSocket(airdropApiUrl, authToken);
-        }
     } else {
         // User not connected
         useAirdropStore.setState((currentState) => ({
@@ -161,6 +169,8 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        removeSocket();
+
         try {
             setAirdropTokensInConfig(undefined);
         } catch (e) {
@@ -202,39 +212,46 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-export async function fetchPollingFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
+async function fetchFeatureFlag(route: string) {
+    return await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
-        path: '/features/polling',
+        path: `/features/${route}`,
         method: 'GET',
         headers: {
             'Content-Type': 'application/json',
         },
     });
+}
 
+export async function fetchPollingFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_POLLING);
     if (response) {
         useAirdropStore.setState({ pollingEnabled: response.access });
         // Let the BE know we're using the polling feature for mining proofs
         // invoke('set_airdrop_polling', { pollingEnabled: response.access });
     }
-
     return response;
 }
 
 export async function fetchOrphanChainUiFeatureFlag() {
-    const response = await handleAirdropRequest<{ access: boolean } | null>({
-        publicRequest: true,
-        path: '/features/orphan-chain-ui',
-        method: 'GET',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-    });
-
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_ORPHAN_CHAIN_DISABLED);
     if (response) {
-        useAirdropStore.setState({ orphanChainUiEnabled: response.access });
+        useAirdropStore.setState({ orphanChainUiDisabled: response.access });
     }
+    return response;
+}
 
+export async function fetchWarmupFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_WARMUP);
+    if (response) {
+        useUIStore.setState({ showWarmup: response.access });
+    }
+    return response;
+}
+
+export async function fetchUiSendRecvFeatureFlag() {
+    const response = await fetchFeatureFlag(FEATURES.FF_UI_TX);
+    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
     return response;
 }
 

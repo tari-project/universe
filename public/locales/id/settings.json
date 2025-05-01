@@ -74,6 +74,8 @@
   "monero-seed-words": "Kata Kunci Pemulihan Monero",
   "network": "Jaringan",
   "no-entry-guard": "Tidak ada Penjaga Masuk yang terhubung!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
   "node-connection-address": "Alamat koneksi",
   "node-public-address": "Alamat publik",
   "node-public-key": "Kunci publik",

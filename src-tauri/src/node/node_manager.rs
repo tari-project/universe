@@ -27,13 +27,14 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use log::{error, info, warn};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tari_common::configuration::Network;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tauri::AppHandle;
 use tokio::sync::watch::{self, Sender};
 use tokio::sync::RwLock;
+use tokio::time::sleep;
 use tokio::{fs, select};
 use tokio_util::task::TaskTracker;
 
@@ -59,11 +60,13 @@ pub enum NodeManagerError {
     ExitCode(i32),
     #[error("Node failed with an unknown error: {0}")]
     UnknownError(#[from] anyhow::Error),
+    #[error("Maximum failed requests exceeded")]
+    MaxFailedRequestsExceeded,
 }
 
 pub const STOP_ON_ERROR_CODES: [i32; 2] = [114, 102];
 
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum NodeType {
     Local,
     Remote,
@@ -89,7 +92,6 @@ pub struct NodeManager {
     local_node_watcher: Arc<RwLock<Option<ProcessWatcher<LocalNodeAdapter>>>>,
     remote_node_watcher: Arc<RwLock<Option<ProcessWatcher<RemoteNodeAdapter>>>>,
     current_adapter: Arc<RwLock<Box<dyn NodeAdapter + Send + Sync>>>,
-    shutdown: ShutdownSignal,
     base_node_watch_tx: watch::Sender<BaseNodeStatus>,
     local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
@@ -101,29 +103,24 @@ impl NodeManager {
         stats_collector: &mut ProcessStatsCollectorBuilder,
         local_node_adapter: LocalNodeAdapter,
         remote_node_adapter: RemoteNodeAdapter,
-        shutdown: ShutdownSignal,
         node_type: NodeType,
         base_node_watch_tx: watch::Sender<BaseNodeStatus>,
         local_node_watch_rx: watch::Receiver<BaseNodeStatus>,
         remote_node_watch_rx: watch::Receiver<BaseNodeStatus>,
     ) -> Self {
         let stats_broadcast = stats_collector.take_minotari_node();
-        let mut local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> = None;
-        if node_type.is_local() {
-            local_node_watcher = Some(construct_process_watcher(
+        let local_node_watcher: Option<ProcessWatcher<LocalNodeAdapter>> =
+            Some(construct_process_watcher(
                 stats_broadcast.clone(),
                 local_node_adapter.clone(),
                 node_type.is_local(),
             ));
-        }
-        let mut remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> = None;
-        if node_type.is_remote() {
-            remote_node_watcher = Some(construct_process_watcher(
+        let remote_node_watcher: Option<ProcessWatcher<RemoteNodeAdapter>> =
+            Some(construct_process_watcher(
                 stats_broadcast,
                 remote_node_adapter.clone(),
                 node_type.is_local(),
             ));
-        }
 
         let current_adapter: Box<dyn NodeAdapter + Send + Sync> = match node_type {
             NodeType::Local | NodeType::LocalAfterRemote => Box::new(local_node_adapter),
@@ -135,7 +132,6 @@ impl NodeManager {
             local_node_watcher: Arc::new(RwLock::new(local_node_watcher)),
             remote_node_watcher: Arc::new(RwLock::new(remote_node_watcher)),
             current_adapter: Arc::new(RwLock::new(current_adapter)),
-            shutdown,
             base_node_watch_tx,
             local_node_watch_rx,
             remote_node_watch_rx,
@@ -197,19 +193,19 @@ impl NodeManager {
         }
 
         let node_type = self.get_node_type().await?;
-        if matches!(node_type, NodeType::RemoteUntilLocal) {
-            self.switch_to_local_when_synced(shutdown_signal.clone(), app_handle)
-                .await?;
-        }
         start_status_forwarding_thread(
             self.clone(),
             self.base_node_watch_tx.clone(),
             self.local_node_watch_rx.clone(),
             self.remote_node_watch_rx.clone(),
-            shutdown_signal,
+            shutdown_signal.clone(),
         )
         .await?;
         self.wait_ready().await?;
+        if matches!(node_type, NodeType::RemoteUntilLocal) {
+            self.switch_to_local_when_synced(shutdown_signal, app_handle)
+                .await?;
+        }
 
         Ok(())
     }
@@ -242,6 +238,11 @@ impl NodeManager {
             }
         }
         Ok(())
+    }
+
+    pub async fn set_node_type(&self, new_node_type: NodeType) {
+        let mut node_type = self.node_type.write().await;
+        *node_type = new_node_type;
     }
 
     async fn switch_to_local_when_synced(
@@ -290,14 +291,16 @@ impl NodeManager {
         progress_params_tx: &watch::Sender<HashMap<String, String>>,
         progress_percentage_tx: &watch::Sender<f64>,
     ) -> Result<(), anyhow::Error> {
-        self.wait_ready().await?;
+        let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
+        let mut failed_request_counter = 0;
+        static MAX_FAILED_REQUESTS: u32 = 10;
         loop {
             let current_service = self.get_current_service().await?;
             match current_service
                 .wait_synced(
                     progress_params_tx,
                     progress_percentage_tx,
-                    self.shutdown.clone(),
+                    shutdown_signal.clone(),
                 )
                 .await
             {
@@ -309,7 +312,12 @@ impl NodeManager {
                         continue;
                     }
                     _ => {
-                        return Err(NodeManagerError::UnknownError(e.into()).into());
+                        failed_request_counter += 1;
+                        if failed_request_counter >= MAX_FAILED_REQUESTS {
+                            return Err(NodeManagerError::MaxFailedRequestsExceeded.into());
+                        }
+                        sleep(Duration::from_millis(100)).await;
+                        continue;
                     }
                 },
             }
@@ -318,11 +326,9 @@ impl NodeManager {
 
     pub async fn wait_ready(&self) -> Result<(), NodeManagerError> {
         if self.is_remote().await? {
-            wait_ready_for_node_process(&self.remote_node_watcher).await?;
             ensure_node_identity_reachable(&self.remote_node_watcher, "Remote").await?;
         }
         if self.is_local().await? {
-            wait_ready_for_node_process(&self.local_node_watcher).await?;
             ensure_node_identity_reachable(&self.local_node_watcher, "Local").await?;
         }
 
@@ -590,8 +596,10 @@ where
                 .as_ref()
                 .and_then(|watcher| watcher.adapter.get_service())
         } {
+            wait_ready_for_node_process(node_watcher).await?;
             match service.get_identity().await {
                 Ok(_) => {
+                    wait_ready_for_node_process(node_watcher).await?;
                     return Ok(());
                 }
                 Err(err) => {
@@ -672,21 +680,31 @@ async fn monitor_local_node_sync_and_switch(
             info!(target: LOG_TARGET, "Shutdown signal received, stopping local node watcher");
         }
         _ = async {
+            let shutdown_signal = TasksTrackers::current().node_phase.get_signal().await;
             for _ in 0..100 {
                 if let Some(local_node_service) = {
                     let local_node_watcher = node_manager.local_node_watcher.read().await;
                     local_node_watcher.as_ref().and_then(|watcher| watcher.adapter.get_service())
                 } {
                     match local_node_service
-                        .wait_synced(&progress_params_tx, &progress_percentage_tx, node_manager.shutdown.clone())
+                        .wait_synced(&progress_params_tx, &progress_percentage_tx, shutdown_signal.clone())
                         .await
                     {
-                        Ok(_) => {
+                        Ok(synced_height) => {
+                            let remote_node_height = node_manager.remote_node_watch_rx.borrow().block_height;
+                            if synced_height + 50 < remote_node_height {
+                                warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
+                                sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again
+                                continue;
+                            }
+                            sleep(Duration::from_secs(30)).await;
                             info!(target: LOG_TARGET, "Local node synced, switching node type...");
                             switch_to_local(node_manager.clone(), node_type.clone()).await;
                             break;
                         }
-                        Err(NodeStatusMonitorError::NodeNotStarted) => {}
+                        Err(NodeStatusMonitorError::NodeNotStarted) => {
+                            info!(target: LOG_TARGET, "Local node not started, waiting...");
+                        }
                         Err(e) => {
                             error!(target: LOG_TARGET, "NodeManagerError: {}", NodeManagerError::UnknownError(e.into()));
                         }
