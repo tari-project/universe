@@ -469,15 +469,21 @@ impl StatusMonitor for NodeStatusMonitor {
 
     async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
         if let Some(ref base_path) = self.base_path {
-            fs::remove_dir_all(
+            let _unused = fs::remove_dir_all(
                 base_path
                     .join("node")
                     .join(Network::get_current().to_string().to_lowercase())
                     .join("peer_db"),
             )
-            .await?;
-
-            fs::remove_dir_all(base_path.join("tor-data")).await?;
+            .await;
+            let _unused = fs::remove_dir_all(
+                base_path
+                    .join("node")
+                    .join(Network::get_current().to_string().to_lowercase())
+                    .join("libtor"),
+            )
+            .await;
+            let _unused = fs::remove_dir_all(base_path.join("tor-data")).await;
         }
 
         Ok(())
