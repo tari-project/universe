@@ -1,3 +1,4 @@
+import { convertHexToRGBA } from '@app/utils';
 import styled from 'styled-components';
 
 export const Wrapper = styled.div`
@@ -18,7 +19,7 @@ export const TabsWarapper = styled.div`
 `;
 
 export const TabsTitle = styled.div`
-    color: rgba(17, 17, 17, 0.5);
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
     font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;
@@ -27,7 +28,7 @@ export const TabsTitle = styled.div`
 `;
 
 export const SyncButton = styled.button`
-    color: rgba(17, 17, 17, 0.5);
+    color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
     font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;
@@ -46,15 +47,15 @@ export const SyncButton = styled.button`
     transition: color 0.2s ease-in-out;
 
     svg {
-        stroke: #7d7d7d;
+        stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
         transition: stroke 0.2s ease-in-out;
     }
 
     &:hover {
-        color: #000;
+        color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
 
         svg {
-            stroke: #000;
+            stroke: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 1)};
         }
     }
 `;
