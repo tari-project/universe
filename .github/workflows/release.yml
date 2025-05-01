@@ -188,15 +188,7 @@ jobs:
         # It requires us to set ARCH environment variable
       - name: BundleMediaFramework fix - [ Linux Appimage ]
         if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
-        run: |
-          if [ "$(uname -m)" = "x86_64" ]; then
-            export ARCH=x86_64
-          elif [ "$(uname -m)" = "aarch64" ]; then
-            export ARCH=aarch64
-          else
-            echo "Unsupported architecture: $(uname -m)"
-            exit 1
-          fi
+        run: echo "ARCH=$(uname -m)" >> $GITHUB_ENV
 
       - name: Install Dependencies - macOS
         if: startsWith(runner.os,'macOS')
