@@ -25,10 +25,9 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
     const airdropToken = useAirdropStore.getState().airdropTokens?.token;
     const airdropTokenExpiration = useAirdropStore.getState().airdropTokens?.expiresAt;
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
-    console.debug(airdropToken);
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
-    console.debug(`isTokenExpired= `, isTokenExpired);
+
     if (isTokenExpired && !publicRequest) {
         if (retryCount >= MAX_RETRIES) {
             throw Error('Failed to refresh tokens from handleAirdropRequest');
