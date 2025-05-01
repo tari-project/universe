@@ -257,7 +257,10 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
                         if let Some(wallet_state) = wallet_state {
                             if let Some(balance) = wallet_state.balance {
-                                if balance.available_balance.gt(&MicroMinotari::zero()) {
+                                let balance_sum = balance.available_balance
+                                    + balance.pending_incoming_balance
+                                    + balance.timelocked_balance;
+                                if balance_sum.gt(&MicroMinotari::zero()) {
                                     EventsEmitter::show_staged_security_modal(&app_handle).await;
                                     let _unused = ConfigUI::update_field(
                                         ConfigUIContent::set_was_staged_security_modal_shown,
