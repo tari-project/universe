@@ -87,8 +87,6 @@ use crate::p2pool_manager::P2poolManager;
 use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
-#[cfg(target_os = "macos")]
-use utils::macos_utils::is_app_in_applications_folder;
 
 mod ab_test_selector;
 mod airdrop;
