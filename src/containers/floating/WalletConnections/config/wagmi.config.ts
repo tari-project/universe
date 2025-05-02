@@ -1,12 +1,12 @@
 import { createAppKit } from '@reown/appkit/react';
 
-import { mainnet, arbitrum, base, scroll, polygon, goerli, sepolia } from '@reown/appkit/networks';
+import { mainnet, sepolia } from '@reown/appkit/networks';
 
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
-import { createStorage } from 'wagmi';
+// import { createStorage } from 'wagmi';
 
-const storage = createStorage({ storage: localStorage });
+// const storage = createStorage({ storage: localStorage });
 
 // 1. Get projectId from https://cloud.reown.com
 const projectId = 'c523cd3d3e0246530115c1dc2c016852';
@@ -20,20 +20,20 @@ const metadata = {
 };
 
 // 3. Set the networks
-const networks = [mainnet, arbitrum, base, scroll, polygon, goerli, sepolia];
+const networks = [mainnet, sepolia];
 
 // 4. Create Wagmi Adapter
 export const wagmiAdapter = new WagmiAdapter({
     networks,
     projectId,
-    storage,
+    // storage,
     // ssr: true,
 });
 
 // 5. Create modal
 createAppKit({
     adapters: [wagmiAdapter],
-    networks: [mainnet, arbitrum, base, scroll, polygon, goerli, sepolia],
+    networks: [mainnet, sepolia],
     projectId,
     metadata,
     debug: true,
