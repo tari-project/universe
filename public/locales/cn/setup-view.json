@@ -5,6 +5,10 @@
   "new-tari-version-available": "有新版本的 Tari Universe 可用！",
   "no": "否",
   "setting-up": "正在设置 Tari ...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "这可能需要几分钟",
   "title": {
     "application-started": "应用程序已启动",

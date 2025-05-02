@@ -5,6 +5,10 @@
   "new-tari-version-available": "A new version of Tari Universe is available!",
   "no": "No",
   "setting-up": "Setting up the Tari truth machine...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "This might take a few minutes",
   "title": {
     "application-started": "Applications started",

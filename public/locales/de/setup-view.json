@@ -5,6 +5,10 @@
   "new-tari-version-available": "Eine neue Version von Tari Universe ist verfügbar!",
   "no": "Nein",
   "setting-up": "Einrichten der Tari Wahrheitsmaschine...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Das könnte ein paar Minuten dauern",
   "title": {
     "application-started": "Anwendungen gestartet",
