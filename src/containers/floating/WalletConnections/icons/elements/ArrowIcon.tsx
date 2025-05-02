@@ -1,6 +1,21 @@
-export const ArrowIcon = ({ width = '100%', onClick }: { width: string | number; onClick?: () => void }) => {
+export const ArrowIcon = ({
+    width = '100%',
+    onClick,
+    style,
+}: {
+    width: string | number;
+    onClick?: () => void;
+    style?: React.CSSProperties;
+}) => {
     return (
-        <svg xmlns="http://www.w3.org/2000/svg" width={width} fill="none" viewBox="0 0 12 13" onClick={onClick}>
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={width}
+            fill="none"
+            viewBox="0 0 12 13"
+            onClick={onClick}
+            style={style}
+        >
             <path
                 stroke="#fff"
                 strokeLinecap="round"

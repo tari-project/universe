@@ -1,15 +1,25 @@
-import { ChainId, Token, WETH9, CurrencyAmount, TradeType, Percent } from '@uniswap/sdk-core';
+import {
+    ChainId,
+    Token,
+    WETH9, // The wrapped Ether representation for SDK calculations
+    CurrencyAmount,
+    TradeType,
+    Percent,
+    Ether, // The native Ether representation for display/API
+    NativeCurrency, // Type used by Ether.onChain
+} from '@uniswap/sdk-core';
 import { Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount } from 'wagmi';
 import { ethers, BrowserProvider, Contract, Signer as EthersSigner } from 'ethers'; // Use ethers v6 imports
 import { useWalletClient } from 'wagmi'; // Use WalletClient
 import { useEffect, useMemo, useState, useCallback } from 'react';
-
-// ABIs (ensure paths are correct)
-import erc20Abi from './abi/erc20.json';
-import uniswapV2RouterAbi from './abi/UniswapV2Router02.json';
-import uniswapV2PairAbi from './abi/UniswapV2Pair.json';
 import { WalletClient } from 'viem';
+
+// --- ABIs (Ensure paths are correct) ---
+// Make sure these files exist and contain the correct ABI JSON
+import erc20Abi from './abi/erc20.json'; // Standard ERC20 ABI
+import uniswapV2RouterAbi from './abi/UniswapV2Router02.json'; // Uniswap V2 Router02 ABI
+import uniswapV2PairAbi from './abi/UniswapV2Pair.json'; // Uniswap V2 Pair ABI
 
 // --- Constants ---
 
@@ -17,11 +27,13 @@ import { WalletClient } from 'viem';
 // !! VERIFY THESE ADDRESSES !! V2 might not be canonical on all chains listed.
 const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
     [ChainId.MAINNET]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-    [ChainId.GOERLI]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
-    [ChainId.SEPOLIA]: '0xB26B2De65D07eBB5E54C7F6282424D3be670E1f0',
-    [ChainId.POLYGON]: '0x6ba6D59Ad633458CEF14B6a79afb968dDa0437d2', // Polygon V2 Router
-    // Add other V2 Routers (Arbitrum might primarily use V3)
+    [ChainId.GOERLI]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Often same as Mainnet for tests
+    [ChainId.SEPOLIA]: '0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008', // Uniswap V2 Router address on Sepolia
+    [ChainId.POLYGON]: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff', // SushiSwap Router (commonly used as V2 Router on Polygon)
+    // Add other V2 Routers (Arbitrum might primarily use V3, check Uniswap docs)
 };
+
+// --- Token Definitions ---
 
 // Example stablecoin (replace or add more as needed)
 export const DAI: Partial<Record<ChainId, Token>> = {
@@ -38,139 +50,206 @@ export const DAI: Partial<Record<ChainId, Token>> = {
         18,
         'DAI',
         'Dai Stablecoin'
-    ), // Example Sepolia DAI
+    ),
 };
 
-// Define your token (XTM) per chain
-// const XTM: Partial<Record<ChainId, Token>> = {
-//     [ChainId.MAINNET]: new Token(
-//         ChainId.MAINNET,
-//         '0x0Da6Ed8B13214Ff28e9Ca979Dd37439e8a88F6c4', // Replace with actual Mainnet address
-//         18,
-//         'XTM',
-//         'Your Token Mainnet'
-//     ),
-//     [ChainId.SEPOLIA]: new Token(
-//         ChainId.SEPOLIA,
-//         '0xYourSepoliaTokenAddress', // Replace with actual Sepolia address
-//         18,
-//         'XTM',
-//         'Your Token Sepolia'
-//     ),
-//     // Add other chains where XTM is deployed
-// };
-//
-const XTM = DAI;
+// Define your token (XTM) per chain - USING DAI AS A PLACEHOLDER
+// Replace this with your actual XTM token details and addresses
+export const XTM: Partial<Record<ChainId, Token>> = {
+    [ChainId.MAINNET]: DAI[ChainId.MAINNET]!, // Replace with actual XTM Token object
+    [ChainId.SEPOLIA]: DAI[ChainId.SEPOLIA]!, // Replace with actual XTM Token object
+    // Add other chains where XTM is deployed
+};
 
-// Helper function to convert WalletClient to ethers Signer (v6)
-// Adapt based on your specific wagmi/ethers setup if needed
+// Known tokens map for easy lookup by address (case-insensitive)
+// Populate this with tokens your app commonly uses
+const KNOWN_TOKENS: Partial<Record<ChainId, Record<`0x${string}`, Token>>> = {};
+
+// Function to populate KNOWN_TOKENS (call this once or ensure it runs)
+function initializeKnownTokens() {
+    for (const chainIdStr in ChainId) {
+        const chainId = Number(chainIdStr) as ChainId;
+        if (isNaN(chainId)) continue; // Skip string keys like 'MAINNET'
+
+        KNOWN_TOKENS[chainId] = {}; // Initialize chain record
+
+        // Add WETH
+        const weth = WETH9[chainId];
+        if (weth) {
+            KNOWN_TOKENS[chainId]!['0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9' as `0x${string}`] = weth;
+        }
+
+        // Add DAI if defined
+        const dai = DAI[chainId];
+        if (dai) {
+            KNOWN_TOKENS[chainId]![dai.address.toLowerCase() as `0x${string}`] = dai;
+        }
+
+        // Add XTM if defined (and different from DAI)
+        const xtm = XTM[chainId];
+        if (xtm && (!dai || !xtm.equals(dai))) {
+            // Avoid adding duplicates if XTM === DAI
+            KNOWN_TOKENS[chainId]![xtm.address.toLowerCase() as `0x${string}`] = xtm;
+        }
+
+        // Add other tokens here...
+        // e.g., USDC[chainId], USDT[chainId], etc.
+    }
+}
+initializeKnownTokens(); // Call initialization
+
+// --- Helper Function ---
+
+// Convert wagmi WalletClient (viem) to ethers Signer (v6)
+// Note: Ensure BrowserProvider handles the transport correctly.
 export async function walletClientToSigner(walletClient: WalletClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;
-    if (!account || !chain || !transport) return null;
-    const network = {
-        chainId: chain.id,
-        name: chain.name,
-        ensAddress: chain.contracts?.ensRegistry?.address,
-    };
-    const provider = new BrowserProvider(transport, network);
-    const signer = provider.getSigner(account.address); // Potential issue if getSigner is async, might need await provider.getSigner(...)
-    return await signer;
+    if (!account || !chain || !transport) {
+        console.error('WalletClient missing account, chain, or transport');
+        return null;
+    }
+    try {
+        const network = {
+            chainId: chain.id,
+            name: chain.name,
+            ensAddress: chain.contracts?.ensRegistry?.address,
+        };
+        // Use BrowserProvider for browser-based wallets (like MetaMask)
+        const provider = new BrowserProvider(transport, network);
+        const signer = await provider.getSigner(account.address);
+        return signer;
+    } catch (e) {
+        console.error('Error creating ethers signer from WalletClient:', e);
+        return null;
+    }
 }
 
-// --- The Hook ---
+// --- The Swap Hook ---
 
 export const useSwap = () => {
     // --- State ---
-    const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(
-        (DAI[ChainId.MAINNET]?.address as `0x${string}`) ?? null
-    ); // Store address, derive Token object later
-    const [direction, setDirection] = useState<'input' | 'output'>('input');
-    const [isLoading, setIsLoading] = useState(false);
+    // Default pair token to native ETH (represented by null address)
+    const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(null);
+    const [direction, setDirection] = useState<'input' | 'output'>('input'); // 'input': PairToken -> XTM, 'output': XTM -> PairToken
+    const [isLoading, setIsLoading] = useState(false); // General loading state for swap execution
     const [error, setError] = useState<string | null>(null);
-    const [isApproving, setIsApproving] = useState(false);
-    const [isFetchingPair, setIsFetchingPair] = useState(false);
+    const [isApproving, setIsApproving] = useState(false); // Specific loading state for approval
+    const [isFetchingPair, setIsFetchingPair] = useState(false); // Specific loading state for fetching pair data
 
     // --- Wagmi Hooks ---
     const { address, isConnected, chain } = useAccount();
     const { data: walletClient } = useWalletClient(); // Get the WalletClient
-    // Optional: Use useEthersSigner if you have @wagmi/ethers-adapter setup
-    // const { data: signer } = useEthersSigner({ chainId: chain?.id }); // Preferred if using adapter
 
     // --- Derived State ---
 
-    // Get the current chain's router address
+    // Get the current chain's ID and router address
+    const currentChainId = useMemo(() => chain?.id as ChainId | undefined, [chain]);
     const routerAddress = useMemo(() => {
-        return chain?.id ? ROUTER_ADDRESSES[chain.id as ChainId] : undefined;
-    }, [chain]);
+        return currentChainId ? ROUTER_ADDRESSES[currentChainId] : undefined;
+    }, [currentChainId]);
 
-    // Get the specific Token instances for the current chain
-    const currentChainId = chain?.id as ChainId | undefined;
+    // Get the primary token instance (e.g., XTM) for the current chain
     const xtmToken = useMemo(() => (currentChainId ? XTM[currentChainId] : undefined), [currentChainId]);
-    const wethToken = useMemo(() => (currentChainId ? WETH9[currentChainId] : undefined), [currentChainId]);
 
-    // Derive the pair token instance from its address state
-    const pairToken = useMemo(() => {
-        if (!pairTokenAddress || !currentChainId) return wethToken; // Default to WETH if no address or chain
-        if (WETH9[currentChainId]?.address.toLowerCase() === pairTokenAddress.toLowerCase()) {
-            return WETH9[currentChainId];
-        }
-        if (wethToken?.address.toLowerCase() === pairTokenAddress.toLowerCase()) {
-            return wethToken;
-        }
-        // Add more known tokens...
-        console.warn(
-            `Token definition not found for address ${pairTokenAddress} on chain ${currentChainId}. Defaulting to WETH.`
-        );
-        return wethToken; // Fallback or handle unknown token error
-    }, [pairTokenAddress, currentChainId, wethToken]);
-
-    // Determine token0 (input) and token1 (output) based on direction
-    const { token0, token1 } = useMemo(() => {
-        if (!xtmToken || !pairToken || !chain || xtmToken.chainId !== pairToken.chainId) {
-            return { token0: null, token1: null };
-        }
-
-        const _token0 = direction === 'input' ? pairToken : xtmToken;
-        const _token1 = direction === 'input' ? xtmToken : pairToken;
-
-        return { token0: _token0, token1: _token1 };
-    }, [pairToken, xtmToken, direction, chain]);
-
-    // Get ethers signer from walletClient (or use useEthersSigner directly)
+    // Get ethers Signer and Provider asynchronously
     const signerAsync = useMemo(async () => {
         if (!walletClient) return null;
-        try {
-            // You might need to adjust this based on your setup or use useEthersSigner
-            const { account, chain, transport } = walletClient;
-            const network = { chainId: chain.id, name: chain.name };
-            const provider = new BrowserProvider(transport, network);
-            return await provider.getSigner(account.address);
-        } catch (e) {
-            console.error('Error creating ethers signer:', e);
-            return null;
-        }
+        return await walletClientToSigner(walletClient);
     }, [walletClient]);
 
-    // Get provider from signer
-    const providerAsync = useMemo(async () => (await signerAsync)?.provider, [signerAsync]);
+    const providerAsync = useMemo(async () => {
+        const signer = await signerAsync;
+        return signer?.provider ?? null;
+    }, [signerAsync]);
+
+    // Derive the pair token instance (SDK object: WETH9 for native, Token otherwise)
+    // This token is used for INTERNAL SDK calculations (Pair, Route, Trade)
+    const sdkPairToken = useMemo(() => {
+        const chainId = currentChainId;
+        if (!chainId) return undefined;
+
+        const currentWeth = WETH9[chainId]; // WETH9 object for the current chain
+
+        // If state address is null (our signal for native ETH)
+        if (pairTokenAddress === null) {
+            return currentWeth; // Use the WETH9 object
+        }
+
+        // If address is set, try to find it (case-insensitive)
+        const lowerCaseAddress = pairTokenAddress.toLowerCase() as `0x${string}`;
+        const knownToken = KNOWN_TOKENS[chainId]?.[lowerCaseAddress];
+
+        if (knownToken) {
+            return knownToken; // Return WETH9 or other known token
+        } else {
+            console.warn(
+                `Token definition not found for address ${pairTokenAddress} on chain ${chainId}. Cannot form pair.`
+            );
+            // Optional: Implement dynamic fetching of token data here if needed
+            setError(`Unknown token address: ${pairTokenAddress}`);
+            return undefined; // Token not known, cannot proceed
+        }
+    }, [pairTokenAddress, currentChainId]);
+
+    // Determine internal SDK tokens based on direction (always use Token/WETH9)
+    const { sdkToken0, sdkToken1 } = useMemo(() => {
+        if (!xtmToken || !sdkPairToken || !currentChainId || xtmToken.chainId !== sdkPairToken.chainId) {
+            return { sdkToken0: undefined, sdkToken1: undefined };
+        }
+
+        // sdkPairToken will be WETH9 if native ETH is selected
+        const _sdkToken0 = direction === 'input' ? sdkPairToken : xtmToken;
+        const _sdkToken1 = direction === 'input' ? xtmToken : sdkPairToken;
+
+        return { sdkToken0: _sdkToken0, sdkToken1: _sdkToken1 };
+    }, [sdkPairToken, xtmToken, direction, currentChainId]);
+
+    // Derive Output Tokens for API/UI (using NativeCurrency for ETH)
+    // This provides a clearer representation (e.g., 'ETH' symbol, isNative=true) to the hook consumer/UI
+    const { token0, token1 } = useMemo(() => {
+        const mapToNative = (token: Token | undefined): Token | NativeCurrency | undefined => {
+            if (!token || !currentChainId) return undefined;
+            const currentWeth = WETH9[currentChainId];
+            // Check if the SDK token IS the WETH9 wrapper for the current chain's native currency
+            if (currentWeth && token.equals(currentWeth)) {
+                // Return the Ether object from sdk-core for native representation
+                return Ether.onChain(currentChainId);
+            }
+            return token; // Otherwise return the original ERC20 Token object
+        };
+
+        return {
+            token0: mapToNative(sdkToken0), // Input token for UI
+            token1: mapToNative(sdkToken1), // Output token for UI
+        };
+    }, [sdkToken0, sdkToken1, currentChainId]);
 
     // --- SDK Interaction Functions ---
 
+    // Fetches Pair data using SDK Tokens (WETH9 for native)
     const getPair = useCallback(async (): Promise<Pair | null> => {
-        if (!token0 || !token1 || !providerAsync || token0.chainId !== token1.chainId) {
-            console.error('Cannot get pair: Invalid tokens, provider, or mismatched chains.');
+        // Use sdkToken0 and sdkToken1 which contain WETH9 if native is involved
+        if (!sdkToken0 || !sdkToken1 || !providerAsync || sdkToken0.chainId !== sdkToken1.chainId) {
+            console.error('Cannot get pair: Invalid SDK tokens, provider, or mismatched chains.');
+            setError('Invalid token setup or provider.');
             return null;
         }
+
         setIsFetchingPair(true);
         setError(null);
         try {
-            console.log('token0', token0, token1);
-            const pairAddress = Pair.getAddress(token0, token1);
-            const pairContract = new Contract(pairAddress, uniswapV2PairAbi, await providerAsync);
-            // Check if contract code exists (basic check for existence)
-            const code = await providerAsync.then((provider) => provider?.getCode(pairAddress));
-            if (code === '0x') {
+            // Pair.getAddress requires Token objects (WETH9 for native)
+            const pairAddress = Pair.getAddress(sdkToken0, sdkToken1);
+            const provider = await providerAsync;
+            if (!provider) throw new Error('Provider not available');
+
+            const pairContract = new Contract(pairAddress, uniswapV2PairAbi, provider); // Use provider for reads
+
+            // Basic check if pair contract exists
+            const code = await provider.getCode(pairAddress);
+            if (code === '0x' || code === '') {
                 console.warn(`No contract code found at pair address: ${pairAddress}. Pair likely doesn't exist.`);
+                setError('Liquidity pair not found.');
                 setIsFetchingPair(false);
                 return null; // Pair doesn't exist
             }
@@ -178,106 +257,156 @@ export const useSwap = () => {
             const reserves = await pairContract['getReserves']();
             const [reserve0, reserve1] = reserves; // These are BigInts in ethers v6
 
-            const tokens = [token0, token1];
-            const [sortedToken0, sortedToken1] = tokens[0].sortsBefore(tokens[1]) ? tokens : [tokens[1], tokens[0]];
+            // Ensure reserves are not zero, otherwise Pair constructor might fail
+            if (reserve0 === 0n && reserve1 === 0n) {
+                console.warn(`Pair ${pairAddress} has zero reserves.`);
+                setError('Liquidity pair has no liquidity.');
+                setIsFetchingPair(false);
+                return null;
+            }
 
+            const tokens = [sdkToken0, sdkToken1]; // Use SDK tokens
+
+            // Create Pair object using CurrencyAmount with raw amounts (strings)
             const pair = new Pair(
-                CurrencyAmount.fromRawAmount(sortedToken0, reserve0.toString()), // SDK expects string or JSBI
-                CurrencyAmount.fromRawAmount(sortedToken1, reserve1.toString())
+                CurrencyAmount.fromRawAmount(tokens[0], reserve0.toString()),
+                CurrencyAmount.fromRawAmount(tokens[1], reserve1.toString())
             );
             setIsFetchingPair(false);
             return pair;
         } catch (error: any) {
             console.error('Error fetching pair:', error);
-            // More specific error checking if possible
             if (error.message?.includes('call revert exception') || error.code === 'CALL_EXCEPTION') {
                 console.warn(
-                    `Pair contract call failed at ${Pair.getAddress(token0, token1)}. It might not exist or have issues.`
+                    `Pair contract call failed at ${Pair.getAddress(sdkToken0, sdkToken1)}. It might not exist or have issues.`
                 );
+                setError('Could not fetch pair data (pair might not exist).');
             } else {
                 setError(`Failed to fetch pair data: ${error.message || 'Unknown error'}`);
             }
             setIsFetchingPair(false);
             return null;
         }
-    }, [token0, token1, providerAsync]); // Add provider dependency
+    }, [sdkToken0, sdkToken1, providerAsync]); // Use SDK tokens in dependency array
 
+    // Calculates trade details using SDK Tokens (WETH9 for native)
     const getTradeDetails = useCallback(
         async (
-            inputAmountRaw: string // Expect raw amount string (e.g., '1000000000000000000')
+            inputAmountRaw: string // Expect raw amount string (e.g., '1000000000000000000' for 1 ETH/Token)
         ): Promise<{ trade: Trade<Token, Token, TradeType.EXACT_INPUT> | null; route: Route<Token, Token> | null }> => {
-            if (!token0 || !token1 || !providerAsync) return { trade: null, route: null };
-
-            // Ensure inputAmountRaw is a valid non-negative integer string
-            if (!/^\d+$/.test(inputAmountRaw) || BigInt(inputAmountRaw) < 0n) {
-                console.error('Invalid raw input amount:', inputAmountRaw);
-                setError('Invalid input amount provided.');
+            // Use sdkToken0 and sdkToken1
+            if (!sdkToken0 || !sdkToken1 || !providerAsync) {
+                setError('Tokens or provider not ready for trade calculation.');
                 return { trade: null, route: null };
             }
 
-            const pair = await getPair(); // Uses the memoized getPair
+            // Validate input amount format (non-negative integer string)
+            if (!/^\d+$/.test(inputAmountRaw) || BigInt(inputAmountRaw) <= 0n) {
+                console.error('Invalid raw input amount:', inputAmountRaw);
+                setError('Invalid or zero input amount provided.');
+                return { trade: null, route: null };
+            }
+
+            const pair = await getPair(); // Uses the memoized getPair with SDK tokens
             if (!pair) {
-                setError('Could not find liquidity pair for these tokens.');
+                // getPair should have set an error if it failed significantly
+                if (!error) setError('Could not find liquidity pair for trade.');
                 return { trade: null, route: null };
             }
 
             try {
-                console.log('pair', pair, token0, token1);
-                const route = new Route([pair], token0, token1);
-                // Use try-catch as Trade constructor can throw if liquidity is insufficient
+                // Route and Trade require Token objects (WETH9 for native)
+                const route = new Route([pair], sdkToken0, sdkToken1);
                 const trade = new Trade(
                     route,
-                    CurrencyAmount.fromRawAmount(token0, inputAmountRaw),
+                    CurrencyAmount.fromRawAmount(sdkToken0, inputAmountRaw), // Use the input SDK token
                     TradeType.EXACT_INPUT
                 );
+                setError(null); // Clear previous errors on success
                 return { trade, route };
             } catch (e: any) {
                 console.error('Error creating trade object:', e);
-                // Handle insufficient liquidity specifically if possible (SDK might throw specific errors)
-                if (e.message?.includes('LIQUIDITY')) {
+                // Handle insufficient liquidity specifically if possible
+                if (e.message?.includes('LIQUIDITY') || e.message?.includes('ZERO_RESERVES')) {
                     setError('Insufficient liquidity for this trade.');
+                } else if (e.message?.includes('INVALID_INPUT')) {
+                    setError('Invalid input amount for trade calculation.');
                 } else {
                     setError(`Error calculating trade: ${e.message || 'Unknown error'}`);
                 }
                 return { trade: null, route: null };
             }
         },
-        [getPair, token0, token1, providerAsync] // Ensure all dependencies are listed
+        [getPair, sdkToken0, sdkToken1, providerAsync, error] // Include error to potentially clear it
     );
 
     // --- Transaction Execution Functions ---
 
+    // Checks allowance and requests approval if needed. Uses SDK input token (sdkToken0).
     const checkAndRequestApproval = useCallback(
         async (amountToApprove: ethers.BigNumberish): Promise<boolean> => {
-            // ethers v6 uses BigNumberish
-            if (!signerAsync || !address || !token0 || !routerAddress) {
-                setError('Cannot approve: Missing signer, address, token, or router address.');
+            // Use sdkToken0 for checking approval requirements
+            if (!signerAsync || !address || !sdkToken0 || !routerAddress || !currentChainId) {
+                setError('Cannot approve: Missing signer, address, token, router, or chain info.');
                 return false;
             }
-            if (token0.isNative) {
-                // No approval needed for native ETH
-                return true;
-            }
 
+            // *** Check if the INPUT token is native ETH (represented by WETH9) ***
+            // const isNativeInput = sdkToken0.equals(WETH9[currentChainId]);
+
+            // if (isNativeInput) {
+            //     // No approval needed for native ETH input
+            //     console.info('Approval not needed for native ETH input.');
+            //     return true;
+            // }
+
+            // Proceed with ERC20 approval logic
             setIsApproving(true);
             setError(null);
+            const signer = await signerAsync;
+            if (!signer) {
+                setError('Signer not available for approval.');
+                setIsApproving(false);
+                return false;
+            }
+
             try {
-                const tokenContract = new Contract(token0.address, erc20Abi, await signerAsync);
+                const tokenContract = new Contract(sdkToken0.address, erc20Abi, signer);
+                const amountToApproveBI = BigInt(amountToApprove.toString()); // Convert to BigInt for comparison
+
+                // Check current allowance
                 const currentAllowance = await tokenContract.allowance(address, routerAddress);
 
-                if (currentAllowance < BigInt(amountToApprove.toString())) {
-                    // Compare BigInts
+                if (currentAllowance < amountToApproveBI) {
                     console.info(
-                        `Allowance is ${currentAllowance.toString()}, need ${amountToApprove.toString()}. Requesting approval...`
+                        `Allowance (${currentAllowance.toString()}) is less than required (${amountToApproveBI.toString()}). Requesting approval for ${sdkToken0.symbol}...`
                     );
-                    const approveTx = await tokenContract.approve(routerAddress, amountToApprove);
+                    // Request maximum approval for simplicity, or amountToApproveBI
+                    const approveAmount = amountToApproveBI;
+                    const approveTx = await tokenContract.approve(routerAddress, approveAmount);
                     console.info('Approval transaction sent:', approveTx.hash);
-                    const receipt = await approveTx.wait(1); // Wait for 1 confirmation
+                    // Wait for 1 confirmation
+                    const receipt = await approveTx.wait(1);
                     console.info('Approval confirmed:', receipt?.hash);
+                    if (receipt?.status !== 1) {
+                        throw new Error('Approval transaction failed.');
+                    }
+                    // Re-verify allowance after confirmation (optional but good practice)
+                    const newAllowance = await tokenContract.allowance(address, routerAddress);
+                    if (newAllowance < amountToApproveBI && approveAmount !== ethers.MaxUint256) {
+                        // This shouldn't happen if approval succeeded, but check anyway if not approving max
+                        console.error(
+                            `Approval confirmed but allowance (${newAllowance}) is still less than required (${amountToApproveBI}).`
+                        );
+                        throw new Error('Allowance update discrepancy after confirmation.');
+                    }
+                    console.info(`Approval successful. New allowance: ${newAllowance.toString()}`);
                     setIsApproving(false);
                     return true;
                 } else {
-                    console.info(`Sufficient allowance already granted: ${currentAllowance.toString()}`);
+                    console.info(
+                        `Sufficient allowance already granted for ${sdkToken0.symbol}: ${currentAllowance.toString()}`
+                    );
                     setIsApproving(false);
                     return true; // Already approved
                 }
@@ -290,213 +419,311 @@ export const useSwap = () => {
                 return false;
             }
         },
-        [signerAsync, address, token0, routerAddress] // Use dynamic routerAddress
+        [signerAsync, address, sdkToken0, routerAddress, currentChainId] // Use sdkToken0
     );
 
+    // Executes the swap transaction. Uses SDK tokens (WETH9 for native).
     const executeSwap = useCallback(
         async (
-            inputAmountRaw: string // Raw amount string
+            inputAmountRaw: string // Raw amount string for the input token
         ): Promise<string | null> => {
+            // Returns transaction hash on success, null on failure
             setError(null);
-            // --- Pre-flight Checks ---
-            if (!signerAsync || !address || !isConnected || !token0 || !token1 || !routerAddress || !providerAsync) {
-                setError('Swap prerequisites not met (connection, signer, tokens, router).');
-                console.error('Swap prerequisites not met:', {
-                    signer: !!signerAsync,
-                    address,
-                    isConnected,
-                    token0: !!token0,
-                    token1: !!token1,
-                    routerAddress,
-                    provider: !!providerAsync,
-                });
-                return null;
-            }
-            if (token0.chainId !== token1.chainId) {
-                setError('Cannot swap between different chains.');
-                return null;
-            }
-            // Validate input amount format
-            if (!/^\d+$/.test(inputAmountRaw) || BigInt(inputAmountRaw) <= 0n) {
-                setError('Invalid or zero input amount.');
-                return null;
-            }
-
             setIsLoading(true);
 
+            // --- Pre-flight Checks ---
+            // Use sdkToken0 and sdkToken1 for checks
+            if (
+                !signerAsync ||
+                !address ||
+                !isConnected ||
+                !sdkToken0 ||
+                !sdkToken1 ||
+                !routerAddress ||
+                !providerAsync ||
+                !currentChainId
+            ) {
+                setError('Swap prerequisites not met (connection, signer, tokens, router, etc.).');
+                console.error('Swap prerequisites failed:', {
+                    hasSigner: !!signerAsync,
+                    address,
+                    isConnected,
+                    hasSdkToken0: !!sdkToken0,
+                    hasSdkToken1: !!sdkToken1,
+                    routerAddress,
+                    hasProvider: !!providerAsync,
+                    currentChainId,
+                });
+                setIsLoading(false);
+                return null;
+            }
+            if (sdkToken0.chainId !== sdkToken1.chainId) {
+                setError('Cannot swap between different chains.');
+                setIsLoading(false);
+                return null;
+            }
+            // Basic validation on raw amount string
+            let amountIn: bigint;
             try {
-                // 1. Calculate Trade Details
+                amountIn = BigInt(inputAmountRaw);
+                if (amountIn <= 0n) throw new Error('Amount must be positive.');
+            } catch (e) {
+                setError('Invalid input amount format or value.');
+                setIsLoading(false);
+                return null;
+            }
+
+            try {
+                // 1. Calculate Trade Details (uses getTradeDetails with sdkTokens)
                 const { trade, route } = await getTradeDetails(inputAmountRaw);
                 if (!trade || !route) {
                     // getTradeDetails should have set the error state already
-                    console.error('Could not calculate trade route.');
+                    console.error('Could not calculate trade details.');
+                    // If no error set yet, set a generic one
+                    if (!error) setError('Failed to calculate trade details.');
                     setIsLoading(false);
                     return null;
                 }
 
                 // 2. Prepare Transaction Parameters
-                const slippageTolerance = new Percent('50', '10000'); // 0.5%
-                const amountIn = BigInt(inputAmountRaw); // Use BigInt directly
-                const amountOutMinString = trade.minimumAmountOut(slippageTolerance).toExact();
-                const amountOutMin = ethers.parseUnits(amountOutMinString, token1.decimals); // Still need parseUnits for decimals
-                const path = route.path.map((token) => token.address);
-                const to = address;
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes
+                const slippageTolerance = new Percent('50', '10000'); // 0.5% (adjust as needed)
+                // Use sdkToken1 (which might be WETH9) for minimumAmountOut calculation
+                const amountOutMinRaw = trade.minimumAmountOut(slippageTolerance).toExact(); // Get exact string representation
+                // Use decimals from sdkToken1 (WETH9 has 18) to convert to BigInt
+                const amountOutMin = ethers.parseUnits(amountOutMinRaw, sdkToken1.decimals);
 
-                console.info('Swap Parameters:', {
+                // Path uses addresses from SDK tokens (WETH9 address for native)
+                const path = route.path.map((token) => token.address as `0x${string}`); // Ensure addresses are `0x...` strings
+                const to = address; // Send the output token/ETH to the connected wallet
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 minutes from now
+
+                console.info('Swap Execution Details:', {
                     amountIn: amountIn.toString(),
-                    inputSymbol: token0.symbol,
+                    inputSymbol: sdkToken0.symbol,
+                    inputDecimals: sdkToken0.decimals,
                     amountOutMin: amountOutMin.toString(),
-                    outputSymbol: token1.symbol,
+                    outputSymbol: sdkToken1.symbol,
+                    outputDecimals: sdkToken1.decimals,
                     path: path.join(' -> '),
-                    to,
+                    recipient: to,
                     deadline: new Date(deadline * 1000).toISOString(),
+                    slippageTolerance: slippageTolerance.toSignificant(4) + '%',
                 });
 
-                // 3. Check and Request Approval (if necessary)
-                // No approval needed if input is native currency (ETH)
-                if (!token0.isNative) {
-                    const approved = await checkAndRequestApproval(amountIn);
-                    if (!approved) {
-                        // checkAndRequestApproval should have set the error
-                        console.error('Token approval failed or was rejected.');
-                        setIsLoading(false);
-                        return null;
-                    }
-                    console.info('Token approval sufficient.');
-                } else {
-                    console.info('Native currency (ETH) input, skipping approval.');
+                // // *** Check if input/output tokens are native ETH (using WETH9 object) ***
+                // const isInputNative = sdkToken0.equals(WETH9[currentChainId]);
+                // const isOutputNative = sdkToken1.equals(WETH9[currentChainId]);
+
+                // 3. Check and Request Approval (if input is not native ETH)
+                //if (!isInputNative) {
+                console.info(`Checking approval for ${sdkToken0.symbol}...`);
+                // Pass amountIn (BigInt) to approval function
+                const approved = await checkAndRequestApproval(amountIn); // Uses sdkToken0 inside
+                if (!approved) {
+                    // checkAndRequestApproval should have set the error
+                    console.error('Token approval failed or was rejected.');
+                    setIsLoading(false);
+                    return null; // Stop execution if approval fails
                 }
+                console.info(`${sdkToken0.symbol} approval sufficient.`);
+                // } else {
+                //     console.info('Native ETH input, skipping approval step.');
+                // }
 
-                // 4. Create Router Contract Instance
-                const routerContract = new Contract(routerAddress, uniswapV2RouterAbi, await signerAsync);
+                // 4. Get Signer and Create Router Contract Instance
+                const signer = await signerAsync;
+                if (!signer) {
+                    setError('Signer became unavailable before sending transaction.');
+                    setIsLoading(false);
+                    return null;
+                }
+                const routerContract = new Contract(routerAddress, uniswapV2RouterAbi, signer);
 
-                // 5. Determine Swap Function and Parameters
-                let swapTx;
-                const txOptions: { value?: bigint; gasLimit?: bigint } = {}; // Add gasLimit if needed, value for ETH swaps
+                // 5. Determine Swap Function and Execute Transaction
+                const txOptions: { value?: bigint; gasLimit?: bigint } = {}; // For sending ETH or setting gas limit
 
-                // Estimate gas (optional but recommended)
-                // try {
-                //    const estimatedGas = await routerContract.estimateGas... (call the specific swap function)
-                //    txOptions.gasLimit = estimatedGas * BigInt(120) / BigInt(100); // Add 20% buffer
-                //} catch (gasError: any) {
-                //    console.error("Gas estimation failed:", gasError);
-                //    setError(`Gas estimation failed: ${gasError?.reason || gasError?.message}`);
-                //    setIsLoading(false);
-                //    return null;
+                // --- Optional: Gas Estimation (can be complex and sometimes unreliable) ---
+                try {
+                    const methodArgs = [amountIn, amountOutMin, path, to, deadline];
+
+                    const methodName = 'swapExactTokensForTokens';
+
+                    // Estimate gas using the contract instance connected to the signer
+                    const estimatedGasLimit = await routerContract[methodName].estimateGas(...methodArgs, {});
+                    // Add a buffer (e.g., 20%)
+                    txOptions.gasLimit = (estimatedGasLimit * 120n) / 100n;
+                    console.info(
+                        `Estimated gas limit: ${estimatedGasLimit.toString()}, using: ${txOptions.gasLimit.toString()}`
+                    );
+                } catch (gasError: any) {
+                    console.warn('Gas estimation failed:', gasError?.reason || gasError?.message);
+                    // Don't fail the swap, let the wallet estimate, but log the warning
+                    // setError(`Gas estimation failed: ${gasError?.reason || gasError?.message}`);
+                    // setIsLoading(false);
+                    // return null;
+                }
+                // --- End Optional Gas Estimation ---
+
+                console.info(`Attempting swap: ${sdkToken0.symbol} -> ${sdkToken1.symbol}...`);
+                // --- Choose correct swap function based on native checks ---
+                // if (isInputNative) {
+                //     // Swapping ETH for Tokens
+                //     console.info(`Calling swapExactETHForTokens with value ${ethers.formatEther(amountIn)} ETH`);
+                //     txOptions.value = amountIn; // Send ETH with the transaction
+                //     swapTxResponse = await routerContract.swapExactETHForTokens(
+                //         amountOutMin, // min amount of token1 to receive
+                //         path, // path[0] MUST be WETH address
+                //         to, // recipient address
+                //         deadline
+                //         // txOptions // contains value (ETH amount) and optional gasLimit
+                //     );
+                // } else if (isOutputNative) {
+                //     // Swapping Tokens for ETH
+                //     console.info(
+                //         `Calling swapExactTokensForETH for ${ethers.formatUnits(amountIn, sdkToken0.decimals)} ${sdkToken0.symbol}`
+                //     );
+                //     // Router automatically unwraps WETH to ETH and sends to 'to' address
+                //     swapTxResponse = await routerContract.swapExactTokensForETH(
+                //         amountIn, // amount of token0 (ERC20) to send
+                //         amountOutMin, // min amount of ETH (calculated as WETH) to receive
+                //         path, // path[path.length - 1] MUST be WETH address
+                //         to, // recipient address
+                //         deadline
+                //         //txOptions // Should NOT contain 'value', may contain gasLimit
+                //     );
+                // } else {
+                // Swapping Tokens for Tokens
+                console.info(
+                    `Calling swapExactTokensForTokens for ${ethers.formatUnits(amountIn, sdkToken0.decimals)} ${sdkToken0.symbol}`
+                );
+                const swapTxResponse = await routerContract.swapExactTokensForTokens(
+                    amountIn, // amount of token0 to send
+                    amountOutMin, // min amount of token1 to receive
+                    path,
+                    to,
+                    deadline,
+                    txOptions // Should NOT contain 'value', may contain gasLimit
+                );
                 //}
 
-                console.info('Sending swap transaction...');
-                // --- Choose correct swap function ---
-                if (token0.isNative) {
-                    // Swapping ETH for Tokens
-                    txOptions.value = amountIn; // Send ETH with the transaction
-                    swapTx = await routerContract.swapExactETHForTokens(
-                        amountOutMin,
-                        path, // path[0] should be WETH address
-                        to,
-                        deadline,
-                        txOptions
-                    );
-                } else if (token1.isNative) {
-                    // Swapping Tokens for ETH
-                    swapTx = await routerContract.swapExactTokensForETH(
-                        amountIn,
-                        amountOutMin,
-                        path, // path[path.length - 1] should be WETH address
-                        to,
-                        deadline,
-                        txOptions
-                    );
-                } else {
-                    // Swapping Tokens for Tokens
-                    swapTx = await routerContract.swapExactTokensForTokens(
-                        amountIn,
-                        amountOutMin,
-                        path,
-                        to,
-                        deadline,
-                        txOptions
-                    );
-                }
-
-                console.info('Swap transaction sent:', swapTx.hash);
-
-                // (Optional but recommended) Wait for transaction confirmation
-                // console.info("Waiting for swap confirmation...");
-                // const receipt = await swapTx.wait(1);
-                // console.info("Swap confirmed in block:", receipt.blockNumber);
-
+                console.info('Swap transaction sent successfully! Hash:', swapTxResponse.hash);
                 setIsLoading(false);
-                return swapTx.hash;
+
+                // Optional: Wait for confirmation (provides better UX feedback)
+                // console.info("Waiting for transaction confirmation (1 block)...");
+                // const receipt = await swapTxResponse.wait(1); // Wait for 1 confirmation
+                // console.info("Swap confirmed in block:", receipt?.blockNumber);
+                // if (receipt?.status === 0) {
+                //     console.error("Swap transaction failed (reverted) on-chain.");
+                //     setError("Swap transaction failed on-chain.");
+                //     return null; // Indicate failure after confirmation
+                // }
+                // console.info("Swap transaction successfully confirmed!");
+
+                return swapTxResponse.hash; // Return the transaction hash
             } catch (error: any) {
-                console.error('Error executing swap:', error);
-                // Extract reason if available (common in reverted transactions)
-                const reason = error?.reason || error?.data?.message || error?.message || 'Unknown swap error';
-                setError(`Swap failed: ${reason}`);
+                console.error('Error executing swap transaction:', error);
+                // Try to extract a meaningful error reason
+                const reason =
+                    error?.reason || // Ethers v6 specific reason
+                    error?.data?.message || // Nested error data
+                    error?.message || // General message
+                    'Unknown swap error occurred.';
 
-                // Log more specific common errors
+                // Provide more specific feedback based on common errors
+                let userFriendlyError = `Swap failed: ${reason}`;
                 if (reason.includes('insufficient funds')) {
-                    console.error('Check ETH balance for gas.');
-                }
-                if (reason.includes('user rejected transaction')) {
-                    console.error('User rejected the swap.');
-                }
-                if (reason.includes('EXPIRED')) {
-                    console.error('Transaction deadline passed.');
-                }
-                if (reason.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
-                    console.error('Slippage too high or price moved.');
-                }
-                if (reason.includes('TRANSFER_FAILED') || reason.includes('TRANSFER_FROM_FAILED')) {
-                    console.error('Token transfer failed. Check balance/approval.');
+                    userFriendlyError = 'Swap failed: Insufficient funds for gas fees.';
+                } else if (reason.includes('user rejected transaction') || error.code === 'ACTION_REJECTED') {
+                    userFriendlyError = 'Swap failed: Transaction rejected by user.';
+                } else if (reason.includes('deadline expired') || reason.includes('Transaction too old')) {
+                    userFriendlyError = 'Swap failed: Transaction deadline expired. Please try again.';
+                } else if (reason.includes('INSUFFICIENT_OUTPUT_AMOUNT')) {
+                    userFriendlyError =
+                        'Swap failed: Slippage too high or price changed significantly. Try increasing slippage tolerance or swapping a smaller amount.';
+                } else if (reason.includes('TRANSFER_FAILED') || reason.includes('TRANSFER_FROM_FAILED')) {
+                    userFriendlyError = `Swap failed: Token transfer failed. Check ${sdkToken0?.symbol} balance and allowance.`;
+                } else if (reason.includes('UniswapV2Router: EXCESSIVE_INPUT_AMOUNT')) {
+                    // Only for swapTokensForExact... or swapETHForExact...
+                    userFriendlyError = `Swap failed: Provided too much input for the desired output.`; // Less common for exact input swaps
+                } else if (reason.includes('UniswapV2Router: INSUFFICIENT_LIQUIDITY')) {
+                    userFriendlyError = `Swap failed: Insufficient liquidity in the pair.`;
+                } else if (reason.includes('call revert exception') && error.transaction) {
+                    // Potential revert without specific reason string
+                    userFriendlyError = `Swap transaction reverted. Check transaction on explorer: ${error.transaction?.hash}`;
                 }
 
+                setError(userFriendlyError);
                 setIsLoading(false);
-                return null;
+                return null; // Indicate swap failure
             }
         },
         [
+            // Core dependencies
             signerAsync,
+            providerAsync,
             address,
             isConnected,
-            token0,
-            token1,
+            currentChainId,
             routerAddress,
-            providerAsync, // Core dependencies
+            // SDK token representations
+            sdkToken0,
+            sdkToken1,
+            // Internal helper functions
             getTradeDetails,
-            checkAndRequestApproval, // Internal functions
+            checkAndRequestApproval,
+            // Error state (to allow clearing it in getTradeDetails)
+            error,
         ]
     );
 
-    // Reset error state when inputs change
+    // Effect to reset error state when relevant inputs change
     useEffect(() => {
         setError(null);
-    }, [token0, token1, pairTokenAddress, direction, chain]);
+    }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]); // Depend on chainId as well
 
     // --- Return Hook API ---
     return {
-        // State
-        pairTokenAddress,
-        direction,
-        isLoading: isLoading || isApproving || isFetchingPair, // Combine loading states
-        isApproving,
-        isFetchingPair,
-        error,
-        // Setters
-        setPairTokenAddress, // Allow UI to set the *other* token's address
-        setDirection,
-        // Derived Data
-        token0, // Input token instance
-        token1, // Output token instance
-        routerAddress, // Current router address
-        // Functions
-        getPair, // Fetches pair data (useful for displaying liquidity info)
-        getTradeDetails, // Calculates trade outcome (useful for previewing swaps)
-        checkAndRequestApproval, // Explicitly trigger approval if needed separately
-        executeSwap, // The main function to perform the swap
-        // Helpers
+        // --- State ---
+        pairTokenAddress, // The address selected in the UI (null for native ETH)
+        direction, // Swap direction ('input' or 'output')
+        isLoading: isLoading || isApproving || isFetchingPair, // Combined loading state
+        isApproving, // Specific approval loading state
+        isFetchingPair, // Specific pair fetching state
+        error, // Current error message string or null
+
+        // --- Setters ---
+        setPairTokenAddress, // Function to update the pair token address (pass null for ETH)
+        setDirection, // Function to set swap direction
+
+        // --- Derived Data (for UI display) ---
+        // These use NativeCurrency (Ether) for native ETH, Token otherwise
+        token0, // Input token (NativeCurrency or Token)
+        token1, // Output token (NativeCurrency or Token)
+
+        // --- Internal SDK Tokens (can be exposed if needed for advanced UI/debugging) ---
+        // sdkToken0, // Input token (WETH9 or Token)
+        // sdkToken1, // Output token (WETH9 or Token)
+
+        // --- Configuration ---
+        routerAddress, // Current router address being used
+
+        // --- Core Functions ---
+        getPair, // Function to fetch and return Pair data
+        getTradeDetails, // Function to calculate trade outcome (preview)
+        checkAndRequestApproval, // Function to explicitly trigger approval if needed
+        executeSwap, // Function to perform the actual swap transaction
+
+        // --- Readiness Check ---
+        // Indicates if the hook has the basic requirements to attempt a swap
         isReady:
-            !!signerAsync && !!address && isConnected && !!token0 && !!token1 && !!routerAddress && !!providerAsync, // Boolean indicating if basic setup is ready
+            !!signerAsync &&
+            !!address &&
+            isConnected &&
+            !!sdkToken0 &&
+            !!sdkToken1 &&
+            !!routerAddress &&
+            !!providerAsync &&
+            !!currentChainId,
     };
 };

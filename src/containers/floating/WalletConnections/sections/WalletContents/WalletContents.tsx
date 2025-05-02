@@ -1,5 +1,5 @@
 import { ContentWrapper, WalletAddress } from '../../WalletConnections.style';
-import { useDisconnect } from '@reown/appkit/react';
+import { useDisconnect, useAppKit } from '@reown/appkit/react';
 import MMFox from '../../icons/mm-fox';
 import { useAccount, useBalance } from 'wagmi';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
@@ -20,6 +20,7 @@ import { getIcon } from '../../helpers/getIcon';
 
 export const WalletContents = () => {
     const { disconnect } = useDisconnect();
+    const { open } = useAppKit();
     const dataAcc = useAccount();
 
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
@@ -59,8 +60,21 @@ export const WalletContents = () => {
 
     return (
         <WalletContentsContainer>
+            <div>
+                <WalletButton
+                    variant="secondary"
+                    size="small"
+                    onClick={() =>
+                        open({
+                            view: 'Networks',
+                        })
+                    }
+                >
+                    {'Switch Network'}
+                </WalletButton>
+            </div>
             <ConnectedWalletWrapper>
-                <WalletButton variant="error" onClick={() => disconnect}>
+                <WalletButton variant="error" onClick={() => disconnect()}>
                     {'Disconnect'}
                 </WalletButton>
                 <StatusWrapper>
@@ -78,7 +92,7 @@ export const WalletContents = () => {
                 </WalletValue>
             </ContentWrapper>
 
-            <WalletButton variant="secondary" onClick={() => setWalletConnectModalStep(SwapStep.Swap)} size="large">
+            <WalletButton variant="primary" onClick={() => setWalletConnectModalStep(SwapStep.Swap)} size="large">
                 {'Continue'}
             </WalletButton>
         </WalletContentsContainer>

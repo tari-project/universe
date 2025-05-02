@@ -18,16 +18,17 @@ import {
     SwapOptionAmount,
     SwapOptionCurrency,
 } from './Swap.styles';
-import { useAccount, useBalance, useSignMessage } from 'wagmi';
+import { useAccount, useBalance } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { getIcon } from '../../helpers/getIcon';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import PortalLogo from '../../icons/PortalLogo.png';
-import { SignMessage } from '../SignMessage/SignMessage';
+// import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import { useSwap } from '@app/hooks/swap/useSwap';
+import { WETH9 } from '@uniswap/sdk-core';
 
 enum Field {
     AMOUNT = 'amount',
@@ -35,9 +36,9 @@ enum Field {
 }
 
 export const Swap = () => {
-    const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
+    // const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
     const dataAcc = useAccount();
-    const { data: accountBalance } = useBalance({ address: dataAcc.address });
+    const { data: accountBalance } = useBalance({ address: WETH9[dataAcc.chain?.id ?? 1].address as `0x${string}` });
     const activeChainIcon = useMemo(() => {
         if (!accountBalance?.symbol) return null;
         return getIcon({
@@ -46,33 +47,36 @@ export const Swap = () => {
         });
     }, [accountBalance?.symbol]);
 
-    const handleConfirm = () => {
-        setSignMessageModalOpen(true);
-        signMessageAsync({ message: 'Hello sign this test message' })
-            .then(() => setWalletConnectModalStep(SwapStep.Progress))
-            .catch(() => {
-                addToast({
-                    title: 'Error',
-                    text: 'Something went wrong',
-                    type: 'error',
-                });
-                setWalletConnectModalStep(SwapStep.ConnectWallet);
-            });
-    };
+    console.log(accountBalance);
 
     const addToast = useToastStore((s) => s.addToast);
-    const { signMessageAsync } = useSignMessage();
+    // const { signMessageAsync } = useSignMessage();
 
     const [amount, setAmount] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<string>('');
     const [lastUpdatedField, setLastUpdatedField] = useState<Field | undefined>();
 
-    const { direction, setDirection, getTradeDetails } = useSwap();
+    const { direction, setDirection, getTradeDetails, checkAndRequestApproval, executeSwap } = useSwap();
 
-    const lastDirection = useRef<string>('input');
+    const notEnoughBalance = useMemo(() => {
+        if (direction === 'input') {
+            if (!accountBalance?.value) return false;
+            const factor = 10n ** BigInt(accountBalance.decimals);
+            return Number(accountBalance.value) < Number(amount || 0) * Number(factor);
+        }
+        return false;
+    }, [accountBalance?.decimals, accountBalance?.value, amount, direction]);
 
-    useEffect(() => {
-        const tradeDetails = getTradeDetails('1000000000000000000');
+    const [networkFee, setNetworkFee] = useState<string>('');
+    const [slippage, setSlippage] = useState<string>('');
+    const [priceImpact, setPriceImpact] = useState<string>('');
+    const shouldCalculate = useRef(false);
+
+    const calcRef = useRef<NodeJS.Timeout | null>(null);
+    const calcAmounts = useCallback(() => {
+        const value = direction === 'input' ? Number(amount || 0) : Number(targetAmount || 0);
+        const factor = 10n ** BigInt(accountBalance?.decimals || 0);
+        const tradeDetails = getTradeDetails((value * Number(factor)).toString());
         tradeDetails.then((details) => {
             const { trade, route } = details;
             if (!trade || !route) {
@@ -83,24 +87,49 @@ export const Swap = () => {
             const invertedMidPrice = route.midPrice.invert().toSignificant(6);
             // const executionPrice = trade.executionPrice.toSignificant(6);
 
-            if (direction !== lastDirection.current) {
-                lastDirection.current = direction;
-                return;
-            }
+            const networkFee = trade.priceImpact.toSignificant(6);
+            setNetworkFee(networkFee);
 
-            const invertedDirection = direction === 'input';
+            const slippage = trade.priceImpact.toSignificant(6);
+            setSlippage(slippage);
+
+            const priceImpact = trade.priceImpact.toSignificant(6);
+            setPriceImpact(priceImpact);
+
+            if (!shouldCalculate.current) return;
+
+            const invertedDirection = false;
             const amountConversionRate = invertedDirection ? invertedMidPrice : midPrice;
             const targetAmountConversionRate = invertedDirection ? midPrice : invertedMidPrice;
 
             if (lastUpdatedField === Field.AMOUNT) {
-                const newTargetAmount = Number(amount) * Number(targetAmountConversionRate);
+                const newTargetAmount = Number(amount || 1) * Number(targetAmountConversionRate || 0);
                 setTargetAmount(newTargetAmount.toString());
             } else if (lastUpdatedField === Field.TARGET) {
-                const newAmount = Number(targetAmount) * Number(amountConversionRate);
+                const newAmount = Number(targetAmount || 1) * Number(amountConversionRate || 0);
                 setAmount(newAmount.toString());
             }
+
+            shouldCalculate.current = false;
         });
-    }, [amount, direction, getTradeDetails, lastUpdatedField, targetAmount]);
+    }, [accountBalance?.decimals, amount, direction, getTradeDetails, lastUpdatedField, targetAmount]);
+
+    // Debounce time is 500ms
+    const debounceCalc = useCallback(
+        () => {
+            if (calcRef.current) {
+                clearTimeout(calcRef.current);
+            }
+            calcRef.current = setTimeout(() => {
+                calcAmounts();
+            }, 500);
+        }, // Debounce time is 500ms
+        [calcAmounts]
+    );
+
+    useEffect(() => {
+        debounceCalc();
+    }, [accountBalance?.decimals, amount, debounceCalc, direction, getTradeDetails, lastUpdatedField, targetAmount]);
 
     const handleNumberInput = (value: string, setter: (value: string) => void, field: Field) => {
         // Allow empty input
@@ -119,40 +148,75 @@ export const Swap = () => {
 
         setter(value);
         setLastUpdatedField(field);
+        shouldCalculate.current = true;
+    };
+
+    const handleConfirm = () => {
+        const value = direction === 'input' ? Number(amount || 0) : Number(targetAmount || 0);
+        const factor = 10n ** BigInt(accountBalance?.decimals || 0);
+        const bigIntValue = BigInt(value * Number(factor));
+        checkAndRequestApproval(bigIntValue.toString()).then((approved) => {
+            if (!approved) return;
+            executeSwap(bigIntValue.toString()).then((hash) => {
+                if (!hash) return;
+                addToast({
+                    title: 'Success',
+                    text: 'Swap successful',
+                    type: 'success',
+                });
+            });
+        });
+        // setSignMessageModalOpen(true);
+        // signMessageAsync({ message: 'Hello sign this test message' })
+        //     .then(() => setWalletConnectModalStep(SwapStep.Progress))
+        //     .catch(() => {
+        //         addToast({
+        //             title: 'Error',
+        //             text: 'Something went wrong',
+        //             type: 'error',
+        //         });
+        //         setWalletConnectModalStep(SwapStep.ConnectWallet);
+        //     });
     };
 
     const items = [
         {
             label: 'Network fee',
-            value: '$0.06',
-            valueRight: 'Fees 0.02%',
-            helpText: 'Fees 0.02%',
+            value: networkFee,
+            valueRight: `${networkFee} XTM`,
+            helpText: `${networkFee} XTM`,
         },
         {
             label: 'Network Cost',
-            value: '0x12345..12789',
-            helpText: 'Fees 0.02%',
+            value: priceImpact,
+            helpText: `${priceImpact} XTM`,
         },
         {
             label: 'You will receive XTM in (Tari wallet address)',
-            value: 'FA12345..12789',
+            value: slippage,
             helpText: 'You will receive XTM in (Tari wallet address)',
         },
         {
             label: 'Slippage',
-            value: '0.50%',
+            value: slippage,
             helpText: 'You will receive XTM in (Tari wallet address)',
         },
         {
             label: 'Price Impact',
-            value: '0.08%',
+            value: priceImpact,
             helpText: 'You will receive XTM in (Tari wallet address)',
         },
     ];
 
-    if (signMessageModalOpen) {
-        return <SignMessage />;
-    }
+    const accountBalanceValue = useMemo(() => {
+        if (!accountBalance?.value) return 0;
+        const factor = 10n ** BigInt(accountBalance.decimals);
+        return (Number(accountBalance.value) / Number(factor)).toString();
+    }, [accountBalance]);
+
+    // if (signMessageModalOpen) {
+    //     return <SignMessage />;
+    // }
 
     return (
         <>
@@ -174,6 +238,7 @@ export const Swap = () => {
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
+                        error={notEnoughBalance && direction === 'input'}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => handleNumberInput(e.target.value, setAmount, Field.AMOUNT)}
@@ -185,6 +250,9 @@ export const Swap = () => {
                         <span>{accountBalance?.symbol}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
+                <span>
+                    {accountBalanceValue} {accountBalance?.symbol}
+                </span>
             </SwapOption>
             <SwapDirection>
                 <SwapDirectionWrapper

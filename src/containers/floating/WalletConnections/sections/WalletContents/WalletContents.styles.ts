@@ -5,7 +5,7 @@ export const ConnectedWalletWrapper = styled.div`
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 10px 15px 10px 20px;
+    padding: 10px 15px 10px 12px;
     border-radius: 60px;
     background: #ffffff40;
 `;
@@ -15,6 +15,10 @@ export const StatusWrapper = styled.div`
     align-items: center;
     justify-content: center;
     gap: 8px;
+    div {
+        font-weight: 600;
+        color: ${({ theme }) => (theme.mode === 'dark' ? '#ffff' : '#000000')} !important;
+    }
 `;
 
 const pulse = keyframes`

@@ -93,7 +93,7 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-export const SwapAmountInput = styled.input`
+export const SwapAmountInput = styled.input<{ error?: boolean }>`
     color: black;
     font-family: Alliance No.1;
     font-weight: 700;
@@ -104,6 +104,11 @@ export const SwapAmountInput = styled.input`
     &:focus {
         outline: none;
     }
+    ${({ error }) =>
+        error &&
+        css`
+            border: 1px solid #ff0000;
+        `}
 `;
 
 export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' }>`
@@ -119,7 +124,7 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
         transition: transform 0.2s ease-in-out;
     }
     ${({ $direction }) =>
-        $direction === 'input' &&
+        $direction !== 'input' &&
         css`
             svg {
                 transform: rotate(180deg);
