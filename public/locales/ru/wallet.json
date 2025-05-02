@@ -2,11 +2,11 @@
   "confirmation-message": "Ваша транзакция отправлена!\nОна появится в Вашей истории после добычи нескольких блоков.",
   "empty-tx": "Транзакции не найдены",
   "history": {
+    "available-balance": "Available:",
     "label-rewards": "Мои награды",
+    "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
-    "view-details": "View details",
-    "available-balance": "Available Balance",
-    "sync-with-phone": "Sync with Phone"
+    "view-details": "View details"
   },
   "my_tari": "Мой Tari",
   "new": "Новый",
@@ -55,6 +55,7 @@
     "status": "Статус",
     "tari-txn": "Tari Txn",
     "total-fees": "Общая комиссия",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Описание транзакции",
     "transaction-id": "ID транзакции"
   },
