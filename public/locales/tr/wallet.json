@@ -2,11 +2,11 @@
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
+    "available-balance": "Available:",
     "label-rewards": "Ödüllerim",
+    "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
-    "view-details": "View details",
-    "available-balance": "Available Balance",
-    "sync-with-phone": "Sync with Phone"
+    "view-details": "View details"
   },
   "my_tari": "Benim Tari",
   "new": "Yeni",
@@ -55,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },

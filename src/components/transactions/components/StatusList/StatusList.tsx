@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { Wrapper, Entry, Label, Value, ValueRight, ExternalLink } from './styles';
 import { SendStatus } from '../../send/SendModal';
 import ExternalLinkIcon from './icons/ExternalLinkIcon';
-
+import { open } from '@tauri-apps/plugin-shell';
 export interface StatusListEntry {
     label: string;
     value: ReactNode;
@@ -28,7 +28,7 @@ export function StatusList({ entries }: Props) {
                             {!externalLink ? (
                                 value
                             ) : (
-                                <ExternalLink href={externalLink}>
+                                <ExternalLink onClick={() => open(externalLink)}>
                                     {value} <ExternalLinkIcon />
                                 </ExternalLink>
                             )}
