@@ -40,6 +40,8 @@ export const Cover = styled(m.div)<{ $noClose?: boolean }>`
 
 export const BoxWrapper = styled(m.div)`
     width: 100%;
+    max-height: 100%;
+    overflow-y: auto;
     max-width: 481px;
     display: flex;
     flex-direction: column;
@@ -49,7 +51,6 @@ export const BoxWrapper = styled(m.div)`
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
-
     position: relative;
     z-index: 1;
     background-color: ${({ theme }) => theme.palette.background.splash};

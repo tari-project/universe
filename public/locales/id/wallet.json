@@ -2,11 +2,11 @@
   "confirmation-message": "Transaksi Anda telah dikirim!\nIni akan muncul dalam riwayat Anda setelah menambang beberapa blok.",
   "empty-tx": "Tidak ada transaksi ditemukan",
   "history": {
+    "available-balance": "Available:",
     "label-rewards": "Hadiah saya",
+    "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
-    "view-details": "View details",
-    "available-balance": "Available Balance",
-    "sync-with-phone": "Sync with Phone"
+    "view-details": "View details"
   },
   "my_tari": "Tari Saya",
   "new": "Baru",
@@ -55,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },

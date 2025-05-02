@@ -38,5 +38,6 @@
   "utilization": "Utilisation",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé."
+  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
+  "xtm": "tXTM"
 }
