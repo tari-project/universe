@@ -68,7 +68,7 @@ export default function SendModal({ section, setSection }: SendModalProps) {
                     destination: data.address,
                     paymentId: data.message,
                 };
-                invoke('send_one_sided_to_stealth_address', {
+                await invoke('send_one_sided_to_stealth_address', {
                     ...payload,
                     amount: payload.amount.toString(),
                 });
