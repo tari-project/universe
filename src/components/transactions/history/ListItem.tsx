@@ -2,7 +2,7 @@ import { memo, useRef, useState } from 'react';
 import { AnimatePresence, useInView } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
-import { getItemTitle, getItemType } from './helpers.ts';
+import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
 import ItemExpand from './ExpandedItem';
 import ItemHover from './HoveredItem';
 import {
@@ -17,7 +17,7 @@ import {
     BlockInfoWrapper,
     Content,
 } from './ListItem.styles.ts';
-import { useConfigUIStore, useUIStore } from '@app/store';
+import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
@@ -57,8 +57,6 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
 const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false }: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
-    const appLanguage = useConfigUIStore((s) => s.application_language);
-    const systemLang = useConfigUIStore((s) => s.should_always_use_system_language);
 
     const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);
@@ -75,13 +73,7 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
     const earningsFormatted = hideWalletBalance
         ? `***`
         : formatNumber(item.amount, FormatPreset.TXTM_COMPACT).toLowerCase();
-    const itemTime = new Date(item.timestamp * 1000)?.toLocaleString(systemLang ? undefined : appLanguage, {
-        month: 'short',
-        day: '2-digit',
-        hourCycle: 'h23',
-        hour: 'numeric',
-        minute: 'numeric',
-    });
+    const itemTime = formatTimeStamp(item.timestamp);
 
     function handleTxClick() {
         if (import.meta.env.MODE !== 'development' || isMined) return;

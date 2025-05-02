@@ -5,6 +5,10 @@
   "new-tari-version-available": "Versi baru dari Tari Universe tersedia!",
   "no": "Tidak",
   "setting-up": "Menyiapkan mesin kebenaran Tari...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
   "title": {
     "application-started": "Aplikasi dimulai",

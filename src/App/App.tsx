@@ -34,7 +34,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
 
         if (showMainView) {
             return (
-                <AppContentContainer key="main" initial="dashboardInitial">
+                <AppContentContainer key="main" initial="visible">
                     <MainView />
                 </AppContentContainer>
             );

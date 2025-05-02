@@ -41,7 +41,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let platform = get_platform_name();
         let cdn_tor_bundle_url = format!(
-            "https://cdn-universe.tari.com/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
+            "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
         let mut cdn_responded = false;

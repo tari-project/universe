@@ -20,7 +20,8 @@ const ItemHover = memo(function ItemHover({ item, button }: Props) {
     const { t } = useTranslation('sidebar', { useSuspense: false });
     const sharingEnabled = useConfigUIStore((s) => s.sharing_enabled);
     const airdropTokens = useAirdropStore((s) => s.airdropTokens);
-    const { setShowModal, setItemData } = useShareRewardStore((s) => s);
+    const setShowModal = useShareRewardStore((s) => s.setShowModal);
+    const setItemData = useShareRewardStore((s) => s.setItemData);
 
     const gemsValue = GIFT_GEMS.toLocaleString();
 

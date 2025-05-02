@@ -1077,18 +1077,14 @@ fn main() {
         node_manager.clone(),
     );
 
-    let app_id = app_config_raw.anon_id().to_string();
-
     let websocket_manager = Arc::new(RwLock::new(WebsocketManager::new(
         app_in_memory_config.clone(),
         websocket_message_rx,
         websocket_manager_status_tx.clone(),
         websocket_manager_status_rx.clone(),
-        app_id.clone(),
     )));
 
     let websocket_events_manager = WebsocketEventsManager::new(
-        app_id.clone(),
         cpu_miner_status_watch_rx.clone(),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),

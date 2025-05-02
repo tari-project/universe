@@ -2,11 +2,11 @@
   "confirmation-message": "Jou transaksie is ingedien!\nDit sal in jou geskiedenis verskyn nadat \"n paar blokke gemyn is.",
   "empty-tx": "Geen transaksies gevind nie",
   "history": {
+    "available-balance": "Available",
     "label-rewards": "My belonings",
+    "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
-    "view-details": "View details",
-    "available-balance": "Available Balance",
-    "sync-with-phone": "Sync with Phone"
+    "view-details": "View details"
   },
   "my_tari": "My Tari",
   "new": "Nuut",
@@ -55,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },

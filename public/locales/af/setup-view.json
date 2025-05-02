@@ -5,6 +5,10 @@
   "new-tari-version-available": "'n Nuwe weergawe van Tari Universe is beskikbaar",
   "no": "Nee",
   "setting-up": "Stel Tari waarheidsmasjien op...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Hierdie mag 'n paar minute neem",
   "title": {
     "application-started": "Toepassings het begin",
