@@ -2,7 +2,7 @@
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
-    "available-balance": "Available:",
+    "available-balance": "Available",
     "label-rewards": "Mes récompenses",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
