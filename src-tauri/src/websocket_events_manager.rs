@@ -111,7 +111,7 @@ impl WebsocketEventsManager {
                 return Ok(());
             }
 
-            tokio::spawn(async move {
+            TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
                 loop {
                     let jwt_token = ConfigCore::content()
                         .await
