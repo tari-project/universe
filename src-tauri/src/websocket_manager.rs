@@ -106,7 +106,6 @@ pub struct WebsocketManager {
     status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
     status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
-    app_id: String,
 }
 
 impl WebsocketManager {
@@ -115,7 +114,6 @@ impl WebsocketManager {
         websocket_manager_rx: mpsc::Receiver<WebsocketMessage>,
         status_update_channel_tx: watch::Sender<WebsocketManagerStatusMessage>,
         status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage>,
-        app_id: String,
     ) -> Self {
         let (close_channel_tx, _) = tokio::sync::broadcast::channel::<bool>(1);
         WebsocketManager {
@@ -125,7 +123,6 @@ impl WebsocketManager {
             status_update_channel_tx,
             status_update_channel_rx,
             close_channel_tx,
-            app_id,
         }
     }
 
@@ -154,7 +151,6 @@ impl WebsocketManager {
     }
 
     async fn connect_to_url(
-        app_id: String,
         in_memory_config: &Arc<RwLock<AppInMemoryConfig>>,
     ) -> Result<WebSocketStream<MaybeTlsStream<TcpStream>>, anyhow::Error> {
         info!(target:LOG_TARGET,"connecting to websocket...");
@@ -165,6 +161,8 @@ impl WebsocketManager {
         } else {
             adjusted_ws_url = config_read.airdrop_api_url.clone().replace("http", "ws");
         }
+
+        let app_id = ConfigCore::content().await.anon_id().clone();
         adjusted_ws_url.push_str(&format!("/v2/ws?app_id={}", encode(&app_id)));
 
         let token = ConfigCore::content()
@@ -234,7 +232,6 @@ impl WebsocketManager {
         let mut status_update_channel_rx: watch::Receiver<WebsocketManagerStatusMessage> =
             self.status_update_channel_rx.clone();
         let close_channel_tx = self.close_channel_tx.clone();
-        let app_id = self.app_id.clone();
         //we don't want to receive previous messages
         status_update_channel_rx.mark_unchanged();
 
@@ -242,7 +239,7 @@ impl WebsocketManager {
             loop {
                 tokio::select! {
                     _ = async {
-                        let connection_res = WebsocketManager::connect_to_url(app_id.clone(), &config_cloned).await.inspect_err(|e|{
+                        let connection_res = WebsocketManager::connect_to_url(&config_cloned).await.inspect_err(|e|{
                             error!(target:LOG_TARGET,"failed to connect to websocket due to {}",e.to_string())});
 
                         if let Ok(connection) = connection_res {
@@ -342,7 +339,7 @@ async fn sender_task(
                     .inspect_err(|e| {
                         error!(target:LOG_TARGET,"Failed to send websocket message: {}", e);
                     })?;
-                // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
+                 // info!(target:LOG_TARGET,"websocket event sent to airdrop {:?}", message_as_json);
             },
             _=wait_for_close_signal(close_channel_tx.clone().subscribe())=>{
                 info!(target:LOG_TARGET, "exiting websocket_manager sender task");

@@ -2,11 +2,11 @@
   "confirmation-message": "Twoja transakcja została przesłana!\nPojawi się w historii po wykopaniu kilku bloków.",
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
+    "available-balance": "Available",
     "label-rewards": "Moje nagrody",
+    "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
-    "view-details": "View details",
-    "available-balance": "Available Balance",
-    "sync-with-phone": "Sync with Phone"
+    "view-details": "View details"
   },
   "my_tari": "Moje Tari",
   "new": "Nowy",
@@ -55,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },
