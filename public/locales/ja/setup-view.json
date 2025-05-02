@@ -5,6 +5,10 @@
   "new-tari-version-available": "Tari Universeの新しいバージョンが利用可能です！",
   "no": "いいえ",
   "setting-up": "Tariトゥルースマシンを設定中...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "数分かかる場合があります",
   "title": {
     "application-started": "アプリケーションが開始されました",
