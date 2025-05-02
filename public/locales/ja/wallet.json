@@ -2,7 +2,7 @@
   "confirmation-message": "トランザクションが送信されました！\nいくつかのブロックをマイニングした後、履歴に表示されます。",
   "empty-tx": "トランザクションが見つかりません",
   "history": {
-    "available-balance": "Available:",
+    "available-balance": "Available",
     "label-rewards": "私の報酬",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",

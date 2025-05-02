@@ -2,7 +2,7 @@
   "confirmation-message": "İşleminiz gönderildi!\nBirkaç blok madenciliğinden sonra geçmişinizde görünecektir.",
   "empty-tx": "İşlem bulunamadı",
   "history": {
-    "available-balance": "Available:",
+    "available-balance": "Available",
     "label-rewards": "Ödüllerim",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
