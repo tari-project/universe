@@ -38,6 +38,7 @@ export const ContentContainer = styled.div`
     display: flex;
     flex-direction: column;
     position: relative;
+    overflow: hidden;
 `;
 
 export const SectionWrapper = styled.div`
