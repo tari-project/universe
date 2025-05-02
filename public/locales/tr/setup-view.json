@@ -5,6 +5,10 @@
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
   "no": "Hayır",
   "setting-up": "Tari doğruluk makinesi kuruluyor...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {
     "application-started": "Uygulamalar başladı",
