@@ -1,9 +1,10 @@
-import { AdminShow, CONNECTION_STATUS, DialogType, useUIStore } from '@app/store/useUIStore.ts';
+import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, useUIStore } from '@app/store/useUIStore.ts';
 import { setAnimationProperties } from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
+import { SB_WIDTH } from '@app/theme/styles.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
@@ -20,7 +21,7 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     setVisualMode(false);
     useUIStore.setState({ isWebglNotSupported });
 };
-export const setAdminShow = (adminShow: AdminShow) => useUIStore.setState({ adminShow });
+
 export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
     if (connectionStatus === 'InProgress') {
         setIsReconnecting(true);
@@ -38,7 +39,11 @@ export const setIsReconnecting = (isReconnecting: boolean) => useUIStore.setStat
 
 export const toggleHideWalletBalance = () =>
     useUIStore.setState((current) => ({ hideWalletBalance: !current.hideWalletBalance }));
-export const setSidebarOpen = (sidebarOpen: boolean) => useUIStore.setState({ sidebarOpen });
+export const setSidebarOpen = (sidebarOpen: boolean) =>
+    useUIStore.setState({
+        sidebarOpen,
+        towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
+    });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { sidebarTowerOffset, TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
+import { TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,
@@ -25,6 +25,7 @@ function VisualMode() {
     const setupComplete = useSetupStore((s) => s.appUnlocked);
     const visualModeToggleLoading = useConfigUIStore((s) => s.visualModeToggleLoading);
     const isWebglNotSupported = useUIStore((s) => s.isWebglNotSupported);
+    const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
     const { t } = useTranslation('settings', { useSuspense: false });
 
     const handleDisable = useCallback(() => {
@@ -42,7 +43,7 @@ function VisualMode() {
             });
     }, []);
     const handleEnable = useCallback(() => {
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset })
+        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
             .then(() => {
                 setVisualMode(true);
                 if (setupComplete) {
@@ -53,7 +54,7 @@ function VisualMode() {
                 console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
                 setVisualMode(false);
             });
-    }, [setupComplete]);
+    }, [setupComplete, towerSidebarOffset]);
 
     const handleSwitch = useCallback(() => {
         if (visualMode) {
