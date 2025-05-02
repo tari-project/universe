@@ -292,7 +292,7 @@ export const setVisualMode = (enabled: boolean) => {
 
             visualModeToggleTimeout = setTimeout(() => {
                 useConfigUIStore.setState({ visualModeToggleLoading: false });
-            }, 1000 * 3);
+            }, 1000 * 4);
         });
 };
 export const setNodeType = async (nodeType: NodeType) => {
