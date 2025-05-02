@@ -20,11 +20,11 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 use std::time::Duration;
-use std::collections::HashMap;
 
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
@@ -264,9 +264,14 @@ impl ProcessAdapter for TorAdapter {
         // Force tor to use bundled libevent.so on linux
         let mut tor_bundle_path = binary_version_path.clone();
         tor_bundle_path.pop();
-        let envs: Option<HashMap<String, String>> = Some([
-            ("LD_PRELOAD".to_string(), format!("{}/libevent-2.1.so.7", tor_bundle_path.display())), 
-        ].into_iter().collect());
+        let envs: Option<HashMap<String, String>> = Some(
+            [(
+                "LD_PRELOAD".to_string(),
+                format!("{}/libevent-2.1.so.7", tor_bundle_path.display()),
+            )]
+            .into_iter()
+            .collect(),
+        );
 
         if self.config.use_bridges {
             // Used by tor bridges
