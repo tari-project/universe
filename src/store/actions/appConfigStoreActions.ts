@@ -1,3 +1,5 @@
+let visualModeToggleTimeout: NodeJS.Timeout | undefined;
+
 import { invoke } from '@tauri-apps/api/core';
 import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
@@ -276,12 +278,22 @@ export const setUseTor = async (useTor: boolean) => {
     });
 };
 export const setVisualMode = (enabled: boolean) => {
-    useConfigUIStore.setState({ visual_mode: enabled });
-    invoke('set_visual_mode', { enabled }).catch((e) => {
-        console.error('Could not set visual mode', e);
-        setError('Could not change visual mode');
-        useConfigUIStore.setState({ visual_mode: !enabled });
-    });
+    useConfigUIStore.setState({ visual_mode: enabled, visualModeToggleLoading: true });
+    invoke('set_visual_mode', { enabled })
+        .catch((e) => {
+            console.error('Could not set visual mode', e);
+            setError('Could not change visual mode');
+            useConfigUIStore.setState({ visual_mode: !enabled, visualModeToggleLoading: false });
+        })
+        .finally(() => {
+            if (visualModeToggleTimeout) {
+                clearTimeout(visualModeToggleTimeout);
+            }
+
+            visualModeToggleTimeout = setTimeout(() => {
+                useConfigUIStore.setState({ visualModeToggleLoading: false });
+            }, 1000 * 3);
+        });
 };
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = useConfigCoreStore.getState().node_type;

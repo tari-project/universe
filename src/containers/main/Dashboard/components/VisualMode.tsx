@@ -57,12 +57,13 @@ function VisualMode() {
     }, [setupComplete, towerSidebarOffset]);
 
     const handleSwitch = useCallback(() => {
+        if (visualModeToggleLoading) return;
         if (visualMode) {
             handleDisable();
         } else {
             handleEnable();
         }
-    }, [handleDisable, handleEnable, visualMode]);
+    }, [handleDisable, handleEnable, visualMode, visualModeToggleLoading]);
 
     return (
         <SettingsGroupWrapper>
@@ -75,9 +76,10 @@ function VisualMode() {
                 </SettingsGroupContent>
                 <SettingsGroupAction style={{ alignItems: 'center' }}>
                     <ToggleSwitch
-                        disabled={visualModeToggleLoading || isWebglNotSupported}
+                        disabled={isWebglNotSupported}
                         checked={visualMode}
-                        onChange={() => handleSwitch()}
+                        onChange={handleSwitch}
+                        isLoading={visualModeToggleLoading}
                     />
                 </SettingsGroupAction>
             </SettingsGroup>
