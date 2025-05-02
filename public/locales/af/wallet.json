@@ -2,7 +2,7 @@
   "confirmation-message": "Jou transaksie is ingedien!\nDit sal in jou geskiedenis verskyn nadat \"n paar blokke gemyn is.",
   "empty-tx": "Geen transaksies gevind nie",
   "history": {
-    "available-balance": "Available:",
+    "available-balance": "Available",
     "label-rewards": "My belonings",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
