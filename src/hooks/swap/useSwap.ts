@@ -53,6 +53,11 @@ export const DAI: Partial<Record<ChainId, Token>> = {
     ),
 };
 
+export const USDC: Partial<Record<ChainId, Token>> = {
+    [ChainId.MAINNET]: new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD Coin'),
+    [ChainId.SEPOLIA]: new Token(ChainId.SEPOLIA, '0x73d219B3881E481394DA6B5008A081d623992200', 6, 'USDC', 'USD Coin'),
+};
+
 // Define your token (XTM) per chain - USING DAI AS A PLACEHOLDER
 // Replace this with your actual XTM token details and addresses
 export const XTM: Partial<Record<ChainId, Token>> = {
@@ -546,7 +551,7 @@ export const useSwap = () => {
                 try {
                     const methodArgs = [amountIn, amountOutMin, path, to, deadline];
 
-                    const methodName = 'swapExactTokensForTokens';
+                    const methodName = direction === 'output' ? 'swapExactTokensForTokens' : 'swapTokensForExactTokens';
 
                     // Estimate gas using the contract instance connected to the signer
                     const estimatedGasLimit = await routerContract[methodName].estimateGas(...methodArgs, {});

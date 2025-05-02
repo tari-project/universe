@@ -28,7 +28,6 @@ import PortalLogo from '../../icons/PortalLogo.png';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import { useSwap } from '@app/hooks/swap/useSwap';
-import { WETH9 } from '@uniswap/sdk-core';
 
 enum Field {
     AMOUNT = 'amount',
@@ -38,7 +37,7 @@ enum Field {
 export const Swap = () => {
     // const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
     const dataAcc = useAccount();
-    const { data: accountBalance } = useBalance({ address: WETH9[dataAcc.chain?.id ?? 1].address as `0x${string}` });
+    const { data: accountBalance } = useBalance({ address: dataAcc.address });
     const activeChainIcon = useMemo(() => {
         if (!accountBalance?.symbol) return null;
         return getIcon({
@@ -46,8 +45,6 @@ export const Swap = () => {
             width: 10,
         });
     }, [accountBalance?.symbol]);
-
-    console.log(accountBalance);
 
     const addToast = useToastStore((s) => s.addToast);
     // const { signMessageAsync } = useSignMessage();
