@@ -261,11 +261,11 @@ impl ProcessAdapter for TorAdapter {
             format!("notice file {}", log_dir_string),
         ];
 
+        // Force tor to use bundled libevent.so on linux
+        let mut tor_bundle_path = binary_version_path.clone();
+        tor_bundle_path.pop();
         let envs: Option<HashMap<String, String>> = Some([
-            // rust is hard :/
-            // getting borrowed after move error & should only be declared on linux
-            // ("LD_PRELOAD".to_string(), format!("{}/libevent-2.1.so.7", working_dir_string.clone())), 
-            ("LD_PRELOAD".to_string(), "/home/test/.cache/com.tari.universe.alpha/binaries/tor-binaries/esmeralda/14.5.1/tor/libevent-2.1.so.7".to_string()),
+            ("LD_PRELOAD".to_string(), format!("{}/libevent-2.1.so.7", tor_bundle_path.display())), 
         ].into_iter().collect());
 
         if self.config.use_bridges {
