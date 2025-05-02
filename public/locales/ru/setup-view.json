@@ -5,6 +5,10 @@
   "new-tari-version-available": "Доступна новая версия Tari Universe!",
   "no": "Нет",
   "setting-up": "Настройка машины правды Tari...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Это может занять несколько минут",
   "title": {
     "application-started": "Приложения запущены",

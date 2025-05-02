@@ -28,7 +28,6 @@ import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import { useSwap } from '@app/hooks/swap/useSwap';
-import useDebouncedValue from '@app/hooks/helpers/useDebounce';
 
 enum Field {
     AMOUNT = 'amount',
