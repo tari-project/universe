@@ -38,5 +38,6 @@
   "utilization": "Pemanfaatan",
   "version": "Versi",
   "versions": "Versi",
-  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan."
+  "webgl-not-supported": "WebGL tidak didukung. Mode visual dinonaktifkan.",
+  "xtm": "tXTM"
 }

@@ -78,4 +78,5 @@ export const ExternalLink = styled.a`
     display: flex;
     align-items: center;
     gap: 4px;
+    cursor: pointer;
 `;

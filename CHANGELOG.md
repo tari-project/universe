@@ -1,3 +1,19 @@
+🚀 TARI UNIVERSE v0.9.914: Echoes of Victory
+
+_May 2, 2025_
+
+💜 Hey Fam,
+Mainnet is almost upon us and contributors are working furiously to make sure Tari Universe is ready for prime time. Introducing Echoes of Victory, the possibly, maybe, potentially final release of Tari Universe pre-mainnet. Tari mainnet is coming Soon™ (May 6th soon!)
+
+✨ WHAT’S NEW
+- 🧾 Enhanced transaction details modal
+- 🛜 TOR download fixes
+- 🍎 MacOS white screen on startup fix
+- 🎛️ General UX improvements
+- 🧱 Minor stability fixes
+
+--
+
 🔥 TARI UNIVERSE v0.9.913: The Great Ascent (Testnet Reset!)
 
 _May 1, 2025_

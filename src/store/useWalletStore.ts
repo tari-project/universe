@@ -1,6 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
-import { refreshTransactions } from './actions/walletStoreActions.ts';
+import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 export enum SwapStep {
@@ -85,6 +85,10 @@ export const addPendingTransaction = (payload: { amount: number; destination: st
     useWalletStore.setState((state) => ({
         pending_transactions: [transaction, ...state.pending_transactions],
     }));
+    const balance = useWalletStore.getState().balance;
+    if (balance) {
+        setWalletBalance(balance);
+    }
 };
 
 export const updateWalletScanningProgress = (payload: {

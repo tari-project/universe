@@ -38,5 +38,6 @@
   "utilization": "Использование",
   "version": "Версия",
   "versions": "Версии",
-  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен."
+  "webgl-not-supported": "WebGL не поддерживается. Визуальный режим отключен.",
+  "xtm": "tXTM"
 }
