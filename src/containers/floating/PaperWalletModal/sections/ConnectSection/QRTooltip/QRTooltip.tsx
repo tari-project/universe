@@ -1,7 +1,7 @@
 import { AnimatePresence } from 'motion/react';
 import { Image, Menu, Text, Trigger, Wrapper } from './styles';
 import { useState } from 'react';
-import { autoUpdate, flip, offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { autoUpdate, flip, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 interface Props {
     trigger: JSX.Element;
@@ -17,7 +17,6 @@ export default function QRTooltip({ trigger, text, codeImage }: Props) {
         onOpenChange: setExpanded,
         placement: 'bottom',
         middleware: [
-            offset(10),
             flip({
                 fallbackPlacements: ['top', 'bottom'],
             }),
