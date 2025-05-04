@@ -1,5 +1,6 @@
 import * as m from 'motion/react-m';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { Placement } from '@floating-ui/react';
 
 export const Wrapper = styled('div')`
     position: relative;
@@ -9,7 +10,7 @@ export const Trigger = styled('div')`
     cursor: pointer;
 `;
 
-export const Menu = styled(m.div)`
+export const Menu = styled(m.div)<{ $placement: Placement }>`
     z-index: 2;
     position: absolute;
     top: 100%;
@@ -31,6 +32,15 @@ export const Menu = styled(m.div)`
     box-shadow: 0px 2.915px 24.782px 0px rgba(0, 0, 0, 0.25);
 
     width: 190px;
+
+    ${({ $placement }) =>
+        $placement === 'top' &&
+        css`
+            top: auto;
+            bottom: 100%;
+            margin-top: 0;
+            margin-bottom: 7px;
+        `}
 `;
 
 export const Image = styled('img')`
