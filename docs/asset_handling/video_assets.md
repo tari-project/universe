@@ -1,4 +1,4 @@
-# Video assets with transparency | Convert from `.webm`
+# Video assets with transparency | Convert from `.webm` (macOS Guide)
 
 ---
 
@@ -29,7 +29,21 @@ Safari supports `.webm`, but **not** with alpha.
 
 ### Step 1 detailed:
 
-a) Convert the video. 
+- set up `ffmpeg`
+  d - because you need the `libvpx`,`libx265`, and `libkvazaar` libs, you can't just install and use the pre-compiled binaries from `ffmpeg`, so you need to [compile it yourself](https://trac.ffmpeg.org/wiki/CompilationGuide/macOS#CompilingFFmpegyourself) - TL;DR:
+
+    ```bash
+    brew install automake fdk-aac git lame libass libtool libvorbis libvpx \
+        opus sdl shtool texi2html theora wget x264 x265 xvid nasm
+    ```
+
+    and
+
+    ```bash
+    brew install libvpx libx265 libkvazaar
+    ```
+
+- go to 
 
 ### Step 2 detailed:
 
@@ -52,3 +66,4 @@ const videoSrc = `/assets/video/coin_loader.${isMac ? 'mov' : 'webm'}`;
 - https://developer.apple.com/documentation/safari-release-notes/safari-17_4-release-notes
 - https://discussions.apple.com/thread/253025458?sortBy=rank
 - https://forum.babylonjs.com/t/transparent-video/47736/2
+- https://trac.ffmpeg.org/wiki/CompilationGuide/macOS#CompilingFFmpegyourself
