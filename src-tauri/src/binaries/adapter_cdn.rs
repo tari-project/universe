@@ -198,7 +198,7 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = r"macos-aarch64.zip";
+            name_suffix = r"macos-arm64.zip";
         }
         if cfg!(target_os = "linux") {
             name_suffix = r"linux-x86_64.zip";
