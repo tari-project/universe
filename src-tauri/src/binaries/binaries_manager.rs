@@ -41,8 +41,8 @@ use log::{debug, error, warn};
 pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 
 #[derive(Deserialize, Serialize, Default)]
-struct BinaryVersionsJsonContent {
-    binaries: HashMap<String, String>,
+pub struct BinaryVersionsJsonContent {
+    pub binaries: HashMap<String, String>,
 }
 pub(crate) struct BinaryManager {
     binary_name: String,
