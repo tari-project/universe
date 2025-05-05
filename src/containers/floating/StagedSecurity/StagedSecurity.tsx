@@ -65,7 +65,7 @@ const StagedSecurity = memo(function StagedSecurity() {
         <>
             <AnimatePresence>
                 {showModal && (
-                    <GreenModal onClose={handleClose} boxWidth={boxWidth} padding={20}>
+                    <GreenModal onClose={handleClose} boxWidth={boxWidth}>
                         <LockImage src={lockImage} alt="Lock Icon" />
 
                         {section == 'ProtectIntro' ? (

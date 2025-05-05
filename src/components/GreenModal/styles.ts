@@ -34,29 +34,29 @@ export const Cover = styled(m.div)`
 
 export const BoxWrapper = styled(m.div)<{ $boxWidth?: number; $padding?: number }>`
     width: 100%;
-
     flex-shrink: 0;
-
     border-radius: 35px;
     background: linear-gradient(180deg, #c9eb00 32.79%, #fff 92.04%);
     box-shadow: 28px 28px 77px 0 rgba(0, 0, 0, 0.1);
-
     position: relative;
     z-index: 1;
-
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    gap: 20px;
+    gap: 40px;
     max-width: 635px;
+    padding: 50px;
+
+    @media (max-height: 900px) {
+        gap: 20px;
+        padding: 20px;
+    }
 
     ${({ $boxWidth }) =>
         $boxWidth &&
         css`
             max-width: ${$boxWidth}px;
         `}
-
-    padding: 40px;
 
     ${({ $padding }) =>
         $padding &&

@@ -7,7 +7,7 @@ export const LockImage = styled('img')`
     transform: translateX(-50%);
     pointer-events: none;
     max-width: 100%;
-    width: 200px;
+    width: 190px;
 
     @media (max-height: 900px) {
         width: 110px;
