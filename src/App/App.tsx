@@ -70,8 +70,8 @@ export default function App() {
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                <canvas id={TOWER_CANVAS_ID} />
             </LazyMotion>
-            <canvas id={TOWER_CANVAS_ID} />
         </ThemeProvider>
     );
 }
