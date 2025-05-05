@@ -1,16 +1,16 @@
+import { useEffect, useRef, useState, memo } from 'react';
 import { FaPlay } from 'react-icons/fa6';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { BodyCopy, DashboardBanner, FlexSection, TagLine, VideoPreview } from './styles.ts';
 import { setDialogToShow, useConfigUIStore } from '@app/store';
 import { VideoModal } from '@app/components/VideoModal/VideoModal.tsx';
-import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { setWarmupSeen } from '@app/store/actions/appConfigStoreActions.ts';
 
 const VIDEO_SRC = 'https://static.tari.com/Tari-Announcement-BG.mp4';
 
-export default function Banner() {
+const Banner = memo(function Banner() {
     const { t } = useTranslation(['common', 'components']);
     const warmup_seen = useConfigUIStore((s) => s.warmup_seen);
     const [expandPlayer, setExpandPlayer] = useState(false);
@@ -64,4 +64,6 @@ export default function Banner() {
             />
         </>
     );
-}
+});
+
+export default Banner;

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Video, Wrapper, CTA } from './styles.ts';
@@ -9,7 +10,7 @@ interface VideoModalProps {
     firstPlay?: boolean;
 }
 
-export function VideoModal({ src, open, onOpenChange, firstPlay = false }: VideoModalProps) {
+const VideoModal = memo(function VideoModal({ src, open, onOpenChange, firstPlay = false }: VideoModalProps) {
     function handleEnded() {
         if (open && firstPlay) {
             onOpenChange(false);
@@ -30,4 +31,6 @@ export function VideoModal({ src, open, onOpenChange, firstPlay = false }: Video
             </DialogContent>
         </Dialog>
     );
-}
+});
+
+export { VideoModal };

@@ -1,3 +1,5 @@
+import { memo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { setDialogToShow, useUIStore } from '@app/store';
 import { DialogContent, Dialog } from '@app/components/elements/dialog/Dialog';
 import {
@@ -11,13 +13,12 @@ import {
     Wrapper,
 } from './styles.ts';
 import GradientText from '@app/components/elements/gradientText/GradientText.tsx';
-import { useTranslation } from 'react-i18next';
 import track from '/assets/img/track.gif';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { BlocksSVG } from './BlocksSVG.tsx';
 
-const WarmupDialog = function WarmupDialogs() {
+const WarmupDialog = memo(function WarmupDialogs() {
     const { t } = useTranslation('components');
     const open = useUIStore((s) => s.dialogToShow === 'warmup');
     function handleClose() {
@@ -55,6 +56,6 @@ const WarmupDialog = function WarmupDialogs() {
             </DialogContent>
         </Dialog>
     );
-};
+});
 
 export default WarmupDialog;
