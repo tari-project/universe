@@ -1,4 +1,10 @@
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{self, BufRead},
+    path::PathBuf,
+    str::FromStr,
+};
 
 use anyhow::Error;
 use async_trait::async_trait;
@@ -29,8 +35,36 @@ struct CDNBinaryVersionsJsonContent {
 pub struct CDNReleaseAdapter {
     pub specific_name: Option<Regex>,
     pub binary_name: Binaries,
-    pub cdn_path: String,
+    pub cdn_versions_list_path: String,
     pub asset_name: String,
+}
+
+#[derive(Debug)]
+struct FileEntry {
+    hash: String,
+    filename: String,
+}
+
+fn parse_file_to_struct(file_path: &str) -> io::Result<Vec<FileEntry>> {
+    let mut entries = Vec::new();
+
+    // Open the file
+    let file = File::open(file_path)?;
+    let reader = io::BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line?;
+        // Split the line into parts using whitespace
+        let mut parts = line.split_whitespace();
+        if let (Some(hash), Some(filename)) = (parts.next(), parts.next()) {
+            entries.push(FileEntry {
+                hash: hash.to_string(),
+                filename: filename.to_string(),
+            });
+        }
+    }
+
+    Ok(entries)
 }
 
 impl CDNReleaseAdapter {
@@ -69,8 +103,8 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
 
         let client = reqwest::Client::new();
         for _ in 0..3 {
-            let cdn_path_cloned = self.cdn_path.clone();
-            let response = client.head(cdn_path_cloned).send().await;
+            let cdn_versions_list_path_cloned = self.cdn_versions_list_path.clone();
+            let response = client.head(cdn_versions_list_path_cloned).send().await;
 
             if let Ok(resp) = response {
                 if resp.status().is_success() {
@@ -82,10 +116,24 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
 
         if !cdn_responded {}
 
+        let response = client
+            .get(&self.cdn_versions_list_path)
+            .header("User-Agent", "request")
+            .send()
+            .await?;
+
+        let data = response.text().await?;
+        println!("Response: {}", data);
+        let structured_data = parse_file_to_struct(&data)?;
+        for entry in structured_data {
+            info!(target: LOG_TARGET, "Parsed entry: {:?}", entry);
+        }
+        // let releases: Vec<Release> = serde_json::from_str(&data)?;
+
         let version = VersionDownloadInfo {
             version: Self::read_version(self.binary_name.clone().name().to_string()),
             assets: vec![VersionAsset {
-                url: self.cdn_path.clone().to_string(),
+                url: self.cdn_versions_list_path.clone().to_string(),
                 name: self.asset_name.clone(),
             }],
         };
