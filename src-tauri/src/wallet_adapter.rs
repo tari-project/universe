@@ -44,6 +44,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
+use tari_utilities::encoding::Base58;
 use tari_utilities::hex::Hex;
 use tokio::sync::{watch, Mutex};
 use tonic::Streaming;
@@ -135,10 +136,13 @@ impl WalletAdapter {
                 // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN and REJECTED
                 continue;
             }
+            let source_address = TariAddress::from_bytes(&tx.source_address)?;
+            let dest_address = TariAddress::from_bytes(&tx.dest_address)?;
+
             transactions.push(TransactionInfo {
                 tx_id: tx.tx_id,
-                source_address: tx.source_address.to_hex(),
-                dest_address: tx.dest_address.to_hex(),
+                source_address: source_address.to_base58(),
+                dest_address: dest_address.to_base58(),
                 status: tx.status,
                 amount: MicroMinotari(tx.amount),
                 is_cancelled: tx.is_cancelled,
