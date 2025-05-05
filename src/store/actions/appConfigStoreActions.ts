@@ -282,41 +282,11 @@ export const setUseTor = async (useTor: boolean) => {
     });
 };
 export const setVisualMode = (enabled: boolean) => {
-    const setupComplete = useSetupStore.getState().appUnlocked;
-    const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
-    useConfigUIStore.setState({ visual_mode: enabled, visualModeToggleLoading: true });
+    useConfigUIStore.setState({ visual_mode: enabled });
     invoke('set_visual_mode', { enabled }).catch((e) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
     });
-    if (enabled) {
-        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
-            .then(() => {
-                if (setupComplete) {
-                    setAnimationState('showVisual');
-                }
-            })
-            .catch((e) => {
-                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
-    } else {
-        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
-            .then(() => {
-                // Force garbage collection to clean up WebGL context
-                if (window.gc) {
-                    window.gc();
-                }
-            })
-            .catch((e) => {
-                console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
-            })
-            .finally(() => {
-                useConfigUIStore.setState({ visualModeToggleLoading: false });
-            });
-    }
 };
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = useConfigCoreStore.getState().node_type;

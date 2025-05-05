@@ -1,10 +1,23 @@
-import { CONNECTION_STATUS, DialogType, sidebarTowerOffset, useUIStore } from '@app/store/useUIStore.ts';
-import { setAnimationProperties } from '@tari-project/tari-tower';
+import {
+    CONNECTION_STATUS,
+    DialogType,
+    sidebarTowerOffset,
+    TOWER_CANVAS_ID,
+    useUIStore,
+} from '@app/store/useUIStore.ts';
+import {
+    loadTowerAnimation,
+    removeTowerAnimation,
+    setAnimationProperties,
+    setAnimationState,
+} from '@tari-project/tari-tower';
 import { setVisualMode } from './appConfigStoreActions.ts';
 
 import { Theme } from '@app/theme/types.ts';
 import { ConnectionStatusPayload } from '@app/types/events-payloads.ts';
 import { SB_WIDTH } from '@app/theme/styles.ts';
+import { useConfigUIStore } from '../useAppConfigStore.ts';
+import { useSetupStore } from '../useSetupStore.ts';
 
 export const setShowExternalDependenciesDialog = (showExternalDependenciesDialog: boolean) =>
     useUIStore.setState({ showExternalDependenciesDialog });
@@ -22,6 +35,40 @@ export const setIsWebglNotSupported = (isWebglNotSupported: boolean) => {
     useUIStore.setState({ isWebglNotSupported });
 };
 
+export const enableTowerAnimation = (enabled: boolean) => {
+    const setupComplete = useSetupStore.getState().appUnlocked;
+    const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
+    useConfigUIStore.setState({ visualModeToggleLoading: true });
+    setVisualMode(enabled);
+    if (enabled) {
+        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
+            .then(() => {
+                if (setupComplete) {
+                    setAnimationState('showVisual');
+                }
+            })
+            .catch((e) => {
+                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
+            })
+            .finally(() => {
+                useConfigUIStore.setState({ visualModeToggleLoading: false });
+            });
+    } else {
+        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
+            .then(() => {
+                // Force garbage collection to clean up WebGL context
+                if (window.gc) {
+                    window.gc();
+                }
+            })
+            .catch((e) => {
+                console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
+            })
+            .finally(() => {
+                useConfigUIStore.setState({ visualModeToggleLoading: false });
+            });
+    }
+};
 export const handleConnectionStatusChanged = (connectionStatus: ConnectionStatusPayload) => {
     if (connectionStatus === 'InProgress') {
         setIsReconnecting(true);

@@ -1,8 +1,7 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { ToggleSwitch } from '@app/components/elements/ToggleSwitch.tsx';
-import { TOWER_CANVAS_ID, useUIStore } from '@app/store/useUIStore';
 import { Typography } from '@app/components/elements/Typography';
 import {
     SettingsGroup,
@@ -11,7 +10,8 @@ import {
     SettingsGroupAction,
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
-import { setVisualMode, useConfigUIStore } from '@app/store';
+import { useConfigUIStore, useUIStore } from '@app/store';
+import { enableTowerAnimation } from '@app/store/actions/uiStoreActions';
 
 const ErrorTypography = styled(Typography)(({ theme }) => ({
     color: theme.palette.error.main,
@@ -26,9 +26,9 @@ function VisualMode() {
     const handleSwitch = useCallback(() => {
         if (visualModeToggleLoading) return;
         if (visualMode) {
-            setVisualMode(false);
+            enableTowerAnimation(false);
         } else {
-            setVisualMode(true);
+            enableTowerAnimation(true);
         }
     }, [visualMode, visualModeToggleLoading]);
 
