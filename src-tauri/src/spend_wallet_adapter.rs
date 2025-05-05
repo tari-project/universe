@@ -179,9 +179,7 @@ impl SpendWalletAdapter {
     fn get_shared_args(&self) -> Result<Vec<String>, Error> {
         let network = Network::get_current_or_user_setting_or_default();
         let dns_seeds = match network {
-            Network::MainNet => {
-                "ip4.seeds.tari.com,ip6.seeds.tari.com".to_string()
-            }
+            Network::MainNet => "ip4.seeds.tari.com,ip6.seeds.tari.com".to_string(),
             _ => {
                 format!(
                     "ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",

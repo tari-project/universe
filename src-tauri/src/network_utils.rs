@@ -39,10 +39,11 @@ fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
 
 fn get_text_explore_url(network: Network) -> String {
     match network {
-        Network::MainNet | Network::StageNet => "https://explore.tari.com/?json".to_string(),
-        Network::NextNet => "https://textexplore-nextnet.tari.com/?json".to_string(),
-        Network::Esmeralda => "https://textexplore-esmeralda.tari.com/?json".to_string(),
-        _ => "https://textexplore-esmeralda.tari.com/?json".to_string(),
+        Network::MainNet => "https://explore.tari.com/?json".to_string(),
+        _ => format!(
+            "https://textexplore-{}.tari.com/?json",
+            network.as_key_str()
+        ),
     }
 }
 
