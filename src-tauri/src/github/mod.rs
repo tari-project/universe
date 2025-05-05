@@ -49,12 +49,12 @@ enum ReleaseSource {
     Mirror,
 }
 
-pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
-    format!(
-        "https://api.github.com/repos/{}/{}/releases",
-        repo_owner, repo_name
-    )
-}
+// pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
+//     format!(
+//         "https://api.github.com/repos/{}/{}/releases",
+//         repo_owner, repo_name
+//     )
+// }
 
 pub fn get_mirror_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
