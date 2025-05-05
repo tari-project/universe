@@ -93,7 +93,7 @@ export function formatNumber(value: number, preset: FormatPreset): string {
         case FormatPreset.XTM_LONG:
             return formatXTMLong(value);
         case FormatPreset.XTM_DECIMALS:
-            return formatTXTMDecimals(value);
+            return formatXTMDecimals(value);
         case FormatPreset.DECIMAL_COMPACT:
             return formatDecimalCompact(value);
         default:
