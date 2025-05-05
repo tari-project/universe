@@ -129,8 +129,8 @@ jobs:
           echo "tagName=v__VERSION__" >> $GITHUB_ENV
           echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
           #echo "releaseId=" >> $GITHUB_ENV
-          echo "TARI_NETWORK=nextnet" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=nextnet" >> $GITHUB_ENV
+          echo "TARI_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
