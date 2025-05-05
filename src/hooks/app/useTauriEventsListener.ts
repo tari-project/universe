@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { emit, listen } from '@tauri-apps/api/event';
+import { listen } from '@tauri-apps/api/event';
 
 import { BACKEND_STATE_UPDATE, BackendStateUpdateEvent } from '@app/types/backend-state.ts';
 
@@ -16,7 +16,6 @@ import {
     handleCloseSplashscreen,
     handleConnectionStatusChanged,
     setConnectionStatus,
-    setIsReconnecting,
     setShowExternalDependenciesDialog,
 } from '@app/store/actions/uiStoreActions';
 import { setAvailableEngines } from '@app/store/actions/miningStoreActions';
@@ -24,18 +23,11 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
-    setCriticalProblem,
     setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import {
-    refreshTransactions,
-    setWalletAddress,
-    setWalletBalance,
-    updateWalletScanningProgress,
-    useUIStore,
-} from '@app/store';
+import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,

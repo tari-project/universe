@@ -7,15 +7,24 @@ export const SB_SPACING = 15;
 
 export const DashboardContainer = styled.div<{ $disableBackground?: boolean }>`
     display: flex;
+    flex-direction: column;
     position: relative;
-    padding: 20px;
     height: 100vh;
     width: 100%;
+    padding: 10px;
+    gap: 10px;
     max-height: 100%;
     background: ${({ theme, $disableBackground }) =>
         $disableBackground
             ? 'none'
             : `radial-gradient(140% 90% at 35% 20%, transparent 93%,  ${theme.palette.background.main} 98%)`};
+`;
+
+export const DashboardContent = styled.div`
+    width: 100%;
+    height: 100%;
+    display: flex;
+    position: relative;
 `;
 
 export const Background = styled.div`

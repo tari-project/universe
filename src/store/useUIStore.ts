@@ -4,7 +4,7 @@ import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 
 export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
 export const TOWER_CANVAS_ID = 'tower-canvas';
-const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation'] as const;
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'warmup'] as const;
 type DialogTypeTuple = typeof _DIALOG_TYPES;
 export type DialogType = DialogTypeTuple[number] | null;
 
@@ -22,6 +22,7 @@ interface UIStoreState {
     latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
+    showWarmup: boolean;
     showExternalDependenciesDialog: boolean;
     dialogToShow?: DialogType;
     isWebglNotSupported: boolean;
@@ -47,6 +48,7 @@ const initialState: UIStoreState = {
     isReconnecting: false,
     showSplashscreen: true,
     hideWalletBalance: false,
+    showWarmup: false,
     showResumeAppModal: false,
 };
 

@@ -326,6 +326,12 @@ async fn do_health_check<TStatusMonitor: StatusMonitor, TProcessInstance: Proces
             *uptime = Instant::now();
             stats.num_restarts += 1;
             stats.current_uptime = uptime.elapsed();
+            match status_monitor3.handle_unhealthy().await {
+                Ok(_) => {}
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Failed to handle unhealthy {} status: {}", name, e)
+                }
+            }
             child.start(task_tracker).await?;
             // Wait for a bit before checking health again
             // sleep(Duration::from_secs(10)).await;

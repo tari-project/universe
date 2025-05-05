@@ -102,23 +102,24 @@ impl WalletAdapter {
         limit: Option<u32>,
     ) -> Result<Vec<TransactionInfo>, WalletStatusMonitorError> {
         // TODO: Implement starting point instead of continuation
-        let mut stream =
-            if continuation && self.completed_transactions_stream.lock().await.is_some() {
-                self.completed_transactions_stream
-                    .lock()
-                    .await
-                    .take()
-                    .expect("completed_transactions_stream not found")
-            } else {
-                let mut client = WalletClient::connect(self.wallet_grpc_address())
-                    .await
-                    .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
-                let res = client
-                    .get_completed_transactions(GetCompletedTransactionsRequest {})
-                    .await
-                    .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
-                res.into_inner()
-            };
+        let mut stream = if continuation
+            && self.completed_transactions_stream.lock().await.is_some()
+        {
+            self.completed_transactions_stream
+                .lock()
+                .await
+                .take()
+                .expect("completed_transactions_stream not found")
+        } else {
+            let mut client = WalletClient::connect(self.wallet_grpc_address())
+                .await
+                .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
+            let res = client
+                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
+                .await
+                .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
+            res.into_inner()
+        };
 
         let mut transactions: Vec<TransactionInfo> = Vec::new();
 
@@ -180,7 +181,7 @@ impl WalletAdapter {
                 .await
                 .map_err(|_e| WalletStatusMonitorError::WalletNotStarted)?;
             let res = client
-                .get_completed_transactions(GetCompletedTransactionsRequest {})
+                .get_completed_transactions(GetCompletedTransactionsRequest { payment_id: None })
                 .await
                 .map_err(|e| WalletStatusMonitorError::UnknownError(e.into()))?;
             res.into_inner()

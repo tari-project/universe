@@ -24,6 +24,7 @@ export const HoverWrapper = styled(m.div)`
     transition: background-color 2s ease;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.7)};
     height: 100%;
+    backdrop-filter: blur(5px);
 `;
 
 export const ContentWrapper = styled.div`
@@ -72,18 +73,28 @@ export const ValueWrapper = styled.div`
 `;
 export const Chip = styled.div`
     display: flex;
-    text-align: center;
-    font-size: 9px;
-    font-weight: 700;
     align-self: center;
     justify-content: center;
     align-items: center;
+
     text-transform: uppercase;
     border-radius: 50px;
     background-color: ${({ theme }) => theme.colors.green[700]};
-    color: #fff; // no theming needed,should always be white
+
     height: 14px;
     padding: 0 7px;
+
+    color: #fff;
+    text-align: center;
+    font-family: Poppins, sans-serif;
+    font-size: 8px;
+    font-style: normal;
+    font-weight: 700;
+    line-height: normal;
+
+    span {
+        height: 10px;
+    }
 `;
 
 export const CurrencyText = styled(Typography).attrs({ variant: 'p' })`
@@ -178,33 +189,4 @@ export const GemPill = styled.div`
 
 export const GemImage = styled.img`
     width: 11px;
-`;
-
-export const InfoWrapper = styled.div`
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 8px;
-    padding: 8px 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-`;
-export const InfoItemWrapper = styled.div`
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 3px;
-    font-size: 11px;
-    width: 100%;
-    overflow: hidden;
-    align-items: baseline;
-
-    strong {
-        font-weight: bold;
-    }
-    span {
-        overflow: hidden;
-        font-size: 10px;
-        word-wrap: break-word;
-    }
 `;

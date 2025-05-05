@@ -12,6 +12,8 @@
   "hashrate": "Taux de hachage",
   "installation-problem": "Problème d\"installation",
   "join_the_space": "Rejoindre l'espace",
+  "learn-more": "Learn more",
+  "mainnet": "Mainnet",
   "max-temperature": "Température maximale",
   "minimize": "Minimiser",
   "mode": "Mode",
@@ -25,6 +27,7 @@
   "sent": "Envoyé",
   "shutting-down": "Arrêt...",
   "submit": "Envoyer",
+  "tari": "Tari",
   "tari-universe": "Univers Tari",
   "temperature": "Température",
   "testnet": "Testnet",
@@ -35,5 +38,6 @@
   "utilization": "Utilisation",
   "version": "Version",
   "versions": "Versions",
-  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé."
+  "webgl-not-supported": "WebGL non pris en charge. Mode visuel désactivé.",
+  "xtm": "tXTM"
 }

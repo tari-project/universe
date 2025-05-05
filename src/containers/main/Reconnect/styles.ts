@@ -5,11 +5,11 @@ export const Wrapper = styled.div`
     pointer-events: all;
     position: absolute;
     top: 0;
-    right: -20px; // 20px offsets for container padding
-    transform: translate(0, -20px);
+    right: -10px; // 10px offsets for container padding
+    transform: translate(0, -10px);
     background-color: rgba(0, 0, 0, 0);
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
+    width: calc(100% + 20px);
+    height: calc(100% + 20px);
     margin: auto;
     display: flex;
     flex-direction: column;

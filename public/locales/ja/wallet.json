@@ -2,7 +2,11 @@
   "confirmation-message": "トランザクションが送信されました！\nいくつかのブロックをマイニングした後、履歴に表示されます。",
   "empty-tx": "トランザクションが見つかりません",
   "history": {
-    "label-rewards": "私の報酬"
+    "available-balance": "Available",
+    "label-rewards": "私の報酬",
+    "sync-with-phone": "Sync with Phone",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "私のTari",
   "new": "新規",
@@ -51,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },

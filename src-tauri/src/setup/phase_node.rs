@@ -244,6 +244,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
                         if STOP_ON_ERROR_CODES.contains(&code) {
                             warn!(target: LOG_TARGET, "Database for node is corrupt or needs a restart, deleting and trying again.");
                             state.node_manager.clean_data_folder(&data_dir).await?;
+                            state.wallet_manager.clean_data_folder(&data_dir).await?;
                         }
                         continue;
                     }
@@ -280,7 +281,7 @@ impl SetupPhaseImpl for NodeSetupPhase {
             Some(ProgressPlans::Node(ProgressSetupNodePlan::Done)),
         );
 
-        TasksTrackers::current()
+        let progress_handle = TasksTrackers::current()
             .node_phase
             .get_task_tracker()
             .await
@@ -323,6 +324,8 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .node_manager
             .wait_synced(&progress_params_tx, &progress_percentage_tx)
             .await?;
+        progress_handle.abort();
+        let _unused = progress_handle.await;
 
         Ok(())
     }

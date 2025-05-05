@@ -691,7 +691,7 @@ async fn monitor_local_node_sync_and_switch(
                         .await
                     {
                         Ok(synced_height) => {
-                            let remote_node_height = (*node_manager.remote_node_watch_rx.borrow()).block_height;
+                            let remote_node_height = node_manager.remote_node_watch_rx.borrow().block_height;
                             if synced_height + 50 < remote_node_height {
                                 warn!(target: LOG_TARGET, "Sync completed but local node is behind remote node by more than 50 blocks. Attempting to sync again");
                                 sleep(Duration::from_secs(3)).await; // Wait for 3 seconds before retrying to ensure the node has time to enter syncing state again

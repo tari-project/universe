@@ -82,7 +82,7 @@ impl InternalWallet {
                     config.config_path = Some(file_parent.to_path_buf());
 
                     let cm = CredentialManager::default_with_dir(config_path.clone());
-                    if let Err(e) = cm.migrate(&config).await {
+                    if let Err(e) = cm.migrate().await {
                         warn!(target: LOG_TARGET, "Failed to migrate wallet credentials: {}", e.to_string());
                     }
 
@@ -250,7 +250,9 @@ impl InternalWallet {
             comms_pub_key.clone(),
             network,
             TariAddressFeatures::create_one_sided_only(),
-        );
+            None,
+        )
+        .map_err(|e| anyhow!(e.to_string()))?;
 
         config.tari_address_base58 = tari_address.to_base58();
         config.view_key_private_hex = view_key_private.to_hex();

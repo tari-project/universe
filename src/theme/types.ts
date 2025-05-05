@@ -52,6 +52,7 @@ interface Palette {
         paper: string;
         accent: string;
         main: string;
+        secondary: string;
     };
     action: {
         hover: Colour;

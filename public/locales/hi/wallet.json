@@ -2,7 +2,11 @@
   "confirmation-message": "आपका लेन-देन सबमिट कर दिया गया है!\nकुछ ब्लॉकों के माइनिंग के बाद यह आपके इतिहास में दिखाई देगा।",
   "empty-tx": "कोई लेन-देन नहीं मिला",
   "history": {
-    "label-rewards": "मेरे पुरस्कार"
+    "available-balance": "Available",
+    "label-rewards": "मेरे पुरस्कार",
+    "sync-with-phone": "Sync with Phone",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "मेरा तारी",
   "new": "नया",
@@ -51,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },
