@@ -59,28 +59,26 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             }
         }
 
-        // if cdn_responded {
+        if cdn_responded {
+            let version = VersionDownloadInfo {
+                version: "14.5.1".parse().expect("Bad tor version"),
+                assets: vec![VersionAsset {
+                    url: cdn_tor_bundle_url.to_string(),
+                    name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                }],
+            };
+            return Ok(vec![version]);
+        }
+
+        // Tor doesn't have a nice API for this so just return specific ones
         let version = VersionDownloadInfo {
             version: "14.5.1".parse().expect("Bad tor version"),
             assets: vec![VersionAsset {
-                url: cdn_tor_bundle_url.to_string(),
+                url: format!("https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz", platform),
                 name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
-            }],
+            }]
         };
-        //     return Ok(vec![version]);
-        // }
-
         Ok(vec![version])
-
-        // Tor doesn't have a nice API for this so just return specific ones
-        // let version = VersionDownloadInfo {
-        //     version: "14.5.1".parse().expect("Bad tor version"),
-        //     assets: vec![VersionAsset {
-        //         url: format!("https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz", platform),
-        //         name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
-        //     }]
-        // };
-        // Ok(vec![version])
     }
 
     async fn download_and_get_checksum_path(
