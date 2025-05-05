@@ -190,7 +190,7 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
     ) -> Result<VersionAsset, Error> {
         let mut name_suffix = "";
         if cfg!(target_os = "windows") {
-            name_suffix = r"windows-x86_64.zip";
+            name_suffix = r"windows-x64.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
