@@ -2,7 +2,7 @@
   "confirmation-message": "Twoja transakcja została przesłana!\nPojawi się w historii po wykopaniu kilku bloków.",
   "empty-tx": "Nie znaleziono transakcji",
   "history": {
-    "available-balance": "Available:",
+    "available-balance": "Available",
     "label-rewards": "Moje nagrody",
     "sync-with-phone": "Sync with Phone",
     "transaction-details": "Transaction Details",
