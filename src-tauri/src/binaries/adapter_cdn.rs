@@ -36,35 +36,6 @@ pub struct CDNReleaseAdapter {
     pub specific_name: Option<Regex>,
     pub binary_name: Binaries,
     pub cdn_versions_list_path: String,
-    pub asset_name: String,
-}
-
-#[derive(Debug)]
-struct FileEntry {
-    hash: String,
-    filename: String,
-}
-
-fn parse_file_to_struct(file_path: &str) -> io::Result<Vec<FileEntry>> {
-    let mut entries = Vec::new();
-
-    // Open the file
-    let file = File::open(file_path)?;
-    let reader = io::BufReader::new(file);
-
-    for line in reader.lines() {
-        let line = line?;
-        // Split the line into parts using whitespace
-        let mut parts = line.split_whitespace();
-        if let (Some(hash), Some(filename)) = (parts.next(), parts.next()) {
-            entries.push(FileEntry {
-                hash: hash.to_string(),
-                filename: filename.to_string(),
-            });
-        }
-    }
-
-    Ok(entries)
 }
 
 impl CDNReleaseAdapter {
@@ -101,7 +72,7 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let mut cdn_responded = false;
 
-        let client = reqwest::Client::new();
+        let client: reqwest::Client = reqwest::Client::new();
         for _ in 0..3 {
             let cdn_versions_list_path_cloned = self.cdn_versions_list_path.clone();
             let response = client.head(cdn_versions_list_path_cloned).send().await;
@@ -116,27 +87,62 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
 
         if !cdn_responded {}
 
-        let response = client
-            .get(&self.cdn_versions_list_path)
-            .header("User-Agent", "request")
-            .send()
-            .await?;
+        let mut asset_urls = Vec::new();
+        match reqwest::get(&self.cdn_versions_list_path).await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    match response.text().await {
+                        Ok(content) => {
+                            // Process each line
+                            let mut parsed_lines: Vec<Vec<String>> = Vec::new();
+                            for line in content.lines() {
+                                // Split the line by whitespace
+                                let parts: Vec<&str> = line.split_whitespace().collect();
 
-        let data = response.text().await?;
-        println!("Response: {}", data);
-        let structured_data = parse_file_to_struct(&data)?;
-        for entry in structured_data {
-            info!(target: LOG_TARGET, "Parsed entry: {:?}", entry);
+                                // Save the parts
+                                if parts.len() >= 2 {
+                                    parsed_lines
+                                        .push(vec![parts[0].to_string(), parts[1].to_string()]);
+                                } else {
+                                    println!("Invalid line: {}", line);
+                                }
+                            }
+                            for line in parsed_lines {
+                                asset_urls.push(line[1].clone());
+                            }
+                        }
+                        Err(e) => {
+                            error!(target: LOG_TARGET, "Failed to read content from glytex file: {}", e);
+                        }
+                    }
+                } else {
+                    error!(target: LOG_TARGET, "Failed to fetch glytex file. HTTP Status: {}", response.status());
+                }
+            }
+            Err(e) => {
+                error!(target: LOG_TARGET, "Error occurred while fetching glytex file: {}", e);
+            }
         }
-        // let releases: Vec<Release> = serde_json::from_str(&data)?;
 
+        info!(target: LOG_TARGET, "Asset URLs: {:?}", asset_urls);
+
+        let base_url = format!(
+            "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/",
+            Self::read_version(self.binary_name.name().to_string())
+        );
+        let base_url_path = PathBuf::from_str(&base_url).expect("parsing failed");
         let version = VersionDownloadInfo {
             version: Self::read_version(self.binary_name.clone().name().to_string()),
-            assets: vec![VersionAsset {
-                url: self.cdn_versions_list_path.clone().to_string(),
-                name: self.asset_name.clone(),
-            }],
+            assets: asset_urls
+                .iter()
+                .map(|name: &String| VersionAsset {
+                    name: name.clone(),
+                    url: base_url_path.join(name).to_string_lossy().to_string(),
+                })
+                .collect(),
         };
+
+        info!(target: LOG_TARGET, "Version: {:?}", version);
         Ok(vec![version])
     }
 
@@ -190,18 +196,18 @@ impl LatestVersionApiAdapter for CDNReleaseAdapter {
     ) -> Result<VersionAsset, Error> {
         let mut name_suffix = "";
         if cfg!(target_os = "windows") {
-            name_suffix = r"windows-x86_64.*\.gz";
+            name_suffix = r"windows-x86_64.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-            name_suffix = r"macos-x86_64.*\.gz";
+            name_suffix = r"macos-x86_64.zip";
         }
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-            name_suffix = r"macos-aarch64.*\.gz";
+            name_suffix = r"macos-aarch64.zip";
         }
         if cfg!(target_os = "linux") {
-            name_suffix = r"linux-x86_64.*\.gz";
+            name_suffix = r"linux-x86_64.zip";
         }
         if name_suffix.is_empty() {
             panic!("Unsupported OS");

@@ -126,38 +126,12 @@ impl BinaryResolver {
                 Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
 
-        // let xmrig_default_adapter = XmrigVersionApiAdapter {};
-        let xmrig_cdn_version = CDNReleaseAdapter::read_version(Binaries::Xmrig.name().to_string());
-        let xmirg_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::Xmrig,
-            specific_name: None,
-            asset_name: format!("xmrig-{}-{}.zip`", get_platform_name(), xmrig_cdn_version),
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
-                xmrig_cdn_version,
-                xmrig_cdn_version
-            ),
-        };
+        let xmrig_default_adapter = XmrigVersionApiAdapter {};
 
-        // "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz"
-        // "tor-expert-bundle-{}-14.5.1.tar.gz"
-
-        // let gpu_default_adapter = GithubReleasesAdapter {
-        //     repo: "glytex".to_string(),
-        //     owner: "tari-project".to_string(),
-        //     specific_name: gpuminer_specific_name,
-        // };
-        let gpu_cdn_version =
-            CDNReleaseAdapter::read_version(Binaries::GpuMiner.name().to_string());
-        let gpu_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::GpuMiner,
+        let gpu_default_adapter = GithubReleasesAdapter {
+            repo: "glytex".to_string(),
+            owner: "tari-project".to_string(),
             specific_name: gpuminer_specific_name,
-            asset_name: format!("glytex-{}-{}.zip", get_platform_name(), gpu_cdn_version),
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/glytex/releases/download/v{}/glytex-{}-f49f592.sha256-unsigned.txt",
-                gpu_cdn_version,
-                gpu_cdn_version
-            ),
         };
 
         // let merge_mining_default_adapter = GithubReleasesAdapter {
@@ -170,11 +144,6 @@ impl BinaryResolver {
         let merge_mining_cdn_adapter = CDNReleaseAdapter {
             binary_name: Binaries::MergeMiningProxy,
             specific_name: None,
-            asset_name: format!(
-                "tari-suite-{}-{}.zip",
-                get_platform_name(),
-                merge_mining_cdn_version
-            ),
             cdn_versions_list_path: format!(
                 "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
                 merge_mining_cdn_version,
@@ -194,11 +163,6 @@ impl BinaryResolver {
         let minotari_node_cdn_adapter = CDNReleaseAdapter {
             binary_name: Binaries::MinotariNode,
             specific_name: None,
-            asset_name: format!(
-                "tari-suite-{}-{}.zip",
-                get_platform_name(),
-                minotari_node_cdn_version
-            ),
             cdn_versions_list_path: format!(
                 "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
                 minotari_node_cdn_version,
@@ -217,11 +181,6 @@ impl BinaryResolver {
         let wallet_cdn_adapter = CDNReleaseAdapter {
             binary_name: Binaries::Wallet,
             specific_name: None,
-            asset_name: format!(
-                "tari-suite-{}-{}.zip",
-                get_platform_name(),
-                wallet_cdn_version
-            ),
             cdn_versions_list_path: format!(
                 "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
                 wallet_cdn_version,
@@ -229,42 +188,13 @@ impl BinaryResolver {
             ),
         };
 
-        // let sha_pool_default = GithubReleasesAdapter {
-        //     repo: "sha-p2pool".to_string(),
-        //     owner: "tari-project".to_string(),
-        //     specific_name: None,
-        // };
-
-        let sha_pool_cdn_version =
-            CDNReleaseAdapter::read_version(Binaries::ShaP2pool.name().to_string());
-
-        let sha_pool_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::ShaP2pool,
+        let sha_pool_default = GithubReleasesAdapter {
+            repo: "sha-p2pool".to_string(),
+            owner: "tari-project".to_string(),
             specific_name: None,
-            asset_name: format!("tari-suite-{}-{}.zip",
-            get_platform_name(),
-            sha_pool_cdn_version),
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
-                xmrig_cdn_version,
-                xmrig_cdn_version
-            ),
         };
 
-        let tor_cdn_version = CDNReleaseAdapter::read_version(Binaries::Tor.name().to_string());
-
-        // let tor_default_adapter = TorReleaseAdapter {}
-        let tor_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::Tor,
-            specific_name: None,
-            asset_name: format!("tor-expert-bundle-{}-{}.tar.gz",
-            get_platform_name(),
-            tor_cdn_version),
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tor-package-archive/torbrowser/{}/sha256sums-signed-build.txt",
-                tor_cdn_version,
-            ),
-        };
+        let tor_default_adapter = TorReleaseAdapter {};
 
         binary_manager.insert(
             Binaries::Xmrig,
@@ -272,7 +202,7 @@ impl BinaryResolver {
                 Binaries::Xmrig.name().to_string(),
                 // Some("xmrig-6.22.0".to_string()),
                 None,
-                Box::new(xmirg_cdn_adapter),
+                Box::new(xmrig_default_adapter),
                 None,
                 true,
             )),
@@ -283,7 +213,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
                 None,
-                Box::new(gpu_cdn_adapter),
+                Box::new(gpu_default_adapter),
                 None,
                 true,
             )),
@@ -327,7 +257,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
                 None,
-                Box::new(sha_pool_cdn_adapter),
+                Box::new(sha_pool_default),
                 None,
                 true,
             )),
@@ -338,7 +268,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
-                Box::new(tor_cdn_adapter),
+                Box::new(tor_default_adapter),
                 None,
                 true,
             )),
