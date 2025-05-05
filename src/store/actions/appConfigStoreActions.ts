@@ -5,12 +5,14 @@ import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import {
     AirdropTokens,
+    TOWER_CANVAS_ID,
     useConfigCoreStore,
     useConfigMiningStore,
     useConfigUIStore,
     useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
+    useUIStore,
 } from '../index.ts';
 import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
@@ -19,6 +21,8 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
+import { useSetupStore } from '../useSetupStore.ts';
 
 interface SetModeProps {
     mode: modeType;
@@ -278,22 +282,41 @@ export const setUseTor = async (useTor: boolean) => {
     });
 };
 export const setVisualMode = (enabled: boolean) => {
+    const setupComplete = useSetupStore.getState().appUnlocked;
+    const towerSidebarOffset = useUIStore.getState().towerSidebarOffset;
     useConfigUIStore.setState({ visual_mode: enabled, visualModeToggleLoading: true });
-    invoke('set_visual_mode', { enabled })
-        .catch((e) => {
-            console.error('Could not set visual mode', e);
-            setError('Could not change visual mode');
-            useConfigUIStore.setState({ visual_mode: !enabled, visualModeToggleLoading: false });
-        })
-        .finally(() => {
-            if (visualModeToggleTimeout) {
-                clearTimeout(visualModeToggleTimeout);
-            }
-
-            visualModeToggleTimeout = setTimeout(() => {
+    invoke('set_visual_mode', { enabled }).catch((e) => {
+        console.error('Could not set visual mode', e);
+        setError('Could not change visual mode');
+    });
+    if (enabled) {
+        loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: towerSidebarOffset })
+            .then(() => {
+                if (setupComplete) {
+                    setAnimationState('showVisual');
+                }
+            })
+            .catch((e) => {
+                console.error('Could not enable visual mode. Error at loadTowerAnimation:', e);
+            })
+            .finally(() => {
                 useConfigUIStore.setState({ visualModeToggleLoading: false });
-            }, 1000 * 4);
-        });
+            });
+    } else {
+        removeTowerAnimation({ canvasId: TOWER_CANVAS_ID })
+            .then(() => {
+                // Force garbage collection to clean up WebGL context
+                if (window.gc) {
+                    window.gc();
+                }
+            })
+            .catch((e) => {
+                console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
+            })
+            .finally(() => {
+                useConfigUIStore.setState({ visualModeToggleLoading: false });
+            });
+    }
 };
 export const setNodeType = async (nodeType: NodeType) => {
     const previousNodeType = useConfigCoreStore.getState().node_type;
