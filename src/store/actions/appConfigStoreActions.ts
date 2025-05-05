@@ -301,6 +301,6 @@ export const setWarmupSeens = (warmupSeen: boolean) => {
     invoke('set_warmup_seen', { warmupSeen }).catch((e) => {
         console.error('Could not set seen', e);
         setError('Could not change seen');
-        useConfigUIStore.setState({ visual_mode: !warmupSeen });
+        useConfigUIStore.setState({ warmup_seen: !warmupSeen });
     });
 };
