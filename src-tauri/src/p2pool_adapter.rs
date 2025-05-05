@@ -83,7 +83,9 @@ impl ProcessAdapter for P2poolAdapter {
 
         info!(target: LOG_TARGET, "Starting p2pool node");
 
-        let working_dir = data_dir.join("sha-p2pool");
+        let working_dir = data_dir
+            .join("sha-p2pool")
+            .join(Network::get_current_or_user_setting_or_default().to_string());
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
         });
