@@ -1,18 +1,14 @@
-let visualModeToggleTimeout: NodeJS.Timeout | undefined;
-
 import { invoke } from '@tauri-apps/api/core';
 import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import {
     AirdropTokens,
-    TOWER_CANVAS_ID,
     useConfigCoreStore,
     useConfigMiningStore,
     useConfigUIStore,
     useConfigWalletStore,
     useMiningMetricsStore,
     useMiningStore,
-    useUIStore,
 } from '../index.ts';
 import { pauseMining, restartMining, startMining, stopMining, toggleDeviceExclusion } from './miningStoreActions';
 import { setError } from './appStateStoreActions.ts';
@@ -21,8 +17,6 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
-import { loadTowerAnimation, removeTowerAnimation, setAnimationState } from '@tari-project/tari-tower';
-import { useSetupStore } from '../useSetupStore.ts';
 
 interface SetModeProps {
     mode: modeType;
