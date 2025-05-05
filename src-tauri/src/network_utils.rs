@@ -27,7 +27,7 @@ use tari_common::configuration::Network;
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
         Network::MainNet => {
-            format!("https://explore.tari.com/blocks/{}?json", block_height)
+            format!("https://textexplore.tari.com/blocks/{}?json", block_height)
         }
         _ => format!(
             "https://textexplore-{}.tari.com/blocks/{}?json",
@@ -39,7 +39,7 @@ fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
 
 fn get_text_explore_url(network: Network) -> String {
     match network {
-        Network::MainNet => "https://explore.tari.com/?json".to_string(),
+        Network::MainNet => "https://textexplore.tari.com/?json".to_string(),
         _ => format!(
             "https://textexplore-{}.tari.com/?json",
             network.as_key_str()
