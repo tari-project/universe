@@ -44,7 +44,6 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_core::transactions::transaction_components::encrypted_data::PaymentId;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::Shutdown;
-use tari_utilities::encoding::Base58;
 use tari_utilities::hex::Hex;
 use tokio::sync::{watch, Mutex};
 use tonic::Streaming;
