@@ -23,7 +23,7 @@ export function VideoModal({ src, open, onOpenChange, firstPlay = false }: Video
                     <CTA onClick={() => onOpenChange(false)}>
                         <IoClose />
                     </CTA>
-                    <Video autoPlay={open} controls playsInline preload="auto" loop={false} onEnded={handleEnded}>
+                    <Video autoPlay controls preload="auto" onEnded={handleEnded}>
                         <source src={src} />
                     </Video>
                 </Wrapper>
