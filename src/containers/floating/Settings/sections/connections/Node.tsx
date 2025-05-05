@@ -21,7 +21,7 @@ const getNodeType = (nodeType?: NodeType) => {
 export default function Node() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { node_type, node_identity, node_connection_address } = useNodeStore();
-    console.debug(`node_connection_address= `, node_connection_address);
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroup>

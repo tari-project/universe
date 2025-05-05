@@ -26,7 +26,10 @@ pub mod phase_builder;
 
 pub async fn conditional_sleeper(duration: Option<Duration>) -> Option<()> {
     match duration {
-        Some(duration) => Some(tokio::time::sleep(duration).await),
+        Some(duration) => {
+            tokio::time::sleep(duration).await;
+            Some(())
+        }
         None => {
             pending::<()>().await;
             None

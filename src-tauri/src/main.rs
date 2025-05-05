@@ -87,8 +87,6 @@ use crate::p2pool_manager::P2poolManager;
 use crate::spend_wallet_manager::SpendWalletManager;
 use crate::tor_manager::TorManager;
 use crate::wallet_manager::WalletManager;
-#[cfg(target_os = "macos")]
-use utils::macos_utils::is_app_in_applications_folder;
 
 mod ab_test_selector;
 mod airdrop;
@@ -1079,18 +1077,14 @@ fn main() {
         node_manager.clone(),
     );
 
-    let app_id = app_config_raw.anon_id().to_string();
-
     let websocket_manager = Arc::new(RwLock::new(WebsocketManager::new(
         app_in_memory_config.clone(),
         websocket_message_rx,
         websocket_manager_status_tx.clone(),
         websocket_manager_status_rx.clone(),
-        app_id.clone(),
     )));
 
     let websocket_events_manager = WebsocketEventsManager::new(
-        app_id.clone(),
         cpu_miner_status_watch_rx.clone(),
         gpu_status_rx.clone(),
         base_node_watch_rx.clone(),
@@ -1311,7 +1305,8 @@ fn main() {
             commands::verify_address_for_send,
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
-            commands::set_node_type
+            commands::set_node_type,
+            commands::set_warmup_seen
         ])
         .build(tauri::generate_context!())
         .inspect_err(

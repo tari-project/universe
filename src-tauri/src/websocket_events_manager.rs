@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{sync::Arc, time::Duration};
+use std::sync::Arc;
+use std::time::Duration;
 
 use futures::lock::Mutex;
 use log::{error, info};
@@ -47,7 +48,6 @@ pub struct WebsocketEventsManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
     node_latest_status: watch::Receiver<BaseNodeStatus>,
-    app_id: String,
     websocket_tx_channel: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     close_channel_tx: tokio::sync::broadcast::Sender<bool>,
     is_started: Arc<Mutex<bool>>,
@@ -55,7 +55,6 @@ pub struct WebsocketEventsManager {
 
 impl WebsocketEventsManager {
     pub fn new(
-        app_id: String,
         cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
         gpu_latest_miner_stats: watch::Receiver<GpuMinerStatus>,
         node_latest_status: watch::Receiver<BaseNodeStatus>,
@@ -66,7 +65,6 @@ impl WebsocketEventsManager {
             cpu_miner_status_watch_rx,
             gpu_latest_miner_stats,
             node_latest_status,
-            app_id,
             websocket_tx_channel: Arc::new(websocket_tx_channel),
             app: None,
             close_channel_tx,
@@ -95,7 +93,9 @@ impl WebsocketEventsManager {
         let cpu_miner_status_watch_rx = self.cpu_miner_status_watch_rx.clone();
         let gpu_latest_miner_stats = self.gpu_latest_miner_stats.clone();
         let node_latest_status = self.node_latest_status.clone();
-        let app_id = self.app_id.clone();
+
+        let app_id = ConfigCore::content().await.anon_id().clone();
+
         let app_version = self
             .app
             .clone()
@@ -111,7 +111,7 @@ impl WebsocketEventsManager {
                 return Ok(());
             }
 
-            tokio::spawn(async move {
+            TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
                 loop {
                     let jwt_token = ConfigCore::content()
                         .await

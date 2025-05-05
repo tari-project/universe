@@ -5,6 +5,10 @@
   "new-tari-version-available": "Tari Universe का एक नया संस्करण उपलब्ध है!",
   "no": "नहीं",
   "setting-up": "Tari सत्य मशीन सेट कर रहा है...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "इसमें कुछ मिनट लग सकते हैं",
   "title": {
     "application-started": "एप्लिकेशन शुरू हो गए हैं",

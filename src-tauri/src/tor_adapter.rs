@@ -28,6 +28,7 @@ use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
+use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::watch;
@@ -285,7 +286,7 @@ impl ProcessAdapter for TorAdapter {
                     file_path: binary_version_path,
                     envs: None,
                     args,
-                    data_dir,
+                    data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -293,6 +294,7 @@ impl ProcessAdapter for TorAdapter {
             TorStatusMonitor {
                 control_port,
                 status_broadcast: self.status_broadcast.clone(),
+                base_path: data_dir,
             },
         ))
     }
@@ -310,6 +312,7 @@ impl ProcessAdapter for TorAdapter {
 pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
     status_broadcast: watch::Sender<TorStatus>,
+    base_path: PathBuf,
 }
 
 #[async_trait]
@@ -335,6 +338,12 @@ impl StatusMonitor for TorStatusMonitor {
                 HealthStatus::Unhealthy
             }
         }
+    }
+
+    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+
+        Ok(())
     }
 }
 
