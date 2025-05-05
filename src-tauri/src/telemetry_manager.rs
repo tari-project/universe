@@ -53,11 +53,11 @@ use std::time::Instant;
 use std::{sync::Arc, time::Duration};
 use sysinfo::{Disks, System};
 use tari_common::configuration::Network;
+use tari_shutdown::ShutdownSignal;
 use tari_utilities::encoding::MBase58;
 use tauri::Emitter;
 use tokio::sync::{watch, RwLock};
 use tokio::time::interval;
-use tokio_util::sync::CancellationToken;
 
 const LOG_TARGET: &str = "tari::universe::telemetry_manager";
 
@@ -106,6 +106,9 @@ pub enum TelemetryManagerError {
 
     #[error("Reqwest error: {0}")]
     ReqwestError(#[from] reqwest::Error),
+
+    #[error("TelemetryManagerError::Cancelled")]
+    Cancelled,
 }
 
 impl From<Network> for TelemetryNetwork {
@@ -201,7 +204,6 @@ pub struct TelemetryData {
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    pub cancellation_token: CancellationToken,
     node_network: Option<Network>,
     gpu_status: watch::Receiver<GpuMinerStatus>,
     node_status: watch::Receiver<BaseNodeStatus>,
@@ -224,10 +226,8 @@ impl TelemetryManager {
         process_stats_collector: ProcessStatsCollector,
         node_manager: NodeManager,
     ) -> Self {
-        let cancellation_token = CancellationToken::new();
         Self {
             cpu_miner_status_watch_rx,
-            cancellation_token,
             node_network: network,
             in_memory_config,
             gpu_status,
@@ -304,13 +304,13 @@ impl TelemetryManager {
         let node_status = self.node_status.clone();
         let p2pool_status = self.p2pool_status.clone();
         let tor_status = self.tor_status.clone();
-        let cancellation_token: CancellationToken = self.cancellation_token.clone();
         let network = self.node_network;
         let in_memory_config_cloned = self.in_memory_config.clone();
         let stats_collector = self.process_stats_collector.clone();
         let node_manager = self.node_manager.clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
         let mut interval = interval(timeout);
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
@@ -323,16 +323,12 @@ impl TelemetryManager {
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
                         if allow_telemetry {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
-                                &tor_status, network, uptime, &stats_collector, &node_manager).await;
+                            let telemetry_data = cancellable_get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
+                                &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
                             let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone()).await;
+                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone())).await;
                         }
                     },
-                    _ = cancellation_token.cancelled() => {
-                        info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by token");
-                        break;
-                    }
                     _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
                         break;
@@ -344,6 +340,28 @@ impl TelemetryManager {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+async fn cancellable_get_telemetry_data(
+    cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
+    gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
+    node_latest_status: &watch::Receiver<BaseNodeStatus>,
+    p2pool_latest_status: &watch::Receiver<Option<P2poolStats>>,
+    tor_latest_status: &watch::Receiver<TorStatus>,
+    network: Option<Network>,
+    started: Instant,
+    stats_collector: &ProcessStatsCollector,
+    node_manager: &NodeManager,
+    shutdown_signal: &mut ShutdownSignal,
+) -> Result<TelemetryData, TelemetryManagerError> {
+    tokio::select! {result = get_telemetry_data(cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager) => {
+            result
+        }
+        _ = shutdown_signal.wait() => {
+            info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
+            Err(TelemetryManagerError::Cancelled)
+        }
+    }
+}
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
 async fn get_telemetry_data(
@@ -709,22 +727,29 @@ async fn handle_telemetry_data(
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
     app_handle: tauri::AppHandle,
+    shutdown_signal: &mut ShutdownSignal,
 ) {
     match telemetry {
         Ok(telemetry) => {
-            let telemetry_response = retry_with_backoff(
-                || {
-                    Box::pin(send_telemetry_data(
-                        telemetry.clone(),
-                        airdrop_access_token.clone(),
-                        airdrop_api_url.clone(),
-                    ))
-                },
-                3,
-                2,
-                "send_telemetry_data",
-            )
-            .await;
+            // Use tokio::select to allow cancellation during the retry operation
+            let telemetry_response = tokio::select! {
+                response = retry_with_backoff(
+                    || {
+                        Box::pin(send_telemetry_data(
+                            telemetry.clone(),
+                            airdrop_access_token.clone(),
+                            airdrop_api_url.clone(),
+                        ))
+                    },
+                    3,
+                    2,
+                    "send_telemetry_data",
+                ) => response,
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
+                    return;
+                }
+            };
 
             match telemetry_response {
                 Ok(response) => {
