@@ -125,7 +125,7 @@ async fn list_releases_from(
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let client = Client::new();
     let url = match source {
-        ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
+        // ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
         ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
     };
 
@@ -166,7 +166,7 @@ async fn list_releases_from(
                     &get_gh_download_url(repo_owner, repo_name),
                     &get_mirror_download_url(repo_owner, repo_name),
                 ),
-                ReleaseSource::Github => asset.browser_download_url,
+                // ReleaseSource::Github => asset.browser_download_url,
             };
             assets.push(VersionAsset {
                 url,
