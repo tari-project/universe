@@ -14,7 +14,8 @@ export default function MainView() {
     return (
         <DashboardContainer $disableBackground={isSettingUp}>
             {!visualMode && !isSettingUp && <Background />}
-            {showWarmup && <Banner />}
+            <Banner />
+            {/*{showWarmup && <Banner />}*/}
             <DashboardContent>
                 <SidebarNavigation />
                 {isSettingUp ? <Sync /> : <Dashboard />}
