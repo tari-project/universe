@@ -50,22 +50,6 @@ const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6)
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-fn get_platform_name() -> String {
-    if cfg!(target_os = "windows") {
-        return "windows-x86_64".to_string();
-    }
-    if cfg!(target_os = "macos") && cfg!(target_arch = "x86_64") {
-        return "macos-x86_64".to_string();
-    }
-    if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
-        return "macos-aarch64".to_string();
-    }
-    if cfg!(target_os = "linux") {
-        return "linux-x86_64".to_string();
-    }
-    panic!("Unsupported OS");
-}
-
 #[derive(Debug, Clone)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
