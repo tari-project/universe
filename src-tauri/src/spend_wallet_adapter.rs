@@ -177,6 +177,17 @@ impl SpendWalletAdapter {
     }
 
     fn get_shared_args(&self) -> Result<Vec<String>, Error> {
+        let network = Network::get_current_or_user_setting_or_default();
+        let dns_seeds = match network {
+            Network::MainNet => "ip4.seeds.tari.com,ip6.seeds.tari.com".to_string(),
+            _ => {
+                format!(
+                    "ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                    key = network.as_key_str(),
+                )
+            }
+        };
+
         let shared_args = vec![
             "-b".to_string(),
             convert_to_string(self.get_working_dir())?,
@@ -210,10 +221,7 @@ impl SpendWalletAdapter {
                 self.tcp_listener_port
             ),
             "-p".to_string(),
-            format!(
-                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
-                key = Network::get_current_or_user_setting_or_default().as_key_str(),
-            ),
+            format!("{}.p2p.seeds.dns_seeds={}", network.as_key_str(), dns_seeds),
         ];
 
         Ok(shared_args)
