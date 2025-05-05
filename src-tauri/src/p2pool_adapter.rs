@@ -132,16 +132,10 @@ impl ProcessAdapter for P2poolAdapter {
         let pid_file_name = self.pid_file_name().to_string();
 
         args.push("--squad-prefix".to_string());
-        let mut squad_prefix = "default";
-        let mut num_squads = 3;
-        if let Some(benchmark) = config.cpu_benchmark_hashrate {
-            if benchmark < 4000 {
-                squad_prefix = "mini";
-                num_squads = 1;
-            }
-        }
+        let squad_prefix = "default";
         args.push(squad_prefix.to_string());
         args.push("--num-squads".to_string());
+        let num_squads = 3;
         args.push(num_squads.to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
