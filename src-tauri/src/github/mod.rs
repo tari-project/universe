@@ -45,7 +45,7 @@ struct Asset {
 
 #[derive(Debug)]
 enum ReleaseSource {
-    Github,
+    // Github,
     Mirror,
 }
 
