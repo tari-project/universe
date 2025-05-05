@@ -288,7 +288,7 @@ impl WalletManager {
                             break;
                         }
 
-                        if scanned_height > 0 {
+                        if scanned_height > 0 && progress < 1.0 {
                             log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 &app_clone,

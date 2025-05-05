@@ -480,6 +480,7 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
+        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, asset.url);
         progress_tracker
             .send_last_action(format!(
                 "Downloading binary: {} with version: {}",
