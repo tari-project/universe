@@ -122,7 +122,7 @@ const initialState: AirdropStoreState = {
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
     pollingEnabled: undefined,
-    uiSendRecvEnabled: false,
+    uiSendRecvEnabled: true,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

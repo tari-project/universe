@@ -27,13 +27,13 @@
   "live": "na żywo",
   "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Nagrody Airdrop",
-  "loggedOutTitle": "Kop i zapraszaj znajomych, aby zdobywać klejnoty",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Zaloguj się, aby odebrać klejnoty",
   "logout": "Wyloguj się",
   "nextTierBonus": "Zaproś <strong>{{count}} znajomych</strong> i zdobądź {{bonusGems}} dodatkowych klejnotów",
   "permission": {
     "setup": "Tari Universe chciałoby używać analityki, aby <strong>poprawić twoje doświadczenia.</strong>",
-    "text": "Tari Universe chciałby używać analityki, aby poprawić Twoje doświadczenia i nagrodzić Cię klejnotami za kopanie.",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "Zarabiaj klejnoty i ulepszaj Tari Universe"
   },
   "permissionNoGems": {
