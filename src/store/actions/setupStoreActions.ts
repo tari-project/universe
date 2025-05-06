@@ -5,21 +5,22 @@ import { startMining, stopMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     initialFetchTxs,
-    sidebarTowerOffset,
     TOWER_CANVAS_ID,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
+    useUIStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
     const visual_mode = useConfigUIStore.getState().visual_mode;
+    const offset = useUIStore.getState().towerSidebarOffset;
     if (visual_mode) {
         try {
             console.info('Loading tower animation');
-            await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: sidebarTowerOffset });
+            await loadTowerAnimation({ canvasId: TOWER_CANVAS_ID, offset: offset });
             try {
                 setAnimationState('showVisual');
             } catch (error) {
