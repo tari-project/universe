@@ -677,7 +677,6 @@ async fn get_telemetry_data(
         upload_speed,
         latency,
     };
-    // info!(target: LOG_TARGET,"Telemetry data collected: {:?}", &data);
     Ok(data)
 }
 
@@ -731,7 +730,6 @@ async fn handle_telemetry_data(
 ) {
     match telemetry {
         Ok(telemetry) => {
-            // Use tokio::select to allow cancellation during the retry operation
             let telemetry_response = tokio::select! {
                 response = retry_with_backoff(
                     || {
@@ -779,6 +777,9 @@ async fn handle_telemetry_data(
                     error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
                 }
             }
+        }
+        Err(TelemetryManagerError::Cancelled) => {
+            debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
         }
         Err(e) => {
             error!(target: LOG_TARGET,"Error getting telemetry data: {}", e);
