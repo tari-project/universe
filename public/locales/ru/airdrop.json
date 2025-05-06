@@ -27,13 +27,13 @@
   "live": "в реальном времени",
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Награды Airdrop",
-  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
   "permission": {
     "setup": "Tari Universe хотел бы использовать аналитику для <strong>улучшения Вашего опыта.</strong>",
-    "text": "Tari Universe хочет использовать аналитику для улучшения Вашего опыта и вознаграждать Вас гемами за майнинг.",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "Зарабатывайте гемы и улучшайте Tari Universe"
   },
   "permissionNoGems": {
