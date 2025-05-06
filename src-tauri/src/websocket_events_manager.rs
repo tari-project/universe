@@ -169,6 +169,7 @@ impl WebsocketEventsManager {
         let network = match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => "esmeralda".to_owned(),
             Network::NextNet => "nextnet".to_owned(),
+            Network::MainNet => "mainnet".to_owned(),
             _ => "unknown".to_owned(),
         };
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
