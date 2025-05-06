@@ -32,7 +32,7 @@
   "nextTierBonus": "Invite <strong>{{count}} friends</strong> & earn {{bonusGems}} bonus gems",
   "permission": {
     "setup": "Tari Universe would like to use analytics to <strong>improve your experience.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for mining.",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "Earn Gems & make Tari Universe better"
   },
   "permissionNoGems": {
