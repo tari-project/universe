@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{app_config::DisplayMode, events_manager::EventsManager};
+use crate::events_manager::EventsManager;
 
 use std::{sync::LazyLock, time::SystemTime};
 
@@ -30,11 +30,29 @@ use sys_locale::get_locale;
 use tauri::AppHandle;
 use tokio::sync::RwLock;
 
-use crate::AppConfig;
-
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigUI>> = LazyLock::new(|| RwLock::new(ConfigUI::new()));
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Default)]
+pub enum DisplayMode {
+    #[default]
+    System,
+    Dark,
+    Light,
+}
+
+impl DisplayMode {
+    pub fn from_str(s: &str) -> Option<DisplayMode> {
+        match s {
+            "system" => Some(DisplayMode::System),
+            "dark" => Some(DisplayMode::Dark),
+            "light" => Some(DisplayMode::Light),
+            _ => None,
+        }
+    }
+}
+
 #[allow(clippy::struct_excessive_bools)]
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -94,10 +112,9 @@ pub struct ConfigUI {
 }
 
 impl ConfigUI {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        config.handle_old_config_migration(old_config);
 
         EventsManager::handle_config_ui_loaded(&app_handle, config.content.clone()).await;
         drop(config);
@@ -112,7 +129,6 @@ impl ConfigUI {
 
 impl ConfigImpl for ConfigUI {
     type Config = ConfigUIContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -142,32 +158,5 @@ impl ConfigImpl for ConfigUI {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigUIContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                display_mode: old_config.display_mode(),
-                has_system_language_been_proposed: old_config.has_system_language_been_proposed(),
-                should_always_use_system_language: old_config.should_always_use_system_language(),
-                application_language: old_config.application_language().to_string(),
-                paper_wallet_enabled: old_config.paper_wallet_enabled(),
-                custom_power_levels_enabled: old_config.custom_power_levels_enabled(),
-                sharing_enabled: old_config.sharing_enabled(),
-                visual_mode: old_config.visual_mode(),
-                show_experimental_settings: old_config.show_experimental_settings(),
-                warmup_seen: false,
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

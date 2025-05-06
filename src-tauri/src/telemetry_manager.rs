@@ -21,11 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
-use crate::app_config::MiningMode;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
 use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMining;
+use crate::configs::config_mining::MiningMode;
 use crate::configs::trait_config::ConfigImpl;
 use crate::gpu_miner_adapter::GpuMinerStatus;
 use crate::hardware::hardware_status_monitor::HardwareStatusMonitor;
