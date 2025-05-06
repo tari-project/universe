@@ -2,7 +2,7 @@ import styled, { css } from 'styled-components';
 import { InputHTMLAttributes, ReactNode } from 'react';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
-const Wrapper = styled.label<{ $disabled?: boolean }>`
+const Wrapper = styled.label<{ $disabled?: boolean; $isLoading?: boolean }>`
     display: flex;
     cursor: pointer;
     position: relative;
@@ -13,6 +13,12 @@ const Wrapper = styled.label<{ $disabled?: boolean }>`
             cursor: auto;
             pointer-events: none;
             opacity: 0.8;
+        `}
+    ${({ $isLoading }) =>
+        $isLoading &&
+        css`
+            cursor: wait;
+            opacity: 0.7;
         `}
 `;
 const Label = styled.label<{ $disabled?: boolean }>`
@@ -70,7 +76,7 @@ const Switch = styled.div<{ $hasDecorators?: boolean }>`
     }
 `;
 
-const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean }>`
+const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean; $isLoading?: boolean }>`
     position: absolute;
     opacity: 0;
     width: 36px;
@@ -116,6 +122,13 @@ const Input = styled.input<{ $isSolid?: boolean; $hasDecorators?: boolean }>`
                   ? theme.palette.success.main
                   : `radial-gradient(at 100% 100%, #000 0% ${theme.colors.teal[700]} 90%)`};
     }
+
+    ${({ $isLoading }) =>
+        $isLoading &&
+        css`
+            cursor: wait;
+            opacity: 0.7;
+        `}
 `;
 
 const Decorator = styled.div<{ $first?: boolean; $checked?: boolean }>`
@@ -142,6 +155,7 @@ interface ToggleSwitchProps extends InputHTMLAttributes<HTMLInputElement> {
     label?: string;
     customDecorators?: { first: ReactNode; second?: ReactNode };
     variant?: 'solid' | 'gradient';
+    isLoading?: boolean;
 }
 export function ToggleSwitch({
     label,
@@ -149,6 +163,7 @@ export function ToggleSwitch({
     disabled,
     onChange,
     customDecorators,
+    isLoading = false,
     ...props
 }: ToggleSwitchProps) {
     const isSolid = variant === 'solid';
@@ -161,7 +176,7 @@ export function ToggleSwitch({
     };
 
     const switchMarkup = (
-        <Wrapper $disabled={disabled}>
+        <Wrapper $isLoading={isLoading} $disabled={disabled}>
             {customDecorators?.first ? (
                 <Decorator $first $checked={props.checked}>
                     {customDecorators?.first}
@@ -171,6 +186,7 @@ export function ToggleSwitch({
                 <Decorator $checked={props.checked}>{customDecorators?.second}</Decorator>
             ) : null}
             <Input
+                $isLoading={isLoading}
                 disabled={disabled}
                 checked={props.checked || false}
                 type="checkbox"
