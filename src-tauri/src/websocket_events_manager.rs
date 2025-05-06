@@ -166,12 +166,7 @@ impl WebsocketEventsManager {
 
         let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
         let gpu_status = gpu_latest_miner_stats.borrow().clone();
-        let network = match Network::get_current_or_user_setting_or_default() {
-            Network::Esmeralda => "esmeralda".to_owned(),
-            Network::NextNet => "nextnet".to_owned(),
-            Network::MainNet => "mainnet".to_owned(),
-            _ => "unknown".to_owned(),
-        };
+        let network = Network::get_current_or_user_setting_or_default().as_key_str();
         let is_mining_active = cpu_miner_status.hash_rate > 0.0 || gpu_status.hash_rate > 0.0;
 
         if let Some(claims) = decode_jwt_claims_without_exp(&jwt_token) {
