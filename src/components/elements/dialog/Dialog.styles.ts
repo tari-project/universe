@@ -2,11 +2,6 @@ import styled from 'styled-components';
 import { FloatingOverlay } from '@floating-ui/react';
 import { colorsAll } from '@app/theme/palettes/colors.ts';
 
-export const Wrapper = styled.div`
-    display: flex;
-    align-items: center;
-    justify-content: center;
-`;
 export const ContentWrapper = styled.div<{ $unPadded?: boolean }>`
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.dialog};

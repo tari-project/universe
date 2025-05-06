@@ -1,16 +1,51 @@
+<<<<<<< HEAD
 use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::info;
+=======
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
+use crate::configs::trait_config::ConfigImpl;
+use crate::ProgressTracker;
+use anyhow::{anyhow, Error};
+use async_trait::async_trait;
+use log::error;
+>>>>>>> origin
 use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
+use std::time::{Duration, SystemTime};
 use tari_common::configuration::Network;
-use tokio::sync::RwLock;
+use tauri_plugin_sentry::sentry;
+use tokio::sync::watch::Receiver;
+use tokio::sync::{Mutex, RwLock};
+use tokio::time::timeout;
 
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
@@ -18,7 +53,11 @@ use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
+<<<<<<< HEAD
 pub const LOG_TARGET: &str = "tari::universe::binary_resolver";
+=======
+const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
+>>>>>>> origin
 
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
@@ -56,55 +95,64 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
 }
 
 pub struct BinaryResolver {
-    managers: HashMap<Binaries, BinaryManager>,
+    managers: HashMap<Binaries, Mutex<BinaryManager>>,
 }
 
 impl BinaryResolver {
     #[allow(clippy::too_many_lines)]
     pub fn new() -> Self {
-        let mut binary_manager = HashMap::<Binaries, BinaryManager>::new();
+        let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
 
-        let gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+        let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
+        let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let mut gpu_miner_mainnet_regex = Regex::new(r"opencl.*mainnet").ok();
 
-        let gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
+            gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
+            gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            gpu_miner_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
+        }
 
-        let (tari_prerelease_prefix, gpuminer_specific_nanme) =
+        let (tari_prerelease_prefix, gpuminer_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
+                Network::MainNet => ("", gpu_miner_mainnet_regex),
+                Network::StageNet => ("", gpu_miner_nextnet_regex),
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
-                _ => panic!("Unsupported network"),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
+                Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
 
         binary_manager.insert(
             Binaries::Xmrig,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
                 // Some("xmrig-6.22.0".to_string()),
                 None,
                 Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::GpuMiner,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
-                    repo: "tarigpuminer".to_string(),
-                    owner: "stringhandler".to_string(),
-                    specific_name: gpuminer_specific_nanme,
+                    repo: "glytex".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: gpuminer_specific_name,
                 }),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::MergeMiningProxy,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -114,12 +162,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::MinotariNode,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -129,12 +177,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::Wallet,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -144,12 +192,12 @@ impl BinaryResolver {
                 }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::ShaP2pool,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
                 None,
                 Box::new(GithubReleasesAdapter {
@@ -159,18 +207,18 @@ impl BinaryResolver {
                 }),
                 None,
                 true,
-            ),
+            )),
         );
 
         binary_manager.insert(
             Binaries::Tor,
-            BinaryManager::new(
+            Mutex::new(BinaryManager::new(
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
                 Box::new(TorReleaseAdapter {}),
                 None,
                 true,
-            ),
+            )),
         );
 
         Self {
@@ -182,17 +230,38 @@ impl BinaryResolver {
         &INSTANCE
     }
 
-    pub fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
+    async fn should_check_for_update() -> bool {
+        let now = SystemTime::now();
+
+        let should_check_for_update = now
+            .duration_since(*ConfigCore::content().await.last_binaries_update_timestamp())
+            .unwrap_or(Duration::from_secs(0))
+            .gt(&TIME_BETWEEN_BINARIES_UPDATES);
+
+        if should_check_for_update {
+            let _unused = ConfigCore::update_field(
+                ConfigCoreContent::set_last_binaries_update_timestamp,
+                now,
+            )
+            .await;
+        }
+
+        should_check_for_update
+    }
+
+    pub async fn resolve_path_to_binary_files(&self, binary: Binaries) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&binary)
             .ok_or_else(|| anyhow!("No latest version manager for this binary"))?;
 
         let version = manager
+            .lock()
+            .await
             .get_used_version()
             .ok_or_else(|| anyhow!("No version selected for binary {}", binary.name()))?;
 
-        let base_dir = manager.get_base_dir().map_err(|error| {
+        let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
             anyhow!(
                 "No base directory for binary {}, Error: {}",
                 binary.name(),
@@ -200,7 +269,7 @@ impl BinaryResolver {
             )
         })?;
 
-        if let Some(sub_folder) = manager.binary_subfolder() {
+        if let Some(sub_folder) = manager.lock().await.binary_subfolder() {
             return Ok(base_dir
                 .join(sub_folder)
                 .join(binary.binary_file_name(version)));
@@ -208,18 +277,48 @@ impl BinaryResolver {
         Ok(base_dir.join(binary.binary_file_name(version)))
     }
 
-    pub async fn initalize_binary(
-        &mut self,
+    pub async fn initialize_binary_timeout(
+        &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
-        should_check_for_update: bool,
+        timeout_channel: Receiver<String>,
     ) -> Result<(), Error> {
+<<<<<<< HEAD
         info!(target: LOG_TARGET, "Initializing binary: {} | should check for update: {}", binary.name(), should_check_for_update);
 
         let manager = self
+=======
+        match timeout(
+            Duration::from_secs(60 * 5),
+            self.initialize_binary(binary, progress_tracker.clone()),
+        )
+        .await
+        {
+            Err(_) => {
+                let last_msg = timeout_channel.borrow().clone();
+                error!(target: "tari::universe::main", "Setup took too long: {:?}", last_msg);
+                let error_msg = format!("Setup took too long: {}", last_msg);
+                sentry::capture_message(&error_msg, sentry::Level::Error);
+                Err(anyhow!(error_msg))
+            }
+            Ok(result) => result,
+        }
+    }
+
+    pub async fn initialize_binary(
+        &self,
+        binary: Binaries,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        let mut manager = self
+>>>>>>> origin
             .managers
-            .get_mut(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
+
+        let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
 
@@ -265,17 +364,27 @@ impl BinaryResolver {
     }
 
     pub async fn update_binary(
-        &mut self,
+        &self,
         binary: Binaries,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        let manager = self
+        let mut manager = self
             .managers
-            .get_mut(&binary)
-            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?;
+            .get(&binary)
+            .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?
+            .lock()
+            .await;
 
         manager.check_for_updates().await;
         let highest_version = manager.select_highest_version();
+
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist before download: {} {}",
+                binary.name(),
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
+            ))
+            .await;
 
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
@@ -285,6 +394,13 @@ impl BinaryResolver {
                 .await?;
         }
 
+        progress_tracker
+            .send_last_action(format!(
+                "Checking if files exist after download: {} {}",
+                binary.name(),
+                highest_version.clone().unwrap_or(Version::new(0, 0, 0))
+            ))
+            .await;
         let check_if_files_exist =
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
@@ -299,14 +415,17 @@ impl BinaryResolver {
         Ok(())
     }
 
-    pub fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
+    pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         self.managers
             .get(&binary)
-            .and_then(|manager| manager.get_used_version())
+            .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
+            .lock()
+            .await
+            .get_used_version()
     }
 
     pub async fn get_binary_version_string(&self, binary: Binaries) -> String {
-        let version = self.get_binary_version(binary);
+        let version = self.get_binary_version(binary).await;
         version
             .map(|v| v.to_string())
             .unwrap_or_else(|| "Not Installed".to_string())

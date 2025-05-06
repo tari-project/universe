@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "Adresy nasłuchujące",
+  "miners": "Górnicy",
+  "network-info": "Informacje o sieci",
+  "p2pool-chain-tip": "Wskazówka łańcucha P2Pool",
+  "p2pool-connected": "Połączono z P2Pool",
+  "p2pool-connection-info": "Połączenie",
+  "p2pool-connection-info-more": "Szczegóły połączenia",
+  "p2pool-peers": "Rówieśnicy P2pool",
+  "p2pool-stats": "Statystyki kopania w puli",
+  "randomx-stats": "Statystyki RandomX",
+  "sha3-stats": "Statystyki SHA3",
+  "tribe": "Plemie"
+}

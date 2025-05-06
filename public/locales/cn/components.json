@@ -1,11 +1,44 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
+    "integers-only": "只允许整数",
     "invalid": "字段无效",
-    "required": "必填字段",
-    "password-too-short": "密码必须至少包含 8 个字符",
-    "invalid-url": "必须是有效的链接",
-    "invalid-email": "输入有效的电子邮件地址",
     "invalid-date": "日期无效",
-    "integers-only": "只允许整数"
+    "invalid-email": "输入有效的电子邮件地址",
+    "invalid-url": "必须是有效的链接",
+    "password-too-short": "密码必须至少包含 8 个字符",
+    "required": "必填字段"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "取消",
+    "description": "疯狂模式可能会导致系统无响应。请确认您要在疯狂模式下开始挖矿，否则 Tari Universe 将在",
+    "keepChanges": "保留更改",
+    "seconds": "秒",
+    "title": "切换到疯狂模式？"
+  },
+  "releaseNotesDialog": {
+    "close": "知道了",
+    "title": "发布说明"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "完成恢复...",
+    "resuming-all-processes": "恢复所有进程...",
+    "resuming-mm-proxy": "恢复 MM 代理...",
+    "resuming-node": "恢复节点...",
+    "resuming-p2pool": "恢复 P2Pool...",
+    "resuming-tor": "恢复 Tor...",
+    "resuming-wallet": "恢复钱包...",
+    "syncing-node": "同步节点...",
+    "title": "恢复 Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }

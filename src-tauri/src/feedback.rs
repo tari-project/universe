@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
@@ -11,26 +33,20 @@ use tokio::sync::RwLock;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::app_config::AppConfig;
 use crate::app_in_memory_config::AppInMemoryConfig;
+use crate::configs::config_core::ConfigCore;
+use crate::configs::trait_config::ConfigImpl;
 use crate::utils::file_utils::{make_relative_path, path_as_string};
 
 const LOG_TARGET: &str = "tari::universe::feedback";
 
 pub struct Feedback {
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-    config: Arc<RwLock<AppConfig>>,
 }
 
 impl Feedback {
-    pub fn new(
-        in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
-        config: Arc<RwLock<AppConfig>>,
-    ) -> Self {
-        Self {
-            in_memory_config,
-            config,
-        }
+    pub fn new(in_memory_config: Arc<RwLock<AppInMemoryConfig>>) -> Self {
+        Self { in_memory_config }
     }
 
     /// Build zip file
@@ -83,8 +99,8 @@ impl Feedback {
     }
 
     async fn archive_path(&self, logs_dir: &Path) -> Result<(PathBuf, String)> {
-        let config = self.config.read().await;
-        let zip_filename = format!("logs_{}.zip", config.anon_id());
+        let anon_id = ConfigCore::content().await.anon_id().clone();
+        let zip_filename = format!("logs_{}.zip", anon_id.clone());
         let archive_file = logs_dir.join(zip_filename.clone());
         let _unused = self
             .zip_create_from_directory(&archive_file, logs_dir)
@@ -107,10 +123,10 @@ impl Feedback {
         );
 
         // Create a multipart form
-        let app_id = self.config.read().await.anon_id().to_string();
+        let anon_id = ConfigCore::content().await.anon_id().clone();
         let mut form = multipart::Form::new()
             .text("feedback", feedback_message.clone())
-            .text("appId", app_id.clone());
+            .text("appId", anon_id.clone());
 
         let upload_zip_path = if include_logs {
             let logs_dir = &app_log_dir.ok_or(anyhow::anyhow!("Missing log directory"))?;
@@ -135,12 +151,8 @@ impl Feedback {
             None
         };
 
-        let jwt = self
-            .in_memory_config
-            .read()
-            .await
-            .airdrop_access_token
-            .clone();
+        let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
+        let jwt = airdrop_tokens.map(|tokens| tokens.token);
 
         // Send the POST request
         let mut req = reqwest::Client::new().post(feedback_url).multipart(form);

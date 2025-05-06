@@ -1,0 +1,34 @@
+{
+  "common": {
+    "got-it": "Rozumiem"
+  },
+  "completedTip": {
+    "text": "Twoja fraza seed może być ponownie znaleziona w ustawieniach",
+    "title": "Fraza seed"
+  },
+  "intro": {
+    "balance": "Twój portfel ma <span>{{balance}}</span> XTM",
+    "button": "Zrób kopię zapasową frazy seed",
+    "text": "Tari Universe automatycznie zakłada portfel, gdy zaczynasz kopać. Upewnij się, że zawsze masz dostęp do swojego portfela, przechowując frazę seed w bezpiecznym miejscu.",
+    "title": "Chroń swoje tokeny, tworząc kopię zapasową frazy seed",
+    "warning": "❗ Wysoce zalecane"
+  },
+  "reminderTip": {
+    "text": "Zaleca się wykonanie kopii zapasowej frazy seed dla unikalnego portfela",
+    "title": "Szybko zrób kopię zapasową frazy seed w ustawieniach"
+  },
+  "seedPhrase": {
+    "button": "ZWERYFIKUJ FRAZĘ SEED",
+    "checkbox": "Rozumiem, że jeśli zgubię swoją frazę seed, nie będę mógł przywrócić portfela.",
+    "copied": "Skopiowano!",
+    "copy": "Kopiuj do schowka",
+    "text": "Będziesz potrzebować tego kodu, aby przywrócić swój portfel.",
+    "title": "Zapisz swoją frazę seed i przechowuj ją w bezpiecznym miejscu"
+  },
+  "verifySeed": {
+    "button": "POTWIERDŹ FRAZĘ SEED",
+    "placeholder": "Kliknij poniższe słowa w odpowiedniej kolejności",
+    "text": "Aby upewnić się, że poprawnie zapisałeś swoją frazę seed, wybierz słowa w odpowiedniej kolejności.",
+    "title": "Zweryfikuj swoją frazę seed"
+  }
+}

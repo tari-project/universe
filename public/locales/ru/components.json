@@ -1,11 +1,44 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
+    "integers-only": "Допускаются только целые числа",
     "invalid": "Поле недействительно",
-    "required": "Поле обязательно",
-    "password-too-short": "Пароль должен содержать не менее 8 символов",
-    "invalid-url": "Должен быть действительный URL-адрес",
-    "invalid-email": "Введите действительный адрес электронной почты",
     "invalid-date": "Дата недействительна",
-    "integers-only": "Допускаются только целые числа"
+    "invalid-email": "Введите действительный адрес электронной почты",
+    "invalid-url": "Должен быть действительный URL-адрес",
+    "password-too-short": "Пароль должен содержать не менее 8 символов",
+    "required": "Обязательное поле"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Отмена",
+    "description": "Режим Ludicrous может сделать Вашу систему неотзывчивой. Пожалуйста, подтвердите, что Вы хотите начать майнинг в режиме Ludicrous, или Tari Universe переключится обратно в режим Eco через",
+    "keepChanges": "Сохранить изменения",
+    "seconds": "секунд",
+    "title": "Переключиться в режим Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Понял",
+    "title": "Примечания к выпуску"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "Завершение возобновления...",
+    "resuming-all-processes": "Возобновление всех процессов...",
+    "resuming-mm-proxy": "Возобновление MM Proxy...",
+    "resuming-node": "Возобновление узла...",
+    "resuming-p2pool": "Возобновление P2Pool...",
+    "resuming-tor": "Возобновление Tor...",
+    "resuming-wallet": "Возобновление кошелька...",
+    "syncing-node": "Синхронизация узла...",
+    "title": "Возобновление Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }

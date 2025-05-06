@@ -1,22 +1,26 @@
-import { ReactNode, CSSProperties, HTMLAttributes } from 'react';
+import { ReactNode, CSSProperties, HTMLAttributes, memo } from 'react';
 
 import { DynamicTypography } from './styled';
 
 export type TagVariants = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'p' | 'span';
 
-export interface TypographyProps extends HTMLAttributes<HTMLDivElement> {
+interface TypographyProps extends HTMLAttributes<HTMLDivElement> {
     variant?: TagVariants;
     children: ReactNode;
     fontFamily?: string;
 }
 
-export const Typography = ({
+const Typography = memo(function Typography({
     variant = 'span',
     children,
     fontFamily = 'inherit',
     ...props
-}: TypographyProps & CSSProperties) => (
-    <DynamicTypography variant={variant} fontFamily={fontFamily} {...props}>
-        {children}
-    </DynamicTypography>
-);
+}: TypographyProps & CSSProperties) {
+    return (
+        <DynamicTypography variant={variant} fontFamily={fontFamily} {...props}>
+            {children}
+        </DynamicTypography>
+    );
+});
+
+export { Typography };

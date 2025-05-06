@@ -1,3 +1,25 @@
+// Copyright 2024. The Tari Project
+//
+// Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+// following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+// disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+// following disclaimer in the documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote
+// products derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+// INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+// WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+// USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 #[cfg(test)]
 mod tests {
     use std::time::{Duration, SystemTime};
@@ -12,7 +34,6 @@ mod tests {
         let config_json = r#"
         {
             "version": 0,
-            "auto_mining": true
         }
         "#;
 
@@ -21,15 +42,13 @@ mod tests {
         config.apply_loaded_config(config_json.to_string());
 
         assert_eq!(config.mode(), MiningMode::Eco);
-        // it doesn't affect auto_mining value saved in the config
-        assert_eq!(config.auto_mining(), true);
-        assert_eq!(config.p2pool_enabled(), false);
+        assert!(!config.p2pool_enabled());
         assert_ne!(format!("{:?}", config.last_binaries_update_timestamp()), "");
-        assert_eq!(config.allow_telemetry(), false);
+        assert!(!config.allow_telemetry());
         assert_eq!(config.anon_id().len(), 20);
         assert_eq!(config.monero_address(), DEFAULT_MONERO_ADDRESS.to_string());
-        assert_eq!(config.gpu_mining_enabled(), true);
-        assert_eq!(config.cpu_mining_enabled(), true);
+        assert!(config.gpu_mining_enabled());
+        assert!(config.cpu_mining_enabled());
     }
 
     #[test]
@@ -37,7 +56,6 @@ mod tests {
         let config_json = r#"
             {
                 "mode": "Ludicrous",
-                "auto_mining": false,
                 "p2pool_enabled": true,
                 "last_binaries_update_timestamp": {
                     "secs_since_epoch": 1725545367,
@@ -56,18 +74,17 @@ mod tests {
         config.apply_loaded_config(config_json.to_string());
 
         assert_eq!(config.mode(), MiningMode::Ludicrous);
-        assert_eq!(config.auto_mining(), false);
         // For now always false by default
-        assert_eq!(config.p2pool_enabled(), false);
+        assert!(!config.p2pool_enabled());
         let expected_timestamp = SystemTime::UNIX_EPOCH + Duration::new(1725545367, 379078628);
         assert_eq!(config.last_binaries_update_timestamp(), expected_timestamp);
-        assert_eq!(config.allow_telemetry(), true);
+        assert!(config.allow_telemetry());
         assert_eq!(config.anon_id(), "5GGl^0NQiChrGMsjYXs5");
         assert_eq!(
             config.monero_address(),
             "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A"
         );
-        assert_eq!(config.gpu_mining_enabled(), true);
-        assert_eq!(config.cpu_mining_enabled(), true);
+        assert!(config.gpu_mining_enabled());
+        assert!(config.cpu_mining_enabled());
     }
 }

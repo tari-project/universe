@@ -1,11 +1,11 @@
 import { Colours } from '@app/theme/palettes/colors.ts';
 import { ColoursAlpha } from '@app/theme/palettes/colorsAlpha.ts';
 
-export const THEME_TYPES = ['light', 'dark'] as const;
-type ThemeTuple = typeof THEME_TYPES;
+const _THEME_TYPES = ['light', 'dark'] as const;
+type ThemeTuple = typeof _THEME_TYPES;
 export type Theme = ThemeTuple[number];
 
-export const COLOUR_TYPES = [
+const _COLOUR_TYPES = [
     'main',
     'dark',
     'light',
@@ -18,10 +18,13 @@ export const COLOUR_TYPES = [
     'accent',
     'default',
 ] as const;
-type ColourTuple = typeof COLOUR_TYPES;
+type ColourTuple = typeof _COLOUR_TYPES;
 type ColourKey = ColourTuple[number];
-export type Colour = { [key in ColourKey]?: string };
-export type Gradients = { [key in ColourKey]?: string };
+
+type StandardColour = Record<ColourKey, string>;
+type Colour = Partial<Record<ColourKey, string>>;
+type GraidentKey = 'setupBg' | 'radialBg' | 'miningButtonStarted' | 'miningButtonHover' | ColourKey;
+type Gradients = Partial<Record<GraidentKey, string>>;
 
 export interface ThemePalette {
     mode: Theme;
@@ -31,11 +34,11 @@ export interface ThemePalette {
     gradients: Gradients;
 }
 
-export interface Palette {
+interface Palette {
     base: string;
     contrast: string;
     contrastAlpha: string;
-    primary: Colour;
+    primary: Omit<StandardColour, 'primary' | 'secondary' | 'default'>;
     secondary: Colour;
     success: Colour;
     warning: Colour;
@@ -49,6 +52,7 @@ export interface Palette {
         paper: string;
         accent: string;
         main: string;
+        secondary: string;
     };
     action: {
         hover: Colour;

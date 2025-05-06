@@ -1,19 +1,21 @@
 import styled, { css } from 'styled-components';
+import { RadioType } from './RadioButton.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
 interface Props {
     $variant: 'dark' | 'light' | 'neutral';
+    $styleType?: RadioType;
     $disabled?: boolean;
 }
 
-export const RadioButtonWrapper = styled.div<Props>`
+export const RadioButtonWrapper = styled.label<Props>`
     gap: 6px;
     display: flex;
     align-items: center;
     justify-content: stretch;
     width: 100%;
-    padding: 0 25px;
-    height: 55px;
     color: transparent;
+    cursor: pointer;
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     border-width: 1px;
     border-style: solid;
@@ -22,7 +24,7 @@ export const RadioButtonWrapper = styled.div<Props>`
         color: #fff;
     }
 
-    ${({ theme, $variant }) => {
+    ${({ theme, $variant, $styleType }) => {
         switch ($variant) {
             case 'dark': {
                 return css`
@@ -37,19 +39,31 @@ export const RadioButtonWrapper = styled.div<Props>`
             case 'neutral':
             default: {
                 return css`
-                    background-color: ${theme.colorsAlpha.darkAlpha[10]};
+                    background-color: ${$styleType === 'minimal'
+                        ? convertHexToRGBA(theme.palette.contrast, 0.04)
+                        : theme.colorsAlpha.darkAlpha[10]};
                 `;
             }
         }
     }};
+
+    ${({ $styleType }) =>
+        $styleType === 'minimal'
+            ? css`
+                  padding: 0 12px;
+                  height: 36px;
+              `
+            : css`
+                  padding: 0 25px;
+                  height: 55px;
+              `}
 `;
 
-export const StyledLabel = styled.label<Props>`
-    text-transform: capitalize;
-    text-align: center;
+export const StyledLabel = styled.div<Props>`
     width: 100%;
-
-    ${({ $variant }) => {
+    cursor: pointer;
+    -webkit-user-select: none;
+    ${({ $variant, $styleType }) => {
         switch ($variant) {
             case 'dark': {
                 return css`
@@ -64,11 +78,22 @@ export const StyledLabel = styled.label<Props>`
             case 'neutral':
             default: {
                 return css`
-                    color: ${({ theme }) => theme.palette.text.primary};
+                    color: ${({ theme }) =>
+                        $styleType === 'minimal' ? theme.palette.text.accent : theme.palette.text.primary};
                 `;
             }
         }
     }};
+
+    ${({ $styleType }) =>
+        $styleType === 'minimal'
+            ? css`
+                  padding-left: 6px;
+              `
+            : css`
+                  text-align: center;
+                  text-transform: capitalize;
+              `}
 
     ${({ $disabled }) =>
         $disabled &&

@@ -1,0 +1,17 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "предстоящая награда / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Вы приближаетесь",
+      "days": "дни",
+      "hours": "часы"
+    },
+    "friends": {
+      "reduceTimer": "Сократите таймер, пригласив друзей",
+      "linkCopied": "Ссылка скопирована!",
+      "growCrew": "расширяйте свою команду"
+    }
+  }
+}

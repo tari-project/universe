@@ -1,77 +1,202 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/tari.svg" />
-    <script type="module" crossorigin src="/assets/glApp.js"></script>
-    <title>Tari Universe | Testnet</title>
-    <style>
-      #canvas {
-        position: absolute;
-        pointer-events: auto;
-      }
-  </style>
-</head>
-  <body>
-    <main>
-      <canvas id="canvas"></canvas>
-      <div id="root"></div>
-      <script type="module" src="src/main.tsx"></script>
-      <script>
-        let time;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="icon" type="image/svg+xml" href="/tari.svg" />
 
-        function preload() {
-          glApp.preload(
-              {
-                canvas: document.getElementById('canvas'),
-                orbitTarget: document.getElementById('canvas'),
-                ASSETS_PATH: '/assets/',
-              },
-              () => {
-                init();
-              },
-          );
-        }
+        <!-- Preload Poppins fonts -->
+        <link
+            rel="preload"
+            href="/assets/fonts/Poppins/Poppins-Regular.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link rel="preload" href="/assets/fonts/Poppins/Poppins-Medium.woff2" as="font" type="font/woff2" crossorigin />
+        <link
+            rel="preload"
+            href="/assets/fonts/Poppins/Poppins-SemiBold.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link rel="preload" href="/assets/fonts/Poppins/Poppins-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
-        function init() {
-          glApp.init();
-          time = performance.now() / 1000;
-          window.addEventListener('resize', onResize);
+        <!-- Preload Druk fonts -->
+        <link rel="preload" href="/assets/fonts/Druk/DrukLCG-Bold.woff2" as="font" type="font/woff2" crossorigin />
+        <link rel="preload" href="/assets/fonts/Druk/DrukWideLCG-Bold.woff2" as="font" type="font/woff2" crossorigin />
 
-          onResize();
-          animate();
-        }
+        <!-- Preload IBM Plex Mono fonts -->
+        <link
+            rel="preload"
+            href="/assets/fonts/IBMPlexMono/IBMPlexMono-Regular.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/assets/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/assets/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
+        <link
+            rel="preload"
+            href="/assets/fonts/IBMPlexMono/IBMPlexMono-Bold.woff2"
+            as="font"
+            type="font/woff2"
+            crossorigin
+        />
 
-        function animate() {
-          requestAnimationFrame(animate);
+        <title>Tari Universe | Testnet</title>
+        <style>
+            /* Poppins Font Faces */
 
-          let newTime = performance.now() / 1000;
-          let dt = newTime - time;
-          time = newTime;
+            @font-face {
+                font-family: 'Poppins';
+                font-weight: 400;
+                font-style: normal;
+                src:
+                    url('/assets/fonts/Poppins/Poppins-Regular.woff2') format('woff2'),
+                    url('/assets/fonts/Poppins/Poppins-Regular.woff') format('woff'),
+                    url('/assets/fonts/Poppins/Poppins-Regular.ttf') format('truetype');
+                font-display: swap;
+            }
 
-          update(dt);
-        }
+            @font-face {
+                font-family: 'Poppins';
+                font-weight: 500;
+                font-style: normal;
+                src:
+                    url('/assets/fonts/Poppins/Poppins-Medium.woff2') format('woff2'),
+                    url('/assets/fonts/Poppins/Poppins-Medium.woff') format('woff'),
+                    url('/assets/fonts/Poppins/Poppins-Medium.ttf') format('truetype');
+                font-display: swap;
+            }
 
-        function update(dt) {
-          glApp.render(dt);
-        }
+            @font-face {
+                font-family: 'Poppins';
+                font-weight: 600;
+                font-style: normal;
+                src:
+                    url('/assets/fonts/Poppins/Poppins-SemiBold.woff2') format('woff2'),
+                    url('/assets/fonts/Poppins/Poppins-SemiBold.woff') format('woff'),
+                    url('/assets/fonts/Poppins/Poppins-SemiBold.ttf') format('truetype');
+                font-display: swap;
+            }
 
-        function onResize() {
-          const sidebarOffset = 348 + 20; // sidebar + padding
-          glApp.properties.cameraOffsetX =  sidebarOffset / window.innerWidth;
-          glApp.setSize(window.innerWidth, window.innerHeight);
-        }
+            @font-face {
+                font-family: 'Poppins';
+                font-weight: 700;
+                font-style: normal;
+                src:
+                    url('/assets/fonts/Poppins/Poppins-Bold.woff2') format('woff2'),
+                    url('/assets/fonts/Poppins/Poppins-Bold.woff') format('woff'),
+                    url('/assets/fonts/Poppins/Poppins-Bold.ttf') format('truetype');
+                font-display: swap;
+            }
 
+            /* Druk Font Faces */
+            @font-face {
+                font-family: 'Druk';
+                src:
+                    url('/assets/fonts/Druk/DrukLCG-Bold.woff2') format('woff2'),
+                    url('/assets/fonts/Druk/DrukLCG-Bold.woff') format('woff'),
+                    url('/assets/fonts/Druk/DrukLCG-Bold.ttf') format('truetype');
+                font-weight: 700;
+                font-style: normal;
+                font-display: swap;
+            }
 
-        document.addEventListener("contextmenu", (e) => {
-          if (window.location.hostname !== "localhost") {
-            e.preventDefault();
-          }
-        });
+            @font-face {
+                font-family: 'DrukWide';
+                src:
+                    url('/assets/fonts/Druk/DrukWideLCG-Bold.woff2') format('woff2'),
+                    url('/assets/fonts/Druk/DrukWideLCG-Bold.woff') format('woff'),
+                    url('/assets/fonts/Druk/DrukWideLCG-Bold.ttf') format('truetype');
+                font-weight: 800;
+                font-style: normal;
+                font-display: swap;
+            }
 
-        document.addEventListener('DOMContentLoaded', preload);
-      </script>
-    </main>
-</body>
+            /* IBM Plex Mono Fonts */
+
+            @font-face {
+                font-family: 'IBM Plex Mono';
+                src:
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Regular.woff2') format('woff2'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Regular.woff') format('woff'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Regular.ttf') format('truetype');
+                font-weight: 400;
+                font-style: normal;
+                font-display: swap;
+            }
+
+            @font-face {
+                font-family: 'IBM Plex Mono';
+                src:
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Medium.woff2') format('woff2'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Medium.woff') format('woff'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Medium.ttf') format('truetype');
+                font-weight: 500;
+                font-style: normal;
+                font-display: swap;
+            }
+
+            @font-face {
+                font-family: 'IBM Plex Mono';
+                src:
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff2') format('woff2'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-SemiBold.woff') format('woff'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-SemiBold.ttf') format('truetype');
+                font-weight: 600;
+                font-style: normal;
+                font-display: swap;
+            }
+
+            @font-face {
+                font-family: 'IBM Plex Mono';
+                src:
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Bold.woff2') format('woff2'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Bold.woff') format('woff'),
+                    url('/assets/fonts/IBMPlexMono/IBMPlexMono-Bold.ttf') format('truetype');
+                font-weight: 700;
+                font-style: normal;
+                font-display: swap;
+            }
+
+            /* Existing styles */
+
+            html {
+                background: #fff;
+                @media (prefers-color-scheme: dark) {
+                    background: #000;
+                }
+            }
+
+            body,
+            main,
+            #root {
+                padding: 0;
+                margin: 0;
+            }
+            #tower-canvas {
+                position: absolute;
+                pointer-events: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="root"></div>
+        <script type="module" src="src/main.tsx"></script>
+    </body>
 </html>

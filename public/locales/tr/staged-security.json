@@ -1,0 +1,34 @@
+{
+  "common": {
+    "got-it": "Anladım"
+  },
+  "completedTip": {
+    "text": "Seed kelimeleriniz ayarlarınızda tekrar bulunabilir",
+    "title": "Seed kelimeleri"
+  },
+  "intro": {
+    "balance": "Cüzdanınızda <span>{{balance}}</span> XTM var",
+    "button": "Seed kelimelerini yedekle",
+    "text": "Tari Universe, madenciliğe başladığınızda sizin için otomatik olarak bir cüzdan kurar. Seed kelimelerinizi güvenli bir yerde saklayarak cüzdanınıza her zaman erişiminiz olduğundan emin olun.",
+    "title": "Seed kelimelerinizi yedekleyerek token\"larınızı koruyun",
+    "warning": "Şiddetle tavsiye edilir"
+  },
+  "reminderTip": {
+    "text": "Benzersiz cüzdanınız için seed kelimelerinizi yedeklemeniz şiddetle tavsiye edilir",
+    "title": "Ayarlarınızda seed kelimelerinizi hızlıca yedekleyin"
+  },
+  "seedPhrase": {
+    "button": "SEED KELİMELERİNİ DOĞRULA",
+    "checkbox": "Kurtarma seed kelimelerimi kaybedersem cüzdanımı geri yükleyemeyeceğimi anlıyorum.",
+    "copied": "Kopyalandı!",
+    "copy": "Panoya kopyala",
+    "text": "Cüzdanınızı geri yüklemek için bu koda tekrar ihtiyacınız olacak.",
+    "title": "Seed kelimelerinizi yazın ve güvenli bir yerde saklayın"
+  },
+  "verifySeed": {
+    "button": "SEED KELİMELERİNİ ONAYLA",
+    "placeholder": "Aşağıdaki kelimelere doğru sırayla tıklayın",
+    "text": "Seed kelimelerinizi doğru yazdığınızdan emin olmak için lütfen kelimeleri doğru sırayla seçin.",
+    "title": "Seed kelimelerinizi doğrulayın"
+  }
+}

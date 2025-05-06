@@ -1,11 +1,44 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
+    "integers-only": "Hanya bilangan bulat yang diizinkan",
     "invalid": "Kolom tidak valid",
-    "required": "Kolom diperlukan",
-    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
-    "invalid-url": "Harus berupa alamat URL yang valid",
-    "invalid-email": "Masukkan alamat email yang valid",
     "invalid-date": "Tanggal tidak valid",
-    "integers-only": "Hanya bilangan bulat yang diizinkan"
+    "invalid-email": "Masukkan alamat email yang valid",
+    "invalid-url": "Harus berupa alamat URL yang valid",
+    "password-too-short": "Kata sandi harus memiliki setidaknya 8 karakter",
+    "required": "Kolom diperlukan"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Batal",
+    "description": "Mode Ludicrous dapat membuat sistem Anda tidak responsif. Harap konfirmasi jika Anda ingin memulai penambangan dalam mode Ludicrous atau Tari Universe akan beralih kembali ke mode Eco dalam",
+    "keepChanges": "Simpan Perubahan",
+    "seconds": "detik",
+    "title": "Beralih ke Mode Ludicrous?"
+  },
+  "releaseNotesDialog": {
+    "close": "Mengerti",
+    "title": "Catatan Rilis"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "Menyelesaikan Resume...",
+    "resuming-all-processes": "Melanjutkan semua proses...",
+    "resuming-mm-proxy": "Melanjutkan MM Proxy...",
+    "resuming-node": "Melanjutkan Node...",
+    "resuming-p2pool": "Melanjutkan P2Pool...",
+    "resuming-tor": "Melanjutkan Tor...",
+    "resuming-wallet": "Melanjutkan Dompet...",
+    "syncing-node": "Sinkronisasi Node...",
+    "title": "Melanjutkan Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }

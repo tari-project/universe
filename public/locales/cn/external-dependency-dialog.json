@@ -1,5 +1,5 @@
 {
-  "title": "外部依赖",
   "description": "以下外部依赖是应用程序正常运行所需的。",
-  "download-and-install": "下载并安装"
+  "download-and-install": "下载并安装",
+  "title": "外部依赖"
 }

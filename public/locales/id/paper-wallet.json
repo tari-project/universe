@@ -1,0 +1,18 @@
+{
+  "connect": {
+    "blackButton": "Saya memiliki aplikasi",
+    "scan": "Pindai Kode QR",
+    "text": "Unduh Tari Aurora dan lacak XTM Anda di mana saja. Dapatkan sekarang di App Store atau Google Play Store.",
+    "textButton": "Pelajari lebih lanjut tentang Tari Aurora",
+    "title": "Hubungkan dompet Tari Universe Anda ke ponsel Anda"
+  },
+  "qrcode": {
+    "blackButton": "Selesai",
+    "copied": "Disalin!",
+    "inputLabel": "Kode Identifikasi",
+    "text": "Pindai kode QR dalam aplikasi Tari Aurora untuk mengimpor dompet Tari Universe Anda. Gunakan kode satu kali di bawah ini untuk mengonfirmasi identitas Anda, lalu ikuti langkah-langkah dalam aplikasi.",
+    "textButton": "Saya butuh bantuan",
+    "title": "Impor ke Tari Aurora",
+    "warning": "Jangan bagikan kode QR ini"
+  }
+}

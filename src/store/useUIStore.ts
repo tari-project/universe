@@ -1,57 +1,59 @@
 import { create } from './create';
-import { backgroundType, viewType } from './types.ts';
 import { Theme } from '@app/theme/types.ts';
+import { SB_MINI_WIDTH, SB_SPACING } from '@app/theme/styles.ts';
 
-export const DIALOG_TYPES = ['logs', 'restart'] as const;
-type DialogTypeTuple = typeof DIALOG_TYPES;
-export type DialogType = DialogTypeTuple[number];
+export const sidebarTowerOffset = SB_SPACING + SB_MINI_WIDTH;
+export const TOWER_CANVAS_ID = 'tower-canvas';
+const _DIALOG_TYPES = ['logs', 'restart', 'autoUpdate', 'releaseNotes', 'ludicrousConfirmation', 'warmup'] as const;
+type DialogTypeTuple = typeof _DIALOG_TYPES;
+export type DialogType = DialogTypeTuple[number] | null;
 
-interface State {
+export type AdminShow = 'setup' | 'main' | 'shutdown' | null;
+export type CONNECTION_STATUS = 'connected' | 'disconnected' | 'disconnected-severe';
+const _SIDEBAR_TYPES = ['mining', 'wallet'] as const;
+
+type SidebarTypeTuple = typeof _SIDEBAR_TYPES;
+export type SidebarType = SidebarTypeTuple[number];
+
+interface UIStoreState {
     theme: Theme;
-    showSplash: boolean;
-    background: backgroundType;
-    view: viewType;
-    visualMode: boolean;
+    preferredTheme: Theme;
+    currentSidebar: SidebarType;
+    latestVersion?: string;
     sidebarOpen: boolean;
     showExperimental: boolean;
+    showWarmup: boolean;
     showExternalDependenciesDialog: boolean;
-    dialogToShow?: DialogType | null;
+    dialogToShow?: DialogType;
+    isWebglNotSupported: boolean;
+    adminShow?: AdminShow;
+    connectionStatus?: CONNECTION_STATUS;
+    isReconnecting?: boolean;
+    showSplashscreen: boolean;
+    hideWalletBalance: boolean;
+    showResumeAppModal: boolean;
+    towerSidebarOffset: number;
 }
-interface Actions {
-    setTheme: (theme: Theme) => void;
-    setShowSplash: (showSplash: boolean) => void;
-    setBackground: (background: State['background']) => void;
-    setView: (view: State['view']) => void;
-    toggleVisualMode: () => void;
-    setSidebarOpen: (sidebarOpen: State['sidebarOpen']) => void;
-    setShowExperimental: (showExperimental: boolean) => void;
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog: boolean) => void;
-    setDialogToShow: (dialogToShow: State['dialogToShow']) => void;
-}
+const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
-type UIStoreState = State & Actions;
-
-const initialState: State = {
-    theme: 'light',
-    showSplash: true,
-    background: 'onboarding',
-    view: 'setup',
-    visualMode: true,
+const initialState: UIStoreState = {
+    isWebglNotSupported: false,
+    theme: preferredTheme,
+    preferredTheme,
     sidebarOpen: false,
+    currentSidebar: 'mining',
     dialogToShow: null,
     showExperimental: false,
     showExternalDependenciesDialog: false,
+    connectionStatus: 'connected',
+    isReconnecting: false,
+    showSplashscreen: true,
+    hideWalletBalance: false,
+    showWarmup: false,
+    showResumeAppModal: false,
+    towerSidebarOffset: sidebarTowerOffset,
 };
 
-export const useUIStore = create<UIStoreState>()((set) => ({
+export const useUIStore = create<UIStoreState>()(() => ({
     ...initialState,
-    setTheme: (_theme) => set({ theme: 'light' }),
-    setShowSplash: (showSplash) => set({ showSplash }),
-    setBackground: (background) => set({ background }),
-    setView: (view) => set({ view }),
-    toggleVisualMode: () => set((state) => ({ visualMode: !state.visualMode })),
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    setShowExperimental: (showExperimental) => set({ showExperimental }),
-    setShowExternalDependenciesDialog: (showExternalDependenciesDialog) => set({ showExternalDependenciesDialog }),
-    setDialogToShow: (dialogToShow) => set({ dialogToShow }),
 }));

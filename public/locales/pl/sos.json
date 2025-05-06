@@ -1,0 +1,55 @@
+{
+  "widget": {
+    "prize": {
+      "upcomingReward": "nadchodząca nagroda / macbook pro 16’"
+    },
+    "timer": {
+      "gettingClose": "Jesteś blisko",
+      "days": "dni",
+      "hours": "godziny"
+    },
+    "friends": {
+      "reduceTimer": "Skróć swój czas, zapraszając znajomych",
+      "linkCopied": "Link skopiowany!",
+      "growCrew": "rozwiń swoją ekipę"
+    }
+  },
+  "superCharger": {
+    "title": "Super Ładowarka",
+    "placeholder": "Wprowadź swój kod",
+    "success": "Dodano bonus czasowy {{time}}.",
+    "error": "Nieprawidłowy kod.",
+    "submit": "Idź"
+  },
+  "mainTimer": {
+    "title": "Twój Timer",
+    "days": "DNI",
+    "hours": "GODZINY",
+    "minutes": "MINUTY",
+    "seconds": "SEKUNDY"
+  },
+  "progress": {
+    "message": "Jesteś <span>{{hours}} godzin</span> od następnego rangi. Kontynuuj kopanie!"
+  },
+  "leaserboardEntry": {
+    "mining": "Kopanie teraz",
+    "idle": "Ostatnio kopano {{time}} temu"
+  },
+  "leaderboard": {
+    "title": "Tabela wyników",
+    "viewFull": "ZOBACZ pełną TABELĘ WYNIKÓW"
+  },
+  "member": {
+    "new": "Nowy",
+    "nudge": "Szturchnij",
+    "minHr": "min/godz"
+  },
+  "crewMining": {
+    "title": "Kopanie zespołowe",
+    "rate": "+{{rate}}min/godz",
+    "mining": "{{current}}/{{total}} Kopanie"
+  },
+  "crewList": {
+    "placeholder": "Zaproś pierwszego członka załogi"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "listener-addresses": "श्रोता पते",
+  "miners": "माइनर्स",
+  "network-info": "नेटवर्क जानकारी",
+  "p2pool-chain-tip": "P2Pool चेन टिप",
+  "p2pool-connected": "P2Pool कनेक्टेड",
+  "p2pool-connection-info": "कनेक्शन",
+  "p2pool-connection-info-more": "कनेक्शन विवरण",
+  "p2pool-peers": "P2pool सहकर्मी",
+  "p2pool-stats": "पूल माइनिंग आँकड़े",
+  "randomx-stats": "RandomX सांख्यिकी",
+  "sha3-stats": "SHA3 सांख्यिकी",
+  "tribe": "जनजाति"
+}

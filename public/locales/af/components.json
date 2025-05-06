@@ -1,11 +1,44 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
+    "integers-only": "Slegs heelgetalle toegelaat",
     "invalid": "Veld ongeldig",
-    "required": "Veld benodig",
-    "password-too-short": "Wagwoord moet ten minste 8 karakters hê",
-    "invalid-url": "Moet 'n geldige URL-adres wees",
-    "invalid-email": "Voer 'n geldige e-posadres in",
     "invalid-date": "Datum is ongeldig",
-    "integers-only": "Slegs heelgetalle toegelaat"
+    "invalid-email": "Voer 'n geldige e-posadres in",
+    "invalid-url": "Moet 'n geldige URL-adres wees",
+    "password-too-short": "Wagwoord moet ten minste 8 karakters hê",
+    "required": "Veld benodig"
+  },
+  "ludicrousConfirmationDialog": {
+    "cancel": "Kanselleer",
+    "description": "Belaglike modus kan jou stelsel onreaktief maak. Bevestig asseblief dat jy wil begin myn in Belaglike modus of Tari Universe sal terugskakel na Eco modus in",
+    "keepChanges": "Behou Veranderings",
+    "seconds": "sekondes",
+    "title": "Skakel oor na Belaglike Modus?"
+  },
+  "releaseNotesDialog": {
+    "close": "Verstaan",
+    "title": "Vrylatingsnotas"
+  },
+  "resume-app-modal": {
+    "finishing-resume": "Voltooi Hervat...",
+    "resuming-all-processes": "Hervat alle prosesse...",
+    "resuming-mm-proxy": "Hervat MM Proxy...",
+    "resuming-node": "Hervat Node...",
+    "resuming-p2pool": "Hervat P2Pool...",
+    "resuming-tor": "Hervat Tor...",
+    "resuming-wallet": "Hervat Beursie...",
+    "syncing-node": "Sinkroniseer Node...",
+    "title": "Hervat Tari Universe"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }
