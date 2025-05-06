@@ -385,7 +385,23 @@ impl ProcessAdapter for WalletAdapter {
         // Always use direct connections with the local node
         if self.use_tor && !self.connect_with_local_node {
             args.push("-p".to_string());
-            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string())
+            args.push("wallet.p2p.transport.tor.proxy_bypass_for_outbound_tcp=true".to_string());
+            args.push("-p".to_string());
+            let network = Network::get_current_or_user_setting_or_default();
+            match network {
+                Network::MainNet => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=seeds.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+                _ => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+            };
         } else {
             if self.connect_with_local_node {
                 args.push("-p".to_string());
@@ -404,12 +420,22 @@ impl ProcessAdapter for WalletAdapter {
                 self.tcp_listener_port
             ));
 
-            let network = Network::get_current_or_user_setting_or_default();
             args.push("-p".to_string());
-            args.push(format!(
-                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
-                key = network.as_key_str(),
-            ));
+            let network = Network::get_current_or_user_setting_or_default();
+            match network {
+                Network::MainNet => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=ip4.seeds.tari.com,ip6.seeds.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+                _ => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+            }
         }
 
         if let Err(e) = std::fs::remove_dir_all(peer_data_folder) {

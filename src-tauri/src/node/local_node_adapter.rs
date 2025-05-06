@@ -297,6 +297,22 @@ impl ProcessAdapter for LocalNodeAdapter {
                     tor_control_port
                 ));
             }
+            let network = Network::get_current_or_user_setting_or_default();
+            args.push("-p".to_string());
+            match network {
+                Network::MainNet => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=seeds.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+                _ => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=seeds.{key}.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+            }
         } else {
             args.push("-p".to_string());
             args.push("base_node.p2p.transport.type=tcp".to_string());
@@ -310,13 +326,22 @@ impl ProcessAdapter for LocalNodeAdapter {
                 "base_node.p2p.transport.tcp.listener_address=/ip4/127.0.0.1/tcp/{}",
                 self.tcp_listener_port
             ));
-
             let network = Network::get_current_or_user_setting_or_default();
             args.push("-p".to_string());
-            args.push(format!(
-                "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com,seeds.{key}.tari.com",
-                key = network.as_key_str(),
-            ));
+            match network {
+                Network::MainNet => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=ip4.seeds.tari.com,ip6.seeds.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+                _ => {
+                    args.push(format!(
+                        "{key}.p2p.seeds.dns_seeds=ip4.seeds.{key}.tari.com,ip6.seeds.{key}.tari.com",
+                        key = network.as_key_str(),
+                    ));
+                }
+            }
         }
 
         // AB testing

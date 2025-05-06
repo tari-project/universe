@@ -295,7 +295,7 @@ export const setNodeType = async (nodeType: NodeType) => {
     });
 };
 
-export const setWarmupSeens = (warmupSeen: boolean) => {
+export const setWarmupSeen = (warmupSeen: boolean) => {
     useConfigUIStore.setState({ warmup_seen: warmupSeen });
     invoke('set_warmup_seen', { warmupSeen }).catch((e) => {
         console.error('Could not set seen', e);
