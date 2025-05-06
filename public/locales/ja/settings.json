@@ -57,6 +57,7 @@
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "ローカルノードの同期進行状況",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",

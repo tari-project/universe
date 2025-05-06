@@ -57,6 +57,7 @@
   "inviteCode": "Invite Code",
   "is-on-orphan-chain": "You seem to be connected to a fork, and not the main chain. Any blocks you win might be invalidated.",
   "last-block-added-time": "Last block added to chain time",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "Local node syncing progress",
   "logs": "Logs",
   "low-hash-rate-warning": "Your hash rate is very low. Try closing all apps other than Tari Universe",

@@ -57,6 +57,7 @@
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "Yerel düğüm senkronizasyon ilerlemesi",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",

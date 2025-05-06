@@ -57,6 +57,7 @@
   "inviteCode": "邀请代码",
   "is-on-orphan-chain": "您似乎连接到了一个分叉，而不是主链。您赢得的任何区块可能会被作废。",
   "last-block-added-time": "最后添加到链的块时间",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "本地节点同步进度",
   "logs": "日志",
   "low-hash-rate-warning": "您的哈希率非常低。尝试关闭除Tari Universe以外的所有应用程序",

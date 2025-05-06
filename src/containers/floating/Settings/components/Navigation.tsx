@@ -36,7 +36,7 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                 })}
             </ButtonContainer>
             <TermsBtn onClick={() => open('https://github.com/tari-project/universe/blob/main/LICENSE.md')}>
-                <Typography>{t('terms-and-conditions')}</Typography>
+                <Typography>{t('license-agreement')}</Typography>
                 <HiOutlineExternalLink />
             </TermsBtn>
         </Container>
