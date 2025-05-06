@@ -27,7 +27,7 @@
   "live": "na żywo",
   "logged-in-as": "Zalogowany jako <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Nagrody Airdrop",
-  "loggedOutTitle": "Kop i zapraszaj znajomych, aby zdobywać klejnoty",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Zaloguj się, aby odebrać klejnoty",
   "logout": "Wyloguj się",
   "nextTierBonus": "Zaproś <strong>{{count}} znajomych</strong> i zdobądź {{bonusGems}} dodatkowych klejnotów",

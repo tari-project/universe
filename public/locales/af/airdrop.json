@@ -27,7 +27,7 @@
   "live": "lewendig",
   "logged-in-as": "Aangemeld as <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Airdrop Belonings",
-  "loggedOutTitle": "Myn & Nooi Vriende om Edelstene te Verdien",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Meld aan om edelstene te eis",
   "logout": "Teken uit",
   "nextTierBonus": "Nooi <strong>{{count}} vriende</strong> & verdien {{bonusGems}} bonus edelstene",

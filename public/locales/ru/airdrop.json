@@ -27,7 +27,7 @@
   "live": "в реальном времени",
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Награды Airdrop",
-  "loggedOutTitle": "Майните и приглашайте друзей, чтобы зарабатывать гемы",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
