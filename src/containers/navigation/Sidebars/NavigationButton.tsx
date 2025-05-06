@@ -6,7 +6,6 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
 import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
-import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import {
     ConnectionWrapper,
     HoverIconWrapper,
@@ -58,25 +57,18 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
 });
 const NavigationButton = memo(function NavigationButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
+    const towerSidebarOffset = useUIStore((s) => s.towerSidebarOffset);
 
     function handleToggleOpen() {
         setSidebarOpen(!sidebarOpen);
     }
 
     useEffect(() => {
-        const offset = (!sidebarOpen ? SB_MINI_WIDTH : SB_WIDTH) + SB_SPACING * 2;
         setAnimationProperties([
-            { property: 'offsetX', value: offset },
-            { property: 'cameraOffsetX', value: offset / window.innerWidth },
+            { property: 'offsetX', value: towerSidebarOffset },
+            { property: 'cameraOffsetX', value: towerSidebarOffset / window.innerWidth },
         ]);
-
-        return () => {
-            setAnimationProperties([
-                { property: 'offsetX', value: 0 },
-                { property: 'cameraOffsetX', value: 0 },
-            ]);
-        };
-    }, [sidebarOpen]);
+    }, [towerSidebarOffset]);
 
     return (
         <NavigationWrapper>
