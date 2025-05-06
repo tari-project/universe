@@ -280,7 +280,6 @@ export const setVisualMode = (enabled: boolean) => {
     invoke('set_visual_mode', { enabled }).catch((e) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
-        useConfigUIStore.setState({ visual_mode: !enabled });
     });
 };
 export const setNodeType = async (nodeType: NodeType) => {
