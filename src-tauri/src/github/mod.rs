@@ -45,16 +45,16 @@ struct Asset {
 
 #[derive(Debug)]
 enum ReleaseSource {
-    // Github,
+    Github,
     Mirror,
 }
 
-// pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
-//     format!(
-//         "https://api.github.com/repos/{}/{}/releases",
-//         repo_owner, repo_name
-//     )
-// }
+pub fn get_gh_url(repo_owner: &str, repo_name: &str) -> String {
+    format!(
+        "https://api.github.com/repos/{}/{}/releases",
+        repo_owner, repo_name
+    )
+}
 
 pub fn get_mirror_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
@@ -97,18 +97,18 @@ pub async fn list_releases(
         );
     };
     // Add any missing releases from github
-    // let github_releases = list_releases_from(ReleaseSource::Github, repo_owner, repo_name)
-    //     .await
-    //     .inspect_err(|e| {
-    //         warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
-    //     })
-    //     .unwrap_or_default();
+    let github_releases = list_releases_from(ReleaseSource::Github, repo_owner, repo_name)
+        .await
+        .inspect_err(|e| {
+            warn!(target: LOG_TARGET, "Failed to fetch releases from Github: {}", e);
+        })
+        .unwrap_or_default();
 
-    // for release in &github_releases {
-    //     if !releases.iter().any(|r| r.version == release.version) {
-    //         releases.push(release.clone());
-    //     }
-    // }
+    for release in &github_releases {
+        if !releases.iter().any(|r| r.version == release.version) {
+            releases.push(release.clone());
+        }
+    }
     Ok(releases)
 
     // if releases.as_ref().map_or(false, |r| !r.is_empty()) {
@@ -125,7 +125,7 @@ async fn list_releases_from(
 ) -> Result<Vec<VersionDownloadInfo>, anyhow::Error> {
     let client = Client::new();
     let url = match source {
-        // ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
+        ReleaseSource::Github => get_gh_url(repo_owner, repo_name),
         ReleaseSource::Mirror => get_mirror_url(repo_owner, repo_name),
     };
 
@@ -166,7 +166,7 @@ async fn list_releases_from(
                     &get_gh_download_url(repo_owner, repo_name),
                     &get_mirror_download_url(repo_owner, repo_name),
                 ),
-                // ReleaseSource::Github => asset.browser_download_url,
+                ReleaseSource::Github => asset.browser_download_url,
             };
             assets.push(VersionAsset {
                 url,
