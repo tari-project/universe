@@ -62,7 +62,7 @@ export const enableTowerAnimation = (enabled: boolean) => {
                 }
             })
             .catch((e) => {
-                console.error('Could not disable visual mode. Error at loadTowerAnimation:', e);
+                console.error('Could not disable visual mode. Error at removeTowerAnimation:', e);
             })
             .finally(() => {
                 useConfigUIStore.setState({ visualModeToggleLoading: false });
