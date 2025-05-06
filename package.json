@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.904",
+    "version": "1.0.0",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -17,7 +17,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.7",
         "@lottiefiles/dotlottie-react": "^0.13.2",
-        "@tari-project/tari-tower": "^0.0.32",
+        "@tari-project/tari-tower": "^0.0.41",
         "@tauri-apps/api": "^2.4.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
         "@tauri-apps/plugin-os": "^2.2.1",
@@ -28,7 +28,7 @@
         "i18next-browser-languagedetector": "^8.0.4",
         "i18next-http-backend": "^3.0.2",
         "linkify-react": "^4.2.0",
-        "motion": "^12.7.0",
+        "motion": "^12.9.4",
         "react": "^18.3.1",
         "react-dom": "^18.2.0",
         "react-hook-form": "^7.54.2",
@@ -36,12 +36,11 @@
         "react-icons": "^5.5.0",
         "react-infinite-scroll-component": "^6.1.0",
         "react-markdown": "^9.1.0",
-        "socket.io-client": "^4.8.1",
         "styled-components": "^6.1.16",
         "use-sync-external-store": "^1.4.0",
         "uuid": "^11.1.0",
         "vite-tsconfig-paths": "^5.1.4",
-        "zustand": "^5.0.3"
+        "zustand": "^5.0.4"
     },
     "devDependencies": {
         "@eslint/js": "^9.9.0",

@@ -3,14 +3,13 @@ import { WebsocketEventNames, WebsocketGlobalEvent } from '@app/types/ws';
 import { useCallback } from 'react';
 
 export const useHandleWsGlobalEvent = () => {
-    return useCallback((event: string) => {
-        const eventParsed = JSON.parse(event) as WebsocketGlobalEvent;
-        switch (eventParsed.name) {
+    return useCallback((event: WebsocketGlobalEvent) => {
+        switch (event.name) {
             case WebsocketEventNames.X_SPACE_EVENT:
-                setXSpaceEvent(eventParsed.data);
+                setXSpaceEvent(event.data);
                 break;
             default:
-                console.warn('Unknown global event', eventParsed);
+                console.warn('Unknown global event', event);
         }
     }, []);
 };

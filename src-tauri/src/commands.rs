@@ -50,6 +50,7 @@ use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
+use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
@@ -872,6 +873,7 @@ pub async fn reset_settings<'r>(
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
     app.restart();
 }
+
 #[tauri::command]
 pub async fn restart_application(
     should_stop_miners: bool,
@@ -1677,7 +1679,7 @@ pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> R
     let timer = Instant::now();
     info!(target: LOG_TARGET, "start_mining_status called");
     state
-        .mining_status_manger
+        .mining_status_manager
         .write()
         .await
         .start_polling()
@@ -1694,7 +1696,7 @@ pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Re
     info!(target: LOG_TARGET, "stop_mining_status called");
     let timer = Instant::now();
     state
-        .mining_status_manger
+        .mining_status_manager
         .write()
         .await
         .stop_polling()
@@ -1740,6 +1742,62 @@ pub async fn set_selected_engine(
 }
 
 #[tauri::command]
+pub async fn websocket_connect(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+    info!(target: LOG_TARGET, "websocket_connect command accepted");
+
+    if matches!(
+        last_state,
+        WebsocketManagerStatusMessage::Connected | WebsocketManagerStatusMessage::Reconnecting
+    ) {
+        return Ok(());
+    }
+
+    let mut websocket_manger_guard = state.websocket_manager.write().await;
+
+    if !websocket_manger_guard.is_websocket_manager_ready() {
+        warn!(target: LOG_TARGET, "websocket_connect cannot be done as websocket_manager is not ready yet");
+        return Err("websocket manager is not ready".into());
+    }
+
+    websocket_manger_guard
+        .connect()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .emit_interval_ws_events()
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_connect took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_connect command finished");
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn reconnect(app_handle: tauri::AppHandle) -> Result<(), String> {
+    EventsManager::handle_connection_status_changed(
+        &app_handle,
+        crate::events::ConnectionStatusPayload::InProgress,
+    )
+    .await;
+    let sm = SetupManager::get_instance();
+    sm.add_phases_to_restart_queue(SetupPhase::all()).await;
+    sm.restart_phases_from_queue(app_handle).await;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn send_one_sided_to_stealth_address(
     state: tauri::State<'_, UniverseAppState>,
     amount: String,
@@ -1756,6 +1814,41 @@ pub async fn send_one_sided_to_stealth_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn websocket_close(
+    _: tauri::AppHandle,
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "websocket_close command started");
+
+    let last_state = state.websocket_manager_status_rx.borrow().clone();
+
+    if matches!(last_state, WebsocketManagerStatusMessage::Stopped) {
+        return Ok(());
+    }
+
+    state
+        .websocket_event_manager
+        .write()
+        .await
+        .stop_emitting_message()
+        .await;
+
+    state
+        .websocket_manager
+        .write()
+        .await
+        .close_connection()
+        .await;
+
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "websocket_close took too long: {:?}", timer.elapsed());
+    }
+    info!(target: LOG_TARGET, "websocket_close command finished");
     Ok(())
 }
 
@@ -1813,20 +1906,50 @@ pub async fn set_node_type(
         node_type = NodeType::Local;
     }
 
-    info!(target: LOG_TARGET, "[set_node_type] with new node type: {:?}", node_type);
-    ConfigCore::update_field_requires_restart(
-        ConfigCoreContent::set_node_type,
-        node_type.clone(),
-        vec![SetupPhase::Wallet, SetupPhase::Node, SetupPhase::Unknown],
-    )
-    .await
-    .map_err(InvokeError::from_anyhow)?;
+    let prev_node_type = state
+        .node_manager
+        .get_node_type()
+        .await
+        .map_err(|e| e.to_string())?;
+    info!(target: LOG_TARGET, "[set_node_type] from {:?} to: {:?}", prev_node_type, node_type);
+
+    let is_current_local = matches!(prev_node_type, NodeType::Local | NodeType::LocalAfterRemote);
+    if is_current_local && node_type != NodeType::Remote {
+        info!(target: LOG_TARGET, "[set_node_type] Local node is already running, no restart needed for node_type: {:?}", node_type);
+        ConfigCore::update_field(ConfigCoreContent::set_node_type, node_type.clone())
+            .await
+            .map_err(InvokeError::from_anyhow)?;
+
+        if node_type == NodeType::RemoteUntilLocal {
+            info!(target: LOG_TARGET, "[set_node_type] Converting RemoteUntilLocal to LocalAfterRemote since local node is running");
+            node_type = NodeType::LocalAfterRemote
+        }
+    } else {
+        info!(target: LOG_TARGET, "[set_node_type] Restarting required phases for node_type: {:?}", node_type);
+        ConfigCore::update_field_requires_restart(
+            ConfigCoreContent::set_node_type,
+            node_type.clone(),
+            vec![SetupPhase::Node, SetupPhase::Wallet, SetupPhase::Unknown],
+        )
+        .await
+        .map_err(InvokeError::from_anyhow)?;
+    }
 
     state.node_manager.set_node_type(node_type.clone()).await;
+    EventsManager::handle_node_type_update(&app_handle).await;
 
     SetupManager::get_instance()
         .restart_phases_from_queue(app_handle)
         .await;
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
+    ConfigUI::update_field(ConfigUIContent::set_warmup_seen, warmup_seen)
+        .await
+        .map_err(|e| e.to_string())?;
 
     Ok(())
 }

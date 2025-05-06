@@ -5,6 +5,8 @@ import {
     fetchLatestXSpaceEvent,
     fetchOrphanChainUiFeatureFlag,
     fetchPollingFeatureFlag,
+    fetchWarmupFeatureFlag,
+    fetchUiSendRecvFeatureFlag,
 } from '@app/store/actions/airdropStoreActions';
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import { useCallback, useEffect, useRef } from 'react';
@@ -27,15 +29,24 @@ export const useAirdropPolling = () => {
         }, DEBOUNCE_DELAY);
     }, []);
 
+    const fetchFeatureFlags = useCallback(() => {
+        fetchOrphanChainUiFeatureFlag();
+        fetchPollingFeatureFlag();
+        fetchUiSendRecvFeatureFlag();
+        fetchWarmupFeatureFlag();
+    }, []);
+
     const fetchFeatureFlagDebounced = useCallback(() => {
         if (featureFlagTimeoutRef.current) {
-            clearTimeout(featureFlagTimeoutRef.current);
+            return;
         }
         featureFlagTimeoutRef.current = setTimeout(async () => {
-            await fetchOrphanChainUiFeatureFlag();
-            await fetchPollingFeatureFlag();
+            fetchFeatureFlags();
+            if (featureFlagTimeoutRef.current) {
+                clearTimeout(featureFlagTimeoutRef.current);
+            }
         }, 1000 * 60); // Once every minute
-    }, []);
+    }, [fetchFeatureFlags]);
 
     useEffect(() => {
         fetchFeatureFlagDebounced();
@@ -48,7 +59,7 @@ export const useAirdropPolling = () => {
         let interval: NodeJS.Timeout;
 
         // Re-fetch flags on focus
-        unlistenPromises.push(listen('tauri://focus', fetchPollingFeatureFlag));
+        unlistenPromises.push(listen('tauri://focus', fetchFeatureFlags));
 
         if (pollingEnabled) {
             // Re-fetch data on focus
@@ -70,5 +81,5 @@ export const useAirdropPolling = () => {
                 unlisten.then((unlisten) => unlisten());
             }
         };
-    }, [fetchAirdropDataDebounced, pollingEnabled]);
+    }, [fetchAirdropDataDebounced, fetchFeatureFlags, pollingEnabled]);
 };

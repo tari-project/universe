@@ -68,6 +68,7 @@ pub enum EventType {
     ConfigMiningLoaded,
     BackgroundNodeSyncUpdate,
     InitWalletScanningProgress,
+    ConnectionStatus,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -150,4 +151,12 @@ pub struct InitWalletScanningProgressPayload {
     pub scanned_height: u64,
     pub total_height: u64,
     pub progress: f64,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub enum ConnectionStatusPayload {
+    InProgress,
+    Succeed,
+    #[allow(dead_code)]
+    Failed,
 }

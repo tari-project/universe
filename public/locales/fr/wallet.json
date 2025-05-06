@@ -2,7 +2,11 @@
   "confirmation-message": "Votre transaction a été soumise !\nElle apparaîtra dans votre historique après le minage de quelques blocs.",
   "empty-tx": "Aucune transaction trouvée",
   "history": {
-    "label-rewards": "Mes récompenses"
+    "available-balance": "Available",
+    "label-rewards": "Mes récompenses",
+    "sync-with-phone": "Sync with Phone",
+    "transaction-details": "Transaction Details",
+    "view-details": "View details"
   },
   "my_tari": "Mon Tari",
   "new": "Nouveau",
@@ -51,6 +55,7 @@
     "status": "Status",
     "tari-txn": "Tari Txn",
     "total-fees": "Total Fees",
+    "transaction-copy-raw": "Copy raw details",
     "transaction-description": "Transaction Description",
     "transaction-id": "Transaction ID"
   },

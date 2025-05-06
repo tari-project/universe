@@ -28,6 +28,7 @@ use tauri::{AppHandle, Manager};
 
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::events::ConnectionStatusPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
 use crate::{configs::config_core::ConfigCoreContent, events::CriticalProblemPayload};
@@ -285,5 +286,12 @@ impl EventsManager {
         progress_params: HashMap<String, String>,
     ) {
         EventsEmitter::emit_background_node_sync_update(app, progress_params).await;
+    }
+
+    pub async fn handle_connection_status_changed(
+        app: &AppHandle,
+        status: ConnectionStatusPayload,
+    ) {
+        EventsEmitter::emit_connection_status_changed(app, status).await;
     }
 }

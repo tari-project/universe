@@ -57,6 +57,7 @@ const configUIInitialState: UIConfigStoreState = {
     show_experimental_settings: false,
     should_always_use_system_language: false,
     visual_mode: true,
+    warmup_seen: false,
 };
 
 export const useConfigCoreStore = create<ConfigCore>()(() => ({

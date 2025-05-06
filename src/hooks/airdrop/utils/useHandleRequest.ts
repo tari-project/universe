@@ -27,6 +27,7 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
     const baseUrl = useAirdropStore.getState().backendInMemoryConfig?.airdropApiUrl;
 
     const isTokenExpired = !airdropTokenExpiration || airdropTokenExpiration * 1000 < Date.now();
+
     if (isTokenExpired && !publicRequest) {
         if (retryCount >= MAX_RETRIES) {
             throw Error('Failed to refresh tokens from handleAirdropRequest');
@@ -51,12 +52,14 @@ export async function handleAirdropRequest<T>({ body, method, path, onError, hea
     }
 
     const fullUrl = `${baseUrl}${path}`;
+    const headersWithAuth = airdropToken ? { Authorization: `Bearer ${airdropToken}` } : undefined;
     try {
         const response = await fetch(fullUrl, {
             method: method,
-            headers: headers ?? {
+            headers: {
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${airdropToken}`,
+                ...headersWithAuth,
+                ...headers,
             },
             body: JSON.stringify(body),
         });

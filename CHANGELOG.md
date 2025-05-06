@@ -1,3 +1,64 @@
+🚀 TARI UNIVERSE v0.9.914: Echoes of Victory
+
+_May 2, 2025_
+
+💜 Hey Fam,
+Mainnet is almost upon us and contributors are working furiously to make sure Tari Universe is ready for prime time. Introducing Echoes of Victory, the possibly, maybe, potentially final release of Tari Universe pre-mainnet. Tari mainnet is coming Soon™ (May 6th soon!)
+
+✨ WHAT’S NEW
+- 🧾 Enhanced transaction details modal
+- 🛜 TOR download fixes
+- 🍎 MacOS white screen on startup fix
+- 🎛️ General UX improvements
+- 🧱 Minor stability fixes
+
+--
+
+🔥 TARI UNIVERSE v0.9.913: The Great Ascent (Testnet Reset!)
+
+_May 1, 2025_
+
+🚀 Hey Tari Fam,
+The Testnet has been reset! These resets help us get everything ready for mainnet. Thanks for your patience and continued support 🙏
+
+⚠️ Quick reminders:
+- 1️⃣ You may still see a fork message for the next 30 minutes — don’t worry, it’ll disappear on its own
+- 2️⃣ Your tXTM balance has been reset to 0
+- 3️⃣ Your Gems are SAFU 💎 — the reset only affects your tXTM balance
+
+✨ WHAT’S NEW
+
+💸 Send & Receive Transactions
+- You can now send and receive tXTM directly from within Tari Universe
+- Share your wallet address with friends and watch it flow in 🔁
+- Review and edit your transactions before sending 📝
+
+🛠️ Other Fixes
+- AppImage installs now work correctly ✅
+- Fixed tower animation stop bug 🏰
+- Smoothed out a few other UI quirks
+
+--
+
+🚀 TARI UNIVERSE v0.9.909 “RC1” — The Surge of Soon
+
+_April 29, 2025_
+
+Hey fam 👋,
+We’re excited to drop the BIGGEST update we’ve ever released 💥
+
+Introducing “The Surge of Soon”, the first release candidate of Tari Universe (v0.9.90x).
+
+This release is a huge step forward. One of the biggest pieces of feedback we hear from the Tari community is about the pain of startup and initialization. Until now, there have been three major frustrations:
+
+- 1️⃣ You can’t access settings, sign into airdrop, or do anything else while the app is starting up
+- 2️⃣ It can take up to 3 hours for a new user to begin mining
+- 3️⃣ Many community members can’t get the app to load at all due to startup-related errors
+
+The Surge of Soon tackles these mission-critical issues head-on. You can now access Settings ⚙️ and sign into Airdrop 🎁 while the app is loading. And VERY SOON all Tari Universe users will now be able to go from launching the app to mining in 120 seconds or less 🏎️🏁
+
+--
+
 🌟 TARI UNIVERSE 0.9.849
 
 _April 23, 2025_

@@ -107,7 +107,8 @@ export interface AirdropStoreState {
     miningRewardPoints?: MiningPoint;
     latestXSpaceEvent?: XSpaceEvent | null;
     pollingEnabled?: boolean;
-    orphanChainUiEnabled?: boolean;
+    orphanChainUiDisabled?: boolean;
+    uiSendRecvEnabled: boolean;
     communityMessages?: CommunityMessage[];
 }
 
@@ -121,6 +122,7 @@ const initialState: AirdropStoreState = {
     flareAnimationType: undefined,
     latestXSpaceEvent: null,
     pollingEnabled: undefined,
+    uiSendRecvEnabled: false,
 };
 
 export const useAirdropStore = create<AirdropStoreState>()(() => ({ ...initialState }));

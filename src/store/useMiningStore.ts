@@ -1,3 +1,4 @@
+import { Network } from '@app/utils/network';
 import { create } from './create';
 import { MaxConsumptionLevels } from '@app/types/app-status';
 
@@ -10,7 +11,7 @@ interface MiningStoreState {
     counter: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
-    network: string;
+    network?: Network;
     engine?: string;
     availableEngines: string[];
 }
@@ -26,7 +27,7 @@ const initialState: MiningStoreState = {
     miningControlsEnabled: true,
     availableEngines: [],
     engine: undefined,
-    network: 'unknown',
+    network: undefined,
 };
 
 export const useMiningStore = create<MiningStoreState>()(() => ({

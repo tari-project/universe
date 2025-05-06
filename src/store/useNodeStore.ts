@@ -28,8 +28,12 @@ export const useNodeStore = create<NodeStoreState>()(() => ({
     ...initialState,
 }));
 
-export const setNodeTypeState = (newState: Partial<NodeStoreState>) => {
+export const setNodeStoreState = (newState: Partial<NodeStoreState>) => {
     useNodeStore.setState((state) => ({ ...state, ...newState }));
+};
+
+export const updateNodeType = (node_type: NodeType) => {
+    setNodeStoreState({ ...initialState, node_type });
 };
 
 export const setBackgroundNodeState = (backgroundNodeSyncLastUpdate: BackgroundNodeSyncUpdatePayload) => {

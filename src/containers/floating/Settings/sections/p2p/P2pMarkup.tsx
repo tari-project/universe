@@ -12,7 +12,6 @@ import {
     SettingsGroupWrapper,
 } from '../../components/SettingsGroup.styles.ts';
 import { setP2poolEnabled, useConfigCoreStore } from '@app/store';
-import { useSetupStore } from '@app/store/useSetupStore.ts';
 
 interface P2pMarkupProps {
     setDisabledStats: (value: boolean) => void;
@@ -21,9 +20,6 @@ interface P2pMarkupProps {
 const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
     const { t } = useTranslation(['common', 'settings'], { useSuspense: false });
     const isP2poolEnabled = useConfigCoreStore((state) => state.is_p2pool_enabled);
-    const miningAllowed = useSetupStore((s) => s.miningUnlocked);
-
-    const isDisabled = !miningAllowed;
 
     const handleP2poolEnabled = useCallback(
         async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +39,7 @@ const P2pMarkup = ({ setDisabledStats }: P2pMarkupProps) => {
                     <Typography>{t('pool-mining-description', { ns: 'settings' })}</Typography>
                 </SettingsGroupContent>
                 <SettingsGroupAction>
-                    <ToggleSwitch checked={isP2poolEnabled} disabled={isDisabled} onChange={handleP2poolEnabled} />
+                    <ToggleSwitch checked={isP2poolEnabled} onChange={handleP2poolEnabled} />
                 </SettingsGroupAction>
             </SettingsGroup>
         </SettingsGroupWrapper>

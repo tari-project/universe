@@ -94,6 +94,8 @@ declare module '@tauri-apps/api/core' {
         param: 'set_show_experimental_settings',
         payload: { showExperimentalSettings: boolean }
     ): Promise<void>;
+    function invoke(param: 'websocket_connect'): Promise<void>;
+    function invoke(param: 'websocket_close'): Promise<void>;
     function invoke(
         param: 'set_monerod_config',
         payload: {
@@ -106,6 +108,7 @@ declare module '@tauri-apps/api/core' {
         payload: { level: 'log' | 'error' | 'warn' | 'info'; message: string }
     ): Promise<ApplicationsVersions>;
     function invoke(param: 'sign_ws_data', payload: { data: string }): Promise<SignData>;
+    function invoke(param: 'reconnect'): Promise<void>;
     function invoke(
         param: 'verify_address_for_send',
         payload: { address: string; sendingMethod?: number }
@@ -113,4 +116,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'validate_minotari_amount', payload: { amount: string }): Promise<string>;
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
+    function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
 }

@@ -38,6 +38,7 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
+use super::adapter_cdn::CDNReleaseAdapter;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
@@ -90,20 +91,94 @@ impl BinaryResolver {
         let mut binary_manager = HashMap::<Binaries, Mutex<BinaryManager>>::new();
 
         let mut gpu_miner_nextnet_regex = Regex::new(r"opencl.*nextnet").ok();
-
         let mut gpu_miner_testnet_regex = Regex::new(r"opencl.*testnet").ok();
+        let mut gpu_miner_mainnet_regex = Regex::new(r"opencl.*mainnet").ok();
 
         if cfg!(target_os = "macos") && cfg!(target_arch = "aarch64") {
             gpu_miner_nextnet_regex = Regex::new(r"combined.*nextnet").ok();
             gpu_miner_testnet_regex = Regex::new(r"combined.*testnet").ok();
+            gpu_miner_mainnet_regex = Regex::new(r"combined.*mainnet").ok();
         }
 
         let (tari_prerelease_prefix, gpuminer_specific_name) =
             match Network::get_current_or_user_setting_or_default() {
+                Network::MainNet => ("", gpu_miner_mainnet_regex),
+                Network::StageNet => ("", gpu_miner_nextnet_regex),
                 Network::NextNet => ("rc", gpu_miner_nextnet_regex),
                 Network::Esmeralda => ("pre", gpu_miner_testnet_regex),
-                _ => panic!("Unsupported network"),
+                Network::Igor => ("pre", gpu_miner_testnet_regex),
+                Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
+
+        let xmrig_default_adapter = XmrigVersionApiAdapter {};
+
+        let gpu_default_adapter = GithubReleasesAdapter {
+            repo: "glytex".to_string(),
+            owner: "tari-project".to_string(),
+            specific_name: gpuminer_specific_name,
+        };
+
+        // let merge_mining_default_adapter = GithubReleasesAdapter {
+        //     repo: "tari".to_string(),
+        //     owner: "tari-project".to_string(),
+        //     specific_name: None,
+        // };
+        let merge_mining_cdn_version =
+            CDNReleaseAdapter::read_version(Binaries::MergeMiningProxy.name().to_string());
+        let merge_mining_cdn_adapter = CDNReleaseAdapter {
+            binary_name: Binaries::MergeMiningProxy,
+            specific_name: None,
+            cdn_versions_list_path: format!(
+                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
+                merge_mining_cdn_version,
+                merge_mining_cdn_version
+            ),
+        };
+
+        // let minotari_node_default_adapter = GithubReleasesAdapter {
+        //     repo: "tari".to_string(),
+        //     owner: "tari-project".to_string(),
+        //     specific_name: None,
+        // };
+
+        let minotari_node_cdn_version =
+            CDNReleaseAdapter::read_version(Binaries::MinotariNode.name().to_string());
+
+        let minotari_node_cdn_adapter = CDNReleaseAdapter {
+            binary_name: Binaries::MinotariNode,
+            specific_name: None,
+            cdn_versions_list_path: format!(
+                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
+                minotari_node_cdn_version,
+                minotari_node_cdn_version
+            ),
+        };
+        // let wallet_default_adapter = GithubReleasesAdapter {
+        //     repo: "tari".to_string(),
+        //     owner: "tari-project".to_string(),
+        //     specific_name: None,
+        // };
+
+        let wallet_cdn_version =
+            CDNReleaseAdapter::read_version(Binaries::Wallet.name().to_string());
+
+        let wallet_cdn_adapter = CDNReleaseAdapter {
+            binary_name: Binaries::Wallet,
+            specific_name: None,
+            cdn_versions_list_path: format!(
+                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
+                wallet_cdn_version,
+                wallet_cdn_version
+            ),
+        };
+
+        let sha_pool_default = GithubReleasesAdapter {
+            repo: "sha-p2pool".to_string(),
+            owner: "tari-project".to_string(),
+            specific_name: None,
+        };
+
+        let tor_default_adapter = TorReleaseAdapter {};
 
         binary_manager.insert(
             Binaries::Xmrig,
@@ -111,7 +186,7 @@ impl BinaryResolver {
                 Binaries::Xmrig.name().to_string(),
                 // Some("xmrig-6.22.0".to_string()),
                 None,
-                Box::new(XmrigVersionApiAdapter {}),
+                Box::new(xmrig_default_adapter),
                 None,
                 true,
             )),
@@ -122,11 +197,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
                 None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "glytex".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: gpuminer_specific_name,
-                }),
+                Box::new(gpu_default_adapter),
                 None,
                 true,
             )),
@@ -137,11 +208,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
                 None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
+                Box::new(merge_mining_cdn_adapter),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -152,11 +219,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
                 None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
+                Box::new(minotari_node_cdn_adapter),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -167,11 +230,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
                 None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "tari".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
+                Box::new(wallet_cdn_adapter),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -182,11 +241,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
                 None,
-                Box::new(GithubReleasesAdapter {
-                    repo: "sha-p2pool".to_string(),
-                    owner: "tari-project".to_string(),
-                    specific_name: None,
-                }),
+                Box::new(sha_pool_default),
                 None,
                 true,
             )),
@@ -197,7 +252,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
-                Box::new(TorReleaseAdapter {}),
+                Box::new(tor_default_adapter),
                 None,
                 true,
             )),
@@ -394,7 +449,7 @@ impl BinaryResolver {
     pub async fn get_binary_version(&self, binary: Binaries) -> Option<Version> {
         self.managers
             .get(&binary)
-            .expect(format!("Couldn't find manager for binary: {}", binary.name()).as_str())
+            .unwrap_or_else(|| panic!("Couldn't find manager for binary: {}", binary.name()))
             .lock()
             .await
             .get_used_version()

@@ -62,3 +62,5 @@ export type BackgroundNodeSyncUpdatePayload =
           local_block_height: number;
           tip_block_height: number;
       };
+
+export type ConnectionStatusPayload = 'InProgress' | 'Succeed' | 'Failed';
