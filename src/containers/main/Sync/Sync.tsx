@@ -17,8 +17,8 @@ import {
     Wrapper,
 } from './sync.styles.ts';
 
-import mov from '/public/assets/video/coin_loader.mov';
-import webm from '/public/assets/video/coin_loader.webm';
+import mov from '/assets/video/coin_loader.mov';
+import webm from '/assets/video/coin_loader.webm';
 
 export default function Sync() {
     const { t } = useTranslation('setup-view');
