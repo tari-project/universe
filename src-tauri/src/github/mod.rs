@@ -53,10 +53,6 @@ pub enum ReleaseSource {
 }
 
 impl ReleaseSource {
-    pub fn is_github(&self) -> bool {
-        matches!(self, ReleaseSource::Github)
-    }
-
     pub fn is_mirror(&self) -> bool {
         matches!(self, ReleaseSource::Mirror)
     }

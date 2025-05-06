@@ -31,6 +31,7 @@ use tari_common::configuration::Network;
 use crate::{
     download_utils::download_file_with_retries,
     github::{self, request_client::RequestClient},
+    progress_tracker_old::ProgressTracker,
     APPLICATION_FOLDER_ID,
 };
 

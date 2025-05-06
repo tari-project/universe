@@ -54,6 +54,7 @@ impl CloudFlareCacheStatus {
         }
     }
 
+    #[allow(dead_code)]
     pub fn is_non_existent(&self) -> bool {
         matches!(self, Self::NonExistent)
     }
@@ -62,6 +63,7 @@ impl CloudFlareCacheStatus {
         matches!(self, Self::Hit) || matches!(self, Self::Revalidated)
     }
 
+    #[allow(dead_code)]
     pub fn is_miss(&self) -> bool {
         matches!(self, Self::Miss)
     }

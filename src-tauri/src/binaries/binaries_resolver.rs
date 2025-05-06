@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-use crate::github::ReleaseSource;
-use crate::ProgressTracker;
-use anyhow::{anyhow, Error};
-use async_trait::async_trait;
-use log::info;
-=======
 // Copyright 2024. The Tari Project
 //
 // Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -29,11 +22,11 @@ use log::info;
 
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
+use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
->>>>>>> origin
 use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize};
@@ -53,11 +46,7 @@ use super::adapter_xmrig::XmrigVersionApiAdapter;
 use super::binaries_manager::BinaryManager;
 use super::Binaries;
 
-<<<<<<< HEAD
-pub const LOG_TARGET: &str = "tari::universe::binary_resolver";
-=======
 const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6); // 6 hours
->>>>>>> origin
 
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
@@ -283,11 +272,6 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
         timeout_channel: Receiver<String>,
     ) -> Result<(), Error> {
-<<<<<<< HEAD
-        info!(target: LOG_TARGET, "Initializing binary: {} | should check for update: {}", binary.name(), should_check_for_update);
-
-        let manager = self
-=======
         match timeout(
             Duration::from_secs(60 * 5),
             self.initialize_binary(binary, progress_tracker.clone()),
@@ -311,7 +295,6 @@ impl BinaryResolver {
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
         let mut manager = self
->>>>>>> origin
             .managers
             .get(&binary)
             .ok_or_else(|| anyhow!("Couldn't find manager for binary: {}", binary.name()))?

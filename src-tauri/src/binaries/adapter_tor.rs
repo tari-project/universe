@@ -26,7 +26,7 @@ use crate::binaries::binaries_resolver::{
 use crate::download_utils::download_file_with_retries;
 use crate::github::request_client::RequestClient;
 use crate::github::ReleaseSource;
-use crate::progress_tracker::ProgressTracker;
+use crate::progress_tracker_old::ProgressTracker;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::Error;
 use async_trait::async_trait;

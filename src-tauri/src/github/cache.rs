@@ -2,9 +2,9 @@ use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
 
 use crate::{binaries::binaries_resolver::VersionDownloadInfo, APPLICATION_FOLDER_ID};
 use anyhow::{anyhow, Error, Ok};
+use dirs::cache_dir;
 use log::info;
 use serde::{Deserialize, Serialize};
-use tauri::api::path::cache_dir;
 use tokio::sync::RwLock;
 
 const LOG_TARGET: &str = "tari::universe::github_cache";
