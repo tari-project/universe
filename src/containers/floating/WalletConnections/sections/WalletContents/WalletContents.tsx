@@ -16,7 +16,7 @@ import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { useMemo } from 'react';
 import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
 import { SwapStep } from '@app/store';
-import { getIcon } from '../../helpers/getIcon';
+import { getCurrencyIcon } from '../../helpers/getIcon';
 
 export const WalletContents = () => {
     const { disconnect } = useDisconnect();
@@ -27,7 +27,7 @@ export const WalletContents = () => {
 
     const walletChainIcon = useMemo(() => {
         if (!accountBalance?.symbol) return null;
-        const icon = getIcon({
+        const icon = getCurrencyIcon({
             simbol: accountBalance?.symbol,
             width: 20,
         });

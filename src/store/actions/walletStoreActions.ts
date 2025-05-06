@@ -82,9 +82,13 @@ export const setWalletConnectModalOpen = (open: boolean) => {
     if (!open) {
         useWalletStore.setState({ swap_step: SwapStep.ConnectWallet });
     }
-    useWalletStore.setState({ wallet_connect_modal_open: open });
+    useWalletStore.setState({ is_swap_ui_visible: open });
 };
 
 export const setWalletConnectModalStep = (step: SwapStep) => {
     useWalletStore.setState({ swap_step: step });
+};
+
+export const setReviewSwap = (reviewSwap: boolean) => {
+    useWalletStore.setState({ review_swap: reviewSwap });
 };

@@ -7,7 +7,7 @@ interface Props {
     width?: string | number;
     fill?: string;
 }
-export const getIcon = ({ simbol, width, fill }: Props) => {
+export const getCurrencyIcon = ({ simbol, width, fill }: Props) => {
     switch (simbol.toLowerCase()) {
         case 'eth':
             return <EthereumIcon width={width} fill={fill} />;

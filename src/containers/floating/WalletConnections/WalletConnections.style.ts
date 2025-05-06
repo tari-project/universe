@@ -16,7 +16,6 @@ export const WalletConnectHeader = styled.div`
 export const ContentWrapper = styled.div`
     display: flex;
     flex-direction: column;
-    background: white;
     border-radius: 24px;
     padding: 24px;
     width: 100%;

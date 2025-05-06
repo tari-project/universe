@@ -1,32 +1,20 @@
-import { WalletConnectHeader } from '../../WalletConnections.style';
-import { WalletButton } from '../../components/WalletButton/WalletButton';
-import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-import { SwapStep } from '@app/store';
 import {
-    NewOutputAmount,
-    NewOutputWrapper,
-    PoweredBy,
-    SelectedChain,
-    SelectedChainInfo,
     SwapAmountInput,
-    SwapDetails,
-    SwapDetailsKey,
-    SwapDetailsValue,
     SwapDirection,
     SwapDirectionWrapper,
     SwapOption,
     SwapOptionAmount,
     SwapOptionCurrency,
 } from './Swap.styles';
-import { useAccount, useBalance } from 'wagmi';
-import { truncateMiddle } from '@app/utils';
-import { getCurrencyIcon } from '../../helpers/getIcon';
+import { useAccount, useBalance, useDisconnect } from 'wagmi';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowIcon } from '../../icons/elements/ArrowIcon';
-import PortalLogo from '../../icons/PortalLogo.png';
+// import { SignMessage } from '../SignMessage/SignMessage';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
-import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import { useSwap } from '@app/hooks/swap/useSwap';
+import { getCurrencyIcon } from '@app/containers/floating/WalletConnections/helpers/getIcon';
+import { ArrowIcon } from '@app/containers/floating/WalletConnections/icons/elements/ArrowIcon';
+import { WalletButton } from '@app/containers/floating/WalletConnections/components/WalletButton/WalletButton';
+import { setReviewSwap } from '@app/store/actions/walletStoreActions';
 
 enum Field {
     AMOUNT = 'amount',
@@ -36,16 +24,11 @@ enum Field {
 export const Swap = () => {
     // const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
     const dataAcc = useAccount();
+    const { disconnectAsync } = useDisconnect();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
-    const activeChainIcon = useMemo(() => {
-        if (!accountBalance?.symbol) return null;
-        return getCurrencyIcon({
-            simbol: accountBalance?.symbol,
-            width: 10,
-        });
-    }, [accountBalance?.symbol]);
 
     const addToast = useToastStore((s) => s.addToast);
+    // const { signMessageAsync } = useSignMessage();
 
     const [amount, setAmount] = useState<string>('');
     const [targetAmount, setTargetAmount] = useState<string>('');
@@ -62,9 +45,6 @@ export const Swap = () => {
         return false;
     }, [accountBalance?.decimals, accountBalance?.value, amount, direction]);
 
-    const [networkFee, setNetworkFee] = useState<string>('');
-    const [slippage, setSlippage] = useState<string>('');
-    const [priceImpact, setPriceImpact] = useState<string>('');
     const shouldCalculate = useRef(false);
 
     const calcRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,15 +61,6 @@ export const Swap = () => {
             const midPrice = route.midPrice.toSignificant(6);
             const invertedMidPrice = route.midPrice.invert().toSignificant(6);
             // const executionPrice = trade.executionPrice.toSignificant(6);
-
-            const networkFee = trade.priceImpact.toSignificant(6);
-            setNetworkFee(networkFee);
-
-            const slippage = trade.priceImpact.toSignificant(6);
-            setSlippage(slippage);
-
-            const priceImpact = trade.priceImpact.toSignificant(6);
-            setPriceImpact(priceImpact);
 
             if (!shouldCalculate.current) return;
 
@@ -161,47 +132,7 @@ export const Swap = () => {
                 });
             });
         });
-        // setSignMessageModalOpen(true);
-        // signMessageAsync({ message: 'Hello sign this test message' })
-        //     .then(() => setWalletConnectModalStep(SwapStep.Progress))
-        //     .catch(() => {
-        //         addToast({
-        //             title: 'Error',
-        //             text: 'Something went wrong',
-        //             type: 'error',
-        //         });
-        //         setWalletConnectModalStep(SwapStep.ConnectWallet);
-        //     });
     };
-
-    const items = [
-        {
-            label: 'Network fee',
-            value: networkFee,
-            valueRight: `${networkFee} XTM`,
-            helpText: `${networkFee} XTM`,
-        },
-        {
-            label: 'Network Cost',
-            value: priceImpact,
-            helpText: `${priceImpact} XTM`,
-        },
-        {
-            label: 'You will receive XTM in (Tari wallet address)',
-            value: slippage,
-            helpText: 'You will receive XTM in (Tari wallet address)',
-        },
-        {
-            label: 'Slippage',
-            value: slippage,
-            helpText: 'You will receive XTM in (Tari wallet address)',
-        },
-        {
-            label: 'Price Impact',
-            value: priceImpact,
-            helpText: 'You will receive XTM in (Tari wallet address)',
-        },
-    ];
 
     const accountBalanceValue = useMemo(() => {
         if (!accountBalance?.value) return 0;
@@ -209,31 +140,15 @@ export const Swap = () => {
         return (Number(accountBalance.value) / Number(factor)).toString();
     }, [accountBalance]);
 
-    // if (signMessageModalOpen) {
-    //     return <SignMessage />;
-    // }
-
     return (
         <>
-            <WalletConnectHeader>
-                <span />
-                <SelectedChain>
-                    {activeChainIcon}
-                    <SelectedChainInfo>
-                        <span className="address">{truncateMiddle(dataAcc.address || '', 6)}</span>
-                        <span className="chain">
-                            {accountBalance?.symbol} {dataAcc.chain?.testnet ? '(TESTNET)' : 'MAINNET'}
-                        </span>
-                    </SelectedChainInfo>
-                </SelectedChain>
-            </WalletConnectHeader>
-
+            {dataAcc?.address && <button onClick={() => disconnectAsync()}>{'Disconnect'}</button>}
             <SwapOption>
                 <span> {'Sell'} </span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
-                        error={notEnoughBalance && direction === 'input'}
+                        $error={notEnoughBalance && direction === 'input'}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => handleNumberInput(e.target.value, setAmount, Field.AMOUNT)}
@@ -241,8 +156,8 @@ export const Swap = () => {
                         value={amount}
                     />
                     <SwapOptionCurrency>
-                        {getCurrencyIcon({ simbol: accountBalance?.symbol || '', width: 10 })}
-                        <span>{accountBalance?.symbol}</span>
+                        {getCurrencyIcon({ simbol: accountBalance?.symbol || 'eth', width: 10 })}
+                        <span>{accountBalance?.symbol || 'ETH'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
                 <span>
@@ -275,32 +190,11 @@ export const Swap = () => {
                 </SwapOptionAmount>
             </SwapOption>
 
-            <SwapDetails>
-                <NewOutputWrapper>
-                    <NewOutputAmount>
-                        <SwapDetailsKey>{'New output'}</SwapDetailsKey>
-                        <SwapDetailsValue>{1.074234}</SwapDetailsValue>
-                    </NewOutputAmount>
-                    <WalletButton
-                        variant="success"
-                        onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
-                        size="medium"
-                    >
-                        {'Accept'}
-                    </WalletButton>
-                </NewOutputWrapper>
-
-                <StatusList entries={items} />
-            </SwapDetails>
-
-            <WalletButton variant="primary" onClick={handleConfirm} size="xl">
-                {'Approve & Buy'}
-            </WalletButton>
-
-            <PoweredBy>
-                {'Powered by'}
-                <img src={PortalLogo} alt="Portal to Bitcoin" width={50} />
-            </PoweredBy>
+            <div style={{ marginTop: '20px', width: '100%' }}>
+                <WalletButton variant="primary" onClick={() => setReviewSwap(true)} size="xl">
+                    {'Approve & Buy'}
+                </WalletButton>
+            </div>
         </>
     );
 };

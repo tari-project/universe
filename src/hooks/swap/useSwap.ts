@@ -28,7 +28,7 @@ import uniswapV2PairAbi from './abi/UniswapV2Pair.json'; // Uniswap V2 Pair ABI
 const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
     [ChainId.MAINNET]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D',
     [ChainId.GOERLI]: '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D', // Often same as Mainnet for tests
-    [ChainId.SEPOLIA]: '0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008', // Uniswap V2 Router address on Sepolia
+    [ChainId.SEPOLIA]: '0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3', // Uniswap V2 Router address on Sepolia
     [ChainId.POLYGON]: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff', // SushiSwap Router (commonly used as V2 Router on Polygon)
     // Add other V2 Routers (Arbitrum might primarily use V3, check Uniswap docs)
 };

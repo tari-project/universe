@@ -34,7 +34,8 @@ interface WalletStoreState {
     has_more_transactions: boolean;
     is_transactions_history_loading: boolean;
     is_wallet_importing: boolean;
-    wallet_connect_modal_open: boolean;
+    is_swap_ui_visible: boolean;
+    review_swap: boolean;
     swap_step: SwapStep;
     wallet_scanning: {
         is_scanning: boolean;
@@ -56,7 +57,8 @@ const initialState: WalletStoreState = {
     is_reward_history_loading: false,
     is_transactions_history_loading: false,
     is_wallet_importing: false,
-    wallet_connect_modal_open: false,
+    is_swap_ui_visible: false,
+    review_swap: false,
     swap_step: SwapStep.ConnectWallet,
     wallet_scanning: {
         is_scanning: true,
