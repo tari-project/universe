@@ -1,6 +1,3 @@
-import { useMemo } from 'react';
-
-import { useTranslation } from 'react-i18next';
 import Progress from './components/Progress.tsx';
 import AirdropInvite from './actions/AirdropInvite.tsx';
 import AirdropLogin from './actions/AirdropLogin.tsx';
@@ -16,23 +13,25 @@ import {
     SubHeading,
     Wrapper,
 } from './sync.styles.ts';
-
-import mov from '/assets/video/coin_loader.mov';
-import webm from '/assets/video/coin_loader.webm';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 
 export default function Sync() {
     const { t } = useTranslation('setup-view');
     const isMac = type() === 'macos';
-    const videoSrc = useMemo(() => (isMac ? mov : webm), [isMac]);
+    const videoMarkup = useMemo(
+        () => (
+            <video playsInline autoPlay loop muted controls={false}>
+                <source src={`/assets/video/coinLoader.${isMac ? 'mov' : 'webm'}`} />
+            </video>
+        ),
+        [isMac]
+    );
     return (
         <Wrapper>
             <Content>
                 <HeaderContent>
-                    <HeaderGraphic>
-                        <video playsInline autoPlay loop muted controls={false}>
-                            <source src={videoSrc} />
-                        </video>
-                    </HeaderGraphic>
+                    <HeaderGraphic>{videoMarkup}</HeaderGraphic>
                     <Heading>{t('sync.header')}</Heading>
                     <SubHeading>{t('sync.subheader')}</SubHeading>
                 </HeaderContent>
