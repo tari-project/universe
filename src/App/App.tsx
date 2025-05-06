@@ -47,7 +47,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
                 </AppContentContainer>
             );
         }
-        return null;
+        return undefined;
     }, [showSplashscreen, isShuttingDown]);
 
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
