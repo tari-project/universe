@@ -6,6 +6,8 @@ export interface HistoryListItemProps {
     item: TransactionInfo;
     index: number;
     itemIsNew?: boolean;
+    expanded?: boolean;
+    setDetailsItem?: (item: TransactionInfo | null) => void;
 }
 
 export interface BaseItemProps {

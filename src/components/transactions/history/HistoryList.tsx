@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import InfiniteScroll from 'react-infinite-scroll-component';
 import { useWalletStore } from '@app/store/useWalletStore';
 import { CircularProgress } from '@app/components/elements/CircularProgress';
@@ -9,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
+import ItemExpand from './ExpandedItem.tsx';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -18,6 +19,8 @@ const HistoryList = memo(function HistoryList() {
     const walletScanning = useWalletStore((s) => s.wallet_scanning);
     const hasMore = useWalletStore((s) => s.has_more_transactions);
     const transactions = useWalletStore((s) => s.transactions);
+
+    const [detailsItem, setDetailsItem] = useState<TransactionInfo | null>(null);
 
     const combinedTransactions = useMemo(
         () => [...pendingTransactions, ...transactions] as TransactionInfo[],
@@ -49,7 +52,15 @@ const HistoryList = memo(function HistoryList() {
                         // it's only of the latest 3
                         // its timestamp is later than the latest transaction on the very first fetch
                         const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
-                        return <HistoryListItem key={tx.tx_id} item={tx} index={i} itemIsNew={isNew} />;
+                        return (
+                            <HistoryListItem
+                                key={tx.tx_id}
+                                item={tx}
+                                index={i}
+                                itemIsNew={isNew}
+                                setDetailsItem={setDetailsItem}
+                            />
+                        );
                     })}
                 </ListItemWrapper>
             </InfiniteScroll>
@@ -76,10 +87,20 @@ const HistoryList = memo(function HistoryList() {
     const emptyMarkup = isEmpty ? <Typography variant="h6">{t('empty-tx')}</Typography> : null;
 
     return (
-        <ListWrapper id="list">
-            {emptyMarkup}
-            {baseMarkup}
-        </ListWrapper>
+        <>
+            <ListWrapper id="list">
+                {emptyMarkup}
+                {baseMarkup}
+            </ListWrapper>
+
+            {detailsItem && (
+                <ItemExpand
+                    item={detailsItem}
+                    expanded={Boolean(detailsItem)}
+                    handleClose={() => setDetailsItem(null)}
+                />
+            )}
+        </>
     );
 });
 

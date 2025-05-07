@@ -3,7 +3,6 @@ import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
 import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
-import ItemExpand from './ExpandedItem';
 import ItemHover from './HoveredItem';
 import {
     ContentWrapper,
@@ -54,7 +53,13 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
     );
 });
 
-const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false }: HistoryListItemProps) {
+const HistoryListItem = memo(function ListItem({
+    item,
+    index,
+    itemIsNew = false,
+    expanded,
+    setDetailsItem,
+}: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
@@ -66,7 +71,6 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
     const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
-    const [expanded, setExpanded] = useState(false);
 
     const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
     const earningsFormatted = hideWalletBalance
@@ -80,11 +84,11 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
         if (!expanded) {
             clickRef.current += 1;
             if (clickRef.current === 3) {
-                setExpanded(true);
+                setDetailsItem?.(item);
                 clickRef.current = 0;
             }
         } else {
-            setExpanded(false);
+            setDetailsItem?.(null);
         }
     }
 
@@ -106,7 +110,7 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
             variant="outlined"
             onClick={(e) => {
                 e.stopPropagation();
-                setExpanded(true);
+                setDetailsItem?.(item);
             }}
         >
             {t(`history.view-details`)}
@@ -114,26 +118,16 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
     ) : null;
 
     return (
-        <>
-            <ItemWrapper
-                ref={ref}
-                data-index={index}
-                style={{ height: 48 }}
-                onMouseEnter={() => setHovering(true)}
-                onMouseLeave={() => setHovering(false)}
-            >
-                <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
-                {baseItem}
-            </ItemWrapper>
-            {!isMined && (
-                <ItemExpand
-                    item={item}
-                    expanded={expanded}
-                    setExpanded={setExpanded}
-                    handleClose={() => setExpanded(false)}
-                />
-            )}
-        </>
+        <ItemWrapper
+            ref={ref}
+            data-index={index}
+            style={{ height: 48 }}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+        >
+            <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            {baseItem}
+        </ItemWrapper>
     );
 });
 
