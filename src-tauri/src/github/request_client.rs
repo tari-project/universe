@@ -362,7 +362,7 @@ impl RequestClient {
         destination: &Path,
         check_cache: bool,
     ) -> Result<(), anyhow::Error> {
-        let retries = 0;
+        let mut retries = 0;
 
         loop {
             if retries >= MAX_DOWNLOAD_FILE_RETRIES {
@@ -382,6 +382,7 @@ impl RequestClient {
                     tokio::time::sleep(TIME_BETWEEN_FILE_DOWNLOADS).await;
                 }
             }
+            retries += 1;
         }
 
         Ok(())
