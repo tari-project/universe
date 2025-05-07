@@ -61,12 +61,6 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
             .join(format!("{}.sha256", asset.name));
         let checksum_url = format!("{}.sha256", asset.url);
 
-        if asset.source.is_mirror() {
-            RequestClient::current()
-                .check_if_cache_hits(checksum_url.as_str())
-                .await?;
-        }
-
         match RequestClient::current()
             .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
             .await
