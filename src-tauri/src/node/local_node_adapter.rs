@@ -257,8 +257,6 @@ impl ProcessAdapter for LocalNodeAdapter {
             "base_node.p2p.allow_test_addresses=true".to_string(),
             "-p".to_string(),
             "base_node.p2p.dht.network_discovery.min_desired_peers=12".to_string(),
-            "-p".to_string(),
-            "base_node.p2p.dht.minimize_connections=true".to_string(),
         ];
         if self.use_pruned_mode {
             args.push("-p".to_string());
@@ -352,8 +350,12 @@ impl ProcessAdapter for LocalNodeAdapter {
             args.push("base_node.p2p.dht.num_neighbouring_nodes=4".to_string());
             args.push("-p".to_string());
             args.push("base_node.p2p.dht.num_random_nodes=8".to_string());
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.minimize_connections=true".to_string());
         } else {
             info!(target: LOG_TARGET, "Using AB test group A");
+            args.push("-p".to_string());
+            args.push("base_node.p2p.dht.minimize_connections=false".to_string());
         }
 
         #[cfg(target_os = "windows")]

@@ -20,6 +20,7 @@ export const ExpandableTileItem = styled(m.div)`
     align-items: baseline;
     color: ${({ theme }) => theme.palette.text.primary};
 `;
+
 export const ExpandedWrapper = styled(m.div)`
     display: flex;
     background-color: ${({ theme }) => theme.palette.background.paper};
