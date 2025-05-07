@@ -41,6 +41,7 @@ use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 const LOG_TARGET: &str = "tari::universe::request_client";
 const MAX_DOWNLOAD_FILE_RETRIES: u8 = 3;
 const TIME_BETWEEN_FILE_DOWNLOADS: Duration = Duration::from_secs(15);
+#[allow(dead_code)]
 pub enum CloudFlareCacheStatus {
     Hit,
     Miss,
@@ -54,6 +55,7 @@ pub enum CloudFlareCacheStatus {
     NonExistent,
 }
 
+#[allow(dead_code)]
 impl CloudFlareCacheStatus {
     pub fn from_str(s: &str) -> Self {
         match s {
@@ -92,6 +94,7 @@ impl CloudFlareCacheStatus {
         matches!(self, Self::NonExistent)
     }
 
+    #[allow(dead_code)]
     pub fn is_hit(&self) -> bool {
         matches!(self, Self::Hit) || matches!(self, Self::Revalidated)
     }
@@ -101,6 +104,7 @@ impl CloudFlareCacheStatus {
         matches!(self, Self::Miss)
     }
 
+    #[allow(dead_code)]
     pub fn should_log_warning(&self) -> bool {
         matches!(self, Self::Unknown)
             || matches!(self, Self::NonExistent)
@@ -108,6 +112,7 @@ impl CloudFlareCacheStatus {
             || matches!(self, Self::Bypass)
     }
 
+    #[allow(dead_code)]
     pub fn log_warning_if_present(&self) {
         if self.should_log_warning() {
             warn!(target: LOG_TARGET, "Cloudflare cache status: {}", self.to_str());
@@ -148,6 +153,7 @@ impl RequestClient {
             .build()
     }
 
+    #[allow(dead_code)]
     fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
         (content_length as f64) / 1024.0 / 1024.0
     }
@@ -192,6 +198,7 @@ impl RequestClient {
             .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
     }
 
+    #[allow(dead_code)]
     pub fn get_cf_cache_status_from_head_response(
         &self,
         response: &Response,
@@ -230,6 +237,7 @@ impl RequestClient {
         Ok((serde_json::from_str(&body)?, etag))
     }
 
+    #[allow(dead_code)]
     pub async fn check_if_cache_hits(&self, url: &str) -> Result<bool, anyhow::Error> {
         const MAX_RETRIES: u8 = 3;
         const MAX_WAIT_TIME: u64 = 30;
