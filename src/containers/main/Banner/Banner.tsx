@@ -11,7 +11,7 @@ import { setWarmupSeen } from '@app/store/actions/appConfigStoreActions.ts';
 export default function Banner() {
     const { t } = useTranslation(['common', 'components']);
     const warmup_seen = useConfigUIStore((s) => s.warmup_seen);
-    const firstPlay = useRef(!warmup_seen);
+    const firstPlay = useRef(warmup_seen !== null && !warmup_seen);
     const [expandPlayer, setExpandPlayer] = useState(false);
 
     function handleClick() {
@@ -22,7 +22,7 @@ export default function Banner() {
     }
 
     useEffect(() => {
-        if (warmup_seen || !firstPlay.current) return;
+        if (warmup_seen === null || warmup_seen) return;
         setExpandPlayer(true);
         setWarmupSeen(true);
         firstPlay.current = false;
