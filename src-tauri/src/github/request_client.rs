@@ -30,7 +30,7 @@ use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 
 use super::Release;
-use anyhow::anyhow;
+use anyhow::{anyhow, Error};
 use log::debug;
 use log::info;
 use log::warn;
@@ -134,8 +134,6 @@ impl RequestClient {
             std::env::consts::OS
         );
 
-        // let user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36".to_string();
-
         info!(target: LOG_TARGET, "RequestClient::new, user_agent: {}", user_agent);
 
         Self {
@@ -158,23 +156,54 @@ impl RequestClient {
         (content_length as f64) / 1024.0 / 1024.0
     }
 
-    pub async fn send_head_request(
-        &self,
-        url: &str,
-    ) -> Result<Response, reqwest_middleware::Error> {
-        self.client
+    pub async fn send_head_request(&self, url: &str) -> Result<Response, Error> {
+        let head_response = self
+            .client
             .head(url)
             .header("User-Agent", self.user_agent.clone())
             .send()
-            .await
+            .await;
+
+        if let Ok(response) = head_response {
+            if response.status().is_success() {
+                return Ok(response);
+            } else {
+                return Err(anyhow!(
+                    "HEAD request failed with status code: {}",
+                    response.status()
+                ));
+            }
+        };
+
+        Err(anyhow!(
+            "HEAD request failed with error: {}",
+            head_response.as_ref().err().unwrap()
+        ))
     }
 
-    pub async fn send_get_request(&self, url: &str) -> Result<Response, reqwest_middleware::Error> {
-        self.client
+    pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
+        let get_response = self
+            .client
             .get(url)
             .header("User-Agent", self.user_agent.clone())
             .send()
-            .await
+            .await;
+
+        if let Ok(response) = get_response {
+            if response.status().is_success() {
+                return Ok(response);
+            } else {
+                return Err(anyhow!(
+                    "GET request failed with status code: {}",
+                    response.status()
+                ));
+            }
+        };
+
+        Err(anyhow!(
+            "GET request failed with error: {}",
+            get_response.as_ref().err().unwrap()
+        ))
     }
 
     pub fn get_etag_from_head_response(&self, response: &Response) -> String {
