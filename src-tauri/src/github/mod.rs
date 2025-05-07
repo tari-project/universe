@@ -165,7 +165,7 @@ async fn list_mirror_releases(
 
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
 
-    if does_hit && need_to_download {
+    if need_to_download {
         let (response, etag) = RequestClient::current()
             .fetch_get_versions_download_info(&url)
             .await?;
@@ -179,9 +179,15 @@ async fn list_mirror_releases(
             cache_json_file_lock.create_cache_entry(repo_owner, repo_name, None, Some(etag))?;
         };
         versions_list.extend(remote_versions_list);
-        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
+        cache_json_file_lock.save_file_content(
+            repo_owner,
+            repo_name,
+            versions_list.clone(),
+            ReleaseSource::Mirror,
+        )?;
     } else {
-        let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
+        let content =
+            cache_json_file_lock.get_file_content(repo_owner, repo_name, ReleaseSource::Mirror)?;
         versions_list.extend(content);
     }
 
@@ -220,9 +226,15 @@ async fn list_github_releases(
         };
 
         versions_list.extend(remote_versions_list);
-        cache_json_file_lock.save_file_content(repo_owner, repo_name, versions_list.clone())?;
+        cache_json_file_lock.save_file_content(
+            repo_owner,
+            repo_name,
+            versions_list.clone(),
+            ReleaseSource::Github,
+        )?;
     } else {
-        let content = cache_json_file_lock.get_file_content(repo_owner, repo_name)?;
+        let content =
+            cache_json_file_lock.get_file_content(repo_owner, repo_name, ReleaseSource::Github)?;
         versions_list.extend(content);
     }
 
@@ -242,7 +254,17 @@ async fn check_if_need_download(
 
     match cache_entry {
         Some(cache_entry) => {
-            if !cache_json_file_lock.chech_if_content_file_exist(repo_owner, repo_name) {
+            if !cache_json_file_lock.check_if_content_file_exist(
+                repo_owner,
+                repo_name,
+                source.clone(),
+            ) {
+                info!(
+                    target: LOG_TARGET,
+                    "Cache entry found but content file not found for {}/{}",
+                    repo_owner,
+                    repo_name
+                );
                 need_to_download = true;
             }
 
@@ -257,12 +279,24 @@ async fn check_if_need_download(
             info!(target: LOG_TARGET, "Local etag: {:?}", cache_entry);
 
             if !remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
+                info!(
+                    target: LOG_TARGET,
+                    "Cache entry etag mismatch for {}/{}",
+                    repo_owner,
+                    repo_name
+                );
                 need_to_download = true
             };
 
             Ok((need_to_download, cache_entry_present, Some(response)))
         }
         None => {
+            info!(
+                target: LOG_TARGET,
+                "Cache entry not found for {}/{}",
+                repo_owner,
+                repo_name
+            );
             need_to_download = true;
             Ok((need_to_download, cache_entry_present, None))
         }

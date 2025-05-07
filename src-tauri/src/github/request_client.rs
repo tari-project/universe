@@ -272,7 +272,7 @@ impl RequestClient {
         check_cache: bool,
     ) -> Result<(), anyhow::Error> {
         if check_cache {
-            self.check_if_cache_hits(url.clone()).await?;
+            self.check_if_cache_hits(url).await?;
         }
 
         let head_response = self.send_head_request(url).await?;
