@@ -373,6 +373,12 @@ impl RequestClient {
                 Ok(_) => break,
                 Err(e) => {
                     warn!(target: LOG_TARGET, "Failed to download file: {}", e);
+                    info!(target: LOG_TARGET, "Deleting file: {}", destination.display());
+                    if destination.exists() {
+                        let _unused = fs::remove_file(destination).await.inspect_err(|e| {
+                            warn!(target: LOG_TARGET, "Failed to delete file: {}", e);
+                        });
+                    }
                     tokio::time::sleep(TIME_BETWEEN_FILE_DOWNLOADS).await;
                 }
             }
