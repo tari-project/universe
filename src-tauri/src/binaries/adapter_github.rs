@@ -29,9 +29,7 @@ use regex::Regex;
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::download_file_with_retries,
     github::{self, request_client::RequestClient},
-    progress_tracker_old::ProgressTracker,
     APPLICATION_FOLDER_ID,
 };
 
@@ -56,7 +54,6 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
@@ -70,7 +67,10 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
                 .await?;
         }
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .await
+        {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);

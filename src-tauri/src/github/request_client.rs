@@ -1,13 +1,24 @@
+use futures::StreamExt;
+use std::path::Path;
+use std::path::PathBuf;
 use std::sync::LazyLock;
-
-use anyhow::anyhow;
-use log::info;
-use log::warn;
-use reqwest::{Client, Response};
+use std::time::Duration;
+use tokio::fs;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 
 use super::Release;
-const LOG_TARGET: &str = "tari::universe::request_client";
+use anyhow::anyhow;
+use log::debug;
+use log::info;
+use log::warn;
+use reqwest::{self, Client, Response};
+use reqwest_middleware::{ClientBuilder, ClientWithMiddleware};
+use reqwest_retry::{policies::ExponentialBackoff, RetryTransientMiddleware};
 
+const LOG_TARGET: &str = "tari::universe::request_client";
+const MAX_DOWNLOAD_FILE_RETRIES: u8 = 3;
+const TIME_BETWEEN_FILE_DOWNLOADS: Duration = Duration::from_secs(15);
 pub enum CloudFlareCacheStatus {
     Hit,
     Miss,
@@ -84,7 +95,7 @@ impl CloudFlareCacheStatus {
 
 static INSTANCE: LazyLock<RequestClient> = LazyLock::new(RequestClient::new);
 pub struct RequestClient {
-    client: Client,
+    client: ClientWithMiddleware,
     user_agent: String,
 }
 
@@ -96,17 +107,33 @@ impl RequestClient {
             std::env::consts::OS
         );
 
+        // let user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36".to_string();
+
+        info!(target: LOG_TARGET, "RequestClient::new, user_agent: {}", user_agent);
+
         Self {
-            client: Client::new(),
+            client: Self::build_retry_reqwest_client(),
             user_agent,
         }
+    }
+
+    fn build_retry_reqwest_client() -> ClientWithMiddleware {
+        debug!(target: LOG_TARGET, "[build_retry_reqwest_client]");
+        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
+
+        ClientBuilder::new(Client::new())
+            .with(RetryTransientMiddleware::new_with_policy(retry_policy))
+            .build()
     }
 
     fn convert_content_length_to_mb(&self, content_length: u64) -> f64 {
         (content_length as f64) / 1024.0 / 1024.0
     }
 
-    pub async fn send_head_request(&self, url: &str) -> Result<Response, reqwest::Error> {
+    pub async fn send_head_request(
+        &self,
+        url: &str,
+    ) -> Result<Response, reqwest_middleware::Error> {
         self.client
             .head(url)
             .header("User-Agent", self.user_agent.clone())
@@ -114,7 +141,7 @@ impl RequestClient {
             .await
     }
 
-    pub async fn send_get_request(&self, url: &str) -> Result<Response, reqwest::Error> {
+    pub async fn send_get_request(&self, url: &str) -> Result<Response, reqwest_middleware::Error> {
         self.client
             .get(url)
             .header("User-Agent", self.user_agent.clone())
@@ -193,6 +220,7 @@ impl RequestClient {
             }
 
             let head_response = self.send_head_request(url).await?;
+            info!(target: LOG_TARGET, "Headers: {:?}", head_response.headers());
 
             let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
             cf_cache_status.log_warning_if_present();
@@ -222,6 +250,107 @@ impl RequestClient {
         }
 
         Ok(true)
+    }
+
+    #[allow(dead_code)]
+    pub async fn lookup_content_size(&self, url: &str) -> Result<u64, anyhow::Error> {
+        let head_response = self.send_head_request(url).await?;
+        let content_length = self.get_content_length_from_head_response(&head_response);
+        Ok(content_length)
+    }
+
+    pub async fn get_content_size_from_file(&self, path: PathBuf) -> Result<u64, anyhow::Error> {
+        let file = File::open(path).await?;
+        let metadata = file.metadata().await?;
+        Ok(metadata.len())
+    }
+
+    pub async fn download_file(
+        &self,
+        url: &str,
+        destination: &Path,
+        check_cache: bool,
+    ) -> Result<(), anyhow::Error> {
+        if check_cache {
+            self.check_if_cache_hits(url.clone()).await?;
+        }
+
+        let head_response = self.send_head_request(url).await?;
+        let head_reponse_content_length =
+            self.get_content_length_from_head_response(&head_response);
+        let head_reponse_etag = self.get_etag_from_head_response(&head_response);
+
+        let get_response: reqwest::Response = self.send_get_request(url).await?;
+        let get_reposnse_etag = self.get_etag_from_head_response(&get_response);
+
+        // Ensure the directory exists
+        if let Some(parent) = destination.parent() {
+            fs::create_dir_all(parent).await?;
+        }
+
+        // Open a file for writing
+        let mut destination_path = File::create(destination).await?;
+
+        // Stream the response body directly to the file
+        let mut stream = get_response.bytes_stream();
+        while let Some(item) = stream.next().await {
+            destination_path.write_all(&item?).await?;
+        }
+
+        let destination_file_size = self
+            .get_content_size_from_file(destination.to_path_buf())
+            .await?;
+
+        info!(target: LOG_TARGET, "Expected downloaded file size: {}", head_reponse_content_length);
+        info!(target: LOG_TARGET, "Downloaded file size: {}", destination_file_size);
+
+        info!(target: LOG_TARGET, "Expected etag: {}", head_reponse_etag);
+        info!(target: LOG_TARGET, "Downloaded etag: {}", get_reposnse_etag);
+
+        if head_reponse_content_length.ne(&destination_file_size) {
+            return Err(anyhow!(
+                "Downloaded file size does not match expected size. Expected: {}, Actual: {}",
+                head_reponse_content_length,
+                destination_file_size
+            ));
+        };
+
+        if head_reponse_etag.ne(&get_reposnse_etag) {
+            return Err(anyhow!(
+                "Downloaded etag does not match expected etag. Expected: {}, Actual: {}",
+                head_reponse_etag,
+                get_reposnse_etag
+            ));
+        };
+
+        info!(target: LOG_TARGET, "Finished downloading: {}", url);
+
+        Ok(())
+    }
+
+    pub async fn download_file_with_retries(
+        &self,
+        url: &str,
+        destination: &Path,
+        check_cache: bool,
+    ) -> Result<(), anyhow::Error> {
+        let retries = 0;
+
+        loop {
+            if retries >= MAX_DOWNLOAD_FILE_RETRIES {
+                return Err(anyhow!("Max retries reached"));
+            }
+
+            match self.download_file(url, destination, check_cache).await {
+                Ok(_) => break,
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "Failed to download file: {}", e);
+                    tokio::time::sleep(TIME_BETWEEN_FILE_DOWNLOADS).await;
+                }
+            }
+        }
+
+        Ok(())
     }
 
     pub fn current() -> &'static LazyLock<RequestClient> {

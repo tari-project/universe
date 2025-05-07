@@ -238,7 +238,7 @@ async fn check_if_need_download(
     let cache_json_file_lock = CacheJsonFile::current().write().await;
     let cache_entry = cache_json_file_lock.get_cache_entry(repo_owner, repo_name);
     let mut need_to_download = false;
-    let cache_entry_present = cache_entry.is_some();
+    let cache_entry_present: bool = cache_entry.is_some();
 
     match cache_entry {
         Some(cache_entry) => {

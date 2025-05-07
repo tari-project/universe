@@ -27,7 +27,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum},
+    download_utils::{extract, validate_checksum},
     github::request_client::RequestClient,
     progress_tracker_old::ProgressTracker,
 };
@@ -284,7 +284,6 @@ impl BinaryManager {
             .download_and_get_checksum_path(
                 destination_dir.clone().to_path_buf(),
                 version_download_info,
-                progress_tracker.clone(),
             )
             .await
             .map_err(|e| {
@@ -487,12 +486,6 @@ impl BinaryManager {
                 .await?;
         }
 
-        if asset.source.is_mirror() {
-            RequestClient::current()
-                .check_if_cache_hits(asset.url.as_str())
-                .await?;
-        }
-
         info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, asset.url);
         progress_tracker
             .send_last_action(format!(
@@ -500,13 +493,14 @@ impl BinaryManager {
                 self.binary_name, version
             ))
             .await;
-        download_file_with_retries(
-            asset.url.as_str(),
-            &in_progress_file_zip,
-            progress_tracker.clone(),
-        )
-        .await
-        .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+        RequestClient::current()
+            .download_file_with_retries(
+                asset.url.as_str(),
+                &in_progress_file_zip,
+                asset.source.is_mirror(),
+            )
+            .await
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
 
         debug!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 

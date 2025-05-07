@@ -28,7 +28,7 @@ use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
 
-use crate::{github, progress_tracker_old::ProgressTracker, APPLICATION_FOLDER_ID};
+use crate::{github, APPLICATION_FOLDER_ID};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 
@@ -47,7 +47,6 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        _: ProgressTracker,
     ) -> Result<PathBuf, Error> {
         // When xmrig is downloaded checksum will be already in its folder so there is no need to download it
         // directory parameter should point to folder where xmrig is extracted

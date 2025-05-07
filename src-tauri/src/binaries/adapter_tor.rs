@@ -23,10 +23,8 @@
 use crate::binaries::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo,
 };
-use crate::download_utils::download_file_with_retries;
 use crate::github::request_client::RequestClient;
 use crate::github::ReleaseSource;
-use crate::progress_tracker_old::ProgressTracker;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::Error;
 use async_trait::async_trait;
@@ -79,7 +77,6 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
@@ -87,7 +84,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             .join(format!("{}.asc", asset.name));
         let checksum_url = format!("{}.asc", asset.url);
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .await
+        {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);

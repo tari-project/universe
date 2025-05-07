@@ -72,7 +72,6 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error>;
@@ -304,11 +303,7 @@ impl BinaryResolver {
         let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
-
-        if true {
-            // Will populate Vec of downloaded versions that meet the requirements
-            manager.check_for_updates().await;
-        }
+        manager.check_for_updates().await;
 
         // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();
