@@ -128,6 +128,7 @@ impl TappletResolver {
             .lock()
             .await;
 
+        // TODO
         // // Throw error if file do not exist
         // let check_if_files_exist = manager.check_if_files_exist();
         // if !check_if_files_exist {

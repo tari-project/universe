@@ -18,6 +18,7 @@ anyhow = "1"
 async-trait = "0.1.81"
 async_zip = { version = "0.0.17", features = ["full"] }
 auto-launch = "0.5.0"
+axum = "0.7.9"
 base64 = "0.22.1"
 blake2 = "0.10"
 chrono = "0.4.38"
@@ -85,6 +86,7 @@ tauri-plugin-updater = "2"
 thiserror = "2.0.10"
 tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.7.14", features = ["compat", "rt"] }
+tower-http = { version = "0.6.2", default-features = false, features = ["fs"] }
 xz2 = { version = "0.1.7", features = ["static"] } # static bind lzma
 zip = "2.2.0"
 dirs = "5.0.1"

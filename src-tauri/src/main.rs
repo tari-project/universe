@@ -1307,7 +1307,8 @@ fn main() {
             commands::validate_minotari_amount,
             commands::trigger_phases_restart,
             commands::set_node_type,
-            commands::set_warmup_seen
+            commands::set_warmup_seen,
+            commands::launch_builtin_tapplet
         ])
         .build(tauri::generate_context!())
         .inspect_err(

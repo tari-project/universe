@@ -107,6 +107,9 @@ pub async fn extract(file_path: &Path, dest_dir: &Path) -> Result<(), anyhow::Er
             Some("gz") => {
                 extract_gz(file_path, dest_dir).await?;
             }
+            Some("tgz") => {
+                extract_gz(file_path, dest_dir).await?;
+            }
             Some("zip") => {
                 extract_zip(file_path, dest_dir).await?;
             }

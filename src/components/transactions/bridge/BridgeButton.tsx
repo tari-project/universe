@@ -12,7 +12,7 @@ export default function BridgeButton() {
     const handleClick = useCallback(
         async (tappletId: number) => {
             try {
-                setActiveTappById(tappletId);
+                setActiveTappById(tappletId, true);
                 setShowTapplet(true);
                 setVisualMode(false);
                 setSidebarOpen(false);

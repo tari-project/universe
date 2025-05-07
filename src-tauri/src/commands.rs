@@ -44,6 +44,9 @@ use crate::node::node_manager::NodeType;
 use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
+use crate::tapplets::interface::ActiveTapplet;
+use crate::tapplets::tapp_consts::TAPPLET_DIST_DIR;
+use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -62,6 +65,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
+use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -1919,4 +1923,44 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     Ok(())
+}
+
+/*
+ ********** TAPPLETS SECTION **********
+*/
+
+#[tauri::command]
+pub async fn launch_builtin_tapplet(
+    tapplet_dest_dir: String,
+) -> Result<ActiveTapplet, String> {
+    // let mut locked_tokens = shutdown_tokens.0.lock().await;
+    let tapplet_id = 0;
+    let tapplet_path = PathBuf::from(tapplet_dest_dir).join(TAPPLET_DIST_DIR);
+
+    let handle_start =
+        tauri::async_runtime::spawn(async move { start_tapplet(tapplet_path).await });
+
+    let (addr, _cancel_token) = match handle_start.await {
+        Ok(result) => result.map_err(|e| e.to_string())?,
+        Err(e) => {
+            error!(target: LOG_TARGET, "❌ Error handling tapplet start: {:?}", e);
+            return Err(e.to_string());
+        }
+    };
+
+    //TODO SERVER RUNNING ERROR IF LAUNCHED INSTALLED TAPPLET 2 TIMES
+    // match locked_tokens.insert(tapplet_id, cancel_token) {
+    //     Some(_) => {
+    //         return Err(TappletServerError(AlreadyRunning)).map_err(|e| e.to_string())?;
+    //     }
+    //     None => {}
+    // }
+
+    // TODO tmp hardcoded
+    Ok(ActiveTapplet {
+        tapplet_id,
+        display_name: format!("Bridge-wXTM"),
+        source: format!("http://{}", addr),
+        version: format!("1.0.0"),
+    })
 }
