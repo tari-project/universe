@@ -26,12 +26,14 @@ use crate::binaries::binaries_resolver::{
 use crate::download_utils::download_file_with_retries;
 use crate::progress_tracker_old::ProgressTracker;
 use crate::APPLICATION_FOLDER_ID;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 pub const LOG_TARGET: &str = "tari::universe::adapter_tor";
 pub(crate) struct TorReleaseAdapter {}
@@ -79,6 +81,31 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             }]
         };
         Ok(vec![version])
+    }
+
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+        let mut expected_hash = "";
+        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
+            .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
+
+        for line in contents.lines() {
+            if let Some(caps) = regex.captures(line) {
+                expected_hash = caps
+                    .get(1)
+                    .map(|hash| hash.as_str())
+                    .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
+            }
+        }
+        Ok(expected_hash.to_string())
     }
 
     async fn download_and_get_checksum_path(

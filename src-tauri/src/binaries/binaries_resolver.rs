@@ -65,6 +65,11 @@ pub struct VersionAsset {
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error>;
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,

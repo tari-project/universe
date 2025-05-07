@@ -28,7 +28,7 @@ use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, fs::read_to_string, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use super::{
@@ -267,7 +267,7 @@ impl BinaryManager {
         in_progress_file_zip: PathBuf,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
@@ -295,9 +295,16 @@ impl BinaryManager {
                 )
             })?;
 
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
-        debug!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
-        debug!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        let expected_checksum = self
+            .adapter
+            .get_expected_checksum(checksum_file.clone(), &asset.name)
+            .await?;
+        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
+        let checksum_file_content = read_to_string(checksum_file.as_path()).unwrap_or_default();
+        info!(target: LOG_TARGET, "checksum file content: {}", checksum_file_content);
+        info!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+
         progress_tracker
             .send_last_action(format!(
                 "Validating checksum for checksum file: {:?} and in progress file: {:?}",
@@ -306,13 +313,13 @@ impl BinaryManager {
             .await;
         match validate_checksum(
             in_progress_file_zip.clone(),
-            checksum_file,
+            expected_checksum,
             asset.name.clone(),
         )
         .await
         {
             Ok(_) => {
-                debug!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
+                info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
                 Ok(())
             }
             Err(e) => {
