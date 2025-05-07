@@ -23,7 +23,7 @@ export const ListItemsWrapper = styled.div`
 export const Rectangle = styled(m.div)`
     width: 100%;
     height: 48px;
-    background: ${({ theme }) => theme.colors.grey[100]};
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;
 `;
@@ -38,8 +38,8 @@ export const LoadingText = styled(m.div)`
     text-align: center;
     z-index: 1;
 
-    background-color: ${({ theme }) => theme.colors.greyscale[100]};
-    color: ${({ theme }) => theme.colors.greyscale[900]};
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
+    color: ${({ theme }) => (theme.mode === 'dark' ? '#fff' : '#000')};
     padding: 8px 20px;
     border-radius: 8px;
     max-width: 220px;
