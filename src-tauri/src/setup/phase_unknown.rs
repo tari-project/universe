@@ -65,6 +65,7 @@ pub struct UnknownSetupPhaseAppConfiguration {
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
+    squad_override: Option<String>,
 }
 
 pub struct UnknownSetupPhase {
@@ -115,12 +116,14 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let p2pool_stats_server_port = *ConfigCore::content().await.p2pool_stats_server_port();
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
+        let squad_override = *ConfigCore::content().await.squad_override().clone();
 
         Ok(UnknownSetupPhaseAppConfiguration {
             p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
+            squad_override,
         })
     }
 
@@ -218,6 +221,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc_address.clone())
+                .with_squad_override(self.app_configuration.squad_override)
                 .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
                 .with_cpu_benchmark_hashrate(Some(
                     state.cpu_miner.read().await.benchmarked_hashrate,

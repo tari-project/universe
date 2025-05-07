@@ -46,6 +46,7 @@ pub struct P2poolConfig {
     pub stats_server_port: u16,
     pub base_node_address: String,
     pub cpu_benchmark_hashrate: Option<u64>,
+    pub squad_override: Option<String>,
 }
 
 pub struct P2poolConfigBuilder {
@@ -61,6 +62,11 @@ impl P2poolConfigBuilder {
 
     pub fn with_base_node(&mut self, address: String) -> &mut Self {
         self.config.base_node_address = address;
+        self
+    }
+
+    pub fn with_squad_override(&mut self, squad_override: Option<String>) -> &mut Self {
+        self.config.squad_override = squad_override;
         self
     }
 
