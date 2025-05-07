@@ -1,5 +1,5 @@
 import { memo, useRef, useState } from 'react';
-import { AnimatePresence, useInView } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
 import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
@@ -60,7 +60,6 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
 
     const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);
-    const inView = useInView(ref, { amount: 0.5, once: false });
 
     const itemType = getItemType(item);
 
@@ -119,8 +118,6 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
             <ItemWrapper
                 ref={ref}
                 data-index={index}
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity: 1 } : { opacity: 0 }}
                 style={{ height: 48 }}
                 onMouseEnter={() => setHovering(true)}
                 onMouseLeave={() => setHovering(false)}

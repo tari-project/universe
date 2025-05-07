@@ -9,6 +9,8 @@ export const ListWrapper = styled.div`
     flex-grow: 1;
     position: relative;
 
+    mask-image: linear-gradient(to bottom, transparent 0px, black 6px, black calc(100% - 30px), transparent 100%);
+
     h6 {
         text-align: center;
     }
@@ -19,7 +21,8 @@ export const ListItemWrapper = styled.div`
     flex-direction: column;
     align-items: center;
     width: calc(100% - 4px);
-    padding: 0 2px;
     position: relative;
     gap: 4px;
+    padding-top: 6px;
+    padding-bottom: 60px;
 `;
