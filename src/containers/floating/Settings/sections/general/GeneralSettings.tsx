@@ -9,10 +9,12 @@ import StartApplicationOnBootSettings from './StartApplicationOnBootSettings.tsx
 import AutoUpdate from './AutoUpdate.tsx';
 import PreReleaseSettings from './PreReleaseSettings.tsx';
 import VisualMode from '@app/containers/main/Dashboard/components/VisualMode.tsx';
+import LocalNodeSync from '@app/containers/floating/Settings/sections/general/LocalNodeSync.tsx';
 
 export const GeneralSettings = () => {
     return (
         <>
+            <LocalNodeSync />
             <StartApplicationOnBootSettings />
             <AutoUpdate />
             <PreReleaseSettings />

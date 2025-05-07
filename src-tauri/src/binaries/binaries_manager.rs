@@ -20,29 +20,27 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use crate::{
+    download_utils::{download_file_with_retries, extract, validate_checksum},
+    progress_tracker_old::ProgressTracker,
+};
 use anyhow::{anyhow, Error};
+use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
-
-use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum},
-    progress_tracker::ProgressTracker,
-};
 
 use super::{
     binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo},
     Binaries,
 };
 
-use log::{debug, error, warn};
-
 pub const LOG_TARGET: &str = "tari::universe::binary_manager";
 
 #[derive(Deserialize, Serialize, Default)]
-struct BinaryVersionsJsonContent {
-    binaries: HashMap<String, String>,
+pub struct BinaryVersionsJsonContent {
+    pub binaries: HashMap<String, String>,
 }
 pub(crate) struct BinaryManager {
     binary_name: String,
@@ -65,9 +63,24 @@ impl BinaryManager {
         should_validate_checksum: bool,
     ) -> Self {
         let versions_requirements_data = match Network::get_current_or_user_setting_or_default() {
-            Network::NextNet => include_str!("../../binaries_versions_nextnet.json"),
-            Network::Esmeralda => include_str!("../../binaries_versions_esmeralda.json"),
-            _ => panic!("Unsupported network"),
+            Network::NextNet => {
+                include_str!("../../binaries-versions/binaries_versions_nextnet.json")
+            }
+            Network::Esmeralda => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::StageNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::MainNet => {
+                include_str!("../../binaries-versions/binaries_versions_mainnet.json")
+            }
+            Network::LocalNet => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
+            Network::Igor => {
+                include_str!("../../binaries-versions/binaries_versions_testnets.json")
+            }
         };
         let version_requirements = BinaryManager::read_version_requirements(
             binary_name.clone(),
@@ -314,7 +327,8 @@ impl BinaryManager {
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
-        debug!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        info!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        info!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
         let is_meet_semver = self.version_requirements.matches(version);
         let did_meet_network_prerelease = self
             .network_prerelease_prefix
@@ -466,6 +480,7 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
+        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, asset.url);
         progress_tracker
             .send_last_action(format!(
                 "Downloading binary: {} with version: {}",

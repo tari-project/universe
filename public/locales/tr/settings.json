@@ -5,7 +5,6 @@
   "application-info": "Uygulama Bilgileri",
   "applyInviteCode": "Davet Kodunu Uygula",
   "cancel": "İptal",
-  "gpu-engine": "Gpu Motoru",
   "change-language": "Dil Değiştir",
   "confirm": "Onayla",
   "confirm-action": "İşlemi onayla",
@@ -30,6 +29,7 @@
   "debug-info": "Hata Ayıklama",
   "disconnect": "Airdrop\"tan Bağlantıyı Kes",
   "errors": {
+    "fetch-tor-bridges": "Tor köprüleri alınamadı. İnternet bağlantınızı kontrol edin veya daha sonra tekrar deneyin.",
     "invalid-bridge": "Köprü yapılandırması geçersiz",
     "invalid-control-port": "Kontrol Portu yapılandırması geçersiz"
   },
@@ -39,6 +39,7 @@
   "gpu-device-enabled": "GPU Madencilik cihazları",
   "gpu-device-enabled-description": "Belirli bir GPU cihazını etkinleştir veya devre dışı bırak.",
   "gpu-device-no-found": "⚠️ GPU cihazı bulunamadı",
+  "gpu-engine": "Gpu Motoru",
   "gpu-mining-enabled": "GPU Madenciliği",
   "gpu-unavailable": "⚠️ Donanımınız desteklemediği için GPU devre dışı bırakıldı",
   "hardware-status": "Donanım durumu",
@@ -56,6 +57,8 @@
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "license-agreement": "License Agreement",
+  "local-node-sync-progress": "Yerel düğüm senkronizasyon ilerlemesi",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
   "mine-on-app-start": {
@@ -64,6 +67,7 @@
   },
   "miners": "Madenciler",
   "mining-toggle-warning": "Değişiklikler etkili olana kadar madencilik duraklatılacak.",
+  "minotari-node": "Minotari Düğümü",
   "monero-address": {
     "placeholder": "Monero adresini girin",
     "title": "Monero Adresi"
@@ -71,6 +75,12 @@
   "monero-seed-words": "Monero Seed Kelimeleri",
   "network": "Ağ",
   "no-entry-guard": "Giriş Koruması bağlı değil!",
+  "node-configuration": "Node configuration",
+  "node-configuration-description": "Connect with Remote, Local or both until your Local is ready to use",
+  "node-connection-address": "Bağlantı adresi",
+  "node-public-address": "Genel adres",
+  "node-public-key": "Genel anahtar",
+  "node-type": "Tür",
   "not-connected-to-tari": "Tari Ağına Bağlı Değil",
   "open-logs-directory": "Günlükler dizinini açın",
   "p2pool-chain-tip": "Zincir ucu",
@@ -154,6 +164,7 @@
   "use-random-port": "Rastgele port kullan",
   "use-tor": "Tor Kullan",
   "use-tor-bridges": "Tor Köprülerini Kullan",
+  "user-agreement": "User Agreement",
   "visual-mode": "Görsel mod",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",

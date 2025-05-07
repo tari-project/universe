@@ -26,14 +26,10 @@ export const ButtonWrapper = styled('div')`
 `;
 
 export const QRCodeWrapper = styled('div')`
-    border-radius: 15px;
     background: white;
-    padding: 10px;
-    min-width: 200px;
-
-    svg {
-        display: block;
-    }
+    width: 200px;
+    height: 200px;
+    border-radius: 15px;
 `;
 
 export const QRContentWrapper = styled('div')`

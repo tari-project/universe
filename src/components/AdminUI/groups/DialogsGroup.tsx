@@ -2,16 +2,10 @@
 import { Button, ButtonGroup, CategoryLabel } from '../styles';
 
 import { useAppStateStore } from '@app/store/appStateStore';
-import {
-    setCriticalError,
-    setCriticalProblem,
-    setDialogToShow,
-    setShowExternalDependenciesDialog,
-} from '@app/store/actions';
+import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
 
 export function DialogsGroup() {
-    const criticalError = useAppStateStore((s) => s.criticalError);
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const dialogToShow = useUIStore((s) => s.dialogToShow);
     const showExternalDependenciesDialog = useUIStore((s) => s.showExternalDependenciesDialog);
@@ -20,12 +14,6 @@ export function DialogsGroup() {
         <>
             <CategoryLabel>Dialogs</CategoryLabel>
             <ButtonGroup>
-                <Button
-                    onClick={() => setCriticalError(criticalError ? undefined : 'This is a critical error')}
-                    $isActive={!!criticalError}
-                >
-                    Critical Error
-                </Button>
                 <Button
                     onClick={() =>
                         setCriticalProblem(
@@ -45,13 +33,13 @@ export function DialogsGroup() {
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}
                 >
-                    Auto Update Dialog
+                    Auto Update
                 </Button>
                 <Button
                     onClick={() => setShowExternalDependenciesDialog(!showExternalDependenciesDialog)}
                     $isActive={showExternalDependenciesDialog}
                 >
-                    External Dependencies
+                    External Deps
                 </Button>
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'releaseNotes' ? undefined : 'releaseNotes')}
@@ -65,7 +53,7 @@ export function DialogsGroup() {
                     }
                     $isActive={dialogToShow === 'ludicrousConfirmation'}
                 >
-                    Ludicrous Confirmation
+                    Ludicrous
                 </Button>
             </ButtonGroup>
         </>

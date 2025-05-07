@@ -2,15 +2,15 @@ import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography';
 import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
-import { useAppConfigStore } from '@app/store/useAppConfigStore';
 import { useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { SettingsGroupContent, SettingsGroupTitle } from '../../components/SettingsGroup.styles.ts';
+import { useConfigCoreStore } from '@app/store/useAppConfigStore.ts';
 
 export default function AppDataSettings() {
     const { t } = useTranslation('settings');
     const { isCopied, copyToClipboard } = useCopyToClipboard();
-    const anon_id = useAppConfigStore((s) => s.anon_id);
+    const anon_id = useConfigCoreStore((s) => s.anon_id);
 
     return (
         <>

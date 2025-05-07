@@ -5,15 +5,19 @@
   "new-tari-version-available": "Tari Universe'ün yeni sürümü var!",
   "no": "Hayır",
   "setting-up": "Tari doğruluk makinesi kuruluyor...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "Bu birkaç dakika sürebilir",
   "title": {
     "application-started": "Uygulamalar başladı",
-    "benchmarking-network": "Network Benchmark",
+    "benchmarking-network": "Ağ Karşılaştırması",
     "checking-latest-version-gpuminer": "xtrgpuminer'in en son sürümü kontrol ediliyor",
     "checking-latest-version-mmproxy": "mmproxy'nin son sürümü kontrol ediliyor",
     "checking-latest-version-node": "Düğümün en son sürümü kontrol ediliyor",
     "checking-latest-version-sha-p2pool": "sha-p2pool'un en son sürümü kontrol ediliyor",
-    "checking-latest-version-tor": "Checking latest version of tor",
+    "checking-latest-version-tor": "Tor\"un en son sürümü kontrol ediliyor",
     "checking-latest-version-wallet": "Cüzdanın en son sürümü kontrol ediliyor",
     "checking-latest-version-xmrig": "xmrig'in en son sürümü kontrol ediliyor",
     "download-completed": "İndirme tamamlandı",

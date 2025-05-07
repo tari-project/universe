@@ -39,7 +39,7 @@ export default function ConnectSection({ setSection }: Props) {
 
         try {
             const authUuid = await setTokenToUuid();
-            const r = await invoke('get_paper_wallet_details', { authUuid: authUuid });
+            const r = await invoke('get_paper_wallet_details', { authUuid });
 
             if (r) {
                 const url = r.qr_link;

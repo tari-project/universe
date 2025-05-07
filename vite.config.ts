@@ -12,7 +12,7 @@ const plugins: UserConfig['plugins'] = [
                     'babel-plugin-styled-components',
                     {
                         displayName: true,
-                        fileName: false,
+                        fileName: true,
                     },
                 ],
             ],

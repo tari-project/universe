@@ -8,16 +8,17 @@ export const Wrapper = styled(Stack)`
     background: #fff;
     border-radius: 10px;
     border: 1px solid rgba(0, 0, 0, 0.05);
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-
+    z-index: 100;
     position: fixed;
     bottom: 20px;
     right: 0;
     left: 0;
     margin: auto;
+    z-index: 10;
 `;
 
 export const TextWrapper = styled(Stack)`

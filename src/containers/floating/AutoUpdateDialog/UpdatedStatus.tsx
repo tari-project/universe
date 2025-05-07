@@ -1,7 +1,6 @@
 import { LinearProgress } from '@app/components/elements/LinearProgress';
 import { Stack } from '@app/components/elements/Stack';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { ProgressWrapper } from '@app/containers/main/Dashboard/styles.ts';
 
 interface UpdatedStatusProps {
     contentLength: number;
@@ -20,9 +19,7 @@ export function UpdatedStatus({ contentLength, downloaded }: UpdatedStatusProps)
 
     return (
         <Stack alignItems="center" style={{ height: 120 }}>
-            <ProgressWrapper>
-                <LinearProgress value={(downloaded / contentLength) * 100} variant="small" />
-            </ProgressWrapper>
+            <LinearProgress value={(downloaded / contentLength) * 100} variant="small" />
             {shouldShowProgress && (
                 <Typography variant="p">{`${formatSize(downloaded)} / ${formatSize(contentLength)}`}</Typography>
             )}

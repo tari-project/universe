@@ -8,7 +8,7 @@ const truncateMiddle = (str: string, num: number): string => {
     const end = str.substring(str.length - num);
     const start = str.substring(0, num);
 
-    return start + '....' + end;
+    return start + '...' + end;
 };
 
 export { truncateMiddle, truncateString };

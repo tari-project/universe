@@ -1,3 +1,5 @@
+import { refreshTransactions, setWalletBalance } from '@app/store/actions';
+
 let winTimeout: NodeJS.Timeout | undefined;
 let failTimeout: NodeJS.Timeout | undefined;
 import { create } from './create';
@@ -6,8 +8,9 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
-import { useWalletStore } from './useWalletStore.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
+import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+
 const appWindow = getCurrentWindow();
 
 interface Recap {
@@ -49,7 +52,6 @@ const getSuccessTier = (earnings: number) => {
 
 export const useBlockchainVisualisationStore = create<BlockchainVisualisationStoreState>()((set) => ({
     recapIds: [],
-
     setDisplayBlockHeight: (displayBlockHeight) => set({ displayBlockHeight }),
     setDisplayBlockTime: (displayBlockTime) => set({ displayBlockTime }),
     setDebugBlockTime: (debugBlockTime) => set({ debugBlockTime }),
@@ -73,14 +75,16 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         if (winTimeout) {
             clearTimeout(winTimeout);
         }
-        winTimeout = setTimeout(() => {
+        winTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
-            useWalletStore.getState().setWalletBalance(balance);
-            useWalletStore.getState().refreshCoinbaseTransactions();
+            await refreshTransactions();
+            refreshPendingTransactions();
+            setWalletBalance(balance);
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
-        await useWalletStore.getState().refreshCoinbaseTransactions();
+        await refreshTransactions();
+        refreshPendingTransactions();
         useBlockchainVisualisationStore.setState((curr) => ({
             recapIds: [...curr.recapIds, coinbase_transaction.tx_id],
             displayBlockHeight: blockHeight,
@@ -95,10 +99,12 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
         if (failTimeout) {
             clearTimeout(failTimeout);
         }
-        failTimeout = setTimeout(() => {
+        failTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
-            useWalletStore.getState().setWalletBalance(balance);
             setMiningControlsEnabled(true);
+            await refreshTransactions();
+            refreshPendingTransactions();
+            setWalletBalance(balance);
         }, 1000);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
@@ -153,6 +159,8 @@ async function processNewBlock(payload: {
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: payload.block_height });
         console.info('Mining not initiated. Block height updated.');
+        await refreshTransactions();
+        refreshPendingTransactions();
     }
 }
 
@@ -162,6 +170,15 @@ export const handleNewBlock = async (payload: {
     balance: WalletBalance;
 }) => {
     latestBlockPayload = payload;
+
+    const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
+    if (!isWalletScanned) {
+        updateWalletScanningProgress({
+            progress: 1,
+            scanned_height: payload.block_height,
+            total_height: payload.block_height,
+        });
+    }
 
     if (newBlockDebounceTimeout) {
         clearTimeout(newBlockDebounceTimeout);

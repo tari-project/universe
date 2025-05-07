@@ -68,7 +68,9 @@ impl P2poolAdapter {
 
 impl ProcessAdapter for P2poolAdapter {
     type StatusMonitor = P2poolStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
+    #[allow(clippy::too_many_lines)]
     fn spawn_inner(
         &self,
         data_dir: PathBuf,
@@ -81,7 +83,9 @@ impl ProcessAdapter for P2poolAdapter {
 
         info!(target: LOG_TARGET, "Starting p2pool node");
 
-        let working_dir = data_dir.join("sha-p2pool");
+        let working_dir = data_dir
+            .join("sha-p2pool")
+            .join(Network::get_current_or_user_setting_or_default().to_string());
         std::fs::create_dir_all(&working_dir).unwrap_or_else(|error| {
             warn!(target: LOG_TARGET, "Could not create p2pool working directory - {}", error);
         });
@@ -105,7 +109,7 @@ impl ProcessAdapter for P2poolAdapter {
                 });
             }
             if fs::exists(data_dir.join("block_cache_backup"))? {
-                let _unused = fs::remove_file(data_dir.join("block_cache_backup")).inspect_err(
+                let _unused = fs::remove_dir_all(data_dir.join("block_cache_backup")).inspect_err(
                     |e| warn!(target: LOG_TARGET, "Failed to remove block cache backup file: {}", e),
                 ).inspect(|_| {
                     info!(target: LOG_TARGET, "Removed block cache backup file");
@@ -130,29 +134,32 @@ impl ProcessAdapter for P2poolAdapter {
         let pid_file_name = self.pid_file_name().to_string();
 
         args.push("--squad-prefix".to_string());
-        let mut squad_prefix = "default";
-        let mut num_squads = 3;
-        if let Some(benchmark) = config.cpu_benchmark_hashrate {
-            if benchmark < 4000 {
-                squad_prefix = "mini";
-                num_squads = 1;
-            }
-        }
+        let squad_prefix = "default";
         args.push(squad_prefix.to_string());
         args.push("--num-squads".to_string());
+        let num_squads = 3;
         args.push(num_squads.to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
             Network::Esmeralda => {
-                envs.insert("TARI_NETWORK".to_string(), "esmeralda".to_string());
+                envs.insert("TARI_NETWORK".to_string(), "esme".to_string());
             }
             Network::NextNet => {
                 envs.insert("TARI_NETWORK".to_string(), "nextnet".to_string());
             }
-            _ => {
-                return Err(anyhow!("Unsupported network"));
+            Network::Igor => {
+                envs.insert("TARI_NETWORK".to_string(), "igor".to_string());
             }
-        };
+            Network::MainNet => {
+                envs.insert("TARI_NETWORK".to_string(), "mainnet".to_string());
+            }
+            Network::StageNet => {
+                envs.insert("TARI_NETWORK".to_string(), "stagenet".to_string());
+            }
+            Network::LocalNet => {
+                envs.insert("TARI_NETWORK".to_string(), "localnet".to_string());
+            }
+        }
 
         #[cfg(target_os = "windows")]
         add_firewall_rule("sha_p2pool.exe".to_string(), binary_version_path.clone())?;
@@ -206,21 +213,35 @@ impl P2poolStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for P2poolStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        match self.stats_client.stats().await {
-            Ok(stats) => {
-                if EpochTime::now().as_u64() - stats.last_gossip_message.as_u64() > 60 * 10 {
-                    warn!(target: LOG_TARGET, "P2pool last gossip message was more than 10 minutes ago, health check failed");
-                    return HealthStatus::Unhealthy;
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.stats_client.stats()).await {
+            Ok(stats_result) => match stats_result {
+                Ok(stats) => {
+                    let time_since_last_gossip =
+                        EpochTime::now().as_u64() - stats.last_gossip_message.as_u64();
+                    if time_since_last_gossip > 60 * 10 {
+                        warn!(
+                            target: LOG_TARGET,
+                            "P2pool last gossip message was more than 10 minutes ago, health check warning"
+                        );
+                        return HealthStatus::Warning;
+                    }
+
+                    let _unused = self.latest_status_broadcast.send(Some(stats));
+                    HealthStatus::Healthy
                 }
-
-                let _unused = self.latest_status_broadcast.send(Some(stats));
-
-                HealthStatus::Healthy
-            }
-            Err(e) => {
-                warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
-                HealthStatus::Unhealthy
+                Err(e) => {
+                    warn!(target: LOG_TARGET, "P2pool health check failed: {}", e);
+                    HealthStatus::Unhealthy
+                }
+            },
+            Err(_timeout_err) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "P2pool health check timed out after {:?}",
+                    timeout_duration
+                );
+                HealthStatus::Warning
             }
         }
     }

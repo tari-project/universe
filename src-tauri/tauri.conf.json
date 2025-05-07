@@ -1,5 +1,5 @@
 {
-    "version": "0.9.839",
+    "version": "1.0.1",
     "productName": "Tari Universe (Alpha)",
     "mainBinaryName": "Tari Universe (Alpha)",
     "identifier": "com.tari.universe.alpha",
@@ -14,6 +14,11 @@
         "targets": "all",
         "macOS": {
             "providerShortName": "Tari Labs, LLC"
+        },
+        "linux": {
+            "appimage": {
+                "bundleMediaFramework": true
+            }
         },
         "icon": [
             "icons/32x32.png",
@@ -53,10 +58,16 @@
                     "base64"
                 ],
                 "script-src": "'self' 'unsafe-eval'",
-                "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
-                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower",
                 "object-src": "'self' data: blob:",
-                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
+                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'",
+                "img-src": [
+                    "'self'",
+                    "data:",
+                    "blob:",
+                    "base64:",
+                    "https://*.twimg.com",
+                    "https://*.googleusercontent.com"
+                ]
             },
             "pattern": {
                 "use": "isolation",
@@ -92,9 +103,7 @@
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }

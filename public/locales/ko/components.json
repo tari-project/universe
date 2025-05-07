@@ -1,4 +1,9 @@
 {
+  "banner": {
+    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
+    "body-copy-highlight": "Tari is brand new!",
+    "is-live": "is live"
+  },
   "field-error-message": {
     "integers-only": "정수만 허용됨",
     "invalid": "잘못된 필드",
@@ -20,14 +25,20 @@
     "title": "릴리스 노트"
   },
   "resume-app-modal": {
-    "title": "Tari Universe 재개 중",
+    "finishing-resume": "재개 완료 중...",
     "resuming-all-processes": "모든 프로세스 재개 중...",
-    "resuming-tor": "Tor 재개 중...",
+    "resuming-mm-proxy": "MM 프록시 재개 중...",
     "resuming-node": "노드 재개 중...",
+    "resuming-p2pool": "P2Pool 재개 중...",
+    "resuming-tor": "Tor 재개 중...",
     "resuming-wallet": "지갑 재개 중...",
     "syncing-node": "노드 동기화 중...",
-    "resuming-p2pool": "P2Pool 재개 중...",
-    "resuming-mm-proxy": "MM 프록시 재개 중...",
-    "finishing-resume": "재개 완료 중..."
+    "title": "Tari Universe 재개 중"
+  },
+  "warmupDialog": {
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
+    "subtitle": "What does this mean exactly?",
+    "tag-line": "Welcome to Tari Mainnet",
+    "title": "Warm up phase"
   }
 }

@@ -28,7 +28,7 @@ use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
 
-use crate::{github, progress_tracker::ProgressTracker, APPLICATION_FOLDER_ID};
+use crate::{github, progress_tracker_old::ProgressTracker, APPLICATION_FOLDER_ID};
 
 use super::binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo};
 

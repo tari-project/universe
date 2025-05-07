@@ -5,15 +5,19 @@
   "new-tari-version-available": "Nowa wersja Tari Universe jest dostępna!",
   "no": "Nie",
   "setting-up": "Konfiguracja Tari truth machine...",
+  "sync": {
+    "header": "Connecting to the Tari network",
+    "subheader": "Syncing with the Tari network"
+  },
   "this-might-take-a-few-minutes": "To może zająć kilka minut",
   "title": {
     "application-started": "Aplikacje uruchomione",
-    "benchmarking-network": "Network Benchmark",
+    "benchmarking-network": "Test Wydajności Sieci",
     "checking-latest-version-gpuminer": "Sprawdzanie najnowszej wersji xtrgpuminer",
     "checking-latest-version-mmproxy": "Sprawdzanie najnowszej wersji mmproxy",
     "checking-latest-version-node": "Sprawdzanie najnowszej wersji węzła",
     "checking-latest-version-sha-p2pool": "Sprawdzanie najnowszej wersji sha-p2pool",
-    "checking-latest-version-tor": "Checking latest version of tor",
+    "checking-latest-version-tor": "Sprawdzanie najnowszej wersji Tor",
     "checking-latest-version-wallet": "Sprawdzanie najnowszej wersji portfela",
     "checking-latest-version-xmrig": "Sprawdzanie najnowszej wersji xmrig",
     "download-completed": "Pobieranie zakończone",

@@ -1,7 +1,5 @@
-import useSocketEvents from './useSocket.ts';
-import { useEmitMiningStatus } from './useHandleEmitMiningStatus.ts';
+import useRustWebsocket from './useRustWebsocket';
 
 export default function useAirdropWebsocket() {
-    useSocketEvents();
-    useEmitMiningStatus();
+    useRustWebsocket();
 }

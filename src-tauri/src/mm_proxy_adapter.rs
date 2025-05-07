@@ -31,6 +31,8 @@ use crate::utils::logging_utils::setup_logging;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::warn;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 // use log::warn;
 use reqwest::Client;
 use serde_json::json;
@@ -43,22 +45,23 @@ const LOG_TARGET: &str = "tari::universe::mm_proxy_adapter";
 pub(crate) struct MergeMiningProxyConfig {
     pub port: u16,
     pub p2pool_enabled: bool,
-    pub base_node_grpc_port: u16,
-    pub p2pool_grpc_port: u16,
+    pub base_node_grpc_address: String,
+    pub p2pool_node_grpc_address: String,
     pub coinbase_extra: String,
     pub tari_address: TariAddress,
     pub use_monero_fail: bool,
     pub monero_nodes: Vec<String>,
 }
 
+#[allow(dead_code)]
 impl MergeMiningProxyConfig {
-    pub fn set_to_use_base_node(&mut self, port: u16) {
-        self.base_node_grpc_port = port;
+    pub fn set_to_use_base_node(&mut self, grpc_address: String) {
+        self.base_node_grpc_address = grpc_address;
     }
 
-    pub fn set_to_use_p2pool(&mut self, port: u16) {
+    pub fn set_to_use_p2pool(&mut self, grpc_address: String) {
         self.p2pool_enabled = true;
-        self.p2pool_grpc_port = port;
+        self.p2pool_node_grpc_address = grpc_address;
     }
 }
 
@@ -74,6 +77,7 @@ impl MergeMiningProxyAdapter {
 
 impl ProcessAdapter for MergeMiningProxyAdapter {
     type StatusMonitor = MergeMiningProxyStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -116,10 +120,9 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             "--non-interactive-mode".to_string(),
             format!("--log-config={}", config_dir_string),
             "-p".to_string(),
-            // TODO: Test that this fails with an invalid value.Currently the process continues
             format!(
-                "merge_mining_proxy.base_node_grpc_address=http://127.0.0.1:{}",
-                config.base_node_grpc_port
+                "merge_mining_proxy.base_node_grpc_address={}",
+                config.base_node_grpc_address
             ),
             "-p".to_string(),
             format!(
@@ -149,19 +152,21 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
             ),
         ];
 
-        for node in &config.monero_nodes {
-            args.push("-p".to_string());
-            args.push(format!("merge_mining_proxy.monerod_url={}", node));
-        }
+        let shuffled_nodes = &mut config.monero_nodes.clone();
+        shuffled_nodes.shuffle(&mut thread_rng());
+        args.push("-p".to_string());
+        args.push(format!(
+            "merge_mining_proxy.monerod_url=[{}]",
+            shuffled_nodes.join(",")
+        ));
 
-        // TODO: uncomment if p2pool is needed in CPU mining
         if config.p2pool_enabled {
             args.push("-p".to_string());
             args.push("merge_mining_proxy.p2pool_enabled=true".to_string());
             args.push("-p".to_string());
             args.push(format!(
-                "merge_mining_proxy.p2pool_node_grpc_address=http://127.0.0.1:{}",
-                config.p2pool_grpc_port
+                "merge_mining_proxy.p2pool_node_grpc_address={}",
+                config.p2pool_node_grpc_address
             ));
         }
 
@@ -200,18 +205,25 @@ pub struct MergeMiningProxyStatusMonitor {
 
 #[async_trait]
 impl StatusMonitor for MergeMiningProxyStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
-        if self
-            .get_version()
-            .await
-            .inspect_err(
-                |e| warn!(target: LOG_TARGET, "Failed to get version during health check: {}", e),
-            )
-            .is_ok()
-        {
-            HealthStatus::Healthy
-        } else {
-            HealthStatus::Warning
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
+        match tokio::time::timeout(timeout_duration, self.get_version()).await {
+            Ok(result) => match result {
+                Ok(_) => HealthStatus::Healthy,
+                Err(e) => {
+                    warn!(
+                        target: LOG_TARGET,
+                        "Failed to get version during health check: {}", e
+                    );
+                    HealthStatus::Warning
+                }
+            },
+            Err(_) => {
+                warn!(
+                    target: LOG_TARGET,
+                    "Mmproxy Version check timed out after {:?}", timeout_duration
+                );
+                HealthStatus::Warning
+            }
         }
     }
 }

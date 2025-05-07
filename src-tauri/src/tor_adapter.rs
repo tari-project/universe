@@ -28,6 +28,7 @@ use async_trait::async_trait;
 use log::{debug, error, info, warn};
 use serde::{Deserialize, Serialize};
 use tari_shutdown::Shutdown;
+use tokio::fs;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
 use tokio::sync::watch;
@@ -48,11 +49,11 @@ pub(crate) struct TorAdapter {
     socks_port: u16,
     config_file: Option<PathBuf>,
     config: TorConfig,
-    status_broadcast: watch::Sender<Option<TorStatus>>,
+    status_broadcast: watch::Sender<TorStatus>,
 }
 
 impl TorAdapter {
-    pub fn new(status_broadcast: watch::Sender<Option<TorStatus>>) -> Self {
+    pub fn new(status_broadcast: watch::Sender<TorStatus>) -> Self {
         let port = PortAllocator::new().assign_port_with_fallback();
 
         Self {
@@ -197,6 +198,7 @@ impl TorAdapter {
 
 impl ProcessAdapter for TorAdapter {
     type StatusMonitor = TorStatusMonitor;
+    type ProcessInstance = ProcessInstance;
 
     #[allow(clippy::too_many_lines)]
     fn spawn_inner(
@@ -284,7 +286,7 @@ impl ProcessAdapter for TorAdapter {
                     file_path: binary_version_path,
                     envs: None,
                     args,
-                    data_dir,
+                    data_dir: data_dir.clone(),
                     pid_file_name: self.pid_file_name().to_string(),
                     name: self.name().to_string(),
                 },
@@ -292,6 +294,7 @@ impl ProcessAdapter for TorAdapter {
             TorStatusMonitor {
                 control_port,
                 status_broadcast: self.status_broadcast.clone(),
+                base_path: data_dir,
             },
         ))
     }
@@ -308,32 +311,39 @@ impl ProcessAdapter for TorAdapter {
 #[derive(Clone)]
 pub(crate) struct TorStatusMonitor {
     pub control_port: u16,
-    status_broadcast: watch::Sender<Option<TorStatus>>,
+    status_broadcast: watch::Sender<TorStatus>,
+    base_path: PathBuf,
 }
 
 #[async_trait]
 impl StatusMonitor for TorStatusMonitor {
-    async fn check_health(&self, _uptime: Duration) -> HealthStatus {
+    async fn check_health(&self, _uptime: Duration, timeout_duration: Duration) -> HealthStatus {
         let client = TorControlClient::new(self.control_port);
-        match timeout(std::time::Duration::from_secs(5), client.get_info()).await {
+        match timeout(timeout_duration, client.get_info()).await {
             Ok(Ok(status)) => {
-                let _res = self.status_broadcast.send(Some(status.clone()));
+                let _res = self.status_broadcast.send(status);
                 if status.is_bootstrapped && status.network_liveness {
                     HealthStatus::Healthy
                 } else {
-                    warn!(target: LOG_TARGET, "Tor is not bootstrapped or network is unreachable: {:?}", status);
+                    warn!(target: LOG_TARGET, "Tor Healthcheck status: {:?}", status);
                     HealthStatus::Warning
                 }
             }
             Ok(Err(e)) => {
-                warn!(target: LOG_TARGET, "Failed to get Tor status: {}", e);
+                warn!(target: LOG_TARGET, "Failed to get Tor Healthcheck status: {}", e);
                 HealthStatus::Unhealthy
             }
             Err(_) => {
-                warn!(target: LOG_TARGET, "Timed out getting Tor status");
+                warn!(target: LOG_TARGET, "Tor Healthcheck timeout");
                 HealthStatus::Unhealthy
             }
         }
+    }
+
+    async fn handle_unhealthy(&self) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(self.base_path.join("tor-data")).await?;
+
+        Ok(())
     }
 }
 

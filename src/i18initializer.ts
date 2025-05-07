@@ -109,6 +109,7 @@ i18n.use(HttpBackend)
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
+        // debug: process.env.NODE_ENV === 'development',
         lng: Language.EN,
         compatibilityJSON: 'v4',
         fallbackLng: Language.EN,
@@ -132,4 +133,7 @@ i18n.use(HttpBackend)
         ],
         saveMissingTo: 'all',
         contextSeparator: '-',
+    })
+    .then(() => {
+        console.info('i18n initialized');
     });
