@@ -58,7 +58,6 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         let contents =
             String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
 
-        info!(target: LOG_TARGET, "asset_name: {}", asset_name);
         let xmrig_hash = contents
             .lines()
             .find(|line| line.contains(asset_name))
@@ -76,12 +75,12 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory.join("in_progress").join("SHA256SUMS");
-        let trimmed_url = match asset.url.rfind('/') {
+        let checksum_url = match asset.url.rfind('/') {
             Some(pos) => format!("{}/{}", asset.url[..pos].to_string(), "SHA256SUMS"),
             None => asset.url,
         };
 
-        match download_file_with_retries(&trimmed_url, &checksum_path, progress_tracker).await {
+        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);

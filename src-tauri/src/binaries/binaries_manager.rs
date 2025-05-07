@@ -299,11 +299,6 @@ impl BinaryManager {
             .adapter
             .get_expected_checksum(checksum_file.clone(), &asset.name)
             .await?;
-        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
-        info!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
-        let checksum_file_content = read_to_string(checksum_file.as_path()).unwrap_or_default();
-        info!(target: LOG_TARGET, "checksum file content: {}", checksum_file_content);
-        info!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
 
         progress_tracker
             .send_last_action(format!(
@@ -318,9 +313,14 @@ impl BinaryManager {
         )
         .await
         {
-            Ok(_) => {
-                info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
-                Ok(())
+            Ok(validate_checksum) => {
+                if validate_checksum {
+                    info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
+                    Ok(())
+                } else {
+                    std::fs::remove_dir_all(destination_dir.clone()).ok();
+                    return Err(anyhow!("Checksums mismatched!"));
+                }
             }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();

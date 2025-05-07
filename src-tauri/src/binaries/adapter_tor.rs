@@ -93,19 +93,14 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         file_sha256.read_to_end(&mut buffer_sha256).await?;
         let contents =
             String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
-        let mut expected_hash = "";
-        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
-            .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
 
-        for line in contents.lines() {
-            if let Some(caps) = regex.captures(line) {
-                expected_hash = caps
-                    .get(1)
-                    .map(|hash| hash.as_str())
-                    .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
-            }
-        }
-        Ok(expected_hash.to_string())
+        let tor_hash = contents
+            .lines()
+            .find(|line| line.contains(asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .map(|hash| hash.to_string());
+
+        tor_hash.ok_or(anyhow!("No checksum was found for xmrig"))
     }
 
     async fn download_and_get_checksum_path(
@@ -117,8 +112,15 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
             .join("in_progress")
-            .join(format!("{}.asc", asset.name));
-        let checksum_url = format!("{}.asc", asset.url);
+            .join("sha256sums-signed-build.txt");
+        let checksum_url = match asset.url.rfind('/') {
+            Some(pos) => format!(
+                "{}/{}",
+                asset.url[..pos].to_string(),
+                "sha256sums-signed-build.txt"
+            ),
+            None => asset.url,
+        };
 
         match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
             Ok(_) => Ok(checksum_path),

@@ -231,10 +231,6 @@ pub async fn validate_checksum(
     hasher.update(&buffer);
     let hash = hasher.finalize();
     let hash_hex = format!("{:x}", hash);
-    info!(target: LOG_TARGET, "Validating checksum for {}", asset_name);
-    info!(target: LOG_TARGET, "Expected hash: {}", expected_checksum);
-    info!(target: LOG_TARGET, "Calculated hash: {}", hash_hex);
-    info!(target: LOG_TARGET, "Checksum validation result: {}", hash_hex == expected_checksum);
 
     Ok(hash_hex == expected_checksum)
 }
