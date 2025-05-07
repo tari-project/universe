@@ -267,7 +267,7 @@ impl BinaryManager {
         in_progress_file_zip: PathBuf,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        info!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
@@ -309,7 +309,7 @@ impl BinaryManager {
         match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
                 if validate_checksum {
-                    info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
+                    info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, version);
                     Ok(())
                 } else {
                     std::fs::remove_dir_all(destination_dir.clone()).ok();
