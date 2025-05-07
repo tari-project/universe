@@ -5,7 +5,7 @@ interface AppState {
     error?: string;
     criticalProblem?: Partial<CriticalProblem>;
     isSettingsOpen: boolean;
-    criticalError?: string;
+    criticalError?: Partial<CriticalProblem>;
     externalDependencies: ExternalDependency[];
     missingExternalDependencies?: ExternalDependency[];
     issueReference?: string;
