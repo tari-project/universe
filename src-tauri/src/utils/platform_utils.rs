@@ -28,6 +28,7 @@ use crate::external_dependencies::ExternalDependencies;
 
 #[cfg(not(target_os = "linux"))]
 use crate::events_manager::EventsManager;
+use crate::tasks_tracker::TasksTrackers;
 #[cfg(not(target_os = "linux"))]
 use anyhow::anyhow;
 use std::fmt::Display;
@@ -88,13 +89,15 @@ impl PlatformUtils {
     async fn initialize_macos_preqesities(
         app_handle: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
-        if !cfg!(dev) && !is_app_in_applications_folder() {
+        // if !cfg!(dev) && !is_app_in_applications_folder() {
+        if !is_app_in_applications_folder() {
             EventsManager::handle_critical_problem(
                 &app_handle,
-                None,
-                Some("not-installed-in-applications-directory".to_string()),
+                Some("common:installation-problem".to_string()),
+                Some("common:not-installed-in-applications-directory".to_string()),
             )
             .await;
+            TasksTrackers::current().stop_all_processes().await;
             return Err(anyhow!(
                 "App is not installed in the Applications directory"
             ));

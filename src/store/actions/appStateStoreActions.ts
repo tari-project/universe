@@ -52,8 +52,10 @@ export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
-export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
+export const setCriticalError = (payload?: CriticalProblemPayload) =>
+    useAppStateStore.setState({ criticalError: payload });
 export const setCriticalProblemTest = (payload?: CriticalProblemPayload) => {
+    console.debug('setCriticalProblemTest', payload);
     const connectionStatus = useUIStore.getState().connectionStatus;
     if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
         // Assume reconnecting Failed

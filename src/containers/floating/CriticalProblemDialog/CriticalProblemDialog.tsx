@@ -12,7 +12,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 
 const CriticalProblemDialog = memo(function CriticalProblemDialog() {
-    const { t } = useTranslation('setup-progresses', { useSuspense: false });
+    const { t } = useTranslation(['setup-progresses', 'common'], { useSuspense: false });
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
     const [isExiting, setIsExiting] = useState(false);
     const [isSubmittingLogs, setIsSubmittingLogs] = useState(false);
@@ -24,7 +24,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
             setIsExiting(true);
             await invoke('exit_application');
         } catch (e) {
-            console.error('Error closing application| handleClose in CriticalProblemDialog: ', e);
+            console.error('Error closing application | handleClose in CriticalProblemDialog: ', e);
         }
         setIsExiting(false);
     }, []);
@@ -71,14 +71,18 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
         }
         return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
     }, [logsSubmissionId, isSubmittingLogs, isCopied, t]);
-
+    console.debug(criticalProblem);
     return (
         <Dialog open={!!criticalProblem}>
             <DialogContent>
                 <Stack gap={16}>
                     <Stack gap={4} style={{ maxWidth: '480px' }}>
-                        <Typography variant="h4">{t(criticalProblem?.title || 'installation-problem')}</Typography>
-                        <Typography variant="p">{t(criticalProblem?.description || 'installation-problem')}</Typography>
+                        <Typography variant="h4">
+                            {t(criticalProblem?.title || 'common:installation-problem')}
+                        </Typography>
+                        <Typography variant="p">
+                            {t(criticalProblem?.description || 'common:installation-problem')}
+                        </Typography>
                     </Stack>
                     <Stack direction="row" justifyContent="center" gap={8}>
                         {isExiting ? (
