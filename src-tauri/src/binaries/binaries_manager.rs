@@ -28,7 +28,7 @@ use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fs::read_to_string, path::PathBuf, str::FromStr};
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
 
 use super::{
@@ -306,20 +306,14 @@ impl BinaryManager {
                 checksum_file, in_progress_file_zip
             ))
             .await;
-        match validate_checksum(
-            in_progress_file_zip.clone(),
-            expected_checksum,
-            asset.name.clone(),
-        )
-        .await
-        {
+        match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
             Ok(validate_checksum) => {
                 if validate_checksum {
                     info!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
                     Ok(())
                 } else {
                     std::fs::remove_dir_all(destination_dir.clone()).ok();
-                    return Err(anyhow!("Checksums mismatched!"));
+                    Err(anyhow!("Checksums mismatched!"))
                 }
             }
             Err(e) => {
@@ -440,7 +434,29 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
-    pub async fn download_selected_version(
+    pub async fn download_verion_with_retries(
+        &self,
+        selected_version: Option<Version>,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        for retry in 0..3 {
+            match self
+                .download_selected_version(selected_version.clone(), progress_tracker.clone())
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(_) => {
+                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    continue;
+                }
+            }
+        }
+        let error_msg = format!("Failed to download binary: {}", self.binary_name);
+        error!(target: LOG_TARGET, "{}", error_msg);
+        Err(anyhow!(error_msg))
+    }
+
+    async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,

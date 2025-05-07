@@ -23,7 +23,7 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
-    setCriticalProblemTest,
+    handleCriticalProblemEvent,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
@@ -149,7 +149,7 @@ const useTauriEventsListener = () => {
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
                         case 'CriticalProblem':
-                            setCriticalProblemTest(event.payload);
+                            handleCriticalProblemEvent(event.payload);
                             break;
                         case 'MissingApplications':
                             loadExternalDependencies(event.payload);

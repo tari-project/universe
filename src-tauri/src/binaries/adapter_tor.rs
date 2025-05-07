@@ -114,11 +114,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             .join("in_progress")
             .join("sha256sums-signed-build.txt");
         let checksum_url = match asset.url.rfind('/') {
-            Some(pos) => format!(
-                "{}/{}",
-                asset.url[..pos].to_string(),
-                "sha256sums-signed-build.txt"
-            ),
+            Some(pos) => format!("{}/{}", &asset.url[..pos], "sha256sums-signed-build.txt"),
             None => asset.url,
         };
 

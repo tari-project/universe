@@ -26,7 +26,6 @@ use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
 use futures_util::StreamExt;
 use log::{info, warn};
-use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -221,7 +220,6 @@ pub async fn set_permissions(_file_path: &Path) -> Result<(), anyhow::Error> {
 pub async fn validate_checksum(
     file_path: PathBuf,
     expected_checksum: String,
-    asset_name: String,
 ) -> Result<bool, Error> {
     let mut file = File::open(file_path.clone()).await?;
     let mut buffer = Vec::new();

@@ -24,7 +24,7 @@ use std::path::PathBuf;
 
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
-use log::{error, info};
+use log::error;
 use regex::Regex;
 use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
@@ -76,7 +76,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory.join("in_progress").join("SHA256SUMS");
         let checksum_url = match asset.url.rfind('/') {
-            Some(pos) => format!("{}/{}", asset.url[..pos].to_string(), "SHA256SUMS"),
+            Some(pos) => format!("{}/{}", &asset.url[..pos], "SHA256SUMS"),
             None => asset.url,
         };
 
