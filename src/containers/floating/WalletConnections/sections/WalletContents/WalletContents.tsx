@@ -1,7 +1,6 @@
 import { ContentWrapper, WalletAddress } from '../../WalletConnections.style';
-import { useDisconnect, useAppKit } from '@reown/appkit/react';
 import MMFox from '../../icons/mm-fox';
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useDisconnect } from 'wagmi';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import {
     ActiveDot,
@@ -20,7 +19,7 @@ import { getCurrencyIcon } from '../../helpers/getIcon';
 
 export const WalletContents = () => {
     const { disconnect } = useDisconnect();
-    const { open } = useAppKit();
+    // const { open } = useAppKit();
     const dataAcc = useAccount();
 
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
@@ -61,17 +60,19 @@ export const WalletContents = () => {
     return (
         <WalletContentsContainer>
             <div>
-                <WalletButton
-                    variant="secondary"
-                    size="small"
-                    onClick={() =>
-                        open({
-                            view: 'Networks',
-                        })
-                    }
-                >
-                    {'Switch Network'}
-                </WalletButton>
+                {
+                    // <WalletButton
+                    //     variant="secondary"
+                    //     size="small"
+                    //     onClick={() =>
+                    //         open({
+                    //             view: 'Networks',
+                    //         })
+                    //     }
+                    // >
+                    //     {'Switch Network'}
+                    // </WalletButton>
+                }
             </div>
             <ConnectedWalletWrapper>
                 <WalletButton variant="error" onClick={() => disconnect()}>

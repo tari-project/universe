@@ -36,9 +36,9 @@
     "title": "तारी यूनिवर्स को फिर से शुरू कर रहा है"
   },
   "warmupDialog": {
-    "copy": "The Warm Up phase is a temporary period at the start of network activation, expected to last 15 days.\nDuring this time, the network is still stabilizing, and some irregular behavior is normal. You may experience fluctuations in block times, temporary disconnects, or syncing issues. In some cases, your node might end up on a temporary fork and need to reconnect to the main chain.\nMiners are still earning XTM during this phase. This period allows the system to calibrate as more miners and nodes come online, helping iron out edge cases and ensure the network is resilient under real-world conditions. No action is needed unless your node becomes stuck. Restarting or resyncing will usually resolve it. After the warm-up period, the network will transition into a more stable and predictable state.",
+    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
     "subtitle": "What does this mean exactly?",
-    "tag-line": "The network is starting",
+    "tag-line": "Welcome to Tari Mainnet",
     "title": "Warm up phase"
   }
 }

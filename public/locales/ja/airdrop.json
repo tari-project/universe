@@ -24,16 +24,16 @@
   "joinAirdropButtonAriaLabel": "エアドロップに参加してジェムを獲得。右クリックでリンクをコピー",
   "keep-mining-to-earn-rewards": "さらに報酬を得るためにマイニングを続けましょう！",
   "linkCopied": "リンクがコピーされました！",
+  "live": "ライブ",
   "logged-in-as": "<strong>@{{twitter}}</strong> としてログイン中",
   "loggedInTitle": "エアドロップ報酬",
-  "loggedOutTitle": "マインして友達を招待し、ジェムを獲得",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "ログインしてジェムを獲得",
   "logout": "ログアウト",
   "nextTierBonus": "<strong>{{count}}人の友達</strong>を招待して、{{bonusGems}}ボーナスジェムを獲得",
-  "update-username": "ユーザー名を更新",
   "permission": {
     "setup": "Tari Universeは、<strong>あなたの体験を向上させるために</strong>分析を使用したいと考えています。",
-    "text": "Tari Universeは、あなたの体験を向上させ、マイニングでジェムを報酬として提供するために分析を使用したいと考えています。",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "ジェムを獲得してTari Universeをより良くする"
   },
   "permissionNoGems": {
@@ -42,13 +42,13 @@
   },
   "referral": "友達を招待",
   "rightClickToCopy": "右クリックでリンクをコピー",
+  "success": "成功",
   "topTooltipText": "ジェムを集めてTariのエアドロップを獲得しましょう。ジェムを多く集めるほど、エアドロップが大きくなります。",
   "topTooltipTitle": "テストネット報酬",
   "unclaimedGems": "未請求のジェム",
-  "you-reached-your-giftinh-goal": "ギフト目標を達成しました！",
-  "your-friend-accepted-gift": "あなたの友達の一人があなたのギフトを受け取りました！",
+  "update-username": "ユーザー名を更新",
   "username-error": "ユーザー名は3-20文字で、文字、数字、アンダースコア、ハイフンのみを含む必要があります",
   "username-update-success": "ユーザー名が正常に更新されました",
-  "success": "成功",
-  "live": "ライブ"
+  "you-reached-your-giftinh-goal": "ギフト目標を達成しました！",
+  "your-friend-accepted-gift": "あなたの友達の一人があなたのギフトを受け取りました！"
 }

@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "0.9.914",
+    "version": "1.0.1",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -17,11 +17,10 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.7",
         "@lottiefiles/dotlottie-react": "^0.13.2",
-        "@reown/appkit": "^1.7.3",
-        "@reown/appkit-adapter-wagmi": "^1.7.3",
-        "@reown/appkit-wallet-button": "^1.7.3",
-        "@tanstack/react-query": "^5.74.4",
-        "@tari-project/tari-tower": "^0.0.41",
+        "@reown/appkit": "^1.7.4",
+        "@reown/appkit-adapter-wagmi": "^1.7.4",
+        "@tanstack/react-query": "^5.75.4",
+        "@tari-project/tari-tower": "^0.0.42",
         "@tauri-apps/api": "^2.4.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
         "@tauri-apps/plugin-os": "^2.2.1",
@@ -45,9 +44,9 @@
         "styled-components": "^6.1.16",
         "use-sync-external-store": "^1.4.0",
         "uuid": "^11.1.0",
-        "viem": "^2.28.0",
+        "viem": "^2.29.0",
         "vite-tsconfig-paths": "^5.1.4",
-        "wagmi": "^2.15.0",
+        "wagmi": "^2.15.2",
         "zustand": "^5.0.4"
     },
     "devDependencies": {

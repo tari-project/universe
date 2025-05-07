@@ -4,28 +4,28 @@ import { setReviewSwap, setWalletConnectModalStep } from '@app/store/actions/wal
 import { m } from 'motion/react';
 
 import { ConnectWallet } from './sections/ConnectWallet/ConnectWallet';
-import { useAppKitAccount } from '@reown/appkit/react';
 import { useCallback, useEffect, useMemo } from 'react';
 import { WalletContents } from './sections/WalletContents/WalletContents';
 import { Swap } from './sections/Swap/Swap';
 import { SignMessage } from './sections/SignMessage/SignMessage';
 import { ProcessingTransaction } from './sections/ProcessingTransaction/ProcessingTransaction';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
+import { useAccount } from 'wagmi';
 
 export const WalletConnections = () => {
     const reviewSwap = useWalletStore((state) => state.review_swap);
     const swapStep = useWalletStore((state) => state.swap_step);
-    const { allAccounts } = useAppKitAccount({ namespace: 'eip155' });
+    const { addresses } = useAccount();
 
     useEffect(() => {
-        if (allAccounts && allAccounts.length > 0) {
+        if (addresses && addresses.length > 0) {
             if (swapStep === SwapStep.ConnectWallet) {
                 setWalletConnectModalStep(SwapStep.WalletContents);
             }
         } else if (swapStep !== SwapStep.ConnectWallet) {
             setWalletConnectModalStep(SwapStep.ConnectWallet);
         }
-    }, [allAccounts, swapStep]);
+    }, [addresses, swapStep]);
 
     const stepMarkup = useMemo(() => {
         switch (swapStep) {

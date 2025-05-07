@@ -17,7 +17,7 @@ import { useUIStore } from '@app/store/useUIStore.ts';
 import { TOWER_CANVAS_ID } from '@app/store';
 import { WagmiProvider } from 'wagmi';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { wagmiAdapter } from './wagmi/wagmi.config.ts';
+import { config } from './wagmi/wagmi.config.ts';
 
 const queryClient = new QueryClient();
 
@@ -70,17 +70,17 @@ export default function App() {
 
     return (
         <ThemeProvider>
-            <WagmiProvider config={wagmiAdapter.wagmiConfig}>
+            <WagmiProvider config={config}>
                 <QueryClientProvider client={queryClient}>
                     <GlobalReset />
                     <GlobalStyle $hideCanvas={showSplashscreen || isShuttingDown} />
                     <LazyMotion features={domAnimation} strict>
                         <FloatingElements />
                         <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                        <canvas id={TOWER_CANVAS_ID} />
                     </LazyMotion>
                 </QueryClientProvider>
             </WagmiProvider>
-            <canvas id={TOWER_CANVAS_ID} />
         </ThemeProvider>
     );
 }
