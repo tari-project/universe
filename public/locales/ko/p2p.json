@@ -1,4 +1,6 @@
 {
+  "connections": "connections",
+  "established": "Established",
   "listener-addresses": "리스너 주소",
   "miners": "채굴자",
   "network-info": "네트워크 정보",
@@ -8,6 +10,7 @@
   "p2pool-connection-info-more": "연결 세부 정보",
   "p2pool-peers": "P2pool 피어",
   "p2pool-stats": "풀 채굴 통계",
+  "pending": "Pending",
   "randomx-stats": "RandomX 통계",
   "sha3-stats": "SHA3 통계",
   "tribe": "부족"

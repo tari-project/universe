@@ -59,7 +59,6 @@ export {
     setUITheme,
     setDialogToShow,
     setIsWebglNotSupported,
-    setAdminShow,
 } from './uiStoreActions.ts';
 
 export {

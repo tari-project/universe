@@ -1,4 +1,4 @@
-import { StatWrapper, TileItem, TileTop } from '../styles';
+import { LoaderWrapper, StatWrapper, TileItem, TileTop } from '../styles';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { ReactNode, useState } from 'react';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
@@ -7,7 +7,7 @@ import { ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
-import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
+import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
 
 interface ExpandableTileProps {
     title: string;
@@ -78,7 +78,13 @@ export function ExpandableTile({
                 )}
 
                 {!expanded &&
-                    (isLoading ? <SpinnerIcon /> : <StatWrapper $useLowerCase={useLowerCase}>{stats}</StatWrapper>)}
+                    (isLoading ? (
+                        <LoaderWrapper>
+                            <LoadingDots />
+                        </LoaderWrapper>
+                    ) : (
+                        <StatWrapper $useLowerCase={useLowerCase}>{stats}</StatWrapper>
+                    ))}
             </AnimatePresence>
         </TileItem>
     );

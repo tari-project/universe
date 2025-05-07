@@ -9,7 +9,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { refreshPendingTransactions } from './useWalletStore.ts';
+import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -170,6 +170,15 @@ export const handleNewBlock = async (payload: {
     balance: WalletBalance;
 }) => {
     latestBlockPayload = payload;
+
+    const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
+    if (!isWalletScanned) {
+        updateWalletScanningProgress({
+            progress: 1,
+            scanned_height: payload.block_height,
+            total_height: payload.block_height,
+        });
+    }
 
     if (newBlockDebounceTimeout) {
         clearTimeout(newBlockDebounceTimeout);
