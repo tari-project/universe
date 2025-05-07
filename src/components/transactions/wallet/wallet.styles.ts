@@ -12,7 +12,8 @@ export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    transform: translateY(-5px);
+    transform: translateY(-3px);
+    padding-right: 4px;
 `;
 
 export const TabsTitle = styled.div`
