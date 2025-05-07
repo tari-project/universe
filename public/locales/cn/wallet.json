@@ -65,6 +65,6 @@
     "send": "发送"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "钱包正在扫描..",
+  "wallet-is-scanning": "钱包正在扫描...",
   "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)"
 }

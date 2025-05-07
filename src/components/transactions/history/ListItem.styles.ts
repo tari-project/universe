@@ -20,10 +20,10 @@ export const HoverWrapper = styled(m.div)`
     position: absolute;
     inset: 0;
     z-index: 4;
-    transition: background-color 2s ease;
+    transition: background-color 1s ease;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.7)};
     height: 100%;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(1.5px);
 `;
 
 export const ContentWrapper = styled.div`

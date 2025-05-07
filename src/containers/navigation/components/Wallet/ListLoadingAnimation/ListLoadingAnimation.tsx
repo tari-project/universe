@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Circle, Square, SquareWrapper, Wrapper } from './styles';
+import { ListItemsWrapper, LoadingText, Rectangle, Wrapper } from './styles';
 
-export default function NumbersLoadingAnimation() {
+interface Props {
+    loadingText?: string;
+}
+
+export default function ListLoadingAnimation({ loadingText }: Props) {
     const [activeSquares, setActiveSquares] = useState<number[]>([]);
-    const totalSquares = 7;
+    const totalSquares = 5;
     const staggerDelay = 0.15;
 
     useEffect(() => {
@@ -33,23 +37,20 @@ export default function NumbersLoadingAnimation() {
 
     return (
         <Wrapper>
-            <SquareWrapper>
+            <LoadingText>{loadingText}</LoadingText>
+            <ListItemsWrapper>
                 {Array.from({ length: totalSquares }).map((_, index) => (
-                    <Square
+                    <Rectangle
                         key={index}
-                        initial={{ scale: 0.75, opacity: 0.5 }}
-                        animate={
-                            activeSquares.includes(index) ? { scale: 1, opacity: 1 } : { scale: 0.75, opacity: 0.5 }
-                        }
+                        initial={{ opacity: 0.5 }}
+                        animate={activeSquares.includes(index) ? { opacity: 1 } : { opacity: 0.5 }}
                         transition={{
                             duration: 0.5,
                             ease: [0.15, 0, 0, 0.97],
                         }}
                     />
                 ))}
-            </SquareWrapper>
-
-            <Circle />
+            </ListItemsWrapper>
         </Wrapper>
     );
 }

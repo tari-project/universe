@@ -47,45 +47,43 @@ const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
                 onMouseOver={() => toggleBalanceFormat({ isMouseOver: true })}
                 onMouseOut={() => toggleBalanceFormat({ isMouseOver: false })}
             >
-                <AnimatePresence>
-                    {!isWalletScanning ? (
-                        <AnimatePresence mode="popLayout">
-                            {!showLongBalance || hideWalletBalance || isWalletScanning ? (
-                                <WalletBalance
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    key="compressed-number"
-                                >
-                                    <CharSpinner
-                                        value={balanceDisplayValue}
-                                        variant="simple"
-                                        fontSize={34}
-                                        animateNumbers={shouldAnimateBalance}
-                                    />
-                                </WalletBalance>
-                            ) : (
-                                <WalletBalance
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    key="full-number"
-                                >
-                                    <CharSpinner
-                                        value={formattedLongBalance}
-                                        variant="simple"
-                                        fontSize={sizingLong()}
-                                        animateNumbers={shouldAnimateBalance}
-                                    />
-                                </WalletBalance>
-                            )}
-                        </AnimatePresence>
-                    ) : (
-                        <NumbersLoadingAnimation />
-                    )}
-                </AnimatePresence>
+                {!isWalletScanning ? (
+                    <AnimatePresence mode="popLayout">
+                        {!showLongBalance || hideWalletBalance || isWalletScanning ? (
+                            <WalletBalance
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                key="compressed-number"
+                            >
+                                <CharSpinner
+                                    value={balanceDisplayValue}
+                                    variant="simple"
+                                    fontSize={34}
+                                    animateNumbers={shouldAnimateBalance}
+                                />
+                            </WalletBalance>
+                        ) : (
+                            <WalletBalance
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                key="full-number"
+                            >
+                                <CharSpinner
+                                    value={formattedLongBalance}
+                                    variant="simple"
+                                    fontSize={sizingLong()}
+                                    animateNumbers={shouldAnimateBalance}
+                                />
+                            </WalletBalance>
+                        )}
+                    </AnimatePresence>
+                ) : (
+                    <NumbersLoadingAnimation />
+                )}
             </WalletBalanceWrapper>
-            {!isWalletScanning && balanceVis}
+            {!isWalletScanning ? balanceVis : null}
         </WalletBalanceContainer>
     );
 });

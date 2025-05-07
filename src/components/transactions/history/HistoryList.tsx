@@ -8,6 +8,7 @@ import { fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
+import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -56,15 +57,17 @@ const HistoryList = memo(function HistoryList() {
     }, [combinedTransactions, handleNext, hasMore, newestTxIdOnInitialFetch]);
 
     const baseMarkup = walletScanning.is_scanning ? (
-        <Typography variant="h6" style={{ textAlign: 'left' }}>
-            {walletScanning.is_scanning && walletScanning.total_height > 0
-                ? t('wallet-scanning-with-progress', {
-                      scanned: walletScanning.scanned_height.toLocaleString(),
-                      total: walletScanning.total_height.toLocaleString(),
-                      percent: walletScanning.progress.toFixed(1),
-                  })
-                : t('wallet-is-scanning')}
-        </Typography>
+        <ListLoadingAnimation
+            loadingText={
+                walletScanning.is_scanning && walletScanning.total_height > 0
+                    ? t('wallet-scanning-with-progress', {
+                          scanned: walletScanning.scanned_height.toLocaleString(),
+                          total: walletScanning.total_height.toLocaleString(),
+                          percent: walletScanning.progress.toFixed(1),
+                      })
+                    : t('wallet-is-scanning')
+            }
+        />
     ) : (
         listMarkup
     );
