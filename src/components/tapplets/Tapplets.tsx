@@ -33,7 +33,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 provider?.sendWindowSizeMessage(tappletWindow, source);
             }
         } else if (event.data.type === 'signer-call') {
-            console.info('🤝 [TU Tapplet][handle msg] event data:', event.data);
+            console.info('🤝 [TU Tapplet][handle msg] signer-call', event.data);
             runTappletTx(event);
         }
     }

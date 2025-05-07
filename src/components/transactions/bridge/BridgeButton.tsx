@@ -4,14 +4,17 @@ import { ButtonWrapper, StyledButton } from './BridgeButton.styles';
 import { BRIDGE_TAPPLET_ID, useTappletsStore } from '@app/store/useTappletsStore';
 import { setError, setVisualMode } from '@app/store';
 import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
+import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
 
 export default function BridgeButton() {
     const { t } = useTranslation('bridge', { useSuspense: false });
     const { setActiveTappById } = useTappletsStore();
+    const { initTappletProvider } = useTappletProviderStore();
 
     const handleClick = useCallback(
         async (tappletId: number) => {
             try {
+                initTappletProvider();
                 setActiveTappById(tappletId, true);
                 setShowTapplet(true);
                 setVisualMode(false);
@@ -20,7 +23,7 @@ export default function BridgeButton() {
                 setError(`Error while launching tapplet: ${e}`);
             }
         },
-        [setActiveTappById]
+        [initTappletProvider, setActiveTappById]
     );
 
     return (

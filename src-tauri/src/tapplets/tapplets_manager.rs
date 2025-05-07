@@ -149,7 +149,7 @@ impl TappletManager {
         info!(target: LOG_TARGET,"Extracting tapplet to folder: {:?}", &tapplet_folder);
         //TODO !!! set path
         let tapplet_file_zip = PathBuf::from(
-            "/home/oski/Projects/tari/forked/universe/public/tapplets/tariswap-tapplet-0.0.2.tgz",
+            "/home/oski/Projects/tari/forked/universe/public/tapplets/hello-ootle-0.1.2.tgz",
         );
 
         progress_tracker
