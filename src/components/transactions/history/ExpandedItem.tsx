@@ -72,7 +72,7 @@ const ItemExpand = memo(function ItemExpand({ item, expanded, handleClose }: Pro
             }
 
             if (key === 'amount') {
-                const preset = value.toString().length > 5 ? FormatPreset.TXTM_LONG : FormatPreset.TXTM_DECIMALS;
+                const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
                 _value = formatNumber(value, preset);
                 valueRight = `${formatNumber(value, FormatPreset.DECIMAL_COMPACT)} µT`;
             }

@@ -77,10 +77,15 @@ fn default_monero_nodes() -> Vec<String> {
 
 impl Default for ConfigCoreContent {
     fn default() -> Self {
-        let remote_base_node_address = format!(
-            "https://grpc.{}.tari.com:443",
-            Network::get_current_or_user_setting_or_default().as_key_str()
-        );
+        let network = Network::get_current_or_user_setting_or_default();
+        let remote_base_node_address = match network {
+            Network::MainNet => {
+                format!("https://grpc.tari.com:443")
+            }
+            _ => {
+                format!("https://grpc.{}.tari.com:443", network.as_key_str())
+            }
+        };
         let anon_id = generate_password(20);
         let ab_test_selector = anon_id
             .chars()

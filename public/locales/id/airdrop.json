@@ -27,13 +27,13 @@
   "live": "langsung",
   "logged-in-as": "Masuk sebagai <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Hadiah Airdrop",
-  "loggedOutTitle": "Menambang & Undang Teman untuk Mendapatkan Permata",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "Masuk untuk mengklaim permata",
   "logout": "Keluar",
   "nextTierBonus": "Undang <strong>{{count}} teman</strong> & dapatkan {{bonusGems}} permata bonus",
   "permission": {
     "setup": "Tari Universe ingin menggunakan analitik untuk <strong>meningkatkan pengalaman Anda.</strong>",
-    "text": "Tari Universe ingin menggunakan analitik untuk meningkatkan pengalaman Anda dan memberi Anda hadiah dengan permata untuk menambang.",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "Dapatkan Permata & buat Tari Universe lebih baik"
   },
   "permissionNoGems": {

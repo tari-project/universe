@@ -1911,3 +1911,12 @@ pub async fn set_node_type(
 
     Ok(())
 }
+
+#[tauri::command]
+pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
+    ConfigUI::update_field(ConfigUIContent::set_warmup_seen, warmup_seen)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    Ok(())
+}

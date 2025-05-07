@@ -280,7 +280,6 @@ export const setVisualMode = (enabled: boolean) => {
     invoke('set_visual_mode', { enabled }).catch((e) => {
         console.error('Could not set visual mode', e);
         setError('Could not change visual mode');
-        useConfigUIStore.setState({ visual_mode: !enabled });
     });
 };
 export const setNodeType = async (nodeType: NodeType) => {
@@ -293,5 +292,14 @@ export const setNodeType = async (nodeType: NodeType) => {
         setError('Could not change node type');
         useConfigCoreStore.setState({ node_type: previousNodeType });
         updateNodeTypeForNodeStore(nodeType);
+    });
+};
+
+export const setWarmupSeen = (warmupSeen: boolean) => {
+    useConfigUIStore.setState({ warmup_seen: warmupSeen });
+    invoke('set_warmup_seen', { warmupSeen }).catch((e) => {
+        console.error('Could not set seen', e);
+        setError('Could not change seen');
+        useConfigUIStore.setState({ warmup_seen: !warmupSeen });
     });
 };

@@ -1,10 +1,10 @@
-import { StatWrapper, TileItem, TileTop, Unit } from '../styles';
+import { LoaderWrapper, StatWrapper, TileItem, TileTop, Unit } from '../styles';
 import { truncateString } from '@app/utils/truncateString.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { Chip } from '@app/components/elements/Chip.tsx';
 import { colorsAll } from '@app/theme/palettes/colors.ts';
-import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import { formatNumber, FormatPreset } from '@app/utils/formatters';
+import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
 interface TileProps {
     title: string;
@@ -31,7 +31,9 @@ function Tile({ title, stats, chipValue = 0, unit, isLoading = false, useLowerCa
                 ) : null}
             </TileTop>
             {isLoading ? (
-                <SpinnerIcon />
+                <LoaderWrapper>
+                    <LoadingDots />
+                </LoaderWrapper>
             ) : (
                 <StatWrapper $useLowerCase={useLowerCase}>
                     {truncateString(stats, 8)}
