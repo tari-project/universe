@@ -140,32 +140,19 @@ async fn list_mirror_releases(
     let url = get_mirror_url(repo_owner, repo_name);
     info!(target: LOG_TARGET, "Mirror releases url: {}", url);
 
-    let (need_to_download, cache_entry_present, response) =
+    let (need_to_download, cache_entry_present, _) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
 
     debug!(target: LOG_TARGET, "Mirror releases need to download: {}", need_to_download);
     debug!(target: LOG_TARGET, "Mirror releases cache entry present: {}", cache_entry_present);
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
-    let mut does_hit = response
-        .and_then(|res| {
-            Some(
-                RequestClient::current()
-                    .get_cf_cache_status_from_head_response(&res)
-                    .is_hit(),
-            )
-        })
-        .unwrap_or(false);
-
-    info!(target: LOG_TARGET, "Mirror releases cache hit: {}", does_hit);
-
-    if need_to_download && !does_hit {
-        does_hit = RequestClient::current().check_if_cache_hits(&url).await?;
-    }
 
     let mut cache_json_file_lock = CacheJsonFile::current().write().await;
 
     if need_to_download {
+        //TODO (1/2) bring it back once cloudflare stops returning dynamic status
+        // RequestClient::current().check_if_cache_hits(&url).await?;
         let (response, etag) = RequestClient::current()
             .fetch_get_versions_download_info(&url)
             .await?;

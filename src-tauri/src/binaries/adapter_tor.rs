@@ -46,8 +46,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         );
 
         let cdn_responded = RequestClient::current()
-            .check_if_cache_hits(cdn_tor_bundle_url.as_str())
-            .await?;
+            .send_head_request(&cdn_tor_bundle_url)
+            .await?
+            .status()
+            .is_success();
 
         if cdn_responded {
             let version = VersionDownloadInfo {
