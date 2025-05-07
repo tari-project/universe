@@ -96,7 +96,7 @@ pub async fn list_releases(
         .await
         .read_version_releases_responses_cache_file()?;
 
-    info!(target: LOG_TARGET, "Fetching mirror releases for {}/{}", repo_owner, repo_name);
+    debug!(target: LOG_TARGET, "Fetching mirror releases for {}/{}", repo_owner, repo_name);
 
     let mut mirror_releases = list_mirror_releases(repo_owner, repo_name)
         .await
@@ -105,9 +105,9 @@ pub async fn list_releases(
         })
         .unwrap_or_default();
 
-    info!(target: LOG_TARGET, "Found {} releases from mirror", mirror_releases.len());
+    debug!(target: LOG_TARGET, "Found {} releases from mirror", mirror_releases.len());
 
-    info!(target: LOG_TARGET, "Fetching github releases for {}/{}", repo_owner, repo_name);
+    debug!(target: LOG_TARGET, "Fetching github releases for {}/{}", repo_owner, repo_name);
 
     let github_releases = list_github_releases(repo_owner, repo_name)
         .await
@@ -116,7 +116,7 @@ pub async fn list_releases(
         })
         .unwrap_or_default();
 
-    info!(target: LOG_TARGET, "Found {} releases from Github", github_releases.len());
+    debug!(target: LOG_TARGET, "Found {} releases from Github", github_releases.len());
 
     // Add any missing releases from github
     for release in &github_releases {
@@ -143,8 +143,8 @@ async fn list_mirror_releases(
     let (need_to_download, cache_entry_present, response) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Mirror).await?;
 
-    info!(target: LOG_TARGET, "Mirror releases need to download: {}", need_to_download);
-    info!(target: LOG_TARGET, "Mirror releases cache entry present: {}", cache_entry_present);
+    debug!(target: LOG_TARGET, "Mirror releases need to download: {}", need_to_download);
+    debug!(target: LOG_TARGET, "Mirror releases cache entry present: {}", cache_entry_present);
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
     let mut does_hit = response
@@ -204,8 +204,8 @@ async fn list_github_releases(
     let (need_to_download, cache_entry_present, _) =
         check_if_need_download(repo_owner, repo_name, &url, ReleaseSource::Github).await?;
 
-    info!(target: LOG_TARGET, "Github releases need to download: {}", need_to_download);
-    info!(target: LOG_TARGET, "Github releases cache entry present: {}", cache_entry_present);
+    debug!(target: LOG_TARGET, "Github releases need to download: {}", need_to_download);
+    debug!(target: LOG_TARGET, "Github releases cache entry present: {}", cache_entry_present);
 
     let mut versions_list: Vec<VersionDownloadInfo> = vec![];
 
@@ -259,12 +259,6 @@ async fn check_if_need_download(
                 repo_name,
                 source.clone(),
             ) {
-                info!(
-                    target: LOG_TARGET,
-                    "Cache entry found but content file not found for {}/{}",
-                    repo_owner,
-                    repo_name
-                );
                 need_to_download = true;
             }
 
@@ -275,28 +269,16 @@ async fn check_if_need_download(
                 ReleaseSource::Github => cache_entry.github_etag.clone(),
             };
 
-            info!(target: LOG_TARGET, "Remote etag: {}", remote_etag);
-            info!(target: LOG_TARGET, "Local etag: {:?}", cache_entry);
+            debug!(target: LOG_TARGET, "Remote etag: {}", remote_etag);
+            debug!(target: LOG_TARGET, "Local etag: {:?}", cache_entry);
 
             if !remote_etag.eq(&local_etag.unwrap_or("".to_string())) {
-                info!(
-                    target: LOG_TARGET,
-                    "Cache entry etag mismatch for {}/{}",
-                    repo_owner,
-                    repo_name
-                );
                 need_to_download = true
             };
 
             Ok((need_to_download, cache_entry_present, Some(response)))
         }
         None => {
-            info!(
-                target: LOG_TARGET,
-                "Cache entry not found for {}/{}",
-                repo_owner,
-                repo_name
-            );
             need_to_download = true;
             Ok((need_to_download, cache_entry_present, None))
         }

@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf, sync::LazyLock};
 use crate::{binaries::binaries_resolver::VersionDownloadInfo, APPLICATION_FOLDER_ID};
 use anyhow::{anyhow, Error, Ok};
 use dirs::cache_dir;
-use log::info;
+use log::debug;
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
@@ -63,13 +63,13 @@ impl CacheJsonFile {
 
     pub fn read_version_releases_responses_cache_file(&mut self) -> Result<(), Error> {
         let cache_file_path = self.get_version_releases_responses_cache_file_path()?;
-        info!(target: LOG_TARGET, "Reading cache file: {:?}", cache_file_path);
+        debug!(target: LOG_TARGET, "Reading cache file: {:?}", cache_file_path);
         if cache_file_path.exists() {
             let json = std::fs::read_to_string(&cache_file_path)?;
             self.cache_entries = serde_json::from_str(&json)?;
         }
 
-        info!(target: LOG_TARGET, "Version releases cache file read successfully");
+        debug!(target: LOG_TARGET, "Version releases cache file read successfully");
         Ok(())
     }
 
@@ -85,7 +85,7 @@ impl CacheJsonFile {
         let json = serde_json::to_string_pretty(&self.cache_entries)?;
         std::fs::write(&cache_file_path, json)?;
 
-        info!(target: LOG_TARGET, "Version releases cache file saved successfully");
+        debug!(target: LOG_TARGET, "Version releases cache file saved successfully");
         Ok(())
     }
 
@@ -154,15 +154,9 @@ impl CacheJsonFile {
         source: ReleaseSource,
     ) -> bool {
         self.get_cache_entry(repo_owner, repo_name)
-            .map_or(false, |cache_entry| {
-                info!(target: LOG_TARGET, "Checking if content file exists: {:?}", cache_entry);
-                info!(target: LOG_TARGET, "Is cache entry exists for github: {:?}", cache_entry.gitub_file_path.exists());
-                info!(target: LOG_TARGET, "Is cache entry exists for mirror: {:?}", cache_entry.mirror_file_path.exists());
-
-                match source {
+            .map_or(false, |cache_entry| match source {
                 ReleaseSource::Github => cache_entry.gitub_file_path.exists(),
                 ReleaseSource::Mirror => cache_entry.mirror_file_path.exists(),
-            }
             })
     }
 
@@ -209,7 +203,7 @@ impl CacheJsonFile {
         let json = serde_json::to_string_pretty(&content)?;
         std::fs::write(&file_path, json)?;
 
-        info!(target: LOG_TARGET, "File content saved successfully");
+        debug!(target: LOG_TARGET, "File content saved successfully");
         Ok(())
     }
 
@@ -223,7 +217,7 @@ impl CacheJsonFile {
         let json = std::fs::read_to_string(&file_path)?;
         let content: Vec<VersionDownloadInfo> = serde_json::from_str(&json)?;
 
-        info!(target: LOG_TARGET, "File content read successfully");
+        debug!(target: LOG_TARGET, "File content read successfully");
         Ok(content)
     }
 

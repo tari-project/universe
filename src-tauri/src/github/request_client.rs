@@ -174,7 +174,7 @@ impl RequestClient {
         &self,
         response: &Response,
     ) -> CloudFlareCacheStatus {
-        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, response status: {}, url: {}", response.status(), response.url());
+        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, response status: {}, url: {}", response.status(), response.url());
         if response.status().is_server_error() || response.status().is_client_error() {
             info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, error");
             return CloudFlareCacheStatus::Unknown;
@@ -186,8 +186,8 @@ impl RequestClient {
                 .map_or("", |v| v.to_str().unwrap_or_default()),
         );
 
-        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, cache status: {:?}", cache_status.to_str());
-        info!(target: LOG_TARGET, "get_cf_cache_status_from_head_response_raw, cache status: {:?}", response.headers().get("cf-cache-status"));
+        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response, cache status: {:?}", cache_status.to_str());
+        debug!(target: LOG_TARGET, "get_cf_cache_status_from_head_response_raw, cache status: {:?}", response.headers().get("cf-cache-status"));
 
         cache_status.log_warning_if_present();
         cache_status
@@ -220,14 +220,11 @@ impl RequestClient {
             }
 
             let head_response = self.send_head_request(url).await?;
-            info!(target: LOG_TARGET, "Headers: {:?}", head_response.headers());
 
             let cf_cache_status = self.get_cf_cache_status_from_head_response(&head_response);
             cf_cache_status.log_warning_if_present();
 
             let content_length = self.get_content_length_from_head_response(&head_response);
-            info!(target: LOG_TARGET, "Content length: {}", content_length);
-            info!(target: LOG_TARGET, "Content length in mb: {}", self.convert_content_length_to_mb(content_length));
 
             let mut sleep_time = std::time::Duration::from_secs(MIN_WAIT_TIME);
 
