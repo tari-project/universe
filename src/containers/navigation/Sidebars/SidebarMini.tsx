@@ -4,6 +4,7 @@ import OpenSettingsButton from '@app/containers/floating/Settings/components/Ope
 import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/AirdropSidebarItems.tsx';
 import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
+import BridgeNavigationButton from './BridgeNavigationButton.tsx';
 
 const SidebarMini = memo(function SidebarMini() {
     return (
@@ -15,6 +16,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
+                <BridgeNavigationButton />
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />

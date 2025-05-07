@@ -21,6 +21,7 @@ import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
+import BridgeButton from '../bridge/BridgeButton.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 
@@ -64,6 +65,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             <HistoryList />
 
+            <BridgeButton />
             <BottomNavWrapper>
                 {uiSendRecvEnabled ? (
                     <>
