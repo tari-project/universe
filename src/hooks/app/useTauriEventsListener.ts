@@ -138,7 +138,11 @@ const useTauriEventsListener = () => {
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
                         case 'CriticalProblem': {
-                            if (event.payload.title === 'common:installation-problem') {
+                            const isMacAppFolderError =
+                                event.payload.title === 'common:installation-problem' &&
+                                event.payload.description === 'common:not-installed-in-applications-directory';
+
+                            if (isMacAppFolderError) {
                                 setCriticalError(event.payload);
                             } else {
                                 setCriticalProblemTest(event.payload);

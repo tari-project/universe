@@ -71,7 +71,7 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
         }
         return isSubmittingLogs ? <CircularProgress /> : <Trans t={t}>send-logs</Trans>;
     }, [logsSubmissionId, isSubmittingLogs, isCopied, t]);
-    console.debug(criticalProblem);
+
     return (
         <Dialog open={!!criticalProblem}>
             <DialogContent>

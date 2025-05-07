@@ -89,8 +89,7 @@ impl PlatformUtils {
     async fn initialize_macos_preqesities(
         app_handle: tauri::AppHandle,
     ) -> Result<(), anyhow::Error> {
-        // if !cfg!(dev) && !is_app_in_applications_folder() {
-        if !is_app_in_applications_folder() {
+        if !cfg!(dev) && !is_app_in_applications_folder() {
             EventsManager::handle_critical_problem(
                 &app_handle,
                 Some("common:installation-problem".to_string()),
