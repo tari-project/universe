@@ -24,7 +24,6 @@ import {
     useInteractions,
     useRole,
 } from '@floating-ui/react';
-import { SpinnerIcon } from '@app/components/elements/loaders/SpinnerIcon.tsx';
 import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
 
 export interface SelectOption<T = string> {
