@@ -310,8 +310,8 @@ impl WalletManager {
             let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
             loop {
+                let mut retries = 0;
                 let current_target_height = loop {
-                    let mut retries = 0;
                     let current_height = node_status_watch_rx_scan.borrow().block_height;
                     if current_height > 0 {
                         break current_height;
