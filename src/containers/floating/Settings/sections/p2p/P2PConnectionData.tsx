@@ -82,8 +82,8 @@ export default function P2PConnectionData() {
             </CardItem>
 
             <CardContainer>
-                <CardComponent labels={establishedLabels} heading={'Established connnections'} />
-                <CardComponent labels={pendingLabels} heading={'Pending connnections'} />
+                <CardComponent labels={establishedLabels} heading={`${t('established')} ${t('connections')}`} />
+                <CardComponent labels={pendingLabels} heading={`${t('pending')} ${t('connections')}`} />
             </CardContainer>
         </>
     );
