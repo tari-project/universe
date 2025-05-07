@@ -36,7 +36,7 @@ export default function Banner() {
                 <FlexSection>
                     <VideoPreview onClick={() => handleOpenChange(true)}>
                         <FaPlay />
-                        <video src={VIDEO_SRC} autoPlay={false} loop={false} muted={true} controls={false} />
+                        {/*}<video src={VIDEO_SRC} autoPlay={true} loop={true} muted={true} controls={false} />{*/}
                     </VideoPreview>
                     <TagLine>
                         <div>{t('tari')}</div>
@@ -51,7 +51,7 @@ export default function Banner() {
                         </Typography>
                         <Typography variant="h6">{t('components:banner.body-copy')}</Typography>
                     </BodyCopy>
-                    <Button onClick={handleClick} variant="primary" color="primary">
+                    <Button onClick={handleClick} variant="primary" color="primary" size="small">
                         {t('learn-more')}
                     </Button>
                 </FlexSection>
