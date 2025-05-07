@@ -2,11 +2,22 @@ import MMFox from '../../icons/mm-fox';
 import { useConnect } from 'wagmi';
 import { useCallback, useEffect, useState } from 'react';
 import { QRCode } from 'react-qrcode-logo';
-import { ContentWrapper } from './ConnectWallet.styles';
+import {
+    ConnectHeader,
+    ConnectSubHeader,
+    ContentWrapper,
+    QrWrapper,
+    LoadingQrInner,
+    ConnectingProgress,
+    GreenDot,
+    LoadingCopy,
+} from './ConnectWallet.styles';
 import { LoadingDots } from '../SignMessage/SignMessage.styles';
+import TransactionModal from '@app/components/TransactionModal/TransactionModal';
+import { AnimatePresence } from 'motion/react';
 // import Portal from '../../icons/portal.png';
 
-export const ConnectWallet = () => {
+export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false); // Track connection status
@@ -49,11 +60,37 @@ export const ConnectWallet = () => {
     }, [handleConnect, isConnected, qrCodeUri]);
 
     return (
-        <ContentWrapper>
-            <MMFox width="100" />
-            <span>{'Connect to MetaMask'}</span>
-            <span>{'Scan the QR code to connect your wallet on your phone'}</span>
-            {qrCodeUri ? <QRCode value={qrCodeUri} size={250} /> : <LoadingDots />}
-        </ContentWrapper>
+        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
+            <AnimatePresence mode="wait">
+                <ContentWrapper>
+                    <MMFox width="100" />
+                    <ConnectHeader>{'Connect to MetaMask'}</ConnectHeader>
+                    <ConnectSubHeader>{'Scan the QR code to connect your wallet on your phone'}</ConnectSubHeader>
+                    <QrWrapper>
+                        {qrCodeUri ? (
+                            <QRCode value={qrCodeUri} size={180} />
+                        ) : (
+                            <LoadingQrInner
+                                animate={{
+                                    backgroundPosition: ['-200%', '200%'],
+                                }}
+                                transition={{
+                                    repeat: Infinity,
+                                    duration: 2,
+                                    ease: 'linear',
+                                }}
+                            />
+                        )}
+                    </QrWrapper>
+                    <ConnectingProgress>
+                        <GreenDot />
+                        <MMFox width="20" />
+                        <LoadingCopy>
+                            {'Waiting for connection'} <LoadingDots />
+                        </LoadingCopy>
+                    </ConnectingProgress>
+                </ContentWrapper>
+            </AnimatePresence>
+        </TransactionModal>
     );
 };

@@ -33,6 +33,13 @@ const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
     // Add other V2 Routers (Arbitrum might primarily use V3, check Uniswap docs)
 };
 
+// Add Public RPC URLs for read-only operations (replace with your preferred ones)
+const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
+    [ChainId.MAINNET]: 'https://rpc.ankr.com/eth', // Example for Mainnet via Ankr
+    [ChainId.SEPOLIA]: 'https://gateway.tenderly.co/public/sepolia', // Official public Sepolia RPC
+    // Or from https://chainlist.org/ (filter for desired network)
+};
+
 // --- Token Definitions ---
 
 // Example stablecoin (replace or add more as needed)
@@ -102,6 +109,8 @@ function initializeKnownTokens() {
     }
 }
 initializeKnownTokens(); // Call initialization
+// If Dev mode, use sepolia if prod, use mainnet
+const defaultChainId = process.env.NODE_ENV === 'development' ? ChainId.SEPOLIA : ChainId.MAINNET;
 
 // --- Helper Function ---
 
@@ -148,7 +157,7 @@ export const useSwap = () => {
     // --- Derived State ---
 
     // Get the current chain's ID and router address
-    const currentChainId = useMemo(() => chain?.id as ChainId | undefined, [chain]);
+    const currentChainId = useMemo(() => chain?.id || defaultChainId, [chain]);
     const routerAddress = useMemo(() => {
         return currentChainId ? ROUTER_ADDRESSES[currentChainId] : undefined;
     }, [currentChainId]);
@@ -156,16 +165,38 @@ export const useSwap = () => {
     // Get the primary token instance (e.g., XTM) for the current chain
     const xtmToken = useMemo(() => (currentChainId ? XTM[currentChainId] : undefined), [currentChainId]);
 
+    const publicRpcProvider = useMemo(() => {
+        if (!currentChainId || !PUBLIC_RPC_URLS[currentChainId]) {
+            console.warn(`No public RPC URL configured for chainId: ${currentChainId}`);
+            return null;
+        }
+        try {
+            // Use JsonRpcProvider for ethers v6
+            return new ethers.JsonRpcProvider(PUBLIC_RPC_URLS[currentChainId], currentChainId);
+        } catch (e) {
+            console.error('Error creating public JsonRpcProvider:', e);
+            return null;
+        }
+    }, [currentChainId]);
+
     // Get ethers Signer and Provider asynchronously
     const signerAsync = useMemo(async () => {
         if (!walletClient) return null;
-        return await walletClientToSigner(walletClient);
+        return walletClientToSigner(walletClient);
     }, [walletClient]);
 
     const providerAsync = useMemo(async () => {
-        const signer = await signerAsync;
-        return signer?.provider ?? null;
-    }, [signerAsync]);
+        if (walletClient) {
+            // If wallet is connected
+            const signer = await signerAsync; // This will re-use the signerAsync memo
+            if (signer?.provider) {
+                return signer.provider;
+            }
+            // Fallback if signer or its provider couldn't be obtained from walletClient
+            // (though walletClientToSigner should handle provider creation)
+        }
+        return publicRpcProvider;
+    }, [publicRpcProvider, signerAsync, walletClient]);
 
     // Derive the pair token instance (SDK object: WETH9 for native, Token otherwise)
     // This token is used for INTERNAL SDK calculations (Pair, Route, Trade)
@@ -198,16 +229,12 @@ export const useSwap = () => {
 
     // Determine internal SDK tokens based on direction (always use Token/WETH9)
     const { sdkToken0, sdkToken1 } = useMemo(() => {
-        if (!xtmToken || !sdkPairToken || !currentChainId || xtmToken.chainId !== sdkPairToken.chainId) {
-            return { sdkToken0: undefined, sdkToken1: undefined };
-        }
-
         // sdkPairToken will be WETH9 if native ETH is selected
         const _sdkToken0 = direction === 'input' ? sdkPairToken : xtmToken;
         const _sdkToken1 = direction === 'input' ? xtmToken : sdkPairToken;
 
         return { sdkToken0: _sdkToken0, sdkToken1: _sdkToken1 };
-    }, [sdkPairToken, xtmToken, direction, currentChainId]);
+    }, [sdkPairToken, xtmToken, direction]);
 
     // Derive Output Tokens for API/UI (using NativeCurrency for ETH)
     // This provides a clearer representation (e.g., 'ETH' symbol, isNative=true) to the hook consumer/UI
@@ -232,79 +259,75 @@ export const useSwap = () => {
     // --- SDK Interaction Functions ---
 
     // Fetches Pair data using SDK Tokens (WETH9 for native)
-    const getPair = useCallback(async (): Promise<Pair | null> => {
-        // Use sdkToken0 and sdkToken1 which contain WETH9 if native is involved
-        if (!sdkToken0 || !sdkToken1 || !providerAsync || sdkToken0.chainId !== sdkToken1.chainId) {
-            console.error('Cannot get pair: Invalid SDK tokens, provider, or mismatched chains.');
-            setError('Invalid token setup or provider.');
-            return null;
-        }
-
-        setIsFetchingPair(true);
-        setError(null);
-        try {
-            // Pair.getAddress requires Token objects (WETH9 for native)
-            const pairAddress = Pair.getAddress(sdkToken0, sdkToken1);
-            const provider = await providerAsync;
-            if (!provider) throw new Error('Provider not available');
-
-            const pairContract = new Contract(pairAddress, uniswapV2PairAbi, provider); // Use provider for reads
-
-            // Basic check if pair contract exists
-            const code = await provider.getCode(pairAddress);
-            if (code === '0x' || code === '') {
-                console.warn(`No contract code found at pair address: ${pairAddress}. Pair likely doesn't exist.`);
-                setError('Liquidity pair not found.');
-                setIsFetchingPair(false);
-                return null; // Pair doesn't exist
-            }
-
-            const reserves = await pairContract['getReserves']();
-            const [reserve0, reserve1] = reserves; // These are BigInts in ethers v6
-
-            // Ensure reserves are not zero, otherwise Pair constructor might fail
-            if (reserve0 === 0n && reserve1 === 0n) {
-                console.warn(`Pair ${pairAddress} has zero reserves.`);
-                setError('Liquidity pair has no liquidity.');
-                setIsFetchingPair(false);
+    const getPair = useCallback(
+        async (preview?: boolean): Promise<Pair | null> => {
+            // Use sdkToken0 and sdkToken1 which contain WETH9 if native is involved
+            if (!preview && (!sdkToken0 || !sdkToken1 || !providerAsync || sdkToken0.chainId !== sdkToken1.chainId)) {
+                console.error('Cannot get pair: Invalid SDK tokens, provider, or mismatched chains.');
+                setError('Invalid token setup or provider.');
                 return null;
             }
 
-            const tokens = [sdkToken0, sdkToken1]; // Use SDK tokens
+            setIsFetchingPair(true);
+            setError(null);
+            try {
+                const pairAddress = Pair.getAddress(sdkToken0, sdkToken1);
+                const provider = await providerAsync;
+                if (!provider && !preview) throw new Error('Provider not available');
 
-            // Create Pair object using CurrencyAmount with raw amounts (strings)
-            const pair = new Pair(
-                CurrencyAmount.fromRawAmount(tokens[0], reserve0.toString()),
-                CurrencyAmount.fromRawAmount(tokens[1], reserve1.toString())
-            );
-            setIsFetchingPair(false);
-            return pair;
-        } catch (error: any) {
-            console.error('Error fetching pair:', error);
-            if (error.message?.includes('call revert exception') || error.code === 'CALL_EXCEPTION') {
-                console.warn(
-                    `Pair contract call failed at ${Pair.getAddress(sdkToken0, sdkToken1)}. It might not exist or have issues.`
+                const pairContract = new Contract(pairAddress, uniswapV2PairAbi, provider); // Use provider for reads
+
+                // Basic check if pair contract exists
+                const code = preview ? '0x' : await provider?.getCode(pairAddress);
+                if (!preview && (code === '0x' || code === '')) {
+                    console.warn(`No contract code found at pair address: ${pairAddress}. Pair likely doesn't exist.`);
+                    setError('Liquidity pair not found.');
+                    setIsFetchingPair(false);
+                    return null; // Pair doesn't exist
+                }
+
+                const reserves = await pairContract['getReserves']();
+                const [reserve0, reserve1] = reserves; // These are BigInts in ethers v6
+
+                // Ensure reserves are not zero, otherwise Pair constructor might fail
+                if (reserve0 === 0n && reserve1 === 0n) {
+                    console.warn(`Pair ${pairAddress} has zero reserves.`);
+                    setError('Liquidity pair has no liquidity.');
+                    setIsFetchingPair(false);
+                    return null;
+                }
+
+                const tokens = [sdkToken0, sdkToken1]; // Use SDK tokens
+
+                // Create Pair object using CurrencyAmount with raw amounts (strings)
+                const pair = new Pair(
+                    CurrencyAmount.fromRawAmount(tokens[0], reserve0.toString()),
+                    CurrencyAmount.fromRawAmount(tokens[1], reserve1.toString())
                 );
-                setError('Could not fetch pair data (pair might not exist).');
-            } else {
-                setError(`Failed to fetch pair data: ${error.message || 'Unknown error'}`);
+                setIsFetchingPair(false);
+                return pair;
+            } catch (error: any) {
+                console.error('Error fetching pair:', error);
+                if (error.message?.includes('call revert exception') || error.code === 'CALL_EXCEPTION') {
+                    console.warn(
+                        `Pair contract call failed at ${Pair.getAddress(sdkToken0, sdkToken1)}. It might not exist or have issues.`
+                    );
+                    setError('Could not fetch pair data (pair might not exist).');
+                } else {
+                    setError(`Failed to fetch pair data: ${error.message || 'Unknown error'}`);
+                }
+                setIsFetchingPair(false);
+                return null;
             }
-            setIsFetchingPair(false);
-            return null;
-        }
-    }, [sdkToken0, sdkToken1, providerAsync]); // Use SDK tokens in dependency array
+        },
+        [sdkToken0, sdkToken1, providerAsync]
+    ); // Use SDK tokens in dependency array
 
     // Calculates trade details using SDK Tokens (WETH9 for native)
     const getTradeDetails = useCallback(
         async (
             inputAmountRaw: string // Expect raw amount string (e.g., '1000000000000000000' for 1 ETH/Token)
         ): Promise<{ trade: Trade<Token, Token, TradeType.EXACT_INPUT> | null; route: Route<Token, Token> | null }> => {
-            // Use sdkToken0 and sdkToken1
-            if (!sdkToken0 || !sdkToken1 || !providerAsync) {
-                setError('Tokens or provider not ready for trade calculation.');
-                return { trade: null, route: null };
-            }
-
             // Validate input amount format (non-negative integer string)
             if (!/^\d+$/.test(inputAmountRaw) || BigInt(inputAmountRaw) <= 0n) {
                 console.error('Invalid raw input amount:', inputAmountRaw);
@@ -312,7 +335,7 @@ export const useSwap = () => {
                 return { trade: null, route: null };
             }
 
-            const pair = await getPair(); // Uses the memoized getPair with SDK tokens
+            const pair = await getPair(true); // Uses the memoized getPair with SDK tokens
             if (!pair) {
                 // getPair should have set an error if it failed significantly
                 if (!error) setError('Could not find liquidity pair for trade.');
@@ -321,7 +344,7 @@ export const useSwap = () => {
 
             try {
                 // Route and Trade require Token objects (WETH9 for native)
-                const route = new Route([pair], sdkToken0, sdkToken1);
+                const route = new Route([pair], sdkToken0 || WETH9[currentChainId], sdkToken1 || WETH9[currentChainId]);
                 const trade = new Trade(
                     route,
                     CurrencyAmount.fromRawAmount(sdkToken0, inputAmountRaw), // Use the input SDK token
@@ -342,7 +365,7 @@ export const useSwap = () => {
                 return { trade: null, route: null };
             }
         },
-        [getPair, sdkToken0, sdkToken1, providerAsync, error] // Include error to potentially clear it
+        [getPair, error, sdkToken0, currentChainId, sdkToken1] // Include error to potentially clear it
     );
 
     // --- Transaction Execution Functions ---
@@ -664,21 +687,18 @@ export const useSwap = () => {
             }
         },
         [
-            // Core dependencies
             signerAsync,
-            providerAsync,
             address,
             isConnected,
-            currentChainId,
-            routerAddress,
-            // SDK token representations
             sdkToken0,
             sdkToken1,
-            // Internal helper functions
+            routerAddress,
+            providerAsync,
+            currentChainId,
             getTradeDetails,
             checkAndRequestApproval,
-            // Error state (to allow clearing it in getTradeDetails)
             error,
+            direction,
         ]
     );
 

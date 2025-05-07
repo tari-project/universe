@@ -11,10 +11,10 @@ export const ArrowIcon = ({
         <svg
             xmlns="http://www.w3.org/2000/svg"
             width={width}
+            viewBox="0 0 13 13"
             fill="none"
-            viewBox="0 0 12 13"
             onClick={onClick}
-            style={style}
+            style={{ display: 'block', margin: 'auto', ...style }}
         >
             <path
                 stroke="#fff"

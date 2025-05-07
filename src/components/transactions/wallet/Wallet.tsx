@@ -25,7 +25,7 @@ import { memo } from 'react';
 import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions.ts';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
-import { Swap } from './Swap/Swap.tsx';
+import { Swap } from './SwapConfirmation/SwapConfirmation.tsx';
 
 interface Props {
     section: string;

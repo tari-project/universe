@@ -34,7 +34,6 @@ enum Field {
 }
 
 export const Swap = () => {
-    // const [signMessageModalOpen, setSignMessageModalOpen] = useState(false);
     const dataAcc = useAccount();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
     const activeChainIcon = useMemo(() => {
