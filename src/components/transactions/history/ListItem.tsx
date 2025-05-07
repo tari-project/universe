@@ -57,13 +57,11 @@ const HistoryListItem = memo(function ListItem({
     item,
     index,
     itemIsNew = false,
-    expanded,
     setDetailsItem,
 }: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
-    const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);
 
     const itemType = getItemType(item);
@@ -78,20 +76,6 @@ const HistoryListItem = memo(function ListItem({
         : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();
     const itemTime = formatTimeStamp(item.timestamp);
 
-    function handleTxClick() {
-        if (import.meta.env.MODE !== 'development' || isMined) return;
-
-        if (!expanded) {
-            clickRef.current += 1;
-            if (clickRef.current === 3) {
-                setDetailsItem?.(item);
-                clickRef.current = 0;
-            }
-        } else {
-            setDetailsItem?.(null);
-        }
-    }
-
     const baseItem = (
         <BaseItem
             title={itemTitle}
@@ -99,7 +83,6 @@ const HistoryListItem = memo(function ListItem({
             value={earningsFormatted}
             type={itemType}
             status={item?.status}
-            onClick={handleTxClick}
             chip={itemIsNew ? t('new') : ''}
         />
     );
