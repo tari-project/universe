@@ -10,7 +10,6 @@ export const HeaderLabel = styled(Typography).attrs({
     font-weight: 500;
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
     text-transform: none;
-    padding: 0 0 0 5px;
 `;
 
 export const TabHeader = styled.div<{ $noBorder?: boolean }>`
