@@ -52,7 +52,9 @@ export const setIsStuckOnOrphanChain = (isStuckOnOrphanChain: boolean) =>
     useAppStateStore.setState({ isStuckOnOrphanChain });
 export const loadExternalDependencies = (externalDependencies: ExternalDependency[]) =>
     useAppStateStore.setState({ externalDependencies });
-export const setCriticalError = (criticalError: string | undefined) => useAppStateStore.setState({ criticalError });
+
+export const setCriticalError = (payload?: CriticalProblemPayload) =>
+    useAppStateStore.setState({ criticalError: payload });
 export const handleCriticalProblemEvent = (payload?: CriticalProblemPayload) => {
     const connectionStatus = useUIStore.getState().connectionStatus;
     if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
