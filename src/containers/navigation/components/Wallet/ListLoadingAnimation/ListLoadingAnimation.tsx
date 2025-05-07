@@ -7,7 +7,7 @@ interface Props {
 
 export default function ListLoadingAnimation({ loadingText }: Props) {
     const [activeSquares, setActiveSquares] = useState<number[]>([]);
-    const totalSquares = 5;
+    const totalSquares = 6;
     const staggerDelay = 0.15;
 
     useEffect(() => {
