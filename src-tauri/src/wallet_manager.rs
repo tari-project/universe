@@ -288,7 +288,7 @@ impl WalletManager {
                             break;
                         }
 
-                        if scanned_height > 0 && progress < 1.0 {
+                        if scanned_height > 0 && progress < 100.0 {
                             log::info!(target: LOG_TARGET, "Initial wallet scanning: {}% ({}/{})", progress, scanned_height, current_target_height);
                             EventsEmitter::emit_init_wallet_scanning_progress(
                                 &app_clone,
@@ -304,13 +304,25 @@ impl WalletManager {
 
         let app_clone2 = app.clone();
         let wallet_manager = self.clone();
-        let node_status_watch_rx_scan = node_status_watch_rx.clone();
+        let mut node_status_watch_rx_scan = node_status_watch_rx.clone();
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             let mut shutdown_signal = TasksTrackers::current().wallet_phase.get_signal().await;
 
             loop {
-                let current_target_height = node_status_watch_rx_scan.borrow().block_height;
+                let current_target_height = loop {
+                    let mut retries = 0;
+                    let current_height = node_status_watch_rx_scan.borrow().block_height;
+                    if current_height > 0 {
+                        break current_height;
+                    }
+                    retries += 1;
+                    if retries >= 10 {
+                        log::warn!(target: LOG_TARGET, "Max retries(10) reached while waiting for node status update");
+                        break 1;
+                    }
+                    let _unused = node_status_watch_rx_scan.changed().await;
+                };
                 tokio::select! {
                     _ = shutdown_signal.wait() => {
                         log::info!(target: LOG_TARGET, "Shutdown signal received, stopping wallet initial scan task");
