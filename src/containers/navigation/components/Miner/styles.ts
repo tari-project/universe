@@ -51,6 +51,12 @@ export const StatWrapper = styled.div<{ $useLowerCase?: boolean }>`
     text-transform: ${({ $useLowerCase }) => ($useLowerCase ? 'lowercase' : 'uppercase')};
 `;
 
+export const LoaderWrapper = styled.div`
+    height: 18px;
+    display: flex;
+    align-items: center;
+`;
+
 export const Unit = styled.div`
     color: ${({ theme }) => theme.palette.text.primary};
     font-size: 10px;

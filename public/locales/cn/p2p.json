@@ -1,4 +1,6 @@
 {
+  "connections": "connections",
+  "established": "Established",
   "listener-addresses": "监听地址",
   "miners": "矿工",
   "network-info": "网络信息",
@@ -8,6 +10,7 @@
   "p2pool-connection-info-more": "连接详情",
   "p2pool-peers": "P2pool 节点",
   "p2pool-stats": "矿池挖矿统计",
+  "pending": "Pending",
   "randomx-stats": "RandomX 统计",
   "sha3-stats": "SHA3 统计",
   "tribe": "部落"

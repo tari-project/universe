@@ -1,4 +1,3 @@
-// import { Send } from './send/Send';
 import { Receive } from './receive/Receive';
 import Wallet from './wallet/Wallet';
 import { WalletGreyBox, WalletSections } from './WalletSidebarContent.styles.ts';
