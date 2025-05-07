@@ -5,38 +5,43 @@ export const Wrapper = styled('div')`
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 25px;
-
-    padding-top: 60px;
+    gap: 30px;
+    padding-top: 40px;
     width: 100%;
     max-width: 710px;
+    @media (max-height: 900px) {
+        padding-top: 10px;
+        gap: 20px;
+    }
 `;
 
 export const TextWrapper = styled('div')`
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 20px;
+    gap: 10px;
 `;
 
 export const PhraseWrapper = styled('div')`
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 15px;
+    justify-content: center;
+    gap: 20px;
     width: 100%;
 `;
 
 export const GroupCol = styled('div')`
     display: flex;
     justify-content: space-between;
-    padding-right: 20px;
-    gap: 20px;
+    align-items: center;
+    padding-right: 10px;
+    gap: 10px;
     width: 100%;
 `;
 export const WordList = styled('div')`
     display: flex;
-    gap: 5px;
+    gap: 4px;
     justify-content: space-between;
     width: 100%;
     max-width: 566px;
@@ -45,29 +50,31 @@ export const WordList = styled('div')`
 export const WordColumn = styled('div')`
     display: flex;
     flex-direction: column;
-    gap: 22px;
-    padding-top: 10px;
+    gap: max(10px, 2vmin);
+    padding: 4px 0;
 `;
 
 export const Word = styled('div')`
     color: #000;
-    font-size: 18px;
+    font-size: min(calc(1rem + 0.1vmin), 18px);
     font-weight: 600;
-    line-height: 100%;
-
+    line-height: 1;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 6px;
 
     span {
         color: rgba(0, 0, 0, 0.5);
+        text-align: center;
+        width: 24px;
+        font-variant-numeric: tabular-nums;
     }
 `;
 
 export const GroupDivider = styled('div')`
     background: rgba(0, 0, 0, 0.15);
     width: 1px;
-    height: 241px;
+    height: 100%;
 `;
 
 export const CopyButton = styled('button')`
@@ -78,7 +85,7 @@ export const CopyButton = styled('button')`
     align-self: stretch;
 
     height: 44px;
-    padding: 0px 25px;
+    padding: 0 25px;
 
     border-radius: 100px;
     border: 1px solid #b0b0b0;
@@ -122,8 +129,8 @@ export const Checkbox = styled('div')<{ $checked: boolean }>`
     height: 25px;
     flex-shrink: 0;
 
-    border-radius: 5.75px;
-    border: 3.25px solid #000;
+    border-radius: 0.3rem;
+    border: 0.2rem solid #000;
     opacity: 0.5;
 
     display: flex;
