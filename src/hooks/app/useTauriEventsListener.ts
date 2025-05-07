@@ -23,6 +23,7 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
+    setCriticalError,
     setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
@@ -46,19 +47,7 @@ import {
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 
-const LOG_EVENT_TYPES = [
-    // 'ResumingAllProcesses',
-    // 'StuckOnOrphanChain',
-    // 'MissingApplications',
-    // 'CriticalProblem',
-    // 'DetectedDevices',
-    // 'DetectedAvailableGpuEngines',
-    // 'AppConfigLoaded',
-    'LockMining',
-    'LockWallet',
-    'UnlockMining',
-    'UnlockWallet',
-];
+const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -148,9 +137,18 @@ const useTauriEventsListener = () => {
                         case 'DetectedAvailableGpuEngines':
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
-                        case 'CriticalProblem':
-                            setCriticalProblemTest(event.payload);
+                        case 'CriticalProblem': {
+                            const isMacAppFolderError =
+                                event.payload.title === 'common:installation-problem' &&
+                                event.payload.description === 'common:not-installed-in-applications-directory';
+
+                            if (isMacAppFolderError) {
+                                setCriticalError(event.payload);
+                            } else {
+                                setCriticalProblemTest(event.payload);
+                            }
                             break;
+                        }
                         case 'MissingApplications':
                             loadExternalDependencies(event.payload);
                             setShowExternalDependenciesDialog(true);
