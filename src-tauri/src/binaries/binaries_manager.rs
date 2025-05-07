@@ -434,7 +434,7 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
-    pub async fn download_verion_with_retries(
+    pub async fn download_version_with_retries(
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
