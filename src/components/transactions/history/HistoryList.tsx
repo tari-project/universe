@@ -69,7 +69,7 @@ const HistoryList = memo(function HistoryList() {
         listMarkup
     );
 
-    const isEmpty = !walletScanning.is_scanning && !is_transactions_history_loading && !combinedTransactions?.length;
+    const isEmpty = !walletScanning.is_scanning && !combinedTransactions?.length;
     const emptyMarkup = isEmpty ? <Typography variant="h6">{t('empty-tx')}</Typography> : null;
 
     return (
