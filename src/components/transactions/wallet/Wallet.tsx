@@ -19,10 +19,13 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
+import { BuyTariButton, SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
+
+import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions.ts';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
+import { Swap } from './SwapConfirmation/SwapConfirmation.tsx';
 
 interface Props {
     section: string;
@@ -36,8 +39,11 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const displayAddress = truncateMiddle(walletAddress, 4);
+    const swapUiVisible = useWalletStore((s) => s.is_swap_ui_visible);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
+
+    if (swapUiVisible) return <Swap />;
 
     return (
         <Wrapper>
@@ -64,9 +70,10 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             <HistoryList />
 
-            <BottomNavWrapper>
-                {uiSendRecvEnabled ? (
-                    <>
+            {uiSendRecvEnabled ? (
+                <>
+                    <BuyTariButton onClick={() => setWalletConnectModalOpen(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
+                    <BottomNavWrapper>
                         <NavButton
                             onClick={() => setSection('send')}
                             $isActive={section === 'send'}
@@ -88,8 +95,10 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                                 {t('tabs.receive')}
                             </NavButtonContent>
                         </NavButton>
-                    </>
-                ) : (
+                    </BottomNavWrapper>
+                </>
+            ) : (
+                <BottomNavWrapper>
                     <SyncTooltip
                         title={t('paper-wallet-tooltip-title', { ns: 'sidebar' })}
                         text={t('paper-wallet-tooltip-message', { ns: 'sidebar' })}
@@ -99,8 +108,8 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                             </Button>
                         }
                     />
-                )}
-            </BottomNavWrapper>
+                </BottomNavWrapper>
+            )}
         </Wrapper>
     );
 });

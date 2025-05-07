@@ -9,10 +9,14 @@ import {
 } from '../../components/SettingsGroup.styles';
 import { useTranslation } from 'react-i18next';
 import { setAutoUpdate, useConfigCoreStore } from '@app/store';
+import { useEffect } from 'react';
 
 const AutoUpdate = () => {
     const { t } = useTranslation(['settings'], { useSuspense: false });
     const autoUpdate = useConfigCoreStore((s) => s.auto_update);
+    useEffect(() => {
+        setAutoUpdate(false);
+    }, [autoUpdate]);
 
     return (
         <SettingsGroupWrapper>
