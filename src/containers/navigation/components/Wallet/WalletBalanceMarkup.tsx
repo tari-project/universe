@@ -10,10 +10,10 @@ import {
     WalletBalanceContainer,
     WalletBalanceWrapper,
 } from './Wallet.styles.ts';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useUIStore } from '@app/store';
+import NumbersLoadingAnimation from './NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
 
 const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
@@ -47,41 +47,43 @@ const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
                 onMouseOver={() => toggleBalanceFormat({ isMouseOver: true })}
                 onMouseOut={() => toggleBalanceFormat({ isMouseOver: false })}
             >
-                {!isWalletScanning ? (
-                    <AnimatePresence mode="popLayout">
-                        {!showLongBalance || hideWalletBalance || isWalletScanning ? (
-                            <WalletBalance
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                key="compressed-number"
-                            >
-                                <CharSpinner
-                                    value={balanceDisplayValue}
-                                    variant="simple"
-                                    fontSize={34}
-                                    animateNumbers={shouldAnimateBalance}
-                                />
-                            </WalletBalance>
-                        ) : (
-                            <WalletBalance
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                key="full-number"
-                            >
-                                <CharSpinner
-                                    value={formattedLongBalance}
-                                    variant="simple"
-                                    fontSize={sizingLong()}
-                                    animateNumbers={shouldAnimateBalance}
-                                />
-                            </WalletBalance>
-                        )}
-                    </AnimatePresence>
-                ) : (
-                    <CircularProgress />
-                )}
+                <AnimatePresence>
+                    {!isWalletScanning ? (
+                        <AnimatePresence mode="popLayout">
+                            {!showLongBalance || hideWalletBalance || isWalletScanning ? (
+                                <WalletBalance
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    key="compressed-number"
+                                >
+                                    <CharSpinner
+                                        value={balanceDisplayValue}
+                                        variant="simple"
+                                        fontSize={34}
+                                        animateNumbers={shouldAnimateBalance}
+                                    />
+                                </WalletBalance>
+                            ) : (
+                                <WalletBalance
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    exit={{ opacity: 0 }}
+                                    key="full-number"
+                                >
+                                    <CharSpinner
+                                        value={formattedLongBalance}
+                                        variant="simple"
+                                        fontSize={sizingLong()}
+                                        animateNumbers={shouldAnimateBalance}
+                                    />
+                                </WalletBalance>
+                            )}
+                        </AnimatePresence>
+                    ) : (
+                        <NumbersLoadingAnimation />
+                    )}
+                </AnimatePresence>
             </WalletBalanceWrapper>
             {!isWalletScanning && balanceVis}
         </WalletBalanceContainer>
