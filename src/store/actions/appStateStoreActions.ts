@@ -55,7 +55,6 @@ export const loadExternalDependencies = (externalDependencies: ExternalDependenc
 export const setCriticalError = (payload?: CriticalProblemPayload) =>
     useAppStateStore.setState({ criticalError: payload });
 export const setCriticalProblemTest = (payload?: CriticalProblemPayload) => {
-    console.debug('setCriticalProblemTest', payload);
     const connectionStatus = useUIStore.getState().connectionStatus;
     if (connectionStatus === 'disconnected' || connectionStatus === 'disconnected-severe') {
         // Assume reconnecting Failed
