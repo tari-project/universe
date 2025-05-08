@@ -13,7 +13,6 @@ export const ItemWrapper = styled(m.div)`
     overflow: hidden;
     position: relative;
     box-shadow: ${({ theme }) => `${convertHexToRGBA(theme.palette.contrast, 0.025)} 0 1px 2px -1px`};
-
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#1B1B1B' : theme.palette.background.paper)};
 `;
 
@@ -21,10 +20,10 @@ export const HoverWrapper = styled(m.div)`
     position: absolute;
     inset: 0;
     z-index: 4;
-    transition: background-color 2s ease;
+    transition: background-color 1s ease;
     background-color: ${({ theme }) => convertHexToRGBA(theme.palette.background.main, 0.7)};
     height: 100%;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(1.5px);
 `;
 
 export const ContentWrapper = styled.div`
@@ -189,4 +188,13 @@ export const GemPill = styled.div`
 
 export const GemImage = styled.img`
     width: 11px;
+`;
+
+export const PlaceholderItem = styled.div`
+    width: 100%;
+    height: 48px;
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
+    border-radius: 10px;
+    flex-shrink: 0;
+    opacity: 0.75;
 `;

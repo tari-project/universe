@@ -65,6 +65,6 @@
     "send": "Отправить"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Кошелек сканируется..",
+  "wallet-is-scanning": "Кошелек сканируется...",
   "wallet-scanning-with-progress": "Кошелек сканируется: {{scanned}}/{{total}} ({{percent}}%)"
 }

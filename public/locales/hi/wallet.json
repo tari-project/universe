@@ -65,6 +65,6 @@
     "send": "भेजें"
   },
   "tari": "तारी",
-  "wallet-is-scanning": "वॉलेट स्कैन कर रहा है..",
+  "wallet-is-scanning": "वॉलेट स्कैन कर रहा है...",
   "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)"
 }
