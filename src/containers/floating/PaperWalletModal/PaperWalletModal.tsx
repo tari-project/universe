@@ -1,3 +1,4 @@
+
 import GreenModal from '@app/components/GreenModal/GreenModal';
 import { AnimatePresence } from 'motion/react';
 import { memo, useEffect, useState } from 'react';
