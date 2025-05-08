@@ -34,7 +34,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
 
         if (showMainView) {
             return (
-                <AppContentContainer key="main" initial="dashboardInitial">
+                <AppContentContainer key="main" initial="visible">
                     <MainView />
                 </AppContentContainer>
             );
@@ -47,7 +47,7 @@ function CurrentAppSection({ showSplashscreen, isShuttingDown }: CurrentAppSecti
                 </AppContentContainer>
             );
         }
-        return null;
+        return undefined;
     }, [showSplashscreen, isShuttingDown]);
 
     return <AnimatePresence mode="wait">{currentSection}</AnimatePresence>;
@@ -70,8 +70,8 @@ export default function App() {
             <LazyMotion features={domAnimation} strict>
                 <FloatingElements />
                 <CurrentAppSection showSplashscreen={showSplashscreen} isShuttingDown={isShuttingDown} />
+                <canvas id={TOWER_CANVAS_ID} />
             </LazyMotion>
-            <canvas id={TOWER_CANVAS_ID} />
         </ThemeProvider>
     );
 }

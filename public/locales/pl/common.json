@@ -38,5 +38,6 @@
   "utilization": "Wykorzystanie",
   "version": "Wersja",
   "versions": "Wersje",
-  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony."
+  "webgl-not-supported": "WebGL nie jest obsługiwany. Tryb wizualny wyłączony.",
+  "xtm": "XTM"
 }

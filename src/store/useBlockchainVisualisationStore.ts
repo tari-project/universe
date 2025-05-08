@@ -9,7 +9,7 @@ import { BlockTimeData } from '@app/types/mining.ts';
 import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
-import { refreshPendingTransactions } from './useWalletStore.ts';
+import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -77,9 +77,9 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
         }
         winTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight, earnings: undefined });
-            setWalletBalance(balance);
             await refreshTransactions();
             refreshPendingTransactions();
+            setWalletBalance(balance);
             setMiningControlsEnabled(true);
         }, 2000);
     } else {
@@ -101,10 +101,10 @@ const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimat
         }
         failTimeout = setTimeout(async () => {
             useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
-            setWalletBalance(balance);
             setMiningControlsEnabled(true);
             await refreshTransactions();
             refreshPendingTransactions();
+            setWalletBalance(balance);
         }, 1000);
     } else {
         useBlockchainVisualisationStore.setState({ displayBlockHeight: blockHeight });
@@ -170,6 +170,15 @@ export const handleNewBlock = async (payload: {
     balance: WalletBalance;
 }) => {
     latestBlockPayload = payload;
+
+    const isWalletScanned = !useWalletStore.getState().wallet_scanning?.is_scanning;
+    if (!isWalletScanned) {
+        updateWalletScanningProgress({
+            progress: 1,
+            scanned_height: payload.block_height,
+            total_height: payload.block_height,
+        });
+    }
 
     if (newBlockDebounceTimeout) {
         clearTimeout(newBlockDebounceTimeout);

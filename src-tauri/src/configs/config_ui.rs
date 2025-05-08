@@ -53,6 +53,7 @@ pub struct ConfigUIContent {
     sharing_enabled: bool,
     visual_mode: bool,
     show_experimental_settings: bool,
+    warmup_seen: bool,
     was_staged_security_modal_shown: bool,
 }
 
@@ -70,6 +71,7 @@ impl Default for ConfigUIContent {
             sharing_enabled: true,
             visual_mode: true,
             show_experimental_settings: false,
+            warmup_seen: false,
             was_staged_security_modal_shown: false,
         }
     }
@@ -163,6 +165,7 @@ impl ConfigImpl for ConfigUI {
                 sharing_enabled: old_config.sharing_enabled(),
                 visual_mode: old_config.visual_mode(),
                 show_experimental_settings: old_config.show_experimental_settings(),
+                warmup_seen: false,
                 ..Default::default()
             };
             let _unused = Self::_save_config(self.content.clone());

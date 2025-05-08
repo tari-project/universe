@@ -63,5 +63,17 @@ export const setWalletAddress = (addresses: WalletAddress) => {
 export const setWalletBalance = (balance: WalletBalance) => {
     const calculated_balance =
         balance.available_balance + balance.timelocked_balance + balance.pending_incoming_balance;
-    useWalletStore.setState({ balance, calculated_balance });
+
+    const pendingSendAmount = useWalletStore
+        .getState()
+        .pending_transactions.reduce((total, tx) => total + tx.amount, 0);
+
+    useWalletStore.setState({
+        balance: {
+            ...balance,
+            available_balance: balance.available_balance - pendingSendAmount,
+            pending_outgoing_balance: balance.pending_outgoing_balance + pendingSendAmount,
+        },
+        calculated_balance,
+    });
 };

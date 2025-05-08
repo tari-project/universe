@@ -13,21 +13,27 @@ import {
     SubHeading,
     Wrapper,
 } from './sync.styles.ts';
+import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
 
 export default function Sync() {
+    const { t } = useTranslation('setup-view');
     const isMac = type() === 'macos';
-    const videoSrc = `/assets/video/coin_loader.${isMac ? 'mov' : 'webm'}`;
+    const videoMarkup = useMemo(
+        () => (
+            <video playsInline autoPlay loop muted controls={false}>
+                <source src={`/assets/video/coinLoader.${isMac ? 'mov' : 'webm'}`} />
+            </video>
+        ),
+        [isMac]
+    );
     return (
         <Wrapper>
             <Content>
                 <HeaderContent>
-                    <HeaderGraphic>
-                        <video playsInline autoPlay loop muted controls={false}>
-                            <source src={videoSrc} />
-                        </video>
-                    </HeaderGraphic>
-                    <Heading>{'Connecting to the Tari network'}</Heading>
-                    <SubHeading>{`Syncing the latest blocks to keep you up to date. \nThis might take a moment—while you wait, check out what you can do next.`}</SubHeading>
+                    <HeaderGraphic>{videoMarkup}</HeaderGraphic>
+                    <Heading>{t('sync.header')}</Heading>
+                    <SubHeading>{t('sync.subheader')}</SubHeading>
                 </HeaderContent>
                 <ActionContent>
                     <AirdropLogin />

@@ -5,18 +5,27 @@ import { Video, Wrapper, CTA } from './styles.ts';
 interface VideoModalProps {
     src: string;
     open: boolean;
-    onOpenChange: () => void;
+    onOpenChange: (open: boolean) => void;
+    firstPlay?: boolean;
 }
 
-export function VideoModal({ src, open, onOpenChange }: VideoModalProps) {
+export function VideoModal({ src, open, onOpenChange, firstPlay = false }: VideoModalProps) {
+    function handleEnded() {
+        if (open && firstPlay) {
+            onOpenChange(false);
+            return;
+        }
+    }
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent $unPadded>
                 <Wrapper>
-                    <CTA onClick={onOpenChange}>
+                    <CTA onClick={() => onOpenChange(false)}>
                         <IoClose />
                     </CTA>
-                    <Video autoPlay src={src} controls playsInline></Video>
+                    <Video autoPlay controls preload="auto" onEnded={handleEnded}>
+                        <source src={src} />
+                    </Video>
                 </Wrapper>
             </DialogContent>
         </Dialog>
