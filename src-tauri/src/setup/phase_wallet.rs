@@ -216,16 +216,17 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        state
-            .wallet_manager
-            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status_watch_rx)
-            .await?;
-
         Ok(())
     }
 
     async fn finalize_setup(&self) -> Result<(), Error> {
+        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
+        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
+        app_state
+            .wallet_manager
+            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status_watch_rx)
+            .await?;
+
         self.status_sender.send(PhaseStatus::Success).ok();
         self.progress_stepper
             .lock()
