@@ -8,14 +8,12 @@ export const Wrapper = styled.div`
     max-height: clamp(10vh, 400px, 45vh);
 `;
 
-export const TabsWarapper = styled.div`
+export const TabsWrapper = styled.div`
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
-    padding: 0 6px;
-
     transform: translateY(-3px);
+    padding-right: 4px;
 `;
 
 export const TabsTitle = styled.div`

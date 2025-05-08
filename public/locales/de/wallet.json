@@ -65,6 +65,6 @@
     "send": "Senden"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Wallet wird gescannt..",
+  "wallet-is-scanning": "Wallet wird gescannt...",
   "wallet-scanning-with-progress": "Wallet wird gescannt: {{scanned}}/{{total}} ({{percent}}%)"
 }

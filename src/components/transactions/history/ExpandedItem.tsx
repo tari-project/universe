@@ -14,7 +14,6 @@ import { Network } from '@app/utils/network.ts';
 interface Props {
     item: TransactionInfo;
     expanded: boolean;
-    setExpanded: (expanded: boolean) => void;
     handleClose: () => void;
 }
 
