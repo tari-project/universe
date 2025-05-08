@@ -132,11 +132,11 @@ impl ProcessAdapter for P2poolAdapter {
             working_dir.to_string_lossy().to_string(),
         ];
         let pid_file_name = self.pid_file_name().to_string();
-        
+
         if let Some(squad_override) = config.squad_override.clone() {
             args.push("--squad-override".to_string());
             args.push(squad_override);
-        } 
+        }
 
         args.push("--squad-prefix".to_string());
         let squad_prefix = "default";
