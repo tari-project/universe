@@ -59,27 +59,34 @@ export class TappletProvider {
         return true; //TODO tmp solution shoule be better one
     }
 
-    // TODO JUST TEST - RENAME AND REFACTOR THIS FCT
-    public async getPublicKey(branch: string, index: number): Promise<any> {
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝   [TU Tapplet][TEST][IS CONNECTED]');
-        const payload = {
-            amount: index ?? 1,
-            destination: 'f22p3ubvTRM2SW6qrBg1gYb2gSbrWygByywTv14YU13umzphPWV2jDkZHZb1WN7nLKsYTesaZEnGt3vTpVoQBrhZxHj',
-            paymentId: branch,
-        };
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][TEST] payload', payload);
+    public async sendOneSided(req: SendOneSidedRequest): Promise<any> {
+        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝   [TU Tapplet][SEND ONE SIDED]');
         try {
             // if (!address || !amount) {
             //     setStoreError(`Transaction arguments missing`);
             //     return;
             // }
+            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] req', req);
+            const payload = {
+                amount: req.amount,
+                destination: req.address,
+                paymentId: req.message,
+            };
+            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] payload', payload);
 
             await invoke('send_one_sided_to_stealth_address', {
                 ...payload,
                 amount: payload.amount.toString(),
             });
+            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] finished');
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
         }
     }
+}
+
+export interface SendOneSidedRequest {
+    amount: number;
+    address?: string;
+    message?: string;
 }
