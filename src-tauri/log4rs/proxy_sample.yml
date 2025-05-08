@@ -26,11 +26,11 @@ appenders:
       kind: compound
       trigger:
         kind: size
-        limit: 2mb
+        limit: 5mb
       roller:
         kind: fixed_window
         base: 1
-        count: 50
+        count: 3
         pattern: "{{log_dir}}/proxy/log/proxy.{}.log"
     encoder:
       pattern: "{d(%Y-%m-%d %H:%M:%S.%f)} [{t}] {l:5} {m}{n}"
