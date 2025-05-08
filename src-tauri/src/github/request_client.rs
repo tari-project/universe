@@ -25,6 +25,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
+use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -221,7 +222,6 @@ impl RequestClient {
             .map_or(0, |v| v.to_str().unwrap_or_default().parse().unwrap_or(0))
     }
 
-    #[allow(dead_code)]
     pub fn get_cf_cache_status_from_head_response(
         &self,
         response: &Response,
@@ -351,6 +351,12 @@ impl RequestClient {
             .get_content_size_from_file(destination.to_path_buf())
             .await?;
 
+        if check_cache {
+            let head_reposnse_cache_status =
+                self.get_cf_cache_status_from_head_response(&head_response);
+            info!(target: LOG_TARGET, "Cloudflare cache status: {:?}", head_reposnse_cache_status.to_str());
+        };
+
         info!(target: LOG_TARGET, "Expected downloaded file size: {}", head_reponse_content_length);
         info!(target: LOG_TARGET, "Downloaded file size: {}", destination_file_size);
 
@@ -358,19 +364,21 @@ impl RequestClient {
         info!(target: LOG_TARGET, "Downloaded etag: {}", get_reposnse_etag);
 
         if head_reponse_content_length.ne(&destination_file_size) {
-            return Err(anyhow!(
+            let error_message = format!(
                 "Downloaded file size does not match expected size. Expected: {}, Actual: {}",
-                head_reponse_content_length,
-                destination_file_size
-            ));
+                head_reponse_content_length, destination_file_size
+            );
+            sentry::capture_message(&error_message, sentry::Level::Error);
+            return Err(anyhow!(error_message));
         };
 
         if head_reponse_etag.ne(&get_reposnse_etag) {
-            return Err(anyhow!(
+            let error_message = format!(
                 "Downloaded etag does not match expected etag. Expected: {}, Actual: {}",
-                head_reponse_etag,
-                get_reposnse_etag
-            ));
+                head_reponse_etag, get_reposnse_etag
+            );
+            sentry::capture_message(&error_message, sentry::Level::Error);
+            return Err(anyhow!(error_message));
         };
 
         info!(target: LOG_TARGET, "Finished downloading: {}", url);
@@ -384,6 +392,8 @@ impl RequestClient {
         destination: &Path,
         check_cache: bool,
     ) -> Result<(), anyhow::Error> {
+        info!(target: LOG_TARGET, "Downloading file: {}", url);
+
         let mut retries = 0;
 
         loop {
