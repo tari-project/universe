@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{any::Any, env::temp_dir, fmt::Debug, fs, path::PathBuf};
+use std::{env::temp_dir, fmt::Debug, fs, path::PathBuf};
 
 use anyhow::Error;
 use dirs::config_dir;
@@ -46,7 +46,6 @@ static LOG_TARGET: &str = "config_trait";
 #[allow(dead_code)]
 pub trait ConfigImpl {
     type Config: ConfigContentImpl;
-    type OldConfig: Any;
 
     fn new() -> Self;
     fn current() -> &'static RwLock<Self>;
@@ -123,7 +122,6 @@ pub trait ConfigImpl {
         Self::current().read().await._get_content().clone()
     }
     async fn load_app_handle(&mut self, app_handle: AppHandle);
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>);
     async fn update_field<F, I>(setter_callback: F, value: I) -> Result<(), Error>
     where
         I: Serialize + Clone + Debug,

@@ -34,8 +34,8 @@ use tauri::AppHandle;
 use tokio::select;
 use tokio::sync::{watch, RwLock};
 
-use crate::app_config::GpuThreads;
 use crate::binaries::{Binaries, BinaryResolver};
+use crate::configs::config_mining::{GpuThreads, MiningMode};
 use crate::events_manager::EventsManager;
 use crate::gpu_miner_adapter::GpuNodeSource;
 use crate::gpu_status_file::{GpuDevice, GpuStatusFile};
@@ -43,7 +43,6 @@ use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::math_utils::estimate_earning;
 use crate::{
-    app_config::MiningMode,
     gpu_miner_adapter::{GpuMinerAdapter, GpuMinerStatus},
     process_watcher::ProcessWatcher,
 };
