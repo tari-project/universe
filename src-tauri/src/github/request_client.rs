@@ -175,10 +175,7 @@ impl RequestClient {
             }
         };
 
-        Err(anyhow!(
-            "HEAD request failed with error: {}",
-            head_response.as_ref().err().unwrap()
-        ))
+        head_response.map_err(|e| anyhow!("HEAD request failed with error: {}", e))
     }
 
     pub async fn send_get_request(&self, url: &str) -> Result<Response, Error> {
@@ -200,10 +197,7 @@ impl RequestClient {
             }
         };
 
-        Err(anyhow!(
-            "GET request failed with error: {}",
-            get_response.as_ref().err().unwrap()
-        ))
+        get_response.map_err(|e| anyhow!("GET request failed with error: {}", e))
     }
 
     pub fn get_etag_from_head_response(&self, response: &Response) -> String {
@@ -291,8 +285,7 @@ impl RequestClient {
                 sleep_time = std::time::Duration::from_secs(
                     #[allow(clippy::cast_possible_truncation)]
                     ((self.convert_content_length_to_mb(content_length) / 10.0).trunc() as u64)
-                        .min(MAX_WAIT_TIME)
-                        .max(MIN_WAIT_TIME),
+                        .clamp(MIN_WAIT_TIME, MAX_WAIT_TIME),
                 );
             }
 
