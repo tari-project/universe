@@ -94,6 +94,7 @@ impl P2poolConfigBuilder {
             stats_server_port: self.config.stats_server_port,
             base_node_address: self.config.base_node_address.clone(),
             cpu_benchmark_hashrate: self.config.cpu_benchmark_hashrate,
+            squad_override: self.config.squad_override.clone(),
         })
     }
 }
@@ -111,6 +112,7 @@ impl Default for P2poolConfig {
             stats_server_port: 19000,
             base_node_address: String::from("http://127.0.0.1:18142"),
             cpu_benchmark_hashrate: None,
+            squad_override: None,
         }
     }
 }

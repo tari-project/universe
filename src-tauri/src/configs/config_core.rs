@@ -63,7 +63,6 @@ pub struct ConfigCoreContent {
     airdrop_tokens: Option<AirdropTokens>,
     remote_base_node_address: String,
     node_type: NodeType,
-    squad_override: Option<String>,
 }
 
 fn default_monero_nodes() -> Vec<String> {
@@ -119,7 +118,6 @@ impl Default for ConfigCoreContent {
             airdrop_tokens: None,
             remote_base_node_address,
             node_type: NodeType::Local,
-            squad_override: None,
         }
     }
 }
