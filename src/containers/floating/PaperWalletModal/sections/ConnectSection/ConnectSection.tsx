@@ -26,10 +26,6 @@ export default function ConnectSection({ setSection }: Props) {
     const { setQrCodeValue, setIdentificationCode } = usePaperWalletStore();
     const setTokenToUuid = useAirdropSetTokenToUuid();
 
-    // const handleTextButtonClick = () => {
-    //     console.log('Learn more about Tari Aurora');
-    // };
-
     const handleBlackButtonClick = () => {
         loadPaperWalletData();
     };
