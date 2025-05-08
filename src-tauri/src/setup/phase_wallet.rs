@@ -21,7 +21,12 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{
+        config_core::ConfigCore,
+        config_ui::{ConfigUI, ConfigUIContent},
+        trait_config::ConfigImpl,
+    },
+    events_emitter::EventsEmitter,
     events_manager::EventsManager,
     progress_tracker_old::ProgressTracker,
     progress_trackers::{
@@ -35,6 +40,7 @@ use crate::{
 };
 use anyhow::Error;
 use log::{error, info, warn};
+use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_sentry::sentry;
 use tokio::{
@@ -58,6 +64,7 @@ pub struct WalletSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
+    was_staged_security_modal_shown: bool,
 }
 
 pub struct WalletSetupPhase {
@@ -105,7 +112,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let use_tor = *ConfigCore::content().await.use_tor();
-        Ok(WalletSetupPhaseAppConfiguration { use_tor })
+        let was_staged_security_modal_shown =
+            *ConfigUI::content().await.was_staged_security_modal_shown();
+        Ok(WalletSetupPhaseAppConfiguration {
+            use_tor,
+            was_staged_security_modal_shown,
+        })
     }
 
     async fn setup(mut self) {
@@ -233,6 +245,60 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
             .await;
+
+        let app_handle = self.get_app_handle().clone();
+
+        if !self.app_configuration.was_staged_security_modal_shown {
+            let wallet_manager = app_handle
+                .state::<UniverseAppState>()
+                .wallet_manager
+                .clone();
+
+            let shutdown_signal = TasksTrackers::current()
+                .wallet_phase
+                .get_signal()
+                .await
+                .clone();
+
+            TasksTrackers::current()
+                .wallet_phase
+                .get_task_tracker()
+                .await
+                .spawn(async move {
+                    let wallet_state_watcher = app_handle
+                        .state::<UniverseAppState>()
+                        .wallet_state_watch_rx
+                        .clone();
+
+                    loop {
+                        if shutdown_signal.is_triggered() {
+                            break;
+                        }
+
+                        let wallet_state = wallet_state_watcher.borrow().clone();
+                        if let Some(wallet_state) = wallet_state {
+                            if let Some(balance) = wallet_state.balance {
+                                let balance_sum = balance.available_balance
+                                    + balance.pending_incoming_balance
+                                    + balance.timelocked_balance;
+                                if balance_sum.gt(&MicroMinotari::zero())
+                                    && wallet_manager.is_initial_scan_completed()
+                                {
+                                    EventsEmitter::show_staged_security_modal(&app_handle).await;
+                                    let _unused = ConfigUI::update_field(
+                                        ConfigUIContent::set_was_staged_security_modal_shown,
+                                        true,
+                                    )
+                                    .await;
+                                    break;
+                                }
+                            }
+                        }
+
+                        tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+                    }
+                });
+        }
 
         EventsManager::handle_wallet_phase_finished(&self.app_handle, true).await;
 
