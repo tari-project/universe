@@ -1,7 +1,6 @@
 import { create } from './create';
 import { TransactionInfo, WalletBalance } from '../types/app-status.ts';
 import { refreshTransactions, setWalletBalance } from './actions/walletStoreActions.ts';
-import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 
 interface PendingTransaction {
     tx_id: number;
@@ -84,11 +83,6 @@ export const updateWalletScanningProgress = (payload: {
     total_height: number;
     progress: number;
 }) => {
-    const currentWalletScanState = useWalletStore.getState().wallet_scanning;
-    const { is_scanning: _, ...currentScanData } = currentWalletScanState;
-    const isEqual = deepEqual(payload, currentScanData);
-    if (isEqual) return;
-
     const is_scanning = payload.scanned_height < payload.total_height;
     useWalletStore.setState({
         wallet_scanning: {
