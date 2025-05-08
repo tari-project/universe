@@ -88,10 +88,9 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                         },
                     }}
                     render={({ field }) => {
-                        const { ref: _ref, ...rest } = field;
                         return (
                             <StyledInput
-                                {...rest}
+                                {...field}
                                 type="text"
                                 hasError={!!errors.address}
                                 onFocus={() => setEditing(true)}
