@@ -10,7 +10,6 @@ export const HeaderLabel = styled(Typography).attrs({
     font-weight: 500;
     color: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.5)};
     text-transform: none;
-    padding: 0 0 0 5px;
 `;
 
 export const TabHeader = styled.div<{ $noBorder?: boolean }>`
@@ -29,6 +28,7 @@ export const TabHeader = styled.div<{ $noBorder?: boolean }>`
             border: none;
         `}
 `;
+
 export const BottomNavWrapper = styled.div`
     display: flex;
     flex-flow: row;
@@ -46,6 +46,7 @@ export const NavButtonContent = styled.div`
     align-items: center;
     justify-content: center;
 `;
+
 export const NavButton = styled(Button).attrs({
     variant: 'outlined',
     size: 'medium',
@@ -64,6 +65,7 @@ export const NavButton = styled(Button).attrs({
         pointer-events: none;
     }
 `;
+
 export const StyledIconButton = styled(IconButton)`
     border-radius: 50%;
     background: ${({ theme }) => theme.palette.background.paper};
@@ -73,6 +75,7 @@ export const StyledIconButton = styled(IconButton)`
         fill: ${({ theme }) => theme.palette.text.primary};
     }
 `;
+
 export const AddressWrapper = styled.div`
     display: flex;
     align-items: center;

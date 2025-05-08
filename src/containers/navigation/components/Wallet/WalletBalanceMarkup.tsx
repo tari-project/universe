@@ -10,10 +10,10 @@ import {
     WalletBalanceContainer,
     WalletBalanceWrapper,
 } from './Wallet.styles.ts';
-import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import { toggleHideWalletBalance } from '@app/store/actions/uiStoreActions.ts';
 import { useUIStore } from '@app/store';
+import NumbersLoadingAnimation from './NumbersLoadingAnimation/NumbersLoadingAnimation.tsx';
 
 const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
@@ -80,10 +80,10 @@ const WalletBalanceMarkup = memo(function WalletBalanceMarkup() {
                         )}
                     </AnimatePresence>
                 ) : (
-                    <CircularProgress />
+                    <NumbersLoadingAnimation />
                 )}
             </WalletBalanceWrapper>
-            {!isWalletScanning && balanceVis}
+            {!isWalletScanning ? balanceVis : null}
         </WalletBalanceContainer>
     );
 });
