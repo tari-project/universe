@@ -6,7 +6,7 @@ export const ListWrapper = styled.div`
     overflow: hidden;
     overflow-y: auto;
     width: 100%;
-    height: 300px;
+
     flex-grow: 1;
     position: relative;
 

@@ -10,6 +10,7 @@ import { Typography } from '@app/components/elements/Typography.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 import ItemExpand from './ExpandedItem.tsx';
+import { PlaceholderItem } from './ListItem.styles.ts';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -62,6 +63,19 @@ const HistoryList = memo(function HistoryList() {
                             />
                         );
                     })}
+                    {/*}
+                    <HistoryListItem
+                        key={combinedTransactions[0].tx_id}
+                        item={combinedTransactions[0]}
+                        index={0}
+                        itemIsNew={false}
+                        setDetailsItem={setDetailsItem}
+                    />
+                    {*/}
+                    <PlaceholderItem />
+                    <PlaceholderItem />
+                    <PlaceholderItem />
+                    <PlaceholderItem />
                 </ListItemWrapper>
             </InfiniteScroll>
         );

@@ -189,3 +189,11 @@ export const GemPill = styled.div`
 export const GemImage = styled.img`
     width: 11px;
 `;
+
+export const PlaceholderItem = styled.div`
+    width: 100%;
+    height: 48px;
+    background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
+    border-radius: 10px;
+    flex-shrink: 0;
+`;
