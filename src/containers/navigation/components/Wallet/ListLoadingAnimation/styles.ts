@@ -38,17 +38,13 @@ export const LoadingText = styled(m.div)`
     text-align: center;
     z-index: 1;
 
-    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#E9E9E9')};
+    margin-top: 8px;
+
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#fff')};
     color: ${({ theme }) => (theme.mode === 'dark' ? '#fff' : '#000')};
     padding: 8px 20px;
-    border-radius: 8px;
-    max-width: 220px;
-    width: 100%;
+    border-radius: 100px;
+    width: fit-content;
 
-    box-shadow:
-        0px 0px 1px rgba(3, 7, 18, 0.08),
-        0px 1px 3px rgba(3, 7, 18, 0.06),
-        0px 2px 7px rgba(3, 7, 18, 0.05),
-        0px 4px 13px rgba(3, 7, 18, 0.03),
-        0px 6px 20px rgba(3, 7, 18, 0.02);
+    box-shadow: 0px 0px 115px 0px rgba(0, 0, 0, 0.35);
 `;
