@@ -64,6 +64,7 @@ pub struct WalletSetupPhaseOutput {}
 #[derive(Clone, Default)]
 pub struct WalletSetupPhaseAppConfiguration {
     use_tor: bool,
+    was_staged_security_modal_shown: bool,
 }
 
 pub struct WalletSetupPhase {
@@ -111,7 +112,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
     async fn load_app_configuration() -> Result<Self::AppConfiguration, Error> {
         let use_tor = *ConfigCore::content().await.use_tor();
-        Ok(WalletSetupPhaseAppConfiguration { use_tor })
+        let was_staged_security_modal_shown =
+            *ConfigUI::content().await.was_staged_security_modal_shown();
+        Ok(WalletSetupPhaseAppConfiguration {
+            use_tor,
+            was_staged_security_modal_shown,
+        })
     }
 
     async fn setup(mut self) {
@@ -242,13 +248,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
 
         let app_handle = self.get_app_handle().clone();
 
-        if !ConfigUI::content().await.was_staged_security_modal_shown() {
+        if !self.app_configuration.was_staged_security_modal_shown {
             let wallet_manager = app_handle
                 .state::<UniverseAppState>()
                 .wallet_manager
                 .clone();
 
-            let mut shutdown_signal = TasksTrackers::current()
+            let shutdown_signal = TasksTrackers::current()
                 .wallet_phase
                 .get_signal()
                 .await
