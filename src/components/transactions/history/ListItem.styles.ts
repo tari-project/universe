@@ -196,4 +196,5 @@ export const PlaceholderItem = styled.div`
     background: ${({ theme }) => (theme.mode === 'dark' ? '#222223' : '#F3F3F3')};
     border-radius: 10px;
     flex-shrink: 0;
+    opacity: 0.75;
 `;

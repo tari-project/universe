@@ -38,9 +38,14 @@ const HistoryList = memo(function HistoryList() {
         const latestTxId = combinedTransactions?.[0]?.tx_id;
         const hasNewTx = latestTxId ? newestTxIdOnInitialFetch !== latestTxId : false;
         const initialTxTime = combinedTransactions?.find((tx) => tx.tx_id === newestTxIdOnInitialFetch)?.timestamp;
+
+        // Calculate how many placeholder items we need to add
+        const transactionsCount = combinedTransactions?.length || 0;
+        const placeholdersNeeded = Math.max(0, 5 - transactionsCount);
+
         return (
             <InfiniteScroll
-                dataLength={combinedTransactions?.length || 0}
+                dataLength={transactionsCount}
                 next={handleNext}
                 hasMore={hasMore}
                 loader={<CircularProgress />}
@@ -63,18 +68,13 @@ const HistoryList = memo(function HistoryList() {
                             />
                         );
                     })}
-                    {/*}
-                    <HistoryListItem
-                        key={combinedTransactions[0].tx_id}
-                        item={combinedTransactions[0]}
-                        index={0}
-                        itemIsNew={false}
-                        setDetailsItem={setDetailsItem}
-                    />
-                    {*/}
-                    <PlaceholderItem />
-                    <PlaceholderItem />
-                    <PlaceholderItem />
+
+                    {/* fill the list with placeholders if there are less than 4 entries */}
+                    {Array.from({ length: placeholdersNeeded }).map((_, index) => (
+                        <PlaceholderItem key={`placeholder-${index}`} />
+                    ))}
+
+                    {/* added last placeholder so the user can scroll above the bottom mask */}
                     <PlaceholderItem />
                 </ListItemWrapper>
             </InfiniteScroll>
