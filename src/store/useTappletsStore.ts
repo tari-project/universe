@@ -41,12 +41,26 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletProviderStore.getState();
         //TODO path
-        const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
         // built-in tapplet
+        // if (isBuiltIn) {
+        //     const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
+        //     const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
+        //     set({ activeTapplet });
+        //     // TODO change provider name
+        //     tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
+        //     return;
+        // }
+
+        // dev
         if (isBuiltIn) {
-            const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
+            const activeTapplet: ActiveTapplet = {
+                tapplet_id: 0,
+                version: '0.1.0', //TODO tmp solution - change to `config.version` if built-in tapplet has config
+                source: 'http://localhost:3000',
+                display_name: 'dupa',
+                supportedChain: ['MAINNET', 'STAGENET', 'NEXTNET'], //TODO tmp solution - change to `config.supportedChain` if built-in tapplet has config
+            };
             set({ activeTapplet });
-            // TODO change provider name
             tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
             return;
         }

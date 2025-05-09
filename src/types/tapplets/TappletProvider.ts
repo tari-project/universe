@@ -52,10 +52,15 @@ export class TappletProvider {
 
     // TODO JUST TEST - RENAME AND REFACTOR THIS FCT
     public async getAccount(): Promise<any> {
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝   [TU Tapplet][TEST][getAccount]');
+        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][get account]');
+        return {
+            account_id: 0,
+            address: 'tariaddress',
+        };
     }
 
-    public isConnected(): boolean {
+    public async isConnected(): Promise<boolean> {
+        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][is connected]');
         return true; //TODO tmp solution shoule be better one
     }
 

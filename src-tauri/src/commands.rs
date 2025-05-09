@@ -1930,12 +1930,11 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 */
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet(
-    tapplet_dest_dir: String,
-) -> Result<ActiveTapplet, String> {
+pub async fn launch_builtin_tapplet(tapplet_dest_dir: String) -> Result<ActiveTapplet, String> {
     // let mut locked_tokens = shutdown_tokens.0.lock().await;
     let tapplet_id = 0;
     let tapplet_path = PathBuf::from(tapplet_dest_dir).join(TAPPLET_DIST_DIR);
+    info!(target: LOG_TARGET, "❌❌❌ build in tapplet path: {:?}", &tapplet_path);
 
     let handle_start =
         tauri::async_runtime::spawn(async move { start_tapplet(tapplet_path).await });
