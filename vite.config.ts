@@ -29,6 +29,7 @@ const baseOptions: UserConfig = {
         },
     },
     logLevel: 'error',
+    assetsInclude: ['**/*.mov', '**/*.webm'],
 };
 
 const devOptions: UserConfig = {
@@ -51,6 +52,7 @@ export default defineConfig(({ command }) => {
         plugins,
         build: {
             sourcemap: true,
+            assetsInlineLimit: 0,
         },
     };
 });
