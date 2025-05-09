@@ -1,6 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
-import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper } from './item.style.ts';
+import { ActionHoveredWrapper, ActionText, ActionWrapper, ContentWrapper, TooltipBox } from './item.style.ts';
 import { AnimatePresence } from 'motion/react';
 
 interface ActionProps {
@@ -13,11 +13,11 @@ interface ActionProps {
 export function SidebarItem({ children, text, hoverContent, tooltipContent }: ActionProps) {
     const [hovered, setHovered] = useState(false);
 
-    const { x, refs, context, floatingStyles } = useFloating({
+    const { refs, context, floatingStyles } = useFloating({
         open: hovered,
         onOpenChange: setHovered,
         placement: 'right',
-        middleware: [offset({ mainAxis: 15 })],
+        middleware: [offset(15)],
     });
 
     const hover = useHover(context, {
@@ -33,15 +33,14 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
             {text ? <ActionText>{text}</ActionText> : null}
             <AnimatePresence>
                 {tooltipContent && hovered && (
-                    <ActionHoveredWrapper
-                        ref={refs.setFloating}
-                        {...getFloatingProps()}
-                        style={floatingStyles}
-                        initial={{ opacity: 0, x: x - 10 }}
-                        exit={{ opacity: 0, x: x - 5 }}
-                        animate={{ opacity: 1, x }}
-                    >
-                        {tooltipContent}
+                    <ActionHoveredWrapper ref={refs.setFloating} {...getFloatingProps()} style={floatingStyles}>
+                        <TooltipBox
+                            initial={{ opacity: 0, x: 10 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                        >
+                            {tooltipContent}
+                        </TooltipBox>
                     </ActionHoveredWrapper>
                 )}
             </AnimatePresence>
