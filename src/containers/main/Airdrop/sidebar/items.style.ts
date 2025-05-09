@@ -19,8 +19,9 @@ export const ActionImgWrapper = styled.div`
         display: flex;
     }
 `;
+
 export const GemImg = styled.img`
-    width: 18px;
+    width: 30px;
 `;
 
 export const GemImgLarge = styled.img`
