@@ -22,6 +22,8 @@
 
 #[cfg(target_os = "macos")]
 use super::macos_utils::is_app_in_applications_folder;
+#[cfg(target_os = "macos")]
+use crate::tasks_tracker::TasksTrackers;
 
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::ExternalDependencies;
@@ -91,10 +93,11 @@ impl PlatformUtils {
         if !cfg!(dev) && !is_app_in_applications_folder() {
             EventsManager::handle_critical_problem(
                 &app_handle,
-                None,
-                Some("not-installed-in-applications-directory".to_string()),
+                Some("common:installation-problem".to_string()),
+                Some("common:not-installed-in-applications-directory".to_string()),
             )
             .await;
+            TasksTrackers::current().stop_all_processes().await;
             return Err(anyhow!(
                 "App is not installed in the Applications directory"
             ));

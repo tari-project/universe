@@ -256,7 +256,12 @@ impl NodeAdapterService {
             progress_percentage_tx.send(percentage).ok();
             progress_params_tx.send(progress_params).ok();
 
-            if tip_res.initial_sync_achieved {
+            if tip_res.initial_sync_achieved
+                && tip_res
+                    .metadata
+                    .clone()
+                    .is_some_and(|metadata| metadata.best_block_height > 0)
+            {
                 info!(target: LOG_TARGET, "Initial sync achieved");
                 let tip_height = match tip_res.metadata {
                     Some(metadata) => metadata.best_block_height,
