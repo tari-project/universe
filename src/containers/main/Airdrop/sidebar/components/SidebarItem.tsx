@@ -17,7 +17,7 @@ export function SidebarItem({ children, text, hoverContent, tooltipContent }: Ac
         open: hovered,
         onOpenChange: setHovered,
         placement: 'right',
-        middleware: [offset(10)],
+        middleware: [offset(15)],
     });
 
     const hover = useHover(context, {
