@@ -26,6 +26,7 @@ use log::error;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
+use crate::airdrop::send_new_block_mined;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::ConnectionStatusPayload;
@@ -79,6 +80,7 @@ impl EventsManager {
                             Some(balance),
                         )
                         .await;
+                        send_new_block_mined(app_clone.clone(), block_height).await;
                     } else {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
                         EventsEmitter::emit_new_block_mined(
