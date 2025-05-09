@@ -1,11 +1,12 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
-import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline } from 'react-icons/io5';
+import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
+import { IconContainer } from '@app/containers/floating/Settings/sections/wallet/components/SeedWords.styles.ts';
 
 const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
 interface MoneroAddressEditorProps {
@@ -24,7 +25,7 @@ const StyledInput = styled(Input)`
 const StyledForm = styled.form`
     width: 100%;
     // Reserve space for error message
-    min-height: 53px;
+    min-height: 60px;
 `;
 
 const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorProps) => {
@@ -33,16 +34,21 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
         watch,
         handleSubmit,
         setValue,
+        setFocus,
         reset,
         trigger,
-        formState: { errors },
+        formState: { errors, isDirty },
     } = useForm({
         defaultValues: { address: initialAddress },
     });
+    const [editing, setEditing] = useState(false);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
-
     const address = watch('address');
 
+    function handleEditClick() {
+        setFocus('address', { shouldSelect: true });
+        setEditing(true);
+    }
     useEffect(() => {
         setValue('address', initialAddress);
     }, [initialAddress, setValue]);
@@ -56,11 +62,18 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
 
     const handleReset = useCallback(() => {
         reset({ address: initialAddress });
+        setEditing(false);
     }, [initialAddress, reset]);
 
     useEffect(() => {
         trigger('address');
     }, [address, trigger]);
+
+    const editIconMarkup = !editing ? (
+        <IconButton size="small" onClick={() => handleEditClick()} type="button">
+            <IoPencil />
+        </IconButton>
+    ) : null;
 
     return (
         <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
@@ -75,24 +88,32 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                         },
                     }}
                     render={({ field }) => {
-                        const { ref: _ref, ...rest } = field;
-                        return <StyledInput type="text" hasError={!!errors.address} {...rest} />;
+                        return (
+                            <StyledInput
+                                {...field}
+                                type="text"
+                                hasError={!!errors.address}
+                                onFocus={() => setEditing(true)}
+                            />
+                        );
                     }}
                 />
-                {address !== initialAddress ? (
+                {editIconMarkup}
+                {editing ? (
                     <>
-                        {!errors.address && (
-                            <IconButton type="submit">
+                        <IconContainer style={{ gap: 2 }}>
+                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
                                 <IoCheckmarkOutline />
                             </IconButton>
-                        )}
-                        <IconButton type="reset">
-                            <IoCloseOutline />
-                        </IconButton>
+                            <IconButton type="reset" size="small">
+                                <IoCloseOutline />
+                            </IconButton>
+                        </IconContainer>
                     </>
                 ) : (
                     <IconButton
                         size="small"
+                        type="button"
                         onClick={(e) => {
                             e.preventDefault();
                             copyToClipboard(address);

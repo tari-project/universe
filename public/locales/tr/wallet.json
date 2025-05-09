@@ -65,6 +65,6 @@
     "send": "Gönder"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Cüzdan taranıyor..",
+  "wallet-is-scanning": "Cüzdan taranıyor...",
   "wallet-scanning-with-progress": "Cüzdan taranıyor: {{scanned}}/{{total}} ({{percent}}%)"
 }
