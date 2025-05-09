@@ -2,17 +2,17 @@
   "connect": {
     "blackButton": "У меня есть приложение",
     "scan": "Сканировать QR-код",
-    "text": "Скачайте Tari Aurora и отслеживайте свои XTM в любом месте. Загрузите его сейчас в App Store или Google Play Store.",
-    "textButton": "Узнать больше о Tari Aurora",
+    "text": "Скачайте Tari Universe Mobile и отслеживайте свои XTM в любом месте. Загрузите его сейчас в App Store или Google Play Store.",
+    "textButton": "Узнать больше о Tari Universe Mobile",
     "title": "Подключите Ваш кошелек Tari Universe к телефону"
   },
   "qrcode": {
     "blackButton": "Готово",
     "copied": "Скопировано!",
     "inputLabel": "Идентификационный код",
-    "text": "Отсканируйте QR-код в приложении Tari Aurora, чтобы импортировать Ваш кошелек Tari Universe. Используйте одноразовый код ниже для подтверждения Вашей личности, затем следуйте инструкциям в приложении.",
+    "text": "Отсканируйте QR-код в приложении Tari Universe Mobile, чтобы импортировать Ваш кошелек Tari Universe. Используйте одноразовый код ниже для подтверждения Вашей личности, затем следуйте инструкциям в приложении.",
     "textButton": "Мне нужна помощь",
-    "title": "Импорт в Tari Aurora",
+    "title": "Импорт в Tari Universe Mobile",
     "warning": "Не делитесь этим QR-кодом"
   }
 }
