@@ -132,15 +132,19 @@ pub async fn restart_mm_proxy_with_new_telemetry_id(
     Ok(())
 }
 
+pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
+    let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+    let view_private_key = wallet_manager.get_view_private_key().await;
+    hex::encode(Sha256::digest(view_private_key))
+}
+
 pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
     TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
-        let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
         let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();
         let config = ConfigCore::content().await;
         let app_id = config.anon_id().to_string();
 
-        let view_private_key = wallet_manager.get_view_private_key().await;
-        let hashed_view_private_key = hex::encode(Sha256::digest(view_private_key));
+        let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
 
         let client = reqwest::Client::new();
         let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
@@ -156,7 +160,7 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
             .send()
             .await
             .inspect_err(|e| {
-                error!("error at sending newly mined block to /miner/mined-block {}", e.to_string());
+                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {}", e.to_string());
             })
         {
             let status = response.status();
