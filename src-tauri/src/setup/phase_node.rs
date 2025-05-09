@@ -219,6 +219,9 @@ impl SetupPhaseImpl for NodeSetupPhase {
             .resolve_step(ProgressPlans::Node(ProgressSetupNodePlan::StartingNode))
             .await;
 
+        // Temporary solution for constantly corrupted peer_db
+        state.node_manager.clean_peer_db_folder(&data_dir).await?;
+
         info!(target: LOG_TARGET, "Starting node manager, grpc address: {}", self.app_configuration.base_node_grpc_address);
 
         for _i in 0..2 {
