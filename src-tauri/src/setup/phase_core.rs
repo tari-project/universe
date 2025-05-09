@@ -190,6 +190,12 @@ impl SetupPhaseImpl for CoreSetupPhase {
                 |e| error!(target: LOG_TARGET, "Could not initialize auto launcher: {:?}", e),
             );
 
+        state
+            .mining_status_manager
+            .write()
+            .await
+            .set_app_handle(self.app_handle.clone());
+
         progress_stepper
             .resolve_step(ProgressPlans::Core(ProgressSetupCorePlan::NetworkSpeedTest))
             .await;
