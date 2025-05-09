@@ -11,8 +11,6 @@ export const ContentWrapper = styled.div`
     position: relative;
 `;
 
-export const PositionWrapper = styled.div``;
-
 export const ActionWrapper = styled.div`
     flex-direction: column;
     display: grid;
