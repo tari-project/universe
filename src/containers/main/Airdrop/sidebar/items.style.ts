@@ -21,7 +21,7 @@ export const ActionImgWrapper = styled.div`
 `;
 
 export const GemImg = styled.img`
-    width: 30px;
+    width: 18px;
 `;
 
 export const GemImgLarge = styled.img`
@@ -58,7 +58,14 @@ export const TooltipAction = styled.div`
     color: ${({ theme }) => theme.palette.warning.main};
     display: flex;
     padding-top: 4px;
+
+    button {
+        &:hover {
+            text-decoration: underline;
+        }
+    }
 `;
+
 export const TooltipWrapper = styled.div`
     display: flex;
     justify-content: center;

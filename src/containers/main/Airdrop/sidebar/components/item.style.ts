@@ -50,11 +50,16 @@ export const TooltipBox = styled(m.div)`
     background: ${({ theme }) => theme.palette.background.main};
     box-shadow: 0 0 45px 0 rgba(0, 0, 0, 0.15);
     border-radius: 10px;
-    padding: 20px;
+    padding: 16px;
     display: flex;
     justify-content: center;
     flex-direction: column;
     z-index: 20;
     width: max-content;
     max-width: 260px;
+
+    h6 {
+        line-height: 1.2;
+        margin-bottom: 2px;
+    }
 `;
