@@ -49,8 +49,10 @@ export const HeaderGraphic = styled.div`
     width: min(220px, 24vh);
     user-select: none;
     max-width: 100%;
+
     video {
-        max-width: 100%;
+        width: 169px;
+        height: 176px;
     }
 `;
 
