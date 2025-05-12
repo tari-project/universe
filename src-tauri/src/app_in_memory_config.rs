@@ -38,7 +38,7 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 #[cfg(feature = "exchange-env")]
-const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_MINER env is not defined");
+const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_ID env is not defined");
 pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
