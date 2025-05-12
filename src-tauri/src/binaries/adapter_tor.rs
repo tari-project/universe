@@ -108,9 +108,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 if let Some(fallback_url) = asset.fallback_url {
-                    info!(target: LOG_TARGET, "Fallback URL: {}", fallback_url);
+                    let checksum_fallback_url = format!("{}.asc", fallback_url);
+                    info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
                     RequestClient::current()
-                        .download_file_with_retries(&fallback_url, &checksum_path, false)
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
                         .await?;
                     Ok(checksum_path)
                 } else {
