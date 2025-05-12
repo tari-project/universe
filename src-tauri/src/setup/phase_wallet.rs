@@ -231,24 +231,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        Ok(())
-    }
+        // progress_stepper
+        //     .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
+        //     .await;
 
-    async fn finalize_setup(&self) -> Result<(), Error> {
-        let app_state = self.get_app_handle().state::<UniverseAppState>().clone();
-        let node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        app_state
-            .wallet_manager
-            .wait_for_initial_wallet_scan(self.get_app_handle(), node_status_watch_rx)
-            .await?;
-
-        progress_stepper
-            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-            .await;
-
-        tapplet_resolver
-            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
-            .await?;
+        // tapplet_resolver
+        //     .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+        //     .await?;
 
         Ok(())
     }
