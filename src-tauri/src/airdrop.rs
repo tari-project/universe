@@ -48,7 +48,7 @@ pub struct AirdropAccessToken {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AirdropMinedBlockMessage {
-    pub hashed_view_private_key: String,
+    pub wallet_view_key_hashed: String,
     pub app_id: String,
     pub block_height: u64,
 }
@@ -150,7 +150,7 @@ pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
         let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
         let url = format!("{}/miner/mined-block", base_url);
         let message = AirdropMinedBlockMessage {
-            hashed_view_private_key,
+            wallet_view_key_hashed: hashed_view_private_key,
             app_id,
             block_height
         };
