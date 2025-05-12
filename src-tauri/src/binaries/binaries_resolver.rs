@@ -301,6 +301,8 @@ impl BinaryResolver {
             .lock()
             .await;
 
+        #[allow(unused_variables)]
+        // We will remove this logic in next PR's
         let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;

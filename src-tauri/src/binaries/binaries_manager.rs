@@ -491,7 +491,7 @@ impl BinaryManager {
             ))
             .await;
 
-        if let Err(_) = RequestClient::current()
+        if RequestClient::current()
             .download_file_with_retries(
                 download_url.as_str(),
                 &in_progress_file_zip,
@@ -499,6 +499,7 @@ impl BinaryManager {
             )
             .await
             .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
+            .is_err()
         {
             if let Some(fallback_url) = fallback_url {
                 info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
