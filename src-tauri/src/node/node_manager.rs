@@ -347,6 +347,17 @@ impl NodeManager {
         Ok(())
     }
 
+    pub async fn clean_peer_db_folder(&self, base_path: &Path) -> Result<(), anyhow::Error> {
+        fs::remove_dir_all(
+            base_path
+                .join("node")
+                .join(Network::get_current().to_string().to_lowercase())
+                .join("peer_db"),
+        )
+        .await?;
+        Ok(())
+    }
+
     pub async fn get_node_type(&self) -> Result<NodeType, anyhow::Error> {
         let node_type = self.node_type.read().await;
         Ok(node_type.clone())
