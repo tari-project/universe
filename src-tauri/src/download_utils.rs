@@ -23,8 +23,6 @@
 use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
-use futures_util::StreamExt;
-use log::{info, warn};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tar::Archive;

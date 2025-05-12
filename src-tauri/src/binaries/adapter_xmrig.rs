@@ -30,7 +30,7 @@ use tari_common::configuration::Network;
 use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
-    download_utils::download_file_with_retries, github, progress_tracker_old::ProgressTracker,
+    github::{self, request_client::RequestClient},
     APPLICATION_FOLDER_ID,
 };
 
@@ -71,8 +71,6 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
-
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory.join("in_progress").join("SHA256SUMS");
@@ -81,7 +79,10 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
             None => asset.url,
         };
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, false)
+            .await
+        {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
