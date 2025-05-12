@@ -6,11 +6,11 @@ import { ListItemWrapper, ListWrapper } from './TxHistory.styles.ts';
 import { HistoryListItem } from './ListItem.tsx';
 import { fetchTransactionsHistory } from '@app/store';
 import { useTranslation } from 'react-i18next';
-import { Typography } from '@app/components/elements/Typography.tsx';
 import { TransactionInfo } from '@app/types/app-status.ts';
 import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/ListLoadingAnimation.tsx';
 import ItemExpand from './ExpandedItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
+import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
@@ -98,7 +98,7 @@ const HistoryList = memo(function HistoryList() {
     );
 
     const isEmpty = !walletScanning.is_scanning && !combinedTransactions?.length;
-    const emptyMarkup = isEmpty ? <Typography variant="h6">{t('empty-tx')}</Typography> : null;
+    const emptyMarkup = isEmpty ? <LoadingText>{t('empty-tx')}</LoadingText> : null;
 
     return (
         <>
