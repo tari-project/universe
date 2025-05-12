@@ -456,6 +456,7 @@ impl BinaryManager {
         Err(anyhow!(error_msg))
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
@@ -515,7 +516,7 @@ impl BinaryManager {
             .await;
 
         if RequestClient::current()
-            .download_file_with_retries(
+            .download_file(
                 download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
@@ -534,7 +535,7 @@ impl BinaryManager {
                     .await;
 
                 RequestClient::current()
-                    .download_file_with_retries(
+                    .download_file(
                         fallback_url.as_str(),
                         &in_progress_file_zip,
                         asset.source.is_mirror(),
@@ -543,6 +544,11 @@ impl BinaryManager {
                     .map_err(|e| {
                         anyhow!("Error downloading version: {:?}. Error: {:?}", version, e)
                     })?;
+            } else {
+                return Err(anyhow!(
+                    "Error downloading version: {:?}. No fallback url provided",
+                    version
+                ));
             }
         }
 

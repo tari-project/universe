@@ -145,7 +145,7 @@ impl RequestClient {
 
     fn build_retry_reqwest_client() -> ClientWithMiddleware {
         debug!(target: LOG_TARGET, "[build_retry_reqwest_client]");
-        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(5);
+        let retry_policy = ExponentialBackoff::builder().build_with_max_retries(2);
 
         ClientBuilder::new(Client::new())
             .with(RetryTransientMiddleware::new_with_policy(retry_policy))
