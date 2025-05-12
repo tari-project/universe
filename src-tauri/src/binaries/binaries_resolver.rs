@@ -22,12 +22,14 @@
 
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
+use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -49,16 +51,17 @@ const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6)
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
     pub(crate) assets: Vec<VersionAsset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
     pub(crate) name: String,
+    pub(crate) source: ReleaseSource,
 }
 
 #[async_trait]
@@ -74,7 +77,6 @@ pub trait LatestVersionApiAdapter: Send + Sync + 'static {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error>;
@@ -306,11 +308,7 @@ impl BinaryResolver {
         let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
-
-        if should_check_for_update {
-            // Will populate Vec of downloaded versions that meet the requirements
-            manager.check_for_updates().await;
-        }
+        manager.check_for_updates().await;
 
         // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();

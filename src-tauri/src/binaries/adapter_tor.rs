@@ -23,8 +23,8 @@
 use crate::binaries::binaries_resolver::{
     LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo,
 };
-use crate::download_utils::download_file_with_retries;
-use crate::progress_tracker_old::ProgressTracker;
+use crate::github::request_client::RequestClient;
+use crate::github::ReleaseSource;
 use crate::APPLICATION_FOLDER_ID;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
@@ -46,20 +46,12 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
-        let mut cdn_responded = false;
 
-        let client = reqwest::Client::new();
-        for _ in 0..3 {
-            let cloned_cdn_tor_bundle_url = cdn_tor_bundle_url.clone();
-            let response = client.head(cloned_cdn_tor_bundle_url).send().await;
-
-            if let Ok(resp) = response {
-                if resp.status().is_success() {
-                    cdn_responded = true;
-                    break;
-                }
-            }
-        }
+        let cdn_responded = RequestClient::current()
+            .send_head_request(&cdn_tor_bundle_url)
+            .await?
+            .status()
+            .is_success();
 
         if cdn_responded {
             let version = VersionDownloadInfo {
@@ -67,6 +59,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
                     name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                    source: ReleaseSource::Mirror,
                 }],
             };
             return Ok(vec![version]);
@@ -78,6 +71,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             assets: vec![VersionAsset {
                 url: format!("https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz", platform),
                 name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                source: ReleaseSource::Github
             }]
         };
         Ok(vec![version])
@@ -107,7 +101,6 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
@@ -118,7 +111,10 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             None => asset.url,
         };
 
-        match download_file_with_retries(&checksum_url, &checksum_path, progress_tracker).await {
+        match RequestClient::current()
+            .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())
+            .await
+        {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
                 error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);

@@ -72,6 +72,7 @@ impl LatestVersionApiAdapter for XmrigVersionApiAdapter {
         directory: PathBuf,
         download_info: VersionDownloadInfo,
         progress_tracker: ProgressTracker,
+
     ) -> Result<PathBuf, Error> {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory.join("in_progress").join("SHA256SUMS");

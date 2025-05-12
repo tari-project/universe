@@ -19,17 +19,18 @@
 // SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-use crate::{
-    download_utils::{download_file_with_retries, extract, validate_checksum},
-    progress_tracker_old::ProgressTracker,
-};
 use anyhow::{anyhow, Error};
 use log::{debug, error, info, warn};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
+
+use crate::{
+    download_utils::{extract, validate_checksum},
+    github::request_client::RequestClient,
+    progress_tracker_old::ProgressTracker,
+};
 
 use super::{
     binaries_resolver::{LatestVersionApiAdapter, VersionAsset, VersionDownloadInfo},
@@ -283,7 +284,6 @@ impl BinaryManager {
             .download_and_get_checksum_path(
                 destination_dir.clone().to_path_buf(),
                 version_download_info,
-                progress_tracker.clone(),
             )
             .await
             .map_err(|e| {
@@ -510,13 +510,14 @@ impl BinaryManager {
                 self.binary_name, version
             ))
             .await;
-        download_file_with_retries(
-            asset.url.as_str(),
-            &in_progress_file_zip,
-            progress_tracker.clone(),
-        )
-        .await
-        .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+        RequestClient::current()
+            .download_file_with_retries(
+                asset.url.as_str(),
+                &in_progress_file_zip,
+                asset.source.is_mirror(),
+            )
+            .await
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
 
         debug!(target: LOG_TARGET, "Downloaded version: {:?}", version);
 
