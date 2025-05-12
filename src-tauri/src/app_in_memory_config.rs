@@ -39,6 +39,7 @@ const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 #[cfg(feature = "exchange-env")]
 const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_MINER env is not defined");
+pub const DEFAULT_EXCHANGE_ID: &str = "DEFAULT_EXCHANGE_ID";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
@@ -70,7 +71,7 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
-            exchange_id: "".into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         }
     }
 }
@@ -115,6 +116,7 @@ impl AppInMemoryConfig {
             airdrop_url: AIRDROP_BASE_URL.into(),
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         };
 
         #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
@@ -122,6 +124,7 @@ impl AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         };
 
         #[cfg(all(
