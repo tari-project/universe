@@ -363,7 +363,8 @@ impl RequestClient {
         info!(target: LOG_TARGET, "Expected etag: {}", head_reponse_etag);
         info!(target: LOG_TARGET, "Downloaded etag: {}", get_reposnse_etag);
 
-        if head_reponse_content_length.ne(&destination_file_size) {
+        if head_reponse_content_length != 0 && head_reponse_content_length != destination_file_size
+        {
             let error_message = format!(
                 "Downloaded file size does not match expected size. Expected: {}, Actual: {}",
                 head_reponse_content_length, destination_file_size
@@ -372,7 +373,7 @@ impl RequestClient {
             return Err(anyhow!(error_message));
         };
 
-        if head_reponse_etag.ne(&get_reposnse_etag) {
+        if !head_reponse_etag.is_empty() && head_reponse_etag != get_reposnse_etag {
             let error_message = format!(
                 "Downloaded etag does not match expected etag. Expected: {}, Actual: {}",
                 head_reponse_etag, get_reposnse_etag

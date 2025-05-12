@@ -42,7 +42,7 @@ pub struct CacheEntry {
     pub repo_name: String,
     pub github_etag: Option<String>,
     pub mirror_etag: Option<String>,
-    pub gitub_file_path: PathBuf,
+    pub github_file_path: PathBuf,
     pub mirror_file_path: PathBuf,
 }
 
@@ -79,8 +79,7 @@ impl CacheJsonFile {
     }
 
     fn get_version_releases_responses_cache_file_path(&self) -> Result<PathBuf, Error> {
-        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get cache path"))?;
-        Ok(cache_path.join(self.cache_file_path.clone()))
+        Ok(self.cache_file_path.clone())
     }
 
     pub fn read_version_releases_responses_cache_file(&mut self) -> Result<(), Error> {
@@ -154,7 +153,7 @@ impl CacheJsonFile {
                 repo_name: repo_name.to_string(),
                 github_etag,
                 mirror_etag,
-                gitub_file_path: self
+                github_file_path: self
                     .versions_cache_folder_path
                     .join(format!("{}-{}-github.json", repo_owner, repo_name)),
 
@@ -177,7 +176,7 @@ impl CacheJsonFile {
     ) -> bool {
         self.get_cache_entry(repo_owner, repo_name)
             .map_or(false, |cache_entry| match source {
-                ReleaseSource::Github => cache_entry.gitub_file_path.exists(),
+                ReleaseSource::Github => cache_entry.github_file_path.exists(),
                 ReleaseSource::Mirror => cache_entry.mirror_file_path.exists(),
             })
     }
@@ -188,7 +187,6 @@ impl CacheJsonFile {
         repo_name: &str,
         source: ReleaseSource,
     ) -> Result<PathBuf, Error> {
-        let cache_path = cache_dir().ok_or_else(|| anyhow!("Failed to get file content path"))?;
         let cache_entry = self.get_cache_entry(repo_owner, repo_name).ok_or_else(|| {
             anyhow!(
                 "File content not found for repo_owner: {}, repo_name: {}",
@@ -198,11 +196,11 @@ impl CacheJsonFile {
         })?;
 
         let file_path = match source {
-            ReleaseSource::Github => &cache_entry.gitub_file_path,
+            ReleaseSource::Github => &cache_entry.github_file_path,
             ReleaseSource::Mirror => &cache_entry.mirror_file_path,
         };
 
-        Ok(cache_path.join(file_path))
+        Ok(file_path.clone())
     }
 
     pub fn save_file_content(

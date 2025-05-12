@@ -234,7 +234,7 @@ async fn check_if_need_download(
     url: &str,
     source: ReleaseSource,
 ) -> Result<(bool, bool, Option<Response>), anyhow::Error> {
-    let cache_json_file_lock = CacheJsonFile::current().write().await;
+    let cache_json_file_lock = CacheJsonFile::current().read().await;
     let cache_entry = cache_json_file_lock.get_cache_entry(repo_owner, repo_name);
     let mut need_to_download = false;
     let cache_entry_present: bool = cache_entry.is_some();
