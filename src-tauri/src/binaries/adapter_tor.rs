@@ -46,18 +46,32 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
+        let original_tor_bundle_url: String = format!(
+            "https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
+            platform
+        );
 
-        let cdn_responded = RequestClient::current()
+        info!(target: LOG_TARGET, "Checking if CDN is available");
+
+        let cdn_responded = match RequestClient::current()
             .send_head_request(&cdn_tor_bundle_url)
-            .await?
-            .status()
-            .is_success();
+            .await
+        {
+            Ok(response) => response.status().is_success(),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to check CDN availability: {}", e);
+                false
+            }
+        };
+
+        info!(target: LOG_TARGET, "CDN responded: {}", cdn_responded);
 
         if cdn_responded {
             let version = VersionDownloadInfo {
                 version: "14.5.1".parse().expect("Bad tor version"),
                 assets: vec![VersionAsset {
                     url: cdn_tor_bundle_url.to_string(),
+                    fallback_url: Some(original_tor_bundle_url),
                     name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
                     source: ReleaseSource::Mirror,
                 }],
@@ -69,10 +83,11 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         let version = VersionDownloadInfo {
             version: "14.5.1".parse().expect("Bad tor version"),
             assets: vec![VersionAsset {
-                url: format!("https://dist.torproject.org/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz", platform),
+                url: original_tor_bundle_url,
+                fallback_url: None,
                 name: format!("tor-expert-bundle-{}-14.5.1.tar.gz", platform),
-                source: ReleaseSource::Github
-            }]
+                source: ReleaseSource::Github,
+            }],
         };
         Ok(vec![version])
     }
@@ -117,8 +132,16 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
-                Err(e)
+                if let Some(fallback_url) = asset.fallback_url {
+                    let checksum_fallback_url = format!("{}.asc", fallback_url);
+                    info!(target: LOG_TARGET, "Fallback URL: {}", checksum_fallback_url);
+                    RequestClient::current()
+                        .download_file_with_retries(&checksum_fallback_url, &checksum_path, false)
+                        .await?;
+                    Ok(checksum_path)
+                } else {
+                    Err(anyhow::anyhow!("Failed to download checksum file: {}", e))
+                }
             }
         }
     }

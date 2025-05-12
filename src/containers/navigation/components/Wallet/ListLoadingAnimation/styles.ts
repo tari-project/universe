@@ -38,13 +38,14 @@ export const LoadingText = styled(m.div)`
     text-align: center;
     z-index: 1;
 
-    margin-top: 8px;
+    margin-top: 7px;
 
     background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2E2E2E' : '#fff')};
     color: ${({ theme }) => (theme.mode === 'dark' ? '#fff' : '#000')};
     padding: 8px 20px;
     border-radius: 100px;
-    width: fit-content;
+    width: max-content;
+    max-width: 220px;
 
     box-shadow: 0px 0px 115px 0px rgba(0, 0, 0, 0.35);
 `;

@@ -297,10 +297,15 @@ async fn extract_versions_from_release(
                     &get_gh_download_url(repo_owner, repo_name),
                     &get_mirror_download_url(repo_owner, repo_name),
                 ),
-                ReleaseSource::Github => asset.browser_download_url,
+                ReleaseSource::Github => asset.browser_download_url.clone(),
+            };
+            let fallback_url: Option<String> = match source {
+                ReleaseSource::Mirror => Some(asset.browser_download_url),
+                ReleaseSource::Github => None,
             };
             assets.push(VersionAsset {
                 url,
+                fallback_url,
                 name: asset.name,
                 source: source.clone(),
             });
