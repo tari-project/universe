@@ -1,7 +1,7 @@
 {
     "name": "tari-universe",
     "private": true,
-    "version": "1.0.0",
+    "version": "1.0.5",
     "type": "module",
     "scripts": {
         "dev": "vite dev",
@@ -17,7 +17,7 @@
     "dependencies": {
         "@floating-ui/react": "^0.27.7",
         "@lottiefiles/dotlottie-react": "^0.13.2",
-        "@tari-project/tari-tower": "^0.0.41",
+        "@tari-project/tari-tower": "^0.0.42",
         "@tauri-apps/api": "^2.4.0",
         "@tauri-apps/plugin-clipboard-manager": "^2.2.2",
         "@tauri-apps/plugin-os": "^2.2.1",
@@ -27,7 +27,6 @@
         "i18next": "^24.2.3",
         "i18next-browser-languagedetector": "^8.0.4",
         "i18next-http-backend": "^3.0.2",
-        "linkify-react": "^4.2.0",
         "motion": "^12.9.4",
         "react": "^18.3.1",
         "react-dom": "^18.2.0",

@@ -1,9 +1,8 @@
 import { memo, useRef, useState } from 'react';
-import { AnimatePresence, useInView } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
 import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
-import ItemExpand from './ExpandedItem';
 import ItemHover from './HoveredItem';
 import {
     ContentWrapper,
@@ -54,40 +53,28 @@ const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClic
     );
 });
 
-const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false }: HistoryListItemProps) {
+const HistoryListItem = memo(function ListItem({
+    item,
+    index,
+    itemIsNew = false,
+    setDetailsItem,
+}: HistoryListItemProps) {
     const { t } = useTranslation('wallet');
     const hideWalletBalance = useUIStore((s) => s.hideWalletBalance);
 
-    const clickRef = useRef(0);
     const ref = useRef<HTMLDivElement>(null);
-    const inView = useInView(ref, { amount: 0.5, once: false });
 
     const itemType = getItemType(item);
 
     const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
-    const [expanded, setExpanded] = useState(false);
 
     const itemTitle = getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
     const earningsFormatted = hideWalletBalance
         ? `***`
         : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();
     const itemTime = formatTimeStamp(item.timestamp);
-
-    function handleTxClick() {
-        if (import.meta.env.MODE !== 'development' || isMined) return;
-
-        if (!expanded) {
-            clickRef.current += 1;
-            if (clickRef.current === 3) {
-                setExpanded(true);
-                clickRef.current = 0;
-            }
-        } else {
-            setExpanded(false);
-        }
-    }
 
     const baseItem = (
         <BaseItem
@@ -96,7 +83,6 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
             value={earningsFormatted}
             type={itemType}
             status={item?.status}
-            onClick={handleTxClick}
             chip={itemIsNew ? t('new') : ''}
         />
     );
@@ -107,7 +93,7 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
             variant="outlined"
             onClick={(e) => {
                 e.stopPropagation();
-                setExpanded(true);
+                setDetailsItem?.(item);
             }}
         >
             {t(`history.view-details`)}
@@ -115,28 +101,16 @@ const HistoryListItem = memo(function ListItem({ item, index, itemIsNew = false 
     ) : null;
 
     return (
-        <>
-            <ItemWrapper
-                ref={ref}
-                data-index={index}
-                initial={{ opacity: 0 }}
-                animate={inView ? { opacity: 1 } : { opacity: 0 }}
-                style={{ height: 48 }}
-                onMouseEnter={() => setHovering(true)}
-                onMouseLeave={() => setHovering(false)}
-            >
-                <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
-                {baseItem}
-            </ItemWrapper>
-            {!isMined && (
-                <ItemExpand
-                    item={item}
-                    expanded={expanded}
-                    setExpanded={setExpanded}
-                    handleClose={() => setExpanded(false)}
-                />
-            )}
-        </>
+        <ItemWrapper
+            ref={ref}
+            data-index={index}
+            style={{ height: 48 }}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+        >
+            <AnimatePresence>{hovering && <ItemHover item={item} button={detailsButton} />}</AnimatePresence>
+            {baseItem}
+        </ItemWrapper>
     );
 });
 
