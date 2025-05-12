@@ -480,23 +480,47 @@ impl BinaryManager {
             .map_err(|e| anyhow!("Error creating in progress folder. Error: {:?}", e))?;
         let in_progress_file_zip = in_progress_dir.join(asset.name.clone());
 
-        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, asset.url);
+        let download_url = asset.clone().url;
+        let fallback_url = asset.clone().fallback_url;
+
+        info!(target: LOG_TARGET, "Downloading binary: {} from url: {}", self.binary_name, download_url);
         progress_tracker
             .send_last_action(format!(
                 "Downloading binary: {} with version: {}",
                 self.binary_name, version
             ))
             .await;
-        RequestClient::current()
+
+        if let Err(_) = RequestClient::current()
             .download_file_with_retries(
-                asset.url.as_str(),
+                download_url.as_str(),
                 &in_progress_file_zip,
                 asset.source.is_mirror(),
             )
             .await
-            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))?;
+            .map_err(|e| anyhow!("Error downloading version: {:?}. Error: {:?}", version, e))
+        {
+            if let Some(fallback_url) = fallback_url {
+                info!(target: LOG_TARGET, "Downloading binary: {} from fallback url: {}", self.binary_name, fallback_url);
+                progress_tracker
+                    .send_last_action(format!(
+                        "Downloading binary: {} with version: {} from fallback url",
+                        self.binary_name, version
+                    ))
+                    .await;
 
-        debug!(target: LOG_TARGET, "Downloaded version: {:?}", version);
+                RequestClient::current()
+                    .download_file_with_retries(
+                        fallback_url.as_str(),
+                        &in_progress_file_zip,
+                        asset.source.is_mirror(),
+                    )
+                    .await
+                    .map_err(|e| {
+                        anyhow!("Error downloading version: {:?}. Error: {:?}", version, e)
+                    })?;
+            }
+        }
 
         progress_tracker
             .send_last_action(format!(

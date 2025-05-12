@@ -81,7 +81,7 @@ pub fn get_gh_download_url(repo_owner: &str, repo_name: &str) -> String {
 
 pub fn get_mirror_download_url(repo_owner: &str, repo_name: &str) -> String {
     format!(
-        "https://cdn-universe.tari.com/{}/{}/releases/download",
+        "https://cdn-unverse.tari.com/{}/{}/releases/download",
         repo_owner, repo_name
     )
 }
@@ -125,12 +125,6 @@ pub async fn list_releases(
         }
     }
     Ok(mirror_releases)
-
-    // if releases.as_ref().map_or(false, |r| !r.is_empty()) {
-    //     releases
-    // } else {
-    //     list_releases_from(ReleaseSource::Github, repo_owner, repo_name).await
-    // }
 }
 
 async fn list_mirror_releases(
@@ -297,10 +291,15 @@ async fn extract_versions_from_release(
                     &get_gh_download_url(repo_owner, repo_name),
                     &get_mirror_download_url(repo_owner, repo_name),
                 ),
-                ReleaseSource::Github => asset.browser_download_url,
+                ReleaseSource::Github => asset.browser_download_url.clone(),
+            };
+            let fallback_url: Option<String> = match source {
+                ReleaseSource::Mirror => Some(asset.browser_download_url),
+                ReleaseSource::Github => None,
             };
             assets.push(VersionAsset {
                 url,
+                fallback_url,
                 name: asset.name,
                 source: source.clone(),
             });

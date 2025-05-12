@@ -60,6 +60,7 @@ pub struct VersionDownloadInfo {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
+    pub(crate) fallback_url: Option<String>,
     pub(crate) name: String,
     pub(crate) source: ReleaseSource,
 }
@@ -309,8 +310,7 @@ impl BinaryResolver {
         let mut highest_version = manager.select_highest_version();
 
         // This covers case when we do not check newest version and there is no local version
-        if !should_check_for_update && highest_version.is_none() {
-            manager.check_for_updates().await;
+        if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
                 .download_selected_version(highest_version.clone(), progress_tracker.clone())
