@@ -22,11 +22,12 @@
 
 use std::path::PathBuf;
 
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use tari_common::configuration::Network;
+use tokio::{fs::File, io::AsyncReadExt};
 
 use crate::{
     github::{self, request_client::RequestClient},
@@ -50,6 +51,30 @@ impl LatestVersionApiAdapter for GithubReleasesAdapter {
         Ok(releases.clone())
     }
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+        let mut expected_hash = "";
+        let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
+            .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
+
+        for line in contents.lines() {
+            if let Some(caps) = regex.captures(line) {
+                expected_hash = caps
+                    .get(1)
+                    .map(|hash| hash.as_str())
+                    .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
+            }
+        }
+        Ok(expected_hash.to_string())
+    }
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,

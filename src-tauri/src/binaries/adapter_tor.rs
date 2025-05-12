@@ -26,12 +26,14 @@ use crate::binaries::binaries_resolver::{
 use crate::github::request_client::RequestClient;
 use crate::github::ReleaseSource;
 use crate::APPLICATION_FOLDER_ID;
-use anyhow::Error;
+use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::{error, info};
 use regex::Regex;
 use std::path::PathBuf;
 use tari_common::configuration::Network;
+use tokio::fs::File;
+use tokio::io::AsyncReadExt;
 
 pub const LOG_TARGET: &str = "tari::universe::adapter_tor";
 pub(crate) struct TorReleaseAdapter {}
@@ -90,6 +92,26 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         Ok(vec![version])
     }
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error> {
+        let mut file_sha256 = File::open(checksum_path.clone()).await?;
+        let mut buffer_sha256 = Vec::new();
+        file_sha256.read_to_end(&mut buffer_sha256).await?;
+        let contents =
+            String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
+
+        let tor_hash = contents
+            .lines()
+            .find(|line| line.contains(asset_name))
+            .and_then(|line| line.split_whitespace().next())
+            .map(|hash| hash.to_string());
+
+        tor_hash.ok_or(anyhow!("No checksum was found for xmrig"))
+    }
+
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
@@ -98,8 +120,11 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         let asset = self.find_version_for_platform(&download_info)?;
         let checksum_path = directory
             .join("in_progress")
-            .join(format!("{}.asc", asset.name));
-        let checksum_url = format!("{}.asc", asset.url);
+            .join("sha256sums-signed-build.txt");
+        let checksum_url = match asset.url.rfind('/') {
+            Some(pos) => format!("{}/{}", &asset.url[..pos], "sha256sums-signed-build.txt"),
+            None => asset.url,
+        };
 
         match RequestClient::current()
             .download_file_with_retries(&checksum_url, &checksum_path, asset.source.is_mirror())

@@ -268,7 +268,7 @@ impl BinaryManager {
         in_progress_file_zip: PathBuf,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
+        info!(target: LOG_TARGET, "Validating checksum for binary: {} with version: {:?}", self.binary_name, version);
         let version_download_info = VersionDownloadInfo {
             version: version.clone(),
             assets: vec![asset.clone()],
@@ -295,25 +295,26 @@ impl BinaryManager {
                 )
             })?;
 
-        debug!(target: LOG_TARGET, "Validating checksum for version: {:?}", version);
-        debug!(target: LOG_TARGET, "Checksum file: {:?}", checksum_file);
-        debug!(target: LOG_TARGET, "In progress file: {:?}", in_progress_file_zip);
+        let expected_checksum = self
+            .adapter
+            .get_expected_checksum(checksum_file.clone(), &asset.name)
+            .await?;
+
         progress_tracker
             .send_last_action(format!(
                 "Validating checksum for checksum file: {:?} and in progress file: {:?}",
                 checksum_file, in_progress_file_zip
             ))
             .await;
-        match validate_checksum(
-            in_progress_file_zip.clone(),
-            checksum_file,
-            asset.name.clone(),
-        )
-        .await
-        {
-            Ok(_) => {
-                debug!(target: LOG_TARGET, "Checksum validation succeeded for version: {:?}", version);
-                Ok(())
+        match validate_checksum(in_progress_file_zip.clone(), expected_checksum).await {
+            Ok(validate_checksum) => {
+                if validate_checksum {
+                    info!(target: LOG_TARGET, "Checksum validation succeeded for binary: {} with version: {:?}", self.binary_name, version);
+                    Ok(())
+                } else {
+                    std::fs::remove_dir_all(destination_dir.clone()).ok();
+                    Err(anyhow!("Checksums mismatched!"))
+                }
             }
             Err(e) => {
                 std::fs::remove_dir_all(destination_dir.clone()).ok();
@@ -433,7 +434,29 @@ impl BinaryManager {
         self.online_versions_list.reverse();
     }
 
-    pub async fn download_selected_version(
+    pub async fn download_version_with_retries(
+        &self,
+        selected_version: Option<Version>,
+        progress_tracker: ProgressTracker,
+    ) -> Result<(), Error> {
+        for retry in 0..3 {
+            match self
+                .download_selected_version(selected_version.clone(), progress_tracker.clone())
+                .await
+            {
+                Ok(_) => return Ok(()),
+                Err(_) => {
+                    warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
+                    continue;
+                }
+            }
+        }
+        let error_msg = format!("Failed to download binary: {}", self.binary_name);
+        error!(target: LOG_TARGET, "{}", error_msg);
+        Err(anyhow!(error_msg))
+    }
+
+    async fn download_selected_version(
         &self,
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,

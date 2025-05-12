@@ -23,7 +23,6 @@
 use anyhow::{anyhow, Error};
 use async_zip::base::read::seek::ZipFileReader;
 use flate2::read::GzDecoder;
-use regex::Regex;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 use tar::Archive;
@@ -152,28 +151,8 @@ pub async fn set_permissions(_file_path: &Path) -> Result<(), anyhow::Error> {
 
 pub async fn validate_checksum(
     file_path: PathBuf,
-    file_sha256_path: PathBuf,
-    asset_name: String,
+    expected_checksum: String,
 ) -> Result<bool, Error> {
-    let mut file_sha256 = File::open(file_sha256_path.clone()).await?;
-    let mut buffer_sha256 = Vec::new();
-    file_sha256.read_to_end(&mut buffer_sha256).await?;
-    let contents = String::from_utf8(buffer_sha256).expect("Failed to read file contents as UTF-8");
-
-    // Extract the expected hash for the corresponding asset name
-    let mut expected_hash = "";
-    let regex = Regex::new(&format!(r"([a-f0-9]+)\s.{}", asset_name))
-        .map_err(|e| anyhow!("Failed to create regex: {}", e))?;
-
-    for line in contents.lines() {
-        if let Some(caps) = regex.captures(line) {
-            expected_hash = caps
-                .get(1)
-                .map(|hash| hash.as_str())
-                .ok_or_else(|| anyhow!("Failed to extract hash from line: {}", line))?;
-        }
-    }
-
     let mut file = File::open(file_path.clone()).await?;
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).await?;
@@ -183,5 +162,5 @@ pub async fn validate_checksum(
     let hash = hasher.finalize();
     let hash_hex = format!("{:x}", hash);
 
-    Ok(hash_hex == expected_hash)
+    Ok(hash_hex == expected_checksum)
 }
