@@ -39,7 +39,7 @@ const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 #[cfg(feature = "exchange-env")]
 const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_MINER env is not defined");
-pub const DEFAULT_EXCHANGE_ID: &str = "DEFAULT_EXCHANGE_ID";
+pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
