@@ -41,7 +41,7 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error> {
         let platform = get_platform_name();
         let cdn_tor_bundle_url: String = format!(
-            "https://cdn-univrse.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
+            "https://cdn-universe.tari.com/tor-package-archive/torbrowser/14.5.1/tor-expert-bundle-{}-14.5.1.tar.gz",
             platform
         );
         let original_tor_bundle_url: String = format!(
@@ -49,11 +49,20 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
             platform
         );
 
-        let cdn_responded = RequestClient::current()
+        info!(target: LOG_TARGET, "Checking if CDN is available");
+
+        let cdn_responded = match RequestClient::current()
             .send_head_request(&cdn_tor_bundle_url)
-            .await?
-            .status()
-            .is_success();
+            .await
+        {
+            Ok(response) => response.status().is_success(),
+            Err(e) => {
+                error!(target: LOG_TARGET, "Failed to check CDN availability: {}", e);
+                false
+            }
+        };
+
+        info!(target: LOG_TARGET, "CDN responded: {}", cdn_responded);
 
         if cdn_responded {
             let version = VersionDownloadInfo {
@@ -98,8 +107,15 @@ impl LatestVersionApiAdapter for TorReleaseAdapter {
         {
             Ok(_) => Ok(checksum_path),
             Err(e) => {
-                error!(target: LOG_TARGET, "Failed to download checksum file: {}", e);
-                Err(e)
+                if let Some(fallback_url) = asset.fallback_url {
+                    info!(target: LOG_TARGET, "Fallback URL: {}", fallback_url);
+                    RequestClient::current()
+                        .download_file_with_retries(&fallback_url, &checksum_path, false)
+                        .await?;
+                    Ok(checksum_path)
+                } else {
+                    Err(anyhow::anyhow!("Failed to download checksum file: {}", e))
+                }
             }
         }
     }
