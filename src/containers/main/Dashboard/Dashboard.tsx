@@ -4,7 +4,7 @@ import DisconnectWrapper from '../Reconnect/DisconnectWrapper.tsx';
 import { DashboardContentContainer } from './styles';
 import { useAirdropStore, useUIStore } from '@app/store';
 import { useTappletsStore } from '@app/store/useTappletsStore';
-import { Tapplet } from '@app/components/tapplets/Tapplets';
+import { Tapplet } from '@app/components/tapplets/Tapplet.tsx';
 
 export default function Dashboard() {
     const activeTapplet = useTappletsStore((s) => s.activeTapplet);

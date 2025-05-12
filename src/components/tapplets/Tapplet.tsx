@@ -12,6 +12,7 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const runTransaction = useTappletProviderStore((s) => s.runTransaction);
 
     function sendWindowSize() {
+        console.info('🤝 [TU Tapplet]resize', tappletRef.current);
         if (tappletRef.current) {
             const height = tappletRef.current.offsetHeight;
             const width = tappletRef.current.offsetWidth;
