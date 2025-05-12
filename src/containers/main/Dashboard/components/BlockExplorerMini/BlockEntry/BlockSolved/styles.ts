@@ -5,10 +5,6 @@ export const Wrapper = styled(m.div)`
     display: flex;
     transition: scale 0.2s ease;
     pointer-events: all;
-
-    &:hover {
-        scale: 1.05;
-    }
 `;
 
 export const BoxWrapper = styled.div`
