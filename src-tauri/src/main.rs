@@ -1320,7 +1320,8 @@ fn main() {
             commands::trigger_phases_restart,
             commands::set_node_type,
             commands::set_warmup_seen,
-            commands::launch_builtin_tapplet
+            commands::launch_builtin_tapplet,
+            commands::get_tari_wallet_address,
         ])
         .build(tauri::generate_context!())
         .inspect_err(

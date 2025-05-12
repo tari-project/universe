@@ -231,13 +231,13 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
-        // progress_stepper
-        //     .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
-        //     .await;
+        progress_stepper
+            .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
+            .await;
 
-        // tapplet_resolver
-        //     .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
-        //     .await?;
+        tapplet_resolver
+            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+            .await?;
 
         Ok(())
     }

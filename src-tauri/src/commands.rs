@@ -78,6 +78,7 @@ use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
+const MAX_ACCEPTABLE_TRANSFER_TIME: Duration = Duration::from_secs(30); //TODO
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
@@ -1815,7 +1816,7 @@ pub async fn send_one_sided_to_stealth_address(
         .send_one_sided_to_stealth_address(amount, destination, payment_id)
         .await
         .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+    if timer.elapsed() > MAX_ACCEPTABLE_TRANSFER_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
@@ -1995,4 +1996,15 @@ pub async fn launch_builtin_tapplet(tapplet_dest_dir: String) -> Result<ActiveTa
         source: format!("http://{}", addr),
         version: format!("1.0.0"),
     })
+}
+
+#[tauri::command]
+pub async fn get_tari_wallet_address(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<String, String> {
+    info!(target: LOG_TARGET, "🤝 [TU][command]get tari address");
+    let tari_address = state.tari_address.clone();
+    let addr = tari_address.read().await.to_base58();
+    info!(target: LOG_TARGET, "🤝 [TU][command] tari addr:  {:?}", &addr);
+    Ok(addr)
 }

@@ -14,6 +14,11 @@ export interface TappletProviderParams {
     onConnection?: () => void;
 }
 
+export interface AccountData {
+    account_id: number;
+    address: string;
+}
+
 export class TappletProvider {
     public providerName = 'TappletProvider';
     id: string;
@@ -51,39 +56,46 @@ export class TappletProvider {
     }
 
     // TODO JUST TEST - RENAME AND REFACTOR THIS FCT
-    public async getAccount(): Promise<any> {
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][get account]');
+    public async getAccount(): Promise<AccountData> {
+        console.info('🤝🤝🤝 [TU Tapplet][get account]');
+        const tariAddress = await invoke('get_tari_wallet_address');
+        console.info('🤝🤝🤝 [TU Tapplet][get account] SUCCESS', tariAddress);
         return {
             account_id: 0,
-            address: 'tariaddress',
+            address: tariAddress,
         };
     }
 
     public async isConnected(): Promise<boolean> {
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][is connected]');
+        console.info('🤝🤝🤝 [TU Tapplet][is connected]');
         return true; //TODO tmp solution shoule be better one
     }
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<any> {
-        console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝   [TU Tapplet][SEND ONE SIDED]');
+        console.info('🤝🤝🤝   [TU Tapplet][SEND ONE SIDED]');
         try {
             // if (!address || !amount) {
             //     setStoreError(`Transaction arguments missing`);
             //     return;
             // }
-            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] req', req);
+            console.info('🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] req', { req });
             const payload = {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.message,
             };
-            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] payload', payload);
+            console.info('🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] payload', { payload });
 
             await invoke('send_one_sided_to_stealth_address', {
                 ...payload,
                 amount: payload.amount.toString(),
             });
-            console.info('🤝🤝🤝🤝🤝🤝🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] finished');
+            console.info(
+                '🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] finished',
+                payload.amount,
+                payload.destination,
+                payload.paymentId
+            );
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
         }
