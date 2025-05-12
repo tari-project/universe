@@ -65,6 +65,6 @@
     "send": "Stuur"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Beursie skandeer..",
+  "wallet-is-scanning": "Beursie skandeer...",
   "wallet-scanning-with-progress": "Beursie skandeer: {{scanned}}/{{total}} ({{percent}}%)"
 }
