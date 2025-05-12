@@ -325,7 +325,9 @@ impl TelemetryManager {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                             let telemetry_data = cancellable_get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
                                 &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
-                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                            let memory_config = in_memory_config_cloned.read().await;
+                            let airdrop_api_url = memory_config.airdrop_api_url.clone();
+                            let exchange_id = memory_config.exchange_id.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone())).await;
                         }
                     },
