@@ -40,7 +40,7 @@ export interface ConfigUI {
     sharing_enabled: boolean;
     visual_mode: boolean;
     show_experimental_settings: boolean;
-    warmup_seen?: boolean;
+    warmup_seen: boolean | null;
 }
 export interface ConfigMining {
     created_at: string;
