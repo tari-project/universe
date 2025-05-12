@@ -22,10 +22,10 @@ import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncToolti
 import { BuyTariButton, SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
 
-import { setWalletConnectModalOpen } from '@app/store/actions/walletStoreActions.ts';
+import { setWalletUiVisible } from '@app/store/actions/walletStoreActions.ts';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
-import { Swap } from './SwapConfirmation/SwapConfirmation.tsx';
+import { Swap } from './Swap/Swap.tsx';
 
 interface Props {
     section: string;
@@ -72,7 +72,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             {uiSendRecvEnabled ? (
                 <>
-                    <BuyTariButton onClick={() => setWalletConnectModalOpen(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
+                    <BuyTariButton onClick={() => setWalletUiVisible(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
                     <BottomNavWrapper>
                         <NavButton
                             onClick={() => setSection('send')}

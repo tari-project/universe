@@ -46,7 +46,7 @@ export const SwapOption = styled.div`
     flex-direction: column;
     gap: 4px;
     background: rgba(255, 255, 255, 0.8);
-    border-radius: 20px;
+    border-radius: 15px;
 
     > span {
         color: #7f7e7d;
@@ -60,9 +60,11 @@ export const SwapOptionAmount = styled.div`
     justify-content: space-between;
 
     color: black;
-    font-family: Poppins, sans-serif;
+    font-family: Poppins; // Was Poppins in original, keep consistent?
     font-weight: 500;
-    font-size: 36px;
+    font-size: 36px; // Original size, might need adjustment with input
+    line-height: 117%;
+    letter-spacing: -1.61px;
 `;
 
 export const SwapOptionCurrency = styled.div`
@@ -94,39 +96,49 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
+// Modified SwapAmountInput slightly
 export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     color: black;
     font-family: Poppins, sans-serif;
-    font-weight: 500;
-    font-size: 28px;
+    font-weight: 500; // Adjusted weight
+    font-size: 28px; // Adjusted size to fit better potentially
     line-height: 100%;
+    letter-spacing: -1px; // Adjusted spacing
     width: 100%;
     background: transparent;
     border: none;
-    text-align: left;
+    text-align: left; // Align input text
     padding: 0;
-    margin-right: 10px;
+    margin-right: 10px; // Add some space between input and currency selector
 
     &:focus {
         outline: none;
     }
 
+    // Style placeholder text if needed
     &::placeholder {
-        color: #aaaaaa;
+        color: #aaaaaa; // Lighter placeholder
     }
 
+    // Use $ prefix for transient props in styled-components v6+
     ${({ $error }) =>
         $error &&
         css`
-            color: #d32f2f;
+            // Add subtle error indication, maybe text color?
+            color: #d32f2f; // Example error color
+            // border: 1px solid #D32F2F; // Adding border might change layout
         `}
 `;
 
 export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' }>`
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: black;
+    border: 4px solid #e5e2e1;
     display: flex;
     align-items: center;
     justify-content: center;
-
     cursor: pointer; // Make it look clickable
     transition: background-color 0.2s ease; // Add hover effect
 
@@ -137,15 +149,7 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     svg {
         transition: transform 0.2s ease-in-out;
     }
-
-    width: 46px;
-    height: 46px;
-    top: 96px;
-    left: 130px;
-    border-radius: 23px;
-    border-width: 4px;
-    background: #090719;
-
+    // Use $ prefix for transient props in styled-components v6+
     ${({ $direction }) =>
         $direction === 'output' && // Only rotate when output is the input field now (direction='output')
         css`
@@ -155,6 +159,79 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
         `}
 `;
 
+export const SwapDetails = styled.div`
+    margin-top: 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+`;
+
+export const SwapDetailsKey = styled.div`
+    color: rgba(0, 0, 0, 0.6);
+    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    line-height: 130%;
+    letter-spacing: -2%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+`;
+
+export const SwapDetailsValue = styled.div`
+    color: black;
+    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 117%;
+    letter-spacing: -3%;
+    display: flex;
+    justify-content: space-between; // Keeps value right-aligned if needed
+    align-items: center; // Align value vertically
+
+    span {
+        // If you ever add a sub-value span
+        font-family: Poppins, sans-serif;
+        font-weight: 500;
+        font-size: 10px;
+        line-height: 100%;
+        letter-spacing: -3%;
+    }
+`;
+
+export const NewOutputWrapper = styled.div`
+    border: 2px solid #0000001a;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 15px;
+    margin-bottom: 20px;
+`;
+
+export const NewOutputAmount = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+`;
+
+export const PoweredBy = styled.div`
+    color: #7f8599;
+    padding: 20px 20px 0 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+
+    font-family: Poppins, sans-serif;
+    font-weight: 500;
+    font-size: 12px;
+`;
+
+// --- ADDED/MODIFIED COMPONENTS ---
+
+// Button used to trigger token selection modal
+// It wraps the SwapOptionCurrency display
 export const TokenSelectButton = styled.button`
     background: none;
     border: none;

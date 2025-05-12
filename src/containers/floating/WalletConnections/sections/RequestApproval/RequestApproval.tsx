@@ -1,23 +1,20 @@
 import MMFox from '../../icons/mm-fox';
 import { useConnect } from 'wagmi';
 import { useCallback, useEffect, useState } from 'react';
-import { QRCode } from 'react-qrcode-logo';
 import {
     ConnectHeader,
     ConnectSubHeader,
     ContentWrapper,
-    QrWrapper,
-    LoadingQrInner,
     ConnectingProgress,
     GreenDot,
     LoadingCopy,
-} from './ConnectWallet.styles';
+} from './RequestApproval.styles';
 import { LoadingDots } from '../SignMessage/SignMessage.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
 // import Portal from '../../icons/portal.png';
 
-export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
+export const RequestApproval = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false); // Track connection status
@@ -73,22 +70,6 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                     <MMFox width="100" />
                     <ConnectHeader>{'Connect to MetaMask'}</ConnectHeader>
                     <ConnectSubHeader>{'Scan the QR code to connect your wallet on your phone'}</ConnectSubHeader>
-                    <QrWrapper>
-                        {qrCodeUri ? (
-                            <QRCode value={qrCodeUri} size={180} />
-                        ) : (
-                            <LoadingQrInner
-                                animate={{
-                                    backgroundPosition: ['-200%', '200%'],
-                                }}
-                                transition={{
-                                    repeat: Infinity,
-                                    duration: 2,
-                                    ease: 'linear',
-                                }}
-                            />
-                        )}
-                    </QrWrapper>
                     <ConnectingProgress>
                         <GreenDot />
                         <MMFox width="20" />

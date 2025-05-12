@@ -78,7 +78,7 @@ export const setWalletBalance = (balance: WalletBalance) => {
     });
 };
 
-export const setWalletConnectModalOpen = (open: boolean) => {
+export const setWalletUiVisible = (open: boolean) => {
     if (!open) {
         useWalletStore.setState({ swap_step: SwapStep.ConnectWallet });
     }
