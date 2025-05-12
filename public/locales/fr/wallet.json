@@ -65,6 +65,6 @@
     "send": "Envoyer"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Le portefeuille est en cours de scan..",
+  "wallet-is-scanning": "Le portefeuille est en cours de scan...",
   "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)"
 }

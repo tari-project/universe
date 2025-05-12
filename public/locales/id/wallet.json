@@ -65,6 +65,6 @@
     "send": "Kirim"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "Dompet sedang memindai..",
+  "wallet-is-scanning": "Dompet sedang memindai...",
   "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)"
 }
