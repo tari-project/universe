@@ -31,7 +31,7 @@ jobs:
           echo "EXCHANGES_NAMES=$EXCHANGES_NAMES" >> $GITHUB_OUTPUT
   builds:
     needs: read-exchanges
-    name: Building ${{ matrix.platform }}${{ matrix.extra }}
+    name: Building ${{ matrix.exchange }} ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
@@ -40,10 +40,7 @@ jobs:
       fail-fast: false
       matrix:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS) }}
-        name: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
-        include:
-          - exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS)[0] }}
-            name: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES)[0] }}
+        platforms:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
@@ -62,7 +59,7 @@ jobs:
             args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
 
