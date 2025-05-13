@@ -5,7 +5,7 @@ export const Wrapper = styled.div`
     align-items: center;
     width: 100%;
 
-    padding: 0px 0px 20px 30px;
+    padding: 0px 0px 10px 30px;
 
     position: absolute;
     bottom: 0;
@@ -32,10 +32,5 @@ export const StickyEntryWrapper = styled.div`
 
 export const LoadingPlaceholder = styled.div`
     width: 100%;
-    height: 89px;
-`;
-
-export const BlockEntryPlaceholder = styled.div`
-    width: 316px;
     height: 89px;
 `;
