@@ -1,5 +1,5 @@
 ---
-name: Release
+name: Release-Exchange
 
 'on':
   workflow_dispatch:
