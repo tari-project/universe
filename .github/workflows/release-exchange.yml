@@ -31,7 +31,7 @@ jobs:
           echo "EXCHANGES_NAMES=$EXCHANGES_NAMES" >> $GITHUB_OUTPUT
   builds:
     needs: read-exchanges
-    name: Building ${{ matrix.exchange }} ${{ matrix.platform }}${{ matrix.extra }}
+    name: Building ${{ matrix.exchange }}${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.best_effort || false }}
     permissions:
