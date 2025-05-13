@@ -25,7 +25,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
-use tauri_plugin_sentry::sentry;
 use tokio::fs;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
@@ -365,21 +364,19 @@ impl RequestClient {
 
         if head_reponse_content_length != 0 && head_reponse_content_length != destination_file_size
         {
-            let error_message = format!(
+            return Err(anyhow!(
                 "Downloaded file size does not match expected size. Expected: {}, Actual: {}",
-                head_reponse_content_length, destination_file_size
-            );
-            sentry::capture_message(&error_message, sentry::Level::Error);
-            return Err(anyhow!(error_message));
+                head_reponse_content_length,
+                destination_file_size
+            ));
         };
 
         if !head_reponse_etag.is_empty() && head_reponse_etag != get_reposnse_etag {
-            let error_message = format!(
+            return Err(anyhow!(
                 "Downloaded etag does not match expected etag. Expected: {}, Actual: {}",
-                head_reponse_etag, get_reposnse_etag
-            );
-            sentry::capture_message(&error_message, sentry::Level::Error);
-            return Err(anyhow!(error_message));
+                head_reponse_etag,
+                get_reposnse_etag
+            ));
         };
 
         info!(target: LOG_TARGET, "Finished downloading: {}", url);
@@ -396,15 +393,21 @@ impl RequestClient {
         info!(target: LOG_TARGET, "Downloading file: {}", url);
 
         let mut retries = 0;
+        let mut last_error_message = String::new();
 
         loop {
             if retries >= MAX_DOWNLOAD_FILE_RETRIES {
-                return Err(anyhow!("Max retries reached"));
+                return Err(anyhow!(
+                    "Failed to download file after {} retries. Last error: {}",
+                    MAX_DOWNLOAD_FILE_RETRIES,
+                    last_error_message
+                ));
             }
 
             match self.download_file(url, destination, check_cache).await {
                 Ok(_) => break,
                 Err(e) => {
+                    last_error_message = e.to_string();
                     warn!(target: LOG_TARGET, "Failed to download file: {}", e);
                     info!(target: LOG_TARGET, "Deleting file: {}", destination.display());
                     if destination.exists() {

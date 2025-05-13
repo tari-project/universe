@@ -25,6 +25,7 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 use tari_common::configuration::Network;
+use tauri_plugin_sentry::sentry;
 
 use crate::{
     download_utils::{extract, validate_checksum},
@@ -439,21 +440,26 @@ impl BinaryManager {
         selected_version: Option<Version>,
         progress_tracker: ProgressTracker,
     ) -> Result<(), Error> {
+        let mut last_error_message = String::new();
         for retry in 0..3 {
             match self
                 .download_selected_version(selected_version.clone(), progress_tracker.clone())
                 .await
             {
                 Ok(_) => return Ok(()),
-                Err(_) => {
+                Err(error) => {
+                    last_error_message = format!(
+                        "Failed to download binary: {}. Error: {:?}",
+                        self.binary_name, error
+                    );
                     warn!(target: LOG_TARGET, "Failed to download binary: {} at retry: {}", self.binary_name, retry);
                     continue;
                 }
             }
         }
-        let error_msg = format!("Failed to download binary: {}", self.binary_name);
-        error!(target: LOG_TARGET, "{}", error_msg);
-        Err(anyhow!(error_msg))
+        sentry::capture_message(&last_error_message, sentry::Level::Error);
+        error!(target: LOG_TARGET, "{}", last_error_message);
+        Err(anyhow!(last_error_message))
     }
 
     #[allow(clippy::too_many_lines)]
