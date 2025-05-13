@@ -1,10 +1,12 @@
 {
     "exchanges": [
         {
+            "order": 0,
             "id": "46d881c4-c351-4d94-a070-d77c47fe8e71",
             "secret_name": "yolo"
         },
         {
+            "order": 1,
             "id": "22d881c4-c351-4d94-a070-d77c47fe8e00",
             "secret_name": "not-yolo"
         }
