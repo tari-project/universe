@@ -10,6 +10,7 @@ export const Wrapper = styled.div`
     position: absolute;
     bottom: 0;
     right: 0;
+    z-index: 0;
 
     pointer-events: all;
 `;

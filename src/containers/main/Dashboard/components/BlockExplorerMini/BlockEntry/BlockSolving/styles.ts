@@ -4,8 +4,6 @@ import styled, { css } from 'styled-components';
 export const Wrapper = styled(m.div)`
     display: flex;
     width: 100%;
-    pointer-events: all;
-    user-select: none;
 `;
 
 export const BoxWrapper = styled(m.div)<{ $isSolved?: boolean }>`
