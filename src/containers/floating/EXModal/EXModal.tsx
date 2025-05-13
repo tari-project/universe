@@ -12,7 +12,7 @@ export default function EXModal() {
 
     if (!data) return null;
     return (
-        <Dialog open={showModal} onOpenChange={setShowExchangeModal}>
+        <Dialog open={showModal} onOpenChange={setShowExchangeModal} disableClose>
             <DialogContent $disableOverflow $borderRadius="40px">
                 <Wrapper>
                     <CloseButton onClick={() => setShowExchangeModal(false)}>

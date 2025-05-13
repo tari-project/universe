@@ -69,7 +69,7 @@ export const Connect = () => {
     return (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
-                <AddressInputLabel>{data?.wallet_label}</AddressInputLabel>
+                <AddressInputLabel>{`Enter your ${data?.name} Tari Address`}</AddressInputLabel>
                 <AddressInputWrapper>
                     <AddressInput
                         {...register('address', {
@@ -92,7 +92,7 @@ export const Connect = () => {
                     type="submit"
                     disabled={formState.isSubmitting || !formState.isValid}
                 >
-                    <CTAText>{`Connect`}</CTAText>
+                    <CTAText>{data?.campaign_cta || `Connect`}</CTAText>
                 </CTA>
             </ConnectForm>
         </Wrapper>
