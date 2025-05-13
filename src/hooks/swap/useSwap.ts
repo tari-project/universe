@@ -21,6 +21,12 @@ import erc20Abi from './abi/erc20.json'; // Standard ERC20 ABI
 import uniswapV2RouterAbi from './abi/UniswapV2Router02.json'; // Uniswap V2 Router02 ABI
 import uniswapV2PairAbi from './abi/UniswapV2Pair.json'; // Uniswap V2 Pair ABI
 
+export interface TradeDetails {
+    trade: Trade<Token, Token, TradeType.EXACT_INPUT> | null;
+    route: Route<Token, Token> | null;
+    estimatedGasFeeUSD?: string | number;
+}
+
 // --- Constants ---
 
 // Store router addresses per chain ID
@@ -31,6 +37,32 @@ const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
     [ChainId.SEPOLIA]: '0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3', // Uniswap V2 Router address on Sepolia
     [ChainId.POLYGON]: '0xa5E0829CaCEd8fFDD4De3c43696c57F7D7A678ff', // SushiSwap Router (commonly used as V2 Router on Polygon)
     // Add other V2 Routers (Arbitrum might primarily use V3, check Uniswap docs)
+};
+
+enum EnabledTokens {
+    DAI = 'DAI',
+    WETH = 'WETH',
+    XTM = 'XTM',
+    USDC = 'USDC',
+}
+
+export const ENABLED_TOKENS = {
+    [EnabledTokens.DAI]: {
+        [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
+    },
+    [EnabledTokens.WETH]: {
+        [ChainId.MAINNET]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+        [ChainId.SEPOLIA]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
+    },
+    [EnabledTokens.XTM]: {
+        [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
+    },
+    [EnabledTokens.USDC]: {
+        [ChainId.MAINNET]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+        [ChainId.SEPOLIA]: '0x73d219B3881E481394DA6B5008A081d623992200',
+    },
 };
 
 // Add Public RPC URLs for read-only operations (replace with your preferred ones)
@@ -46,14 +78,14 @@ const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
 export const DAI: Partial<Record<ChainId, Token>> = {
     [ChainId.MAINNET]: new Token(
         ChainId.MAINNET,
-        '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+        ENABLED_TOKENS[EnabledTokens.DAI][ChainId.MAINNET],
         18,
         'DAI',
         'Dai Stablecoin'
     ),
     [ChainId.SEPOLIA]: new Token(
         ChainId.SEPOLIA,
-        '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
+        ENABLED_TOKENS[EnabledTokens.DAI][ChainId.SEPOLIA],
         18,
         'DAI',
         'Dai Stablecoin'
@@ -61,8 +93,20 @@ export const DAI: Partial<Record<ChainId, Token>> = {
 };
 
 export const USDC: Partial<Record<ChainId, Token>> = {
-    [ChainId.MAINNET]: new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6, 'USDC', 'USD Coin'),
-    [ChainId.SEPOLIA]: new Token(ChainId.SEPOLIA, '0x73d219B3881E481394DA6B5008A081d623992200', 6, 'USDC', 'USD Coin'),
+    [ChainId.MAINNET]: new Token(
+        ChainId.MAINNET,
+        ENABLED_TOKENS[EnabledTokens.USDC][ChainId.MAINNET],
+        6,
+        'USDC',
+        'USD Coin'
+    ),
+    [ChainId.SEPOLIA]: new Token(
+        ChainId.SEPOLIA,
+        ENABLED_TOKENS[EnabledTokens.USDC][ChainId.SEPOLIA],
+        6,
+        'USDC',
+        'USD Coin'
+    ),
 };
 
 // Define your token (XTM) per chain - USING DAI AS A PLACEHOLDER
@@ -70,7 +114,6 @@ export const USDC: Partial<Record<ChainId, Token>> = {
 export const XTM: Partial<Record<ChainId, Token>> = {
     [ChainId.MAINNET]: DAI[ChainId.MAINNET]!, // Replace with actual XTM Token object
     [ChainId.SEPOLIA]: DAI[ChainId.SEPOLIA]!, // Replace with actual XTM Token object
-    // Add other chains where XTM is deployed
 };
 
 // Known tokens map for easy lookup by address (case-insensitive)
@@ -327,7 +370,7 @@ export const useSwap = () => {
     const getTradeDetails = useCallback(
         async (
             inputAmountRaw: string // Expect raw amount string (e.g., '1000000000000000000' for 1 ETH/Token)
-        ): Promise<{ trade: Trade<Token, Token, TradeType.EXACT_INPUT> | null; route: Route<Token, Token> | null }> => {
+        ): Promise<TradeDetails> => {
             // Validate input amount format (non-negative integer string)
             if (!/^\d+$/.test(inputAmountRaw) || BigInt(inputAmountRaw) <= 0n) {
                 console.error('Invalid raw input amount:', inputAmountRaw);

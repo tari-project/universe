@@ -19,7 +19,7 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { BuyTariButton, SyncButton, TabsTitle, TabsWarapper, Wrapper, TabsWrapper } from './wallet.styles.ts';
+import { BuyTariButton, SyncButton, TabsTitle, Wrapper, TabsWrapper } from './wallet.styles.ts';
 import { memo } from 'react';
 
 import { setWalletUiVisible } from '@app/store/actions/walletStoreActions.ts';

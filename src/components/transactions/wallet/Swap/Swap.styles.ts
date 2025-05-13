@@ -65,16 +65,16 @@ export const SwapOptionAmount = styled.div`
     font-size: 36px;
 `;
 
-export const SwapOptionCurrency = styled.div`
+export const SwapOptionCurrency = styled.div<{ $clickable?: boolean }>`
     border-radius: 60px;
     gap: 6px;
-    padding: 5px;
+    padding: 3px;
     padding-right: 10px;
-    background: #e5e2e1;
-    display: inline-flex; // Changed to inline-flex
+    background: #dcd8d7;
+    display: inline-flex;
     align-items: center;
-    white-space: nowrap; // Prevent wrapping
-
+    white-space: nowrap;
+    border: 1px solid #0000004d;
     span {
         color: black;
         font-family: Alliance No.1;
@@ -83,6 +83,15 @@ export const SwapOptionCurrency = styled.div`
         line-height: 100%;
         letter-spacing: -2%;
     }
+
+    ${({ $clickable }) =>
+        $clickable &&
+        css`
+            cursor: pointer;
+            &:hover {
+                opacity: 0.8;
+            }
+        `}
 `;
 
 export const SwapDirection = styled.div`
@@ -285,4 +294,52 @@ export const BackButton = styled.button`
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 10px;
+`;
+
+export const HeaderWrapper = styled.div`
+    padding: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+`;
+export const HeaderItem = styled.div`
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: start;
+`;
+export const StepHeader = styled.h3`
+    font-family: Poppins, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0;
+`;
+
+export const CurrentStep = styled.span`
+    font-family: Poppins, sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    color: #00000080;
+    strong {
+        color: black;
+    }
+`;
+
+export const ConnectedWalletWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: #ffffff80;
+    padding: 5px 10px;
+    border-radius: 12px;
+
+    font-family: Poppins, sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+
+    cursor: pointer;
+    transition: opacity 0.2s ease-in-out;
+    &:hover {
+        opacity: 0.5;
+    }
 `;

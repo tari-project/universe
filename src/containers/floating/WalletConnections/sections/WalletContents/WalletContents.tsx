@@ -16,10 +16,16 @@ import { useMemo } from 'react';
 import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
 import { SwapStep } from '@app/store';
 import { getCurrencyIcon } from '../../helpers/getIcon';
+import TransactionModal from '@app/components/TransactionModal/TransactionModal';
+import { AnimatePresence } from 'motion/react';
 
-export const WalletContents = () => {
+interface Props {
+    isOpen: boolean;
+    setIsOpen: (isOpen: boolean) => void;
+}
+
+export const WalletContents = ({ isOpen, setIsOpen }: Props) => {
     const { disconnect } = useDisconnect();
-    // const { open } = useAppKit();
     const dataAcc = useAccount();
 
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
@@ -58,44 +64,29 @@ export const WalletContents = () => {
     }, [accountBalance]);
 
     return (
-        <WalletContentsContainer>
-            <div>
-                {
-                    // <WalletButton
-                    //     variant="secondary"
-                    //     size="small"
-                    //     onClick={() =>
-                    //         open({
-                    //             view: 'Networks',
-                    //         })
-                    //     }
-                    // >
-                    //     {'Switch Network'}
-                    // </WalletButton>
-                }
-            </div>
-            <ConnectedWalletWrapper>
-                <WalletButton variant="error" onClick={() => disconnect()}>
-                    {'Disconnect'}
-                </WalletButton>
-                <StatusWrapper>
-                    <ActiveDot />
-                    <MMFox width="25" />
-                    <WalletAddress>{truncateMiddle(dataAcc.address || '', 4)}</WalletAddress>
-                </StatusWrapper>
-            </ConnectedWalletWrapper>
-            <ContentWrapper>
-                <WalletValue>
-                    {walletChainIcon}
-                    <WalletValueRight>
-                        {value} {accountBalance?.symbol}
-                    </WalletValueRight>
-                </WalletValue>
-            </ContentWrapper>
-
-            <WalletButton variant="primary" onClick={() => setWalletConnectModalStep(SwapStep.Swap)} size="large">
-                {'Continue'}
-            </WalletButton>
-        </WalletContentsContainer>
+        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} title={'Connected wallet'}>
+            <AnimatePresence mode="wait">
+                <WalletContentsContainer>
+                    <ConnectedWalletWrapper>
+                        <WalletButton variant="error" onClick={() => disconnect()}>
+                            {'Disconnect'}
+                        </WalletButton>
+                        <StatusWrapper>
+                            <ActiveDot />
+                            <MMFox width="25" />
+                            <WalletAddress>{truncateMiddle(dataAcc.address || '', 4)}</WalletAddress>
+                        </StatusWrapper>
+                    </ConnectedWalletWrapper>
+                    <ContentWrapper>
+                        <WalletValue>
+                            {walletChainIcon}
+                            <WalletValueRight>
+                                {value} {accountBalance?.symbol}
+                            </WalletValueRight>
+                        </WalletValue>
+                    </ContentWrapper>
+                </WalletContentsContainer>
+            </AnimatePresence>
+        </TransactionModal>
     );
 };

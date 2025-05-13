@@ -15,15 +15,18 @@ import { truncateMiddle } from '@app/utils';
 import { setWalletUiVisible } from '@app/store/actions/walletStoreActions';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
+import { useMemo } from 'react';
 
-type Status = 'processing' | 'success' | 'error';
+export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
+
 interface Props {
-    status: Status;
+    status: SwapStatus;
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
+    transactionId?: string;
 }
 
-export const ProcessingTransaction = ({ status, isOpen, setIsOpen }: Props) => {
+export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId }: Props) => {
     const dataAcc = useAccount();
 
     const loadingDots = (
@@ -43,8 +46,8 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen }: Props) => {
             value: '0.03%',
         },
         {
-            key: 'Swap id',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+            key: 'Transaction id',
+            value: transactionId || loadingDots,
         },
         {
             key: 'Ethereum Txn',
@@ -55,6 +58,19 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen }: Props) => {
             value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
         },
     ];
+
+    const ctaMessage = useMemo(() => {
+        switch (status) {
+            case 'processingapproval':
+                return 'Awaiting Approval';
+            case 'processingswap':
+                return 'Processing Swap';
+            case 'success':
+                return 'Done';
+            case 'error':
+                return 'Close';
+        }
+    }, [status]);
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
             <AnimatePresence mode="wait">
@@ -76,11 +92,10 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen }: Props) => {
                 <WalletButton
                     variant="primary"
                     size="xl"
-                    disabled={status === 'processing'}
+                    disabled={status === 'processingswap' || status === 'processingapproval'}
                     onClick={() => setWalletUiVisible(false)}
                 >
-                    {status === 'processing' ? 'Processing transaction' : 'Done'}
-                    {status === 'processing' ? loadingDots : null}
+                    {ctaMessage}
                 </WalletButton>
             </AnimatePresence>
         </TransactionModal>

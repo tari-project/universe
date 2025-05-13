@@ -1,4 +1,5 @@
 import styled from 'styled-components';
+import { SwapStatus } from './ProcessingTransaction';
 
 export const HeaderWrapper = styled.div`
     display: flex;
@@ -52,7 +53,7 @@ export const ProcessingItemDetailKey = styled.div`
     gap: 8px;
 `;
 
-export const StatusValue = styled.div<{ $status: 'processing' | 'success' | 'error' }>`
+export const StatusValue = styled.div<{ $status: SwapStatus }>`
     font-family: Poppins;
     font-weight: bold;
     font-size: 14px;
@@ -60,7 +61,8 @@ export const StatusValue = styled.div<{ $status: 'processing' | 'success' | 'err
     letter-spacing: -3%;
     color: ${({ $status: status, theme }) => {
         switch (status) {
-            case 'processing':
+            case 'processingapproval':
+            case 'processingswap':
                 return '#FF7700';
             case 'success':
                 return theme.mode === 'dark' ? '#00ff00' : '#36C475';

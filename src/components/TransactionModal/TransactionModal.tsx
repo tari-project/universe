@@ -26,6 +26,7 @@ export default function TransactionModal({ show, title, children, handleBack, ha
             <CloseIcon />
         </TopButton>
     ) : null;
+
     return (
         <AnimatePresence>
             {show && (

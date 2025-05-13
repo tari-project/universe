@@ -9,13 +9,13 @@ interface Props {
 }
 export const getCurrencyIcon = ({ simbol, width, fill }: Props) => {
     switch (simbol.toLowerCase()) {
-        case 'eth':
-            return <EthereumIcon width={width} fill={fill} />;
         case 'pol':
             return <PolygonIcon width={width} fill={fill} />;
         case 'xtm':
-            return <TariIcon width={width} fill={fill} />;
+        case 'dai':
+            return <TariIcon size={width} fill={fill} />;
+        case 'eth':
         default:
-            return null;
+            return <EthereumIcon size={width} fill={fill} />;
     }
 };

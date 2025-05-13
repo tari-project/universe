@@ -30,18 +30,18 @@ interface Props {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     onConfirm: () => void;
-    trannsaction: {
+    transaction: {
         amount: string;
         targetAmount: string;
         direction: 'input' | 'output';
-        slippage: string;
-        networkFee: string;
-        priceImpact: string;
-        transactionId: string;
+        slippage?: string | null;
+        networkFee?: string | null;
+        priceImpact?: string | null;
+        transactionId?: string | null;
     };
 }
-export const SwapConfirmation = ({ isOpen, setIsOpen, trannsaction, onConfirm }: Props) => {
-    const { amount, targetAmount, direction, slippage, networkFee, priceImpact } = trannsaction;
+export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm }: Props) => {
+    const { amount, targetAmount, direction, slippage, networkFee, priceImpact } = transaction;
 
     const dataAcc = useAccount();
     const { data: accountBalance } = useBalance({ address: dataAcc.address });
