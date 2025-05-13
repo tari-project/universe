@@ -129,6 +129,11 @@ impl InternalWallet {
         self.tari_address.clone()
     }
 
+    pub fn set_tari_address(&mut self, address: TariAddress) {
+        self.tari_address = address;
+        self.config.is_tari_address_generated = true;
+    }
+
     pub async fn get_paper_wallet_details(
         &self,
         anon_id: String,
@@ -187,6 +192,7 @@ impl InternalWallet {
             spend_public_key_hex: "".to_string(),
             config_path: Some(path.to_path_buf()),
             passphrase: None,
+            is_tari_address_generated: false,
         };
 
         let cm = CredentialManager::default_with_dir(path);
@@ -345,6 +351,7 @@ pub struct WalletConfig {
     // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
+    is_tari_address_generated: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]

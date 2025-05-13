@@ -67,7 +67,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::TariAddressFeatures;
+use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
@@ -562,11 +562,7 @@ pub async fn get_paper_wallet_details(
 }
 
 #[tauri::command]
-pub async fn get_seed_words(
-    _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<Vec<String>, String> {
+pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -592,6 +588,26 @@ pub async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let mut internal_wallet = InternalWallet::load_or_create(config_path)
+        .await
+        .map_err(|e| e.to_string())?;
+    internal_wallet.set_tari_address(TariAddress::from_str(&address).map_err(|e| e.to_string())?);
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app)
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -871,7 +887,7 @@ pub async fn reset_settings<'r>(
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
-    app.restart();
+    app.restart()
 }
 
 #[tauri::command]

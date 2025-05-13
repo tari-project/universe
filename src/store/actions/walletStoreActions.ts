@@ -54,6 +54,14 @@ export const refreshTransactions = async () => {
     return fetchTransactionsHistory({ continuation: false, limit: Math.max(limit, 20) });
 };
 
+export const setGeneratedTariAddress = async (newAddress: string) => {
+    try {
+        await invoke('set_tari_address', { address: newAddress });
+    } catch (error) {
+        console.error('Could not set generated Tari address: ', error);
+    }
+};
+
 export const setWalletAddress = (addresses: WalletAddress) => {
     useWalletStore.setState({
         tari_address_base58: addresses.tari_address_base58,
