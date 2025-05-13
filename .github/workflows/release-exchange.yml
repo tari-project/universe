@@ -213,8 +213,8 @@ jobs:
           NODE_OPTIONS: '--max_old_space_size=4096'
           EXCHANGE_ID: ${{ matrix.exchange.id }}
         with:
-          tagName: ${{ env.tagName }}
-          releaseName: ${{ env.releaseName }}
+          # tagName: ${{ env.tagName }}
+          # releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
           releaseDraft: false
           prerelease: true
