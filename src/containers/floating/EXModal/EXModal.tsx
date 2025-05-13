@@ -18,9 +18,9 @@ export default function EXModal() {
                         <IoClose />
                     </CloseButton>
                     <Hero
-                        heroImgUrl={data.exchange_hero_img}
-                        primaryCol={data.primary_col}
-                        secondaryCol={data.secondary_col}
+                        heroImgUrl={data.hero_img_url}
+                        primaryCol={data.primary_colour}
+                        secondaryCol={data.secondary_colour}
                     />
                     <Content data={data} />
                 </Wrapper>

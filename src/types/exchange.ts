@@ -2,13 +2,17 @@ export interface ExchangeContent {
     createdAt: string;
     updatedAt: string;
     id: string;
-    exchange_name: string;
-    exchange_campaign_cta: string;
-    exchange_campaign_description: string;
-    exchange_campaign_description_extra?: string;
-    exchange_wallet_label: string;
-    exchange_hero_img: string;
-    exchange_logo_img: string;
-    primary_col: string;
-    secondary_col: string;
+    exchange_id: string;
+    name: string;
+    campaign_cta?: string;
+    campaign_title: string;
+    campaign_description: string;
+    campaign_tagline?: string;
+    wallet_label: string;
+    secondary_colour: string;
+    primary_colour: string;
+    logo_img_url: string;
+    hero_img_url: string;
+    logo_img_small_url?: string;
+    reward_percentage: number;
 }

@@ -10,14 +10,14 @@ export default function Content({ data }: ContentProps) {
     return (
         <Container>
             <LogoContainer>
-                <LogoImg src={data.exchange_logo_img} alt={data.exchange_name} />
+                <LogoImg src={data.logo_img_url} alt={data.name} />
                 {`TariExchange LOGO`}
             </LogoContainer>
             <ContentContainer>
-                <GradientText colors={[data.secondary_col, data.primary_col, data.secondary_col]}>
-                    <Heading>{data.exchange_campaign_description}</Heading>
+                <GradientText colors={[data.secondary_colour, data.primary_colour, data.secondary_colour]}>
+                    <Heading>{data.campaign_title}</Heading>
                 </GradientText>
-                <p>{data.exchange_campaign_description_extra}</p>
+                <p>{data.campaign_description}</p>
             </ContentContainer>
             <Connect />
         </Container>

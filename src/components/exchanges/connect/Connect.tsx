@@ -69,7 +69,7 @@ export const Connect = () => {
     return (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
-                <AddressInputLabel>{data.exchange_wallet_label}</AddressInputLabel>
+                <AddressInputLabel>{data.wallet_label}</AddressInputLabel>
                 <AddressInputWrapper>
                     <AddressInput
                         {...register('address', {
@@ -88,7 +88,7 @@ export const Connect = () => {
                     )}
                 </AddressInputWrapper>
                 <CTA
-                    $backgroundCol={data.primary_col}
+                    $backgroundCol={data.primary_colour}
                     type="submit"
                     disabled={formState.isSubmitting || !formState.isValid}
                 >
