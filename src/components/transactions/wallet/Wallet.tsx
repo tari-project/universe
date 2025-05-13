@@ -72,7 +72,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             {uiSendRecvEnabled ? (
                 <>
-                    <BuyTariButton onClick={() => setWalletUiVisible(true)}>{'Buy Tari (XTM)'}</BuyTariButton>
+                    <BuyTariButton onClick={() => setWalletUiVisible(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                     <BottomNavWrapper>
                         <NavButton
                             onClick={() => setSection('send')}
