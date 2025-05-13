@@ -78,9 +78,7 @@ impl Default for ConfigCoreContent {
     fn default() -> Self {
         let network = Network::get_current_or_user_setting_or_default();
         let remote_base_node_address = match network {
-            Network::MainNet => {
-                format!("https://grpc.tari.com:443")
-            }
+            Network::MainNet => "https://grpc.tari.com:443".to_string(),
             _ => {
                 format!("https://grpc.{}.tari.com:443", network.as_key_str())
             }
