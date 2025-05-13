@@ -72,7 +72,6 @@ jobs:
           sudo bash ./scripts/check-get-yq.sh
 
       - name: Set environment variables
-        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
         env:
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
           # Used for linux formatting
