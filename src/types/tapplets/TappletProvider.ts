@@ -1,7 +1,6 @@
-import { SendInputs } from '@app/components/transactions/send/types';
 import { setError as setStoreError } from '@app/store';
-
 import { invoke } from '@tauri-apps/api/core';
+import { WalletBalance } from '../app-status';
 
 export interface WindowSize {
     width: number;
@@ -101,6 +100,13 @@ export class TappletProvider {
             setStoreError(`Error sending transaction: ${error}`);
             return false;
         }
+    }
+
+    // TODO tmp test
+    public async getTariBalance(): Promise<WalletBalance> {
+        const balance = await invoke('get_tari_wallet_balance');
+        console.info('🤝🤝🤝 [TU Tapplet][get balance] SUCCESS', balance);
+        return balance;
     }
 }
 

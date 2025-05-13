@@ -1322,6 +1322,7 @@ fn main() {
             commands::set_warmup_seen,
             commands::launch_builtin_tapplet,
             commands::get_tari_wallet_address,
+            commands::get_tari_wallet_balance
         ])
         .build(tauri::generate_context!())
         .inspect_err(

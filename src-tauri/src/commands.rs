@@ -51,7 +51,7 @@ use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
 use crate::utils::app_flow_utils::FrontendReadyChannel;
-use crate::wallet_adapter::TransactionInfo;
+use crate::wallet_adapter::{TransactionInfo, WalletBalance};
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
@@ -2007,4 +2007,26 @@ pub async fn get_tari_wallet_address(
     let addr = tari_address.read().await.to_base58();
     info!(target: LOG_TARGET, "🤝 [TU][command] tari addr:  {:?}", &addr);
     Ok(addr)
+}
+
+#[tauri::command]
+pub async fn get_tari_wallet_balance(
+    state: tauri::State<'_, UniverseAppState>,
+) -> Result<WalletBalance, String> {
+    info!(target: LOG_TARGET, "🤝 [TU][command] get tari balance ");
+    let balance = state
+        .wallet_state_watch_rx
+        .borrow()
+        .clone()
+        .and_then(|state| state.balance);
+
+    match balance {
+        Some(balance) => Ok(balance),
+        None => Ok(WalletBalance {
+            available_balance: MicroMinotari(0),
+            timelocked_balance: MicroMinotari(0),
+            pending_incoming_balance: MicroMinotari(0),
+            pending_outgoing_balance: MicroMinotari(0),
+        }),
+    }
 }

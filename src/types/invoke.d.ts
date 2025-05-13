@@ -7,6 +7,7 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
+    WalletBalance,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
@@ -120,4 +121,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
     function invoke(param: 'launch_builtin_tapplet', payload: { tappletDestDir: string }): Promise<ActiveTapplet>;
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
+    function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
 }
