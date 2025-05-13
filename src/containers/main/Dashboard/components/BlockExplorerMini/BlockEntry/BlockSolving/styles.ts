@@ -22,8 +22,8 @@ export const BoxWrapper = styled(m.div)<{ $isSolved?: boolean }>`
     ${({ $isSolved }) =>
         $isSolved &&
         css`
-            border: 1px solid rgba(92, 184, 92, 0.1);
-            background: rgba(216, 247, 217, 0.6);
+            border: 1px solid rgba(148, 227, 151, 0.5);
+            background: rgba(148, 227, 151, 0.5);
         `};
 `;
 
@@ -64,20 +64,11 @@ export const ContentWrapper = styled.div<{ $isSolved?: boolean }>`
     padding-left: 10px;
 
     background: linear-gradient(to right, #fccf5f, #ffb128);
-    @supports (-moz-appearance: none) {
-        /* Firefox-specific styles */
-        background: linear-gradient(to right, #ffc74f, #ffb128);
-    }
 
     ${({ $isSolved }) =>
         $isSolved &&
         css`
             background: linear-gradient(to right, #a8efa2, #8ee193);
-
-            @supports (-moz-appearance: none) {
-                /* Firefox-specific styles */
-                background: linear-gradient(to right, #8ee193, #cef5cf);
-            }
         `};
 `;
 

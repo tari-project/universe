@@ -87,7 +87,7 @@ export const RewardPill = styled.div<{ $isHovering?: boolean }>`
 
     color: #030303;
     font-family: Poppins, sans-serif;
-    font-size: 9px;
+    font-size: 10px;
     font-style: normal;
     font-weight: 700;
     line-height: normal;
@@ -96,7 +96,12 @@ export const RewardPill = styled.div<{ $isHovering?: boolean }>`
 
     position: relative;
 
-    padding: 3px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    height: 20px;
+    padding: 0px 8px;
     transition: background 0.2s ease;
 
     span {
