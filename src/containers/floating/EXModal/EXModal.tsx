@@ -10,6 +10,7 @@ export default function EXModal() {
     const data = useExchangeStore((s) => s.content);
     const showModal = useExchangeStore((s) => s.showModal);
 
+    if (!data) return null;
     return (
         <Dialog open={showModal} onOpenChange={setShowExchangeModal}>
             <DialogContent $disableOverflow $borderRadius="40px">

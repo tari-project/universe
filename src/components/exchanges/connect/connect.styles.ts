@@ -11,8 +11,8 @@ export const Wrapper = styled.div`
     gap: 9px;
 `;
 
-export const CTA = styled.button<{ $backgroundCol: string }>`
-    background-color: ${({ $backgroundCol }) => $backgroundCol};
+export const CTA = styled.button<{ $backgroundCol?: string }>`
+    background-color: ${({ $backgroundCol, theme }) => $backgroundCol || theme.palette.action.background};
     box-shadow: 20px 20px 54px 0 rgba(0, 0, 0, 0.1);
     border-radius: 110px;
     height: 50px;

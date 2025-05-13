@@ -1,18 +1,11 @@
 import styled from 'styled-components';
+import { m } from 'motion/react';
 
 interface BrandColours {
     $brandPrimary?: string;
     $brandSecondary?: string;
 }
 
-export const RingContainer = styled.div<BrandColours>`
-    overflow: hidden;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    position: absolute;
-`;
 export const GraphicContainer = styled.div<BrandColours>`
     min-width: 310px;
     width: 45%;
@@ -40,6 +33,15 @@ export const HeroImgWrapper = styled.div`
 export const HeroImg = styled.img`
     width: 100%;
 `;
+
+export const RingContainer = styled(m.div)<BrandColours>`
+    overflow: hidden;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+`;
 export const HeroRingsWrapper = styled.div`
     position: absolute;
     left: 50%;
@@ -49,10 +51,12 @@ export const HeroRingsWrapper = styled.div`
         position: relative;
     }
 `;
-export const HeroRings = styled.img`
+export const HeroCoinWrapper = styled(m.div)`
     position: absolute;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+    z-index: 11;
+`;
+
+export const HeroCoinImg = styled(m.img)`
+    //position: absolute;
     z-index: 10;
 `;
