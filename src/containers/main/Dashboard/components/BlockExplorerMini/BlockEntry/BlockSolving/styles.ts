@@ -5,11 +5,19 @@ export const Wrapper = styled(m.div)`
     display: flex;
     width: 100%;
     user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    pointer-events: none;
 `;
 
 export const BoxWrapper = styled(m.div)<{ $isSolved?: boolean }>`
     display: flex;
     border-radius: 100px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 
     border: 1px solid rgba(255, 144, 18, 0.3);
     background: rgba(255, 204, 75, 0.3);
@@ -31,6 +39,10 @@ export const Inside = styled.div<{ $isSolved?: boolean }>`
     display: flex;
     align-items: center;
     gap: 14px;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 
     border-radius: 100px;
 
@@ -57,6 +69,10 @@ export const ContentWrapper = styled.div<{ $isSolved?: boolean }>`
     top: 0;
     right: 0px;
     z-index: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 
     width: 150px;
     height: 100%;
@@ -80,6 +96,9 @@ export const Title = styled.div`
     font-weight: 400;
     line-height: 119.8%;
     user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
     pointer-events: none;
 
     strong {
