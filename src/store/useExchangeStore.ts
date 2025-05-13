@@ -6,10 +6,8 @@ interface ExchangeStoreState {
     showModal: boolean;
 }
 
-const canShowModal = import.meta.env.VITE_SHOW_EXCHANGE; // TODO - get from BE, though should true first thing
-
 const initialState = {
-    showModal: canShowModal,
+    showModal: false,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 
@@ -27,7 +25,8 @@ export async function fetchExchangeContent(exchangeId: string) {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const json = (await content.json()) as ExchangeContent;
         setExchangeContent(json);
-        if (canShowModal && json.exchange_id) {
+        const canShowModal = json?.exchange_id && json?.exchange_id.length > 0 && json?.exchange_id !== 'universal';
+        if (canShowModal) {
             setShowExchangeModal(true);
         }
     } catch (e) {
