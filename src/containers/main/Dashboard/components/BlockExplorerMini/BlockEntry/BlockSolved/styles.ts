@@ -9,7 +9,7 @@ export const Wrapper = styled(m.div)`
 
 export const BoxWrapper = styled.div`
     display: flex;
-    border: 1px solid #e8e1d9;
+    border: 1px solid #dbd2c9;
     background-color: rgba(204, 204, 203, 0.8);
     border-radius: 100px;
 
