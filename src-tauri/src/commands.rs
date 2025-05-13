@@ -32,6 +32,7 @@ use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
@@ -67,7 +68,7 @@ use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
 use std::time::{Duration, Instant, SystemTime};
 use tari_common::configuration::Network;
-use tari_common_types::tari_address::{TariAddress, TariAddressFeatures};
+use tari_common_types::tari_address::TariAddressFeatures;
 use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tauri::ipc::InvokeError;
 use tauri::{Manager, PhysicalPosition, PhysicalSize};
@@ -597,10 +598,14 @@ pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<
         .path()
         .app_config_dir()
         .expect("Could not get config dir");
-    let mut internal_wallet = InternalWallet::load_or_create(config_path)
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
         .await
         .map_err(|e| e.to_string())?;
-    internal_wallet.set_tari_address(TariAddress::from_str(&address).map_err(|e| e.to_string())?);
+    let new_address = internal_wallet
+        .set_tari_address(address, config_path)
+        .await?;
+    let handle_clone = app.clone();
+    let _unused = EventsEmitter::emit_wallet_address_update(&handle_clone, new_address);
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![
             SetupPhase::Wallet,

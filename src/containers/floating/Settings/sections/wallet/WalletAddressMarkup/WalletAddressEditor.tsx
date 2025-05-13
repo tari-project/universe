@@ -95,7 +95,7 @@ const WalletAddressEditor = ({ initialAddress, onApply }: WalletAddressEditorPro
                 {editing ? (
                     <>
                         <IconContainer style={{ gap: 2 }}>
-                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
+                            <IconButton type="submit" size="small">
                                 <IoCheckmarkOutline />
                             </IconButton>
                             <IconButton type="reset" size="small">

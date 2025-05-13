@@ -57,20 +57,14 @@ export const refreshTransactions = async () => {
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
-    const prevWalletAddress = useWalletStore.getState().tari_address_base58;
     await invoke('set_tari_address', { address: newAddress })
         .then(() => {
             restartMining();
-            useWalletStore.setState({
-                tari_address_base58: newAddress,
-                tari_address_emoji: '',
-                is_tari_address_generated: true,
-            });
+            console.info('New Tari address set successfully to:', newAddress);
         })
         .catch((e) => {
             console.error('Could not set Monero address', e);
             setError('Could not change Monero address');
-            useWalletStore.setState({ tari_address_base58: prevWalletAddress });
         });
 };
 
