@@ -14,6 +14,8 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
+import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions';
+import WalletAddressEditor from './WalletAddressEditor';
 
 const Dot = styled.div`
     width: 4px;
@@ -109,12 +111,7 @@ const WalletAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={10}>
-                <AddressContainer>
-                    <Typography>{walletAddress}</Typography>
-                </AddressContainer>
-                <CopyToClipboard text={walletAddress} />
-            </Stack>
+            <WalletAddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} />
             <Stack direction="row" justifyContent="stretch" alignItems={isCondensed ? 'center' : 'flex-start'} gap={10}>
                 <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
                     <AddressInner>

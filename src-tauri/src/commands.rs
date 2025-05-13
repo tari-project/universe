@@ -602,10 +602,17 @@ pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<
         .map_err(|e| e.to_string())?;
     internal_wallet.set_tari_address(TariAddress::from_str(&address).map_err(|e| e.to_string())?);
     SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Wallet,
+            SetupPhase::Node,
+            SetupPhase::Unknown,
+        ])
+        .await;
+    SetupManager::get_instance()
         .restart_phases_from_queue(app)
         .await;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
-        warn!(target: LOG_TARGET, "set_monero_address took too long: {:?}", timer.elapsed());
+        warn!(target: LOG_TARGET, "set_tari_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
 }

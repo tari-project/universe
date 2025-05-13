@@ -2,6 +2,8 @@ import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
 import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from '../useWalletStore';
+import { restartMining } from './miningStoreActions';
+import { setError } from './appStateStoreActions';
 
 interface TxArgs {
     continuation: boolean;
@@ -55,11 +57,21 @@ export const refreshTransactions = async () => {
 };
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
-    try {
-        await invoke('set_tari_address', { address: newAddress });
-    } catch (error) {
-        console.error('Could not set generated Tari address: ', error);
-    }
+    const prevWalletAddress = useWalletStore.getState().tari_address_base58;
+    await invoke('set_tari_address', { address: newAddress })
+        .then(() => {
+            restartMining();
+            useWalletStore.setState({
+                tari_address_base58: newAddress,
+                tari_address_emoji: '',
+                is_tari_address_generated: true,
+            });
+        })
+        .catch((e) => {
+            console.error('Could not set Monero address', e);
+            setError('Could not change Monero address');
+            useWalletStore.setState({ tari_address_base58: prevWalletAddress });
+        });
 };
 
 export const setWalletAddress = (addresses: WalletAddress) => {
