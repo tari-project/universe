@@ -128,6 +128,7 @@ sys-locale = "0.3.1"
 [features]
 airdrop-env = []
 telemetry-env = []
+exchange-env = []
 airdrop-local = []
 custom-protocol = [
   "tauri/custom-protocol",

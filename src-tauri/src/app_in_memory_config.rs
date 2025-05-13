@@ -37,12 +37,16 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 #[cfg(feature = "telemetry-env")]
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
+#[cfg(feature = "exchange-env")]
+const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_ID env is not defined");
+pub const DEFAULT_EXCHANGE_ID: &str = "universal";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
     pub telemetry_api_url: String,
+    pub exchange_id: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -67,6 +71,7 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         }
     }
 }
@@ -106,11 +111,12 @@ pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<Strin
 
 impl AppInMemoryConfig {
     pub fn init() -> Self {
-        #[cfg(feature = "airdrop-env")]
+        #[cfg(all(feature = "airdrop-env", not(feature = "exchange-env")))]
         return AppInMemoryConfig {
             airdrop_url: AIRDROP_BASE_URL.into(),
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
             telemetry_api_url: TELEMETRY_API_URL.into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         };
 
         #[cfg(all(feature = "airdrop-local", not(feature = "airdrop-env")))]
@@ -118,12 +124,26 @@ impl AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
+        };
+
+        #[cfg(all(
+            feature = "exchange-env",
+            feature = "airdrop-env",
+            feature = "telemetry-env"
+        ))]
+        return AppInMemoryConfig {
+            airdrop_url: AIRDROP_BASE_URL.into(),
+            airdrop_api_url: AIRDROP_API_BASE_URL.into(),
+            telemetry_api_url: TELEMETRY_API_URL.into(),
+            exchange_id: EXCHANGE_ID.into(),
         };
 
         #[cfg(not(any(
             feature = "airdrop-local",
             feature = "airdrop-env",
-            feature = "telemetry-env"
+            feature = "telemetry-env",
+            feature = "exchange-env"
         )))]
         AppInMemoryConfig::default()
     }
