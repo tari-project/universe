@@ -60,7 +60,7 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
             const provider = get().tappletProvider;
             const result = await provider?.runOne(methodName, args);
             if (event.source) {
-                event.source.postMessage({ id, result, type: 'provider-call' }, { targetOrigin: event.origin });
+                event.source.postMessage({ id, result, type: 'signer-call' }, { targetOrigin: event.origin });
             }
         } catch (error) {
             console.error(`Error running method "${String(methodName)}": ${error}`);

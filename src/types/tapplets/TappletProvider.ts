@@ -71,7 +71,7 @@ export class TappletProvider {
         return true; //TODO tmp solution shoule be better one
     }
 
-    public async sendOneSided(req: SendOneSidedRequest): Promise<any> {
+    public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
         console.info('🤝🤝🤝   [TU Tapplet][SEND ONE SIDED]');
         try {
             // if (!address || !amount) {
@@ -96,8 +96,10 @@ export class TappletProvider {
                 payload.destination,
                 payload.paymentId
             );
+            return true;
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
+            return false;
         }
     }
 }
