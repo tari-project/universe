@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IconContainer } from '@app/containers/floating/Settings/sections/wallet/components/SeedWords.styles.ts';
+import { invoke } from '@tauri-apps/api/core';
 
 interface WalletAddressEditorProps {
     initialAddress: string;
@@ -68,6 +69,15 @@ const WalletAddressEditor = ({ initialAddress, onApply }: WalletAddressEditorPro
         trigger('address');
     }, [address, trigger]);
 
+    const validateAddress = useCallback(async (value: string) => {
+        try {
+            await invoke('verify_address_for_send', { address: value });
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }, []);
+
     const editIconMarkup = !editing ? (
         <IconButton size="small" onClick={() => handleEditClick()} type="button">
             <IoPencil />
@@ -80,6 +90,12 @@ const WalletAddressEditor = ({ initialAddress, onApply }: WalletAddressEditorPro
                 <Controller
                     name="address"
                     control={control}
+                    rules={{
+                        validate: async (value) => {
+                            const isValid = await validateAddress(value);
+                            return isValid || 'Invalid address format';
+                        },
+                    }}
                     render={({ field }) => {
                         return (
                             <StyledInput
@@ -95,7 +111,7 @@ const WalletAddressEditor = ({ initialAddress, onApply }: WalletAddressEditorPro
                 {editing ? (
                     <>
                         <IconContainer style={{ gap: 2 }}>
-                            <IconButton type="submit" size="small">
+                            <IconButton type="submit" size="small" disabled={!!errors.address}>
                                 <IoCheckmarkOutline />
                             </IconButton>
                             <IconButton type="reset" size="small">
