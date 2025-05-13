@@ -155,6 +155,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             () => {
                 if (airdropApiUrl && authToken) {
                     initialiseSocket();
+                    invoke('start_mining_status').catch(console.error);
                 }
             }
         );
@@ -169,6 +170,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        invoke('stop_mining_status').catch(console.error);
         removeSocket();
 
         try {
