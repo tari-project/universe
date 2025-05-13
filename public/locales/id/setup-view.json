@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Earn",
+    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
+    "earn-gems-cta": "Connect",
+    "mode": "Customize",
+    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+  },
   "could-not-auto-update": "Kami tidak dapat memperbarui Tari Universe ke {{version}} secara otomatis saat mesin terkunci atau dalam mode tidur.",
   "dont-worry": "Jangan khawatir, lain kali tidak akan memakan waktu lama",
   "installing-latest-version": "Menginstal versi {{version}} dari Tari Universe",
