@@ -21,7 +21,6 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use anyhow::anyhow;
-use futures::TryFutureExt;
 use log::{info, warn};
 use rand::Rng;
 use serde::{Deserialize, Serialize};
@@ -145,7 +144,7 @@ impl InternalWallet {
         self.config.tari_address_base58 = tari_address.to_base58();
 
         let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
-        fs::write(file, config).map_err(|e| e.to_string()).await?;
+        fs::write(file, config).await.map_err(|e| e.to_string())?;
         Ok(tari_address)
     }
 
