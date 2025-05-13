@@ -14,6 +14,18 @@ env:
   TS_FEATURES: release-ci
 
 jobs:
+  read-exchanges:
+    name: Read exchanges
+    outputs:
+      EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read exchanges
+        id: read-exchanges
+        run: |
+          EXCHANGES_IDS=$(jq -c '.exchanges | map(.id)' exchanges.json)
+          echo "EXCHANGES_IDS=$EXCHANGES_IDS" >> $GITHUB_OUTPUT
+
   builds:
     name: Building ${{ matrix.platform }}${{ matrix.extra }}
     # best effort disabled by default
@@ -23,6 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS) }}
         include:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
@@ -203,7 +216,7 @@ jobs:
           tagName: ${{ env.tagName }}
           releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: true
           includeDebug: false
           includeRelease: true
@@ -318,19 +331,12 @@ jobs:
             exit 1
           }
 
-      - name: Add bundled Windows installer to release
-        if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          gh release view "v${{ steps.build.outputs.appVersion }}"
-          cd tari-win-bundler
-          ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
-          gh release view "v${{ steps.build.outputs.appVersion }}"
-          gh release upload "v${{ steps.build.outputs.appVersion }}" \
-            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
-          gh release view "v${{ steps.build.outputs.appVersion }}"
+      - name: Bundled Windows installer upload
+        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
 
       - name: Locate artifacts path
         continue-on-error: true
@@ -341,6 +347,13 @@ jobs:
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
+
+      - name: Builds - Upload assets
+        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari-universe_${{ steps.build.outputs.appVersion }}_${{ matrix.platform }}${{ matrix.extra }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
