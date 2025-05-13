@@ -225,9 +225,7 @@ impl P2poolManager {
         } else {
             let network = Network::get_current_or_user_setting_or_default();
             match network {
-                Network::MainNet => {
-                    format!("https://grpc-p2pool.tari.com:443")
-                }
+                Network::MainNet => "https://grpc-p2pool.tari.com:443".to_string(),
                 _ => {
                     format!("https://grpc-p2pool.{}.tari.com:443", network.as_key_str())
                 }
