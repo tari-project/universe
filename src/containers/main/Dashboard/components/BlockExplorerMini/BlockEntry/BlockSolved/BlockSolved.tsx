@@ -42,8 +42,10 @@ export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks 
                         </BlockTitle>
                         <MinersSolved>
                             <PeopleIcon />
-                            {minersSolved}
-                            {` miners solved`}
+                            <span>
+                                {minersSolved}
+                                {` miners solved`}
+                            </span>
                         </MinersSolved>
 
                         <MetaData>

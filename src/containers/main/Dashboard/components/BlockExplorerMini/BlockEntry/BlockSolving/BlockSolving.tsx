@@ -15,12 +15,12 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward }: Prop
     const [isSolved, setIsSolved] = useState(false);
 
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsSolved(true);
+        const interval = setInterval(() => {
+            setIsSolved((prevState) => !prevState);
         }, 6000);
 
-        return () => clearTimeout(timer);
-    }, [isSolved]);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <Wrapper
@@ -74,12 +74,13 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward }: Prop
                                         {` miners`}
                                     </strong>
                                     {` got rewarded `}
-                                    {id}
                                 </Title>
                                 <MetaData>
                                     <RewardPill>
-                                        {reward}
-                                        {` XTM`}
+                                        <span>
+                                            {reward}
+                                            {` XTM`}
+                                        </span>
                                     </RewardPill>
                                     {timeAgo && (
                                         <TimeAgo>

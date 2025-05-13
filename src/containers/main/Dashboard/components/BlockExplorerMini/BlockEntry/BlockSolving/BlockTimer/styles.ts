@@ -13,7 +13,7 @@ export const Wrapper = styled(m.div)`
     height: 20px;
 
     color: #030303;
-    font-family: var(--font-poppins), sans-serif;
+    font-family: Poppins, sans-serif;
     font-size: 11px;
     font-style: normal;
     font-weight: 600;

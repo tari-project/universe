@@ -46,7 +46,7 @@ export const TextContainer = styled.div`
     justify-content: center;
 
     color: #3a3835;
-    font-family: var(--font-poppins), sans-serif;
+    font-family: Poppins, sans-serif;
     font-size: 10px;
     font-style: normal;
     font-weight: 500;

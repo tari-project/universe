@@ -4,6 +4,7 @@ import styled, { css } from 'styled-components';
 export const Wrapper = styled(m.div)`
     display: flex;
     width: 100%;
+    user-select: none;
 `;
 
 export const BoxWrapper = styled(m.div)<{ $isSolved?: boolean }>`
@@ -39,20 +40,11 @@ export const Inside = styled.div<{ $isSolved?: boolean }>`
     overflow: hidden;
 
     background: #fccf5f;
-    @supports (-moz-appearance: none) {
-        /* Firefox-specific styles */
-        background: #ffc74f;
-    }
 
     ${({ $isSolved }) =>
         $isSolved &&
         css`
-            background: #a8efa2;
-
-            @supports (-moz-appearance: none) {
-                /* Firefox-specific styles */
-                background: #8ee193;
-            }
+            background: #a5ee9e;
         `};
 `;
 
@@ -91,12 +83,13 @@ export const ContentWrapper = styled.div<{ $isSolved?: boolean }>`
 
 export const Title = styled.div`
     color: #111;
-    font-family: var(--font-poppins), sans-serif;
+    font-family: Poppins, sans-serif;
     font-size: 12px;
     font-style: normal;
     font-weight: 400;
     line-height: 119.8%;
     user-select: none;
+    pointer-events: none;
 
     strong {
         font-weight: 600;
