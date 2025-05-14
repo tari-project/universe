@@ -44,6 +44,7 @@ jobs:
         run: |
           EXCHANGES_NAMES=$(jq --argjson map '{ "b035a622": "TestA", "aaa1e352": "TestB" }' \
             '.exchanges[] |= (.secret_name = $map[.secret_name])' exchanges.json)
+          EXCHANGES_NAMES=$(echo "${EXCHANGES_NAMES}" | jq -c .exchanges[])
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
 
   builds:
