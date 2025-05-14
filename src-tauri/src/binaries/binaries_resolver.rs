@@ -22,12 +22,14 @@
 
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
+use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -49,27 +51,33 @@ const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6)
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
     pub(crate) assets: Vec<VersionAsset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
+    pub(crate) fallback_url: Option<String>,
     pub(crate) name: String,
+    pub(crate) source: ReleaseSource,
 }
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error>;
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error>;
@@ -298,24 +306,21 @@ impl BinaryResolver {
             .lock()
             .await;
 
+        #[allow(unused_variables)]
+        // We will remove this logic in next PR's
         let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
-
-        if should_check_for_update {
-            // Will populate Vec of downloaded versions that meet the requirements
-            manager.check_for_updates().await;
-        }
+        manager.check_for_updates().await;
 
         // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();
 
         // This covers case when we do not check newest version and there is no local version
-        if !should_check_for_update && highest_version.is_none() {
-            manager.check_for_updates().await;
+        if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 
@@ -324,7 +329,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 
@@ -370,7 +375,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 

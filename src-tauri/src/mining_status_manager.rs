@@ -140,9 +140,7 @@ impl MiningStatusManager {
                                         error!("error at sending mining status {}",e.to_string());
                                     }){
                                         let status = response.status();
-                                        if status.is_success(){
-                                            info!(target:LOG_TARGET,"mining-status message successfully sent");
-                                        }else {
+                                        if !status.is_success(){
                                             error!(target:LOG_TARGET,"error at sending mining status {:?}",response.text().await);
                                         }
                                     }
