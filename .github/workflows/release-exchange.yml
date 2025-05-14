@@ -33,7 +33,7 @@ jobs:
   read-exchanges:
     name: Read exchanges
     env:
-      ALL_EXCHANGES_NAMES: ${{ fromJson(secrets.ALL_EXCHANGES_NAMES) }}
+      ALL_EXCHANGES_NAMES: ${{ secrets.EXCHANGES_NAMES }}
     outputs:
       EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
     runs-on: ubuntu-latest
@@ -42,7 +42,7 @@ jobs:
       - name: Read exchanges
         id: read-exchanges
         run: |
-          echo "EXCHANGES=$(jq -c '.exchanges[] | .secret_name as $key | .secret_name = (if $key == .secret_name then "{ \"b035a622\": \"TestA\", \"aaa1e352\": \"TestB\"}" | fromjson[$key] else .secret_name end)' exchanges.json)" >> $GITHUB_ENV
+          echo "EXCHANGES=$(jq -c '.exchanges[] | .secret_name as $key | .secret_name = (if $key == .secret_name then env(ALL_EXCHANGES_NAMES) | fromjson[$key] else .secret_name end)' exchanges.json)" >> $GITHUB_ENV
           echo "${EXCHANGES}"
           echo "EXCHANGES=$EXCHANGES" >> $GITHUB_OUTPUT
 
