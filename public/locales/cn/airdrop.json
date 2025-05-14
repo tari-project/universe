@@ -17,6 +17,7 @@
   "giftReferralCode": "每邀请一位朋友加入Tari Universe，您将获得{{gems}}个宝石。一旦他们连接账户，您将获得宝石。",
   "giftReferralCodeHeader": "领取您的推荐码<span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span>宝石。",
   "invite": "邀请",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "邀请朋友",
   "inviteFriendsText": "复制链接并分享",
   "invitedAmount": "您已邀请<span>{{count}}</span>位朋友",
