@@ -60,8 +60,8 @@ jobs:
           # pass exchanges to env
           echo "EXCHANGES=$(jq -c '.exchanges' exchanges.json) " >> $GITHUB_ENV
           # Replace secret_name with the name of the exchange (TestA, TestB)
-          echo "EXCHANGES_NAMES=$(jq -c --arg ALL_EXCHANGES_NAMES "${{ env.ALL_EXCHANGES_NAMES }}" \
-            '(.exchanges[] | .secret_name) as $secret_name | ($ALL_EXCHANGES_NAMES | fromjson | .[$secret_name]) as $name | .name = $name' <<< "${{ env.EXCHANGES }}")" >> $GITHUB_ENV
+          echo 'EXCHANGES_NAMES=$(jq -c --arg ALL_EXCHANGES_NAMES "${{ env.ALL_EXCHANGES_NAMES }}" \
+            '(.exchanges[] | .secret_name) as $secret_name | ($ALL_EXCHANGES_NAMES | fromjson | .[$secret_name]) as $name | .name = $name' <<< "${{ env.EXCHANGES }}")' >> $GITHUB_ENV
           echo "EXCHANGES_NAMES=$EXCHANGES_NAMES" >> $GITHUB_OUTPUT
 
   builds:
