@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Earn gems",
+    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
+    "earn-gems-cta": "Connect X Account",
+    "mode": "Customize Mode",
+    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+  },
   "could-not-auto-update": "जब मशीन लॉक या स्लीप मोड में थी, तब हम तारी यूनिवर्स को {{version}} में ऑटो अपडेट नहीं कर सके।",
   "dont-worry": "चिंता न करें, अगली बार इसमें इतना समय नहीं लगेगा",
   "installing-latest-version": "तारी यूनिवर्स के {{version}} संस्करण को इंस्टॉल कर रहे हैं",

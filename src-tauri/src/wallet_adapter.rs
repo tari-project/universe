@@ -36,6 +36,7 @@ use minotari_node_grpc_client::grpc::{
     GetStateRequest, NetworkStatusResponse,
 };
 use serde::Serialize;
+use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
@@ -328,7 +329,17 @@ impl ProcessAdapter for WalletAdapter {
 
         info!(target: LOG_TARGET, "Starting read only wallet");
         let working_dir = data_dir.join("wallet");
+        let network_dir = working_dir.join(Network::get_current().to_string().to_lowercase());
         std::fs::create_dir_all(&working_dir)?;
+
+        // Remove peerdb on every restart as requested by Protocol team
+        let peer_db_dir = network_dir.join("peer_db");
+        if peer_db_dir.exists() {
+            info!(target: LOG_TARGET, "Removing peer db at {:?}", peer_db_dir);
+            let _unused = fs::remove_dir_all(peer_db_dir).inspect_err(|e| {
+                warn!(target: LOG_TARGET, "Failed to remove peer db: {:?}", e);
+            });
+        }
 
         let formatted_working_dir = convert_to_string(working_dir.clone())?;
         let config_dir = log_dir

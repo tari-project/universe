@@ -17,6 +17,7 @@
   "giftReferralCode": "Tari Universeに招待した友達ごとに{{gems}}ジェムを獲得。彼らがアカウントを接続すると、ジェムが付与されます。",
   "giftReferralCodeHeader": "紹介コードを請求して<span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span>ジェムを獲得。",
   "invite": "招待",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "友達を招待",
   "inviteFriendsText": "リンクをコピーして共有する",
   "invitedAmount": "あなたは<span>{{count}}</span>人の友達を招待しました",

@@ -35,7 +35,7 @@ export function Ruler() {
         const renderNumber = heightSegment && heightSegment > diff;
 
         if (renderNumber && heightSegment) {
-            heightSegment -= diff;
+            heightSegment = heightSegment - diff * (i + 1);
         }
 
         const prevSegment = (heightSegment || 0) + diff;

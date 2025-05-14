@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Earn gems",
+    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
+    "earn-gems-cta": "Connect X Account",
+    "mode": "Customize Mode",
+    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+  },
   "could-not-auto-update": "Ons kon nie Tari Universe outomaties opdateer na {{version}} terwyl die masjien gesluit of in slaapmodus was nie.",
   "dont-worry": "Moenie bekommerd wees nie, volgende keer sal dit nie so lank vat nie",
   "installing-latest-version": "Installeer {{version}} weergawe van Tari Universe",

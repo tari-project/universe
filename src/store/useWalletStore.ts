@@ -80,7 +80,7 @@ export const addPendingTransaction = (payload: { amount: number; destination: st
         payment_id: payload.paymentId,
         direction: 2,
         status: 1,
-        timestamp: Date.now(),
+        timestamp: Math.floor(Date.now() / 1000),
     };
 
     useWalletStore.setState((state) => ({

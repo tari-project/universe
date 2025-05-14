@@ -3,8 +3,10 @@ import { SyncActionCard } from '@app/containers/main/Sync/components/SyncActionC
 import { XIconSVG } from '@app/assets/icons/x-icon.tsx';
 import { ActionButton, ActionContentWrapper, ButtonIconWrapper } from './actions.style.ts';
 import { useAirdropAuth } from '@app/hooks/airdrop/utils/useAirdropAuth.ts';
+import { useTranslation } from 'react-i18next';
 
 export default function AirdropLogin() {
+    const { t } = useTranslation('setup-view');
     const airdropToken = useAirdropStore((s) => s.airdropTokens?.token);
     const { handleAuth } = useAirdropAuth();
 
@@ -13,14 +15,10 @@ export default function AirdropLogin() {
             <ButtonIconWrapper>
                 <XIconSVG />
             </ButtonIconWrapper>
-            <ActionContentWrapper>{`Connect X Account`}</ActionContentWrapper>
+            <ActionContentWrapper>{t('actions.earn-gems-cta')}</ActionContentWrapper>
         </ActionButton>
     );
     return !airdropToken ? (
-        <SyncActionCard
-            action={action}
-            title={'Earn gems'}
-            subtitle={'Connect your social account to constantly earn gems as you mine.'}
-        />
+        <SyncActionCard action={action} title={t('actions.earn-gems')} subtitle={t('actions.earn-gems-copy')} />
     ) : null;
 }

@@ -38,6 +38,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const uiSendRecvEnabled = useAirdropStore((s) => s.uiSendRecvEnabled);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
     const swapUiVisible = useWalletStore((s) => s.is_swap_ui_visible);
 
@@ -78,7 +79,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                             onClick={() => setSection('send')}
                             $isActive={section === 'send'}
                             aria-selected={section === 'send'}
-                            disabled={isWalletScanning}
+                            disabled={isWalletScanning || !availableBalance}
                         >
                             <NavButtonContent>
                                 <SendSVG />

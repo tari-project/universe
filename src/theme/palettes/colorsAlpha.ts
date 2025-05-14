@@ -58,6 +58,7 @@ const tariPurpleAlpha = {
     80: 'rgba(147,48,255,0.8)',
     90: 'rgba(147,48,255,0.9)',
 };
+
 const warningDarkAlpha = {
     5: 'rgba(209,138,24,0.05)',
     10: 'rgba(209,138,24,0.1)',

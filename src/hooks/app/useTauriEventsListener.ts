@@ -23,8 +23,8 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
+    handleCriticalProblemEvent,
     setCriticalError,
-    setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
@@ -146,7 +146,7 @@ const useTauriEventsListener = () => {
                             if (isMacAppFolderError) {
                                 setCriticalError(event.payload);
                             } else {
-                                setCriticalProblemTest(event.payload);
+                                handleCriticalProblemEvent(event.payload);
                             }
                             break;
                         }

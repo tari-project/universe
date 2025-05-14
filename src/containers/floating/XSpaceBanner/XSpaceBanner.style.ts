@@ -5,8 +5,8 @@ import styled, { css } from 'styled-components';
 
 export const BannerContent = styled(m.div)`
     position: fixed;
-    top: 16px;
-    right: 32px;
+    top: 86px;
+    right: 10px;
     z-index: 99999;
     display: flex;
     align-items: center;
