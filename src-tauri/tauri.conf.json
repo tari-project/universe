@@ -43,7 +43,7 @@
             "capabilities": ["desktop-capability", "default", "migrated"],
             "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' tauri: https: http://localhost http://127.0.0.1 asset: https://asset.localhost",
+                "default-src": "'self' tauri: https: http://localhost http://127.0.0.1 http://localhost:* http://127.0.0.1:* asset: https://asset.localhost",
                 "style-src": "'self' 'unsafe-inline'",
                 "connect-src": [
                     "'self'",
@@ -51,8 +51,10 @@
                     "wss://ut.tari.com",
                     "tauri:",
                     "tauri://*",
-                    "tauri://localhost",
                     "tauri://127.0.0.1",
+                    "tauri://localhost",
+                    "tauri://localhost/",
+                    "tauri://localhost:*",
                     "ipc:",
                     "http://ipc.localhost",
                     "http://localhost",
@@ -62,10 +64,10 @@
                     "application/octet-stream",
                     "base64"
                 ],
-                "script-src": ["'self", "unsafe-eval", "http://127.0.0.1", "http://localhost", "tauri:"],
-                "object-src": ["self", "data:", "blob: ", "http://127.0.0.1", "http://localhost", "tauri:"],
+                "script-src": ["'self'", "unsafe-eval", "http://127.0.0.1", "http://localhost", "tauri:"],
+                "object-src": ["'self'", "data:", "blob: ", "http://127.0.0.1", "http://localhost", "tauri:"],
                 "script-src-elem": [
-                    "self",
+                    "'self'",
                     "unsafe-inline",
                     "unsafe-eval",
                     "http://127.0.0.1",
@@ -84,6 +86,22 @@
                     "http://localhost:*",
                     "http://127.0.0.1:*",
                     "tauri:"
+                ],
+                "frame-src": [
+                    "'self'",
+                    "https:",
+                    "wss://ut.tari.com",
+                    "https://ut.tari.com",
+                    "https:",
+                    "tauri:",
+                    "tauri://*",
+                    "tauri://localhost",
+                    "tauri://localhost/",
+                    "tauri://localhost:*",
+                    "ipc:",
+                    "http://ipc.localhost",
+                    "http://localhost",
+                    "http://127.0.0.1"
                 ]
             },
             "assetProtocol": {
