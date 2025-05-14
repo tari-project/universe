@@ -42,8 +42,8 @@ jobs:
       - name: Read exchanges
         id: read-exchanges
         run: |
-          # echo "EXCHANGES=$(jq -c --argjson allExchangesNames "$ALL_EXCHANGES_NAMES" \
-          # '.exchanges[] | .secret_name as $key | .secret_name = (if $key == .secret_name then $allExchangesNames[$key] else .secret_name end)' exchanges.json)" >> $GITHUB_ENV
+          echo "ALL_EXCHANGES_NAMES=${{ env.ALL_EXCHANGES_NAMES }}" | jq -R 'split(",") | map({(.): true}) | add' > all_exchanges_names.json
+          echo "ALL_EXCHANGES_NAMES=${{ env.ALL_EXCHANGES_NAMES }}" >> $GITHUB_ENV
           echo "EXCHANGES=$(jq -c --argjson allExchangesNames "$ALL_EXCHANGES_NAMES" \
           '.exchanges[] | .secret_name as $key | .secret_name = ($allExchangesNames[$key] // .secret_name)' exchanges.json)" >> $GITHUB_ENV
 
