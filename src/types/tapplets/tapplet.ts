@@ -9,7 +9,9 @@ export interface ActiveTapplet {
 
 export interface BuiltInTapplet {
     id: number;
+    version: string;
     endpoint: string;
+    destDir: string;
     package_name?: string;
     display_name?: string;
     about_summary?: string;

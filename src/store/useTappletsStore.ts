@@ -1,5 +1,5 @@
 import { create } from './create.ts';
-import { ActiveTapplet, BuiltInTapplet, TappletConfig } from '@app/types/tapplets/tapplet.ts';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.ts';
 import { useTappletProviderStore } from './useTappletProviderStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 
@@ -18,8 +18,6 @@ interface Actions {
 }
 
 type TappletsStoreState = State & Actions;
-
-export const BRIDGE_TAPPLET_ID = 0; //TODO
 
 const initialState: State = {
     isFetching: false,
@@ -42,28 +40,38 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         const tappProviderState = useTappletProviderStore.getState();
         //TODO path
         // built-in tapplet
-        // if (isBuiltIn) {
-        //     const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
-        //     const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
-        //     set({ activeTapplet });
-        //     // TODO change provider name
-        //     tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
-        //     return;
-        // }
-
-        // dev
         if (isBuiltIn) {
-            const activeTapplet: ActiveTapplet = {
-                tapplet_id: 0,
-                version: '0.1.0', //TODO tmp solution - change to `config.version` if built-in tapplet has config
-                source: 'http://localhost:3000',
-                display_name: 'dupa',
-                supportedChain: ['MAINNET', 'STAGENET', 'NEXTNET'], //TODO tmp solution - change to `config.supportedChain` if built-in tapplet has config
-            };
+            const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
+            const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
             set({ activeTapplet });
+            // TODO change provider name
             tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
             return;
         }
+
+        // dev
+        // TODO tmp mock
+        // const bridgeTapplet: BuiltInTapplet = {
+        //     id: 0,
+        //     version: '0.1.0',
+        //     display_name: 'WXTM Bridge',
+        //     endpoint: 'http://localhost:3000',
+        //     destDir: '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda',
+        // };
+
+        // if (isBuiltIn) {
+        //TODO tmp solution - change to `config` data if built-in tapplet has config
+        //     const activeTapplet: ActiveTapplet = {
+        //         tapplet_id: bridgeTapplet.id,
+        //         version: bridgeTapplet.version,
+        //         source: bridgeTapplet.endpoint,
+        //         display_name: bridgeTapplet.display_name ?? '',
+        //         supportedChain: ['MAINNET', 'STAGENET', 'NEXTNET'],
+        //     };
+        //     set({ activeTapplet });
+        //     tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
+        //     return;
+        // }
 
         return;
     },
