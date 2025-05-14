@@ -592,15 +592,6 @@ export const useSwap = () => {
                     }
                 }
 
-                // const inputIsNative = sdkToken0.isNative || sdkToken0.equals(WETH9[currentChainId]);
-                // if (!inputIsNative) {
-                //     const approved = await checkAndRequestApproval(amountIn.toString()); // Pass raw string of input amount
-                //     if (!approved) {
-                //         setIsLoading(false);
-                //         return null;
-                //     }
-                // }
-
                 const signer = await signerAsync;
                 if (!signer) {
                     setError('Signer became unavailable.');
@@ -612,8 +603,6 @@ export const useSwap = () => {
                 const txOptions: { value?: bigint; gasLimit?: bigint } = {};
                 let methodName: string;
                 let methodArgs: any[];
-
-                //const outputIsNative = sdkToken1.isNative || sdkToken1.equals(WETH9[currentChainId]);
 
                 if (inputIsNativeForRouter) {
                     methodName = 'swapExactETHForTokens';
@@ -675,9 +664,9 @@ export const useSwap = () => {
         setPairTokenAddress,
         setDirection,
         token0,
-        token1, // UI display tokens (NativeCurrency or Token)
+        token1,
         sdkToken0,
-        sdkToken1, // Internal SDK tokens (WETH9 or Token)
+        sdkToken1,
         routerAddress,
         getPair,
         getTradeDetails,

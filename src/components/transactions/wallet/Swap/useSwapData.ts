@@ -369,37 +369,26 @@ export const useSwapData = () => {
         let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
         // This tells getTradeDetails if the parsed amount (amountForCalcWei) is for
         // the trade's actual input (sdkToken0) or actual output (sdkToken1).
-        let amountTypeForGetTradeDetails: SwapField;
+        let amountTypeForGetTradeDetails: SwapField = 'target';
 
-        const tradeInputTokenSDK = sdkToken0; // Actual input to the Uniswap trade
-        const tradeOutputTokenSDK = sdkToken1; // Actual output from the Uniswap trade
+        const tradeInputTokenSDK = sdkToken0; // Actual input to the Uniswap trade (Token)
+        const tradeOutputTokenSDK = sdkToken1; // Actual output from the Uniswap trade (Token)
 
+        // Determine which UI field the user typed in and get the amount string and token definition
         if (lastUpdatedField === 'fromValue') {
             // User typed in the UI "FROM" box
             amountTypedByUserStr = fromAmount;
             tokenUsedForParsingAmount = fromUiTokenDefinition;
-
-            if (uiDirection === 'input') {
-                // UI "FROM" box (fromUiTokenDefinition) is for the trade's INPUT (tradeInputTokenSDK).
-                amountTypeForGetTradeDetails = 'fromValue';
-            } else {
-                // uiDirection === 'output'
-                // UI "FROM" box (fromUiTokenDefinition) is for the trade's OUTPUT (tradeOutputTokenSDK).
-                amountTypeForGetTradeDetails = 'target';
-            }
         } else {
             // lastUpdatedField === 'target', user typed in the UI "TO" box
             amountTypedByUserStr = targetAmount;
             tokenUsedForParsingAmount = toUiTokenDefinition;
+        }
 
-            if (uiDirection === 'input') {
-                // UI "TO" box (toUiTokenDefinition) is for the trade's OUTPUT (tradeOutputTokenSDK).
-                amountTypeForGetTradeDetails = 'target';
-            } else {
-                // uiDirection === 'output'
-                // UI "TO" box (toUiTokenDefinition) is for the trade's INPUT (tradeInputTokenSDK).
-                amountTypeForGetTradeDetails = 'fromValue';
-            }
+        if (uiDirection === 'input') {
+            amountTypeForGetTradeDetails = lastUpdatedField === 'fromValue' ? 'fromValue' : 'target';
+        } else {
+            amountTypeForGetTradeDetails = lastUpdatedField === 'fromValue' ? 'target' : 'fromValue';
         }
 
         if (
@@ -418,8 +407,11 @@ export const useSwapData = () => {
 
         setIsLoading(true);
         try {
+            // Parse the user's input string using the decimals of the token definition
+            // associated with the UI field they typed into.
             const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
-            // getTradeDetails expects amountRaw to be for tradeInputTokenSDK (if 'fromValue') or tradeOutputTokenSDK (if 'target')
+
+            // Call getTradeDetails with the parsed amount and specify if it's for the trade's input (sdkToken0) or output (sdkToken1)
             const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
             setTradeDetails(details);
 
@@ -427,37 +419,18 @@ export const useSwapData = () => {
                 setPriceImpact(details.trade.priceImpact.toSignificant(2) + '%');
                 const networkFee = details.estimatedGasFeeNative || details.estimatedGasFeeUSD;
                 if (networkFee) setNetworkFee(networkFee);
-                setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)');
+                setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
 
                 if (shouldCalculate.current) {
-                    // details.inputAmount is ALWAYS the amount of tradeInputTokenSDK (sdkToken0)
-                    // details.outputAmount is ALWAYS the amount of tradeOutputTokenSDK (sdkToken1)
-
-                    if (lastUpdatedField === 'fromValue') {
-                        // User typed in "FROM" box, so we need to set the "TO" box (targetAmount).
-                        if (uiDirection === 'input') {
-                            // UI "TO" box (toUiTokenDefinition) is tradeOutputTokenSDK.
-                            if (details.outputAmount) setTargetAmount(details.outputAmount.toSignificant(6));
-                            else if (targetAmount !== '') setTargetAmount('');
-                        } else {
-                            // uiDirection === 'output'
-                            // UI "TO" box (toUiTokenDefinition) is tradeInputTokenSDK.
-                            if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
-                            else if (targetAmount !== '') setTargetAmount('');
-                        }
+                    if (uiDirection === 'input') {
+                        const newTargetAmount = details.midPrice
+                            ? Number(details.midPrice.invert().toSignificant(6)) * Number(fromAmount)
+                            : 0;
+                        if (newTargetAmount) setTargetAmount(newTargetAmount.toString());
+                        else if (targetAmount !== '') setTargetAmount('');
                     } else {
-                        // lastUpdatedField === 'target'
-                        // User typed in "TO" box, so we need to set the "FROM" box (fromAmount).
-                        if (uiDirection === 'input') {
-                            // UI "FROM" box (fromUiTokenDefinition) is tradeInputTokenSDK.
-                            if (details.inputAmount) setFromAmount(details.inputAmount.toSignificant(6));
-                            else if (fromAmount !== '') setFromAmount('');
-                        } else {
-                            // uiDirection === 'output'
-                            // UI "FROM" box (fromUiTokenDefinition) is tradeOutputTokenSDK.
-                            if (details.outputAmount) setFromAmount(details.outputAmount.toSignificant(6));
-                            else if (fromAmount !== '') setFromAmount('');
-                        }
+                        if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
+                        else if (targetAmount !== '') setTargetAmount('');
                     }
                 }
             } else {
@@ -480,8 +453,8 @@ export const useSwapData = () => {
         uiDirection,
         sdkToken0, // tradeInputTokenSDK
         sdkToken1, // tradeOutputTokenSDK
-        fromUiTokenDefinition,
-        toUiTokenDefinition,
+        fromUiTokenDefinition, // Token definition for UI FROM box
+        toUiTokenDefinition, // Token definition for UI TO box
         getTradeDetails,
         clearCalculatedDetails, // Now a dependency
         addToast,
@@ -550,9 +523,6 @@ export const useSwapData = () => {
         setUiDirection(newUiDirection);
         setSwapEngineDirection(newUiDirection); // This updates 'direction' in useSwapV2
 
-        // Amounts stay in their boxes. Their meaning changes.
-        // Trigger recalculation based on the field that was last being edited,
-        // or a field that has a valid amount.
         if (lastUpdatedField === 'fromValue' && fromAmount && Number(fromAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true); // This will trigger the useEffect for debounceCalc
@@ -634,33 +604,46 @@ export const useSwapData = () => {
             });
     };
 
-    const transactionForDisplay = useMemo(() => {
-        let displayFromAmount: string; // What the user is actually "giving"
-        let displayToAmount: string; // What the user is actually "getting"
+    const displayPrice = useMemo(() => {
+        if (!tradeDetails?.midPrice) return null;
 
+        let price;
         if (uiDirection === 'input') {
-            // User "gives" from the UI "FROM" field (fromAmount)
-            // User "gets" in the UI "TO" field (targetAmount)
-            displayFromAmount = fromAmount;
-            displayToAmount = targetAmount;
+            // Price is sdkToken1 per sdkToken0
+            price = tradeDetails?.midPrice;
         } else {
             // uiDirection === 'output'
-            // User "gives" from the UI "TO" field (targetAmount)
-            // User "gets" in the UI "FROM" field (fromAmount)
-            displayFromAmount = targetAmount;
-            displayToAmount = fromAmount;
+            // Price is sdkToken0 per sdkToken1 (inverse)
+            try {
+                price = tradeDetails?.midPrice?.invert();
+            } catch (e) {
+                console.error('Error inverting price:', e);
+                return null; // Cannot invert price
+            }
         }
 
-        return {
-            amount: displayFromAmount,
-            targetAmount: displayToAmount,
-            // direction: uiDirection, // This can be derived from the above if needed by UI
+        // Format the price for display, e.g., "1 ETH = 3000 USDC" or "1 USDC = 0.00033 ETH"
+        // The price object has baseToken (denominator) and quoteToken (numerator)
+        // For display, we want 1 [baseToken] = X [quoteToken]
+        const baseTokenSymbol = price?.baseToken?.symbol;
+        const quoteTokenSymbol = price?.quoteToken?.symbol;
+        const priceValue = price.toSignificant(6); // Adjust precision as needed
+
+        return `1 ${baseTokenSymbol} = ${priceValue} ${quoteTokenSymbol}`;
+    }, [tradeDetails?.midPrice, uiDirection]);
+
+    const transactionForDisplay = useMemo(
+        () => ({
+            amount: uiDirection === 'input' ? fromAmount : targetAmount, // Amount user gives
+            targetAmount: uiDirection === 'input' ? targetAmount : fromAmount, // Amount user gets
+            direction: uiDirection, // Can keep this if needed elsewhere
             slippage,
             networkFee,
             priceImpact,
             transactionId,
-        };
-    }, [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId]);
+        }),
+        [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId]
+    );
 
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
@@ -708,5 +691,6 @@ export const useSwapData = () => {
         selectableFromTokens,
         tokenSelectOpen,
         setTokenSelectOpen,
+        displayPrice,
     };
 };

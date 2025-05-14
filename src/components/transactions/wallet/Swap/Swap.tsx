@@ -50,6 +50,7 @@ export const Swap = () => {
         uiDirection,
         transaction,
         //useSwapError,
+        displayPrice,
         setProcesingOpen,
         setFromAmount,
         setTargetAmount,
@@ -135,6 +136,19 @@ export const Swap = () => {
                 </SwapOptionAmount>
                 <span>{`Balance: ${toTokenDisplay.balance}`}</span>
             </SwapOption>
+
+            {displayPrice && (fromAmount || targetAmount) && !isLoading && (
+                <div
+                    style={{
+                        textAlign: 'center',
+                        margin: '8px 0',
+                        fontSize: '0.875rem',
+                        color: '#888', // Adjust color as needed
+                    }}
+                >
+                    {displayPrice}
+                </div>
+            )}
 
             <div style={{ marginTop: '20px', width: '100%' }}>
                 <WalletButton
