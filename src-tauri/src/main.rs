@@ -1285,6 +1285,7 @@ fn main() {
             commands::set_monero_address,
             commands::set_monerod_config,
             commands::set_tari_address,
+            commands::confirm_exchange_address,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,

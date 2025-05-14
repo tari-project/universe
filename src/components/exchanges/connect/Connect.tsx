@@ -64,7 +64,13 @@ export const Connect = () => {
     }, [debouncedAddress, validateAddress]);
 
     function onSubmit(data: ConnectFormFields) {
-        console.debug('onSubmit!', data);
+        invoke('confirm_exchange_address', { address })
+            .then(() => {
+                console.debug('onSubmit!', data);
+            })
+            .catch((e) => {
+                console.error('Error confirming exchange address:', e);
+            });
     }
     return (
         <Wrapper>

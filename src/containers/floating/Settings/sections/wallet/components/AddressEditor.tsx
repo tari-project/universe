@@ -107,7 +107,7 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
                 {editing ? (
                     <>
                         <IconContainer style={{ gap: 2 }}>
-                            <IconButton type="submit" size="small" disabled={isDirty || !!errors.address}>
+                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
                                 <IoCheckmarkOutline />
                             </IconButton>
                             <IconButton type="reset" size="small">
