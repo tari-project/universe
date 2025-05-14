@@ -87,9 +87,9 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"${{ secrets[matrix.exchange.secret_name]}} v${TU_VERSION}\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ secrets[matrix.exchange.secret_name]}}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i tauri.conf.json
-          yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
+          yq eval ".plugins.updater.endpoints = [\"https://cdn-universe.tari.com/tari-project/universe/updater/\(env(exchange.id))/latest.json\"]" \
             --output-format=json -i tauri.conf.json
 
       - name: Setup Node
