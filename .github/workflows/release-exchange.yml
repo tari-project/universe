@@ -3,6 +3,22 @@ name: Release-Exchange
 
 'on':
   workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Artifacts destination'
+        required: true
+        type: choice
+        options:
+          - 'github'
+          - 'aws'
+      network:
+        description: 'Network to build for'
+        required: true
+        type: choice
+        options:
+          - 'mainnet'
+          - 'nextnet'
+          - 'esmeralda'
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
@@ -41,21 +57,21 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
-          - platform: 'ubuntu-22.04'
-            args: '--bundles rpm'
-            extra: '-x64-rpm'
-            best_effort: true
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles rpm'
-            extra: '-rpm'
-            best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles rpm'
+          #   extra: '-x64-rpm'
+          #   best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles rpm'
+          #   extra: '-rpm'
+          #   best_effort: true
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +95,7 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
-          echo "TARI_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
@@ -325,13 +341,6 @@ jobs:
             exit 1
           }
 
-      - name: Bundled Windows installer upload
-        if: ${{ startsWith(runner.os,'Windows') && ( ! startsWith(github.ref, 'refs/heads/release') ) }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
-          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
-
       - name: Locate artifacts path
         continue-on-error: true
         env:
@@ -342,12 +351,91 @@ jobs:
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
-      - name: Builds - Upload assets
-        if: ${{ ( github.event_name == 'schedule' ) || ( ! startsWith(github.ref, 'refs/heads/release') ) }}
+      - name: Builds - Upload assets [ GitHub ]
+        if: ${{( startsWith(inputs.destination, 'github' )) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+
+      - name: Bundled Windows installer upload [ GitHub ]
+        if: ${{ startsWith(runner.os,'Windows') && ( startsWith(inputs.destination, 'github' ) ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
+
+      - name: Builds - Upload assets [ AWS ]
+        if: ${{( startsWith(inputs.destination, 'aws' )) && ( env.AWS_SECRET_ACCESS_KEY != '' ) && runner.name != 'self-hosted' }}
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
+          S3CMD: 'cp'
+          S3OPTIONS: '--content-type "application/octet-stream"'
+        run: |
+          docker run --rm -t \
+            -v ${PWD}:/work/data \
+            -w /work/data \
+            -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+            -e AWS_DEFAULT_REGION="WEUR" \
+            amazon/aws-cli:2.22.35 \
+              s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
+                ${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }} \
+                s3://${{ env.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ env.EXCHANGE_NAME }}/
+
+      - name: Bundled Windows installer upload [ AWS ]
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) && ( env.AWS_SECRET_ACCESS_KEY != '' ) && runner.name != 'self-hosted' }}
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
+          S3CMD: 'cp'
+          S3OPTIONS: '--content-type "application/octet-stream"'
+        run: |
+          docker run --rm -t \
+            -v ${PWD}:/work/data \
+            -w /work/data \
+            -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+            -e AWS_DEFAULT_REGION="WEUR" \
+            amazon/aws-cli:2.22.35 \
+              s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
+                ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe \
+                s3://${{ env.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ env.EXCHANGE_NAME }}/
+
+      # - name: sync assets to S3
+      #   continue-on-error: true
+      #   if: ${{ env.AWS_SECRET_ACCESS_KEY != '' && runner.name != 'self-hosted' }}
+      #   env:
+      #     BASE_URL: ${{ secrets.BASE_URL }}
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+      #     AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+      #     S3CMD: 'cp'
+      #     S3OPTIONS: '--content-type "text/plain; charset=utf-8"'
+      #   run: |
+      #     docker run --rm -t \
+      #       -v ${PWD}:/work/data \
+      #       -w /work/data \
+      #       -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+      #       -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+      #       -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+      #       -e AWS_DEFAULT_REGION="WEUR" \
+      #       amazon/aws-cli:2.22.35 \
+      #         s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
+      #           CHANGELOG.md \
+      #           s3://${{ env.BASE_URL }}/
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
