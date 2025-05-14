@@ -72,15 +72,17 @@ impl EventsManager {
                         } else {
                             None
                         };
-
+                        
                         EventsEmitter::emit_new_block_mined(
                             &app_clone,
                             block_height,
-                            coinbase_tx,
+                            coinbase_tx.clone(),
                             Some(balance),
                         )
                         .await;
-                        send_new_block_mined(app_clone.clone(), block_height).await;
+                        if coinbase_tx.is_some() {
+                            send_new_block_mined(app_clone.clone(), block_height).await;
+                        }
                     } else {
                         error!(target: LOG_TARGET, "Wallet balance is None after new block height #{}", block_height);
                         EventsEmitter::emit_new_block_mined(
