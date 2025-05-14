@@ -137,7 +137,7 @@ impl ProcessAdapter for P2poolAdapter {
         let squad_prefix = "default";
         args.push(squad_prefix.to_string());
         args.push("--num-squads".to_string());
-        let num_squads = 3;
+        let num_squads = 1;
         args.push(num_squads.to_string());
         let mut envs = HashMap::new();
         match Network::get_current_or_user_setting_or_default() {
