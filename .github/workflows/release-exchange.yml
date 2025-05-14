@@ -51,7 +51,7 @@ jobs:
 
           echo "EXCHANGES=$(cat exchanges.json | jq -c '.exchanges')" >> $GITHUB_ENV
           echo "EXCHANGES=$(cat exchanges.json | jq -c '.exchanges')" >> $GITHUB_OUTPUT
-          echo ${EXCHANGES}
+          echo "${EXCHANGES}"
           echo "EXCHANGES=$EXCHANGES" >> $GITHUB_OUTPUT
   builds:
     needs: read-exchanges
