@@ -42,7 +42,7 @@ const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
 };
 
 export enum EnabledTokens {
-    DAI = 'DAI',
+    // DAI = 'DAI',
     WETH = 'wETH',
     XTM = 'wXTM',
     wXTM = 'XTM',
@@ -50,10 +50,10 @@ export enum EnabledTokens {
 }
 
 export const ENABLED_TOKENS = {
-    [EnabledTokens.DAI]: {
-        [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-        [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
-    },
+    // [EnabledTokens.DAI]: {
+    //     [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+    //     [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
+    // },
     [EnabledTokens.WETH]: {
         [ChainId.MAINNET]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         [ChainId.SEPOLIA]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
@@ -74,22 +74,22 @@ const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
     [ChainId.SEPOLIA]: 'https://gateway.tenderly.co/public/sepolia',
 };
 
-export const DAI: Partial<Record<ChainId, Token>> = {
-    [ChainId.MAINNET]: new Token(
-        ChainId.MAINNET,
-        ENABLED_TOKENS[EnabledTokens.DAI][ChainId.MAINNET],
-        18,
-        'DAI',
-        'Dai Stablecoin'
-    ),
-    [ChainId.SEPOLIA]: new Token(
-        ChainId.SEPOLIA,
-        ENABLED_TOKENS[EnabledTokens.DAI][ChainId.SEPOLIA],
-        18,
-        'DAI',
-        'Dai Stablecoin'
-    ),
-};
+// export const DAI: Partial<Record<ChainId, Token>> = {
+//     [ChainId.MAINNET]: new Token(
+//         ChainId.MAINNET,
+//         ENABLED_TOKENS[EnabledTokens.DAI][ChainId.MAINNET],
+//         18,
+//         'DAI',
+//         'Dai Stablecoin'
+//     ),
+//     [ChainId.SEPOLIA]: new Token(
+//         ChainId.SEPOLIA,
+//         ENABLED_TOKENS[EnabledTokens.DAI][ChainId.SEPOLIA],
+//         18,
+//         'DAI',
+//         'Dai Stablecoin'
+//     ),
+// };
 export const USDC: Partial<Record<ChainId, Token>> = {
     [ChainId.MAINNET]: new Token(
         ChainId.MAINNET,
@@ -113,14 +113,14 @@ export const XTM: Partial<Record<ChainId, Token>> = {
         ENABLED_TOKENS[EnabledTokens.XTM][ChainId.MAINNET],
         18,
         'wXTM',
-        'Your Token'
+        'Tari'
     ), // Example, update decimals/name
     [ChainId.SEPOLIA]: new Token(
         ChainId.SEPOLIA,
         ENABLED_TOKENS[EnabledTokens.XTM][ChainId.SEPOLIA],
         18,
         'wXTM',
-        'Your Token'
+        'Tari'
     ), // Example, update decimals/name
 };
 
@@ -132,8 +132,8 @@ function initializeKnownTokens() {
         KNOWN_TOKENS[chainId] = {};
         const weth = WETH9[chainId];
         if (weth) KNOWN_TOKENS[chainId]![weth.address.toLowerCase() as `0x${string}`] = weth;
-        const dai = DAI[chainId];
-        if (dai) KNOWN_TOKENS[chainId]![dai.address.toLowerCase() as `0x${string}`] = dai;
+        // const dai = DAI[chainId];
+        // if (dai) KNOWN_TOKENS[chainId]![dai.address.toLowerCase() as `0x${string}`] = dai;
         const usdc = USDC[chainId];
         if (usdc) KNOWN_TOKENS[chainId]![usdc.address.toLowerCase() as `0x${string}`] = usdc;
         const xtm = XTM[chainId];

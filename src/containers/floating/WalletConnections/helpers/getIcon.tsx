@@ -12,6 +12,7 @@ export const getCurrencyIcon = ({ simbol, width, fill }: Props) => {
         case 'pol':
             return <PolygonIcon width={width} fill={fill} />;
         case 'xtm':
+        case 'wxtm':
         case 'dai':
             return <TariIcon size={width} fill={fill} />;
         case 'eth':

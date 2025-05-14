@@ -8,8 +8,6 @@ import {
     TradeDetails,
     useSwap,
     XTM as XTM_DEFINITIONS,
-    USDC as USDC_DEFINITIONS,
-    DAI as DAI_DEFINITIONS,
     EnabledTokens as EnabledTokensEnum,
 } from '@app/hooks/swap/useSwapV2'; // Adjust path as needed
 
@@ -44,7 +42,7 @@ const fetchTokenPriceUSD = async (tokenSymbol: string, chainId: ChainId | undefi
     await new Promise((resolve) => setTimeout(resolve, 150)); // Simulate network delay
     if (tokenSymbol === 'ETH' || tokenSymbol === 'WETH') return 3000.0;
     if (tokenSymbol === 'USDC') return 1.0;
-    if (tokenSymbol === 'DAI') return 0.99;
+    // if (tokenSymbol === 'DAI') return 0.99;
     if (tokenSymbol === 'wXTM') return 0.55;
     return undefined;
 };
@@ -216,11 +214,8 @@ export const useSwapData = () => {
             let tokenDefinitionFromEnum: typeof xtmDef; // e.g., Token | undefined
 
             switch (tokenKey) {
-                case EnabledTokensEnum.DAI:
-                    tokenDefinitionFromEnum = DAI_DEFINITIONS[currentChainId];
-                    break;
-                // case EnabledTokensEnum.USDC:
-                //     tokenDefinitionFromEnum = USDC_DEFINITIONS[currentChainId];
+                // case EnabledTokensEnum.DAI:
+                //     tokenDefinitionFromEnum = DAI_DEFINITIONS[currentChainId];
                 //     break;
                 case EnabledTokensEnum.WETH:
                     tokenDefinitionFromEnum = WETH9[currentChainId];
@@ -233,7 +228,7 @@ export const useSwapData = () => {
                     tokenDefinitionFromEnum = undefined; // Handles any other enum values
             }
 
-            if (tokenDefinitionFromEnum?.address && (!xtmDef || !tokenDefinitionFromEnum.equals(xtmDef))) {
+            if (tokenDefinitionFromEnum?.address) {
                 if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum))) {
                     tokens.push({
                         label: tokenDefinitionFromEnum.name || tokenKey,

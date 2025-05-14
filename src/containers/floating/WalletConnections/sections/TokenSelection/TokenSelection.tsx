@@ -28,25 +28,27 @@ export const TokenSelection = ({ isOpen, setIsOpen, availableTokens, onSelectTok
                         transition={{ duration: 0.2 }}
                     >
                         <TokenList>
-                            {availableTokens.map((token) => (
-                                <TokenItem
-                                    key={token.symbol + (token.address || 'native')}
-                                    onClick={() => handleSelectToken(token)}
-                                >
-                                    <TokenInfo>
-                                        {getCurrencyIcon({ simbol: token.symbol.toLowerCase() || '', width: 32 })}{' '}
-                                        {/* Increased icon size */}
-                                        <TokenDetails>
-                                            <span className="name">{token.label}</span>
-                                            <span className="symbol">{token.symbol}</span>
-                                        </TokenDetails>
-                                    </TokenInfo>
-                                    <TokenValue>
-                                        {token.usdValue && <span className="usd">{token.usdValue}</span>}
-                                        {token.balance && <span className="balance">{token.balance}</span>}
-                                    </TokenValue>
-                                </TokenItem>
-                            ))}
+                            {availableTokens.map((token) =>
+                                token.symbol.toLowerCase() === 'wxtm' ? null : (
+                                    <TokenItem
+                                        key={token.symbol + (token.address || 'native')}
+                                        onClick={() => handleSelectToken(token)}
+                                    >
+                                        <TokenInfo>
+                                            {getCurrencyIcon({ simbol: token.symbol.toLowerCase() || '', width: 32 })}{' '}
+                                            {/* Increased icon size */}
+                                            <TokenDetails>
+                                                <span className="name">{token.label}</span>
+                                                <span className="symbol">{token.symbol}</span>
+                                            </TokenDetails>
+                                        </TokenInfo>
+                                        <TokenValue>
+                                            {token.usdValue && <span className="usd">{token.usdValue}</span>}
+                                            {token.balance && <span className="balance">{token.balance}</span>}
+                                        </TokenValue>
+                                    </TokenItem>
+                                )
+                            )}
                             {availableTokens.length === 0 && (
                                 <div style={{ padding: '20px', textAlign: 'center', color: '#a0a0b0' }}>
                                     {'No other tokens available to select.'}
