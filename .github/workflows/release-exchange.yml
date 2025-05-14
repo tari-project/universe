@@ -2,6 +2,9 @@
 name: Release-Exchange
 
 'on':
+  pull_request:
+    branches:
+      - feat/exchange-miner
   workflow_dispatch:
     inputs:
       destination:
