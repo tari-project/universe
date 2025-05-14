@@ -64,7 +64,7 @@ export const ENABLED_TOKENS = {
     },
     [EnabledTokens.USDC]: {
         [ChainId.MAINNET]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        [ChainId.SEPOLIA]: '0x73d219B3881E481394DA6B5008A081d623992200', // Example, verify
+        [ChainId.SEPOLIA]: '0x271B34781c76fB06bfc54eD9cfE7c817d89f7759',
     },
 };
 

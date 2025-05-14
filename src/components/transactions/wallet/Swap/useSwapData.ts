@@ -421,22 +421,37 @@ export const useSwapData = () => {
                 if (networkFee) setNetworkFee(networkFee);
                 setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
 
+                const lastUpdatedFieldAmount = lastUpdatedField === 'fromValue' ? fromAmount : targetAmount;
+
                 if (shouldCalculate.current) {
-                    if (uiDirection === 'input') {
-                        const newTargetAmount = details.midPrice
-                            ? Number(details.midPrice.invert().toSignificant(6)) * Number(fromAmount)
-                            : 0;
-                        if (newTargetAmount) setTargetAmount(newTargetAmount.toString());
-                        else if (targetAmount !== '') setTargetAmount('');
+                    if (lastUpdatedField === 'fromValue') {
+                        if (uiDirection === 'input') {
+                            const newTargetAmount = details.midPrice
+                                ? Number(details.midPrice.invert().toSignificant(6)) * Number(lastUpdatedFieldAmount)
+                                : 0;
+                            if (newTargetAmount) setTargetAmount(newTargetAmount.toString());
+                            else if (targetAmount !== '') setTargetAmount('');
+                        } else {
+                            if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
+                            else if (targetAmount !== '') setTargetAmount('');
+                        }
                     } else {
-                        if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
-                        else if (targetAmount !== '') setTargetAmount('');
+                        if (uiDirection === 'input') {
+                            const newFromAmount = details.midPrice
+                                ? Number(details.midPrice.toSignificant(6)) * Number(lastUpdatedFieldAmount)
+                                : 0;
+                            if (newFromAmount) setFromAmount(newFromAmount.toString());
+                            else if (fromAmount !== '') setFromAmount('');
+                        } else {
+                            if (details.outputAmount) setFromAmount(details.outputAmount.toSignificant(6));
+                            else if (fromAmount !== '') setFromAmount('');
+                        }
                     }
-                }
-            } else {
-                clearCalculatedDetails(); // Clears the other field
-                if (details.route && !details.trade) {
-                    addToast({ title: 'Error', text: 'Insufficient liquidity for this trade.', type: 'error' });
+                } else {
+                    clearCalculatedDetails(); // Clears the other field
+                    if (details.route && !details.trade) {
+                        addToast({ title: 'Error', text: 'Insufficient liquidity for this trade.', type: 'error' });
+                    }
                 }
             }
         } catch (e: any) {
