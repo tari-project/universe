@@ -213,16 +213,25 @@ export const useSwapData = () => {
         }
 
         Object.values(EnabledTokensEnum).forEach((tokenKey) => {
-            const tokenDefinitionFromEnum =
-                tokenKey === EnabledTokensEnum.DAI
-                    ? DAI_DEFINITIONS[currentChainId]
-                    : tokenKey === EnabledTokensEnum.USDC
-                      ? USDC_DEFINITIONS[currentChainId]
-                      : tokenKey === EnabledTokensEnum.WETH
-                        ? WETH9[currentChainId]
-                        : tokenKey === EnabledTokensEnum.XTM
-                          ? xtmDef
-                          : undefined;
+            let tokenDefinitionFromEnum: typeof xtmDef; // e.g., Token | undefined
+
+            switch (tokenKey) {
+                case EnabledTokensEnum.DAI:
+                    tokenDefinitionFromEnum = DAI_DEFINITIONS[currentChainId];
+                    break;
+                // case EnabledTokensEnum.USDC:
+                //     tokenDefinitionFromEnum = USDC_DEFINITIONS[currentChainId];
+                //     break;
+                case EnabledTokensEnum.WETH:
+                    tokenDefinitionFromEnum = WETH9[currentChainId];
+                    break;
+                case EnabledTokensEnum.XTM:
+                case EnabledTokensEnum.wXTM:
+                    tokenDefinitionFromEnum = xtmDef;
+                    break;
+                default:
+                    tokenDefinitionFromEnum = undefined; // Handles any other enum values
+            }
 
             if (tokenDefinitionFromEnum?.address && (!xtmDef || !tokenDefinitionFromEnum.equals(xtmDef))) {
                 if (!tokens.find((t) => t.definition.equals(tokenDefinitionFromEnum))) {
@@ -663,14 +672,11 @@ export const useSwapData = () => {
     const handleSelectFromToken = useCallback(
         (selectedToken: SelectableTokenInfo) => {
             setPairTokenAddress(selectedToken.address);
-            setFromAmount('');
-            setTargetAmount('');
             setLastUpdatedField('fromValue');
             shouldCalculate.current = false;
-            clearCalculatedDetails();
             setTokenSelectOpen(false);
         },
-        [setPairTokenAddress, clearCalculatedDetails]
+        [setPairTokenAddress]
     );
 
     const finalIsLoading =

@@ -45,6 +45,7 @@ export enum EnabledTokens {
     DAI = 'DAI',
     WETH = 'wETH',
     XTM = 'wXTM',
+    wXTM = 'XTM',
     USDC = 'USDC',
 }
 
@@ -507,12 +508,13 @@ export const useSwap = () => {
         },
         [
             publicClient,
-            accountAddress,
             currentChainId,
             sdkToken0,
             sdkToken1,
             routerAddress,
             getPair,
+            isConnected,
+            accountAddress,
             error,
             token0?.isNative,
             token1?.isNative,

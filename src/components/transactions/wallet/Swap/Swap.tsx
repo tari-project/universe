@@ -90,7 +90,7 @@ export const Swap = () => {
             </HeaderWrapper>
 
             <SwapOption>
-                <span> {'Sell'} </span>
+                <span>{uiDirection === 'input' ? 'Sell' : 'Receive (Estimated)'}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -106,7 +106,7 @@ export const Swap = () => {
                         <Chevron />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                <span>{`Balance: ${fromTokenDisplay.balance}`}</span>
+                {connectedAccount.address ? <span>{`Balance: ${fromTokenDisplay.balance}`}</span> : null}
             </SwapOption>
 
             <SwapDirection>
@@ -116,7 +116,7 @@ export const Swap = () => {
             </SwapDirection>
 
             <SwapOption>
-                <span> {'Receive (Estimated)'} </span>
+                <span>{uiDirection === 'input' ? 'Receive (Estimated)' : 'Sell'}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -130,7 +130,7 @@ export const Swap = () => {
                         <span>{'wXTM'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                <span>{`Balance: ${toTokenDisplay.balance}`}</span>
+                {connectedAccount.address ? <span>{`Balance: ${toTokenDisplay.balance}`}</span> : null}
             </SwapOption>
 
             <SubmitButtonWrapper>
@@ -170,7 +170,7 @@ export const Swap = () => {
                 onSelectToken={handleSelectFromToken}
             />
 
-            <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} />
+            <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} availableTokens={selectableFromTokens} />
 
             <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcesingOpen} />
             {/* ////////////////////////////////// */}

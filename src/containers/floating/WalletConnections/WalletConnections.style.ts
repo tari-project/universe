@@ -19,6 +19,11 @@ export const ContentWrapper = styled.div`
     border-radius: 24px;
     padding: 24px;
     width: 100%;
+    overflow-y: auto;
+    border-radius: 8px;
+    padding: 8px;
+    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2a2a30' : '#ffffff')};
+    border-radius: 25px;
 `;
 
 export const ConnectButton = styled.button`
@@ -37,9 +42,6 @@ export const ConnectButton = styled.button`
     padding: 10px 12px;
     img {
         width: 25px;
-    }
-    &:hover {
-        background: #f5f5f5;
     }
 `;
 
