@@ -66,7 +66,12 @@ pub struct ConfigCoreContent {
 }
 
 fn default_monero_nodes() -> Vec<String> {
-    vec!["https://xmr-01.tari.com".to_string()]
+    vec![
+        "https://xmr-01.tari.com".to_string(),
+        "https://xmr-lim.tari.com".to_string(),
+        "https://xmr-gra.tari.com".to_string(),
+        "https://xmr-bhs.tari.com".to_string(),
+    ]
 }
 
 impl Default for ConfigCoreContent {
