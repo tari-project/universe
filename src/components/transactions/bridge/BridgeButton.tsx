@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ButtonWrapper, StyledButton } from './BridgeButton.styles';
-import { BRIDGE_TAPPLET_ID, useTappletsStore } from '@app/store/useTappletsStore';
+import { useTappletsStore } from '@app/store/useTappletsStore';
 import { setError, setVisualMode } from '@app/store';
 import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
@@ -12,7 +12,7 @@ export default function BridgeButton() {
     const { initTappletProvider } = useTappletProviderStore();
 
     const handleClick = useCallback(
-        async (tappletId: number) => {
+        async (tappletId = 0) => {
             try {
                 initTappletProvider();
                 setActiveTappById(tappletId, true);
@@ -32,7 +32,7 @@ export default function BridgeButton() {
                 size="large"
                 $hasStarted={false}
                 fluid
-                onClick={() => handleClick(BRIDGE_TAPPLET_ID)}
+                onClick={() => handleClick()}
                 icon={null}
                 disabled={false}
                 $isLoading={false}
