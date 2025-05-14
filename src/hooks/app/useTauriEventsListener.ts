@@ -47,9 +47,10 @@ import {
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
+import { fetchExchangeContent } from '@app/store/useExchangeStore.ts';
 
 const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
-
+const EXCHANGE_ID = 'TXC'; // temp for testing
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
     function handleLogUpdate(newEvent: BackendStateUpdateEvent) {
@@ -69,8 +70,13 @@ const useTauriEventsListener = () => {
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
                     switch (event.event_type) {
-                        case 'CorePhaseFinished':
+                        case 'CorePhaseFinished': {
+                            // TODO: see where exchange ID will come through from BE
+                            if (EXCHANGE_ID) {
+                                await fetchExchangeContent(EXCHANGE_ID);
+                            }
                             break;
+                        }
                         case 'HardwarePhaseFinished':
                             await handleHardwarePhaseFinished();
                             break;
@@ -80,6 +86,7 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletPhaseFinished':
                             break;
+
                         case 'UnlockApp':
                             await handleAppUnlocked();
                             break;
