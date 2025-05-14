@@ -17,6 +17,7 @@
   "giftReferralCode": "Tari Universe में आमंत्रित प्रत्येक मित्र के लिए {{gems}} रत्न कमाएं। एक बार जब वे अपना खाता कनेक्ट कर लेते हैं, तो आपको आपके रत्न प्रदान किए जाएंगे।",
   "giftReferralCodeHeader": "अपना रेफरल कोड <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> रत्नों का दावा करें।",
   "invite": "आमंत्रित करें",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "मित्रों को आमंत्रित करें",
   "inviteFriendsText": "लिंक कॉपी करें और साझा करें",
   "invitedAmount": "आपने <span>{{count}}</span> मित्रों को आमंत्रित किया है",
