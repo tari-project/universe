@@ -343,3 +343,8 @@ export const ConnectedWalletWrapper = styled.div`
         opacity: 0.5;
     }
 `;
+
+export const SubmitButtonWrapper = styled.div`
+    width: 100%;
+    margin-top: 20px;
+`;

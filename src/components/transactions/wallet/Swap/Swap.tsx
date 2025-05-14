@@ -6,6 +6,7 @@ import {
     HeaderWrapper,
     SectionHeaderWrapper,
     StepHeader,
+    SubmitButtonWrapper,
     SwapAmountInput,
     SwapDirection,
     SwapDirectionWrapper,
@@ -49,8 +50,7 @@ export const Swap = () => {
         targetAmount,
         uiDirection,
         transaction,
-        //useSwapError,
-        displayPrice,
+        //displayPrice,
         setProcesingOpen,
         setFromAmount,
         setTargetAmount,
@@ -59,15 +59,15 @@ export const Swap = () => {
         handleConfirm,
         tokenSelectOpen,
         setTokenSelectOpen,
-        handleSelectFromToken, // New
-        selectableFromTokens, // New
+        handleSelectFromToken,
+        selectableFromTokens,
     } = useSwapData();
 
     return (
         <>
             <TabHeader $noBorder>
                 <SectionHeaderWrapper>
-                    <HeaderLabel>{'Buy Tari'}</HeaderLabel> {/* Or dynamic based on 'toTokenDisplay.symbol' */}
+                    <HeaderLabel>{'Buy Tari'}</HeaderLabel>
                     <BackButton onClick={() => setWalletUiVisible(false)}>{'Back'}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
@@ -79,14 +79,14 @@ export const Swap = () => {
                         {'Step'} <strong>{'1'}</strong> {'/2'}
                     </CurrentStep>
                 </HeaderItem>
-                <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
-                    {fromTokenDisplay ? (
+                {fromTokenDisplay && connectedAccount.address ? (
+                    <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
                         <>
                             {getCurrencyIcon({ simbol: fromTokenDisplay.symbol.toLowerCase() || 'eth', width: 20 })}
                             {truncateMiddle((connectedAccount?.address as `0x${string}`) || '', 6)}
                         </>
-                    ) : null}
-                </ConnectedWalletWrapper>
+                    </ConnectedWalletWrapper>
+                ) : null}
             </HeaderWrapper>
 
             <SwapOption>
@@ -94,21 +94,18 @@ export const Swap = () => {
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
-                        $error={notEnoughBalance} // notEnoughBalance is now specific to fromAmount and fromTokenDisplay
+                        $error={notEnoughBalance}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setFromAmount(e.target.value)}
-                        // onBlur={formatAmounts} // Review if needed
                         value={fromAmount}
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
-                        {/* Make clickable if you add token selection */}
                         {getCurrencyIcon({ simbol: fromTokenDisplay.symbol.toLowerCase() || 'eth', width: 25 })}
                         <span>{fromTokenDisplay.symbol || 'ETH'}</span>
-                        <Chevron /> {/* Icon for dropdown if token is selectable */}
+                        <Chevron />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                {/* Display balance for the "FROM" token */}
                 <span>{`Balance: ${fromTokenDisplay.balance}`}</span>
             </SwapOption>
 
@@ -126,7 +123,6 @@ export const Swap = () => {
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setTargetAmount(e.target.value)}
-                        // onBlur={formatAmounts} // Review if needed
                         value={targetAmount}
                     />
                     <SwapOptionCurrency>
@@ -137,20 +133,7 @@ export const Swap = () => {
                 <span>{`Balance: ${toTokenDisplay.balance}`}</span>
             </SwapOption>
 
-            {displayPrice && (fromAmount || targetAmount) && !isLoading && (
-                <div
-                    style={{
-                        textAlign: 'center',
-                        margin: '8px 0',
-                        fontSize: '0.875rem',
-                        color: '#888', // Adjust color as needed
-                    }}
-                >
-                    {displayPrice}
-                </div>
-            )}
-
-            <div style={{ marginTop: '20px', width: '100%' }}>
+            <SubmitButtonWrapper>
                 <WalletButton
                     variant="primary"
                     onClick={() => setReviewSwap(true)}
@@ -159,9 +142,13 @@ export const Swap = () => {
                 >
                     {isLoading ? 'Loading...' : 'Review Swap'}
                 </WalletButton>
-            </div>
+            </SubmitButtonWrapper>
+
+            {/* ////////////////////////////////// */}
+            {/* Floating Elements */}
 
             <ConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
+
             <SwapConfirmation
                 isOpen={Boolean(reviewSwap && connectedAccount.address && !notEnoughBalance && Number(fromAmount) > 0)}
                 setIsOpen={setReviewSwap}
@@ -169,11 +156,11 @@ export const Swap = () => {
                 transaction={transaction}
                 fromTokenDisplay={fromTokenDisplay}
             />
+
             <ProcessingTransaction
-                status={isProcessingApproval ? 'processingapproval' : swapSuccess ? 'success' : 'error'}
-                isOpen={procesingOpen && isProcessingSwap}
+                status={isProcessingSwap ? 'processingswap' : swapSuccess ? 'success' : 'error'}
+                isOpen={procesingOpen && !isProcessingApproval}
                 setIsOpen={setProcesingOpen}
-                //transactionId={transaction.transactionId} // Pass transactionId
             />
 
             <TokenSelection
@@ -186,6 +173,7 @@ export const Swap = () => {
             <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} />
 
             <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcesingOpen} />
+            {/* ////////////////////////////////// */}
         </>
     );
 };

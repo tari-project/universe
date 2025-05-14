@@ -1,6 +1,6 @@
 import { ContentWrapper, WalletAddress } from '../../WalletConnections.style';
 import MMFox from '../../icons/mm-fox';
-import { useAccount, useBalance, useDisconnect } from 'wagmi';
+import { useAccount, useBalance, useCall, useDisconnect } from 'wagmi';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import {
     ActiveDot,
@@ -12,9 +12,7 @@ import {
     WalletValueRight,
 } from './WalletContents.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
-import { useMemo } from 'react';
-import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-import { SwapStep } from '@app/store';
+import { useCallback, useMemo } from 'react';
 import { getCurrencyIcon } from '../../helpers/getIcon';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
@@ -63,12 +61,19 @@ export const WalletContents = ({ isOpen, setIsOpen }: Props) => {
         return (Number(accountBalance.value) / Number(factor)).toString();
     }, [accountBalance]);
 
+    const handleDisconnect = useCallback(() => {
+        if (dataAcc.address) {
+            disconnect();
+        }
+        setIsOpen(false);
+    }, [dataAcc.address, disconnect, setIsOpen]);
+
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} title={'Connected wallet'}>
             <AnimatePresence mode="wait">
                 <WalletContentsContainer>
                     <ConnectedWalletWrapper>
-                        <WalletButton variant="error" onClick={() => disconnect()}>
+                        <WalletButton variant="error" onClick={handleDisconnect}>
                             {'Disconnect'}
                         </WalletButton>
                         <StatusWrapper>

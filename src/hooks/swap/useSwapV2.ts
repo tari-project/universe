@@ -235,9 +235,10 @@ export const useSwap = () => {
 
     const { address: accountAddress, isConnected, chain } = useAccount();
     const { data: walletClient } = useWalletClient();
-    const publicClient = usePublicClient(); // From wagmi, for read ops like estimateGas
 
     const currentChainId = useMemo(() => chain?.id || defaultChainId, [chain]);
+    const publicClient = usePublicClient({ chainId: currentChainId });
+
     const routerAddress = useMemo(
         () => (currentChainId ? ROUTER_ADDRESSES[currentChainId] : undefined),
         [currentChainId]
@@ -359,7 +360,7 @@ export const useSwap = () => {
             amountRaw: string, // Expect raw amount string (e.g., '1000000000000000000')
             amountType: SwapField // Whether amountRaw is for input or output token
         ): Promise<TradeDetails> => {
-            if (!publicClient || !accountAddress || !currentChainId || !sdkToken0 || !sdkToken1 || !routerAddress) {
+            if (!publicClient || !currentChainId || !sdkToken0 || !sdkToken1 || !routerAddress) {
                 setError('Prerequisites for trade details not met.');
                 return { trade: null, route: null };
             }
@@ -400,92 +401,98 @@ export const useSwap = () => {
             let estimatedGasFeeNativeStr: string | null = null;
             let estimatedGasFeeUSDStr: string | null = null;
 
-            try {
-                const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
-                const path = route.path.map((token) => token.address as `0x${string}`);
-                const amountIn = BigInt(trade.inputAmount.quotient.toString());
-                const amountOut = BigInt(trade.outputAmount.quotient.toString());
+            if (isConnected && accountAddress) {
+                // Check if wallet is connected for gas estimation
+                try {
+                    const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
+                    const path = route.path.map((token) => token.address as `0x${string}`);
+                    const amountIn = BigInt(trade.inputAmount.quotient.toString());
+                    const amountOut = BigInt(trade.outputAmount.quotient.toString());
 
-                // For exact input, amountOut is minimumOutput. For exact output, amountIn is maximumInput.
-                const amountOutMinOrMax =
-                    trade.tradeType === TradeType.EXACT_INPUT
-                        ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString())
-                        : amountOut; // For exact output, this is the exact amountOut
-                const amountInOrMaxIn =
-                    trade.tradeType === TradeType.EXACT_OUTPUT
-                        ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString())
-                        : amountIn; // For exact input, this is the exact amountIn
+                    // For exact input, amountOut is minimumOutput. For exact output, amountIn is maximumInput.
+                    const amountOutMinOrMax =
+                        trade.tradeType === TradeType.EXACT_INPUT
+                            ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString())
+                            : amountOut; // For exact output, this is the exact amountOut
+                    const amountInOrMaxIn =
+                        trade.tradeType === TradeType.EXACT_OUTPUT
+                            ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString())
+                            : amountIn; // For exact input, this is the exact amountIn
 
-                let callData: `0x${string}`;
-                let valueToSend: bigint | undefined = undefined;
-                let swapAbiForViem;
+                    let callData: `0x${string}`;
+                    let valueToSend: bigint | undefined = undefined;
+                    let swapAbiForViem;
 
-                const inputIsNativeForRouterEst = token0?.isNative;
-                const outputIsNativeForRouterEst = token1?.isNative;
+                    const inputIsNativeForRouterEst = token0?.isNative;
+                    const outputIsNativeForRouterEst = token1?.isNative;
 
-                // Note: Uniswap V2 Router does not have EXACT_OUTPUT for ETH input/output.
-                // It has swapTokensForExactETH, swapETHForExactTokens which are less common.
-                // This estimation primarily targets EXACT_INPUT type swaps.
-                if (inputIsNativeForRouterEst) {
-                    swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
-                    callData = encodeFunctionData({
-                        abi: swapAbiForViem,
-                        functionName: 'swapExactETHForTokens',
-                        args: [amountOutMinOrMax, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                    });
-                    valueToSend = BigInt(amountInOrMaxIn.toString());
-                } else if (outputIsNativeForRouterEst) {
-                    swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
-                    callData = encodeFunctionData({
-                        abi: swapAbiForViem,
-                        functionName: 'swapExactTokensForETH',
-                        args: [
-                            amountInOrMaxIn,
-                            amountOutMinOrMax,
-                            path,
-                            accountAddress as `0x${string}`,
-                            BigInt(deadline),
-                        ],
-                    });
-                } else {
-                    swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
-                    callData = encodeFunctionData({
-                        abi: swapAbiForViem,
-                        functionName: 'swapExactTokensForTokens',
-                        args: [
-                            amountInOrMaxIn,
-                            amountOutMinOrMax,
-                            path,
-                            accountAddress as `0x${string}`,
-                            BigInt(deadline),
-                        ],
-                    });
-                }
-
-                const estimatedGasLimit = await publicClient.estimateGas({
-                    account: accountAddress as `0x${string}`,
-                    to: routerAddress,
-                    data: callData,
-                    value: valueToSend,
-                });
-
-                const gasPrice = await publicClient.getGasPrice();
-                if (estimatedGasLimit && gasPrice) {
-                    const estimatedTotalGasCostNative = estimatedGasLimit * gasPrice;
-                    estimatedGasFeeNativeStr = formatNativeGasFee(
-                        estimatedTotalGasCostNative,
-                        publicClient.chain.nativeCurrency.decimals,
-                        publicClient.chain.nativeCurrency.symbol
-                    );
-                    if (nativeCurrencyPriceUSD) {
-                        const feeInNativeNum = parseFloat(
-                            viemFormatUnits(estimatedTotalGasCostNative, publicClient.chain.nativeCurrency.decimals)
-                        );
-                        estimatedGasFeeUSDStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
+                    // Note: Uniswap V2 Router does not have EXACT_OUTPUT for ETH input/output.
+                    // It has swapTokensForExactETH, swapETHForExactTokens which are less common.
+                    // This estimation primarily targets EXACT_INPUT type swaps.
+                    if (inputIsNativeForRouterEst) {
+                        swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName: 'swapExactETHForTokens',
+                            args: [amountOutMinOrMax, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                        });
+                        valueToSend = BigInt(amountInOrMaxIn.toString());
+                    } else if (outputIsNativeForRouterEst) {
+                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName: 'swapExactTokensForETH',
+                            args: [
+                                amountInOrMaxIn,
+                                amountOutMinOrMax,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
+                    } else {
+                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName: 'swapExactTokensForTokens',
+                            args: [
+                                amountInOrMaxIn,
+                                amountOutMinOrMax,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
                     }
+
+                    const estimatedGasLimit = await publicClient.estimateGas({
+                        account: accountAddress as `0x${string}`,
+                        to: routerAddress,
+                        data: callData,
+                        value: valueToSend,
+                    });
+
+                    const gasPrice = await publicClient.getGasPrice();
+                    if (estimatedGasLimit && gasPrice) {
+                        const estimatedTotalGasCostNative = estimatedGasLimit * gasPrice;
+                        estimatedGasFeeNativeStr = formatNativeGasFee(
+                            estimatedTotalGasCostNative,
+                            publicClient.chain.nativeCurrency.decimals,
+                            publicClient.chain.nativeCurrency.symbol
+                        );
+                        if (nativeCurrencyPriceUSD) {
+                            const feeInNativeNum = parseFloat(
+                                viemFormatUnits(estimatedTotalGasCostNative, publicClient.chain.nativeCurrency.decimals)
+                            );
+                            estimatedGasFeeUSDStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
+                        }
+                    }
+                } catch (gasError: any) {
+                    console.warn(
+                        'Could not estimate gas for the swap preview:',
+                        gasError.shortMessage || gasError.message
+                    );
                 }
-            } catch (gasError: any) {
-                console.warn('Could not estimate gas for the swap preview:', gasError.shortMessage || gasError.message);
             }
 
             return {
