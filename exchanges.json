@@ -1,12 +1,8 @@
 {
     "exchanges": [
         {
-            "id": "46d881c4-c351-4d94-a070-d77c47fe8e71",
-            "secret_name": "b035a622"
-        },
-        {
-            "id": "22d881c4-c351-4d94-a070-d77c47fe8e00",
-            "secret_name": "aaa1e352"
+            "id": "ff0f0a96-52db-42d8-a84e-b781ad0c7614",
+            "secret_name": "ff0f0a96"
         }
     ]
 }
