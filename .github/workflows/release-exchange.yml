@@ -59,10 +59,9 @@ jobs:
 
           # pass exchanges to env
           echo "EXCHANGES=$(jq -c '.exchanges' exchanges.json) " >> $GITHUB_ENV
-          echo "ALL_EXCHANGES_NAMES=${{ toJson(secrets.EXCHANGES_NAMES) }}" >> $GITHUB_ENV
           echo "${GITHUB_ENV}"
 
-          echo "EXCHANGES_NAMES=$(jq --argjson exchanges "$EXCHANGES" --argjson all_exchanges "$ALL_EXCHANGES_NAMES" -n '$exchanges | map({ id: .id, secret_name: $all_exchanges[.secret_name] })' )" >> $GITHUB_ENV
+          echo "EXCHANGES_NAMES=$(jq --argjson exchanges "$EXCHANGES" --arg all_exchanges "$ALL_EXCHANGES_NAMES" -n '$exchanges | map({ id: .id, secret_name: $all_exchanges[.secret_name] })' )" >> $GITHUB_ENV
 
   builds:
     needs: read-exchanges
