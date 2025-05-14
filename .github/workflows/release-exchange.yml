@@ -43,7 +43,7 @@ jobs:
         id: read-exchanges
         run: |
           echo "EXCHANGES_NAMES=$(jq --argjson map '{ "b035a622": "TestA", "aaa1e352": "TestB" }' \
-            '.exchanges[] |= (.secret_name = $map[.secret_name])' exchanges.json) >> $GITHUB_ENV
+            '.exchanges[] |= (.secret_name = $map[.secret_name])' exchanges.json)" >> $GITHUB_ENV
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
 
   builds:
