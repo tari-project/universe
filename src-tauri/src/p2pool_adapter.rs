@@ -99,23 +99,6 @@ impl ProcessAdapter for P2poolAdapter {
             .ok_or_else(|| anyhow!("P2poolAdapter config is not set"))?;
         let log_path_string = convert_to_string(log_path.join("sha-p2pool"))?;
 
-        if is_first_start {
-            info!(target: LOG_TARGET, "Clearing block cache on first start for P2Pool");
-            if fs::exists(data_dir.join("block_cache"))? {
-                let _unused = fs::remove_dir_all(data_dir.join("block_cache")).inspect_err(
-                    |e| warn!(target: LOG_TARGET, "Failed to remove block cache directory: {}", e),
-                ).inspect(|_| {
-                    info!(target: LOG_TARGET, "Removed block cache directory");
-                });
-            }
-            if fs::exists(data_dir.join("block_cache_backup"))? {
-                let _unused = fs::remove_dir_all(data_dir.join("block_cache_backup")).inspect_err(
-                    |e| warn!(target: LOG_TARGET, "Failed to remove block cache backup file: {}", e),
-                ).inspect(|_| {
-                    info!(target: LOG_TARGET, "Removed block cache backup file");
-                });
-            }
-        }
         let mut args: Vec<String> = vec![
             "start".to_string(),
             "--grpc-port".to_string(),
