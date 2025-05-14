@@ -20,7 +20,7 @@ import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import { FEATURES } from '@app/store/consts.ts';
-import { fetchExchangeContent } from '@app/store/useExchangeStore.ts';
+import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 interface TokenResponse {
     exp: number;
@@ -116,7 +116,8 @@ export const airdropSetup = async () => {
     try {
         console.info('Fetching backend in memory config');
         const beConfig = await fetchBackendInMemoryConfig();
-        if (beConfig?.exchangeId) {
+        const currentExchangeId = useExchangeStore.getState().content?.exchange_id;
+        if (beConfig?.exchangeId && !currentExchangeId) {
             await fetchExchangeContent(beConfig.exchangeId);
         }
         console.info('Getting existing tokens');
