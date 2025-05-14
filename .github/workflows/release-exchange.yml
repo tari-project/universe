@@ -33,7 +33,7 @@ jobs:
   read-exchanges:
     name: Read exchanges
     env:
-      ALL_EXCHANGES_NAMES: ${{ secrets.EXCHANGES_NAMES }}
+      ALL_EXCHANGES_NAMES: ${{ fromJson(secrets.ALL_EXCHANGES_NAMES) }}
     outputs:
       EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
     runs-on: ubuntu-latest
