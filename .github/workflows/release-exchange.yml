@@ -1,8 +1,24 @@
 ---
-name: Release
+name: Release-Exchange
 
 'on':
   workflow_dispatch:
+    inputs:
+      destination:
+        description: 'Artifacts destination'
+        required: true
+        type: choice
+        options:
+          - 'github'
+          - 'aws'
+      network:
+        description: 'Network to build for'
+        required: true
+        type: choice
+        options:
+          - 'mainnet'
+          - 'nextnet'
+          - 'esmeralda'
 
 concurrency:
   # https://docs.github.com/en/actions/examples/using-concurrency-expressions-and-a-test-matrix
@@ -14,16 +30,30 @@ env:
   TS_FEATURES: release-ci
 
 jobs:
+  read-exchanges:
+    name: Read exchanges
+    outputs:
+      EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read exchanges
+        id: read-exchanges
+        run: |
+          EXCHANGES_IDS=$(jq -c '.exchanges' exchanges.json)
+          echo "EXCHANGES_IDS=$EXCHANGES_IDS" >> $GITHUB_OUTPUT
   builds:
-    name: Building ${{ matrix.platform }}${{ matrix.extra }}
+    needs: read-exchanges
+    name: Building ${{ matrix.exchange.id }} | ${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
     # best effort disabled by default
-    continue-on-error: ${{ matrix.best_effort || false }}
+    continue-on-error: ${{ matrix.platforms.best_effort || false }}
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        include:
+        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS) }}
+        platforms:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
@@ -42,7 +72,7 @@ jobs:
             args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
-    runs-on: ${{ matrix.platform }}
+    runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
 
@@ -58,7 +88,6 @@ jobs:
           sudo bash ./scripts/check-get-yq.sh
 
       - name: Set environment variables
-        if: ${{ startsWith(github.ref, 'refs/heads/release') }}
         env:
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
           # Used for linux formatting
@@ -66,11 +95,7 @@ jobs:
         shell: bash
         run: |
           #set -xueo pipefail
-          # Setup tauri action envs
-          echo "tagName=v__VERSION__" >> $GITHUB_ENV
-          echo "releaseName=Tari Universe v__VERSION__" >> $GITHUB_ENV
-          #echo "releaseId=" >> $GITHUB_ENV
-          echo "TARI_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
@@ -78,7 +103,7 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"${{ secrets.EXCHANGE_MINER_NAME}} v${TU_VERSION}\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ secrets[matrix.exchange.secret_name]}}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             --output-format=json -i tauri.conf.json
@@ -92,7 +117,7 @@ jobs:
       - name: Rust Setup
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+          targets: ${{ matrix.platforms.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Cargo files and outputs
         if: ${{ ( ! startsWith(github.ref, 'refs/heads/release') ) && ( ! startsWith(github.ref, 'refs/tags/v') ) }}
@@ -113,7 +138,7 @@ jobs:
             protobuf-compiler
 
       - name: Install Dependencies - Linux/AppImage
-        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.platforms.args, 'appimage') ) }}
         run: |
           sudo apt-get install --no-install-recommends --assume-yes \
             appstream
@@ -128,7 +153,7 @@ jobs:
         # We set "bundleMediaFramework" to true, it should bundle into appimage all needed libraries for playing videos
         # It requires us to set ARCH environment variable
       - name: BundleMediaFramework fix - [ Linux Appimage ]
-        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.args, 'appimage') ) }}
+        if: ${{ ( startsWith(runner.os,'Linux') ) && ( contains(matrix.platforms.args, 'appimage') ) }}
         run: echo "ARCH=$(uname -m)" >> $GITHUB_ENV
 
       - name: Install Dependencies - macOS
@@ -198,16 +223,14 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           NODE_OPTIONS: '--max_old_space_size=4096'
-          EXCHANGE_ID: ${{ secrets.EXCHANGE_ID }}
+          EXCHANGE_ID: ${{ matrix.exchange.id }}
         with:
-          tagName: ${{ env.tagName }}
-          releaseName: ${{ env.releaseName }}
           releaseBody: 'Tari Universe - See the assets to download this version and install'
-          releaseDraft: true
+          releaseDraft: false
           prerelease: true
           includeDebug: false
           includeRelease: true
-          args: ${{ matrix.args }} --features "${{ env.TS_FEATURES }}"
+          args: ${{ matrix.platforms.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Add msbuild to PATH (windows)
         uses: microsoft/setup-msbuild@v2
@@ -318,20 +341,6 @@ jobs:
             exit 1
           }
 
-      - name: Add bundled Windows installer to release
-        if: ${{ startsWith(runner.os,'Windows') && startsWith(github.ref, 'refs/heads/release') }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        shell: bash
-        run: |
-          gh release view "v${{ steps.build.outputs.appVersion }}"
-          cd tari-win-bundler
-          ls -la "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
-          gh release view "v${{ steps.build.outputs.appVersion }}"
-          gh release upload "v${{ steps.build.outputs.appVersion }}" \
-            "${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe"
-          gh release view "v${{ steps.build.outputs.appVersion }}"
-
       - name: Locate artifacts path
         continue-on-error: true
         env:
@@ -341,6 +350,68 @@ jobs:
           echo -e "Artifact paths: \n${{ join(fromJSON( env.artifactPaths ), '\n') }}"
           MSI_FILE=$( echo '${{ env.artifactPaths }}' | jq -r '[.[] | select(endswith(".msi"))] | join(" ")' )
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
+
+      - name: Builds - Upload assets [ GitHub ]
+        if: ${{( startsWith(inputs.destination, 'github' )) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
+          path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
+
+      - name: Bundled Windows installer upload [ GitHub ]
+        if: ${{ startsWith(runner.os,'Windows') && ( startsWith(inputs.destination, 'github' ) ) }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
+          path: ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe
+
+      - name: Builds - Upload assets [ AWS ]
+        if: ${{( startsWith(inputs.destination, 'aws' )) && ( env.AWS_SECRET_ACCESS_KEY != '' ) && runner.name != 'self-hosted' }}
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
+          S3CMD: 'cp'
+          S3OPTIONS: '--content-type "application/octet-stream"'
+        run: |
+          docker run --rm -t \
+            -v ${PWD}:/work/data \
+            -w /work/data \
+            -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+            -e AWS_DEFAULT_REGION="WEUR" \
+            amazon/aws-cli:2.22.35 \
+              s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
+                ${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }} \
+                s3://${{ env.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ env.EXCHANGE_NAME }}/
+
+      - name: Bundled Windows installer upload [ AWS ]
+        if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) && ( env.AWS_SECRET_ACCESS_KEY != '' ) && runner.name != 'self-hosted' }}
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
+          S3CMD: 'cp'
+          S3OPTIONS: '--content-type "application/octet-stream"'
+        run: |
+          docker run --rm -t \
+            -v ${PWD}:/work/data \
+            -w /work/data \
+            -e AWS_ACCESS_KEY_ID="${{ env.AWS_ACCESS_KEY_ID }}" \
+            -e AWS_SECRET_ACCESS_KEY="${{ env.AWS_SECRET_ACCESS_KEY }}" \
+            -e AWS_ENDPOINT_URL="${{ env.AWS_ENDPOINT_URL }}" \
+            -e AWS_DEFAULT_REGION="WEUR" \
+            amazon/aws-cli:2.22.35 \
+              s3 ${{ env.S3CMD }} ${{ env.S3OPTIONS }} \
+                ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe \
+                s3://${{ env.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ env.EXCHANGE_NAME }}/
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
