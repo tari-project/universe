@@ -29,6 +29,7 @@ import { TokenSelection } from '@app/containers/floating/WalletConnections/secti
 import { truncateMiddle } from '@app/utils';
 import { useState } from 'react';
 import { WalletContents } from '@app/containers/floating/WalletConnections/sections/WalletContents/WalletContents';
+import { SignApprovalMessage } from '@app/containers/floating/WalletConnections/sections/SignMessage/SignApprovalMessage';
 
 export const Swap = () => {
     const [openWallet, setOpenWallet] = useState(false);
@@ -46,8 +47,8 @@ export const Swap = () => {
         swapSuccess,
         fromAmount,
         targetAmount,
-        transaction,
         uiDirection,
+        transaction,
         //useSwapError,
         setProcesingOpen,
         setFromAmount,
@@ -150,21 +151,13 @@ export const Swap = () => {
             <SwapConfirmation
                 isOpen={Boolean(reviewSwap && connectedAccount.address && !notEnoughBalance && Number(fromAmount) > 0)}
                 setIsOpen={setReviewSwap}
-                transaction={transaction} // Pass the assembled transaction object
                 onConfirm={handleConfirm}
+                transaction={transaction}
+                fromTokenDisplay={fromTokenDisplay}
             />
             <ProcessingTransaction
-                // Adjust status based on isProcessingApproval and isProcessingSwap
-                status={
-                    isProcessingApproval
-                        ? 'processingapproval'
-                        : isProcessingSwap
-                          ? 'processingswap'
-                          : swapSuccess
-                            ? 'success'
-                            : 'error'
-                }
-                isOpen={procesingOpen}
+                status={isProcessingApproval ? 'processingapproval' : swapSuccess ? 'success' : 'error'}
+                isOpen={procesingOpen && isProcessingSwap}
                 setIsOpen={setProcesingOpen}
                 //transactionId={transaction.transactionId} // Pass transactionId
             />
@@ -177,6 +170,8 @@ export const Swap = () => {
             />
 
             <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} />
+
+            <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcesingOpen} />
         </>
     );
 };

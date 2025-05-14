@@ -351,47 +351,66 @@ export const useSwapData = () => {
         setPriceImpact(null);
         setNetworkFee(null);
         setSlippage(null);
-        if (lastUpdatedField === 'fromValue') setTargetAmount('');
-        else setFromAmount('');
-    }, [lastUpdatedField]);
-
-    const handleSelectFromToken = useCallback(
-        (selectedToken: SelectableTokenInfo) => {
-            setPairTokenAddress(selectedToken.address);
-            setFromAmount('');
-            setTargetAmount('');
-            setLastUpdatedField('fromValue');
-            shouldCalculate.current = false;
-            clearCalculatedDetails();
-            setTokenSelectOpen(false);
-        },
-        [setPairTokenAddress, clearCalculatedDetails]
-    );
+        // Only clear the field that was *not* last updated by the user,
+        // and only if it's not already empty to prevent re-renders/loops.
+        if (lastUpdatedField === 'fromValue') {
+            if (targetAmount !== '') setTargetAmount('');
+        } else {
+            // lastUpdatedField === 'target'
+            if (fromAmount !== '') setFromAmount('');
+        }
+    }, [lastUpdatedField, fromAmount, targetAmount]); // Add fromAmount, targetAmount as dependencies
 
     const shouldCalculate = useRef(false);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
 
     const calcAmounts = useCallback(async () => {
-        let amountForCalcStr: string;
+        let amountTypedByUserStr: string;
+        let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
+        // This tells getTradeDetails if the parsed amount (amountForCalcWei) is for
+        // the trade's actual input (sdkToken0) or actual output (sdkToken1).
         let amountTypeForGetTradeDetails: SwapField;
-        let tokenForInputAmount: Token | undefined;
+
+        const tradeInputTokenSDK = sdkToken0; // Actual input to the Uniswap trade
+        const tradeOutputTokenSDK = sdkToken1; // Actual output from the Uniswap trade
 
         if (lastUpdatedField === 'fromValue') {
-            amountForCalcStr = fromAmount;
-            tokenForInputAmount = uiDirection === 'input' ? sdkToken0 : sdkToken1;
-            amountTypeForGetTradeDetails = 'fromValue';
+            // User typed in the UI "FROM" box
+            amountTypedByUserStr = fromAmount;
+            tokenUsedForParsingAmount = fromUiTokenDefinition;
+
+            if (uiDirection === 'input') {
+                // UI "FROM" box (fromUiTokenDefinition) is for the trade's INPUT (tradeInputTokenSDK).
+                amountTypeForGetTradeDetails = 'fromValue';
+            } else {
+                // uiDirection === 'output'
+                // UI "FROM" box (fromUiTokenDefinition) is for the trade's OUTPUT (tradeOutputTokenSDK).
+                amountTypeForGetTradeDetails = 'target';
+            }
         } else {
-            amountForCalcStr = targetAmount;
-            tokenForInputAmount = uiDirection === 'input' ? sdkToken1 : sdkToken0;
-            amountTypeForGetTradeDetails = 'target';
+            // lastUpdatedField === 'target', user typed in the UI "TO" box
+            amountTypedByUserStr = targetAmount;
+            tokenUsedForParsingAmount = toUiTokenDefinition;
+
+            if (uiDirection === 'input') {
+                // UI "TO" box (toUiTokenDefinition) is for the trade's OUTPUT (tradeOutputTokenSDK).
+                amountTypeForGetTradeDetails = 'target';
+            } else {
+                // uiDirection === 'output'
+                // UI "TO" box (toUiTokenDefinition) is for the trade's INPUT (tradeInputTokenSDK).
+                amountTypeForGetTradeDetails = 'fromValue';
+            }
         }
 
         if (
-            !tokenForInputAmount ||
-            !amountForCalcStr ||
-            Number.isNaN(Number(amountForCalcStr)) ||
-            Number(amountForCalcStr) <= 0
+            !tokenUsedForParsingAmount ||
+            !amountTypedByUserStr ||
+            Number.isNaN(Number(amountTypedByUserStr)) ||
+            Number(amountTypedByUserStr) <= 0 ||
+            !tradeInputTokenSDK ||
+            !tradeOutputTokenSDK
         ) {
+            // Call the refined clearCalculatedDetails to only clear the other field
             clearCalculatedDetails();
             setIsLoading(false);
             return;
@@ -399,31 +418,57 @@ export const useSwapData = () => {
 
         setIsLoading(true);
         try {
-            const amountForCalcWei = viemParseUnits(amountForCalcStr, tokenForInputAmount.decimals);
+            const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
+            // getTradeDetails expects amountRaw to be for tradeInputTokenSDK (if 'fromValue') or tradeOutputTokenSDK (if 'target')
             const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
             setTradeDetails(details);
 
             if (details.trade) {
                 setPriceImpact(details.trade.priceImpact.toSignificant(2) + '%');
-
                 const networkFee = details.estimatedGasFeeNative || details.estimatedGasFeeUSD;
                 if (networkFee) setNetworkFee(networkFee);
-
                 setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)');
+
                 if (shouldCalculate.current) {
-                    if (lastUpdatedField === 'fromValue' && details.outputAmount)
-                        setTargetAmount(details.outputAmount.toSignificant(6));
-                    else if (lastUpdatedField === 'target' && details.inputAmount)
-                        setFromAmount(details.inputAmount.toSignificant(6));
+                    // details.inputAmount is ALWAYS the amount of tradeInputTokenSDK (sdkToken0)
+                    // details.outputAmount is ALWAYS the amount of tradeOutputTokenSDK (sdkToken1)
+
+                    if (lastUpdatedField === 'fromValue') {
+                        // User typed in "FROM" box, so we need to set the "TO" box (targetAmount).
+                        if (uiDirection === 'input') {
+                            // UI "TO" box (toUiTokenDefinition) is tradeOutputTokenSDK.
+                            if (details.outputAmount) setTargetAmount(details.outputAmount.toSignificant(6));
+                            else if (targetAmount !== '') setTargetAmount('');
+                        } else {
+                            // uiDirection === 'output'
+                            // UI "TO" box (toUiTokenDefinition) is tradeInputTokenSDK.
+                            if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
+                            else if (targetAmount !== '') setTargetAmount('');
+                        }
+                    } else {
+                        // lastUpdatedField === 'target'
+                        // User typed in "TO" box, so we need to set the "FROM" box (fromAmount).
+                        if (uiDirection === 'input') {
+                            // UI "FROM" box (fromUiTokenDefinition) is tradeInputTokenSDK.
+                            if (details.inputAmount) setFromAmount(details.inputAmount.toSignificant(6));
+                            else if (fromAmount !== '') setFromAmount('');
+                        } else {
+                            // uiDirection === 'output'
+                            // UI "FROM" box (fromUiTokenDefinition) is tradeOutputTokenSDK.
+                            if (details.outputAmount) setFromAmount(details.outputAmount.toSignificant(6));
+                            else if (fromAmount !== '') setFromAmount('');
+                        }
+                    }
                 }
             } else {
-                clearCalculatedDetails();
-                if (details.route && !details.trade)
+                clearCalculatedDetails(); // Clears the other field
+                if (details.route && !details.trade) {
                     addToast({ title: 'Error', text: 'Insufficient liquidity for this trade.', type: 'error' });
+                }
             }
         } catch (e: any) {
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
-            clearCalculatedDetails();
+            clearCalculatedDetails(); // Clears the other field
         } finally {
             setIsLoading(false);
             shouldCalculate.current = false;
@@ -433,10 +478,12 @@ export const useSwapData = () => {
         targetAmount,
         lastUpdatedField,
         uiDirection,
-        sdkToken0,
-        sdkToken1,
+        sdkToken0, // tradeInputTokenSDK
+        sdkToken1, // tradeOutputTokenSDK
+        fromUiTokenDefinition,
+        toUiTokenDefinition,
         getTradeDetails,
-        clearCalculatedDetails,
+        clearCalculatedDetails, // Now a dependency
         addToast,
     ]);
 
@@ -463,16 +510,26 @@ export const useSwapData = () => {
         let processedValue = value;
 
         if (processedValue === '' || processedValue === '.' || processedValue === '0') {
-            if (field === 'fromValue') setFromAmount(processedValue);
-            else setTargetAmount(processedValue);
-            if (field === 'fromValue') setTargetAmount('');
-            else setFromAmount('');
+            if (field === 'fromValue') {
+                setFromAmount(processedValue);
+                if (targetAmount !== '') setTargetAmount(''); // Clear other field
+            } else {
+                // field === 'target'
+                setTargetAmount(processedValue);
+                if (fromAmount !== '') setFromAmount(''); // Clear other field
+            }
+            setLastUpdatedField(field); // Set this to know which field was just interacted with
             shouldCalculate.current = false;
-            clearCalculatedDetails();
+            // Clear only trade details, not the input field being typed into beyond what's done above
+            setTradeDetails(null);
+            setPriceImpact(null);
+            setNetworkFee(null);
+            setSlippage(null);
             setIsLoading(false);
             if (calcRef.current) clearTimeout(calcRef.current);
             return;
         }
+        // ... (rest of the validation and processing logic) ...
         const regex = /^\d*\.?\d*$/;
         if (!regex.test(processedValue) || (processedValue !== '.' && Number.isNaN(Number(processedValue)))) return;
         if (processedValue.length > 1 && processedValue.startsWith('0') && !processedValue.startsWith('0.'))
@@ -483,31 +540,48 @@ export const useSwapData = () => {
 
         if (field === 'fromValue') setFromAmount(processedValue);
         else setTargetAmount(processedValue);
-        setLastUpdatedField(field);
+        setLastUpdatedField(field); // Ensure this is set
         shouldCalculate.current = true;
-        setIsLoading(true);
+        setIsLoading(true); // Triggers useEffect for debounceCalc
     };
 
     const handleSetUiDirection = useCallback(() => {
         const newUiDirection = uiDirection === 'input' ? 'output' : 'input';
         setUiDirection(newUiDirection);
-        setSwapEngineDirection(newUiDirection === 'input' ? 'input' : 'output');
-        const currentFrom = fromAmount;
-        const currentTo = targetAmount;
-        setFromAmount(currentTo);
-        setTargetAmount(currentFrom);
-        if (currentTo) {
-            setLastUpdatedField('fromValue');
+        setSwapEngineDirection(newUiDirection); // This updates 'direction' in useSwapV2
+
+        // Amounts stay in their boxes. Their meaning changes.
+        // Trigger recalculation based on the field that was last being edited,
+        // or a field that has a valid amount.
+        if (lastUpdatedField === 'fromValue' && fromAmount && Number(fromAmount) > 0) {
+            shouldCalculate.current = true;
+            setIsLoading(true); // This will trigger the useEffect for debounceCalc
+        } else if (lastUpdatedField === 'target' && targetAmount && Number(targetAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
-        } else if (currentFrom) {
-            setLastUpdatedField('target');
+        } else if (fromAmount && Number(fromAmount) > 0) {
+            // Fallback if lastUpdatedField was reset
+            setLastUpdatedField('fromValue'); // Assume fromAmount should drive if it has a value
+            shouldCalculate.current = true;
+            setIsLoading(true);
+        } else if (targetAmount && Number(targetAmount) > 0) {
+            // Fallback
+            setLastUpdatedField('target'); // Assume targetAmount should drive
             shouldCalculate.current = true;
             setIsLoading(true);
         } else {
             shouldCalculate.current = false;
+            // Only clear calculated trade details, not the amounts in the input boxes
+            setTradeDetails(null);
+            setPriceImpact(null);
+            setNetworkFee(null);
+            setSlippage(null);
+            // If both amounts are zero/empty, ensure loading is false
+            if (!(fromAmount && Number(fromAmount) > 0) && !(targetAmount && Number(targetAmount) > 0)) {
+                setIsLoading(false);
+            }
         }
-    }, [uiDirection, fromAmount, targetAmount, setSwapEngineDirection]);
+    }, [uiDirection, setSwapEngineDirection, fromAmount, targetAmount, lastUpdatedField]);
 
     const handleConfirm = () => {
         setTransactionId(null);
@@ -560,17 +634,45 @@ export const useSwapData = () => {
             });
     };
 
-    const transactionForDisplay = useMemo(
-        () => ({
-            amount: fromAmount,
-            targetAmount,
-            direction: uiDirection,
+    const transactionForDisplay = useMemo(() => {
+        let displayFromAmount: string; // What the user is actually "giving"
+        let displayToAmount: string; // What the user is actually "getting"
+
+        if (uiDirection === 'input') {
+            // User "gives" from the UI "FROM" field (fromAmount)
+            // User "gets" in the UI "TO" field (targetAmount)
+            displayFromAmount = fromAmount;
+            displayToAmount = targetAmount;
+        } else {
+            // uiDirection === 'output'
+            // User "gives" from the UI "TO" field (targetAmount)
+            // User "gets" in the UI "FROM" field (fromAmount)
+            displayFromAmount = targetAmount;
+            displayToAmount = fromAmount;
+        }
+
+        return {
+            amount: displayFromAmount,
+            targetAmount: displayToAmount,
+            // direction: uiDirection, // This can be derived from the above if needed by UI
             slippage,
             networkFee,
             priceImpact,
             transactionId,
-        }),
-        [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId]
+        };
+    }, [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId]);
+
+    const handleSelectFromToken = useCallback(
+        (selectedToken: SelectableTokenInfo) => {
+            setPairTokenAddress(selectedToken.address);
+            setFromAmount('');
+            setTargetAmount('');
+            setLastUpdatedField('fromValue');
+            shouldCalculate.current = false;
+            clearCalculatedDetails();
+            setTokenSelectOpen(false);
+        },
+        [setPairTokenAddress, clearCalculatedDetails]
     );
 
     const finalIsLoading =

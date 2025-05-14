@@ -420,13 +420,13 @@ export const useSwap = () => {
                 let valueToSend: bigint | undefined = undefined;
                 let swapAbiForViem;
 
-                const inputIsNative = sdkToken0.isNative || sdkToken0.equals(WETH9[currentChainId]);
-                const outputIsNative = sdkToken1.isNative || sdkToken1.equals(WETH9[currentChainId]);
+                const inputIsNativeForRouterEst = token0?.isNative;
+                const outputIsNativeForRouterEst = token1?.isNative;
 
                 // Note: Uniswap V2 Router does not have EXACT_OUTPUT for ETH input/output.
                 // It has swapTokensForExactETH, swapETHForExactTokens which are less common.
                 // This estimation primarily targets EXACT_INPUT type swaps.
-                if (inputIsNative) {
+                if (inputIsNativeForRouterEst) {
                     swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
                     callData = encodeFunctionData({
                         abi: swapAbiForViem,
@@ -434,7 +434,7 @@ export const useSwap = () => {
                         args: [amountOutMinOrMax, path, accountAddress as `0x${string}`, BigInt(deadline)],
                     });
                     valueToSend = BigInt(amountInOrMaxIn.toString());
-                } else if (outputIsNative) {
+                } else if (outputIsNativeForRouterEst) {
                     swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
                     callData = encodeFunctionData({
                         abi: swapAbiForViem,
@@ -507,6 +507,8 @@ export const useSwap = () => {
             routerAddress,
             getPair,
             error,
+            token0?.isNative,
+            token1?.isNative,
             nativeCurrencyPriceUSD,
         ]
     );
@@ -517,8 +519,9 @@ export const useSwap = () => {
                 setError('Approval prerequisites not met.');
                 return false;
             }
-            const isNativeInput = sdkToken0.isNative || sdkToken0.equals(WETH9[currentChainId]);
-            if (isNativeInput) return true; // No approval for native ETH
+            if (sdkToken0.isNative) {
+                return true;
+            } // No approval for native ETH
 
             setIsApproving(true);
             setError(null);
@@ -577,14 +580,26 @@ export const useSwap = () => {
                 const to = accountAddress as `0x${string}`;
                 const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
 
-                const inputIsNative = sdkToken0.isNative || sdkToken0.equals(WETH9[currentChainId]);
-                if (!inputIsNative) {
-                    const approved = await checkAndRequestApproval(amountIn.toString()); // Pass raw string of input amount
+                const inputIsNativeForRouter = token0?.isNative; // NEW: token0 is the UI input token
+                const outputIsNativeForRouter = token1?.isNative; // NEW: token1 is the UI output token
+
+                if (!inputIsNativeForRouter) {
+                    // Check based on the UI selection
+                    const approved = await checkAndRequestApproval(amountIn.toString());
                     if (!approved) {
                         setIsLoading(false);
                         return null;
                     }
                 }
+
+                // const inputIsNative = sdkToken0.isNative || sdkToken0.equals(WETH9[currentChainId]);
+                // if (!inputIsNative) {
+                //     const approved = await checkAndRequestApproval(amountIn.toString()); // Pass raw string of input amount
+                //     if (!approved) {
+                //         setIsLoading(false);
+                //         return null;
+                //     }
+                // }
 
                 const signer = await signerAsync;
                 if (!signer) {
@@ -598,13 +613,13 @@ export const useSwap = () => {
                 let methodName: string;
                 let methodArgs: any[];
 
-                const outputIsNative = sdkToken1.isNative || sdkToken1.equals(WETH9[currentChainId]);
+                //const outputIsNative = sdkToken1.isNative || sdkToken1.equals(WETH9[currentChainId]);
 
-                if (inputIsNative) {
+                if (inputIsNativeForRouter) {
                     methodName = 'swapExactETHForTokens';
                     methodArgs = [amountOutMin, path, to, deadline];
                     txOptions.value = BigInt(amountIn.toString());
-                } else if (outputIsNative) {
+                } else if (outputIsNativeForRouter) {
                     methodName = 'swapExactTokensForETH';
                     methodArgs = [amountIn, amountOutMin, path, to, deadline];
                 } else {
@@ -640,6 +655,8 @@ export const useSwap = () => {
             currentChainId,
             sdkToken0,
             sdkToken1,
+            token0?.isNative,
+            token1?.isNative,
             checkAndRequestApproval,
         ]
     );

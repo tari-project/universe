@@ -12,7 +12,7 @@ import {
     GreenDot,
     LoadingCopy,
 } from './ConnectWallet.styles';
-import { LoadingDots } from '../SignMessage/SignMessage.styles';
+import { LoadingDots } from '../SignMessage/SignApprovalMessage.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
 // import Portal from '../../icons/portal.png';
