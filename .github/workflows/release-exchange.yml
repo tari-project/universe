@@ -44,7 +44,7 @@ jobs:
         run: |
           FORMATTED=$(echo ${ALL_EXCHANGES_NAMES} | jq -R 'fromjson')
           echo "${FORMATTED}"
-          EXCHANGES_NAMES=$(jq --argjson map \"$FORMATTED\"" \
+          EXCHANGES_NAMES=$(jq --argjson map "$FORMATTED" \
             '.exchanges[] |= (.secret_name = $map[.secret_name])' exchanges.json)
           EXCHANGES_NAMES=$(echo "${EXCHANGES_NAMES}" | jq -c .exchanges)
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
