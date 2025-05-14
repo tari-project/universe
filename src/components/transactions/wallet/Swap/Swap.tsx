@@ -31,10 +31,12 @@ import { truncateMiddle } from '@app/utils';
 import { useState } from 'react';
 import { WalletContents } from '@app/containers/floating/WalletConnections/sections/WalletContents/WalletContents';
 import { SignApprovalMessage } from '@app/containers/floating/WalletConnections/sections/SignMessage/SignApprovalMessage';
+import { useTranslation } from 'react-i18next';
 
 export const Swap = () => {
     const [openWallet, setOpenWallet] = useState(false);
     const connectedAccount = useAccount();
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const {
         notEnoughBalance,
@@ -67,16 +69,16 @@ export const Swap = () => {
         <>
             <TabHeader $noBorder>
                 <SectionHeaderWrapper>
-                    <HeaderLabel>{'Buy Tari'}</HeaderLabel>
-                    <BackButton onClick={() => setWalletUiVisible(false)}>{'Back'}</BackButton>
+                    <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
+                    <BackButton onClick={() => setWalletUiVisible(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
 
             <HeaderWrapper>
                 <HeaderItem>
-                    <StepHeader>{'Enter amount'}</StepHeader>
+                    <StepHeader>{t('swap.enter-amount')}</StepHeader>
                     <CurrentStep>
-                        {'Step'} <strong>{'1'}</strong> {'/2'}
+                        {t('swap.swap:step')} <strong>{'1'}</strong> {'/2'}
                     </CurrentStep>
                 </HeaderItem>
                 {fromTokenDisplay && connectedAccount.address ? (
@@ -90,7 +92,7 @@ export const Swap = () => {
             </HeaderWrapper>
 
             <SwapOption>
-                <span>{uiDirection === 'input' ? 'Sell' : 'Receive (Estimated)'}</span>
+                <span>{uiDirection === 'input' ? t('swap.sell') : t('swap.receive-estimated')}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -106,7 +108,7 @@ export const Swap = () => {
                         <Chevron />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`Balance: ${fromTokenDisplay.balance}`}</span> : null}
+                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay.balance}`}</span> : null}
             </SwapOption>
 
             <SwapDirection>
@@ -116,7 +118,7 @@ export const Swap = () => {
             </SwapDirection>
 
             <SwapOption>
-                <span>{uiDirection === 'input' ? 'Receive (Estimated)' : 'Sell'}</span>
+                <span>{uiDirection === 'input' ? t('swap.receive-estimated') : t('swap.sell')}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -130,7 +132,7 @@ export const Swap = () => {
                         <span>{'wXTM'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`Balance: ${toTokenDisplay.balance}`}</span> : null}
+                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay.balance}`}</span> : null}
             </SwapOption>
 
             <SubmitButtonWrapper>
@@ -140,7 +142,7 @@ export const Swap = () => {
                     size="xl"
                     disabled={Boolean(notEnoughBalance || !Number(fromAmount) || isLoading)}
                 >
-                    {isLoading ? 'Loading...' : 'Review Swap'}
+                    {isLoading ? t('swap.loading') : t('swap.review-swap')}
                 </WalletButton>
             </SubmitButtonWrapper>
 

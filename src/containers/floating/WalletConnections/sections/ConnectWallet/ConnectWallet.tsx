@@ -15,36 +15,29 @@ import {
 import { LoadingDots } from '../SignMessage/SignApprovalMessage.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
-// import Portal from '../../icons/portal.png';
+import { useTranslation } from 'react-i18next';
 
 export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
     const [isConnected, setIsConnected] = useState(false); // Track connection status
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleConnect = useCallback(async () => {
         const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect'); // Or the correct ID Reown uses
 
         if (walletConnectConnector && isOpen) {
-            // --- This is the speculative part ---
-            // You need to find how Reown/Wagmi exposes the URI.
-            // This is a common pattern but might differ.
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const provider = (await walletConnectConnector.getProvider()) as any;
             provider.on('display_uri', (uri: string) => {
-                console.log('WalletConnect URI:', uri);
                 setQrCodeUri(uri);
             });
-            // --- End speculative part ---
-
             try {
-                console.log('Attempting connection...');
-                // This will trigger the 'display_uri' event above if the pattern holds
-                const result = connect({ connector: walletConnectConnector });
-                console.log('Connection successful:', result);
+                connect({ connector: walletConnectConnector });
                 setQrCodeUri(null); // Clear QR once connected
                 setIsConnected(true);
-            } catch (error) {
-                console.error('Connection failed:', error);
+            } catch (e) {
+                console.error('Connection failed:', e);
                 setQrCodeUri(null); // Clear QR on error
                 setIsConnected(false);
             }
@@ -71,8 +64,8 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
             <AnimatePresence mode="wait">
                 <ContentWrapper>
                     <MMFox width="100" />
-                    <ConnectHeader>{'Connect to MetaMask'}</ConnectHeader>
-                    <ConnectSubHeader>{'Scan the QR code to connect your wallet on your phone'}</ConnectSubHeader>
+                    <ConnectHeader>{t('swap.connect-wallet')}</ConnectHeader>
+                    <ConnectSubHeader>{t('swap.scan-qr-code')}</ConnectSubHeader>
                     <QrWrapper>
                         {qrCodeUri ? (
                             <QRCode value={qrCodeUri} size={180} />
@@ -93,7 +86,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                         <GreenDot />
                         <MMFox width="20" />
                         <LoadingCopy>
-                            {'Waiting for connection'} <LoadingDots />
+                            {t('swap.connect-wallet-text')} <LoadingDots />
                         </LoadingCopy>
                     </ConnectingProgress>
                 </ContentWrapper>

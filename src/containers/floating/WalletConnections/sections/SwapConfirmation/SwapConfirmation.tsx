@@ -1,16 +1,16 @@
 import { WalletConnectHeader } from '../../WalletConnections.style';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
-import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
-import { SwapStep } from '@app/store';
+// import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
+// import { SwapStep } from '@app/store';
 import {
-    NewOutputAmount,
-    NewOutputWrapper,
     SelectedChain,
     SelectedChainInfo,
     SwapAmountInput,
     SwapDetails,
-    SwapDetailsKey,
-    SwapDetailsValue,
+    // NewOutputAmount,
+    // NewOutputWrapper,
+    // SwapDetailsKey,
+    // SwapDetailsValue,
     SwapDirection,
     SwapDirectionWrapper,
     SwapOption,
@@ -26,6 +26,7 @@ import { AnimatePresence } from 'motion/react';
 import { useAccount } from 'wagmi';
 import { useMemo } from 'react';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     isOpen: boolean;
@@ -44,6 +45,7 @@ interface Props {
 }
 export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fromTokenDisplay }: Props) => {
     const { amount, targetAmount, direction, slippage, networkFee, priceImpact } = transaction;
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const dataAcc = useAccount();
     const activeChainIcon = useMemo(() => {
@@ -56,30 +58,30 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
 
     const items = [
         {
-            label: 'Network fee',
+            label: t('swap.network-fee'),
             value: networkFee,
             valueRight: `${networkFee} XTM`,
             helpText: `${networkFee} XTM`,
         },
         {
-            label: 'Network Cost',
+            label: t('swap.network-cost'),
             value: priceImpact,
             helpText: `${priceImpact} XTM`,
         },
         {
-            label: 'You will receive XTM in (Tari wallet address)',
+            label: t('swap.you-will-receive'),
             value: slippage,
-            helpText: 'You will receive XTM in (Tari wallet address)',
+            helpText: t('swap.you-will-receive'),
         },
         {
-            label: 'Slippage',
+            label: t('swap.slippage-tolerance'),
             value: slippage,
-            helpText: 'You will receive XTM in (Tari wallet address)',
+            helpText: t('swap.you-will-receive'),
         },
         {
-            label: 'Price Impact',
+            label: t('swap.price-impact'),
             value: priceImpact,
-            helpText: 'You will receive XTM in (Tari wallet address)',
+            helpText: t('swap.you-will-receive'),
         },
     ];
 
@@ -106,7 +108,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                     </WalletConnectHeader>
 
                     <SwapOption>
-                        <span> {'Sell'} </span>
+                        <span> {t('swap.sell')} </span>
                         <SwapOptionAmount>
                             <SwapAmountInput
                                 disabled
@@ -130,7 +132,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                         </SwapDirectionWrapper>
                     </SwapDirection>
                     <SwapOption>
-                        <span> {'Receive'} </span>
+                        <span> {t('swap.receive-estimated')} </span>
                         <SwapOptionAmount>
                             <SwapAmountInput
                                 disabled
@@ -147,25 +149,27 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                     </SwapOption>
 
                     <SwapDetails>
-                        <NewOutputWrapper>
-                            <NewOutputAmount>
-                                <SwapDetailsKey>{'New output'}</SwapDetailsKey>
-                                <SwapDetailsValue>{1.074234}</SwapDetailsValue>
-                            </NewOutputAmount>
-                            <WalletButton
-                                variant="success"
-                                onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
-                                size="medium"
-                            >
-                                {'Accept'}
-                            </WalletButton>
-                        </NewOutputWrapper>
+                        {
+                            // <NewOutputWrapper>
+                            //     <NewOutputAmount>
+                            //         <SwapDetailsKey>{t('swap.new-output')}</SwapDetailsKey>
+                            //         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
+                            //     </NewOutputAmount>
+                            //     <WalletButton
+                            //         variant="success"
+                            //         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
+                            //         size="medium"
+                            //     >
+                            //         {t('swap.accept')}
+                            //     </WalletButton>
+                            // </NewOutputWrapper>
+                        }
 
                         <StatusList entries={items} />
                     </SwapDetails>
 
                     <WalletButton variant="primary" onClick={onConfirm} size="xl">
-                        {'Approve & Buy'}
+                        {t('swap.approve-and-buy')}
                     </WalletButton>
                 </div>
             </AnimatePresence>

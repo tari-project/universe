@@ -16,18 +16,21 @@ import { setWalletUiVisible } from '@app/store/actions/walletStoreActions';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
 
 interface Props {
     status: SwapStatus;
     isOpen: boolean;
+    fees?: string;
     setIsOpen: (isOpen: boolean) => void;
     transactionId?: string;
 }
 
-export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId }: Props) => {
+export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId, fees }: Props) => {
     const dataAcc = useAccount();
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const loadingDots = (
         <LoadingDots>
@@ -38,46 +41,50 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
     );
     const statusItems = [
         {
-            key: 'Status',
-            value: <StatusValue $status={status}> {status === 'success' ? 'Completed' : 'Processing'} </StatusValue>,
+            key: t('swap.status'),
+            value: (
+                <StatusValue $status={status}>
+                    {status === 'success' ? t('swap.completed') : t('swap.processing')}
+                </StatusValue>
+            ),
         },
         {
-            key: 'Total Fees',
-            value: '0.03%',
+            key: t('swap.total-fees'),
+            value: fees || loadingDots,
         },
         {
-            key: 'Transaction id',
+            key: t('swap.transaction-id'),
             value: transactionId || loadingDots,
         },
         {
             key: 'Ethereum Txn',
             value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
         },
-        {
-            key: 'Tari Txn',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
-        },
+        // {
+        //     key: 'Tari Txn',
+        //     value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+        // },
     ];
 
     const ctaMessage = useMemo(() => {
         switch (status) {
             case 'processingapproval':
-                return 'Awaiting Approval';
+                return t('swap.awaiting-approval');
             case 'processingswap':
-                return 'Processing Swap';
+                return t('swap.processing');
             case 'success':
-                return 'Done';
+                return t('swap.done');
             case 'error':
-                return 'Close';
+                return t('swap.error');
         }
-    }, [status]);
+    }, [status, t]);
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
             <AnimatePresence mode="wait">
                 <HeaderWrapper>
                     {status === 'success' ? <SuccessIcon width="65" /> : <LoadingClock width="65" />}
-                    <h3>{'Your XTM is on the way!'}</h3>
-                    <p>{'Your purchase is processing. This can take a few minutes.'}</p>
+                    <h3>{t('swap.your-xtm-is-on-the-way')}</h3>
+                    <p>{t('swap.your-purchase-is-processing')}</p>
                 </HeaderWrapper>
 
                 <ProcessingDetailsWrapper>

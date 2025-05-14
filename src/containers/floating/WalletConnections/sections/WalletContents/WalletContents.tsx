@@ -1,6 +1,6 @@
-import { WalletAddress } from '../../WalletConnections.style'; // Assuming WalletAddress is styled here
+import { WalletAddress } from '../../WalletConnections.style';
 import MMFox from '../../icons/mm-fox';
-import { useAccount, useDisconnect } from 'wagmi'; // useBalance might be used per token later
+import { useAccount, useDisconnect } from 'wagmi';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import {
     ActiveDot,
@@ -20,10 +20,11 @@ import {
 } from './WalletContents.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { useCallback } from 'react';
-import { getCurrencyIcon } from '../../helpers/getIcon'; // Could be used for token icons
+import { getCurrencyIcon } from '../../helpers/getIcon';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { AnimatePresence } from 'motion/react'; // Assuming framer-motion
+import { AnimatePresence } from 'motion/react';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     isOpen: boolean;
@@ -32,6 +33,7 @@ interface Props {
 }
 
 export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) => {
+    const { t } = useTranslation(['common'], { useSuspense: false });
     const { disconnect } = useDisconnect();
     const { address: accountAddress } = useAccount();
 
@@ -52,7 +54,7 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                 <WalletContentsContainer>
                     <ConnectedWalletWrapper>
                         <WalletButton variant="error" onClick={handleDisconnect}>
-                            {'Disconnect'}
+                            {t('disconnect')}
                         </WalletButton>
                         <StatusWrapper>
                             <ActiveDot />
@@ -64,7 +66,6 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                     <TokenList>
                         {availableTokens.map((token, index) => (
                             <div key={token.symbol}>
-                                {/* Key on the fragment/wrapper if separator is outside TokenItem */}
                                 <TokenItem>
                                     <TokenItemLeft>
                                         <TokenIconWrapper>
@@ -88,7 +89,7 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                         ))}
                     </TokenList>
 
-                    <ContinueButton onClick={handleContinue}>{'Continue'}</ContinueButton>
+                    <ContinueButton onClick={handleContinue}>{t('continue')}</ContinueButton>
                 </WalletContentsContainer>
             </AnimatePresence>
         </TransactionModal>

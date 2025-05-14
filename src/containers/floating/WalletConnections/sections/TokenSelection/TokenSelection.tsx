@@ -3,6 +3,7 @@ import { AnimatePresence } from 'framer-motion';
 import { getCurrencyIcon } from '../../helpers/getIcon';
 import { ModalContent, TokenDetails, TokenInfo, TokenItem, TokenList, TokenValue } from './TokenSelection.styles';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     isOpen: boolean;
@@ -12,13 +13,14 @@ interface Props {
 }
 
 export const TokenSelection = ({ isOpen, setIsOpen, availableTokens, onSelectToken }: Props) => {
+    const { t } = useTranslation(['wallet'], { useSuspense: false });
     const handleSelectToken = (token: SelectableTokenInfo) => {
         onSelectToken(token);
         setIsOpen(false);
     };
 
     return (
-        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} title={'Select a token'}>
+        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} title={t('swap.select-token')}>
             <AnimatePresence mode="wait">
                 {isOpen && (
                     <ModalContent
@@ -51,7 +53,7 @@ export const TokenSelection = ({ isOpen, setIsOpen, availableTokens, onSelectTok
                             )}
                             {availableTokens.length === 0 && (
                                 <div style={{ padding: '20px', textAlign: 'center', color: '#a0a0b0' }}>
-                                    {'No other tokens available to select.'}
+                                    {t('swap.no-other-tokens-available')}
                                 </div>
                             )}
                         </TokenList>
