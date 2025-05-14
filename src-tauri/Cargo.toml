@@ -79,6 +79,7 @@ tauri = { version = "2", features = [ "protocol-asset",
   "devtools",          # TODO: Remove this before mainnet
 ] }
 tauri-plugin-cli = "2"
+tauri-plugin-http = "2"
 tauri-plugin-os = "2"
 tauri-plugin-sentry = "0.3"
 tauri-plugin-shell = "2"
