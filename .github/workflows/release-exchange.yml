@@ -35,18 +35,17 @@ jobs:
     env:
       ALL_EXCHANGES_NAMES: ${{ secrets.EXCHANGES_NAMES }}
     outputs:
-      EXCHANGES: ${{ steps.read-exchanges.outputs.EXCHANGES }}
+      EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Read exchanges
         id: read-exchanges
         run: |
-          yq eval '.exchanges[] |= ( .secret_name as $key | .secret_name = (env(ALL_EXCHANGES_NAMES) | fromjson | .[$key] // .secret_name))' --output-format=json -i exchanges.json
-          echo "EXCHANGES=$(cat exchanges.json | jq -c '.exchanges')" >> $GITHUB_ENV
-          echo "EXCHANGES=$(cat exchanges.json | jq -c '.exchanges')" >> $GITHUB_OUTPUT
+          echo "EXCHANGES=$(jq -c '.exchanges[] | .secret_name as $key | .secret_name = (if $key == .secret_name then "{ \"b035a622\": \"TestA\", \"aaa1e352\": \"TestB\"}" | fromjson[$key] else .secret_name end)' exchanges.json)" >> $GITHUB_ENV
           echo "${EXCHANGES}"
           echo "EXCHANGES=$EXCHANGES" >> $GITHUB_OUTPUT
+
   builds:
     needs: read-exchanges
     name: Building ${{ matrix.exchange.id }} | ${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
@@ -57,7 +56,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES) }}
+        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS) }}
         platforms:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
@@ -108,7 +107,7 @@ jobs:
           # Don't mess with the double quotes and inner escaped quotes
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.secret_name}}\"" --output-format=json -i tauri.conf.json
+          yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ secrets[matrix.exchange.secret_name]}}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe\"" --output-format=json -i tauri.conf.json
           yq eval ".plugins.updater.endpoints = [\"https://raw.githubusercontent.com/tari-project/universe/main/.updater/latest.json\", \"https://cdn-universe.tari.com/tari-project/universe/updater/latest.json\"]" \
             --output-format=json -i tauri.conf.json
@@ -378,7 +377,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          EXCHANGE_NAME: ${{ matrix.exchange.secret_name }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
           S3CMD: 'cp'
           S3OPTIONS: '--content-type "application/octet-stream"'
         run: |
@@ -402,7 +401,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          EXCHANGE_NAME: ${{ matrix.exchange.secret_name }}
+          EXCHANGE_NAME: ${{ secrets[matrix.exchange.secret_name] }}
           S3CMD: 'cp'
           S3OPTIONS: '--content-type "application/octet-stream"'
         run: |
