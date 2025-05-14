@@ -20,6 +20,7 @@ import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import { FEATURES } from '@app/store/consts.ts';
+import { fetchExchangeContent } from '@app/store/useExchangeStore.ts';
 
 interface TokenResponse {
     exp: number;
@@ -62,7 +63,6 @@ const fetchBackendInMemoryConfig = async () => {
 
     try {
         backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
-
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
         const newState: Partial<AirdropStoreState> = {
             backendInMemoryConfig,
@@ -84,7 +84,6 @@ const fetchBackendInMemoryConfig = async () => {
     if (!backendInMemoryConfig?.airdropUrl) {
         console.error('Error getting BE in memory config');
     }
-
     return backendInMemoryConfig;
 };
 const getExistingTokens = async () => {
@@ -117,6 +116,9 @@ export const airdropSetup = async () => {
     try {
         console.info('Fetching backend in memory config');
         const beConfig = await fetchBackendInMemoryConfig();
+        if (beConfig?.exchangeId) {
+            await fetchExchangeContent(beConfig.exchangeId);
+        }
         console.info('Getting existing tokens');
         await getExistingTokens();
         if (beConfig?.airdropUrl) {

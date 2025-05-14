@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { invoke } from '@tauri-apps/api/core';
-import { useExchangeStore } from '@app/store/useExchangeStore.ts';
+import { setShowExchangeModal, useExchangeStore } from '@app/store/useExchangeStore.ts';
 import {
     Wrapper,
     CTA,
@@ -15,6 +15,8 @@ import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { truncateMiddle } from '@app/utils';
 import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts'; // TODO - make reusable address input
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
+import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface ConnectFormFields {
     address: string;
@@ -63,8 +65,13 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    function onSubmit(data: ConnectFormFields) {
-        console.debug('onSubmit!', data);
+    async function onSubmit(data: ConnectFormFields) {
+        try {
+            await setGeneratedTariAddress(data.address);
+            setShowExchangeModal(false);
+        } catch (e) {
+            console.error(e);
+        }
     }
     return (
         <Wrapper>
@@ -79,6 +86,7 @@ export const Connect = () => {
                         })}
                         onFocus={() => handleFocus(true)}
                         value={isFocused ? address : displayAddress}
+                        placeholder="Enter Address"
                     />
 
                     {addressIsValid && (
@@ -92,7 +100,11 @@ export const Connect = () => {
                     type="submit"
                     disabled={formState.isSubmitting || !formState.isValid}
                 >
-                    <CTAText>{data?.campaign_cta || `Connect`}</CTAText>
+                    {formState.isSubmitting || formState.isLoading ? (
+                        <LoadingDots />
+                    ) : (
+                        <CTAText>{data?.campaign_cta || `Connect`}</CTAText>
+                    )}
                 </CTA>
             </ConnectForm>
         </Wrapper>

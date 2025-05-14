@@ -43,7 +43,7 @@ export const ConnectForm = styled.form`
 `;
 
 export const AddressInputWrapper = styled.div`
-    gap: 10px;
+    gap: 20px;
     display: flex;
     margin: 0 0 15px;
     position: relative;
@@ -55,10 +55,13 @@ export const AddressInputLabel = styled.div`
 `;
 export const AddressInput = styled.input`
     width: 100%;
-    padding: 4px 34px 4px 0;
+    padding: 8px 34px 0 0;
     border-bottom: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.05)};
     &:focus {
         outline: none;
         border-bottom: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+    }
+    &::placeholder {
+        opacity: 0.4;
     }
 `;
