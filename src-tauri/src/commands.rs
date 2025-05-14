@@ -32,6 +32,7 @@ use crate::configs::config_ui::{ConfigUI, ConfigUIContent};
 use crate::configs::config_wallet::{ConfigWallet, ConfigWalletContent};
 use crate::configs::trait_config::ConfigImpl;
 use crate::credential_manager::{CredentialError, CredentialManager};
+use crate::events_emitter::EventsEmitter;
 use crate::events_manager::EventsManager;
 use crate::external_dependencies::{
     ExternalDependencies, ExternalDependency, RequiredExternalDependency,
@@ -562,11 +563,7 @@ pub async fn get_paper_wallet_details(
 }
 
 #[tauri::command]
-pub async fn get_seed_words(
-    _window: tauri::Window,
-    _state: tauri::State<'_, UniverseAppState>,
-    app: tauri::AppHandle,
-) -> Result<Vec<String>, String> {
+pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -592,6 +589,37 @@ pub async fn get_seed_words(
         warn!(target: LOG_TARGET, "get_seed_words took too long: {:?}", timer.elapsed());
     }
     Ok(res)
+}
+
+#[tauri::command]
+pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    let new_address = internal_wallet
+        .set_tari_address(address, config_path)
+        .await?;
+    let handle_clone = app.clone();
+    let _unused = EventsEmitter::emit_wallet_address_update(&handle_clone, new_address);
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Wallet,
+            SetupPhase::Node,
+            SetupPhase::Unknown,
+        ])
+        .await;
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app)
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_tari_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -871,7 +899,7 @@ pub async fn reset_settings<'r>(
     }
 
     info!(target: LOG_TARGET, "[reset_settings] Restarting the app");
-    app.restart();
+    app.restart()
 }
 
 #[tauri::command]
