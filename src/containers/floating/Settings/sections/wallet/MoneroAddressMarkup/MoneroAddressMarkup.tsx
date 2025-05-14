@@ -3,9 +3,17 @@ import { useTranslation } from 'react-i18next';
 
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import MoneroAddressEditor from './MoneroAddressEditor';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles.ts';
 import { setMoneroAddress, useConfigWalletStore } from '@app/store';
+import AddressEditor from '../components/AddressEditor';
+
+const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
+const validationRules = {
+    pattern: {
+        value: moneroAddressRegex,
+        message: 'Invalid Monero address format',
+    },
+};
 
 const MoneroAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
@@ -21,7 +29,11 @@ const MoneroAddressMarkup = () => {
                 <Typography variant="h6">{t('monero-address.title')}</Typography>
             </SettingsGroupTitle>
             <Stack direction="row" justifyContent="space-between">
-                <MoneroAddressEditor initialAddress={moneroAddress || ''} onApply={handleMoneroAddressChange} />
+                <AddressEditor
+                    initialAddress={moneroAddress || ''}
+                    onApply={handleMoneroAddressChange}
+                    rules={validationRules}
+                />
             </Stack>
         </SettingsGroupWrapper>
     );

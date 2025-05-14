@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, RegisterOptions } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
@@ -8,10 +8,20 @@ import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IconContainer } from '@app/containers/floating/Settings/sections/wallet/components/SeedWords.styles.ts';
 
-const moneroAddressRegex = /^4[0-9AB][1-9A-HJ-NP-Za-km-z]{93}$/;
-interface MoneroAddressEditorProps {
+interface AddressEditorProps {
     initialAddress: string;
     onApply: (newAddress: string) => Promise<void>;
+    rules:
+        | Omit<
+              RegisterOptions<
+                  {
+                      address: string;
+                  },
+                  'address'
+              >,
+              'disabled' | 'valueAsNumber' | 'valueAsDate' | 'setValueAs'
+          >
+        | undefined;
 }
 
 const StyledStack = styled(Stack)`
@@ -28,7 +38,7 @@ const StyledForm = styled.form`
     min-height: 60px;
 `;
 
-const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorProps) => {
+const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) => {
     const {
         control,
         watch,
@@ -81,12 +91,7 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                 <Controller
                     name="address"
                     control={control}
-                    rules={{
-                        pattern: {
-                            value: moneroAddressRegex,
-                            message: 'Invalid Monero address format',
-                        },
-                    }}
+                    rules={rules}
                     render={({ field }) => {
                         return (
                             <StyledInput
@@ -102,7 +107,7 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
                 {editing ? (
                     <>
                         <IconContainer style={{ gap: 2 }}>
-                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
+                            <IconButton type="submit" size="small" disabled={isDirty || !!errors.address}>
                                 <IoCheckmarkOutline />
                             </IconButton>
                             <IconButton type="reset" size="small">
@@ -128,4 +133,4 @@ const MoneroAddressEditor = ({ initialAddress, onApply }: MoneroAddressEditorPro
     );
 };
 
-export default MoneroAddressEditor;
+export default AddressEditor;

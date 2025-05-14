@@ -15,7 +15,8 @@ import { useWalletStore } from '@app/store/useWalletStore';
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
 import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions';
-import WalletAddressEditor from './WalletAddressEditor';
+import { invoke } from '@tauri-apps/api/core';
+import AddressEditor from '../components/AddressEditor';
 
 const Dot = styled.div`
     width: 4px;
@@ -75,7 +76,7 @@ const WalletAddressMarkup = () => {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
-    if (!walletAddress) return null;
+    // if (!walletAddress) return null;
 
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
@@ -106,12 +107,27 @@ const WalletAddressMarkup = () => {
         }
     }
 
+    const validateAddress = useCallback(async (value: string) => {
+        try {
+            await invoke('verify_address_for_send', { address: value });
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }, []);
+    const validationRules = {
+        validate: async (value) => {
+            const isValid = await validateAddress(value);
+            return isValid || 'Invalid address format';
+        },
+    };
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <WalletAddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} />
+            <AddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} rules={validationRules} />
             <Stack direction="row" justifyContent="stretch" alignItems={isCondensed ? 'center' : 'flex-start'} gap={10}>
                 <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
                     <AddressInner>
