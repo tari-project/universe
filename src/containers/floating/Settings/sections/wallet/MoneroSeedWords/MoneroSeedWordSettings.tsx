@@ -7,11 +7,11 @@ import { useCopyToClipboard } from '@app/hooks/helpers/useCopyToClipboard';
 import { useCallback, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { IoCheckmarkOutline, IoCopyOutline, IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+import { IoCheckmarkOutline, IoCopyOutline } from 'react-icons/io5';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { useTranslation } from 'react-i18next';
 
-import { SeedWords } from '../components/SeedWords.tsx';
+import SeedWords from '@app/components/wallet/seedwords/SeedWords.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { setError } from '@app/store';
 
@@ -19,7 +19,6 @@ export default function MoneroSeedWordSettings() {
     const { t } = useTranslation('settings', { useSuspense: false });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
 
-    const [showSeedWords, setShowSeedWords] = useState(false);
     const [isFetching, setIsFetching] = useState(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
@@ -61,46 +60,17 @@ export default function MoneroSeedWordSettings() {
             });
         }
     }, [copyToClipboard, getSeedWords, seedWords]);
-    const toggleSeedWordsVisibility = useCallback(async () => {
-        if (!hasFetched.current) {
-            await getSeedWords();
-        }
-        setShowSeedWords((prev) => !prev);
-    }, [getSeedWords]);
 
     return (
         <SettingsGroupWrapper $subGroup>
             <SettingsGroupTitle>
-                <Stack direction="row" justifyContent="flex-start" alignItems="center" style={{ height: '34px' }}>
-                    <Typography variant="h6">{t('monero-seed-words')}</Typography>
-
-                    <IconButton onClick={toggleSeedWordsVisibility} disabled={isFetching}>
-                        {isFetching ? (
-                            <CircularProgress />
-                        ) : showSeedWords ? (
-                            <IoEyeOffOutline size={18} />
-                        ) : (
-                            <IoEyeOutline size={18} />
-                        )}
-                    </IconButton>
-                </Stack>
+                <Typography variant="h6">{t('monero-seed-words')}</Typography>
             </SettingsGroupTitle>
-
-            <Stack direction="row" justifyContent="stretch" alignItems="center" style={{ width: '100%' }} gap={10}>
-                <SeedWords seedWords={seedWords} showSeedWords={showSeedWords && !!seedWords?.length} />
-                {!showSeedWords && (
-                    <IconButton size="small" onClick={() => handleCopyClick()}>
-                        {!isCopied ? (
-                            copyFetchLoading ? (
-                                <CircularProgress />
-                            ) : (
-                                <IoCopyOutline />
-                            )
-                        ) : (
-                            <IoCheckmarkOutline />
-                        )}
-                    </IconButton>
-                )}
+            <Stack direction="row" alignItems="flex-start" style={{ width: '100%' }} gap={10}>
+                <SeedWords isMonero />
+                <IconButton onClick={() => handleCopyClick()}>
+                    {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
+                </IconButton>
             </Stack>
         </SettingsGroupWrapper>
     );

@@ -1,11 +1,15 @@
-import { useState } from 'react';
 import Display from './components/Display.tsx';
+import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wallet/SeedWordsMarkup/useGetSeedWords.ts';
 
 const words = Array(25).fill('hiiii');
 interface SeedWordsProps {
-    seedwords?: string[];
+    isMonero?: boolean;
 }
-export default function SeedWords({ seedwords = words }: SeedWordsProps) {
-    const [isEditing, setIsEditing] = useState(false);
-    return <Display words={seedwords} />;
+export default function SeedWords({ isMonero = false }: SeedWordsProps) {
+    const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
+        fetchMoneroSeeds: isMonero,
+    });
+
+    console.debug(`seedWords= `, seedWords);
+    return <Display words={seedWords} isLoading={seedWordsFetching} />;
 }

@@ -3,11 +3,13 @@ import { CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './displ
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface DisplayProps {
     words: string[];
+    isLoading?: boolean;
 }
-const Display = memo(function Display({ words }: DisplayProps) {
+const Display = memo(function Display({ words, isLoading }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     const wordAmount = words?.length || 0;
@@ -33,10 +35,12 @@ const Display = memo(function Display({ words }: DisplayProps) {
         </HiddenWrapper>
     );
 
+    const toggleIcon = isVisible ? <IoEyeOffOutline /> : <IoEyeOutline />;
+
     const toggleCTA = (
         <CTAWrapper>
-            <IconButton onClick={() => setIsVisible((c) => !c)}>
-                {isVisible ? <IoEyeOffOutline /> : <IoEyeOutline />}
+            <IconButton onClick={() => setIsVisible((c) => !c)} disabled={isLoading}>
+                {isLoading ? <LoadingDots /> : toggleIcon}
             </IconButton>
         </CTAWrapper>
     );
@@ -44,7 +48,7 @@ const Display = memo(function Display({ words }: DisplayProps) {
     return (
         <DisplayWrapper $rows={rowCount} $isHidden={!isVisible}>
             {toggleCTA}
-            {isVisible ? wordMarkup : hiddenMarkup}
+            {isVisible && !isLoading ? wordMarkup : hiddenMarkup}
         </DisplayWrapper>
     );
 });
