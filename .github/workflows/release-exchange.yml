@@ -35,20 +35,34 @@ jobs:
     env:
       ALL_EXCHANGES_NAMES: ${{ secrets.EXCHANGES_NAMES }}
     outputs:
-      EXCHANGES_IDS: ${{ steps.read-exchanges.outputs.EXCHANGES_IDS }}
+      EXCHANGES_NAMES: ${{ steps.read-exchanges.outputs.EXCHANGES_NAMES }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Read exchanges
         id: read-exchanges
         run: |
-          echo "ALL_EXCHANGES_NAMES=${{ env.ALL_EXCHANGES_NAMES }}" | jq -R 'split(",") | map({(.): true}) | add' > all_exchanges_names.json
-          echo "ALL_EXCHANGES_NAMES=${{ env.ALL_EXCHANGES_NAMES }}" >> $GITHUB_ENV
-          echo "EXCHANGES=$(jq -c --argjson allExchangesNames "$ALL_EXCHANGES_NAMES" \
-          '.exchanges[] | .secret_name as $key | .secret_name = ($allExchangesNames[$key] // .secret_name)' exchanges.json)" >> $GITHUB_ENV
+          # ALL_EXCHANGES_NAMES = "{ \"b035a622\": \"TestA\", \"aaa1e352\": \"TestB\" }"
+          # exchanges.jso = {
+          #  "exchanges": [
+          #      {
+          #          "id": "46d881c4-c351-4d94-a070-d77c47fe8e71",
+          #          "secret_name": "b035a622"
+          #      },
+          #      {
+          #          "id": "22d881c4-c351-4d94-a070-d77c47fe8e00",
+          #          "secret_name": "aaa1e352"
+          #      }
+          #  ]
+          # }
+          # I need to repalce the secret_name with the name of the exchange 
 
-          echo "${EXCHANGES}"
-          echo "EXCHANGES=$EXCHANGES" >> $GITHUB_OUTPUT
+          # pass exchanges to env
+          echo "EXCHANGES=$(jq -c '.exchanges' exchanges.json) " >> $GITHUB_ENV
+          # Replace secret_name with the name of the exchange (TestA, TestB)
+          echo "EXCHANGES_NAMES=$(jq -c --argjson ALL_EXCHANGES_NAMES "${{ env.ALL_EXCHANGES_NAMES }}" \
+            '.exchanges | map(.secret_name = $ALL_EXCHANGES_NAMES[.secret_name])' exchanges.json) " >> $GITHUB_ENV
+          echo "EXCHANGES_NAMES=$EXCHANGES_NAMES" >> $GITHUB_OUTPUT
 
   builds:
     needs: read-exchanges
@@ -60,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_IDS) }}
+        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
         platforms:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
