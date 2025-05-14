@@ -12,13 +12,15 @@ import { SeedWordsEdit } from './SeedWordsEdit';
 import { useTranslation } from 'react-i18next';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { SeedWords } from '../components/SeedWords';
+import { useWalletStore } from '@app/store';
 
 const SeedWordsMarkup = () => {
+    const tari_address_is_generated = useWalletStore((s) => s.is_tari_address_generated);
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const { t } = useTranslation('settings', { useSuspense: false });
     const [showSeedWords, setShowSeedWords] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(!tari_address_is_generated);
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords();
 
     const toggleSeedWordsVisibility = useCallback(async () => {

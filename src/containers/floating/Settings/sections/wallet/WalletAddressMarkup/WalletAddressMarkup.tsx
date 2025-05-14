@@ -118,6 +118,7 @@ const WalletAddressMarkup = () => {
     const validationRules = {
         validate: async (value) => {
             const isValid = await validateAddress(value);
+
             return isValid || 'Invalid address format';
         },
     };

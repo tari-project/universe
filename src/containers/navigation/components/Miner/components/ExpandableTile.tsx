@@ -7,7 +7,7 @@ import { ExpandedWrapper, TriggerWrapper } from './ExpandableTile.styles.ts';
 import { AnimatePresence } from 'motion/react';
 import { autoUpdate, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface ExpandableTileProps {
     title: string;

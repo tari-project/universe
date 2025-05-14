@@ -76,6 +76,7 @@ export interface BackendInMemoryConfig {
     airdropUrl: string;
     airdropApiUrl: string;
     airdropTwitterAuthUrl: string;
+    exchangeId?: string;
 }
 export type AnimationType = 'GoalComplete' | 'FriendAccepted' | 'BonusGems';
 
