@@ -156,7 +156,7 @@ impl ProcessAdapter for MergeMiningProxyAdapter {
         shuffled_nodes.shuffle(&mut thread_rng());
         args.push("-p".to_string());
         args.push(format!(
-            "merge_mining_proxy.monerod_url=[{}]",
+            "merge_mining_proxy.monerod_url={}",
             shuffled_nodes.join(",")
         ));
 
