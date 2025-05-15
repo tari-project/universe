@@ -135,7 +135,7 @@ custom-protocol = [
 ] # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
 release-ci = ["tauri/custom-protocol"]
 release-ci-beta = ["tauri/custom-protocol"]
-exchange-ci = []
+exchange-ci = ["tauri/custom-protocol"]
 
 [package.metadata.cargo-machete]
 ignored = [
