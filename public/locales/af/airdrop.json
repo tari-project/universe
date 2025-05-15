@@ -17,6 +17,7 @@
   "giftReferralCode": "Verdien {{gems}} edelstene vir elke vriend wat u na Tari Heelal nooi. Sodra hulle hul rekening koppel, sal u u edelstene ontvang.",
   "giftReferralCodeHeader": "Eis u verwysingskode <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> edelstene.",
   "invite": "Nooi",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "Nooi Vriende",
   "inviteFriendsText": "Kopieer skakel en deel dit",
   "invitedAmount": "U het <span>{{count}}</span> vriende genooi",

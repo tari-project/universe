@@ -17,6 +17,7 @@
   "giftReferralCode": "Zdobądź {{gems}} klejnotów za każdego znajomego, którego zaprosisz do Tari Universe. Po połączeniu ich konta otrzymasz swoje klejnoty.",
   "giftReferralCodeHeader": "Odbierz swój kod polecający <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> klejnotów.",
   "invite": "Zaproś",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "Zaproś znajomych",
   "inviteFriendsText": "Skopiuj link i udostępnij go",
   "invitedAmount": "Zaprosiłeś <span>{{count}}</span> znajomych",
