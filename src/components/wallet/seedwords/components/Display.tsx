@@ -11,7 +11,7 @@ interface DisplayProps {
     onToggleClick: () => void;
 }
 const Display = memo(function Display({ words, onToggleClick, isLoading }: DisplayProps) {
-    const [isVisible, setIsVisible] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
 
     function handleToggleClick() {
         onToggleClick();
