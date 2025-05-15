@@ -9,13 +9,14 @@ import { IconWrapper, Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
-import { importSeedWords } from '@app/store';
+import { importSeedWords, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface SeedWordsProps {
     isMonero?: boolean;
@@ -26,6 +27,7 @@ const dialogStyles = {
     gap: 16,
 };
 export default function SeedWords({ isMonero = false }: SeedWordsProps) {
+    const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
     const [isEditView, setIsEditView] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
@@ -40,7 +42,6 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
 
     const handleConfirmed = useCallback(async () => {
         if (!isDirty || !isValid || !newSeedWords) return;
-        setShowConfirm(false);
         await importSeedWords(newSeedWords);
     }, [isDirty, isValid, newSeedWords]);
 
@@ -130,12 +131,16 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
                             {t('confirm-import-wallet-copy')}
                         </Typography>
-                        <Stack direction="row" gap={8}>
-                            <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
-                            <SquaredButton color="orange" onClick={() => handleConfirmed()}>
-                                {t('yes')}
-                            </SquaredButton>
-                        </Stack>
+                        {isWalletImporting ? (
+                            <LoadingDots />
+                        ) : (
+                            <Stack direction="row" gap={8}>
+                                <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
+                                <SquaredButton color="orange" onClick={() => handleConfirmed()}>
+                                    {t('yes')}
+                                </SquaredButton>
+                            </Stack>
+                        )}
                     </Stack>
                 </DialogContent>
             </Dialog>
