@@ -374,7 +374,6 @@ jobs:
 
       - name: Builds - Upload assets [ AWS ] [ NOT WINDOWS ]
         if: ${{( startsWith(inputs.destination, 'aws' )) && ( matrix.platforms.platform != 'windows-latest' ) }}
-        continue-on-error: true
         shell: bash
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
@@ -393,7 +392,6 @@ jobs:
           done
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) }}
-        continue-on-error: true
         shell: pwsh
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
@@ -411,7 +409,7 @@ jobs:
               aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/ --checksum-algorithm=CRC32 
             }
           }
-          aws s3 cp ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/
+          aws s3 cp ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/ --checksum-algorithm=CRC32
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
