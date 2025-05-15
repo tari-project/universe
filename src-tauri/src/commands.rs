@@ -623,6 +623,34 @@ pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<
 }
 
 #[tauri::command]
+pub async fn confirm_exchange_address(
+    address: String,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let timer = Instant::now();
+    let config_path = app
+        .path()
+        .app_config_dir()
+        .expect("Could not get config dir");
+    let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
+        .await
+        .map_err(|e| e.to_string())?;
+    let new_address = internal_wallet
+        .set_tari_address(address, config_path)
+        .await?;
+    let handle_clone = app.clone();
+    let _unused = EventsEmitter::emit_wallet_address_update(&handle_clone, new_address);
+    SetupManager::get_instance()
+        .init_exchange_modal_status()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn get_tor_config(
     _window: tauri::Window,
     state: tauri::State<'_, UniverseAppState>,

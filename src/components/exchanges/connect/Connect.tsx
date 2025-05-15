@@ -65,13 +65,15 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    async function onSubmit(data: ConnectFormFields) {
-        try {
-            await setGeneratedTariAddress(data.address);
-            setShowExchangeModal(false);
-        } catch (e) {
-            console.error(e);
-        }
+    function onSubmit(data: ConnectFormFields) {
+        invoke('confirm_exchange_address', { address })
+            .then(() => {
+                console.debug('onSubmit!', data);
+                setShowExchangeModal(false);
+            })
+            .catch((e) => {
+                console.error('Error confirming exchange address:', e);
+            });
     }
     return (
         <Wrapper>
