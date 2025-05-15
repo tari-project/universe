@@ -40,7 +40,6 @@ const TELEMETRY_API_URL: &str =
 #[cfg(feature = "exchange-env")]
 const EXCHANGE_ID: &str = std::env!("EXCHANGE_ID", "EXCHANGE_ID env is not defined");
 pub const DEFAULT_EXCHANGE_ID: &str = "universal";
-pub const TEST_NON_DEFAULT_EXCHANGE_ID: &str = "test"; // Delete when no longer testing
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct AppInMemoryConfig {
@@ -74,7 +73,7 @@ impl Default for AppInMemoryConfig {
             airdrop_url: "https://airdrop.tari.com".into(),
             airdrop_api_url: "https://ut.tari.com".into(),
             telemetry_api_url: "https://ut.tari.com/push".into(),
-            exchange_id: TEST_NON_DEFAULT_EXCHANGE_ID.into(),
+            exchange_id: DEFAULT_EXCHANGE_ID.into(),
         }
     }
 }
