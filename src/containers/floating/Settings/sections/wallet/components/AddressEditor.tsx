@@ -1,7 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller, RegisterOptions } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks';
@@ -24,10 +23,6 @@ interface AddressEditorProps {
           >
         | undefined;
 }
-
-const StyledStack = styled(Stack)`
-    width: 100%;
-`;
 
 const StyledInput = styled(Input)`
     font-size: 12px;

@@ -137,7 +137,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                         },
                     }}
                     render={({ field }) => {
-                        const { ref: _ref, ...rest } = field;
+                        const { ...rest } = field;
                         return (
                             <StyledTextArea
                                 variant="secondary"

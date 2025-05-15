@@ -9,19 +9,46 @@ import { IconWrapper, Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
+import { importSeedWords } from '@app/store';
+import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
+import { Stack } from '@app/components/elements/Stack.tsx';
+import { Typography } from '@app/components/elements/Typography.tsx';
+import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { useTranslation } from 'react-i18next';
+import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 
 interface SeedWordsProps {
     isMonero?: boolean;
 }
+const dialogStyles = {
+    width: '380px',
+    padding: '16px 30px',
+    gap: 16,
+};
 export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     const [isEditView, setIsEditView] = useState(false);
+    const [newSeedWords, setNewSeedWords] = useState<string[]>();
+    const [showConfirm, setShowConfirm] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
-
+    const { t } = useTranslation('settings', { useSuspense: false });
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
         fetchMoneroSeeds: isMonero,
     });
     const { copyToClipboard, isCopied } = useCopyToClipboard();
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
+    const { isDirty, isValid } = methods.formState;
+
+    const handleConfirmed = useCallback(async () => {
+        if (!isDirty || !isValid || !newSeedWords) return;
+        setShowConfirm(false);
+        await importSeedWords(newSeedWords);
+    }, [isDirty, isValid, newSeedWords]);
+
+    const handleApply = (data: { seedWords: string }) => {
+        console.debug(`seedWords= `, data.seedWords);
+        setNewSeedWords(data.seedWords.split(' '));
+        setShowConfirm(true);
+    };
 
     async function onToggleVisibility() {
         if (!seedWords?.length || !seedWordsFetched) {
@@ -58,35 +85,60 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
         </IconWrapper>
     );
 
+    function handleReset() {
+        methods.reset();
+        onToggleEdit();
+    }
+
     const editCTAs = (
         <IconWrapper>
             <IconButton size="small" type="submit">
                 <IoCheckmarkOutline />
             </IconButton>
-            <IconButton size="small" type="reset" onClick={onToggleEdit}>
+            <IconButton size="small" type="reset">
                 <IoCloseOutline />
             </IconButton>
         </IconWrapper>
     );
 
     return (
-        <Wrapper key={isMonero ? 'monero' : 'tari'}>
-            <FormProvider {...methods}>
-                <WalletSettingsGrid>
-                    <InputArea>
-                        {isEditView ? (
-                            <Edit />
-                        ) : (
-                            <Display
-                                words={seedWords}
-                                isLoading={seedWordsFetching}
-                                onToggleClick={onToggleVisibility}
-                            />
-                        )}
-                    </InputArea>
-                    <CTASArea>{isEditView ? editCTAs : displayCTAs}</CTASArea>
-                </WalletSettingsGrid>
-            </FormProvider>
-        </Wrapper>
+        <>
+            <Wrapper key={isMonero ? 'monero' : 'tari'}>
+                <FormProvider {...methods}>
+                    <Form onSubmit={methods.handleSubmit(handleApply)} onReset={handleReset}>
+                        <WalletSettingsGrid>
+                            <InputArea>
+                                {isEditView ? (
+                                    <Edit />
+                                ) : (
+                                    <Display
+                                        words={seedWords}
+                                        isLoading={seedWordsFetching || copyFetchLoading}
+                                        onToggleClick={onToggleVisibility}
+                                    />
+                                )}
+                            </InputArea>
+                            <CTASArea>{isEditView ? editCTAs : displayCTAs}</CTASArea>
+                        </WalletSettingsGrid>
+                    </Form>
+                </FormProvider>
+            </Wrapper>
+            <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+                <DialogContent $unPadded>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between" style={dialogStyles}>
+                        <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
+                        <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
+                            {t('confirm-import-wallet-copy')}
+                        </Typography>
+                        <Stack direction="row" gap={8}>
+                            <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
+                            <SquaredButton color="orange" onClick={() => handleConfirmed()}>
+                                {t('yes')}
+                            </SquaredButton>
+                        </Stack>
+                    </Stack>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }

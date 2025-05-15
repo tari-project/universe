@@ -52,7 +52,7 @@ const Display = memo(function Display({ words, onToggleClick, isLoading }: Displ
     );
 
     return (
-        <DisplayWrapper $rows={rowCount} $isHidden={!isVisible}>
+        <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
             {toggleCTA}
             {isVisible && !isLoading ? wordMarkup : hiddenMarkup}
         </DisplayWrapper>
