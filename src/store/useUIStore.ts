@@ -52,8 +52,7 @@ const initialState: UIStoreState = {
     hideWalletBalance: false,
     showWarmup: false,
     showResumeAppModal: false,
-    seedlessUI: true,
-    // seedlessUI: false,
+    seedlessUI: false,
     towerSidebarOffset: sidebarTowerOffset,
 };
 

@@ -10,8 +10,9 @@ interface DisplayProps {
     isLoading?: boolean;
     onToggleClick: () => void;
     isGenerated?: boolean;
+    isMonero?: boolean;
 }
-const Display = memo(function Display({ words, onToggleClick, isLoading, isGenerated }: DisplayProps) {
+const Display = memo(function Display({ words, onToggleClick, isLoading, isGenerated, isMonero }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     function handleToggleClick() {
@@ -59,10 +60,10 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
         </AddSeedWordsWrapper>
     );
 
-    const markup = !isGenerated ? notGeneratedDisplay : generatedDisplay;
+    const markup = !isMonero && !isGenerated ? notGeneratedDisplay : generatedDisplay;
     return (
         <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
-            {isGenerated && toggleCTA}
+            {(isMonero || isGenerated) && toggleCTA}
             {markup}
         </DisplayWrapper>
     );

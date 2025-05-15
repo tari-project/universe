@@ -14,6 +14,7 @@ export const InputArea = styled.div`
     grid-area: input;
     display: flex;
     width: 100%;
+    min-height: 36px;
 `;
 
 export const CTASArea = styled.div`

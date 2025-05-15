@@ -13,7 +13,7 @@ import { importSeedWords, useWalletStore } from '@app/store';
 import { Dialog, DialogContent } from '@app/components/elements/dialog/Dialog.tsx';
 import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
-import { SquaredButton } from '@app/components/elements/buttons/SquaredButton.tsx';
+import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
@@ -117,6 +117,8 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                                         words={seedWords}
                                         isLoading={seedWordsFetching || copyFetchLoading}
                                         onToggleClick={onToggleVisibility}
+                                        isGenerated={isGenerated}
+                                        isMonero={isMonero}
                                     />
                                 )}
                             </InputArea>
@@ -126,8 +128,13 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                 </FormProvider>
             </Wrapper>
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-                <DialogContent $unPadded>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between">
+                <DialogContent>
+                    <Stack
+                        direction="column"
+                        alignItems="center"
+                        justifyContent="space-between"
+                        style={{ width: 400, height: 120 }}
+                    >
                         <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
                             {t('confirm-import-wallet-copy')}
@@ -136,10 +143,12 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                             <LoadingDots />
                         ) : (
                             <Stack direction="row" gap={8}>
-                                <SquaredButton onClick={() => setShowConfirm(false)}>{t('cancel')}</SquaredButton>
-                                <SquaredButton color="orange" onClick={() => handleConfirmed()}>
+                                <Button size="small" onClick={() => setShowConfirm(false)}>
+                                    {t('cancel')}
+                                </Button>
+                                <Button size="small" color="warning" onClick={() => handleConfirmed()}>
                                     {t('yes')}
-                                </SquaredButton>
+                                </Button>
                             </Stack>
                         )}
                     </Stack>

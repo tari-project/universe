@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { ExchangeContent } from '@app/types/exchange.ts';
+import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 
 interface ExchangeStoreState {
     content?: ExchangeContent;
@@ -28,6 +29,7 @@ export async function fetchExchangeContent(exchangeId: string) {
         const canShowModal = json?.exchange_id && json?.exchange_id.length > 0 && json?.exchange_id !== 'universal';
         if (canShowModal) {
             setShowExchangeModal(true);
+            setSeedlessUI(true);
         }
     } catch (e) {
         console.error('Could not fetch exchange content', e);
