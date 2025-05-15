@@ -55,6 +55,7 @@ pub struct AppInMemoryConfig {
 pub struct AirdropInMemoryConfig {
     pub airdrop_url: String,
     pub airdrop_api_url: String,
+    pub exchange_id: Option<String>,
 }
 
 impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
@@ -62,6 +63,7 @@ impl From<AppInMemoryConfig> for AirdropInMemoryConfig {
         AirdropInMemoryConfig {
             airdrop_url: app_config.airdrop_url,
             airdrop_api_url: app_config.airdrop_api_url,
+            exchange_id: Some(app_config.exchange_id),
         }
     }
 }

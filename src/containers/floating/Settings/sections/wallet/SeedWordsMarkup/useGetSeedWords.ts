@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { useWalletStore } from '@app/store';
 
 export function useGetSeedWords() {
+    const tari_address_is_generated = useWalletStore((s) => s.is_tari_address_generated);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
 
@@ -22,7 +24,7 @@ export function useGetSeedWords() {
     }, []);
 
     return {
-        seedWords,
+        seedWords: tari_address_is_generated ? seedWords : [],
         getSeedWords,
         seedWordsFetched: seedWords.length > 0,
         seedWordsFetching,
