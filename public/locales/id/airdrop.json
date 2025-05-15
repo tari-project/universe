@@ -17,6 +17,7 @@
   "giftReferralCode": "Dapatkan {{gems}} permata untuk setiap teman yang Anda undang ke Tari Universe. Setelah mereka menghubungkan akun mereka, Anda akan mendapatkan permata Anda.",
   "giftReferralCodeHeader": "Klaim kode referensi Anda <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> permata.",
   "invite": "Undang",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "Undang Teman",
   "inviteFriendsText": "Salin tautan dan bagikan",
   "invitedAmount": "Anda telah mengundang <span>{{count}}</span> teman",

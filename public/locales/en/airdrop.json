@@ -16,6 +16,7 @@
   "giftReferralCode": "Earn {{gems}} gems for each friend you invite to Tari Universe. Once they connect their account, you’ll be awarded your gems.",
   "giftReferralCodeHeader": "Claim your referral code <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gems.",
   "invite": "Invite",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "Invite Friends",
   "inviteFriendsText": "Copy link and share it",
   "invitedAmount": "You’ve invited <span>{{count}}</span> friends",
