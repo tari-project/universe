@@ -328,7 +328,7 @@ impl SetupManager {
     }
 
     pub async fn init_exchange_modal_status(&self) -> Result<(), anyhow::Error> {
-        self.exchange_modal_status.send(PhaseStatus::Initialized)?;
+        self.exchange_modal_status.send(PhaseStatus::Success)?;
         Ok(())
     }
 
