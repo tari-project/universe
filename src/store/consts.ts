@@ -12,3 +12,5 @@ export const FEATURES = {
     FF_UI_WARMUP,
     FF_UI_BRIDGE,
 };
+
+export const BRIDGE_TAPPLET_ID = 0;

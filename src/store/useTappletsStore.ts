@@ -52,40 +52,15 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         console.info('SET ACTIVE TAP', tappletId, get().activeTapplet?.tapplet_id);
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletProviderStore.getState();
-        //TODO path
+        if (!tappProviderState.isInitialized) tappProviderState.initTappletProvider();
+
         // built-in tapplet
         if (isBuiltIn) {
             const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
             const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
             set({ activeTapplet });
-            // TODO change provider name
-            tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
             return;
         }
-
-        // dev
-        // TODO tmp mock
-        // const bridgeTapplet: BuiltInTapplet = {
-        //     id: 0,
-        //     version: '0.1.0',
-        //     display_name: 'WXTM Bridge',
-        //     endpoint: 'http://localhost:3000',
-        //     destDir: '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda',
-        // };
-
-        // if (isBuiltIn) {
-        //TODO tmp solution - change to `config` data if built-in tapplet has config
-        //     const activeTapplet: ActiveTapplet = {
-        //         tapplet_id: bridgeTapplet.id,
-        //         version: bridgeTapplet.version,
-        //         source: bridgeTapplet.endpoint,
-        //         display_name: bridgeTapplet.display_name ?? '',
-        //         supportedChain: ['MAINNET', 'STAGENET', 'NEXTNET'],
-        //     };
-        //     set({ activeTapplet });
-        //     tappProviderState.setTappletProvider('builtInProvider', activeTapplet);
-        //     return;
-        // }
 
         return;
     },

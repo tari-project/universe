@@ -12,7 +12,7 @@ interface State {
 //TODO do we need tapp provider id at all?
 interface Actions {
     initTappletProvider: () => Promise<void>;
-    setTappletProvider: (id: string, launchedTapplet: ActiveTapplet) => Promise<void>;
+    setTappletProvider: (id: string) => Promise<void>;
     runTransaction: (event: MessageEvent<TransactionEvent>) => Promise<void>;
 }
 
@@ -28,10 +28,11 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
 
     initTappletProvider: async () => {
         try {
+            if (get().isInitialized) return;
             console.info(`🌎️ [TU store][init provider]`);
 
             const params: TappletProviderParams = {
-                id: 'provider',
+                id: 'default',
             };
             const provider: TappletProvider = TappletProvider.build(params);
 
@@ -43,6 +44,7 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
     },
     setTappletProvider: async (id: string) => {
         try {
+            if (get().tappletProvider?.id == id) return;
             const params: TappletProviderParams = {
                 id,
             };

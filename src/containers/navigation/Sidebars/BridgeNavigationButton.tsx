@@ -5,13 +5,13 @@ import { setAnimationProperties } from '@tari-project/tari-tower';
 import { useUIStore } from '@app/store/useUIStore.ts';
 import { setShowTapplet, setSidebarOpen } from '@app/store/actions/uiStoreActions';
 
-import { CubeOutlineSVG } from '@app/assets/icons/cube-outline.tsx';
 import { SB_MINI_WIDTH, SB_SPACING, SB_WIDTH } from '@app/theme/styles.ts';
 import { HoverIconWrapper, NavIconWrapper, NavigationWrapper, StyledIconButton } from './SidebarMini.styles.ts';
 import { AnimatePresence } from 'motion/react';
-import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 import { setVisualMode } from '@app/store/index.ts';
 import { BridgeOutlineSVG } from '@app/assets/icons/bridge-outline.tsx';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
+import { BRIDGE_TAPPLET_ID } from '@app/store/consts.ts';
 
 interface NavButtonProps {
     children: ReactNode;
@@ -55,12 +55,19 @@ const NavButton = memo(function NavButton({ children, isActive, onClick }: NavBu
 const BridgeNavigationButton = memo(function BridgeNavigationButton() {
     const sidebarOpen = useUIStore((s) => s.sidebarOpen);
     const showTapplet = useUIStore((s) => s.showTapplet);
-    const visualMode = useConfigUIStore((s) => s.visual_mode);
+    const setActiveTappById = useTappletsStore((s) => s.setActiveTappById);
 
     function handleToggleOpen() {
-        setShowTapplet(!showTapplet);
-        setVisualMode(!visualMode);
-        setSidebarOpen(!sidebarOpen);
+        if (!showTapplet) {
+            setActiveTappById(BRIDGE_TAPPLET_ID, true);
+            setShowTapplet(true);
+            setSidebarOpen(false);
+            setVisualMode(false);
+        } else {
+            setShowTapplet(false);
+            setSidebarOpen(true);
+            setVisualMode(true);
+        }
     }
 
     useEffect(() => {
