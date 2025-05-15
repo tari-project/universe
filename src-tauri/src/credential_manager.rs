@@ -88,7 +88,6 @@ impl CredentialManager {
             Network::get_current().as_key_str()
         );
 
-        info!(target: LOG_TARGET, "Application folder id: {}", APPLICATION_FOLDER_ID);
         CredentialManager::new(
             APPLICATION_FOLDER_ID.into(),
             network_specific_name.clone(),
