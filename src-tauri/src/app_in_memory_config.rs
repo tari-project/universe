@@ -116,7 +116,7 @@ pub fn get_der_encode_pub_key(key_pair: &Ed25519KeyPair) -> anyhow::Result<Strin
 
 impl AppInMemoryConfig {
     pub fn init() -> Self {
-        #[cfg(all(feature = "airdrop-env"))]
+        #[cfg(feature = "airdrop-env")]
         return AppInMemoryConfig {
             airdrop_url: AIRDROP_BASE_URL.into(),
             airdrop_api_url: AIRDROP_API_BASE_URL.into(),
@@ -129,14 +129,6 @@ impl AppInMemoryConfig {
             airdrop_url: "http://localhost:4000".into(),
             airdrop_api_url: "http://localhost:3004".into(),
             telemetry_api_url: "http://localhost:3004".into(),
-            exchange_id: EXCHANGE_ID.into(),
-        };
-
-        #[cfg(all(feature = "airdrop-env", feature = "telemetry-env"))]
-        return AppInMemoryConfig {
-            airdrop_url: AIRDROP_BASE_URL.into(),
-            airdrop_api_url: AIRDROP_API_BASE_URL.into(),
-            telemetry_api_url: TELEMETRY_API_URL.into(),
             exchange_id: EXCHANGE_ID.into(),
         };
 
