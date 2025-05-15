@@ -5,8 +5,10 @@ import { AirdropSidebarItems } from '@app/containers/main/Airdrop/sidebar/Airdro
 import NavigationButton from './NavigationButton';
 import { GridBottom, GridCenter, GridTop, LogoWrapper, MiniWrapper } from './SidebarMini.styles.ts';
 import BridgeNavigationButton from './BridgeNavigationButton.tsx';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 const SidebarMini = memo(function SidebarMini() {
+    const { uiBridgeSwapsEnabled } = useTappletsStore();
     return (
         <MiniWrapper>
             <GridTop>
@@ -16,7 +18,7 @@ const SidebarMini = memo(function SidebarMini() {
             </GridTop>
             <GridCenter>
                 <NavigationButton />
-                <BridgeNavigationButton />
+                {uiBridgeSwapsEnabled && <BridgeNavigationButton />}
             </GridCenter>
             <GridBottom>
                 <AirdropSidebarItems />
