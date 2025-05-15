@@ -7,8 +7,3 @@ export const Wrapper = styled.div`
     flex-direction: row;
     align-items: center;
 `;
-export const IconWrapper = styled.div`
-    display: flex;
-    height: 100%;
-    padding: 6px 0;
-`;

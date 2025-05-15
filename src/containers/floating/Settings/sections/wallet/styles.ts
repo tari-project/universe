@@ -7,7 +7,7 @@ export const WalletSettingsGrid = styled.div`
     grid-template-rows: auto;
     gap: 10px;
     grid-template-areas: 'input ctas';
-    place-items: stretch;
+    align-items: start;
 `;
 
 export const InputArea = styled.div`
@@ -21,4 +21,7 @@ export const CTASArea = styled.div`
     display: flex;
     width: 100%;
     justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
 `;

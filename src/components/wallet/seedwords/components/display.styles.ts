@@ -30,3 +30,9 @@ export const WordsWrapper = styled.div`
     display: flex;
     gap: 2px;
 `;
+
+export const AddSeedWordsWrapper = styled.div`
+    display: flex;
+    padding: 6px 4px;
+    color: ${({ theme }) => theme.palette.text.secondary};
+`;

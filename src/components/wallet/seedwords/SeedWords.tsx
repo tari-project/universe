@@ -3,9 +3,9 @@ import { useGetSeedWords } from '@app/containers/floating/Settings/sections/wall
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { CircularProgress } from '@app/components/elements/CircularProgress.tsx';
-import { IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
+import { IoAddCircleOutline, IoCheckmarkOutline, IoCloseOutline, IoCopyOutline, IoPencil } from 'react-icons/io5';
 import { useCallback, useState } from 'react';
-import { IconWrapper, Wrapper } from './styles.ts';
+import { Wrapper } from './styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 import { Edit } from '@app/components/wallet/seedwords/components/Edit.tsx';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -18,35 +18,35 @@ import { useTranslation } from 'react-i18next';
 import { Form } from '@app/components/wallet/seedwords/components/edit.styles.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
+// Controller component for edit/view seed words (both Tari & Monero)
+
 interface SeedWordsProps {
     isMonero?: boolean;
+    isGenerated?: boolean;
 }
-const dialogStyles = {
-    width: '380px',
-    padding: '16px 30px',
-    gap: 16,
-};
-export default function SeedWords({ isMonero = false }: SeedWordsProps) {
+export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsProps) {
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
+
     const [isEditView, setIsEditView] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
+
     const { t } = useTranslation('settings', { useSuspense: false });
+    const { copyToClipboard, isCopied } = useCopyToClipboard();
     const { seedWords, getSeedWords, seedWordsFetched, seedWordsFetching } = useGetSeedWords({
         fetchMoneroSeeds: isMonero,
     });
-    const { copyToClipboard, isCopied } = useCopyToClipboard();
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
     const { isDirty, isValid } = methods.formState;
+
+    const disableCopy = !isGenerated && !isMonero;
 
     const handleConfirmed = useCallback(async () => {
         if (!isDirty || !isValid || !newSeedWords) return;
         await importSeedWords(newSeedWords);
     }, [isDirty, isValid, newSeedWords]);
-
     const handleApply = (data: { seedWords: string }) => {
-        console.debug(`seedWords= `, data.seedWords);
         setNewSeedWords(data.seedWords.split(' '));
         setShowConfirm(true);
     };
@@ -56,10 +56,14 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
             await getSeedWords();
         }
     }
-
     function onToggleEdit() {
         setIsEditView((c) => !c);
     }
+    function handleReset() {
+        methods.reset();
+        onToggleEdit();
+    }
+
     const handleCopyClick = useCallback(async () => {
         if (seedWords && seedWordsFetched) {
             copyToClipboard(seedWords.join(' '));
@@ -76,30 +80,27 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
     }, [copyToClipboard, getSeedWords, seedWords, seedWordsFetched]);
 
     const displayCTAs = (
-        <IconWrapper>
-            <IconButton size="small" onClick={() => handleCopyClick()}>
+        <>
+            {!isMonero ? (
+                <IconButton size="small" onClick={onToggleEdit}>
+                    {isGenerated ? <IoPencil /> : <IoAddCircleOutline />}
+                </IconButton>
+            ) : null}
+            <IconButton size="small" onClick={() => handleCopyClick()} disabled={disableCopy}>
                 {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
             </IconButton>
-            <IconButton size="small" onClick={onToggleEdit}>
-                <IoPencil />
-            </IconButton>
-        </IconWrapper>
+        </>
     );
 
-    function handleReset() {
-        methods.reset();
-        onToggleEdit();
-    }
-
     const editCTAs = (
-        <IconWrapper>
+        <>
             <IconButton size="small" type="submit">
                 <IoCheckmarkOutline />
             </IconButton>
             <IconButton size="small" type="reset">
                 <IoCloseOutline />
             </IconButton>
-        </IconWrapper>
+        </>
     );
 
     return (
@@ -126,7 +127,7 @@ export default function SeedWords({ isMonero = false }: SeedWordsProps) {
             </Wrapper>
             <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
                 <DialogContent $unPadded>
-                    <Stack direction="column" alignItems="center" justifyContent="space-between" style={dialogStyles}>
+                    <Stack direction="column" alignItems="center" justifyContent="space-between">
                         <Typography variant="h3">{t('confirm-import-wallet')}</Typography>
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
                             {t('confirm-import-wallet-copy')}

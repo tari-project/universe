@@ -1,5 +1,5 @@
 import { memo, useState } from 'react';
-import { CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
+import { AddSeedWordsWrapper, CTAWrapper, DisplayWrapper, HiddenWrapper, WordsWrapper } from './display.styles.ts';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
 import { IoEyeOffOutline, IoEyeOutline } from 'react-icons/io5';
@@ -9,8 +9,9 @@ interface DisplayProps {
     words: string[];
     isLoading?: boolean;
     onToggleClick: () => void;
+    isGenerated?: boolean;
 }
-const Display = memo(function Display({ words, onToggleClick, isLoading }: DisplayProps) {
+const Display = memo(function Display({ words, onToggleClick, isLoading, isGenerated }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
 
     function handleToggleClick() {
@@ -51,10 +52,18 @@ const Display = memo(function Display({ words, onToggleClick, isLoading }: Displ
         </CTAWrapper>
     );
 
+    const generatedDisplay = isVisible && !isLoading ? wordMarkup : hiddenMarkup;
+    const notGeneratedDisplay = (
+        <AddSeedWordsWrapper>
+            <Typography variant="p">{`Add seedwords to restore another Tari Address`}</Typography>
+        </AddSeedWordsWrapper>
+    );
+
+    const markup = !isGenerated ? notGeneratedDisplay : generatedDisplay;
     return (
         <DisplayWrapper $rows={rowCount} $isHidden={!isVisible || isLoading}>
-            {toggleCTA}
-            {isVisible && !isLoading ? wordMarkup : hiddenMarkup}
+            {isGenerated && toggleCTA}
+            {markup}
         </DisplayWrapper>
     );
 });

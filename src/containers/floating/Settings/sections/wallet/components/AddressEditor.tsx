@@ -5,7 +5,6 @@ import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { IconContainer } from '@app/containers/floating/Settings/sections/wallet/components/SeedWords.styles.ts';
 import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 
 interface AddressEditorProps {
@@ -105,14 +104,12 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
                     {editIconMarkup}
                     {editing ? (
                         <>
-                            <IconContainer style={{ gap: 2 }}>
-                                <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
-                                    <IoCheckmarkOutline />
-                                </IconButton>
-                                <IconButton type="reset" size="small">
-                                    <IoCloseOutline />
-                                </IconButton>
-                            </IconContainer>
+                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
+                                <IoCheckmarkOutline />
+                            </IconButton>
+                            <IconButton type="reset" size="small">
+                                <IoCloseOutline />
+                            </IconButton>
                         </>
                     ) : (
                         <IconButton

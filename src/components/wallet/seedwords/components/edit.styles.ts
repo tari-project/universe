@@ -1,17 +1,18 @@
 import styled from 'styled-components';
 import { TextArea } from '@app/components/elements/inputs/TextArea.tsx';
-import { Typography } from '@app/components/elements/Typography.tsx';
 
 export const EditWrapper = styled.div`
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
 `;
-export const WarningText = styled(Typography).attrs({
-    variant: 'p',
-})`
+export const WarningText = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 4px;
     color: ${({ theme }) => theme.palette.text.secondary};
+    font-size: 14px;
 `;
 export const StyledTextArea = styled(TextArea)<{ $hasError: boolean }>(({ $hasError, theme }) => ({
     backgroundColor: theme.palette.background.default,
