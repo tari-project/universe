@@ -75,7 +75,7 @@ export const setWalletAddress = (addresses: WalletAddress) => {
         tari_address_emoji: addresses.tari_address_emoji,
         is_tari_address_generated: addresses.is_tari_address_generated,
     });
-    useUIStore.setState({ seedlessUI: addresses.is_tari_address_generated });
+    useUIStore.setState({ seedlessUI: !addresses.is_tari_address_generated });
 };
 export const setWalletBalance = (balance: WalletBalance) => {
     const calculated_balance =
