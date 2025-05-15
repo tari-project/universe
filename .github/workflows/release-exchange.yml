@@ -43,10 +43,7 @@ jobs:
         id: read-exchanges
         run: |
           ALL_EXCHANGES_NAMES=$(echo ${ALL_EXCHANGES_NAMES} | jq -r fromjson)
-          echo "${FORMATTED}"
-          EXCHANGES_NAMES=$(jq --argjson map "$ALL_EXCHANGES_NAMES" \
-            '.exchanges[] |= (.secret_name = $map[.secret_name])' exchanges.json)
-          EXCHANGES_NAMES=$(echo "${EXCHANGES_NAMES}" | jq -c .exchanges)
+          EXCHANGES_NAMES=$(echo "${ALL_EXCHANGES_NAMES}" | jq -c .exchanges)
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
 
   builds:
