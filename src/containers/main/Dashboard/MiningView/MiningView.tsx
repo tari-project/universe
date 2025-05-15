@@ -4,6 +4,7 @@ import Earnings from './components/Earnings';
 import BlockTime from './components/BlockTime';
 
 import { MiningViewContainer } from './MiningView.styles.ts';
+import BlockExplorerMini from '../components/BlockExplorerMini/BlockExplorerMini.tsx';
 
 export default function MiningView() {
     return (
@@ -12,6 +13,7 @@ export default function MiningView() {
             <Ruler />
             <Earnings />
             <BlockTime />
+            <BlockExplorerMini />
         </MiningViewContainer>
     );
 }
