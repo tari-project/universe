@@ -1,58 +1,6 @@
 import styled from 'styled-components';
 import { SwapStatus } from './ProcessingTransaction';
 
-export const HeaderWrapper = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 15px;
-    padding: 0 40px;
-
-    h3 {
-        font-family: Poppins;
-        font-weight: 600;
-        font-size: 21px;
-        line-height: 31px;
-        letter-spacing: 0%;
-        text-align: center;
-        color: black;
-        max-width: 300px;
-        margin: 0;
-    }
-
-    p {
-        font-family: Poppins;
-        font-weight: 400;
-        font-size: 12px;
-        line-height: 117%;
-        letter-spacing: 0px;
-        text-align: center;
-        color: #000000;
-        opacity: 0.7;
-    }
-`;
-
-export const ProcessingItemDetailWrapper = styled.div`
-    border-bottom: 2px solid #0000001a;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding: 15px 0;
-`;
-
-export const ProcessingItemDetailKey = styled.div`
-    color: rgba(0, 0, 0, 0.6);
-    font-family: Poppins;
-    font-weight: 500;
-    font-size: 11px;
-    line-height: 130%;
-    letter-spacing: -2%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-`;
-
 export const StatusValue = styled.div<{ $status: SwapStatus }>`
     font-family: Poppins;
     font-weight: bold;

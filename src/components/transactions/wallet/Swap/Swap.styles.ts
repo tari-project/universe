@@ -319,10 +319,20 @@ export const CurrentStep = styled.span`
     font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 12px;
-    color: #00000080;
-    strong {
-        color: black;
-    }
+    ${({ theme }) =>
+        theme.mode === 'dark'
+            ? css`
+                  color: rgba(255, 255, 255, 0.6);
+                  strong {
+                      color: white;
+                  }
+              `
+            : css`
+                  color: rbga(0, 0, 0, 0.6);
+                  strong {
+                      color: black;
+                  }
+              `}
 `;
 
 export const ConnectedWalletWrapper = styled.div`

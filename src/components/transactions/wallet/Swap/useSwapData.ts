@@ -51,7 +51,7 @@ export const useSwapData = () => {
     const connectedAccount = useAccount();
     const addToast = useToastStore((s) => s.addToast);
 
-    const [fromAmount, setFromAmount] = useState<string>('');
+    const [fromAmount, setFromAmount] = useState<string>('1');
     const [targetAmount, setTargetAmount] = useState<string>('');
     const [lastUpdatedField, setLastUpdatedField] = useState<SwapField>('fromValue');
     const [uiDirection, setUiDirection] = useState<'input' | 'output'>('input');
@@ -81,6 +81,7 @@ export const useSwapData = () => {
         checkAndRequestApproval,
         executeSwap,
         error: useSwapError,
+        addLiquidity,
     } = useSwap();
 
     const currentChainId = useMemo(() => connectedAccount.chain?.id, [connectedAccount.chain]);
@@ -291,7 +292,7 @@ export const useSwapData = () => {
         };
         fetchAllPrices();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [baseSelectableTokensForList, currentChainId]); // Removed tokenPrices from dep array to avoid loop
+    }, [baseSelectableTokensForList, currentChainId]);
 
     const selectableFromTokens = useMemo((): SelectableTokenInfo[] => {
         return baseSelectableTokensForList
@@ -365,26 +366,21 @@ export const useSwapData = () => {
         }
     }, [lastUpdatedField, fromAmount, targetAmount]); // Add fromAmount, targetAmount as dependencies
 
-    const shouldCalculate = useRef(false);
+    const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
 
     const calcAmounts = useCallback(async () => {
         let amountTypedByUserStr: string;
         let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
-        // This tells getTradeDetails if the parsed amount (amountForCalcWei) is for
-        // the trade's actual input (sdkToken0) or actual output (sdkToken1).
         let amountTypeForGetTradeDetails: SwapField = 'target';
 
         const tradeInputTokenSDK = sdkToken0; // Actual input to the Uniswap trade (Token)
         const tradeOutputTokenSDK = sdkToken1; // Actual output from the Uniswap trade (Token)
 
-        // Determine which UI field the user typed in and get the amount string and token definition
         if (lastUpdatedField === 'fromValue') {
-            // User typed in the UI "FROM" box
             amountTypedByUserStr = fromAmount;
             tokenUsedForParsingAmount = fromUiTokenDefinition;
         } else {
-            // lastUpdatedField === 'target', user typed in the UI "TO" box
             amountTypedByUserStr = targetAmount;
             tokenUsedForParsingAmount = toUiTokenDefinition;
         }
@@ -403,7 +399,6 @@ export const useSwapData = () => {
             !tradeInputTokenSDK ||
             !tradeOutputTokenSDK
         ) {
-            // Call the refined clearCalculatedDetails to only clear the other field
             clearCalculatedDetails();
             setIsLoading(false);
             return;
@@ -411,11 +406,7 @@ export const useSwapData = () => {
 
         setIsLoading(true);
         try {
-            // Parse the user's input string using the decimals of the token definition
-            // associated with the UI field they typed into.
             const amountForCalcWei = viemParseUnits(amountTypedByUserStr, tokenUsedForParsingAmount.decimals);
-
-            // Call getTradeDetails with the parsed amount and specify if it's for the trade's input (sdkToken0) or output (sdkToken1)
             const details = await getTradeDetails(amountForCalcWei.toString(), amountTypeForGetTradeDetails);
             setTradeDetails(details);
 
@@ -458,6 +449,7 @@ export const useSwapData = () => {
                     }
                 }
             }
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
             clearCalculatedDetails(); // Clears the other field
@@ -470,12 +462,12 @@ export const useSwapData = () => {
         targetAmount,
         lastUpdatedField,
         uiDirection,
-        sdkToken0, // tradeInputTokenSDK
-        sdkToken1, // tradeOutputTokenSDK
-        fromUiTokenDefinition, // Token definition for UI FROM box
-        toUiTokenDefinition, // Token definition for UI TO box
+        sdkToken0,
+        sdkToken1,
+        fromUiTokenDefinition,
+        toUiTokenDefinition,
         getTradeDetails,
-        clearCalculatedDetails, // Now a dependency
+        clearCalculatedDetails,
         addToast,
     ]);
 
@@ -610,12 +602,14 @@ export const useSwapData = () => {
                         setTransactionId(hash);
                         addToast({ title: 'Swap Submitted', text: 'Transaction sent.', type: 'success' });
                     })
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .catch((e: any) => {
                         setIsProcessingSwap(false);
                         setProcesingOpen(false);
                         addToast({ title: 'Swap Error', text: e.message || 'Swap execution failed.', type: 'error' });
                     });
             })
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .catch((e: any) => {
                 setIsProcessingApproval(false);
                 setProcesingOpen(false);
@@ -626,7 +620,8 @@ export const useSwapData = () => {
     const displayPrice = useMemo(() => {
         if (!tradeDetails?.midPrice) return null;
 
-        let price;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let price: any;
         if (uiDirection === 'input') {
             // Price is sdkToken1 per sdkToken0
             price = tradeDetails?.midPrice;
@@ -705,6 +700,7 @@ export const useSwapData = () => {
         useSwapError,
         handleSelectFromToken,
         selectableFromTokens,
+        addLiquidity,
         tokenSelectOpen,
         setTokenSelectOpen,
         displayPrice,

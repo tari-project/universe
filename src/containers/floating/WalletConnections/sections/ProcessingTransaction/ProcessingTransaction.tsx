@@ -1,15 +1,5 @@
-import {
-    HeaderWrapper,
-    LoadingDots,
-    ProcessingDetailsWrapper,
-    ProcessingItemDetailKey,
-    ProcessingItemDetailValue,
-    ProcessingItemDetailWrapper,
-    StatusValue,
-} from './ProcessingTransaction.styles';
-import { LoadingClock } from '../../icons/elements/LoadingClock';
+import { LoadingDots, ProcessingDetailsWrapper, StatusValue } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
-import { SuccessIcon } from '../../icons/elements/SuccessIcon';
 import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import { setWalletUiVisible } from '@app/store/actions/walletStoreActions';
@@ -17,6 +7,9 @@ import TransactionModal from '@app/components/TransactionModal/TransactionModal'
 import { AnimatePresence } from 'motion/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
+import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
+import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
 
 export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
 
@@ -39,9 +32,9 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
             <span>.</span>
         </LoadingDots>
     );
-    const statusItems = [
+    const statusItems: StatusListEntry[] = [
         {
-            key: t('swap.status'),
+            label: t('swap.status'),
             value: (
                 <StatusValue $status={status}>
                     {status === 'success' ? t('swap.completed') : t('swap.processing')}
@@ -49,15 +42,15 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
             ),
         },
         {
-            key: t('swap.total-fees'),
+            label: t('swap.total-fees'),
             value: fees || loadingDots,
         },
         {
-            key: t('swap.transaction-id'),
+            label: t('swap.transaction-id'),
             value: transactionId || loadingDots,
         },
         {
-            key: 'Ethereum Txn',
+            label: 'Ethereum Txn',
             value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
         },
         // {
@@ -81,19 +74,12 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
             <AnimatePresence mode="wait">
-                <HeaderWrapper>
-                    {status === 'success' ? <SuccessIcon width="65" /> : <LoadingClock width="65" />}
-                    <h3>{t('swap.your-xtm-is-on-the-way')}</h3>
+                <StatusHero icon={<ProcessingIcon />} title={t('swap.your-xtm-is-on-the-way')}>
                     <p>{t('swap.your-purchase-is-processing')}</p>
-                </HeaderWrapper>
+                </StatusHero>
 
                 <ProcessingDetailsWrapper>
-                    {statusItems.map((item, index) => (
-                        <ProcessingItemDetailWrapper key={`${item.key}-${index}`}>
-                            <ProcessingItemDetailKey>{item.key}</ProcessingItemDetailKey>
-                            <ProcessingItemDetailValue>{item.value}</ProcessingItemDetailValue>
-                        </ProcessingItemDetailWrapper>
-                    ))}
+                    <StatusList entries={statusItems} />
                 </ProcessingDetailsWrapper>
 
                 <WalletButton

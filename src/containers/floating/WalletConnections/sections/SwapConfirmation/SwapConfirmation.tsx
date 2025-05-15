@@ -85,13 +85,8 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         },
     ];
 
-    const accountBalanceValue = useMemo(() => {
-        if (!fromTokenDisplay?.balance) return 0;
-        return Number(fromTokenDisplay.balance);
-    }, [fromTokenDisplay?.balance]);
-
     return (
-        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
+        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} noHeader>
             <AnimatePresence mode="wait">
                 <div>
                     <WalletConnectHeader>
@@ -122,9 +117,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                                 <span>{fromTokenDisplay?.symbol}</span>
                             </SwapOptionCurrency>
                         </SwapOptionAmount>
-                        <span>
-                            {accountBalanceValue} {fromTokenDisplay?.symbol}
-                        </span>
+                        <span>{fromTokenDisplay?.balance}</span>
                     </SwapOption>
                     <SwapDirection>
                         <SwapDirectionWrapper $direction={direction}>

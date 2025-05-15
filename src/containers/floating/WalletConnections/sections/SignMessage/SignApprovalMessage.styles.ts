@@ -14,7 +14,7 @@ export const HeaderWrapper = styled.div`
         line-height: 31px;
         letter-spacing: 0%;
         text-align: center;
-        color: black;
+        color: ${({ theme }) => theme.palette.text.primary};
         max-width: 300px;
         margin: 0;
     }
@@ -26,7 +26,7 @@ export const HeaderWrapper = styled.div`
         line-height: 18px;
         letter-spacing: 0.46px;
         text-align: center;
-        color: #090719;
+        color: ${({ theme }) => theme.palette.text.secondary};
         max-width: 420px;
         margin: 0;
     }

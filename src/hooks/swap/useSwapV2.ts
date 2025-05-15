@@ -61,7 +61,7 @@ export const ENABLED_TOKENS = {
     [EnabledTokens.XTM]: {
         // Replace with actual XTM addresses
         [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F', // Placeholder
-        [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574', // Placeholder
+        [ChainId.SEPOLIA]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374', // Placeholder
     },
     [EnabledTokens.USDC]: {
         [ChainId.MAINNET]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
@@ -357,10 +357,7 @@ export const useSwap = () => {
     );
 
     const getTradeDetails = useCallback(
-        async (
-            amountRaw: string, // Expect raw amount string (e.g., '1000000000000000000')
-            amountType: SwapField // Whether amountRaw is for input or output token
-        ): Promise<TradeDetails> => {
+        async (amountRaw: string, amountType: SwapField): Promise<TradeDetails> => {
             if (!publicClient || !currentChainId || !sdkToken0 || !sdkToken1 || !routerAddress) {
                 setError('Prerequisites for trade details not met.');
                 return { trade: null, route: null };
@@ -422,14 +419,12 @@ export const useSwap = () => {
 
                     let callData: `0x${string}`;
                     let valueToSend: bigint | undefined = undefined;
-                    let swapAbiForViem;
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    let swapAbiForViem: any;
 
                     const inputIsNativeForRouterEst = token0?.isNative;
                     const outputIsNativeForRouterEst = token1?.isNative;
 
-                    // Note: Uniswap V2 Router does not have EXACT_OUTPUT for ETH input/output.
-                    // It has swapTokensForExactETH, swapETHForExactTokens which are less common.
-                    // This estimation primarily targets EXACT_INPUT type swaps.
                     if (inputIsNativeForRouterEst) {
                         swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
                         callData = encodeFunctionData({
@@ -663,6 +658,23 @@ export const useSwap = () => {
         setError(null);
     }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
 
+    // const addLiquidity = useCallback(async () => {
+    //     const signer = await signerAsync;
+    //     const tokenA = new ethers.Contract('0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374', erc20Abi, signer);
+    //     await tokenA.approve(routerAddress, 1000000000000000000000n);
+    //
+    //     const router = new ethers.Contract(routerAddress, uniswapV2RouterAbi, signer);
+    //     await router.addLiquidityETH(
+    //         '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374', // Token A
+    //         1000000000000000000000n, // Token A amount
+    //         1, // Min Token B
+    //         1, // Min Token B
+    //         accountAddress, // Recipient
+    //         Date.now() + 60 * 1000, // Deadline
+    //         { value: 10000000000000000n } // ETH to send
+    //     );
+    // }, [accountAddress, routerAddress, signerAsync]);
+
     return {
         pairTokenAddress,
         direction,
@@ -681,6 +693,7 @@ export const useSwap = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
+        //addLiquidity,
         isReady:
             !!signerAsync &&
             !!accountAddress &&

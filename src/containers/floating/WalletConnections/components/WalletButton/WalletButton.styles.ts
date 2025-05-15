@@ -92,5 +92,6 @@ export const WalletActionButton = styled.button<{
         css`
             background: rgba(0, 0, 0, 0.5);
             opacity: 0.5;
+            pointer-events: none;
         `}
 `;

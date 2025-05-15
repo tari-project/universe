@@ -12,9 +12,10 @@ interface Props {
     children: ReactNode;
     title?: string;
     noClose?: boolean;
+    noHeader?: boolean;
 }
 
-export default function TransactionModal({ show, title, children, handleBack, handleClose, noClose }: Props) {
+export default function TransactionModal({ show, title, children, handleBack, handleClose, noClose, noHeader }: Props) {
     const backIcon = handleBack ? (
         <TopButton onClick={handleBack}>
             <IoArrowBack />
@@ -36,11 +37,13 @@ export default function TransactionModal({ show, title, children, handleBack, ha
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.8 }}
                     >
-                        <TopWrapper>
-                            {title ? <Title>{title}</Title> : <div />}
-                            {backIcon}
-                            {closeIcon}
-                        </TopWrapper>
+                        {noHeader ? null : (
+                            <TopWrapper>
+                                {title ? <Title>{title}</Title> : <div />}
+                                {backIcon}
+                                {closeIcon}
+                            </TopWrapper>
+                        )}
 
                         {children}
                     </BoxWrapper>
