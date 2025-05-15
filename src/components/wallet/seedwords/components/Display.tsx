@@ -8,9 +8,15 @@ import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 interface DisplayProps {
     words: string[];
     isLoading?: boolean;
+    onToggleClick: () => void;
 }
-const Display = memo(function Display({ words, isLoading }: DisplayProps) {
+const Display = memo(function Display({ words, onToggleClick, isLoading }: DisplayProps) {
     const [isVisible, setIsVisible] = useState(false);
+
+    function handleToggleClick() {
+        onToggleClick();
+        setIsVisible((c) => !c);
+    }
 
     const wordAmount = words?.length || 0;
     const rowCount = isVisible ? (wordAmount % 5 === 0 ? 5 : 6) : 1;
@@ -39,7 +45,7 @@ const Display = memo(function Display({ words, isLoading }: DisplayProps) {
 
     const toggleCTA = (
         <CTAWrapper>
-            <IconButton onClick={() => setIsVisible((c) => !c)} disabled={isLoading}>
+            <IconButton onClick={() => handleToggleClick()} disabled={isLoading}>
                 {isLoading ? <LoadingDots /> : toggleIcon}
             </IconButton>
         </CTAWrapper>

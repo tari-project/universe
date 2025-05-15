@@ -1,12 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
-import { useWalletStore } from '@app/store';
+import { setError } from '@app/store';
 
 interface Arguments {
     fetchMoneroSeeds?: boolean;
 }
 export function useGetSeedWords(args?: Arguments) {
-    const tari_address_is_generated = useWalletStore((s) => s.is_tari_address_generated);
+    const hasFetched = useRef(false);
     const [seedWords, setSeedWords] = useState<string[]>([]);
     const [seedWordsFetching, setSeedWordsFetching] = useState(false);
 
@@ -19,10 +19,15 @@ export function useGetSeedWords(args?: Arguments) {
             const seedWords: string[] = await invoke(commandName);
 
             if (seedWords.length) {
+                hasFetched.current = true;
                 setSeedWords(seedWords);
                 return seedWords;
             }
         } catch (e) {
+            const errorMessage = e as unknown as string;
+            if (errorMessage && errorMessage.includes('Keychain access')) {
+                setError(errorMessage);
+            }
             console.error('Could not get seed words', e);
         } finally {
             setSeedWordsFetching(false);
@@ -30,9 +35,9 @@ export function useGetSeedWords(args?: Arguments) {
     }, [fetchMoneroSeeds]);
 
     return {
-        seedWords: tari_address_is_generated ? seedWords : [],
+        seedWords,
         getSeedWords,
-        seedWordsFetched: seedWords.length > 0,
+        seedWordsFetched: hasFetched.current,
         seedWordsFetching,
     };
 }
