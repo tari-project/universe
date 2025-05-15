@@ -128,7 +128,12 @@ impl ConfigWallet {
                     .await;
                 let tari_address = wallet.get_tari_address();
                 *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(&app_handle, tari_address).await;
+                EventsEmitter::emit_wallet_address_update(
+                    &app_handle,
+                    tari_address,
+                    wallet.get_is_tari_address_generated(),
+                )
+                .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);

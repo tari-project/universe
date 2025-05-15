@@ -15,7 +15,6 @@ import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
 import { truncateMiddle } from '@app/utils';
 import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts'; // TODO - make reusable address input
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
-import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions.ts';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface ConnectFormFields {

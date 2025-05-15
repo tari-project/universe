@@ -38,14 +38,14 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
         fetchMoneroSeeds: isMonero,
     });
     const methods = useForm({ defaultValues: { seedWords: seedWords?.join(' ').trim() } });
-    const { isDirty, isValid } = methods.formState;
+    const { isValid } = methods.formState;
 
     const disableCopy = !isGenerated && !isMonero;
 
     const handleConfirmed = useCallback(async () => {
-        if (!isDirty || !isValid || !newSeedWords) return;
+        if (!isValid || !newSeedWords) return;
         await importSeedWords(newSeedWords);
-    }, [isDirty, isValid, newSeedWords]);
+    }, [isValid, newSeedWords]);
     const handleApply = (data: { seedWords: string }) => {
         setNewSeedWords(data.seedWords.split(' '));
         setShowConfirm(true);
