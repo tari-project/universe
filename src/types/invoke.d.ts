@@ -118,4 +118,5 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
     function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
 }
