@@ -289,6 +289,11 @@ impl SetupManager {
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
+        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+            return;
+        }
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
@@ -596,11 +601,7 @@ impl SetupManager {
         self.setup_core_phase(app_handle.clone()).await;
         self.setup_hardware_phase(app_handle.clone()).await;
         self.setup_node_phase(app_handle.clone()).await;
-        let state = app_handle.state::<UniverseAppState>();
-        let in_memory_config = state.in_memory_config.clone();
-        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            self.setup_wallet_phase(app_handle.clone()).await;
-        }
+        self.setup_wallet_phase(app_handle.clone()).await;
         self.setup_unknown_phase(app_handle.clone()).await;
     }
 
