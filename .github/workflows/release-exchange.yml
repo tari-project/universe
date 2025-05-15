@@ -406,7 +406,7 @@ jobs:
           foreach ($path in $filePaths) {
             if (Test-Path $path -PathType Leaf) {
               Write-Host "Uploading $path"
-              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/
+              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/ --checksum-algorithm SHA256
             }
           }
           aws s3 cp ./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}*.exe s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/
