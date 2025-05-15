@@ -387,7 +387,7 @@ jobs:
           for path in $paths; do
             if [[ -f $path ]]; then
               echo "Uploading $path"
-              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/
+              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.secret_name }}/ --checksum-algorithm SHA256
             fi
           done
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
