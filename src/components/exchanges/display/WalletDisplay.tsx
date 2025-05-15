@@ -15,7 +15,6 @@ import { truncateMiddle } from '@app/utils';
 
 export default function WalletDisplay() {
     const data = useExchangeStore((s) => s.content);
-    // TODO: check `is_tari_address_generated` once #2105 is merged
     const address = useWalletStore((s) => s.tari_address_emoji);
     const [open, setOpen] = useState(false);
 

@@ -118,6 +118,7 @@ pub struct Event<T, E> {
 pub struct WalletAddressUpdatePayload {
     pub tari_address_base58: String,
     pub tari_address_emoji: String,
+    pub is_tari_address_generated: bool,
 }
 
 #[derive(Clone, Debug, Serialize)]

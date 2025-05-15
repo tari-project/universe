@@ -128,6 +128,9 @@ impl InternalWallet {
     pub fn get_tari_address(&self) -> TariAddress {
         self.tari_address.clone()
     }
+    pub fn get_is_tari_address_generated(&self) -> bool {
+        self.config.is_tari_address_generated
+    }
 
     pub async fn set_tari_address(
         &mut self,

@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { SettingsGroupTitle, SettingsGroupWrapper } from '../../../components/SettingsGroup.styles.ts';
 import { setMoneroAddress, useConfigWalletStore } from '@app/store';
@@ -28,13 +27,12 @@ const MoneroAddressMarkup = () => {
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('monero-address.title')}</Typography>
             </SettingsGroupTitle>
-            <Stack direction="row" justifyContent="space-between">
-                <AddressEditor
-                    initialAddress={moneroAddress || ''}
-                    onApply={handleMoneroAddressChange}
-                    rules={validationRules}
-                />
-            </Stack>
+
+            <AddressEditor
+                initialAddress={moneroAddress || ''}
+                onApply={handleMoneroAddressChange}
+                rules={validationRules}
+            />
         </SettingsGroupWrapper>
     );
 };

@@ -1,12 +1,11 @@
 import { useEffect, useCallback, useState } from 'react';
 import { useForm, Controller, RegisterOptions } from 'react-hook-form';
 import { IoCopyOutline, IoCheckmarkOutline, IoCloseOutline, IoPencil } from 'react-icons/io5';
-import { Stack } from '@app/components/elements/Stack.tsx';
 import { Input } from '@app/components/elements/inputs/Input';
 import styled from 'styled-components';
 import { useCopyToClipboard } from '@app/hooks';
 import { IconButton } from '@app/components/elements/buttons/IconButton.tsx';
-import { IconContainer } from '@app/containers/floating/Settings/sections/wallet/components/SeedWords.styles.ts';
+import { CTASArea, InputArea, WalletSettingsGrid } from '../styles';
 
 interface AddressEditorProps {
     initialAddress: string;
@@ -23,10 +22,6 @@ interface AddressEditorProps {
           >
         | undefined;
 }
-
-const StyledStack = styled(Stack)`
-    width: 100%;
-`;
 
 const StyledInput = styled(Input)`
     font-size: 12px;
@@ -87,47 +82,50 @@ const AddressEditor = ({ initialAddress, onApply, rules }: AddressEditorProps) =
 
     return (
         <StyledForm onSubmit={handleSubmit(handleApply)} onReset={handleReset}>
-            <StyledStack direction="row" alignItems="center" gap={10}>
-                <Controller
-                    name="address"
-                    control={control}
-                    rules={rules}
-                    render={({ field }) => {
-                        return (
-                            <StyledInput
-                                {...field}
-                                type="text"
-                                hasError={!!errors.address}
-                                onFocus={() => setEditing(true)}
-                            />
-                        );
-                    }}
-                />
-                {editIconMarkup}
-                {editing ? (
-                    <>
-                        <IconContainer style={{ gap: 2 }}>
-                            <IconButton type="submit" size="small" disabled={isDirty || !!errors.address}>
+            <WalletSettingsGrid>
+                <InputArea>
+                    <Controller
+                        name="address"
+                        control={control}
+                        rules={rules}
+                        render={({ field }) => {
+                            return (
+                                <StyledInput
+                                    {...field}
+                                    type="text"
+                                    hasError={!!errors.address}
+                                    onFocus={() => setEditing(true)}
+                                />
+                            );
+                        }}
+                    />
+                </InputArea>
+                <CTASArea>
+                    {editIconMarkup}
+                    {editing ? (
+                        <>
+                            <IconButton type="submit" size="small" disabled={!isDirty || !!errors.address}>
                                 <IoCheckmarkOutline />
                             </IconButton>
                             <IconButton type="reset" size="small">
                                 <IoCloseOutline />
                             </IconButton>
-                        </IconContainer>
-                    </>
-                ) : (
-                    <IconButton
-                        size="small"
-                        type="button"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            copyToClipboard(address);
-                        }}
-                    >
-                        {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
-                    </IconButton>
-                )}
-            </StyledStack>
+                        </>
+                    ) : (
+                        <IconButton
+                            size="small"
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();
+                                copyToClipboard(address);
+                            }}
+                        >
+                            {!isCopied ? <IoCopyOutline /> : <IoCheckmarkOutline />}
+                        </IconButton>
+                    )}
+                </CTASArea>
+            </WalletSettingsGrid>
+
             {errors.address && <span style={{ color: 'red', fontSize: '12px' }}>{errors.address.message}</span>}
         </StyledForm>
     );
