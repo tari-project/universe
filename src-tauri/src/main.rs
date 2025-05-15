@@ -69,7 +69,7 @@ use tokio::time;
 use utils::logging_utils::setup_logging;
 
 use app_config::AppConfig;
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::{AppInMemoryConfig, EXCHANGE_ID};
 
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
@@ -151,7 +151,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
-#[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
+#[cfg(not(any(
+    feature = "release-ci",
+    feature = "release-ci-beta",
+    feature = "exchange-ci"
+)))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 #[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
@@ -159,6 +163,8 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+#[cfg(feature = "exchange-ci")]
+const APPLICATION_FOLDER_ID: &str = const_format::formatcp!("com.tari.universe.{}", EXCHANGE_ID);
 
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
