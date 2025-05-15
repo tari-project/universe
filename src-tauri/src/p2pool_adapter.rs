@@ -25,7 +25,6 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::{info, warn};
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use std::time::Duration;
 use tari_common::configuration::Network;
@@ -77,7 +76,7 @@ impl ProcessAdapter for P2poolAdapter {
         _config_dir: PathBuf,
         log_path: PathBuf,
         binary_version_path: PathBuf,
-        is_first_start: bool,
+        _is_first_start: bool,
     ) -> Result<(ProcessInstance, Self::StatusMonitor), Error> {
         let inner_shutdown = Shutdown::new();
 

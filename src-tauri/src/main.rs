@@ -77,8 +77,6 @@ use telemetry_manager::TelemetryManager;
 use crate::cpu_miner::CpuMiner;
 
 use crate::commands::CpuMinerConnection;
-#[cfg(target_os = "windows")]
-use crate::external_dependencies::{ExternalDependencies, RequiredExternalDependency};
 use crate::feedback::Feedback;
 use crate::gpu_miner::GpuMiner;
 use crate::mm_proxy_manager::{MmProxyManager, StartConfig};
