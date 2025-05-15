@@ -103,7 +103,7 @@ jobs:
         run: |
           #set -xueo pipefail
           echo "TARI_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
-          echo "TARI_TARGET_NETWORK=mainnet" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
