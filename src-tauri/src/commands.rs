@@ -639,15 +639,22 @@ pub async fn confirm_exchange_address(
     let mut internal_wallet = InternalWallet::load_or_create(config_path.clone())
         .await
         .map_err(|e| e.to_string())?;
-    let new_address = internal_wallet
+    let _unused = internal_wallet
         .set_tari_address(address, config_path)
         .await?;
     let handle_clone = app.clone();
-    let _unused = EventsEmitter::emit_wallet_address_update(
-        &handle_clone,
-        new_address,
-        internal_wallet.get_is_tari_address_generated(),
-    );
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![
+            SetupPhase::Node,
+            SetupPhase::Wallet,
+            SetupPhase::Unknown,
+        ])
+        .await;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(handle_clone)
+        .await;
+
     SetupManager::get_instance()
         .init_exchange_modal_status()
         .await
