@@ -38,7 +38,7 @@
         "publisher": "Tari Labs, LLC",
         "createUpdaterArtifacts": true,
         "resources": {
-            "bridge-tapplet": "tapplets/bridge/bridge-v0.1.0.zip"
+            "tapplets/bridge/bridge-v0.1.0.zip": "resources/bridge-v.0.1.0.zip"
         }
     },
     "app": {
