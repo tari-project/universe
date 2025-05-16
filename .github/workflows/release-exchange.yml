@@ -412,7 +412,7 @@ jobs:
         if: startsWith(runner.os,'Windows')
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe.pdb
+          name: tari_universe_${{ matrix.exchange.name }}.pdb
           path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
 
       - name: Windows install Sentry CLI
