@@ -66,6 +66,8 @@ export const useSwapData = () => {
     const [networkFee, setNetworkFee] = useState<string | null>(null);
     const [slippage, setSlippage] = useState<string | null>(null);
     const [transactionId, setTransactionId] = useState<string | null>(null);
+    const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
+
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
 
     const {
@@ -78,6 +80,7 @@ export const useSwapData = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
+        getPaidTransactionFee,
         error: useSwapError,
         //addLiquidity,
     } = useSwap();
@@ -586,6 +589,18 @@ export const useSwapData = () => {
                         }
                         setSwapSuccess(true);
                         setTransactionId(hash);
+
+                        console.log('-------------------------Swap transaction hash:', hash);
+                        getPaidTransactionFee(hash as `0x${string}`)
+                            .then((fee) => setPaidTransactionFee(fee))
+                            .catch((e) =>
+                                addToast({
+                                    title: 'Swap Error',
+                                    text: e.message || 'Fee cannot be determined',
+                                    type: 'error',
+                                })
+                            );
+
                         addToast({ title: 'Swap Submitted', text: 'Transaction sent.', type: 'success' });
                     })
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -635,8 +650,9 @@ export const useSwapData = () => {
             networkFee,
             priceImpact,
             transactionId,
+            paidTransactionFee,
         }),
-        [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId]
+        [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId, paidTransactionFee]
     );
 
     const handleSelectFromToken = useCallback(
