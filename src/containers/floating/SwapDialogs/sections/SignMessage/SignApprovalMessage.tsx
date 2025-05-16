@@ -21,10 +21,8 @@ export const SignApprovalMessage = ({ isOpen, setIsOpen }: Props) => {
                 </HeaderWrapper>
                 <StatusWrapper>
                     <Metamask width="24" />
-                    <span>
-                        {t('swap.waiting-for-response')}
-                        <LoadingDots />
-                    </span>
+                    {t('swap.waiting-for-response')}
+                    <LoadingDots />
                 </StatusWrapper>
             </AnimatePresence>
         </TransactionModal>

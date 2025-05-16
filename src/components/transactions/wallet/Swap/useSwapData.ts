@@ -385,6 +385,13 @@ export const useSwapData = () => {
             !tradeInputTokenSDK ||
             !tradeOutputTokenSDK
         ) {
+            console.warn('Invalid values provided', {
+                tokenUsedForParsingAmount,
+                amountTypedByUserStr,
+                tradeInputTokenSDK,
+                tradeOutputTokenSDK,
+                isNaN: Number.isNaN(Number(amountTypedByUserStr)),
+            });
             clearCalculatedDetails();
             setIsLoading(false);
             return;
@@ -401,8 +408,6 @@ export const useSwapData = () => {
                 const networkFee = details.estimatedGasFeeNative || details.estimatedGasFeeUSD;
                 if (networkFee) setNetworkFee(networkFee);
                 setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
-
-                // const lastUpdatedFieldAmount = lastUpdatedField === 'fromValue' ? fromAmount : targetAmount;
 
                 if (shouldCalculate.current) {
                     if (lastUpdatedField === 'fromValue') {
@@ -422,15 +427,21 @@ export const useSwapData = () => {
                             else if (fromAmount !== '') setFromAmount('');
                         }
                     }
-                } else {
-                    clearCalculatedDetails();
-                    if (details.route && !details.trade) {
-                        addToast({ title: 'Error', text: 'Insufficient liquidity for this trade.', type: 'error' });
-                    }
                 }
+            } else {
+                // INSUFFICIENT LIQUIDITY OR NO TRADE FOUND
+                clearCalculatedDetails();
+                let errorMessage = 'Insufficient liquidity for this trade.';
+                if (details && details.route && !details.trade) {
+                    errorMessage = 'A route was found, but there is insufficient liquidity to execute the trade.';
+                } else if (details && !details.route && !details.trade) {
+                    errorMessage = 'No trade route found between these tokens or insufficient liquidity.';
+                }
+                addToast({ title: 'Error', text: errorMessage, type: 'error' });
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
+            setIsLoading(false);
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
             clearCalculatedDetails();
         } finally {

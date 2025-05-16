@@ -188,7 +188,6 @@ export const ConnectedWalletWrapper = styled.div`
     display: flex;
     align-items: center;
     gap: 5px;
-    background: #ffffff80;
     padding: 5px 10px;
     border-radius: 12px;
 
@@ -201,6 +200,8 @@ export const ConnectedWalletWrapper = styled.div`
     &:hover {
         opacity: 0.5;
     }
+
+    background-color: ${({ theme }) => theme.palette.background.main};
 `;
 
 export const SubmitButtonWrapper = styled.div`
