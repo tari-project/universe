@@ -39,15 +39,11 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    // TODO remove setter ccause it's just for tests
-    const { uiBridgeSwapsEnabled, setUiBridgeSwaps } = useTappletsStore();
+    const { uiBridgeSwapsEnabled } = useTappletsStore();
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
         <Wrapper>
-            <SyncButton onClick={() => setUiBridgeSwaps(!uiBridgeSwapsEnabled)}>
-                {'BRIDGE'} <ArrowRight />
-            </SyncButton>
             <TabHeader $noBorder>
                 <HeaderLabel>{t('my_tari')}</HeaderLabel>
                 <AddressWrapper>
