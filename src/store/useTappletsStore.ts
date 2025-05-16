@@ -1,11 +1,9 @@
 import { create } from './create.ts';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.ts';
-import { useTappletProviderStore } from './useTappletProviderStore.ts';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.types.ts';
+import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { FEATURES } from './consts.ts';
 import { fetchFeatureFlag } from './actions/airdropStoreActions.ts';
-
-export const TAPPLET_CONFIG_FILE = 'tapplet.config.json'; //TODO
 
 interface State {
     isInitialized: boolean;
@@ -50,14 +48,18 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
     },
     setActiveTappById: async (tappletId, isBuiltIn = false) => {
         if (tappletId == get().activeTapplet?.tapplet_id) return;
-        const tappProviderState = useTappletProviderStore.getState();
-        if (!tappProviderState.isInitialized) tappProviderState.initTappletProvider();
+        const tappProviderState = useTappletSignerStore.getState();
+        if (!tappProviderState.isInitialized) tappProviderState.initTappletSigner();
+
         // built-in tapplet
         if (isBuiltIn) {
             const activeTapplet = await invoke('launch_builtin_tapplet');
             set({ activeTapplet });
             return;
         }
+
+        // by default tapplets are supposed to work with the Ootle
+        // run the Ootle dev/registed tapplet below
         return;
     },
 }));

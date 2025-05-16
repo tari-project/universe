@@ -1,56 +1,54 @@
-import { TappletProvider, TappletProviderParams } from '@app/types/tapplets/TappletProvider.ts';
+import { TappletSigner } from '@app/types/tapplets/TappletSigner.ts';
 import { create } from './create.ts';
 import { setError } from './index.ts';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.ts';
 import { TransactionEvent } from '@app/types/tapplets/transaction.ts';
+import { TappletSignerParams } from '@app/types/tapplets/tapplet.types.ts';
 
 interface State {
     isInitialized: boolean;
-    tappletProvider?: TappletProvider;
+    tappletSigner?: TappletSigner;
 }
 
-//TODO do we need tapp provider id at all?
 interface Actions {
-    initTappletProvider: () => Promise<void>;
-    setTappletProvider: (id: string) => Promise<void>;
+    initTappletSigner: () => Promise<void>;
+    setTappletSigner: (id: string) => Promise<void>;
     runTransaction: (event: MessageEvent<TransactionEvent>) => Promise<void>;
 }
 
-type TappletProviderStoreState = State & Actions;
+type TappletSignerStoreState = State & Actions;
 
 const initialState: State = {
     isInitialized: false,
-    tappletProvider: undefined,
+    tappletSigner: undefined,
 };
 
-export const useTappletProviderStore = create<TappletProviderStoreState>()((set, get) => ({
+export const useTappletSignerStore = create<TappletSignerStoreState>()((set, get) => ({
     ...initialState,
 
-    initTappletProvider: async () => {
+    initTappletSigner: async () => {
         try {
             if (get().isInitialized) return;
-            console.info(`🌎️ [TU store][init provider]`);
 
-            const params: TappletProviderParams = {
+            const params: TappletSignerParams = {
                 id: 'default',
             };
-            const provider: TappletProvider = TappletProvider.build(params);
+            const provider: TappletSigner = TappletSigner.build(params);
 
-            set({ isInitialized: true, tappletProvider: provider });
+            set({ isInitialized: true, tappletSigner: provider });
         } catch (error) {
-            console.error('Error setting tapplet provider: ', error);
-            setError(`Error setting tapplet provider: ${error}`);
+            console.error('Error initializing tapplet provider: ', error);
+            setError(`Error initializing tapplet provider: ${error}`);
         }
     },
-    setTappletProvider: async (id: string) => {
+    setTappletSigner: async (id: string) => {
         try {
-            if (get().tappletProvider?.id == id) return;
-            const params: TappletProviderParams = {
+            if (get().tappletSigner?.id == id) return;
+            const params: TappletSignerParams = {
                 id,
             };
-            const provider: TappletProvider = TappletProvider.build(params);
+            const provider: TappletSigner = TappletSigner.build(params);
 
-            set({ isInitialized: true, tappletProvider: provider });
+            set({ isInitialized: true, tappletSigner: provider });
         } catch (error) {
             console.error('Error setting tapplet provider: ', error);
             setError(`Error setting tapplet provider: ${error}`);
@@ -59,7 +57,7 @@ export const useTappletProviderStore = create<TappletProviderStoreState>()((set,
     runTransaction: async (event: MessageEvent<TransactionEvent>) => {
         const { methodName, args, id } = event.data;
         try {
-            const provider = get().tappletProvider;
+            const provider = get().tappletSigner;
             const result = await provider?.runOne(methodName, args);
             if (event.source) {
                 event.source.postMessage({ id, result, type: 'signer-call' }, { targetOrigin: event.origin });

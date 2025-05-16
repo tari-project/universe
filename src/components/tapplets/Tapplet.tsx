@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { useTappletProviderStore } from '@app/store/useTappletProviderStore';
+import { useTappletSignerStore } from '@app/store/useTappletSignerStore';
 import { MiningViewContainer } from '@app/containers/main/Dashboard/MiningView/MiningView.styles';
 
 interface TappletProps {
@@ -8,11 +8,10 @@ interface TappletProps {
 
 export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const tappletRef = useRef<HTMLIFrameElement | null>(null);
-    const provider = useTappletProviderStore((s) => s.tappletProvider);
-    const runTransaction = useTappletProviderStore((s) => s.runTransaction);
+    const provider = useTappletSignerStore((s) => s.tappletSigner);
+    const runTransaction = useTappletSignerStore((s) => s.runTransaction);
 
     function sendWindowSize() {
-        console.info('🤝 [TU Tapplet]resize', tappletRef.current);
         if (tappletRef.current) {
             const height = tappletRef.current.offsetHeight;
             const width = tappletRef.current.offsetWidth;
@@ -34,7 +33,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
                 provider?.sendWindowSizeMessage(tappletWindow, source);
             }
         } else if (event.data.type === 'signer-call') {
-            console.info('🤝 [TU Tapplet][handle msg] signer-call', event.data);
             runTappletTx(event);
         }
     }

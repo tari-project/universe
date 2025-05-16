@@ -1,30 +1,15 @@
 import { setError as setStoreError } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '../app-status';
+import { AccountData, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 
-export interface WindowSize {
-    width: number;
-    height: number;
-}
-
-export interface TappletProviderParams {
+export class TappletSigner {
+    public providerName = 'TappletSigner';
     id: string;
-    name?: string;
-    onConnection?: () => void;
-}
-
-export interface AccountData {
-    account_id: number;
-    address: string;
-}
-
-export class TappletProvider {
-    public providerName = 'TappletProvider';
-    id: string;
-    params: TappletProviderParams;
+    params: TappletSignerParams;
 
     private constructor(
-        params: TappletProviderParams,
+        params: TappletSignerParams,
         public width = 0,
         public height = 0
     ) {
@@ -32,8 +17,8 @@ export class TappletProvider {
         this.id = params.id;
     }
 
-    static build(params: TappletProviderParams): TappletProvider {
-        return new TappletProvider(params);
+    static build(params: TappletSignerParams): TappletSigner {
+        return new TappletSigner(params);
     }
     public setWindowSize(width: number, height: number): void {
         this.width = width;
@@ -54,47 +39,31 @@ export class TappletProvider {
         return res;
     }
 
-    // TODO JUST TEST - RENAME AND REFACTOR THIS FCT
     public async getAccount(): Promise<AccountData> {
-        console.info('🤝🤝🤝 [TU Tapplet][get account]');
         const tariAddress = await invoke('get_tari_wallet_address');
-        console.info('🤝🤝🤝 [TU Tapplet][get account] SUCCESS', tariAddress);
         return {
-            account_id: 0,
+            account_id: 0, // default id - currently we don't support multi accounts
             address: tariAddress,
         };
     }
 
     public async isConnected(): Promise<boolean> {
-        console.info('🤝🤝🤝 [TU Tapplet][is connected]');
-        return true; //TODO tmp solution shoule be better one
+        return true;
     }
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
-        console.info('🤝🤝🤝   [TU Tapplet][SEND ONE SIDED]');
         try {
-            // if (!address || !amount) {
-            //     setStoreError(`Transaction arguments missing`);
-            //     return;
-            // }
-            console.info('🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] req', { req });
             const payload = {
                 amount: req.amount,
                 destination: req.address,
-                paymentId: req.message,
+                paymentId: req.paymentId,
             };
-            console.info('🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] payload', { payload });
 
             await invoke('send_one_sided_to_stealth_address', {
                 ...payload,
                 amount: payload.amount.toString(),
             });
-            console.info(
-                '🤝🤝🤝 [TU Tapplet][SEND ONE SIDED] finished',
-                payload.amount,
-                payload.destination,
-                payload.paymentId
-            );
+
             return true;
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
@@ -105,13 +74,6 @@ export class TappletProvider {
     // TODO tmp test
     public async getTariBalance(): Promise<WalletBalance> {
         const balance = await invoke('get_tari_wallet_balance');
-        console.info('🤝🤝🤝 [TU Tapplet][get balance] SUCCESS', balance);
         return balance;
     }
-}
-
-export interface SendOneSidedRequest {
-    amount: number;
-    address?: string;
-    message?: string;
 }
