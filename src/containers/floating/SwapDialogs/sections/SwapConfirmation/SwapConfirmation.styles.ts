@@ -6,7 +6,7 @@ export const WalletConnectHeader = styled.div`
     font-weight: 600;
     font-size: 21px;
     line-height: 31px;
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     padding-left: 15px;
     display: flex;
     justify-content: space-between;
@@ -21,7 +21,7 @@ export const SelectedChain = styled.div`
     justify-content: flex-start;
     gap: 8px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.5);
+    background: ${({ theme }) => theme.palette.background.main};
 `;
 
 export const SelectedChainInfo = styled.div`
@@ -36,7 +36,7 @@ export const SelectedChainInfo = styled.div`
         font-size: 10px;
         line-height: 100%;
         letter-spacing: 0%;
-        color: #7f7e7d;
+        color: ${({ theme }) => theme.palette.text.secondary};
     }
 
     .address {
@@ -56,11 +56,11 @@ export const SwapOption = styled.div`
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.8);
+    background: ${({ theme }) => theme.palette.background.main};
     border-radius: 15px;
 
     > span {
-        color: #7f7e7d;
+        color: ${({ theme }) => theme.palette.text.secondary};
         font-size: 10px;
     }
 `;
@@ -70,7 +70,7 @@ export const SwapOptionAmount = styled.div`
     align-items: center;
     justify-content: space-between;
 
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 36px;
@@ -83,13 +83,13 @@ export const SwapOptionCurrency = styled.div`
     gap: 6px;
     padding: 5px;
     padding-right: 10px;
-    background: #e5e2e1;
+    background: ${({ theme }) => theme.palette.background.paper};
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
 
     span {
-        color: black;
+        color: ${({ theme }) => theme.palette.text.primary};
         font-family: Alliance No.1;
         font-weight: 700;
         font-size: 12.85px;
@@ -108,7 +108,7 @@ export const SwapDirection = styled.div`
 `;
 
 export const SwapAmountInput = styled.input<{ $error?: boolean }>`
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 28px;
@@ -126,13 +126,13 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     }
 
     &::placeholder {
-        color: #aaaaaa; // Lighter placeholder
+        color: ${({ theme }) => theme.palette.text.secondary};
     }
 
     ${({ $error }) =>
         $error &&
         css`
-            color: #d32f2f;
+            color: ${({ theme }) => theme.palette.error.main};
         `}
 `;
 
@@ -140,21 +140,18 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: black;
-    border: 4px solid #e5e2e1;
+    background: ${({ theme }) => theme.palette.background.secondary};
+    border: 4px solid ${({ theme }) => theme.palette.divider};
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background-color 0.2s ease;
 
-    &:hover {
-        background-color: #333;
-    }
-
     svg {
         transition: transform 0.2s ease-in-out;
     }
+
     ${({ $direction }) =>
         $direction === 'output' &&
         css`

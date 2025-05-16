@@ -7,11 +7,11 @@ export const SwapOption = styled.div`
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.8);
+    background: ${({ theme }) => theme.palette.background.main};
     border-radius: 20px;
 
     > span {
-        color: #7f7e7d;
+        color: ${({ theme }) => theme.palette.text.secondary};
         font-size: 10px;
     }
 `;
@@ -32,20 +32,20 @@ export const SwapOptionCurrency = styled.div<{ $clickable?: boolean }>`
     gap: 6px;
     padding: 3px;
     padding-right: 10px;
-    background: #dcd8d7;
+    background: ${({ theme }) => theme.palette.background.paper};
     display: inline-flex;
     align-items: center;
     white-space: nowrap;
-    border: 1px solid #0000004d;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
     span {
-        color: black;
+        color: ${({ theme }) => theme.palette.text.primary};
         font-family: Alliance No.1;
         font-weight: 700;
         font-size: 12.85px;
         line-height: 100%;
         letter-spacing: -2%;
     }
-
+    -webkit-transform: translateZ(0);
     ${({ $clickable }) =>
         $clickable &&
         css`
@@ -66,7 +66,7 @@ export const SwapDirection = styled.div`
 `;
 
 export const SwapAmountInput = styled.input<{ $error?: boolean }>`
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 28px;
@@ -83,7 +83,7 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     }
 
     &::placeholder {
-        color: #aaaaaa;
+        color: ${({ theme }) => theme.palette.text.secondary};
     }
 
     ${({ $error }) =>
@@ -98,11 +98,13 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     align-items: center;
     justify-content: center;
 
-    cursor: pointer; // Make it look clickable
-    transition: background-color 0.2s ease; // Add hover effect
+    cursor: pointer;
+    -webkit-transform: translateZ(0);
+
+    transition: opacity 0.2s ease-in-out;
 
     &:hover {
-        background-color: #333; // Darken slightly on hover
+        opacity: 0.8;
     }
 
     svg {
@@ -115,7 +117,7 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     left: 130px;
     border-radius: 23px;
     border-width: 4px;
-    background: #090719;
+    background: ${({ theme }) => theme.palette.background.secondary};
 
     ${({ $direction }) =>
         $direction === 'output' && // Only rotate when output is the input field now (direction='output')
@@ -138,7 +140,7 @@ export const BackButton = styled.button`
     padding: 2px 8px;
     gap: 3px;
     border-width: 1px;
-    border: 1px solid #0000002e;
+    border: 1px solid ${({ theme }) => theme.palette.divider};
 
     font-family: Poppins, sans-serif;
     font-weight: 500;
@@ -168,20 +170,10 @@ export const CurrentStep = styled.span`
     font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 12px;
-    ${({ theme }) =>
-        theme.mode === 'dark'
-            ? css`
-                  color: rgba(255, 255, 255, 0.6);
-                  strong {
-                      color: white;
-                  }
-              `
-            : css`
-                  color: rbga(0, 0, 0, 0.6);
-                  strong {
-                      color: black;
-                  }
-              `}
+    color: ${({ theme }) => theme.palette.text.secondary};
+    strong {
+        color: ${({ theme }) => theme.palette.text.primary};
+    }
 `;
 
 export const ConnectedWalletWrapper = styled.div`
@@ -197,6 +189,7 @@ export const ConnectedWalletWrapper = styled.div`
 
     cursor: pointer;
     transition: opacity 0.2s ease-in-out;
+    -webkit-transform: translateZ(0);
     &:hover {
         opacity: 0.5;
     }

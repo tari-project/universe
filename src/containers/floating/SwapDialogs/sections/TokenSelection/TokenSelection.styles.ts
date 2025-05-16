@@ -8,7 +8,7 @@ export const TokenList = styled.div`
     overflow-y: auto;
     border-radius: 8px;
     padding: 8px;
-    background-color: ${({ theme }) => (theme.mode === 'dark' ? '#2a2a30' : '#ffffff')};
+    background-color: ${({ theme }) => theme.palette.background.main};
     border-radius: 25px;
 `;
 
@@ -18,7 +18,7 @@ export const TokenItem = styled.div`
     justify-content: space-between;
     padding: 12px 8px;
     cursor: pointer;
-    border-bottom: 1px solid #3a3a43; /* Separator line */
+    border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
     transition: opacity 0.2s ease-in-out;
     &:last-child {
         border-bottom: none;
@@ -42,7 +42,7 @@ export const TokenDetails = styled.div`
     }
     .symbol {
         font-size: 0.875rem;
-        color: #a0a0b0;
+        color: ${({ theme }) => theme.palette.text.secondary};
     }
 `;
 
@@ -55,9 +55,9 @@ export const TokenValue = styled.div`
     }
     .balance {
         font-size: 0.875rem;
-        color: #707080;
+        color: ${({ theme }) => theme.palette.text.secondary};
         border-radius: 100px;
-        background: #6666660d;
+        background: ${({ theme }) => theme.palette.background.secondary};
         padding: 2px 6px;
         margin-top: 4px;
     }

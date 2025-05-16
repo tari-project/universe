@@ -52,7 +52,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         if (!fromTokenDisplay?.symbol) return null;
         return getCurrencyIcon({
             simbol: fromTokenDisplay.symbol.toLowerCase(),
-            width: 10,
+            width: 20,
         });
     }, [fromTokenDisplay?.symbol]);
 
@@ -113,7 +113,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                                 value={amount}
                             />
                             <SwapOptionCurrency>
-                                {getCurrencyIcon({ simbol: fromTokenDisplay?.symbol || '', width: 10 })}
+                                {getCurrencyIcon({ simbol: fromTokenDisplay?.symbol || '', width: 25 })}
                                 <span>{fromTokenDisplay?.symbol}</span>
                             </SwapOptionCurrency>
                         </SwapOptionAmount>
@@ -135,7 +135,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                                 value={targetAmount}
                             />
                             <SwapOptionCurrency>
-                                {getCurrencyIcon({ simbol: 'xtm', width: 15 })}
+                                {getCurrencyIcon({ simbol: 'xtm', width: 25 })}
                                 <span>{'XTM'}</span>
                             </SwapOptionCurrency>
                         </SwapOptionAmount>

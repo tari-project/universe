@@ -27,7 +27,7 @@ export const ActiveDot = styled.div`
     width: 9px;
     height: 8px;
     border-radius: 100%;
-    background: rgba(26, 134, 80, 1);
+    background: ${({ theme }) => theme.palette.success.main};
     animation: ${pulse} 2s infinite;
 `;
 
@@ -89,7 +89,7 @@ export const TokenSymbol = styled.span`
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     font-size: 13px;
-    color: #8e8e93;
+    color: ${({ theme }) => theme.palette.text.secondary};
     line-height: 1.3;
     text-transform: uppercase;
     color: ${({ theme }) => theme.palette.text.secondary};
@@ -105,13 +105,13 @@ export const TokenItemRight = styled.div`
 export const TokenSeparator = styled.hr`
     border: none;
     height: 1px;
-    background-color: #eaeaea;
+    background-color: ${({ theme }) => theme.palette.divider};
     margin: 0 20px;
 `;
 
 export const ContinueButton = styled.button`
     text-align: center;
-    background-color: #1a1a2e;
+    background-color: ${({ theme }) => theme.palette.primary.main};
     color: white;
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
@@ -121,10 +121,11 @@ export const ContinueButton = styled.button`
     border-radius: 50px;
     width: 100%;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
+    transition: all 0.2s ease-in-out;
+    -webkit-transform: translateZ(0);
 
     &:hover {
-        background-color: #2c2c4d;
+        opacity: 0.8;
     }
 
     &:active {

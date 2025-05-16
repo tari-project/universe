@@ -24,8 +24,8 @@ export const WalletActionButton = styled.button<{
         switch ($variant) {
             case 'success':
                 return css`
-                    background: #126537;
-                    color: white;
+                    background: ${({ theme }) => theme.palette.success.main};
+                    color: ${({ theme }) => theme.palette.text.primary};
                 `;
             case 'primary':
                 return css`
@@ -34,18 +34,18 @@ export const WalletActionButton = styled.button<{
                 `;
             case 'secondary':
                 return css`
-                    background: black;
-                    color: #ffffff;
+                    background: ${({ theme }) => theme.palette.secondary.main};
+                    color: ${({ theme }) => theme.palette.text.primary};
                 `;
             case 'error':
                 return css`
-                    background: rgba(255, 54, 54, 0.75);
-                    color: #ffffff;
+                    background: ${({ theme }) => theme.palette.error.main};
+                    color: white;
                 `;
             default:
                 return css`
-                    background: #00ff00;
-                    color: #000000;
+                    background: ${({ theme }) => theme.palette.primary.main};
+                    color: ${({ theme }) => theme.palette.text.primary};
                 `;
         }
     }}
@@ -90,7 +90,6 @@ export const WalletActionButton = styled.button<{
     ${({ $disabled }) =>
         $disabled &&
         css`
-            background: rgba(0, 0, 0, 0.5);
             opacity: 0.5;
             pointer-events: none;
         `}
