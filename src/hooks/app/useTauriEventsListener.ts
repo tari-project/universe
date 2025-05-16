@@ -28,7 +28,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -37,6 +37,7 @@ import {
     handleMiningUnlocked,
     handleWalletLocked,
     handleWalletUnlocked,
+    handleWalletUpdate,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -48,7 +49,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
+const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet', 'WalletAddressUpdate'];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -96,9 +97,10 @@ const useTauriEventsListener = () => {
                         case 'LockWallet':
                             handleWalletLocked();
                             break;
-                        case 'WalletAddressUpdate':
-                            setWalletAddress(event.payload);
+                        case 'WalletAddressUpdate': {
+                            await handleWalletUpdate(event.payload);
                             break;
+                        }
                         case 'WalletBalanceUpdate':
                             setWalletBalance(event.payload);
                             refreshTransactions();
