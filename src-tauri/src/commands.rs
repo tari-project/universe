@@ -603,7 +603,8 @@ pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<
         &handle_clone,
         new_address,
         internal_wallet.get_is_tari_address_generated(),
-    );
+    )
+    .await;
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![
             SetupPhase::Wallet,
@@ -641,7 +642,8 @@ pub async fn confirm_exchange_address(
         &handle_clone,
         new_address,
         internal_wallet.get_is_tari_address_generated(),
-    );
+    )
+    .await;
     SetupManager::get_instance()
         .init_exchange_modal_status()
         .await

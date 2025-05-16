@@ -64,10 +64,9 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    function onSubmit(data: ConnectFormFields) {
+    function onSubmit(_unused: ConnectFormFields) {
         invoke('confirm_exchange_address', { address })
             .then(() => {
-                console.debug('onSubmit!', data);
                 setShowExchangeModal(false);
             })
             .catch((e) => {
