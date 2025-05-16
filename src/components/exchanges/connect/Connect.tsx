@@ -16,6 +16,8 @@ import { truncateMiddle } from '@app/utils';
 import { CheckIconWrapper } from '@app/components/transactions/components/TxInput.style.ts'; // TODO - make reusable address input
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { setWalletAddress } from '@app/store';
 
 interface ConnectFormFields {
     address: string;
@@ -64,15 +66,14 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    function onSubmit(data: ConnectFormFields) {
-        invoke('confirm_exchange_address', { address })
-            .then(() => {
-                console.debug('onSubmit!', data);
-                setShowExchangeModal(false);
-            })
-            .catch((e) => {
-                console.error('Error confirming exchange address:', e);
-            });
+    async function onSubmit(_unused: ConnectFormFields) {
+        try {
+            await invoke('confirm_exchange_address', { address });
+            setSeedlessUI(true);
+            setShowExchangeModal(false);
+        } catch (e) {
+            console.error('Error confirming exchange address:', e);
+        }
     }
     return (
         <Wrapper>

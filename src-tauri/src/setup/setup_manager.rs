@@ -447,7 +447,7 @@ impl SetupManager {
             });
     }
 
-    async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
         // As we are shutting down the phases one by one which could lead to unwanted unlocks
         self.cancellation_token.lock().await.cancel();
