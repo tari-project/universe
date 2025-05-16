@@ -14,13 +14,12 @@ import {
     useUIStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
-import { fetchBackendInMemoryConfig } from '@app/store/actions/appConfigStoreActions.ts';
+
 import { WalletAddress } from '@app/types/app-status.ts';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
 import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 export const handleAppUnlocked = async () => {
-    await fetchBackendInMemoryConfig();
     useSetupStore.setState({ appUnlocked: true });
     const visual_mode = useConfigUIStore.getState().visual_mode;
     const offset = useUIStore.getState().towerSidebarOffset;
