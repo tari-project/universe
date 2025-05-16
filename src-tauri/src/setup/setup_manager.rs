@@ -34,6 +34,7 @@ use crate::{
     events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -311,7 +312,17 @@ impl SetupManager {
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
             ];
-            if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+            let config_path = app_handle
+                .path()
+                .app_config_dir()
+                .expect("Could not get config dir");
+            let internal_wallet = InternalWallet::load_or_create(config_path)
+                .await
+                .expect("Could not load or create internal wallet");
+            let is_address_generated = internal_wallet.get_is_tari_address_generated();
+            let is_exchange_id_default =
+                in_memory_config.read().await.exchange_id == DEFAULT_EXCHANGE_ID;
+            if is_address_generated && !is_exchange_id_default {
                 statuses.push(self.exchange_modal_status.subscribe());
             }
             statuses

@@ -1042,7 +1042,6 @@ fn main() {
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
-        tari_address: TariAddress::default(),
         eco_mode_xmrig_options: vec![],
         ludicrous_mode_xmrig_options: vec![],
         custom_mode_xmrig_options: vec![],

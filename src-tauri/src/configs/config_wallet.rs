@@ -118,7 +118,6 @@ impl ConfigWallet {
 
         match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {
-                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
                 state
                     .wallet_manager
                     .set_view_private_key_and_spend_key(
