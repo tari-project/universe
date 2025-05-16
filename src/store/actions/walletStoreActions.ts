@@ -58,9 +58,12 @@ export const refreshTransactions = async () => {
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
     await invoke('set_tari_address', { address: newAddress })
-        .then(() => {
-            restartMining();
-            console.info('New Tari address set successfully to:', newAddress);
+        .then((res) => {
+            if (res) {
+                setWalletAddress(res);
+                restartMining();
+                console.info('New Tari address set successfully to:', newAddress);
+            }
         })
         .catch((e) => {
             console.error('Could not set Monero address', e);

@@ -49,8 +49,6 @@ export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
     const addressIsGenerated = addressPayload.is_tari_address_generated;
     const xcID = useConfigBEInMemoryStore.getState().exchangeId;
 
-    console.debug(`handleWalletUpdate addressPayload (WalletAddressUpdate Event)= `, addressPayload);
-
     setWalletAddress(addressPayload);
     setSeedlessUI(!addressIsGenerated);
 

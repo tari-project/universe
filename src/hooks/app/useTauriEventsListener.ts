@@ -69,6 +69,7 @@ const useTauriEventsListener = () => {
                 BACKEND_STATE_UPDATE,
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
+                    console.debug(`event= `, event);
                     switch (event.event_type) {
                         case 'CorePhaseFinished':
                             break;
