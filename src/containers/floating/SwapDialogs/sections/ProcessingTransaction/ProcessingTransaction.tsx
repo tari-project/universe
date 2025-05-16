@@ -10,6 +10,7 @@ import { StatusList, StatusListEntry } from '@app/components/transactions/compon
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
 import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
+import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 
 export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
 
@@ -64,10 +65,20 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
                 return t('swap.error');
         }
     }, [status, t]);
+
+    const statusIcon = useMemo(() => {
+        switch (status) {
+            case 'success':
+                return <CompletedIcon />;
+            default:
+                return <ProcessingIcon />;
+        }
+    }, [status]);
+
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
             <AnimatePresence mode="wait">
-                <StatusHero icon={<ProcessingIcon />} title={t('swap.your-xtm-is-on-the-way')}>
+                <StatusHero icon={statusIcon} title={t('swap.your-xtm-is-on-the-way')}>
                     <p>{t('swap.your-purchase-is-processing')}</p>
                 </StatusHero>
 

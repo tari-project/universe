@@ -89,7 +89,9 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                         ))}
                     </TokenList>
 
-                    <ContinueButton onClick={handleContinue}>{t('continue')}</ContinueButton>
+                    <WalletButton onClick={handleContinue} variant="primary" size="large">
+                        {t('continue')}
+                    </WalletButton>
                 </WalletContentsContainer>
             </AnimatePresence>
         </TransactionModal>

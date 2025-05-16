@@ -7,7 +7,7 @@ export const ConnectedWalletWrapper = styled.div`
     gap: 10px;
     padding: 10px 15px 10px 12px;
     border-radius: 60px;
-    background: #ffffff40;
+    background: ${({ theme }) => theme.palette.background.main};
 `;
 
 export const StatusWrapper = styled.div`
@@ -39,12 +39,12 @@ export const WalletContentsContainer = styled.div`
 `;
 
 export const TokenList = styled.div`
-    background: #ffffff;
     border-radius: 16px;
     padding: 8px 0;
     display: flex;
     flex-direction: column;
     box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
+    background: ${({ theme }) => theme.palette.background.main};
 `;
 
 export const TokenItem = styled.div`
@@ -81,8 +81,8 @@ export const TokenName = styled.span`
     font-family: 'Poppins', sans-serif;
     font-weight: 600;
     font-size: 16px;
-    color: #1c1c1e;
     line-height: 1.3;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;
 
 export const TokenSymbol = styled.span`
@@ -92,6 +92,7 @@ export const TokenSymbol = styled.span`
     color: #8e8e93;
     line-height: 1.3;
     text-transform: uppercase;
+    color: ${({ theme }) => theme.palette.text.secondary};
 `;
 
 export const TokenItemRight = styled.div`
@@ -137,4 +138,5 @@ export const WalletAddress = styled.div`
     text-overflow: ellipsis;
     white-space: nowrap;
     width: 80%;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;
