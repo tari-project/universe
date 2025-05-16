@@ -254,9 +254,9 @@ jobs:
           cd ../..
           ls -la "src-tauri/target/release/bundle/msi"
           ls -la "tari-win-bundler/executables"
-          export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
-          export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe"
-          export TARI_UNIVERSE_UPGRADE_CODE=ed60939d-f2b8-5b6e-a7af-bd0d5cf13e37
+          export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe-${{matrix.exchange.name}}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+          export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{matrix.exchange.name}}"
+          export TARI_UNIVERSE_UPGRADE_CODE=${{ matrix.exchange.id}}
           export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
