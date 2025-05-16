@@ -43,35 +43,31 @@
             "capabilities": ["desktop-capability", "default", "migrated"],
             "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' tauri: https: http://localhost http://127.0.0.1 http://localhost:* http://127.0.0.1:* asset: https://asset.localhost",
+                "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
                 "connect-src": [
                     "'self'",
                     "https:",
                     "wss://ut.tari.com",
                     "tauri:",
-                    "tauri://*",
-                    "tauri://127.0.0.1",
-                    "tauri://localhost",
-                    "tauri://localhost/",
                     "tauri://localhost:*",
                     "ipc:",
                     "http://ipc.localhost",
-                    "http://localhost",
-                    "http://127.0.0.1",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
                     "data:",
                     "blob:",
                     "application/octet-stream",
                     "base64"
                 ],
-                "script-src": ["'self'", "unsafe-eval", "http://127.0.0.1", "http://localhost", "tauri:"],
-                "object-src": ["'self'", "data:", "blob: ", "http://127.0.0.1", "http://localhost", "tauri:"],
+                "script-src": ["'self'", "unsafe-eval", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
+                "object-src": ["'self'", "data:", "blob: ", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
                 "script-src-elem": [
                     "'self'",
                     "unsafe-inline",
                     "unsafe-eval",
-                    "http://127.0.0.1",
-                    "http://localhost",
+                    "http://127.0.0.1:*",
+                    "http://localhost:*",
                     "tauri:"
                 ],
                 "img-src": [
@@ -81,8 +77,6 @@
                     "base64:",
                     "https://*.twimg.com",
                     "https://*.googleusercontent.com",
-                    "http://127.0.0.1",
-                    "http://localhost",
                     "http://localhost:*",
                     "http://127.0.0.1:*",
                     "tauri:"
@@ -92,16 +86,12 @@
                     "https:",
                     "wss://ut.tari.com",
                     "https://ut.tari.com",
-                    "https:",
                     "tauri:",
-                    "tauri://*",
-                    "tauri://localhost",
-                    "tauri://localhost/",
                     "tauri://localhost:*",
                     "ipc:",
                     "http://ipc.localhost",
-                    "http://localhost",
-                    "http://127.0.0.1"
+                    "http://localhost:*",
+                    "http://127.0.0.1:*"
                 ]
             },
             "assetProtocol": {
