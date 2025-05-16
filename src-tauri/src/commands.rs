@@ -604,9 +604,21 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
         internal_wallet.get_is_tari_address_generated(),
     )
     .await;
+
+    // For non exchange miner cases to stop wallet services
     SetupManager::get_instance()
-        .shutdown_phases(app_handle, vec![SetupPhase::Wallet])
+        .shutdown_phases(app_handle.clone(), vec![SetupPhase::Wallet])
         .await;
+
+    // mm_proxy is using wallet address
+    SetupManager::get_instance()
+        .add_phases_to_restart_queue(vec![SetupPhase::Unknown])
+        .await;
+
+    SetupManager::get_instance()
+        .restart_phases_from_queue(app_handle)
+        .await;
+
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tari_address took too long: {:?}", timer.elapsed());
     }
