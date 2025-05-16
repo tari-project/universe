@@ -1983,9 +1983,9 @@ pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
 
     Ok(ActiveTapplet {
         tapplet_id: 0,
-        display_name: format!("Bridge-wXTM"),
+        display_name: "Bridge-wXTM".to_string(),
         source: format!("http://{}", addr),
-        version: format!("1.0.0"),
+        version: "1.0.0".to_string(),
     })
 }
 

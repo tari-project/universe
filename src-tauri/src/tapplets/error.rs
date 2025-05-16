@@ -23,6 +23,7 @@
 use std::num::ParseIntError;
 use thiserror::Error;
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
