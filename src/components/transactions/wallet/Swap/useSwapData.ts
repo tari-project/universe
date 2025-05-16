@@ -402,15 +402,12 @@ export const useSwapData = () => {
                 if (networkFee) setNetworkFee(networkFee);
                 setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
 
-                const lastUpdatedFieldAmount = lastUpdatedField === 'fromValue' ? fromAmount : targetAmount;
+                // const lastUpdatedFieldAmount = lastUpdatedField === 'fromValue' ? fromAmount : targetAmount;
 
                 if (shouldCalculate.current) {
                     if (lastUpdatedField === 'fromValue') {
                         if (uiDirection === 'input') {
-                            const newTargetAmount = details.midPrice
-                                ? Number(details.midPrice.invert().toSignificant(6)) * Number(lastUpdatedFieldAmount)
-                                : 0;
-                            if (newTargetAmount) setTargetAmount(newTargetAmount.toString());
+                            if (details.outputAmount) setTargetAmount(details.outputAmount.toSignificant(6));
                             else if (targetAmount !== '') setTargetAmount('');
                         } else {
                             if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
@@ -418,10 +415,7 @@ export const useSwapData = () => {
                         }
                     } else {
                         if (uiDirection === 'input') {
-                            const newFromAmount = details.midPrice
-                                ? Number(details.midPrice.toSignificant(6)) * Number(lastUpdatedFieldAmount)
-                                : 0;
-                            if (newFromAmount) setFromAmount(newFromAmount.toString());
+                            if (details.inputAmount) setFromAmount(details.inputAmount.toSignificant(6));
                             else if (fromAmount !== '') setFromAmount('');
                         } else {
                             if (details.outputAmount) setFromAmount(details.outputAmount.toSignificant(6));

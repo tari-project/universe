@@ -287,7 +287,8 @@ export const useSwap = () => {
                 const provider = await providerAsync;
                 if (!provider && !preview) throw new Error('Provider not available');
                 // For V2, Pair.fetchData is often used. If implementing manually:
-                const pairAddress = Pair.getAddress(sdkToken0, sdkToken1);
+                const orderedPairs = direction !== 'input' ? [sdkToken0, sdkToken1] : [sdkToken1, sdkToken0];
+                const pairAddress = Pair.getAddress(orderedPairs[0], orderedPairs[1]);
                 const pairContract = new Contract(pairAddress, uniswapV2PairAbi, provider);
                 const reserves = await pairContract['getReserves']();
                 const [reserve0, reserve1] = [BigInt(reserves[0].toString()), BigInt(reserves[1].toString())];
@@ -297,8 +298,8 @@ export const useSwap = () => {
                     return null;
                 }
                 const pair = new Pair(
-                    CurrencyAmount.fromRawAmount(sdkToken0, reserve0.toString()),
-                    CurrencyAmount.fromRawAmount(sdkToken1, reserve1.toString())
+                    CurrencyAmount.fromRawAmount(orderedPairs[0], reserve0.toString()),
+                    CurrencyAmount.fromRawAmount(orderedPairs[1], reserve1.toString())
                 );
                 setIsFetchingPair(false);
                 return pair;
@@ -309,7 +310,7 @@ export const useSwap = () => {
                 return null;
             }
         },
-        [sdkToken0, sdkToken1, providerAsync]
+        [sdkToken0, sdkToken1, providerAsync, direction]
     );
 
     const getTradeDetails = useCallback(
