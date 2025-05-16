@@ -9,7 +9,7 @@ import {
     useSwap,
     XTM as XTM_DEFINITIONS,
     EnabledTokens as EnabledTokensEnum,
-} from '@app/hooks/swap/useSwapV2'; // Adjust path as needed
+} from '@app/hooks/swap/useSwapV2';
 
 export interface SelectableTokenInfo {
     label: string;
@@ -38,11 +38,10 @@ const formatDisplayBalanceForSelectable = (
 // Placeholder for fetching USD prices - REPLACE THIS
 const fetchTokenPriceUSD = async (tokenSymbol: string, chainId: ChainId | undefined): Promise<number | undefined> => {
     // MOCK IMPLEMENTATION - REPLACE WITH ACTUAL API/ORACLE CALL
-    console.log(`MOCK: Fetching price for ${tokenSymbol} on chain ${chainId}`);
+    console.warn(`MOCK: Fetching price for ${tokenSymbol} on chain ${chainId}`);
     await new Promise((resolve) => setTimeout(resolve, 150)); // Simulate network delay
     if (tokenSymbol === 'ETH' || tokenSymbol === 'WETH') return 3000.0;
     if (tokenSymbol === 'USDC') return 1.0;
-    // if (tokenSymbol === 'DAI') return 0.99;
     if (tokenSymbol === 'wXTM') return 0.55;
     return undefined;
 };
@@ -81,7 +80,7 @@ export const useSwapData = () => {
         checkAndRequestApproval,
         executeSwap,
         error: useSwapError,
-        addLiquidity,
+        //addLiquidity,
     } = useSwap();
 
     const currentChainId = useMemo(() => connectedAccount.chain?.id, [connectedAccount.chain]);
@@ -215,9 +214,6 @@ export const useSwapData = () => {
             let tokenDefinitionFromEnum: typeof xtmDef; // e.g., Token | undefined
 
             switch (tokenKey) {
-                // case EnabledTokensEnum.DAI:
-                //     tokenDefinitionFromEnum = DAI_DEFINITIONS[currentChainId];
-                //     break;
                 case EnabledTokensEnum.WETH:
                     tokenDefinitionFromEnum = WETH9[currentChainId];
                     break;
@@ -280,18 +276,13 @@ export const useSwapData = () => {
             setIsLoadingPrices(true);
             const newPrices: Record<string, number | undefined> = {};
             const promises = baseSelectableTokensForList.map(async (token) => {
-                if (!tokenPrices[token.symbol]) {
-                    newPrices[token.symbol] = await fetchTokenPriceUSD(token.symbol, currentChainId);
-                } else {
-                    newPrices[token.symbol] = tokenPrices[token.symbol];
-                }
+                newPrices[token.symbol] = await fetchTokenPriceUSD(token.symbol, currentChainId);
             });
             await Promise.all(promises);
             setTokenPrices((prev) => ({ ...prev, ...newPrices }));
             setIsLoadingPrices(false);
         };
         fetchAllPrices();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [baseSelectableTokensForList, currentChainId]);
 
     const selectableFromTokens = useMemo((): SelectableTokenInfo[] => {
@@ -636,9 +627,6 @@ export const useSwapData = () => {
             }
         }
 
-        // Format the price for display, e.g., "1 ETH = 3000 USDC" or "1 USDC = 0.00033 ETH"
-        // The price object has baseToken (denominator) and quoteToken (numerator)
-        // For display, we want 1 [baseToken] = X [quoteToken]
         const baseTokenSymbol = price?.baseToken?.symbol;
         const quoteTokenSymbol = price?.quoteToken?.symbol;
         const priceValue = price.toSignificant(6); // Adjust precision as needed
@@ -700,7 +688,7 @@ export const useSwapData = () => {
         useSwapError,
         handleSelectFromToken,
         selectableFromTokens,
-        addLiquidity,
+        // addLiquidity,
         tokenSelectOpen,
         setTokenSelectOpen,
         displayPrice,

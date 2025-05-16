@@ -347,6 +347,7 @@ export const useSwap = () => {
                 );
                 setIsFetchingPair(false);
                 return pair;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 if (!preview) setError(`Failed to fetch pair: ${e.message}`);
                 setIsFetchingPair(false);
@@ -387,6 +388,7 @@ export const useSwap = () => {
                     trade = new Trade(route, currencyAmountOut, TradeType.EXACT_OUTPUT);
                 }
                 setError(null);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 console.error('Error creating trade object:', e);
                 if (e.message?.includes('LIQUIDITY')) setError('Insufficient liquidity for this trade.');
@@ -483,6 +485,7 @@ export const useSwap = () => {
                             estimatedGasFeeUSDStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
                         }
                     }
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (gasError: any) {
                     console.warn(
                         'Could not estimate gas for the swap preview:',
@@ -548,6 +551,7 @@ export const useSwap = () => {
                 }
                 setIsApproving(false);
                 return true;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 console.error('Error during approval:', e);
                 setError(`Approval failed: ${e?.reason || e?.message || 'User rejected'}`);
@@ -606,6 +610,7 @@ export const useSwap = () => {
 
                 const txOptions: { value?: bigint; gasLimit?: bigint } = {};
                 let methodName: string;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 let methodArgs: any[];
 
                 if (inputIsNativeForRouter) {
@@ -624,6 +629,7 @@ export const useSwap = () => {
                 try {
                     const estimatedGas = await routerContract[methodName].estimateGas(...methodArgs, txOptions);
                     txOptions.gasLimit = (estimatedGas * 120n) / 100n; // 20% buffer
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 } catch (gasError: any) {
                     console.warn('Gas estimation failed for executeSwap:', gasError.message);
                 }
@@ -632,6 +638,7 @@ export const useSwap = () => {
 
                 setIsLoading(false);
                 return swapTxResponse.hash;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 console.error('Error executing swap transaction:', error);
                 const reason = error?.reason || error?.data?.message || error?.message || 'Unknown swap error.';
