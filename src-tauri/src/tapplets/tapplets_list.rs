@@ -34,14 +34,14 @@ impl Tapplets {
         }
     }
 
-    pub fn from_name(name: &str) -> Self {
+    pub fn _from_name(name: &str) -> Self {
         match name {
             "bridge" => Tapplets::Bridge,
             _ => panic!("Unknown binary name: {}", name),
         }
     }
 
-    pub fn tapplet_file_name(self) -> PathBuf {
+    pub fn _tapplet_file_name(self) -> PathBuf {
         match self {
             Tapplets::Bridge => {
                 let file_name = "bridge";

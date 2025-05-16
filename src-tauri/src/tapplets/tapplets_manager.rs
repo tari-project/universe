@@ -22,12 +22,11 @@
 
 use crate::{download_utils::extract, progress_tracker_old::ProgressTracker};
 use anyhow::{anyhow, Error};
-use log::{debug, error, info, warn};
-use semver::Version;
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
-use super::{tapplets_resolver::TappletApiAdapter, Tapplets};
+use super::tapplets_resolver::TappletApiAdapter;
 
 pub const LOG_TARGET: &str = "tari::universe::tapplet_manager";
 
@@ -78,7 +77,7 @@ impl TappletManager {
             .map_err(|e| anyhow!("Error getting tapplet folder. Error: {:?}", e))
     }
     pub async fn extract_tapplet(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
-        info!(target: LOG_TARGET,"Extracting tapplet");
+        info!(target: LOG_TARGET,"Extracting {:?} tapplet", self.tapplet_name);
         let tapplet_source_file = self
             .adapter
             .get_tapplet_source_file()
@@ -103,7 +102,7 @@ impl TappletManager {
             .await
             .map_err(|e| anyhow!("Error extracting tapplet: {:?}", e))?;
 
-        info!(target: LOG_TARGET,"Extracting {:?} tapplet done.", self.tapplet_name);
+        info!(target: LOG_TARGET,"Extracting {:?} tapplet to {:?} done.", self.tapplet_name, &tapplet_dest_dir);
         Ok(())
     }
 }
