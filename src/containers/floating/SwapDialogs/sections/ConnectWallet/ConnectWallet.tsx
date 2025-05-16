@@ -20,11 +20,11 @@ import LoadingDots from '@app/components/transactions/send/SendReview/icons/Load
 export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
     const [qrCodeUri, setQrCodeUri] = useState<string | null>(null);
-    const [isConnected, setIsConnected] = useState(false); // Track connection status
+    const [isConnected, setIsConnected] = useState(false);
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleConnect = useCallback(async () => {
-        const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect'); // Or the correct ID Reown uses
+        const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect');
 
         if (walletConnectConnector && isOpen) {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

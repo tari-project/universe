@@ -1,6 +1,17 @@
 import styled, { css } from 'styled-components';
 
-// --- Existing Styles ---
+export const WalletConnectHeader = styled.div`
+    margin-bottom: 20px;
+    font-family: Poppins, sans-serif;
+    font-weight: 600;
+    font-size: 21px;
+    line-height: 31px;
+    color: black;
+    padding-left: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+`;
 
 export const SelectedChain = styled.div`
     margin-top: 20px;
@@ -60,9 +71,9 @@ export const SwapOptionAmount = styled.div`
     justify-content: space-between;
 
     color: black;
-    font-family: Poppins; // Was Poppins in original, keep consistent?
+    font-family: Poppins, sans-serif;
     font-weight: 500;
-    font-size: 36px; // Original size, might need adjustment with input
+    font-size: 36px;
     line-height: 117%;
     letter-spacing: -1.61px;
 `;
@@ -73,9 +84,9 @@ export const SwapOptionCurrency = styled.div`
     padding: 5px;
     padding-right: 10px;
     background: #e5e2e1;
-    display: inline-flex; // Changed to inline-flex
+    display: inline-flex;
     align-items: center;
-    white-space: nowrap; // Prevent wrapping
+    white-space: nowrap;
 
     span {
         color: black;
@@ -100,33 +111,29 @@ export const SwapDirection = styled.div`
 export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     color: black;
     font-family: Poppins, sans-serif;
-    font-weight: 500; // Adjusted weight
-    font-size: 28px; // Adjusted size to fit better potentially
+    font-weight: 500;
+    font-size: 28px;
     line-height: 100%;
-    letter-spacing: -1px; // Adjusted spacing
+    letter-spacing: -1px;
     width: 100%;
     background: transparent;
     border: none;
-    text-align: left; // Align input text
+    text-align: left;
     padding: 0;
-    margin-right: 10px; // Add some space between input and currency selector
+    margin-right: 10px;
 
     &:focus {
         outline: none;
     }
 
-    // Style placeholder text if needed
     &::placeholder {
         color: #aaaaaa; // Lighter placeholder
     }
 
-    // Use $ prefix for transient props in styled-components v6+
     ${({ $error }) =>
         $error &&
         css`
-            // Add subtle error indication, maybe text color?
-            color: #d32f2f; // Example error color
-            // border: 1px solid #D32F2F; // Adding border might change layout
+            color: #d32f2f;
         `}
 `;
 
@@ -139,19 +146,18 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer; // Make it look clickable
-    transition: background-color 0.2s ease; // Add hover effect
+    cursor: pointer;
+    transition: background-color 0.2s ease;
 
     &:hover {
-        background-color: #333; // Darken slightly on hover
+        background-color: #333;
     }
 
     svg {
         transition: transform 0.2s ease-in-out;
     }
-    // Use $ prefix for transient props in styled-components v6+
     ${({ $direction }) =>
-        $direction === 'output' && // Only rotate when output is the input field now (direction='output')
+        $direction === 'output' &&
         css`
             svg {
                 transform: rotate(180deg);
@@ -186,11 +192,10 @@ export const SwapDetails = styled.div`
 //     line-height: 117%;
 //     letter-spacing: -3%;
 //     display: flex;
-//     justify-content: space-between; // Keeps value right-aligned if needed
-//     align-items: center; // Align value vertically
+//     justify-content: space-between;
+//     align-items: center;
 //
 //     span {
-//         // If you ever add a sub-value span
 //         font-family: Poppins, sans-serif;
 //         font-weight: 500;
 //         font-size: 10px;

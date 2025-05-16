@@ -1,4 +1,3 @@
-import { WalletAddress } from '../../WalletConnections.style';
 import MMFox from '../../icons/mm-fox';
 import { useAccount, useDisconnect } from 'wagmi';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
@@ -17,6 +16,7 @@ import {
     TokenItemRight,
     TokenSeparator,
     ContinueButton,
+    WalletAddress,
 } from './WalletContents.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
 import { useCallback } from 'react';

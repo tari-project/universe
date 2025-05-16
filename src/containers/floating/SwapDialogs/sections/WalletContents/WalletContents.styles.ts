@@ -27,7 +27,7 @@ export const ActiveDot = styled.div`
     width: 9px;
     height: 8px;
     border-radius: 100%;
-    background: rgba(26, 134, 80, 1); // Green dot
+    background: rgba(26, 134, 80, 1);
     animation: ${pulse} 2s infinite;
 `;
 
@@ -44,7 +44,7 @@ export const TokenList = styled.div`
     padding: 8px 0;
     display: flex;
     flex-direction: column;
-    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05); // Subtle shadow
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.05);
 `;
 
 export const TokenItem = styled.div`
@@ -68,7 +68,7 @@ export const TokenIconWrapper = styled.div`
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden; // Clip image if not perfectly round
+    overflow: hidden;
 `;
 
 export const TokenInfo = styled.div`
@@ -129,4 +129,12 @@ export const ContinueButton = styled.button`
     &:active {
         background-color: #10101c;
     }
+`;
+
+export const WalletAddress = styled.div`
+    color: black;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 80%;
 `;

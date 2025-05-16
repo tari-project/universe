@@ -9,7 +9,7 @@ interface Props {
     isOpen: boolean;
     setIsOpen: (isOpen: boolean) => void;
     availableTokens: SelectableTokenInfo[];
-    onSelectToken: (token: SelectableTokenInfo) => void; // Changed from setActiveToken
+    onSelectToken: (token: SelectableTokenInfo) => void;
 }
 
 export const TokenSelection = ({ isOpen, setIsOpen, availableTokens, onSelectToken }: Props) => {

@@ -15,21 +15,21 @@ import {
     SwapOptionCurrency,
 } from './Swap.styles';
 import { useAccount } from 'wagmi';
-import { getCurrencyIcon } from '@app/containers/floating/WalletConnections/helpers/getIcon';
-import { ArrowIcon } from '@app/containers/floating/WalletConnections/icons/elements/ArrowIcon';
-import { WalletButton } from '@app/containers/floating/WalletConnections/components/WalletButton/WalletButton';
-import { ConnectWallet } from '@app/containers/floating/WalletConnections/sections/ConnectWallet/ConnectWallet';
+import { getCurrencyIcon } from '@app/containers/floating/SwapDialogs/helpers/getIcon';
+import { ArrowIcon } from '@app/containers/floating/SwapDialogs/icons/elements/ArrowIcon';
+import { WalletButton } from '@app/containers/floating/SwapDialogs/components/WalletButton/WalletButton';
+import { ConnectWallet } from '@app/containers/floating/SwapDialogs/sections/ConnectWallet/ConnectWallet';
 import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
-import { SwapConfirmation } from '@app/containers/floating/WalletConnections/sections/SwapConfirmation/SwapConfirmation';
-import { ProcessingTransaction } from '@app/containers/floating/WalletConnections/sections/ProcessingTransaction/ProcessingTransaction';
+import { SwapConfirmation } from '@app/containers/floating/SwapDialogs/sections/SwapConfirmation/SwapConfirmation';
+import { ProcessingTransaction } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
 import { Chevron } from '@app/assets/icons/Chevron';
 import { useSwapData } from './useSwapData';
-import { TokenSelection } from '@app/containers/floating/WalletConnections/sections/TokenSelection/TokenSelection';
+import { TokenSelection } from '@app/containers/floating/SwapDialogs/sections/TokenSelection/TokenSelection';
 import { truncateMiddle } from '@app/utils';
 import { useState } from 'react';
-import { WalletContents } from '@app/containers/floating/WalletConnections/sections/WalletContents/WalletContents';
-import { SignApprovalMessage } from '@app/containers/floating/WalletConnections/sections/SignMessage/SignApprovalMessage';
+import { WalletContents } from '@app/containers/floating/SwapDialogs/sections/WalletContents/WalletContents';
+import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 
 interface Props {

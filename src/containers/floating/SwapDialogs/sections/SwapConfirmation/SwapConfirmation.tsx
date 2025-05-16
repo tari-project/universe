@@ -1,4 +1,3 @@
-import { WalletConnectHeader } from '../../WalletConnections.style';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 // import { setWalletConnectModalStep } from '@app/store/actions/walletStoreActions';
 // import { SwapStep } from '@app/store';
@@ -16,6 +15,7 @@ import {
     SwapOption,
     SwapOptionAmount,
     SwapOptionCurrency,
+    WalletConnectHeader,
 } from './SwapConfirmation.styles';
 import { truncateMiddle } from '@app/utils';
 import { getCurrencyIcon } from '../../helpers/getIcon';
