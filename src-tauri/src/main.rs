@@ -69,7 +69,9 @@ use tokio::time;
 use utils::logging_utils::setup_logging;
 
 use app_config::AppConfig;
-use app_in_memory_config::{AppInMemoryConfig, EXCHANGE_ID};
+use app_in_memory_config::AppInMemoryConfig;
+#[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
+use app_in_memory_config::EXCHANGE_ID;
 
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
