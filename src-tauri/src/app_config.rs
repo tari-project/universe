@@ -120,6 +120,8 @@ pub struct AppConfigFromFile {
     gpu_engine: String,
     #[serde(default)]
     remote_base_node_address: Option<String>,
+    #[serde(default)]
+    swaps_enabled: Option<bool>,
 }
 
 impl Default for AppConfigFromFile {
@@ -165,6 +167,7 @@ impl Default for AppConfigFromFile {
             airdrop_tokens: None,
             gpu_engine: default_gpu_engine(),
             remote_base_node_address: None,
+            swaps_enabled: None,
         }
     }
 }
@@ -287,6 +290,7 @@ pub struct AppConfig {
     airdrop_tokens: Option<AirdropTokens>,      // CORE
     gpu_engine: String,                         // Mining
     remote_base_node_address: Option<String>,
+    swaps_enabled: Option<bool>,
 }
 
 #[allow(dead_code)]
@@ -335,6 +339,7 @@ impl AppConfig {
             airdrop_tokens: None,
             gpu_engine: EngineType::OpenCL.to_string(),
             remote_base_node_address: None,
+            swaps_enabled: None,
         }
     }
 
@@ -455,6 +460,7 @@ impl AppConfig {
                 self.airdrop_tokens = config.airdrop_tokens;
                 self.gpu_engine = config.gpu_engine;
                 self.remote_base_node_address = config.remote_base_node_address;
+                self.swaps_enabled = config.swaps_enabled;
 
                 // KEYRING_ACCESSED.store(
                 //     config.keyring_accessed,
@@ -627,6 +633,11 @@ impl AppConfig {
     pub fn airdrop_tokens(&self) -> Option<AirdropTokens> {
         warn!(target: LOG_TARGET, "Accessed Old config | airdrop_tokens");
         self.airdrop_tokens.clone()
+    }
+
+    pub fn swaps_enabled(&self) -> Option<bool> {
+        warn!(target: LOG_TARGET, "Accessed Old config | swaps_enabled");
+        self.swaps_enabled
     }
 
     pub async fn set_airdrop_tokens(
@@ -1005,6 +1016,7 @@ impl AppConfig {
             airdrop_tokens: self.airdrop_tokens.clone(),
             gpu_engine: self.gpu_engine.clone(),
             remote_base_node_address: self.remote_base_node_address.clone(),
+            swaps_enabled: self.swaps_enabled,
         };
         let config = serde_json::to_string(config)?;
         debug!(target: LOG_TARGET, "Updating config file: {:?} {:?}", file, self.clone());
