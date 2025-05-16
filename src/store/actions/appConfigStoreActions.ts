@@ -25,7 +25,6 @@ interface SetModeProps {
 }
 
 export const handleConfigCoreLoaded = (coreConfig: ConfigCore) => {
-    console.log('handleConfigCoreLoaded', coreConfig);
     useConfigCoreStore.setState(coreConfig);
 };
 export const handleConfigWalletLoaded = (walletConfig: ConfigWallet) => {

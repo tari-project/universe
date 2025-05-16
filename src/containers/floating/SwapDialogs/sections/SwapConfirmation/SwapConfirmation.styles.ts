@@ -107,7 +107,6 @@ export const SwapDirection = styled.div`
     z-index: 2;
 `;
 
-// Modified SwapAmountInput slightly
 export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     color: black;
     font-family: Poppins, sans-serif;
