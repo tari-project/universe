@@ -109,7 +109,7 @@ jobs:
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".plugins.updater.endpoints = [\"https://cdn-universe.tari.com/tari-project/universe/updater/${{ matrix.exchange.name }}/latest.json\"]" \
+          yq eval ".plugins.updater.endpoints = [\"https://cdn-universe.tari.com/tari-project/universe/updater/latest-${{ matrix.exchange.id }}.json\"]" \
             --output-format=json -i tauri.conf.json
 
       - name: Setup Node
@@ -234,6 +234,7 @@ jobs:
           prerelease: true
           includeDebug: false
           includeRelease: true
+          includeUpdaterJson: true
           args: ${{ matrix.platforms.args }} --features "${{ env.TS_FEATURES }}"
 
       - name: Add msbuild to PATH (windows)
