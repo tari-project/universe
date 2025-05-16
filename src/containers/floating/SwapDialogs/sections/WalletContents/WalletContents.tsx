@@ -15,7 +15,6 @@ import {
     TokenSymbol,
     TokenItemRight,
     TokenSeparator,
-    ContinueButton,
     WalletAddress,
 } from './WalletContents.styles';
 import { truncateMiddle } from '@app/utils/truncateString.ts';
