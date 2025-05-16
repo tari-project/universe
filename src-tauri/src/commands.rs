@@ -100,12 +100,6 @@ pub struct ApplicationsVersions {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct CpuMinerMetrics {
-    // hardware: Vec<PublicDeviceProperties>,
-    mining: CpuMinerStatus,
-}
-
-#[derive(Debug, Serialize, Clone)]
 pub struct GpuMinerMetrics {
     hardware: Vec<GpuStatus>,
     mining: GpuMinerStatus,
