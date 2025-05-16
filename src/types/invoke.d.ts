@@ -119,7 +119,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
-    function invoke(param: 'launch_builtin_tapplet', payload: { tappletDestDir: string }): Promise<ActiveTapplet>;
+    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
 }

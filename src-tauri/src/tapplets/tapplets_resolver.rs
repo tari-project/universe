@@ -34,6 +34,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
 use super::bridge_adapter::BridgeTappletAdapter;
+use super::tapp_consts::TAPPLET_SOURCE_DIR;
 use super::tapplets_manager::TappletManager;
 use super::Tapplets;
 
@@ -42,7 +43,8 @@ static INSTANCE: LazyLock<RwLock<TappletResolver>> =
 
 #[async_trait]
 pub trait TappletApiAdapter: Send + Sync + 'static {
-    fn get_tapplet_folder(&self) -> Result<PathBuf, Error>;
+    fn get_tapplet_source_file(&self) -> Result<PathBuf, Error>;
+    fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error>;
 }
 
 pub struct TappletResolver {
@@ -58,9 +60,7 @@ impl TappletResolver {
             Tapplets::Bridge,
             Mutex::new(TappletManager::new(
                 Tapplets::Bridge.name().to_string(),
-                None,
                 Box::new(BridgeTappletAdapter {}),
-                false,
             )),
         );
 
@@ -73,24 +73,25 @@ impl TappletResolver {
         &INSTANCE
     }
 
-    pub async fn resolve_path_to_tapplet_files(&self, tapplet: Tapplets) -> Result<PathBuf, Error> {
+    pub async fn resolve_path_to_tapplet_dest_dir(
+        &self,
+        tapplet: Tapplets,
+    ) -> Result<PathBuf, Error> {
         let manager = self
             .managers
             .get(&tapplet)
             .ok_or_else(|| anyhow!("No latest version manager for this tapplet"))?;
 
-        let base_dir = manager.lock().await.get_base_dir().map_err(|error| {
+        let dest_dir = manager.lock().await.get_dest_dir().map_err(|error| {
             anyhow!(
-                "No base directory for tapplet {}, Error: {}",
+                "No dest directory for tapplet {}, Error: {}",
                 tapplet.name(),
                 error
             )
         })?;
 
-        if let Some(sub_folder) = manager.lock().await.tapplet_subfolder() {
-            return Ok(base_dir.join(sub_folder).join(tapplet.tapplet_file_name()));
-        }
-        Ok(base_dir.join(tapplet.tapplet_file_name()))
+        // should return /.cache/com.tari.universe.alpha/tapplets/bridge/<network>/out
+        Ok(dest_dir.join(TAPPLET_SOURCE_DIR))
     }
 
     pub async fn initialize_tapplet_timeout(
@@ -127,13 +128,6 @@ impl TappletResolver {
             .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
             .lock()
             .await;
-
-        // TODO
-        // // Throw error if file do not exist
-        // let check_if_files_exist = manager.check_if_files_exist();
-        // if !check_if_files_exist {
-        //     return Err(anyhow!("Failed to download tapplets"));
-        // }
 
         manager.extract_tapplet(progress_tracker).await?;
 

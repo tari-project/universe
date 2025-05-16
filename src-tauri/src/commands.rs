@@ -45,8 +45,9 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapp_consts::TAPPLET_DIST_DIR;
+use crate::tapplets::tapp_consts::TAPPLET_SOURCE_DIR;
 use crate::tapplets::tapplet_server::start_tapplet;
+use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
 use crate::tor_adapter::TorConfig;
 use crate::utils::address_utils::verify_send;
@@ -1964,14 +1965,16 @@ pub async fn set_warmup_seen(warmup_seen: bool) -> Result<(), String> {
 */
 
 #[tauri::command]
-pub async fn launch_builtin_tapplet(tapplet_dest_dir: String) -> Result<ActiveTapplet, String> {
-    // let mut locked_tokens = shutdown_tokens.0.lock().await;
-    let tapplet_id = 0;
-    let tapplet_path = PathBuf::from(tapplet_dest_dir).join(TAPPLET_DIST_DIR);
-    info!(target: LOG_TARGET, "❌❌❌ build in tapplet path: {:?}", &tapplet_path);
+pub async fn launch_builtin_tapplet() -> Result<ActiveTapplet, String> {
+    let tapplet_resolver = TappletResolver::current().read().await;
+
+    let tapp_dest_dir = tapplet_resolver
+        .resolve_path_to_tapplet_dest_dir(Tapplets::Bridge)
+        .await
+        .map_err(|e| e.to_string())?;
 
     let handle_start =
-        tauri::async_runtime::spawn(async move { start_tapplet(tapplet_path).await });
+        tauri::async_runtime::spawn(async move { start_tapplet(tapp_dest_dir).await });
 
     let (addr, _cancel_token) = match handle_start.await {
         Ok(result) => result.map_err(|e| e.to_string())?,
@@ -1981,17 +1984,8 @@ pub async fn launch_builtin_tapplet(tapplet_dest_dir: String) -> Result<ActiveTa
         }
     };
 
-    //TODO SERVER RUNNING ERROR IF LAUNCHED INSTALLED TAPPLET 2 TIMES
-    // match locked_tokens.insert(tapplet_id, cancel_token) {
-    //     Some(_) => {
-    //         return Err(TappletServerError(AlreadyRunning)).map_err(|e| e.to_string())?;
-    //     }
-    //     None => {}
-    // }
-
-    // TODO tmp hardcoded
     Ok(ActiveTapplet {
-        tapplet_id,
+        tapplet_id: 0,
         display_name: format!("Bridge-wXTM"),
         source: format!("http://{}", addr),
         version: format!("1.0.0"),
@@ -2002,10 +1996,8 @@ pub async fn launch_builtin_tapplet(tapplet_dest_dir: String) -> Result<ActiveTa
 pub async fn get_tari_wallet_address(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<String, String> {
-    info!(target: LOG_TARGET, "🤝 [TU][command]get tari address");
     let tari_address = state.tari_address.clone();
     let addr = tari_address.read().await.to_base58();
-    info!(target: LOG_TARGET, "🤝 [TU][command] tari addr:  {:?}", &addr);
     Ok(addr)
 }
 
@@ -2013,7 +2005,6 @@ pub async fn get_tari_wallet_address(
 pub async fn get_tari_wallet_balance(
     state: tauri::State<'_, UniverseAppState>,
 ) -> Result<WalletBalance, String> {
-    info!(target: LOG_TARGET, "🤝 [TU][command] get tari balance ");
     let balance = state
         .wallet_state_watch_rx
         .borrow()

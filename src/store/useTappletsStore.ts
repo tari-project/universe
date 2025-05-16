@@ -49,19 +49,15 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         set({ activeTapplet: undefined });
     },
     setActiveTappById: async (tappletId, isBuiltIn = false) => {
-        console.info('SET ACTIVE TAP', tappletId, get().activeTapplet?.tapplet_id);
         if (tappletId == get().activeTapplet?.tapplet_id) return;
         const tappProviderState = useTappletProviderStore.getState();
         if (!tappProviderState.isInitialized) tappProviderState.initTappletProvider();
-
         // built-in tapplet
         if (isBuiltIn) {
-            const tappletDestDir = '/home/oski/.cache/com.tari.universe.alpha/tapplets/bridge/esmeralda';
-            const activeTapplet = await invoke('launch_builtin_tapplet', { tappletDestDir: tappletDestDir });
+            const activeTapplet = await invoke('launch_builtin_tapplet');
             set({ activeTapplet });
             return;
         }
-
         return;
     },
 }));
