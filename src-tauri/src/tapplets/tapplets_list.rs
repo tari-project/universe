@@ -49,9 +49,4 @@ impl Tapplets {
             }
         }
     }
-
-    #[allow(dead_code)]
-    pub fn iterator() -> impl Iterator<Item = Tapplets> {
-        [Tapplets::Bridge].iter().copied()
-    }
 }
