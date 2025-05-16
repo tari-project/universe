@@ -18,10 +18,10 @@ export interface SelectableTokenInfo {
     iconSymbol: string;
     definition: Token | NativeCurrency;
     balance?: string;
-    usdValue?: string; // Total USD value of the balance
+    usdValue?: string;
     rawBalance?: bigint;
     decimals: number;
-    pricePerTokenUSD?: number; // Price of 1 token in USD
+    pricePerTokenUSD?: number;
 }
 
 const formatDisplayBalanceForSelectable = (
@@ -210,7 +210,7 @@ export const useSwapData = () => {
         }
 
         Object.values(EnabledTokensEnum).forEach((tokenKey) => {
-            let tokenDefinitionFromEnum: typeof xtmDef; // e.g., Token | undefined
+            let tokenDefinitionFromEnum: typeof xtmDef;
 
             switch (tokenKey) {
                 case EnabledTokensEnum.WETH:
@@ -221,7 +221,7 @@ export const useSwapData = () => {
                     tokenDefinitionFromEnum = xtmDef;
                     break;
                 default:
-                    tokenDefinitionFromEnum = undefined; // Handles any other enum values
+                    tokenDefinitionFromEnum = undefined;
             }
 
             if (tokenDefinitionFromEnum?.address) {
@@ -321,7 +321,6 @@ export const useSwapData = () => {
                 };
             })
             .sort((a, b) => {
-                // Optional: Sort by USD value descending, then by balance
                 const valA =
                     a.rawBalance && a.pricePerTokenUSD
                         ? parseFloat(viemFormatUnits(a.rawBalance, a.decimals)) * a.pricePerTokenUSD
@@ -346,15 +345,12 @@ export const useSwapData = () => {
         setPriceImpact(null);
         setNetworkFee(null);
         setSlippage(null);
-        // Only clear the field that was *not* last updated by the user,
-        // and only if it's not already empty to prevent re-renders/loops.
         if (lastUpdatedField === 'fromValue') {
             if (targetAmount !== '') setTargetAmount('');
         } else {
-            // lastUpdatedField === 'target'
             if (fromAmount !== '') setFromAmount('');
         }
-    }, [lastUpdatedField, fromAmount, targetAmount]); // Add fromAmount, targetAmount as dependencies
+    }, [lastUpdatedField, fromAmount, targetAmount]);
 
     const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
@@ -364,8 +360,8 @@ export const useSwapData = () => {
         let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
         let amountTypeForGetTradeDetails: SwapField = 'target';
 
-        const tradeInputTokenSDK = sdkToken0; // Actual input to the Uniswap trade (Token)
-        const tradeOutputTokenSDK = sdkToken1; // Actual output from the Uniswap trade (Token)
+        const tradeInputTokenSDK = sdkToken0;
+        const tradeOutputTokenSDK = sdkToken1;
 
         if (lastUpdatedField === 'fromValue') {
             amountTypedByUserStr = fromAmount;
@@ -433,7 +429,7 @@ export const useSwapData = () => {
                         }
                     }
                 } else {
-                    clearCalculatedDetails(); // Clears the other field
+                    clearCalculatedDetails();
                     if (details.route && !details.trade) {
                         addToast({ title: 'Error', text: 'Insufficient liquidity for this trade.', type: 'error' });
                     }
@@ -442,7 +438,7 @@ export const useSwapData = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
-            clearCalculatedDetails(); // Clears the other field
+            clearCalculatedDetails();
         } finally {
             setIsLoading(false);
             shouldCalculate.current = false;
@@ -486,15 +482,14 @@ export const useSwapData = () => {
         if (processedValue === '' || processedValue === '.' || processedValue === '0') {
             if (field === 'fromValue') {
                 setFromAmount(processedValue);
-                if (targetAmount !== '') setTargetAmount(''); // Clear other field
+                if (targetAmount !== '') setTargetAmount('');
             } else {
                 // field === 'target'
                 setTargetAmount(processedValue);
-                if (fromAmount !== '') setFromAmount(''); // Clear other field
+                if (fromAmount !== '') setFromAmount('');
             }
-            setLastUpdatedField(field); // Set this to know which field was just interacted with
+            setLastUpdatedField(field);
             shouldCalculate.current = false;
-            // Clear only trade details, not the input field being typed into beyond what's done above
             setTradeDetails(null);
             setPriceImpact(null);
             setNetworkFee(null);
@@ -503,7 +498,6 @@ export const useSwapData = () => {
             if (calcRef.current) clearTimeout(calcRef.current);
             return;
         }
-        // ... (rest of the validation and processing logic) ...
         const regex = /^\d*\.?\d*$/;
         if (!regex.test(processedValue) || (processedValue !== '.' && Number.isNaN(Number(processedValue)))) return;
         if (processedValue.length > 1 && processedValue.startsWith('0') && !processedValue.startsWith('0.'))
@@ -514,40 +508,37 @@ export const useSwapData = () => {
 
         if (field === 'fromValue') setFromAmount(processedValue);
         else setTargetAmount(processedValue);
-        setLastUpdatedField(field); // Ensure this is set
+        setLastUpdatedField(field);
         shouldCalculate.current = true;
-        setIsLoading(true); // Triggers useEffect for debounceCalc
+        setIsLoading(true);
     };
 
     const handleSetUiDirection = useCallback(() => {
         const newUiDirection = uiDirection === 'input' ? 'output' : 'input';
         setUiDirection(newUiDirection);
-        setSwapEngineDirection(newUiDirection); // This updates 'direction' in useSwapV2
+        setSwapEngineDirection(newUiDirection);
 
         if (lastUpdatedField === 'fromValue' && fromAmount && Number(fromAmount) > 0) {
             shouldCalculate.current = true;
-            setIsLoading(true); // This will trigger the useEffect for debounceCalc
+            setIsLoading(true);
         } else if (lastUpdatedField === 'target' && targetAmount && Number(targetAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
         } else if (fromAmount && Number(fromAmount) > 0) {
-            // Fallback if lastUpdatedField was reset
-            setLastUpdatedField('fromValue'); // Assume fromAmount should drive if it has a value
+            setLastUpdatedField('fromValue');
             shouldCalculate.current = true;
             setIsLoading(true);
         } else if (targetAmount && Number(targetAmount) > 0) {
             // Fallback
-            setLastUpdatedField('target'); // Assume targetAmount should drive
+            setLastUpdatedField('target');
             shouldCalculate.current = true;
             setIsLoading(true);
         } else {
             shouldCalculate.current = false;
-            // Only clear calculated trade details, not the amounts in the input boxes
             setTradeDetails(null);
             setPriceImpact(null);
             setNetworkFee(null);
             setSlippage(null);
-            // If both amounts are zero/empty, ensure loading is false
             if (!(fromAmount && Number(fromAmount) > 0) && !(targetAmount && Number(targetAmount) > 0)) {
                 setIsLoading(false);
             }
@@ -613,11 +604,8 @@ export const useSwapData = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let price: any;
         if (uiDirection === 'input') {
-            // Price is sdkToken1 per sdkToken0
             price = tradeDetails?.midPrice;
         } else {
-            // uiDirection === 'output'
-            // Price is sdkToken0 per sdkToken1 (inverse)
             try {
                 price = tradeDetails?.midPrice?.invert();
             } catch (e) {
@@ -628,7 +616,7 @@ export const useSwapData = () => {
 
         const baseTokenSymbol = price?.baseToken?.symbol;
         const quoteTokenSymbol = price?.quoteToken?.symbol;
-        const priceValue = price.toSignificant(6); // Adjust precision as needed
+        const priceValue = price.toSignificant(6);
 
         return `1 ${baseTokenSymbol} = ${priceValue} ${quoteTokenSymbol}`;
     }, [tradeDetails?.midPrice, uiDirection]);
@@ -637,7 +625,7 @@ export const useSwapData = () => {
         () => ({
             amount: uiDirection === 'input' ? fromAmount : targetAmount, // Amount user gives
             targetAmount: uiDirection === 'input' ? targetAmount : fromAmount, // Amount user gets
-            direction: uiDirection, // Can keep this if needed elsewhere
+            direction: uiDirection,
             slippage,
             networkFee,
             priceImpact,
