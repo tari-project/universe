@@ -1,8 +1,7 @@
-import { LoadingDots, ProcessingDetailsWrapper, StatusValue } from './ProcessingTransaction.styles';
+import { ProcessingDetailsWrapper, StatusValue } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
 import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
-import { setWalletUiVisible } from '@app/store/actions/walletStoreActions';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
 import { useMemo } from 'react';
@@ -10,6 +9,7 @@ import { useTranslation } from 'react-i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
+import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
 export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';
 
@@ -25,13 +25,6 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
     const dataAcc = useAccount();
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
-    const loadingDots = (
-        <LoadingDots>
-            <span>.</span>
-            <span>.</span>
-            <span>.</span>
-        </LoadingDots>
-    );
     const statusItems: StatusListEntry[] = [
         {
             label: t('swap.status'),
@@ -43,15 +36,15 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
         },
         {
             label: t('swap.total-fees'),
-            value: fees || loadingDots,
+            value: fees || <LoadingDots />,
         },
         {
             label: t('swap.transaction-id'),
-            value: transactionId || loadingDots,
+            value: transactionId || <LoadingDots />,
         },
         {
             label: 'Ethereum Txn',
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
+            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
         },
         // {
         //     key: 'Tari Txn',
@@ -86,7 +79,7 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
                     variant="primary"
                     size="xl"
                     disabled={status === 'processingswap' || status === 'processingapproval'}
-                    onClick={() => setWalletUiVisible(false)}
+                    onClick={() => setIsOpen(false)}
                 >
                     {ctaMessage}
                 </WalletButton>

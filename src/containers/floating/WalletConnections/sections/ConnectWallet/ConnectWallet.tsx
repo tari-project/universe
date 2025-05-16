@@ -12,10 +12,10 @@ import {
     GreenDot,
     LoadingCopy,
 } from './ConnectWallet.styles';
-import { LoadingDots } from '../SignMessage/SignApprovalMessage.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
+import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
 export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
