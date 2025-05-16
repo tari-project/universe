@@ -4,11 +4,11 @@ import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface ExchangeStoreState {
     content?: ExchangeContent;
-    showModal: boolean;
+    showModal: boolean | null;
 }
 
 const initialState = {
-    showModal: false,
+    showModal: null,
 };
 export const useExchangeStore = create<ExchangeStoreState>()(() => ({ ...initialState }));
 

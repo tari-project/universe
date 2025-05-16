@@ -24,7 +24,7 @@ export default function Banner() {
     }
 
     useEffect(() => {
-        if (warmup_seen === null || warmup_seen || showExchangeModal) return;
+        if (warmup_seen === null || warmup_seen || !!showExchangeModal) return;
         setExpandPlayer(true);
         setWarmupSeen(true);
         firstPlay.current = false;
@@ -55,7 +55,11 @@ export default function Banner() {
                     </Button>
                 </FlexSection>
             </DashboardBanner>
-            <VideoModal open={expandPlayer} onOpenChange={handleOpenChange} firstPlay={firstPlay.current} />
+            <VideoModal
+                open={expandPlayer && !showExchangeModal}
+                onOpenChange={handleOpenChange}
+                firstPlay={firstPlay.current}
+            />
         </>
     );
 }

@@ -9,7 +9,7 @@ import {
     P2poolConnections,
 } from './app-status';
 import { Language } from '@app/i18initializer';
-import { PaperWalletDetails } from '@app/types/app-status.ts';
+import { PaperWalletDetails, WalletAddress } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
 import { ConfigBackendInMemory } from '@app/types/configs.ts';
@@ -119,6 +119,6 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
     function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
-    function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<Partial<WalletAddress>>;
     function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
 }
