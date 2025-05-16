@@ -292,6 +292,7 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+            self.unlock_wallet(app_handle).await;
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
