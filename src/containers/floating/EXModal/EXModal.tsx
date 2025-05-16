@@ -11,7 +11,7 @@ export default function EXModal() {
 
     if (!data) return null;
     return (
-        <Dialog open={showModal} disableClose>
+        <Dialog open={!!showModal} disableClose>
             <DialogContent $disableOverflow $borderRadius="40px">
                 <Wrapper>
                     <Hero

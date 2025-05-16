@@ -630,11 +630,12 @@ pub async fn confirm_exchange_address(
         .set_tari_address(address, config_path)
         .await?;
     let handle_clone = app.clone();
-    let _unused = EventsEmitter::emit_wallet_address_update(
+    EventsEmitter::emit_wallet_address_update(
         &handle_clone,
         new_address,
         internal_wallet.get_is_tari_address_generated(),
-    );
+    )
+    .await;
     SetupManager::get_instance()
         .init_exchange_modal_status()
         .await
