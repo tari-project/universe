@@ -41,7 +41,6 @@ const fetchTokenPriceUSD = async (tokenSymbol: string, chainId: ChainId | undefi
     console.warn(`MOCK: Fetching price for ${tokenSymbol} on chain ${chainId}`);
     await new Promise((resolve) => setTimeout(resolve, 150)); // Simulate network delay
     if (tokenSymbol === 'ETH' || tokenSymbol === 'WETH') return 3000.0;
-    if (tokenSymbol === 'USDC') return 1.0;
     if (tokenSymbol === 'wXTM') return 0.55;
     return undefined;
 };

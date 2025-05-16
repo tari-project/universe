@@ -42,30 +42,21 @@ const ROUTER_ADDRESSES: Partial<Record<ChainId, `0x${string}`>> = {
 };
 
 export enum EnabledTokens {
-    // DAI = 'DAI',
     WETH = 'wETH',
     XTM = 'wXTM',
     wXTM = 'XTM',
-    USDC = 'USDC',
 }
 
 export const ENABLED_TOKENS = {
-    // [EnabledTokens.DAI]: {
-    //     [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
-    //     [ChainId.SEPOLIA]: '0x68194a729C2450ad26072b3D33ADaCbcef39D574',
-    // },
     [EnabledTokens.WETH]: {
         [ChainId.MAINNET]: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
         [ChainId.SEPOLIA]: '0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9',
     },
     [EnabledTokens.XTM]: {
         // Replace with actual XTM addresses
+        // Curently using the same address as DAI for Mainnet
         [ChainId.MAINNET]: '0x6B175474E89094C44Da98b954EedeAC495271d0F', // Placeholder
-        [ChainId.SEPOLIA]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374', // Placeholder
-    },
-    [EnabledTokens.USDC]: {
-        [ChainId.MAINNET]: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
-        [ChainId.SEPOLIA]: '0x271B34781c76fB06bfc54eD9cfE7c817d89f7759',
+        [ChainId.SEPOLIA]: '0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374',
     },
 };
 
@@ -74,38 +65,6 @@ const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
     [ChainId.SEPOLIA]: 'https://gateway.tenderly.co/public/sepolia',
 };
 
-// export const DAI: Partial<Record<ChainId, Token>> = {
-//     [ChainId.MAINNET]: new Token(
-//         ChainId.MAINNET,
-//         ENABLED_TOKENS[EnabledTokens.DAI][ChainId.MAINNET],
-//         18,
-//         'DAI',
-//         'Dai Stablecoin'
-//     ),
-//     [ChainId.SEPOLIA]: new Token(
-//         ChainId.SEPOLIA,
-//         ENABLED_TOKENS[EnabledTokens.DAI][ChainId.SEPOLIA],
-//         18,
-//         'DAI',
-//         'Dai Stablecoin'
-//     ),
-// };
-export const USDC: Partial<Record<ChainId, Token>> = {
-    [ChainId.MAINNET]: new Token(
-        ChainId.MAINNET,
-        ENABLED_TOKENS[EnabledTokens.USDC][ChainId.MAINNET],
-        6,
-        'USDC',
-        'USD Coin'
-    ),
-    [ChainId.SEPOLIA]: new Token(
-        ChainId.SEPOLIA,
-        ENABLED_TOKENS[EnabledTokens.USDC][ChainId.SEPOLIA],
-        6,
-        'USDC',
-        'USD Coin'
-    ),
-};
 export const XTM: Partial<Record<ChainId, Token>> = {
     // Replace with actual XTM Token object
     [ChainId.MAINNET]: new Token(
@@ -114,14 +73,14 @@ export const XTM: Partial<Record<ChainId, Token>> = {
         18,
         'wXTM',
         'Tari'
-    ), // Example, update decimals/name
+    ),
     [ChainId.SEPOLIA]: new Token(
         ChainId.SEPOLIA,
         ENABLED_TOKENS[EnabledTokens.XTM][ChainId.SEPOLIA],
         18,
         'wXTM',
         'Tari'
-    ), // Example, update decimals/name
+    ),
 };
 
 const KNOWN_TOKENS: Partial<Record<ChainId, Record<`0x${string}`, Token>>> = {};
@@ -132,10 +91,6 @@ function initializeKnownTokens() {
         KNOWN_TOKENS[chainId] = {};
         const weth = WETH9[chainId];
         if (weth) KNOWN_TOKENS[chainId]![weth.address.toLowerCase() as `0x${string}`] = weth;
-        // const dai = DAI[chainId];
-        // if (dai) KNOWN_TOKENS[chainId]![dai.address.toLowerCase() as `0x${string}`] = dai;
-        const usdc = USDC[chainId];
-        if (usdc) KNOWN_TOKENS[chainId]![usdc.address.toLowerCase() as `0x${string}`] = usdc;
         const xtm = XTM[chainId];
         if (xtm) KNOWN_TOKENS[chainId]![xtm.address.toLowerCase() as `0x${string}`] = xtm;
     }
