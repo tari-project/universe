@@ -969,6 +969,18 @@ struct FEPayload {
 
 #[allow(clippy::too_many_lines)]
 fn main() {
+    #[cfg(target_os = "linux")]
+    {
+        if std::path::Path::new("/dev/dri").exists()
+            && std::env::var("WAYLAND_DISPLAY").is_err()
+            && std::env::var("XDG_SESSION_TYPE").unwrap_or_default() == "x11"
+        {
+            // SAFETY: There's potential for race conditions in a multi-threaded context.
+            unsafe {
+                std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+            }
+        }
+    }
     let _unused = fix_path_env::fix();
     // TODO: Integrate sentry into logs. Because we are using Tari's logging infrastructure, log4rs
     // sets the logger and does not expose a way to add sentry into it.
