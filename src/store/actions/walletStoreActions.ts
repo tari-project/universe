@@ -70,6 +70,7 @@ export const setGeneratedTariAddress = async (newAddress: string) => {
 };
 
 export const setWalletAddress = (addresses: WalletAddress) => {
+    console.debug({ ...addresses });
     useWalletStore.setState({
         tari_address_base58: addresses.tari_address_base58,
         tari_address_emoji: addresses.tari_address_emoji,

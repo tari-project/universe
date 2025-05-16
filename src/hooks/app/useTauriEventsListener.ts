@@ -96,11 +96,14 @@ const useTauriEventsListener = () => {
                         case 'LockWallet':
                             handleWalletLocked();
                             break;
-                        case 'WalletAddressUpdate':
-                            console.debug(`WalletAddressUpdate= `, event.payload);
-                            setWalletAddress(event.payload);
+                        case 'WalletAddressUpdate': {
+                            console.debug(`WEN WalletAddressUpdate= `, event.payload);
+                            if (event.payload) {
+                                setWalletAddress(event.payload);
+                            }
 
                             break;
+                        }
                         case 'WalletBalanceUpdate':
                             setWalletBalance(event.payload);
                             refreshTransactions();

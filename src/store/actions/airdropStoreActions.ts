@@ -116,18 +116,23 @@ export const airdropSetup = async () => {
     try {
         console.info('Fetching backend in memory config');
         const beConfig = await fetchBackendInMemoryConfig();
-        const currentExchangeId = useExchangeStore.getState().content?.exchange_id;
-        if (beConfig?.exchangeId && !currentExchangeId) {
-            await fetchExchangeContent(beConfig.exchangeId);
-        }
-        console.info('Getting existing tokens');
-        await getExistingTokens();
-        if (beConfig?.airdropUrl) {
-            console.info('Refreshing airdrop tokens');
-            await handleRefreshAirdropTokens();
-            await fetchAllUserData();
-            if (useUIStore.getState().showSplashscreen) {
-                handleCloseSplashscreen();
+
+        if (beConfig) {
+            const xcID = beConfig.exchangeId;
+            const currentID = useExchangeStore.getState().content?.exchange_id;
+            const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'universal';
+            if (canFetchXCContent) {
+                await fetchExchangeContent(xcID);
+            }
+            console.info('Getting existing tokens');
+            await getExistingTokens();
+            if (beConfig.airdropUrl) {
+                console.info('Refreshing airdrop tokens');
+                await handleRefreshAirdropTokens();
+                await fetchAllUserData();
+                if (useUIStore.getState().showSplashscreen) {
+                    handleCloseSplashscreen();
+                }
             }
         }
     } catch (error) {

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { ExchangeContent } from '@app/types/exchange.ts';
-import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface ExchangeStoreState {
     content?: ExchangeContent;
@@ -24,12 +24,13 @@ export async function fetchExchangeContent(exchangeId: string) {
     const endpoint = `https://rwa.y.at/miner/exchanges`;
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
-        const json = (await content.json()) as ExchangeContent;
-        setExchangeContent(json);
-        const canShowModal = json?.exchange_id && json?.exchange_id.length > 0 && json?.exchange_id !== 'universal';
-        if (canShowModal) {
-            setShowExchangeModal(true);
-            setSeedlessUI(true);
+        const xcContent = (await content.json()) as ExchangeContent;
+        const walletIsGenerated = useWalletStore.getState().is_tari_address_generated;
+        console.debug(`xcContent= `, xcContent);
+        console.debug(`walletIsGenerated= `, walletIsGenerated);
+        if (xcContent) {
+            setExchangeContent(xcContent);
+            setShowExchangeModal(!!walletIsGenerated);
         }
     } catch (e) {
         console.error('Could not fetch exchange content', e);
