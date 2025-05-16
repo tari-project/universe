@@ -46,11 +46,11 @@ export const handleWalletUnlocked = () => {
     initialFetchTxs();
 };
 export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
-    console.debug({ ...addressPayload });
-
     const addressIsGenerated = addressPayload.is_tari_address_generated;
     const xcID = useConfigBEInMemoryStore.getState().exchangeId;
-    console.debug(`xcID= `, xcID);
+
+    console.debug(`handleWalletUpdate addressPayload (WalletAddressUpdate Event)= `, addressPayload);
+
     setWalletAddress(addressPayload);
     setSeedlessUI(!addressIsGenerated);
 

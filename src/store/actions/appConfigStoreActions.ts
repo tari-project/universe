@@ -309,9 +309,7 @@ export const setWarmupSeen = (warmupSeen: boolean) => {
 
 export const fetchBackendInMemoryConfig = async () => {
     try {
-        console.debug(`fetching BE config...`);
         const res = await invoke('get_app_in_memory_config');
-        console.debug(`res= `, res);
         if (res) {
             useConfigBEInMemoryStore.setState({ ...res });
         }

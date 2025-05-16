@@ -66,18 +66,13 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    function onSubmit(data: ConnectFormFields) {
+    async function onSubmit(data: ConnectFormFields) {
         console.debug('onSubmit!', data);
-        invoke('confirm_exchange_address', { address })
-            .then((r) => {
-                console.debug(`r= `, r);
-                setWalletAddress({ ...r, is_tari_address_generated: false });
-                setShowExchangeModal(false);
-                setSeedlessUI(true);
-            })
-            .catch((e) => {
-                console.error('Error confirming exchange address:', e);
-            });
+        try {
+            await invoke('confirm_exchange_address', { address });
+        } catch (e) {
+            console.error('Error confirming exchange address:', e);
+        }
     }
     return (
         <Wrapper>
