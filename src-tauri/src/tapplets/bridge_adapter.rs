@@ -20,12 +20,13 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::{env, path::PathBuf};
+use std::path::PathBuf;
 
 use anyhow::Error;
 use async_trait::async_trait;
 use log::error;
 use tari_common::configuration::Network;
+use tauri::{path::BaseDirectory, AppHandle, Manager};
 
 use crate::APPLICATION_FOLDER_ID;
 
@@ -37,14 +38,11 @@ pub struct BridgeTappletAdapter {}
 
 #[async_trait]
 impl TappletApiAdapter for BridgeTappletAdapter {
-    fn get_tapplet_source_file(&self) -> Result<PathBuf, Error> {
-        // cwd path is '/src-tauri'
-        let cwd = env::current_dir().expect("Failed to get current directory");
+    fn get_tapplet_source_file(&self, app_handle: AppHandle) -> Result<PathBuf, Error> {
+        let tapplet_source_file = app_handle
+            .path()
+            .resolve("applets/bridge/bridge-v0.1.0.zip", BaseDirectory::Resource)?;
 
-        let tapplet_source_file = cwd
-            .join("tapplets")
-            .join("bridge")
-            .join("bridge-v0.1.0.zip");
         Ok(tapplet_source_file)
     }
     fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error> {

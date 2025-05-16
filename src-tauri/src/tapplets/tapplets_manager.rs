@@ -25,6 +25,7 @@ use anyhow::{anyhow, Error};
 use log::{info, warn};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
+use tauri::AppHandle;
 
 use super::tapplets_resolver::TappletApiAdapter;
 
@@ -76,11 +77,15 @@ impl TappletManager {
             .get_tapplet_dest_dir()
             .map_err(|e| anyhow!("Error getting tapplet folder. Error: {:?}", e))
     }
-    pub async fn extract_tapplet(&self, progress_tracker: ProgressTracker) -> Result<(), Error> {
+    pub async fn extract_tapplet(
+        &self,
+        progress_tracker: ProgressTracker,
+        app_handle: AppHandle,
+    ) -> Result<(), Error> {
         info!(target: LOG_TARGET,"Extracting {:?} tapplet", self.tapplet_name);
         let tapplet_source_file = self
             .adapter
-            .get_tapplet_source_file()
+            .get_tapplet_source_file(app_handle)
             .map_err(|e| anyhow!("Error getting tapplet source file: {:?}", e))?;
 
         let tapplet_dest_dir = self

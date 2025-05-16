@@ -28,6 +28,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
+use tauri::AppHandle;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
@@ -43,7 +44,7 @@ static INSTANCE: LazyLock<RwLock<TappletResolver>> =
 
 #[async_trait]
 pub trait TappletApiAdapter: Send + Sync + 'static {
-    fn get_tapplet_source_file(&self) -> Result<PathBuf, Error>;
+    fn get_tapplet_source_file(&self, app_handle: AppHandle) -> Result<PathBuf, Error>;
     fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error>;
 }
 
@@ -99,10 +100,11 @@ impl TappletResolver {
         tapplet: Tapplets,
         progress_tracker: ProgressTracker,
         timeout_channel: Receiver<String>,
+        app_handle: AppHandle,
     ) -> Result<(), Error> {
         match timeout(
             Duration::from_secs(60 * 5),
-            self.initialize_tapplet(tapplet, progress_tracker.clone()),
+            self.initialize_tapplet(tapplet, progress_tracker.clone(), app_handle),
         )
         .await
         {
@@ -121,6 +123,7 @@ impl TappletResolver {
         &self,
         tapplet: Tapplets,
         progress_tracker: ProgressTracker,
+        app_handle: AppHandle,
     ) -> Result<(), Error> {
         let manager = self
             .managers
@@ -129,7 +132,9 @@ impl TappletResolver {
             .lock()
             .await;
 
-        manager.extract_tapplet(progress_tracker).await?;
+        manager
+            .extract_tapplet(progress_tracker, app_handle)
+            .await?;
 
         Ok(())
     }

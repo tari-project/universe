@@ -236,7 +236,12 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await;
 
         tapplet_resolver
-            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
+            .initialize_tapplet_timeout(
+                Tapplets::Bridge,
+                progress.clone(),
+                rx.clone(),
+                self.app_handle.clone(),
+            )
             .await?;
 
         Ok(())
