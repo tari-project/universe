@@ -24,7 +24,7 @@ import {
     useInteractions,
     useRole,
 } from '@floating-ui/react';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 export interface SelectOption<T = string> {
     label: string;

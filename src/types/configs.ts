@@ -57,3 +57,10 @@ export interface ConfigMining {
     cpu_mining_enabled: boolean;
     gpu_engine: string;
 }
+
+export interface ConfigBackendInMemory {
+    airdropUrl: string;
+    airdropApiUrl: string;
+    airdropTwitterAuthUrl: string;
+    exchangeId?: string;
+}

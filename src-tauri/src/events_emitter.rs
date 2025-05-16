@@ -265,13 +265,18 @@ impl EventsEmitter {
         }
     }
 
-    pub async fn emit_wallet_address_update(app_handle: &AppHandle, wallet_address: TariAddress) {
+    pub async fn emit_wallet_address_update(
+        app_handle: &AppHandle,
+        wallet_address: TariAddress,
+        is_tari_address_generated: bool,
+    ) {
         let _unused = FrontendReadyChannel::current().wait_for_ready().await;
         let event = Event {
             event_type: EventType::WalletAddressUpdate,
             payload: WalletAddressUpdatePayload {
                 tari_address_base58: wallet_address.to_base58(),
                 tari_address_emoji: wallet_address.to_emoji_string(),
+                is_tari_address_generated,
             },
         };
         if let Err(e) = app_handle.emit(BACKEND_STATE_UPDATE, event) {

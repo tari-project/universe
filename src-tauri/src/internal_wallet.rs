@@ -128,6 +128,28 @@ impl InternalWallet {
     pub fn get_tari_address(&self) -> TariAddress {
         self.tari_address.clone()
     }
+    pub fn get_is_tari_address_generated(&self) -> bool {
+        self.config.is_tari_address_generated
+    }
+
+    pub async fn set_tari_address(
+        &mut self,
+        address: String,
+        config_path: PathBuf,
+    ) -> Result<TariAddress, String> {
+        let network = Network::get_current_or_user_setting_or_default()
+            .to_string()
+            .to_lowercase();
+        let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
+        let file = config_path.join(network).join("wallet_config.json");
+        self.tari_address = tari_address.clone();
+        self.config.is_tari_address_generated = false;
+        self.config.tari_address_base58 = tari_address.to_base58();
+
+        let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
+        fs::write(file, config).await.map_err(|e| e.to_string())?;
+        Ok(tari_address)
+    }
 
     pub async fn get_paper_wallet_details(
         &self,
@@ -187,6 +209,7 @@ impl InternalWallet {
             spend_public_key_hex: "".to_string(),
             config_path: Some(path.to_path_buf()),
             passphrase: None,
+            is_tari_address_generated: true,
         };
 
         let cm = CredentialManager::default_with_dir(path);
@@ -345,6 +368,7 @@ pub struct WalletConfig {
     // TODO: "This is for Universe users < v0.5.x who wouldn't be migrated yet. Once we're confident that all users have been migrated, we can remove this."
     pub(crate) passphrase: Option<SafePassword>,
     config_path: Option<PathBuf>,
+    is_tari_address_generated: bool,
 }
 
 #[derive(Debug, Serialize, Clone)]

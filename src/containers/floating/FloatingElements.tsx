@@ -19,6 +19,7 @@ import ResumeApplicationModal from './ResumeApplicationModal/ResumeApplicationMo
 import XSpaceEventBanner from './XSpaceBanner/XSpaceBanner.tsx';
 import { CustomPowerLevelsDialogContainer } from '@app/containers/navigation/components/Miner/components/CustomPowerLevels/CustomPowerLevelsDialogContainer.tsx';
 import WarmupDialog from './Warmup/WarmupDialog.tsx';
+import EXModal from '@app/containers/floating/EXModal/EXModal.tsx';
 
 const environment = import.meta.env.MODE;
 
@@ -42,6 +43,7 @@ const FloatingElements = memo(function FloatingElements() {
             <CustomPowerLevelsDialogContainer />
             {environment === 'development' && <AdminUI />}
             <WarmupDialog />
+            <EXModal />
         </FloatingTree>
     );
 });

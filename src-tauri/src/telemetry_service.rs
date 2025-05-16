@@ -58,6 +58,7 @@ pub struct FullTelemetryData {
     os: String,
     cpu_name: String,
     gpu_name: String,
+    exchange_id: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -97,11 +98,9 @@ impl TelemetryService {
         self.version = app_version;
         let cancellation_token = self.cancellation_token.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
-        let telemetry_api_url = in_memory_config_cloned
-            .read()
-            .await
-            .telemetry_api_url
-            .clone();
+        let in_memeory_config_guard = in_memory_config_cloned.read().await;
+        let telemetry_api_url = in_memeory_config_guard.telemetry_api_url.clone();
+        let exchange_id = in_memeory_config_guard.exchange_id.clone();
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);
@@ -132,6 +131,7 @@ impl TelemetryService {
                                             telemetry_api_url.clone(),
                                             system_info.clone(),
                                             anon_id.clone(),
+                                            exchange_id.clone()
                                         ))
                                     },
                                     3,
@@ -190,6 +190,7 @@ async fn send_telemetry_data(
     api_url: String,
     system_info: SystemInfo,
     app_id: String,
+    exchange_id: String,
 ) -> Result<(), TelemetryServiceError> {
     let request = reqwest::Client::new();
 
@@ -217,6 +218,7 @@ async fn send_telemetry_data(
         os: system_info.os.to_string(),
         cpu_name,
         gpu_name,
+        exchange_id,
     };
     let request_builder = request
         .post(api_url)

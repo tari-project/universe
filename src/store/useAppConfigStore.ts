@@ -1,4 +1,4 @@
-import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
+import { ConfigBackendInMemory, ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs';
 import { create } from './create';
 
 type UIConfigStoreState = Partial<ConfigUI> & {
@@ -60,6 +60,13 @@ const configUIInitialState: UIConfigStoreState = {
     warmup_seen: null,
 };
 
+const configBEInMemoryInitialState: ConfigBackendInMemory = {
+    airdropUrl: '',
+    airdropApiUrl: '',
+    airdropTwitterAuthUrl: '',
+    exchangeId: undefined,
+};
+
 export const useConfigCoreStore = create<ConfigCore>()(() => ({
     ...configCoreInitialState,
 }));
@@ -74,4 +81,8 @@ export const useConfigMiningStore = create<ConfigMining>()(() => ({
 
 export const useConfigUIStore = create<UIConfigStoreState>()(() => ({
     ...configUIInitialState,
+}));
+
+export const useConfigBEInMemoryStore = create<ConfigBackendInMemory>()(() => ({
+    ...configBEInMemoryInitialState,
 }));

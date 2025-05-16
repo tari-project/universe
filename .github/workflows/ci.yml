@@ -65,6 +65,7 @@ jobs:
           AIRDROP_API_BASE_URL: http://localhost:3004
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
+          EXCHANGE_ID: universal
         run: |
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features

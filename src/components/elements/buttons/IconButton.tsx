@@ -66,7 +66,14 @@ const BaseIconButton = styled.button<ExtendedButtonStyleProps>`
 `;
 
 export const IconButton = ({ children, active, variant = 'primary', size, ...props }: ExtendedButtonProps) => (
-    <BaseIconButton $variant={variant} $color="grey" $active={active} $size={size} {...props}>
+    <BaseIconButton
+        $variant={variant}
+        $color="grey"
+        $active={active}
+        $size={size}
+        type={props.type || 'button'}
+        {...props}
+    >
         {children}
     </BaseIconButton>
 );

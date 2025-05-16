@@ -4,6 +4,7 @@ import { Button, ButtonGroup, CategoryLabel } from '../styles';
 import { useAppStateStore } from '@app/store/appStateStore';
 import { setCriticalProblem, setDialogToShow, setShowExternalDependenciesDialog } from '@app/store/actions';
 import { useUIStore } from '@app/store/useUIStore.ts';
+import { setShowExchangeModal } from '@app/store/useExchangeStore.ts';
 
 export function DialogsGroup() {
     const criticalProblem = useAppStateStore((s) => s.criticalProblem);
@@ -29,6 +30,7 @@ export function DialogsGroup() {
                 >
                     Critical Problem
                 </Button>
+                <Button onClick={() => setShowExchangeModal(true)}>Test Exchange Modal</Button>
                 <Button
                     onClick={() => setDialogToShow(dialogToShow === 'autoUpdate' ? undefined : 'autoUpdate')}
                     $isActive={dialogToShow === 'autoUpdate'}

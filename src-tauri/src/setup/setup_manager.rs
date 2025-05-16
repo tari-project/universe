@@ -26,6 +26,7 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
+    app_in_memory_config::DEFAULT_EXCHANGE_ID,
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
@@ -33,6 +34,7 @@ use crate::{
     events::ConnectionStatusPayload,
     events_manager::EventsManager,
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -146,13 +148,13 @@ impl PhaseStatus {
 }
 
 #[derive(Default)]
-
 pub struct SetupManager {
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
+    exchange_modal_status: Sender<PhaseStatus>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
@@ -288,6 +290,12 @@ impl SetupManager {
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
+        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+            self.unlock_wallet(app_handle).await;
+            return;
+        }
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
@@ -297,15 +305,39 @@ impl SetupManager {
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
-        let unknown_phase_setup = PhaseBuilder::new()
-            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .with_listeners_for_required_phases_statuses(vec![
+        let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
+        let required_statuses = {
+            let mut statuses = vec![
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
-            ])
+            ];
+            let config_path = app_handle
+                .path()
+                .app_config_dir()
+                .expect("Could not get config dir");
+            let internal_wallet = InternalWallet::load_or_create(config_path)
+                .await
+                .expect("Could not load or create internal wallet");
+            let is_address_generated = internal_wallet.get_is_tari_address_generated();
+            let is_exchange_id_default =
+                in_memory_config.read().await.exchange_id == DEFAULT_EXCHANGE_ID;
+            if is_address_generated && !is_exchange_id_default {
+                statuses.push(self.exchange_modal_status.subscribe());
+            }
+            statuses
+        };
+        let unknown_phase_setup = PhaseBuilder::new()
+            .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
+            .with_listeners_for_required_phases_statuses(required_statuses)
             .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
             .await;
         unknown_phase_setup.setup().await;
+    }
+
+    pub async fn init_exchange_modal_status(&self) -> Result<(), anyhow::Error> {
+        self.exchange_modal_status.send(PhaseStatus::Success)?;
+        Ok(())
     }
 
     #[allow(clippy::too_many_lines)]
@@ -426,7 +458,7 @@ impl SetupManager {
             });
     }
 
-    async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
         // As we are shutting down the phases one by one which could lead to unwanted unlocks
         self.cancellation_token.lock().await.cancel();

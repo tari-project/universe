@@ -7,10 +7,12 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { setWarmupSeen } from '@app/store/actions/appConfigStoreActions.ts';
+import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 export default function Banner() {
     const { t } = useTranslation(['common', 'components']);
     const warmup_seen = useConfigUIStore((s) => s.warmup_seen);
+    const showExchangeModal = useExchangeStore((s) => s.showModal);
     const firstPlay = useRef(warmup_seen !== null && !warmup_seen);
     const [expandPlayer, setExpandPlayer] = useState(false);
 
@@ -22,11 +24,11 @@ export default function Banner() {
     }
 
     useEffect(() => {
-        if (warmup_seen === null || warmup_seen) return;
+        if (showExchangeModal === null || showExchangeModal || warmup_seen === null || warmup_seen) return;
         setExpandPlayer(true);
         setWarmupSeen(true);
         firstPlay.current = false;
-    }, [warmup_seen]);
+    }, [showExchangeModal, warmup_seen]);
 
     return (
         <>
