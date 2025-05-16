@@ -28,8 +28,11 @@ export const GridTop = styled.div`
 `;
 export const GridCenter = styled.div`
     grid-area: center;
+    flex-direction: column;
     align-items: center;
+    justify-content: center;
     display: flex;
+    gap: 10px;
 `;
 export const GridBottom = styled.div`
     grid-area: bottom;

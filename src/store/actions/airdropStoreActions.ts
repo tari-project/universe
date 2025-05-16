@@ -214,7 +214,7 @@ export const handleUsernameChange = async (username: string, onError?: (e: unkno
     });
 };
 
-async function fetchFeatureFlag(route: string) {
+export async function fetchFeatureFlag(route: string) {
     return await handleAirdropRequest<{ access: boolean } | null>({
         publicRequest: true,
         path: `/features/${route}`,

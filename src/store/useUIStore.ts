@@ -33,6 +33,7 @@ interface UIStoreState {
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
     towerSidebarOffset: number;
+    showTapplet: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -52,6 +53,7 @@ const initialState: UIStoreState = {
     showWarmup: false,
     showResumeAppModal: false,
     towerSidebarOffset: sidebarTowerOffset,
+    showTapplet: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({

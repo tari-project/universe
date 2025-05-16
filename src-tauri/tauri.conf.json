@@ -36,44 +36,70 @@
         "shortDescription": "Tari Universe is a mining app for Tari.",
         "longDescription": "Introducing Tari Universe, the beautifully simple mining app for Tari. Install it on your Mac or PC and start mining Tari with one click.",
         "publisher": "Tari Labs, LLC",
-        "createUpdaterArtifacts": true
+        "createUpdaterArtifacts": true,
+        "resources": {
+            "tapplets/bridge/bridge-v0.1.0.zip": "resources/bridge-v.0.1.0.zip"
+        }
     },
     "app": {
         "security": {
-            "capabilities": [
-                "desktop-capability",
-                "default",
-                "migrated"
-            ],
-            "dangerousDisableAssetCspModification": [
-                "style-src"
-            ],
+            "capabilities": ["desktop-capability", "default", "migrated"],
+            "dangerousDisableAssetCspModification": ["style-src"],
             "csp": {
-                "default-src": "'self' tauri: https:",
+                "default-src": "'self' tauri: https: http://localhost:* http://127.0.0.1:*",
                 "style-src": "'self' 'unsafe-inline'",
                 "connect-src": [
                     "'self'",
                     "https:",
                     "wss://ut.tari.com",
                     "tauri:",
+                    "tauri://localhost:*",
                     "ipc:",
                     "http://ipc.localhost",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
                     "data:",
                     "blob:",
                     "application/octet-stream",
                     "base64"
                 ],
-                "script-src": "'self' 'unsafe-eval'",
-                "object-src": "'self' data: blob:",
-                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'",
+                "script-src": ["'self'", "unsafe-eval", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
+                "object-src": ["'self'", "data:", "blob: ", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
+                "script-src-elem": [
+                    "'self'",
+                    "unsafe-inline",
+                    "unsafe-eval",
+                    "http://127.0.0.1:*",
+                    "http://localhost:*",
+                    "tauri:"
+                ],
                 "img-src": [
                     "'self'",
                     "data:",
                     "blob:",
                     "base64:",
                     "https://*.twimg.com",
-                    "https://*.googleusercontent.com"
+                    "https://*.googleusercontent.com",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*",
+                    "tauri:"
+                ],
+                "frame-src": [
+                    "'self'",
+                    "https:",
+                    "wss://ut.tari.com",
+                    "https://ut.tari.com",
+                    "tauri:",
+                    "tauri://localhost:*",
+                    "ipc:",
+                    "http://ipc.localhost",
+                    "http://localhost:*",
+                    "http://127.0.0.1:*"
                 ]
+            },
+            "assetProtocol": {
+                "enable": true,
+                "scope": ["**"]
             },
             "pattern": {
                 "use": "isolation",
@@ -109,9 +135,7 @@
     "plugins": {
         "updater": {
             "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEYxNUJBOEFEQkQ4RjJBMjYKUldRbUtvKzlyYWhiOFJIUmFFditENVV3d3hRbjNlZm1DMi9aMjluRUpVdHhQTytadTV3ODN3bUMK",
-            "endpoints": [
-                "https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"
-            ],
+            "endpoints": ["https://raw.githubusercontent.com/tari-project/universe/main/.updater/alpha-latest.json"],
             "windows": {
                 "installMode": "passive"
             }

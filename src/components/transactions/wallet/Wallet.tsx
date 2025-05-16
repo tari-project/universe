@@ -21,8 +21,10 @@ import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { SyncButton, TabsTitle, TabsWrapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
+import BridgeButton from '../bridge/BridgeButton.tsx';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
+import { useTappletsStore } from '@app/store/useTappletsStore.ts';
 
 interface Props {
     section: string;
@@ -37,7 +39,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-
+    const { uiBridgeSwapsEnabled } = useTappletsStore();
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
     return (
@@ -65,6 +67,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             <HistoryList />
 
+            {uiBridgeSwapsEnabled && <BridgeButton />}
             <BottomNavWrapper>
                 {uiSendRecvEnabled ? (
                     <>

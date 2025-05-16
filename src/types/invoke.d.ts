@@ -7,11 +7,13 @@ import {
     MaxConsumptionLevels,
     GpuThreads,
     P2poolConnections,
+    WalletBalance,
 } from './app-status';
 import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
+import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
 declare module '@tauri-apps/api/core' {
     function invoke(
@@ -117,4 +119,7 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
+    function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
+    function invoke(param: 'get_tari_wallet_address'): Promise<string>;
+    function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
 }
