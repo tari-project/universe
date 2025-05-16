@@ -1,5 +1,5 @@
 import TransactionModal from '@app/components/TransactionModal/TransactionModal'; // Adjust path if needed
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'motion/react';
 import { getCurrencyIcon } from '../../helpers/getIcon';
 import { ModalContent, TokenDetails, TokenInfo, TokenItem, TokenList, TokenValue } from './TokenSelection.styles';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
