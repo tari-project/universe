@@ -14,7 +14,7 @@ import { useAccount, usePublicClient } from 'wagmi';
 import { ethers, BrowserProvider, Contract, Signer as EthersSigner } from 'ethers';
 import { useWalletClient } from 'wagmi';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { WalletClient, encodeFunctionData, formatUnits as viemFormatUnits } from 'viem';
+import { Hash, WalletClient, encodeFunctionData, formatUnits as viemFormatUnits } from 'viem';
 
 // --- ABIs ---
 import erc20Abi from './abi/erc20.json';
@@ -617,6 +617,25 @@ export const useSwap = () => {
         ]
     );
 
+    const getPaidTransactionFee = useCallback(
+        async (txHash: Hash): Promise<string | null> => {
+            if (!publicClient || !txHash) return null;
+            const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+            const tx = await publicClient.getTransaction({ hash: txHash });
+
+            if (receipt && tx && tx.gasPrice) {
+                const gasUsed = receipt.gasUsed;
+
+                const gasPrice = tx.gasPrice || 0n; // May also be maxFeePerGas
+                const totalFee = gasUsed * gasPrice;
+                const totalFeeInEth = viemFormatUnits(totalFee, 18); // assumes fee in wei
+                return totalFeeInEth;
+            }
+
+            return null;
+        },
+        [publicClient]
+    );
     useEffect(() => {
         setError(null);
     }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
@@ -656,6 +675,7 @@ export const useSwap = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
+        getPaidTransactionFee,
         //addLiquidity,
         isReady:
             !!signerAsync &&

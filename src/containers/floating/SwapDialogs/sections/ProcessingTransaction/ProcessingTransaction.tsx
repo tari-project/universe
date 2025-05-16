@@ -17,7 +17,7 @@ export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | '
 interface Props {
     status: SwapStatus;
     isOpen: boolean;
-    fees?: string;
+    fees?: string | null;
     setIsOpen: (isOpen: boolean) => void;
     transactionId?: string;
 }
