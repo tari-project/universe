@@ -45,7 +45,6 @@ use crate::p2pool::models::{Connections, P2poolStats};
 use crate::progress_tracker_old::ProgressTracker;
 use crate::setup::setup_manager::{SetupManager, SetupPhase};
 use crate::tapplets::interface::ActiveTapplet;
-use crate::tapplets::tapp_consts::TAPPLET_SOURCE_DIR;
 use crate::tapplets::tapplet_server::start_tapplet;
 use crate::tapplets::{TappletResolver, Tapplets};
 use crate::tasks_tracker::TasksTrackers;
@@ -66,7 +65,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::fmt::Debug;
 use std::fs::{read_dir, remove_dir_all, remove_file, File};
-use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::Ordering;
 use std::thread::{available_parallelism, sleep};
@@ -79,7 +77,6 @@ use tauri::{Manager, PhysicalPosition, PhysicalSize};
 use tauri_plugin_sentry::sentry;
 
 const MAX_ACCEPTABLE_COMMAND_TIME: Duration = Duration::from_secs(1);
-const MAX_ACCEPTABLE_TRANSFER_TIME: Duration = Duration::from_secs(30); //TODO
 const LOG_TARGET: &str = "tari::universe::commands";
 const LOG_TARGET_WEB: &str = "tari::universe::web";
 
@@ -1817,7 +1814,7 @@ pub async fn send_one_sided_to_stealth_address(
         .send_one_sided_to_stealth_address(amount, destination, payment_id)
         .await
         .map_err(|e| e.to_string())?;
-    if timer.elapsed() > MAX_ACCEPTABLE_TRANSFER_TIME {
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "send_one_sided_to_stealth_address took too long: {:?}", timer.elapsed());
     }
     Ok(())
