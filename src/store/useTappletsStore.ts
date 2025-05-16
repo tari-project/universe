@@ -1,5 +1,5 @@
 import { create } from './create.ts';
-import { ActiveTapplet } from '@app/types/tapplets/tapplet.types.ts';
+import { ActiveTapplet, SendOneSidedRequest } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { FEATURES } from './consts.ts';
@@ -10,6 +10,8 @@ interface State {
     isFetching: boolean;
     activeTapplet: ActiveTapplet | undefined;
     uiBridgeSwapsEnabled: boolean;
+    pendingBridgeTx: SendOneSidedRequest[];
+    isPendingTappletTx: boolean;
 }
 
 interface Actions {
@@ -18,6 +20,8 @@ interface Actions {
     deactivateTapplet: () => Promise<void>;
     setUiBridgeSwaps: (enabled: boolean) => Promise<void>;
     fetchUiBridgeFeatureFlag: () => Promise<boolean>;
+    addPendingTappletTx: (tx: SendOneSidedRequest) => void;
+    removePendingTappletTx: (paymentId: string) => void;
 }
 
 type TappletsStoreState = State & Actions;
@@ -27,6 +31,8 @@ const initialState: State = {
     isInitialized: false,
     activeTapplet: undefined,
     uiBridgeSwapsEnabled: false,
+    pendingBridgeTx: [],
+    isPendingTappletTx: false,
 };
 
 export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
@@ -61,5 +67,20 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         // by default tapplets are supposed to work with the Ootle
         // run the Ootle dev/registed tapplet below
         return;
+    },
+    addPendingTappletTx: (tx: SendOneSidedRequest) => {
+        set((state) => ({
+            pendingBridgeTx: [...state.pendingBridgeTx, tx],
+            isPendingTappletTx: true,
+        }));
+    },
+    removePendingTappletTx: (paymentId: string) => {
+        set((state) => {
+            const updatedTxs = state.pendingBridgeTx.filter((tx) => tx.paymentId !== paymentId);
+            return {
+                pendingBridgeTx: updatedTxs,
+                isPendingTappletTx: updatedTxs.length > 0,
+            };
+        });
     },
 }));

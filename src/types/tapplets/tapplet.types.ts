@@ -43,7 +43,7 @@ export interface TappletConfig {
 }
 
 export interface SendOneSidedRequest {
-    amount: number;
+    amount: string;
     address: string;
-    paymentId?: string;
+    paymentId: string;
 }
