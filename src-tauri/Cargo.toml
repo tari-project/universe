@@ -70,7 +70,8 @@ tari_crypto = "0.22.0"
 tari_key_manager = { git = "https://github.com/tari-project/tari.git", tag = "v1.18.0-rc.0" }
 tari_shutdown = { git = "https://github.com/tari-project/tari.git", tag = "v1.18.0-rc.0" }
 tari_utilities = "0.8.0"
-tauri = { version = "2", features = [ "protocol-asset",
+tauri = { version = "2", features = [
+  "protocol-asset",
   "isolation",
   "macos-private-api",
   "image-png",
