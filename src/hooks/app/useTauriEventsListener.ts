@@ -49,7 +49,7 @@ import {
 import { invoke } from '@tauri-apps/api/core';
 import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
+const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet', 'WalletAddressUpdate'];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -69,7 +69,6 @@ const useTauriEventsListener = () => {
                 BACKEND_STATE_UPDATE,
                 async ({ payload: event }: { payload: BackendStateUpdateEvent }) => {
                     handleLogUpdate(event);
-                    console.debug(`event= `, event);
                     switch (event.event_type) {
                         case 'CorePhaseFinished':
                             break;
@@ -99,10 +98,7 @@ const useTauriEventsListener = () => {
                             handleWalletLocked();
                             break;
                         case 'WalletAddressUpdate': {
-                            console.debug(`WENNNNNN WalletAddressUpdate= `, event.payload);
-                            if (event.payload) {
-                                await handleWalletUpdate(event.payload);
-                            }
+                            await handleWalletUpdate(event.payload);
                             break;
                         }
                         case 'WalletBalanceUpdate':

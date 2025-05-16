@@ -66,15 +66,11 @@ export const Connect = () => {
         void validateAddress(debouncedAddress);
     }, [debouncedAddress, validateAddress]);
 
-    async function onSubmit(_data: ConnectFormFields) {
-        console.debug('onSubmit!', data);
+    async function onSubmit(_unused: ConnectFormFields) {
         try {
-            const res = await invoke('confirm_exchange_address', { address });
-            if (res) {
-                setWalletAddress(res);
-                setSeedlessUI(true);
-                setShowExchangeModal(false);
-            }
+            await invoke('confirm_exchange_address', { address });
+            setSeedlessUI(true);
+            setShowExchangeModal(false);
         } catch (e) {
             console.error('Error confirming exchange address:', e);
         }

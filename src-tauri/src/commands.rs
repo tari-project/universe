@@ -54,7 +54,6 @@ use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
 use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
 
-use crate::events::WalletAddressUpdatePayload;
 use base64::prelude::*;
 use keyring::Entry;
 use log::{debug, error, info, warn};
@@ -593,10 +592,7 @@ pub async fn get_seed_words(app: tauri::AppHandle) -> Result<Vec<String>, String
 }
 
 #[tauri::command]
-pub async fn set_tari_address(
-    address: String,
-    app: tauri::AppHandle,
-) -> Result<WalletAddressUpdatePayload, String> {
+pub async fn set_tari_address(address: String, app: tauri::AppHandle) -> Result<(), String> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -608,11 +604,13 @@ pub async fn set_tari_address(
     let new_address = internal_wallet
         .set_tari_address(address, config_path)
         .await?;
-    let response = WalletAddressUpdatePayload {
-        tari_address_base58: new_address.to_base58(),
-        tari_address_emoji: new_address.to_emoji_string(),
-        is_tari_address_generated: false,
-    };
+    let handle_clone = app.clone();
+    EventsEmitter::emit_wallet_address_update(
+        &handle_clone,
+        new_address,
+        internal_wallet.get_is_tari_address_generated(),
+    )
+    .await;
     SetupManager::get_instance()
         .add_phases_to_restart_queue(vec![
             SetupPhase::Wallet,
@@ -626,14 +624,14 @@ pub async fn set_tari_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_tari_address took too long: {:?}", timer.elapsed());
     }
-    Ok(response)
+    Ok(())
 }
 
 #[tauri::command]
 pub async fn confirm_exchange_address(
     address: String,
     app: tauri::AppHandle,
-) -> Result<WalletAddressUpdatePayload, String> {
+) -> Result<(), String> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -645,11 +643,13 @@ pub async fn confirm_exchange_address(
     let new_address = internal_wallet
         .set_tari_address(address, config_path)
         .await?;
-    let response = WalletAddressUpdatePayload {
-        tari_address_base58: new_address.to_base58(),
-        tari_address_emoji: new_address.to_emoji_string(),
-        is_tari_address_generated: false,
-    };
+    let handle_clone = app.clone();
+    EventsEmitter::emit_wallet_address_update(
+        &handle_clone,
+        new_address,
+        internal_wallet.get_is_tari_address_generated(),
+    )
+    .await;
     SetupManager::get_instance()
         .init_exchange_modal_status()
         .await
@@ -657,7 +657,7 @@ pub async fn confirm_exchange_address(
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
     }
-    Ok(response)
+    Ok(())
 }
 
 #[tauri::command]

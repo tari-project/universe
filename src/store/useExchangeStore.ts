@@ -3,7 +3,7 @@ import { ExchangeContent } from '@app/types/exchange.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface ExchangeStoreState {
-    content?: ExchangeContent;
+    content?: ExchangeContent | null;
     showModal: boolean | null;
 }
 
@@ -16,7 +16,7 @@ export const setShowExchangeModal = (showModal: boolean) => {
     useExchangeStore.setState({ showModal });
 };
 
-export const setExchangeContent = (content: ExchangeContent) => {
+export const setExchangeContent = (content?: ExchangeContent | null) => {
     useExchangeStore.setState({ content });
 };
 

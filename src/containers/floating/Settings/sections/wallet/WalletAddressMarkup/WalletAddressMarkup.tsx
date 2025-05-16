@@ -76,7 +76,7 @@ const WalletAddressMarkup = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
-    console.debug(`walletAddress after sumbit = `, walletAddress);
+
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
         if (!emojiAddress) {

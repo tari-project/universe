@@ -4,6 +4,7 @@ import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
+import { setExchangeContent } from '@app/store/useExchangeStore.ts';
 
 interface TxArgs {
     continuation: boolean;
@@ -58,12 +59,10 @@ export const refreshTransactions = async () => {
 
 export const setGeneratedTariAddress = async (newAddress: string) => {
     await invoke('set_tari_address', { address: newAddress })
-        .then((res) => {
-            if (res) {
-                setWalletAddress(res);
-                restartMining();
-                console.info('New Tari address set successfully to:', newAddress);
-            }
+        .then(() => {
+            setExchangeContent(null);
+            restartMining();
+            console.info('New Tari address set successfully to:', newAddress);
         })
         .catch((e) => {
             console.error('Could not set Monero address', e);
