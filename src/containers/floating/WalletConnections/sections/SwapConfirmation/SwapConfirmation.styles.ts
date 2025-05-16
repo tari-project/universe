@@ -166,165 +166,64 @@ export const SwapDetails = styled.div`
     flex-direction: column;
 `;
 
-export const SwapDetailsKey = styled.div`
-    color: rgba(0, 0, 0, 0.6);
-    font-family: Poppins, sans-serif;
-    font-weight: 500;
-    font-size: 11px;
-    line-height: 130%;
-    letter-spacing: -2%;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-`;
+// export const SwapDetailsKey = styled.div`
+//     color: rgba(0, 0, 0, 0.6);
+//     font-family: Poppins, sans-serif;
+//     font-weight: 500;
+//     font-size: 11px;
+//     line-height: 130%;
+//     letter-spacing: -2%;
+//     display: flex;
+//     align-items: center;
+//     gap: 8px;
+// `;
 
-export const SwapDetailsValue = styled.div`
-    color: black;
-    font-family: Poppins, sans-serif;
-    font-weight: 500;
-    font-size: 14px;
-    line-height: 117%;
-    letter-spacing: -3%;
-    display: flex;
-    justify-content: space-between; // Keeps value right-aligned if needed
-    align-items: center; // Align value vertically
+// export const SwapDetailsValue = styled.div`
+//     color: black;
+//     font-family: Poppins, sans-serif;
+//     font-weight: 500;
+//     font-size: 14px;
+//     line-height: 117%;
+//     letter-spacing: -3%;
+//     display: flex;
+//     justify-content: space-between; // Keeps value right-aligned if needed
+//     align-items: center; // Align value vertically
+//
+//     span {
+//         // If you ever add a sub-value span
+//         font-family: Poppins, sans-serif;
+//         font-weight: 500;
+//         font-size: 10px;
+//         line-height: 100%;
+//         letter-spacing: -3%;
+//     }
+// `;
 
-    span {
-        // If you ever add a sub-value span
-        font-family: Poppins, sans-serif;
-        font-weight: 500;
-        font-size: 10px;
-        line-height: 100%;
-        letter-spacing: -3%;
-    }
-`;
+// export const NewOutputWrapper = styled.div`
+//     border: 2px solid #0000001a;
+//     border-radius: 10px;
+//     display: flex;
+//     align-items: center;
+//     justify-content: space-between;
+//     padding: 13px 15px;
+//     margin-bottom: 20px;
+// `;
 
-export const NewOutputWrapper = styled.div`
-    border: 2px solid #0000001a;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px 15px;
-    margin-bottom: 20px;
-`;
+// export const NewOutputAmount = styled.div`
+//     display: flex;
+//     flex-direction: column;
+//     gap: 4px;
+// `;
 
-export const NewOutputAmount = styled.div`
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-`;
-
-export const PoweredBy = styled.div`
-    color: #7f8599;
-    padding: 20px 20px 0 20px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 5px;
-
-    font-family: Poppins, sans-serif;
-    font-weight: 500;
-    font-size: 12px;
-`;
-
-// --- ADDED/MODIFIED COMPONENTS ---
-
-// Button used to trigger token selection modal
-// It wraps the SwapOptionCurrency display
-export const TokenSelectButton = styled.button`
-    background: none;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-    display: inline-flex; // Ensures it wraps its content
-    align-items: center;
-    border-radius: 60px; // Match SwapOptionCurrency if desired for hover/focus states
-    transition: background-color 0.15s ease;
-
-    &:hover ${SwapOptionCurrency} {
-        // Style the inner div on button hover
-        background: #dcd8d7; // Slightly darker background on hover
-    }
-
-    &:focus {
-        outline: 2px solid lightblue; // Accessibility focus ring
-        outline-offset: 2px;
-    }
-
-    &:disabled {
-        cursor: not-allowed;
-        opacity: 0.6;
-        ${SwapOptionCurrency} {
-            // Make currency look disabled too
-            background: #f0f0f0;
-        }
-    }
-`;
-
-// Full-screen overlay for the modal
-export const SelectorModalOverlay = styled.div`
-    position: fixed;
-    inset: 0; // Equivalent to top: 0; left: 0; right: 0; bottom: 0;
-    background-color: rgba(0, 0, 0, 0.6); // Semi-transparent black background
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000; // Ensure it appears above other content
-    backdrop-filter: blur(4px); // Optional nice blur effect
-`;
-
-// The content container within the modal overlay
-export const SelectorModalContent = styled.div`
-    background-color: #ffffff; // White background
-    padding: 25px;
-    border-radius: 16px; // More rounded corners
-    min-width: 320px; // Minimum width
-    max-width: 400px; // Maximum width
-    width: 90%; // Responsive width
-    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15); // Soft shadow
-    max-height: 80vh; // Limit height and allow internal scrolling if needed
-    display: flex; // Use flex for content layout
-    flex-direction: column; // Stack title and list vertically
-
-    h3 {
-        margin-top: 0;
-        margin-bottom: 20px;
-        text-align: center;
-        font-family: Poppins, sans-serif; // Consistent font
-        font-size: 18px;
-        font-weight: 600;
-        color: #333; // Darker heading color
-    }
-
-    // Style the TokenSelector's internal list if needed
-    // You might need to inspect the TokenSelector's output HTML structure
-    ul {
-        margin: 0;
-        padding: 0;
-        list-style: none;
-        overflow-y: auto; // Enable scrolling if content exceeds max-height
-    }
-
-    li {
-        // Basic styling for list items within the modal (assuming TokenSelector uses <li>)
-        padding: 12px 8px;
-        border-bottom: 1px solid #f0f0f0; // Lighter separator
-        cursor: pointer;
-        transition: background-color 0.15s ease;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-family: Poppins, sans-serif;
-        font-size: 14px;
-
-        &:last-child {
-            border-bottom: none;
-        }
-
-        &:hover {
-            background-color: #f7f7f7; // Slight hover effect
-        }
-    }
-`;
+// export const PoweredBy = styled.div`
+//     color: #7f8599;
+//     padding: 20px 20px 0 20px;
+//     display: flex;
+//     justify-content: center;
+//     align-items: center;
+//     gap: 5px;
+//
+//     font-family: Poppins, sans-serif;
+//     font-weight: 500;
+//     font-size: 12px;
+// `;

@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { ALREADY_FETCHING } from '@app/App/sentryIgnore.ts';
 import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
-import { SwapStep, useWalletStore } from '../useWalletStore';
+import { useWalletStore } from '../useWalletStore';
 
 interface TxArgs {
     continuation: boolean;
@@ -76,19 +76,4 @@ export const setWalletBalance = (balance: WalletBalance) => {
         },
         calculated_balance,
     });
-};
-
-export const setWalletUiVisible = (open: boolean) => {
-    if (!open) {
-        useWalletStore.setState({ swap_step: SwapStep.ConnectWallet });
-    }
-    useWalletStore.setState({ is_swap_ui_visible: open });
-};
-
-export const setWalletConnectModalStep = (step: SwapStep) => {
-    useWalletStore.setState({ swap_step: step });
-};
-
-export const setReviewSwap = (reviewSwap: boolean) => {
-    useWalletStore.setState({ review_swap: reviewSwap });
 };
