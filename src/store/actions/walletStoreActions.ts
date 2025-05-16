@@ -4,7 +4,6 @@ import { WalletAddress, WalletBalance } from '@app/types/app-status.ts';
 import { useWalletStore } from '../useWalletStore';
 import { restartMining } from './miningStoreActions';
 import { setError } from './appStateStoreActions';
-import { useUIStore } from '@app/store';
 
 interface TxArgs {
     continuation: boolean;
@@ -70,13 +69,11 @@ export const setGeneratedTariAddress = async (newAddress: string) => {
 };
 
 export const setWalletAddress = (addresses: WalletAddress) => {
-    console.debug({ ...addresses });
     useWalletStore.setState({
         tari_address_base58: addresses.tari_address_base58,
         tari_address_emoji: addresses.tari_address_emoji,
         is_tari_address_generated: addresses.is_tari_address_generated,
     });
-    useUIStore.setState({ seedlessUI: !addresses.is_tari_address_generated });
 };
 export const setWalletBalance = (balance: WalletBalance) => {
     const calculated_balance =

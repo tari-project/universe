@@ -28,7 +28,7 @@ import {
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
-import { refreshTransactions, setWalletAddress, setWalletBalance, updateWalletScanningProgress } from '@app/store';
+import { refreshTransactions, setWalletBalance, updateWalletScanningProgress } from '@app/store';
 import { deepEqual } from '@app/utils/objectDeepEqual.ts';
 import {
     handleAppUnlocked,
@@ -37,6 +37,7 @@ import {
     handleMiningUnlocked,
     handleWalletLocked,
     handleWalletUnlocked,
+    handleWalletUpdate,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -99,9 +100,8 @@ const useTauriEventsListener = () => {
                         case 'WalletAddressUpdate': {
                             console.debug(`WEN WalletAddressUpdate= `, event.payload);
                             if (event.payload) {
-                                setWalletAddress(event.payload);
+                                await handleWalletUpdate(event.payload);
                             }
-
                             break;
                         }
                         case 'WalletBalanceUpdate':

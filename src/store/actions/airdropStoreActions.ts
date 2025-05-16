@@ -1,14 +1,15 @@
 import { invoke } from '@tauri-apps/api/core';
 import { handleRefreshAirdropTokens } from '@app/hooks/airdrop/stateHelpers/useAirdropTokensRefresh.ts';
 import {
+    AirdropConfigBackendInMemory,
     AirdropStoreState,
     AirdropTokens,
     AnimationType,
-    BackendInMemoryConfig,
     BonusTier,
     CommunityMessage,
     setAirdropTokensInConfig,
     useAirdropStore,
+    useConfigBEInMemoryStore,
     useConfigCoreStore,
     UserDetails,
     UserEntryPoints,
@@ -20,7 +21,6 @@ import { initialiseSocket, removeSocket } from '@app/utils/socket.ts';
 import { XSpaceEvent } from '@app/types/ws.ts';
 import { handleCloseSplashscreen } from '@app/store/actions/uiStoreActions.ts';
 import { FEATURES } from '@app/store/consts.ts';
-import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 interface TokenResponse {
     exp: number;
@@ -58,14 +58,21 @@ const clearState: AirdropStoreState = {
     uiSendRecvEnabled: true,
 };
 
-const fetchBackendInMemoryConfig = async () => {
-    let backendInMemoryConfig: BackendInMemoryConfig | undefined = undefined;
+const getAirdropInMemoryConfig = async () => {
+    let airdropInMemoryConfig: AirdropConfigBackendInMemory | undefined = useConfigBEInMemoryStore.getState();
+
+    if (!airdropInMemoryConfig) {
+        try {
+            airdropInMemoryConfig = await invoke('get_app_in_memory_config', {});
+        } catch (e) {
+            throw `get_app_in_memory_config error: ${e}`;
+        }
+    }
 
     try {
-        backendInMemoryConfig = await invoke('get_app_in_memory_config', {});
         const airdropTokens = (await invoke('get_airdrop_tokens')) || {};
         const newState: Partial<AirdropStoreState> = {
-            backendInMemoryConfig,
+            backendInMemoryConfig: airdropInMemoryConfig,
         };
 
         if (airdropTokens?.token) {
@@ -78,13 +85,13 @@ const fetchBackendInMemoryConfig = async () => {
 
         useAirdropStore.setState(newState);
     } catch (e) {
-        throw `get_app_in_memory_config error: ${e}`;
+        throw `get_airdrop_tokens error: ${e}`;
     }
 
-    if (!backendInMemoryConfig?.airdropUrl) {
+    if (!airdropInMemoryConfig?.airdropUrl?.length) {
         console.error('Error getting BE in memory config');
     }
-    return backendInMemoryConfig;
+    return airdropInMemoryConfig;
 };
 const getExistingTokens = async () => {
     const localStorageTokens = localStorage.getItem('airdrop-store');
@@ -115,15 +122,9 @@ const getExistingTokens = async () => {
 export const airdropSetup = async () => {
     try {
         console.info('Fetching backend in memory config');
-        const beConfig = await fetchBackendInMemoryConfig();
+        const beConfig = await getAirdropInMemoryConfig();
 
         if (beConfig) {
-            const xcID = beConfig.exchangeId;
-            const currentID = useExchangeStore.getState().content?.exchange_id;
-            const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'universal';
-            if (canFetchXCContent) {
-                await fetchExchangeContent(xcID);
-            }
             console.info('Getting existing tokens');
             await getExistingTokens();
             if (beConfig.airdropUrl) {

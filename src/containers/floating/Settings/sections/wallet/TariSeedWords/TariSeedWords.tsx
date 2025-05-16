@@ -11,7 +11,7 @@ export default function TariSeedWords() {
     return (
         <SettingsGroupWrapper $subGroup>
             <Typography variant="h6">{t('seed-words')}</Typography>
-            <SeedWords isGenerated={is_tari_address_generated} />
+            <SeedWords isGenerated={!!is_tari_address_generated} />
         </SettingsGroupWrapper>
     );
 }
