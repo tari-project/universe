@@ -20,9 +20,7 @@ import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
 import { BuyTariButton, SyncButton, TabsTitle, Wrapper, TabsWrapper } from './wallet.styles.ts';
-import { memo } from 'react';
-
-import { setWalletUiVisible } from '@app/store/actions/walletStoreActions.ts';
+import { memo, useState } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
 import { Swap } from './Swap/Swap.tsx';
@@ -40,11 +38,11 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
-    const swapUiVisible = useWalletStore((s) => s.is_swap_ui_visible);
+    const [swapUiVisible, setSwapUiVisible] = useState(false);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
 
-    if (swapUiVisible) return <Swap />;
+    if (swapUiVisible) return <Swap setSwapUiVisible={setSwapUiVisible} />;
 
     return (
         <Wrapper>
@@ -73,7 +71,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
             {uiSendRecvEnabled ? (
                 <>
-                    <BuyTariButton onClick={() => setWalletUiVisible(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
+                    <BuyTariButton onClick={() => setSwapUiVisible(true)}>{'Buy Tari (wXTM)'}</BuyTariButton>
                     <BottomNavWrapper>
                         <NavButton
                             onClick={() => setSection('send')}

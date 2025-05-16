@@ -20,7 +20,6 @@ import { ArrowIcon } from '@app/containers/floating/WalletConnections/icons/elem
 import { WalletButton } from '@app/containers/floating/WalletConnections/components/WalletButton/WalletButton';
 import { ConnectWallet } from '@app/containers/floating/WalletConnections/sections/ConnectWallet/ConnectWallet';
 import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
-import { setWalletUiVisible } from '@app/store/actions/walletStoreActions';
 import { SwapConfirmation } from '@app/containers/floating/WalletConnections/sections/SwapConfirmation/SwapConfirmation';
 import { ProcessingTransaction } from '@app/containers/floating/WalletConnections/sections/ProcessingTransaction/ProcessingTransaction';
 
@@ -33,7 +32,11 @@ import { WalletContents } from '@app/containers/floating/WalletConnections/secti
 import { SignApprovalMessage } from '@app/containers/floating/WalletConnections/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
 
-export const Swap = () => {
+interface Props {
+    setSwapUiVisible: (isVisible: boolean) => void;
+}
+
+export const Swap = ({ setSwapUiVisible }: Props) => {
     const [openWallet, setOpenWallet] = useState(false);
     const connectedAccount = useAccount();
     const { t } = useTranslation(['wallet'], { useSuspense: false });
@@ -70,7 +73,7 @@ export const Swap = () => {
             <TabHeader $noBorder>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
-                    <BackButton onClick={() => setWalletUiVisible(false)}>{t('swap.back-button')}</BackButton>
+                    <BackButton onClick={() => setSwapUiVisible(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
 
