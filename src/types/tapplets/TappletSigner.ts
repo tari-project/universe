@@ -58,7 +58,6 @@ export class TappletSigner {
     }
 
     public async removePendingTappletTx(paymentId: string): Promise<void> {
-        console.log('remove call from tapp');
         const removeTx = useTappletsStore.getState().removePendingTappletTx;
         removeTx(paymentId);
     }

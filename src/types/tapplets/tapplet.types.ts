@@ -24,24 +24,6 @@ export interface ActiveTapplet {
     supportedChain: SupportedChain[];
 }
 
-export interface BuiltInTapplet {
-    id: number;
-    version: string;
-    endpoint: string;
-    destDir: string;
-    package_name?: string;
-    display_name?: string;
-    about_summary?: string;
-    about_description?: string;
-}
-
-export interface TappletConfig {
-    packageName: string;
-    version: string;
-    permissions: object;
-    supportedChain: SupportedChain[];
-}
-
 export interface SendOneSidedRequest {
     amount: string;
     address: string;

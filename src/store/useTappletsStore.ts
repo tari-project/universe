@@ -30,7 +30,7 @@ const initialState: State = {
     isFetching: false,
     isInitialized: false,
     activeTapplet: undefined,
-    uiBridgeSwapsEnabled: false,
+    uiBridgeSwapsEnabled: true,
     pendingBridgeTx: [],
     isPendingTappletTx: false,
 };

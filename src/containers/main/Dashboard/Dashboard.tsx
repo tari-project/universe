@@ -4,6 +4,7 @@ import { DashboardContentContainer } from './styles';
 import { useAirdropStore, useUIStore } from '@app/store';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 import { Tapplet } from '@app/components/tapplets/Tapplet.tsx';
+import MiningView from './MiningView/MiningView.tsx';
 
 export default function Dashboard() {
     const { uiBridgeSwapsEnabled } = useTappletsStore();
@@ -17,7 +18,11 @@ export default function Dashboard() {
     return (
         <DashboardContentContainer $tapplet={!!activeTapplet}>
             {connectionStatus !== 'connected' && !orphanChainUiDisabled ? <DisconnectWrapper /> : null}
-            {uiBridgeSwapsEnabled && showTapplet && activeTapplet && <Tapplet source={activeTapplet.source} />}
+            {uiBridgeSwapsEnabled && showTapplet && activeTapplet ? (
+                <Tapplet source={activeTapplet.source} />
+            ) : (
+                <MiningView />
+            )}
         </DashboardContentContainer>
     );
 }

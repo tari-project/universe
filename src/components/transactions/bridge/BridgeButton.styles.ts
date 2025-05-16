@@ -2,20 +2,6 @@ import styled, { css } from 'styled-components';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 import { convertHexToRGBA } from '@app/utils/convertHex.ts';
 
-export const IconWrapper = styled.div`
-    width: 27px;
-    height: 27px;
-    border-radius: 100%;
-    background-color: rgba(255, 255, 255, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    svg {
-        height: 16px;
-    }
-`;
-
 export const ButtonWrapper = styled.div`
     position: relative;
     display: flex;
