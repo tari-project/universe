@@ -143,7 +143,7 @@ impl InternalWallet {
         let tari_address = TariAddress::from_str(&address).map_err(|e| e.to_string())?;
         let file = config_path.join(network).join("wallet_config.json");
         self.tari_address = tari_address.clone();
-        self.config.is_tari_address_generated = true;
+        self.config.is_tari_address_generated = false;
         self.config.tari_address_base58 = tari_address.to_base58();
 
         let config = serde_json::to_string(&self.config).map_err(|e| e.to_string())?;
@@ -209,7 +209,7 @@ impl InternalWallet {
             spend_public_key_hex: "".to_string(),
             config_path: Some(path.to_path_buf()),
             passphrase: None,
-            is_tari_address_generated: false,
+            is_tari_address_generated: true,
         };
 
         let cm = CredentialManager::default_with_dir(path);
