@@ -61,6 +61,7 @@ pub struct ConfigCoreContent {
     pre_release: bool,
     last_changelog_version: Version,
     airdrop_tokens: Option<AirdropTokens>,
+    swaps_enabled: Option<bool>,
     remote_base_node_address: String,
     node_type: NodeType,
 }
@@ -113,6 +114,7 @@ impl Default for ConfigCoreContent {
             pre_release: false,
             last_changelog_version: Version::new(0, 0, 0),
             airdrop_tokens: None,
+            swaps_enabled: None,
             remote_base_node_address,
             node_type: NodeType::Local,
         }
@@ -199,6 +201,7 @@ impl ConfigImpl for ConfigCore {
                 last_changelog_version: Version::from_str(old_config.last_changelog_version())
                     .unwrap_or_else(|_| Version::new(0, 0, 0)),
                 airdrop_tokens: old_config.airdrop_tokens(),
+                swaps_enabled: old_config.swaps_enabled(),
                 ..Default::default()
             };
             let _unused = Self::_save_config(self.content.clone());
