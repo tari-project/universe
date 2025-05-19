@@ -141,7 +141,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Wallet);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -156,7 +156,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Wallet,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()))
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Wallet.get_critical_problem_title()), Some(SetupPhase::Wallet.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }

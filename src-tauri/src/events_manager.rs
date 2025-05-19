@@ -169,9 +169,17 @@ impl EventsManager {
         app: &AppHandle,
         title: Option<String>,
         description: Option<String>,
+        error_message: Option<String>,
     ) {
-        EventsEmitter::emit_critical_problem(app, CriticalProblemPayload { title, description })
-            .await;
+        EventsEmitter::emit_critical_problem(
+            app,
+            CriticalProblemPayload {
+                title,
+                description,
+                error_message,
+            },
+        )
+        .await;
     }
 
     #[cfg(target_os = "windows")]
