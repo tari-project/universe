@@ -78,8 +78,6 @@ jobs:
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
-      - uses: actions/checkout@v4
-
       - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
@@ -236,6 +234,18 @@ jobs:
           includeRelease: true
           includeUpdaterJson: true
           args: ${{ matrix.platforms.args }} --features "${{ env.TS_FEATURES }}"
+
+      - name: Log target folder structure
+        shell: bash
+        run: |
+          echo "Target folder structure:"
+          ls -la src-tauri/target/release/bundle/
+          ls -la src-tauri/target/release/bundle/appimage
+          ls -la src-tauri/target/release/bundle/rpm
+          ls -la src-tauri/target/release/bundle/msi
+          ls -la src-tauri/target/release/bundle/deb
+          ls -la src-tauri/target/release/bundle/macos/
+          ls -la src-tauri/target/release/bundle/dmg/
 
       - name: Add msbuild to PATH (windows)
         uses: microsoft/setup-msbuild@v2
