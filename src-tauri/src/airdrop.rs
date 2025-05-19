@@ -21,10 +21,17 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Validation};
-use log::{info, warn};
+use log::{error, info, warn};
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use tauri::{AppHandle, Manager};
 
-use crate::{mm_proxy_adapter::MergeMiningProxyConfig, UniverseAppState};
+use crate::{
+    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    mm_proxy_adapter::MergeMiningProxyConfig,
+    tasks_tracker::TasksTrackers,
+    UniverseAppState,
+};
 
 const LOG_TARGET: &str = "tari::universe::airdrop";
 
@@ -36,6 +43,14 @@ pub struct AirdropAccessToken {
     pub provider: String,
     pub role: String,
     pub scope: String,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AirdropMinedBlockMessage {
+    pub wallet_view_key_hashed: String,
+    pub app_id: String,
+    pub block_height: u64,
 }
 
 pub fn decode_jwt_claims(t: &str) -> Option<AirdropAccessToken> {
@@ -115,4 +130,45 @@ pub async fn restart_mm_proxy_with_new_telemetry_id(
         .map_err(|e| e.to_string());
     info!(target: LOG_TARGET, "mm_proxy restarted");
     Ok(())
+}
+
+pub async fn get_wallet_view_key_hashed(app: AppHandle) -> String {
+    let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+    let view_private_key = wallet_manager.get_view_private_key().await;
+    hex::encode(Sha256::digest(view_private_key))
+}
+
+pub async fn send_new_block_mined(app: AppHandle, block_height: u64) {
+    TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
+        let app_in_config_memory = app.state::<UniverseAppState>().in_memory_config.clone();
+        let config = ConfigCore::content().await;
+        let app_id = config.anon_id().to_string();
+
+        let hashed_view_private_key = get_wallet_view_key_hashed(app.clone()).await;
+
+        let client = reqwest::Client::new();
+        let base_url = app_in_config_memory.read().await.airdrop_api_url.clone();
+        let url = format!("{}/miner/mined-block", base_url);
+        let message = AirdropMinedBlockMessage {
+            wallet_view_key_hashed: hashed_view_private_key,
+            app_id,
+            block_height
+        };
+        if let Ok(response) = client
+            .post(url)
+            .json(&message)
+            .send()
+            .await
+            .inspect_err(|e| {
+                error!(target: LOG_TARGET,"error at sending newly mined block to /miner/mined-block {}", e.to_string());
+            })
+        {
+            let status = response.status();
+            if status.is_success() {
+                info!(target:LOG_TARGET," successfully sent newly mined block data to /miner/mined-block");
+            } else {
+                error!(target:LOG_TARGET,"error at sending to /miner/mined-block {:?}",response.text().await);
+            }
+        }
+    });
 }
