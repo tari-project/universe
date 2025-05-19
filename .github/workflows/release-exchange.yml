@@ -63,9 +63,9 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -456,18 +456,14 @@ jobs:
         with:
           name: '${{ matrix.exchange.id }}*'
 
-      - name: Extract artifacts zip archives
-        shell: bash
-        run: |
-          # Extract all zip files in the current directory
-          for file in *.zip; do
-            if [ -f "$file" ]; then
-              unzip -o "$file"
-            fi
-          done
-
       - name: Log downloaded artifact
         shell: bash
         run: |
           echo "Downloaded artifact:"
+          ls -la "${{ github.workspace }}"
+
+      - name: Run create-latest-json.sh
+        shell: bash
+        run: |
+          ./scripts/create-latest-json.sh "${{ steps.build.outputs.appVersion }}"
           ls -la "${{ github.workspace }}"
