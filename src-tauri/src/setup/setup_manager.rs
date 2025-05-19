@@ -31,7 +31,7 @@ use crate::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
-    events::ConnectionStatusPayload,
+    events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
@@ -297,11 +297,19 @@ impl SetupManager {
             self.unlock_wallet(app_handle.clone()).await;
             let mut wallet_progress_tracker =
                 WalletSetupPhase::create_progress_stepper(app_handle.clone());
-            info!("[DEBUG WALLET] Setting up wallet phase");
             wallet_progress_tracker
                 .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
                 .await;
-            info!("[DEBUG WALLET] Wallet phase completed");
+            EventsManager::handle_progress_tracker_update(
+                &app_handle,
+                ProgressEvents::Wallet,
+                "setup-wallet".to_string(),
+                "setup-wallet".to_string(),
+                69.0,
+                None,
+                true, // just enforce is_completed true
+            )
+            .await;
 
             return;
         }
