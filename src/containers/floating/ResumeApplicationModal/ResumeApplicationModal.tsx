@@ -45,19 +45,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     ]);
 
     const [stageProgress, stageTotal] = useMemo(() => {
-        console.info('Debug - unknownPhaseInfoPayload:', unknownPhaseInfoPayload);
-        console.info('Debug - walletPhaseInfoPayload:', walletPhaseInfoPayload);
-        console.info('Debug - hardwarePhaseInfoPayload:', hardwarePhaseInfoPayload);
-        console.info('Debug - nodePhaseInfoPayload:', nodePhaseInfoPayload);
-        console.info('Debug - corePhaseInfoPayload:', corePhaseInfoPayload);
-        console.info('Debug - is_complete flags:', {
-            core: corePhaseInfoPayload?.is_complete,
-            node: nodePhaseInfoPayload?.is_complete,
-            hardware: hardwarePhaseInfoPayload?.is_complete,
-            wallet: walletPhaseInfoPayload?.is_complete,
-            unknown: unknownPhaseInfoPayload?.is_complete,
-        });
-
         if (unknownPhaseInfoPayload?.is_complete && walletPhaseInfoPayload?.is_complete) {
             setShowResumeAppModal(false);
             return [5, 5];
