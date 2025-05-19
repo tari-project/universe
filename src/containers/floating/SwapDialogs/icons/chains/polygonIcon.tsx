@@ -1,7 +1,7 @@
 interface IconProps {
-  width?: number | string;
-  fill?: string;
-  title?: string;
+    width?: number | string;
+    fill?: string;
+    title?: string;
 }
 
 export const PolygonIcon = ({ width, fill = '#6C00F6', title = 'Polygon Chain' }: IconProps) => (
