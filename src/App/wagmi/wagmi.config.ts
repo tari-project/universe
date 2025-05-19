@@ -3,7 +3,7 @@ import { createAppKit } from '@reown/appkit/react';
 import { mainnet, sepolia } from '@reown/appkit/networks';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
 
-const projectId = 'c523cd3d3e0246530115c1dc2c016852';
+const projectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || 'c523cd3d3e0246530115c1dc2c016852';
 
 const metadata = {
     name: 'TariUniverse',
