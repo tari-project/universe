@@ -96,12 +96,8 @@ impl WebsocketEventsManager {
 
         let app_id = ConfigCore::content().await.anon_id().clone();
 
-        let app_version = self
-            .app
-            .clone()
-            .map(|handle| handle.package_info().version.clone())
-            .expect("no app version present in WebsocketEventsManager")
-            .to_string();
+        let app_cloned = self.app.clone();
+
         let websocket_tx_channel_clone = self.websocket_tx_channel.clone();
         let close_channel_tx = self.close_channel_tx.clone();
 
@@ -110,9 +106,9 @@ impl WebsocketEventsManager {
             if *is_started_guard {
                 return Ok(());
             }
-
             TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
                 loop {
+                    let app_version_option = app_cloned.clone().map(|handle| handle.package_info().version.clone().to_string());
                     let jwt_token = ConfigCore::content()
                         .await
                         .airdrop_tokens()
@@ -121,7 +117,7 @@ impl WebsocketEventsManager {
                     let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
                     tokio::select! {
                       _= interval.tick() => {
-                            if let Some(jwt)= jwt_token{
+                            if let (Some(jwt), Some(app_version))= (jwt_token, app_version_option){
                             if let Some(message) = WebsocketEventsManager::assemble_mining_status(
                               cpu_miner_status_watch_rx.clone(),
                               gpu_latest_miner_stats.clone(),
