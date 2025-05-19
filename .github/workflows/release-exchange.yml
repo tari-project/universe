@@ -465,5 +465,5 @@ jobs:
       - name: Run create-latest-json.sh
         shell: bash
         run: |
-          ./scripts/create-latest-json.sh "${{ steps.build.outputs.appVersion }}"
+          sudo bash ./scripts/create-latest-json.sh "${{ steps.build.outputs.appVersion }}"
           ls -la "${{ github.workspace }}"
