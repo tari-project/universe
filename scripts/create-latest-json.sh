@@ -63,5 +63,66 @@
 # ├── Tari Universe-test_1.0.10_x64_en-US.msi
 # └── Tari Universe-test_1.0.10_x64_en-US.msi.sig
 
+# For url we will use filesystem path
+
 #!/usr/bin/env bash
 
+set -euo pipefail
+
+# Input: Version of the release
+VERSION=$1
+
+# Output JSON file
+OUTPUT_FILE="latest.json"
+
+# Base directory for extracted artifacts
+BASE_DIR=$(pwd)
+
+# Initialize the JSON structure
+cat <<EOF > "$OUTPUT_FILE"
+{
+  "version": "$VERSION",
+  "notes": "Tari Universe - See the assets to download this version and install",
+  "pub_date": "$(date --utc +%Y-%m-%dT%H:%M:%SZ)",
+  "platforms": {}
+}
+EOF
+
+# Function to extract archives and update JSON
+process_artifact() {
+  local artifact_path=$1
+  local platform_key=$2
+
+  # Extract the archive
+  echo "Processing $artifact_path for $platform_key..."
+  mkdir -p "$BASE_DIR/$platform_key"
+  tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1 || unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1
+
+  # Find the main file and its signature
+  local main_file=$(find "$BASE_DIR/$platform_key" -type f -name "*.AppImage" -o -name "*.msi" -o -name "*.tar.gz" | head -n 1)
+  local signature_file=$(find "$BASE_DIR/$platform_key" -type f -name "*.sig" | head -n 1)
+
+  if [[ -z "$main_file" || -z "$signature_file" ]]; then
+    echo "Error: Could not find main file or signature for $platform_key"
+    exit 1
+  fi
+
+  # Read the signature
+  local signature=$(cat "$signature_file" | base64 -w 0)
+
+  # Update the JSON
+  jq --arg platform "$platform_key" \
+     --arg url "file://$main_file" \
+     --arg signature "$signature" \
+     '.platforms[$platform] = { "url": $url, "signature": $signature }' \
+     "$OUTPUT_FILE" > tmp.json && mv tmp.json "$OUTPUT_FILE"
+}
+
+# Process each artifact
+process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_ubuntu-22.04-x64.tar.gz" "linux-x86_64"
+process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_ubuntu-24.04-arm.tar.gz" "linux-aarch64"
+process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_macos-latest.tar.gz" "darwin-aarch64"
+process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_windows-latest.zip" "windows-x86_64"
+
+echo "Generated $OUTPUT_FILE:"
+cat "$OUTPUT_FILE"
