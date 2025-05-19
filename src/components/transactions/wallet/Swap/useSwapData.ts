@@ -3,13 +3,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { formatUnits as viemFormatUnits, parseUnits as viemParseUnits, erc20Abi as viemErc20Abi } from 'viem';
 import { Token, NativeCurrency, WETH9, Ether, ChainId } from '@uniswap/sdk-core';
-import {
-    SwapField,
-    TradeDetails,
-    useSwap,
-    XTM as XTM_DEFINITIONS,
-    EnabledTokens as EnabledTokensEnum,
-} from '@app/hooks/swap/useSwapV2';
+import { SwapField, TradeDetails, useSwap, XTM as XTM_DEFINITIONS } from '@app/hooks/swap/useSwapV2';
+import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 
 export type TokenSymbol = 'POL' | 'XTM' | 'WXTM' | 'DAI' | 'ETH';
 export interface SelectableTokenInfo {
@@ -218,8 +213,7 @@ export const useSwapData = () => {
                 case EnabledTokensEnum.WETH:
                     tokenDefinitionFromEnum = WETH9[currentChainId];
                     break;
-                case EnabledTokensEnum.XTM:
-                case EnabledTokensEnum.wXTM:
+                case EnabledTokensEnum.WXTM:
                     tokenDefinitionFromEnum = xtmDef;
                     break;
                 default:
@@ -347,7 +341,7 @@ export const useSwapData = () => {
         setPriceImpact(null);
         setNetworkFee(null);
         setSlippage(null);
-        if (lastUpdatedField === 'fromValue') {
+        if (lastUpdatedField === 'ethTokenField') {
             if (targetAmount !== '') setTargetAmount('');
         } else {
             if (fromAmount !== '') setFromAmount('');
@@ -360,12 +354,12 @@ export const useSwapData = () => {
     const calcAmounts = useCallback(async () => {
         let amountTypedByUserStr: string;
         let tokenUsedForParsingAmount: Token | NativeCurrency | undefined;
-        let amountTypeForGetTradeDetails: SwapField = 'target';
+        let amountTypeForGetTradeDetails: SwapField = 'wxtmField';
 
         const tradeInputTokenSDK = sdkToken0;
         const tradeOutputTokenSDK = sdkToken1;
 
-        if (lastUpdatedField === 'fromValue') {
+        if (lastUpdatedField === 'ethTokenField') {
             amountTypedByUserStr = fromAmount;
             tokenUsedForParsingAmount = fromUiTokenDefinition;
         } else {
@@ -374,9 +368,9 @@ export const useSwapData = () => {
         }
 
         if (uiDirection === 'input') {
-            amountTypeForGetTradeDetails = lastUpdatedField === 'fromValue' ? 'fromValue' : 'target';
+            amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'ethTokenField' : 'wxtmField';
         } else {
-            amountTypeForGetTradeDetails = lastUpdatedField === 'fromValue' ? 'target' : 'fromValue';
+            amountTypeForGetTradeDetails = lastUpdatedField === 'ethTokenField' ? 'wxtmField' : 'ethTokenField';
         }
 
         if (
@@ -412,7 +406,7 @@ export const useSwapData = () => {
                 setSlippage(details.trade.priceImpact.toSignificant(2) + '% (Price Impact)'); // Consider actual slippage setting
 
                 if (shouldCalculate.current) {
-                    if (lastUpdatedField === 'fromValue') {
+                    if (lastUpdatedField === 'ethTokenField') {
                         if (uiDirection === 'input') {
                             if (details.outputAmount) setTargetAmount(details.outputAmount.toSignificant(6));
                             else if (targetAmount !== '') setTargetAmount('');
@@ -482,12 +476,12 @@ export const useSwapData = () => {
     const handleNumberInput = (value: string, field: SwapField) => {
         setReviewSwap(false);
         setTransactionId(null);
-        const currentUiTokenDef = field === 'fromValue' ? fromUiTokenDefinition : toUiTokenDefinition;
+        const currentUiTokenDef = field === 'ethTokenField' ? fromUiTokenDefinition : toUiTokenDefinition;
         const maxDecimals = currentUiTokenDef?.decimals ?? 18;
         let processedValue = value;
 
         if (processedValue === '' || processedValue === '.' || processedValue === '0') {
-            if (field === 'fromValue') {
+            if (field === 'ethTokenField') {
                 setFromAmount(processedValue);
                 if (targetAmount !== '') setTargetAmount('');
             } else {
@@ -513,7 +507,7 @@ export const useSwapData = () => {
         if (parts[1] && parts[1].length > maxDecimals)
             processedValue = `${parts[0]}.${parts[1].substring(0, maxDecimals)}`;
 
-        if (field === 'fromValue') setFromAmount(processedValue);
+        if (field === 'ethTokenField') setFromAmount(processedValue);
         else setTargetAmount(processedValue);
         setLastUpdatedField(field);
         shouldCalculate.current = true;
@@ -525,10 +519,10 @@ export const useSwapData = () => {
         setUiDirection(newUiDirection);
         setSwapEngineDirection(newUiDirection);
 
-        if (lastUpdatedField === 'fromValue' && fromAmount && Number(fromAmount) > 0) {
+        if (lastUpdatedField === 'ethTokenField' && fromAmount && Number(fromAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
-        } else if (lastUpdatedField === 'target' && targetAmount && Number(targetAmount) > 0) {
+        } else if (lastUpdatedField === 'wxtmField' && targetAmount && Number(targetAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
         } else if (fromAmount && Number(fromAmount) > 0) {
@@ -685,9 +679,9 @@ export const useSwapData = () => {
         isProcessingSwap,
         swapSuccess,
         fromAmount,
-        setFromAmount: (val: string) => handleNumberInput(val, 'fromValue'),
+        setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         targetAmount,
-        setTargetAmount: (val: string) => handleNumberInput(val, 'target'),
+        setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
         uiDirection,
         setUiDirection: handleSetUiDirection,
         handleConfirm,
