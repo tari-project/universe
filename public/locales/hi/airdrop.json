@@ -17,6 +17,7 @@
   "giftReferralCode": "Tari Universe में आमंत्रित प्रत्येक मित्र के लिए {{gems}} रत्न कमाएं। एक बार जब वे अपना खाता कनेक्ट कर लेते हैं, तो आपको आपके रत्न प्रदान किए जाएंगे।",
   "giftReferralCodeHeader": "अपना रेफरल कोड <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> रत्नों का दावा करें।",
   "invite": "आमंत्रित करें",
+  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
   "inviteFriends": "मित्रों को आमंत्रित करें",
   "inviteFriendsText": "लिंक कॉपी करें और साझा करें",
   "invitedAmount": "आपने <span>{{count}}</span> मित्रों को आमंत्रित किया है",
@@ -27,13 +28,13 @@
   "live": "लाइव",
   "logged-in-as": "<strong>@{{twitter}}</strong> के रूप में लॉग इन",
   "loggedInTitle": "एयरड्रॉप पुरस्कार",
-  "loggedOutTitle": "माइन करें और रत्न कमाने के लिए दोस्तों को आमंत्रित करें",
+  "loggedOutTitle": "Invite Friends to Earn Gems",
   "loginButton": "रत्नों का दावा करने के लिए लॉग इन करें",
   "logout": "लॉगआउट",
   "nextTierBonus": "<strong>{{count}} मित्रों</strong> को आमंत्रित करें और {{bonusGems}} बोनस रत्न कमाएं",
   "permission": {
     "setup": "तारी यूनिवर्स आपके अनुभव को <strong>सुधारने के लिए</strong> एनालिटिक्स का उपयोग करना चाहता है।",
-    "text": "Tari Universe आपके अनुभव को बेहतर बनाने और माइनिंग के लिए आपको रत्नों से पुरस्कृत करने के लिए विश्लेषण का उपयोग करना चाहता है।",
+    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "रत्न कमाएं और Tari Universe को बेहतर बनाएं"
   },
   "permissionNoGems": {

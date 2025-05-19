@@ -23,7 +23,8 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
-    setCriticalProblemTest,
+    handleCriticalProblemEvent,
+    setCriticalError,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
@@ -45,20 +46,9 @@ import {
     handleConfigWalletLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
+import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
-const LOG_EVENT_TYPES = [
-    // 'ResumingAllProcesses',
-    // 'StuckOnOrphanChain',
-    // 'MissingApplications',
-    // 'CriticalProblem',
-    // 'DetectedDevices',
-    // 'DetectedAvailableGpuEngines',
-    // 'AppConfigLoaded',
-    'LockMining',
-    'LockWallet',
-    'UnlockMining',
-    'UnlockWallet',
-];
+const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
 
 const useTauriEventsListener = () => {
     const eventRef = useRef<BackendStateUpdateEvent | null>(null);
@@ -148,9 +138,18 @@ const useTauriEventsListener = () => {
                         case 'DetectedAvailableGpuEngines':
                             setAvailableEngines(event.payload.engines, event.payload.selected_engine);
                             break;
-                        case 'CriticalProblem':
-                            setCriticalProblemTest(event.payload);
+                        case 'CriticalProblem': {
+                            const isMacAppFolderError =
+                                event.payload.title === 'common:installation-problem' &&
+                                event.payload.description === 'common:not-installed-in-applications-directory';
+
+                            if (isMacAppFolderError) {
+                                setCriticalError(event.payload);
+                            } else {
+                                handleCriticalProblemEvent(event.payload);
+                            }
                             break;
+                        }
                         case 'MissingApplications':
                             loadExternalDependencies(event.payload);
                             setShowExternalDependenciesDialog(true);
@@ -184,6 +183,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConnectionStatus':
                             handleConnectionStatusChanged(event.payload);
+                            break;
+                        case 'ShowStageSecurityModal':
+                            handleShowStagedSecurityModal();
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

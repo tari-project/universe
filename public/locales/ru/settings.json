@@ -57,6 +57,7 @@
   "inviteCode": "Код приглашения",
   "is-on-orphan-chain": "Похоже, что Вы подключены к форку, а не к основной цепочке. Любые выигранные Вами блоки могут быть аннулированы.",
   "last-block-added-time": "Время добавления последнего блока в цепь",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "Прогресс синхронизации локального узла",
   "logs": "Логи",
   "low-hash-rate-warning": "Ваш хешрейт очень низкий. Попробуйте закрыть все приложения, кроме Tari Universe",
@@ -90,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Подключите Ваш кошелек Tari Universe к телефону",
     "do-not-share-this-code": "Не делитесь этим кодом ни с кем",
-    "link-tari-aurora": "Связать с Tari Aurora",
+    "link-tari-aurora": "Связать с Tari Universe Mobile",
     "load-qr-code": "Загрузить QR-код",
     "passphrase": "Парольная фраза"
   },
@@ -163,6 +164,7 @@
   "use-random-port": "Использовать случайный порт",
   "use-tor": "Использовать Tor",
   "use-tor-bridges": "Использовать мосты Tor",
+  "user-agreement": "User Agreement",
   "visual-mode": "Визуальный режим",
   "yes": "Да",
   "your-feedback": "Пожалуйста, опишите Вашу проблему",

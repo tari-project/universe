@@ -58,6 +58,7 @@
   "inviteCode": "Kod Zaproszenia",
   "is-on-orphan-chain": "Wygląda na to, że jesteś połączony z rozwidleniem, a nie z głównym łańcuchem. Wszelkie wygrane bloki mogą zostać unieważnione.",
   "last-block-added-time": "Czas dodania ostatniego bloku do łańcucha",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "Postęp synchronizacji lokalnego węzła",
   "logs": "Logi",
   "low-hash-rate-warning": "Twój hash rate jest bardzo niski. Spróbuj zamknąć wszystkie aplikacje poza Tari Universe",
@@ -92,7 +93,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Połącz swój portfel Tari Universe z telefonem",
     "do-not-share-this-code": "Nie udostępniaj tego kodu nikomu",
-    "link-tari-aurora": "Połącz z Tari Aurora",
+    "link-tari-aurora": "Połącz z Tari Universe Mobile",
     "load-qr-code": "Załaduj kod QR",
     "passphrase": "Hasło"
   },
@@ -165,6 +166,7 @@
   "use-random-port": "Użyj losowego portu",
   "use-tor": "Używaj Tor",
   "use-tor-bridges": "Użyj mostów Tor",
+  "user-agreement": "User Agreement",
   "visual-mode": "Tryb wizualny",
   "yes": "Tak",
   "your-feedback": "Proszę opisać swój problem",

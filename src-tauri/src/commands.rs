@@ -1674,6 +1674,39 @@ pub async fn proceed_with_update(
 }
 
 #[tauri::command]
+pub async fn start_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    let timer = Instant::now();
+    info!(target: LOG_TARGET, "start_mining_status called");
+    state
+        .mining_status_manager
+        .write()
+        .await
+        .start_polling()
+        .await
+        .map_err(|e| e.to_string())?;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "start_mining_status_sending took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn stop_mining_status(state: tauri::State<'_, UniverseAppState>) -> Result<(), String> {
+    info!(target: LOG_TARGET, "stop_mining_status called");
+    let timer = Instant::now();
+    state
+        .mining_status_manager
+        .write()
+        .await
+        .stop_polling()
+        .await;
+    if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
+        warn!(target: LOG_TARGET, "stop_mining_status_sending took too long: {:?}", timer.elapsed());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn set_selected_engine(
     selected_engine: &str,
     state: tauri::State<'_, UniverseAppState>,

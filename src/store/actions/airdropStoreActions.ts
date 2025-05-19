@@ -54,7 +54,7 @@ const clearState: AirdropStoreState = {
     userPoints: undefined,
     bonusTiers: undefined,
     flareAnimationType: undefined,
-    uiSendRecvEnabled: false,
+    uiSendRecvEnabled: true,
 };
 
 const fetchBackendInMemoryConfig = async () => {
@@ -155,6 +155,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             () => {
                 if (airdropApiUrl && authToken) {
                     initialiseSocket();
+                    invoke('start_mining_status').catch(console.error);
                 }
             }
         );
@@ -169,6 +170,7 @@ export const setAirdropTokens = async (airdropTokens?: AirdropTokens) => {
             syncedWithBackend: true,
             airdropTokens: undefined,
         }));
+        invoke('stop_mining_status').catch(console.error);
         removeSocket();
 
         try {
@@ -251,7 +253,7 @@ export async function fetchWarmupFeatureFlag() {
 
 export async function fetchUiSendRecvFeatureFlag() {
     const response = await fetchFeatureFlag(FEATURES.FF_UI_TX);
-    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || false });
+    useAirdropStore.setState({ uiSendRecvEnabled: response?.access || true });
     return response;
 }
 

@@ -72,6 +72,7 @@ pub struct ConfigUIContent {
     visual_mode: bool,
     show_experimental_settings: bool,
     warmup_seen: bool,
+    was_staged_security_modal_shown: bool,
 }
 
 impl Default for ConfigUIContent {
@@ -89,6 +90,7 @@ impl Default for ConfigUIContent {
             visual_mode: true,
             show_experimental_settings: false,
             warmup_seen: false,
+            was_staged_security_modal_shown: false,
         }
     }
 }

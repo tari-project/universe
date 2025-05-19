@@ -57,6 +57,7 @@
   "inviteCode": "Davet Kodu",
   "is-on-orphan-chain": "Bir çatal ile bağlantılı görünüyorsunuz, ana zincirle değil. Kazandığınız bloklar geçersiz kılınabilir.",
   "last-block-added-time": "Zincir zamanına eklenen son blok",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "Yerel düğüm senkronizasyon ilerlemesi",
   "logs": "Günlükler",
   "low-hash-rate-warning": "Hashrate\"iniz çok düşük. Tari Evreni dışındaki tüm uygulamaları kapatmayı deneyin",
@@ -90,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universe cüzdanınızı telefonunuza bağlayın",
     "do-not-share-this-code": "Bu kodu kimseyle paylaşmayın",
-    "link-tari-aurora": "Tari Aurora\"yı Bağla",
+    "link-tari-aurora": "Tari Universe Mobile\"yı Bağla",
     "load-qr-code": "QR kodunu yükle",
     "passphrase": "Parola"
   },
@@ -163,6 +164,7 @@
   "use-random-port": "Rastgele port kullan",
   "use-tor": "Tor Kullan",
   "use-tor-bridges": "Tor Köprülerini Kullan",
+  "user-agreement": "User Agreement",
   "visual-mode": "Görsel mod",
   "yes": "Evet",
   "your-feedback": "Lütfen sorununuzu açıklayın",

@@ -28,6 +28,7 @@ use cpu_miner::CpuMinerConfig;
 use events_manager::EventsManager;
 use gpu_miner_adapter::GpuMinerStatus;
 use log::{error, info, warn};
+use mining_status_manager::MiningStatusManager;
 use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
@@ -109,6 +110,7 @@ mod gpu_miner_adapter;
 mod gpu_status_file;
 mod hardware;
 mod internal_wallet;
+mod mining_status_manager;
 mod mm_proxy_adapter;
 mod mm_proxy_manager;
 mod network_utils;
@@ -286,6 +288,7 @@ struct UniverseAppState {
     updates_manager: UpdatesManager,
     cached_p2pool_connections: Arc<RwLock<Option<Option<Connections>>>>,
     systemtray_manager: Arc<RwLock<SystemTrayManager>>,
+    mining_status_manager: Arc<RwLock<MiningStatusManager>>,
     websocket_message_tx: Arc<tokio::sync::mpsc::Sender<WebsocketMessage>>,
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
@@ -427,6 +430,12 @@ fn main() {
 
     let feedback = Feedback::new(app_in_memory_config.clone());
 
+    let mining_status_manager = MiningStatusManager::new(
+        cpu_miner_status_watch_rx.clone(),
+        gpu_status_rx.clone(),
+        base_node_watch_rx.clone(),
+        app_in_memory_config.clone(),
+    );
     let app_state = UniverseAppState {
         stop_start_mutex: Arc::new(Mutex::new(())),
         is_getting_p2pool_connections: Arc::new(AtomicBool::new(false)),
@@ -455,6 +464,7 @@ fn main() {
         updates_manager,
         cached_p2pool_connections: Arc::new(RwLock::new(None)),
         systemtray_manager: Arc::new(RwLock::new(SystemTrayManager::new())),
+        mining_status_manager: Arc::new(RwLock::new(mining_status_manager)),
         websocket_message_tx: Arc::new(websocket_message_tx),
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
@@ -628,6 +638,8 @@ fn main() {
             commands::get_airdrop_tokens,
             commands::set_selected_engine,
             commands::frontend_ready,
+            commands::start_mining_status,
+            commands::stop_mining_status,
             commands::websocket_connect,
             commands::websocket_close,
             commands::reconnect,

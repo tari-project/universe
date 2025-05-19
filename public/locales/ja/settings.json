@@ -57,6 +57,7 @@
   "inviteCode": "招待コード",
   "is-on-orphan-chain": "フォークに接続されているようです。メインチェーンではありません。獲得したブロックは無効になる可能性があります。",
   "last-block-added-time": "最後のブロックがチェーンに追加された時間",
+  "license-agreement": "License Agreement",
   "local-node-sync-progress": "ローカルノードの同期進行状況",
   "logs": "ログ",
   "low-hash-rate-warning": "ハッシュレートが非常に低いです。Tari Universe以外のすべてのアプリを閉じてみてください",
@@ -90,7 +91,7 @@
   "paper-wallet": {
     "connect-wallet-to-phone": "Tari Universeウォレットを電話に接続",
     "do-not-share-this-code": "このコードを誰とも共有しないでください",
-    "link-tari-aurora": "Tari Auroraをリンク",
+    "link-tari-aurora": "Tari Universe Mobileをリンク",
     "load-qr-code": "QRコードを読み込む",
     "passphrase": "パスフレーズ"
   },
@@ -163,6 +164,7 @@
   "use-random-port": "ランダムポートを使用",
   "use-tor": "Torを使用する",
   "use-tor-bridges": "Torブリッジを使用",
+  "user-agreement": "User Agreement",
   "visual-mode": "ビジュアルモード",
   "yes": "はい",
   "your-feedback": "問題を説明してください",

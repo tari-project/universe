@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { HiOutlineExternalLink } from 'react-icons/hi';
 import { Typography } from '@app/components/elements/Typography';
 import { SETTINGS_TYPES, SettingsType } from '../types.ts';
-import { ButtonContainer, Container, SectionButton, TermsBtn } from './Navigation.styles.ts';
+import { ButtonContainer, Container, LinkContainer, SectionButton, TermsBtn } from './Navigation.styles.ts';
 
 import { open } from '@tauri-apps/plugin-shell';
 interface SettingsNavigationProps {
@@ -35,10 +35,16 @@ export default function SettingsNavigation({ activeSection, onChangeActiveSectio
                     );
                 })}
             </ButtonContainer>
-            <TermsBtn onClick={() => open('https://github.com/tari-project/universe/blob/main/LICENSE.md')}>
-                <Typography>{t('terms-and-conditions')}</Typography>
-                <HiOutlineExternalLink />
-            </TermsBtn>
+            <LinkContainer>
+                <TermsBtn onClick={() => open('https://www.tari.com/user_agreement/')}>
+                    <Typography>{t('user-agreement')}</Typography>
+                    <HiOutlineExternalLink />
+                </TermsBtn>
+                <TermsBtn onClick={() => open('https://github.com/tari-project/universe/blob/main/LICENSE.md')}>
+                    <Typography>{t('license-agreement')}</Typography>
+                    <HiOutlineExternalLink />
+                </TermsBtn>
+            </LinkContainer>
         </Container>
     );
 }

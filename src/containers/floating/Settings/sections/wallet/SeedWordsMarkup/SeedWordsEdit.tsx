@@ -145,6 +145,7 @@ export const SeedWordsEdit = ({ seedWords, seedWordsFetching, toggleEdit }: Seed
                                 disabled={seedWordsFetching}
                                 onPaste={handlePaste}
                                 minHeight="80px"
+                                autoFocus
                                 {...rest}
                             />
                         );

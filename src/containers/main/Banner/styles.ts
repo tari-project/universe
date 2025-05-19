@@ -1,4 +1,6 @@
 import styled from 'styled-components';
+import thumbnailImage from './images/thumbnail.png';
+import backgroundImage from './images/background.png';
 
 export const DashboardBanner = styled.div`
     width: 100%;
@@ -6,9 +8,15 @@ export const DashboardBanner = styled.div`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: ${({ theme }) => theme.palette.background.secondary};
-    border-radius: 15px;
-    padding: 10px;
+
+    background-color: ${({ theme }) => theme.palette.background.secondary};
+    background-image: url(${backgroundImage});
+    background-size: cover;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+
+    border-radius: 18px;
+    padding: 10px 16px;
     gap: 10px;
     pointer-events: auto;
     position: relative;
@@ -73,21 +81,32 @@ export const VideoPreview = styled.div`
     color: ${({ theme }) => theme.colors.greyscale[100]};
     transition: transform 0.2s ease-in;
     cursor: pointer;
-    &:hover {
-        svg {
-            transform: scale(1.1);
-        }
-    }
+
+    background-image: url(${thumbnailImage});
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: ${({ theme }) => theme.colors.tariPurple[900]};
+
     svg {
         display: flex;
         position: absolute;
         height: 18px;
         z-index: 1;
+        transition: transform 0.2s ease;
     }
+
     video {
         display: flex;
         height: 100%;
-        width: auto;
-        filter: blur(0.04rem);
+        width: 100%;
+        object-fit: cover;
+        filter: blur(2px);
+    }
+
+    &:hover {
+        svg {
+            transform: scale(1.25);
+        }
     }
 `;

@@ -22,12 +22,14 @@
 
 use crate::configs::config_core::{ConfigCore, ConfigCoreContent};
 use crate::configs::trait_config::ConfigImpl;
+use crate::github::ReleaseSource;
 use crate::ProgressTracker;
 use anyhow::{anyhow, Error};
 use async_trait::async_trait;
 use log::error;
 use regex::Regex;
 use semver::Version;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
@@ -38,7 +40,6 @@ use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
 use tokio::time::timeout;
 
-use super::adapter_cdn::CDNReleaseAdapter;
 use super::adapter_github::GithubReleasesAdapter;
 use super::adapter_tor::TorReleaseAdapter;
 use super::adapter_xmrig::XmrigVersionApiAdapter;
@@ -50,27 +51,33 @@ const TIME_BETWEEN_BINARIES_UPDATES: Duration = Duration::from_secs(60 * 60 * 6)
 static INSTANCE: LazyLock<RwLock<BinaryResolver>> =
     LazyLock::new(|| RwLock::new(BinaryResolver::new()));
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionDownloadInfo {
     pub(crate) version: Version,
     pub(crate) assets: Vec<VersionAsset>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VersionAsset {
     pub(crate) url: String,
+    pub(crate) fallback_url: Option<String>,
     pub(crate) name: String,
+    pub(crate) source: ReleaseSource,
 }
 
 #[async_trait]
 pub trait LatestVersionApiAdapter: Send + Sync + 'static {
     async fn fetch_releases_list(&self) -> Result<Vec<VersionDownloadInfo>, Error>;
 
+    async fn get_expected_checksum(
+        &self,
+        checksum_path: PathBuf,
+        asset_name: &str,
+    ) -> Result<String, Error>;
     async fn download_and_get_checksum_path(
         &self,
         directory: PathBuf,
         download_info: VersionDownloadInfo,
-        progress_tracker: ProgressTracker,
     ) -> Result<PathBuf, Error>;
 
     fn get_binary_folder(&self) -> Result<PathBuf, Error>;
@@ -110,83 +117,13 @@ impl BinaryResolver {
                 Network::LocalNet => ("pre", gpu_miner_testnet_regex),
             };
 
-        let xmrig_default_adapter = XmrigVersionApiAdapter {};
-
-        let gpu_default_adapter = GithubReleasesAdapter {
-            repo: "glytex".to_string(),
-            owner: "tari-project".to_string(),
-            specific_name: gpuminer_specific_name,
-        };
-
-        // let merge_mining_default_adapter = GithubReleasesAdapter {
-        //     repo: "tari".to_string(),
-        //     owner: "tari-project".to_string(),
-        //     specific_name: None,
-        // };
-        let merge_mining_cdn_version =
-            CDNReleaseAdapter::read_version(Binaries::MergeMiningProxy.name().to_string());
-        let merge_mining_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::MergeMiningProxy,
-            specific_name: None,
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
-                merge_mining_cdn_version,
-                merge_mining_cdn_version
-            ),
-        };
-
-        // let minotari_node_default_adapter = GithubReleasesAdapter {
-        //     repo: "tari".to_string(),
-        //     owner: "tari-project".to_string(),
-        //     specific_name: None,
-        // };
-
-        let minotari_node_cdn_version =
-            CDNReleaseAdapter::read_version(Binaries::MinotariNode.name().to_string());
-
-        let minotari_node_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::MinotariNode,
-            specific_name: None,
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
-                minotari_node_cdn_version,
-                minotari_node_cdn_version
-            ),
-        };
-        // let wallet_default_adapter = GithubReleasesAdapter {
-        //     repo: "tari".to_string(),
-        //     owner: "tari-project".to_string(),
-        //     specific_name: None,
-        // };
-
-        let wallet_cdn_version =
-            CDNReleaseAdapter::read_version(Binaries::Wallet.name().to_string());
-
-        let wallet_cdn_adapter = CDNReleaseAdapter {
-            binary_name: Binaries::Wallet,
-            specific_name: None,
-            cdn_versions_list_path: format!(
-                "https://cdn-universe.tari.com/tari-project/tari/releases/download/v{}/tari_suite-{}.sha256-unsigned.txt",
-                wallet_cdn_version,
-                wallet_cdn_version
-            ),
-        };
-
-        let sha_pool_default = GithubReleasesAdapter {
-            repo: "sha-p2pool".to_string(),
-            owner: "tari-project".to_string(),
-            specific_name: None,
-        };
-
-        let tor_default_adapter = TorReleaseAdapter {};
-
         binary_manager.insert(
             Binaries::Xmrig,
             Mutex::new(BinaryManager::new(
                 Binaries::Xmrig.name().to_string(),
                 // Some("xmrig-6.22.0".to_string()),
                 None,
-                Box::new(xmrig_default_adapter),
+                Box::new(XmrigVersionApiAdapter {}),
                 None,
                 true,
             )),
@@ -197,7 +134,11 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::GpuMiner.name().to_string(),
                 None,
-                Box::new(gpu_default_adapter),
+                Box::new(GithubReleasesAdapter {
+                    repo: "glytex".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: gpuminer_specific_name,
+                }),
                 None,
                 true,
             )),
@@ -208,7 +149,11 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::MergeMiningProxy.name().to_string(),
                 None,
-                Box::new(merge_mining_cdn_adapter),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -219,7 +164,11 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::MinotariNode.name().to_string(),
                 None,
-                Box::new(minotari_node_cdn_adapter),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -230,7 +179,11 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::Wallet.name().to_string(),
                 None,
-                Box::new(wallet_cdn_adapter),
+                Box::new(GithubReleasesAdapter {
+                    repo: "tari".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
                 Some(tari_prerelease_prefix.to_string()),
                 true,
             )),
@@ -241,7 +194,11 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::ShaP2pool.name().to_string(),
                 None,
-                Box::new(sha_pool_default),
+                Box::new(GithubReleasesAdapter {
+                    repo: "sha-p2pool".to_string(),
+                    owner: "tari-project".to_string(),
+                    specific_name: None,
+                }),
                 None,
                 true,
             )),
@@ -252,7 +209,7 @@ impl BinaryResolver {
             Mutex::new(BinaryManager::new(
                 Binaries::Tor.name().to_string(),
                 Some("tor".to_string()),
-                Box::new(tor_default_adapter),
+                Box::new(TorReleaseAdapter {}),
                 None,
                 true,
             )),
@@ -349,24 +306,21 @@ impl BinaryResolver {
             .lock()
             .await;
 
+        #[allow(unused_variables)]
+        // We will remove this logic in next PR's
         let should_check_for_update = Self::should_check_for_update().await;
 
         manager.read_local_versions().await;
-
-        if should_check_for_update {
-            // Will populate Vec of downloaded versions that meet the requirements
-            manager.check_for_updates().await;
-        }
+        manager.check_for_updates().await;
 
         // Selects the highest version from the Vec of downloaded versions and local versions
         let mut highest_version = manager.select_highest_version();
 
         // This covers case when we do not check newest version and there is no local version
-        if !should_check_for_update && highest_version.is_none() {
-            manager.check_for_updates().await;
+        if highest_version.is_none() {
             highest_version = manager.select_highest_version();
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 
@@ -375,7 +329,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 
@@ -421,7 +375,7 @@ impl BinaryResolver {
             manager.check_if_files_for_version_exist(highest_version.clone());
         if !check_if_files_exist {
             manager
-                .download_selected_version(highest_version.clone(), progress_tracker.clone())
+                .download_version_with_retries(highest_version.clone(), progress_tracker.clone())
                 .await?;
         }
 

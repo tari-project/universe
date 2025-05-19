@@ -1,4 +1,11 @@
 {
+  "actions": {
+    "earn-gems": "Earn gems",
+    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
+    "earn-gems-cta": "Connect X Account",
+    "mode": "Customize Mode",
+    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+  },
   "could-not-auto-update": "当机器被锁定或处于睡眠模式时，我们无法自动更新 Tari Universe 到 {{version}}。",
   "dont-worry": "别担心，下次不会花这么长时间",
   "installing-latest-version": "正在安装 Tari 宇宙的 {{version}} 版本",
