@@ -35,6 +35,7 @@ use crate::{
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
+    progress_trackers::progress_plans::{ProgressPlans, ProgressSetupWalletPlan},
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -293,7 +294,15 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            self.unlock_wallet(app_handle).await;
+            self.unlock_wallet(app_handle.clone()).await;
+            let mut wallet_progress_tracker =
+                WalletSetupPhase::create_progress_stepper(app_handle.clone());
+            info!("[DEBUG WALLET] Setting up wallet phase");
+            wallet_progress_tracker
+                .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::Done))
+                .await;
+            info!("[DEBUG WALLET] Wallet phase completed");
+
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
