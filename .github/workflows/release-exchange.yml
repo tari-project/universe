@@ -436,7 +436,7 @@ jobs:
           sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
 
   updater-artifact:
-    name: Prepare updater artifact
+    name: Prepare updater artifact ${{ matrix.exchange.id }}
     needs: [read-exchanges, builds]
     strategy:
       fail-fast: false
@@ -450,6 +450,21 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: '${{ matrix.exchange.id }}*'
+
+      - name: Delete artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: '${{ matrix.exchange.id }}*'
+
+      - name: Extract artifacts zip archives
+        shell: bash
+        run: |
+          # Extract all zip files in the current directory
+          for file in *.zip; do
+            if [ -f "$file" ]; then
+              unzip -o "$file"
+            fi
+          done
 
       - name: Log downloaded artifact
         shell: bash

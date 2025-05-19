@@ -34,88 +34,34 @@
 # Where "1.0.10" is the version of the release, provided as parameter to the script
 # The script will be run in the context of the release workflow, so it will have access to the GITHUB_TOKEN
 
+# archives with the artifacts are downloaded to the current directory and will be accessed on these paths:
+
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_macos-latest
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_ubuntu-22.04-x64
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_ubuntu-24.04-arm
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_windows-latest
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_x64_en-US
+
+# The script will need to extract archives
+# After extraction they will look like this:
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_macos-latest:
+# ├── dmg
+# │   └── Tari.Universe_test-1.0.10_universal.dmg
+# └── macos
+#     ├── Tari Universe-test.app
+#     └── Tari Universe-test.app.tar.gz
+#     └── Tari Universe-test.app.tar.gz.sig
+
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_ubuntu-22.04-x64:
+# ├── appimage
+# │   ├── tari_universe-test_1.0.10_amd64.AppImage
+# │   └── tari_universe-test_1.0.10_amd64.AppImage.sig
+# └── deb
+#     ├── tari_universe-test_1.0.10_amd64.deb
+
+# ff0f0a96-52db-42d8-a84e-b781ad0c7614_1.0.10_windows-latest
+# ├── Tari Universe-test_1.0.10_x64_en-US.msi
+# └── Tari Universe-test_1.0.10_x64_en-US.msi.sig
+
 #!/usr/bin/env bash
 
-set -euo pipefail
-
-# Ensure the version is passed as an argument
-if [ "$#" -ne 1 ]; then
-  echo "Usage: $0 <version>"
-  exit 1
-fi
-
-VERSION="$1"
-NOTES="Tari Universe - See the assets to download this version and install"
-PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-LATEST_JSON="latest.json"
-
-# Ensure GITHUB_TOKEN is available
-if [ -z "${GITHUB_TOKEN:-}" ]; then
-  echo "Error: GITHUB_TOKEN is not set."
-  exit 1
-fi
-
-# Function to download artifacts for a specific platform
-download_artifact() {
-  local platform="$1"
-  local artifact_name="$2"
-  local output_file="$3"
-
-  echo "Downloading artifact for platform: $platform"
-  gh run download --name "$artifact_name" --pattern "$output_file" --token "$GITHUB_TOKEN"
-}
-
-# Function to generate platform entry
-generate_platform_entry() {
-  local platform="$1"
-  local artifact_name="$2"
-  local signature_file="$3"
-  local url="$4"
-
-  # Download artifact and signature
-  download_artifact "$platform" "$artifact_name" "$artifact_name"
-  download_artifact "$platform" "$signature_file" "$signature_file"
-
-  # Read signature content
-  local signature
-  signature=$(cat "$signature_file")
-
-  # Generate JSON entry
-  echo "\"$platform\": {"
-  echo "  \"signature\": \"$signature\","
-  echo "  \"url\": \"$url\""
-  echo "}"
-}
-
-# Start building the latest.json structure
-echo "{" > "$LATEST_JSON"
-echo "  \"version\": \"$VERSION\"," >> "$LATEST_JSON"
-echo "  \"notes\": \"$NOTES\"," >> "$LATEST_JSON"
-echo "  \"pub_date\": \"$PUB_DATE\"," >> "$LATEST_JSON"
-echo "  \"platforms\": {" >> "$LATEST_JSON"
-
-# Define platforms and their respective artifact names
-PLATFORMS=(
-  "linux-x86_64 tari_universe_${VERSION}_amd64.AppImage tari_universe_${VERSION}_amd64.AppImage.sig https://github.com/tari-project/universe/releases/download/v${VERSION}/tari_universe_${VERSION}_amd64.AppImage"
-  "linux-aarch64 tari_universe_${VERSION}_aarch64.AppImage tari_universe_${VERSION}_aarch64.AppImage.sig https://github.com/tari-project/universe/releases/download/v${VERSION}/tari_universe_${VERSION}_aarch64.AppImage"
-  "darwin-aarch64 Tari.Universe_universal.app.tar.gz Tari.Universe_universal.app.tar.gz.sig https://github.com/tari-project/universe/releases/download/v${VERSION}/Tari.Universe_universal.app.tar.gz"
-  "darwin-x86_64 Tari.Universe_universal.app.tar.gz Tari.Universe_universal.app.tar.gz.sig https://github.com/tari-project/universe/releases/download/v${VERSION}/Tari.Universe_universal.app.tar.gz"
-  "windows-x86_64 Tari.Universe_${VERSION}_x64_en-US.msi Tari.Universe_${VERSION}_x64_en-US.msi.sig https://github.com/tari-project/universe/releases/download/v${VERSION}/Tari.Universe_${VERSION}_x64_en-US.msi"
-)
-
-# Loop through platforms and generate entries
-for i in "${!PLATFORMS[@]}"; do
-  IFS=" " read -r platform artifact_name signature_file url <<< "${PLATFORMS[$i]}"
-  generate_platform_entry "$platform" "$artifact_name" "$signature_file" "$url" >> "$LATEST_JSON"
-
-  # Add a comma if it's not the last platform
-  if [ "$i" -lt $((${#PLATFORMS[@]} - 1)) ]; then
-    echo "," >> "$LATEST_JSON"
-  fi
-done
-
-# Close the JSON structure
-echo "  }" >> "$LATEST_JSON"
-echo "}" >> "$LATEST_JSON"
-
-echo "latest.json has been created successfully."
