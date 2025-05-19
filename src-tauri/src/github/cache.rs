@@ -145,9 +145,7 @@ impl CacheJsonFile {
     ) -> Result<(), Error> {
         let identifier = Self::create_cache_entry_identifier(repo_owner, repo_name);
 
-        if self.cache_entries.contains_key(&identifier) {
-            self.update_cache_entry(repo_owner, repo_name, github_etag, mirror_etag)?;
-        } else {
+        if let std::collections::hash_map::Entry::Vacant(e) = self.cache_entries.entry(identifier) {
             let cache_entry = CacheEntry {
                 repo_owner: repo_owner.to_string(),
                 repo_name: repo_name.to_string(),
@@ -161,7 +159,9 @@ impl CacheJsonFile {
                     .versions_cache_folder_path
                     .join(format!("{}-{}-mirror.json", repo_owner, repo_name)),
             };
-            self.cache_entries.insert(identifier, cache_entry);
+            e.insert(cache_entry);
+        } else {
+            self.update_cache_entry(repo_owner, repo_name, github_etag, mirror_etag)?;
         };
 
         self.save_version_releases_responses_cache_file()?;
