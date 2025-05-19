@@ -240,22 +240,16 @@ impl SetupManager {
                 }
             });
         });
-        info!(target: LOG_TARGET, "Handle node type update");
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        info!(target: LOG_TARGET, "config core init");
         ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
-        info!(target: LOG_TARGET, "config wallet init");
         ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
-        info!(target: LOG_TARGET, "config mining init");
         ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
-        info!(target: LOG_TARGET, "config ui init");
         ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
-        info!(target: LOG_TARGET, "Handle node type update");
         EventsManager::handle_node_type_update(&app_handle).await;
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
