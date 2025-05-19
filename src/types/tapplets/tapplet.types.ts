@@ -29,3 +29,10 @@ export interface SendOneSidedRequest {
     address: string;
     paymentId: string;
 }
+
+export interface BridgeTxDetails {
+    amount: string;
+    amountToReceive: string;
+    destinationAddress: string;
+    paymentId: string;
+}

@@ -87,12 +87,14 @@ impl TappletManager {
             .adapter
             .get_tapplet_source_file(app_handle)
             .map_err(|e| anyhow!("Error getting tapplet source file: {:?}", e))?;
+        info!(target: LOG_TARGET,"{:?} tapplet source file path: {:?}", self.tapplet_name, &tapplet_source_file);
 
         let tapplet_dest_dir = self
             .adapter
             .get_tapplet_dest_dir()
             .map_err(|e| anyhow!("Error getting tapplet dest dir: {:?}", e))?;
 
+        info!(target: LOG_TARGET,"{:?} tapplet dest dir: {:?}", self.tapplet_name, &tapplet_dest_dir);
         self.ensure_empty_directory(tapplet_dest_dir.clone())?;
 
         progress_tracker

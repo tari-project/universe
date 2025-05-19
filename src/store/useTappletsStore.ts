@@ -1,5 +1,5 @@
 import { create } from './create.ts';
-import { ActiveTapplet, SendOneSidedRequest } from '@app/types/tapplets/tapplet.types.ts';
+import { ActiveTapplet, BridgeTxDetails, SendOneSidedRequest } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { FEATURES } from './consts.ts';
@@ -10,7 +10,7 @@ interface State {
     isFetching: boolean;
     activeTapplet: ActiveTapplet | undefined;
     uiBridgeSwapsEnabled: boolean;
-    pendingBridgeTx: SendOneSidedRequest[];
+    pendingBridgeTx: BridgeTxDetails | undefined;
     isPendingTappletTx: boolean;
 }
 
@@ -20,7 +20,7 @@ interface Actions {
     deactivateTapplet: () => Promise<void>;
     setUiBridgeSwaps: (enabled: boolean) => Promise<void>;
     fetchUiBridgeFeatureFlag: () => Promise<boolean>;
-    addPendingTappletTx: (tx: SendOneSidedRequest) => void;
+    addPendingTappletTx: (tx: BridgeTxDetails) => void;
     removePendingTappletTx: (paymentId: string) => void;
 }
 
@@ -31,7 +31,7 @@ const initialState: State = {
     isInitialized: false,
     activeTapplet: undefined,
     uiBridgeSwapsEnabled: true,
-    pendingBridgeTx: [],
+    pendingBridgeTx: undefined,
     isPendingTappletTx: false,
 };
 
@@ -68,19 +68,16 @@ export const useTappletsStore = create<TappletsStoreState>()((set, get) => ({
         // run the Ootle dev/registed tapplet below
         return;
     },
-    addPendingTappletTx: (tx: SendOneSidedRequest) => {
-        set((state) => ({
-            pendingBridgeTx: [...state.pendingBridgeTx, tx],
+    addPendingTappletTx: (tx: BridgeTxDetails) => {
+        set({
+            pendingBridgeTx: tx,
             isPendingTappletTx: true,
-        }));
+        });
     },
-    removePendingTappletTx: (paymentId: string) => {
-        set((state) => {
-            const updatedTxs = state.pendingBridgeTx.filter((tx) => tx.paymentId !== paymentId);
-            return {
-                pendingBridgeTx: updatedTxs,
-                isPendingTappletTx: updatedTxs.length > 0,
-            };
+    removePendingTappletTx: () => {
+        set({
+            pendingBridgeTx: undefined,
+            isPendingTappletTx: false,
         });
     },
 }));

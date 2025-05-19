@@ -1,7 +1,7 @@
 import { setError as setStoreError } from '@app/store';
 import { invoke } from '@tauri-apps/api/core';
 import { WalletBalance } from '../app-status';
-import { AccountData, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
+import { AccountData, BridgeTxDetails, SendOneSidedRequest, TappletSignerParams, WindowSize } from './tapplet.types';
 import { useTappletsStore } from '@app/store/useTappletsStore';
 
 export class TappletSigner {
@@ -52,14 +52,19 @@ export class TappletSigner {
         return true;
     }
 
-    public async isPendingTappletTx(): Promise<SendOneSidedRequest | undefined> {
-        const bridgeTx = useTappletsStore.getState().pendingBridgeTx.find((tx) => tx.address !== '');
-        return bridgeTx;
+    public async addPendingTappletTx(tx: BridgeTxDetails): Promise<void> {
+        const addTx = useTappletsStore.getState().addPendingTappletTx;
+        addTx(tx);
     }
 
     public async removePendingTappletTx(paymentId: string): Promise<void> {
         const removeTx = useTappletsStore.getState().removePendingTappletTx;
         removeTx(paymentId);
+    }
+
+    public async getPendingTappletTx(): Promise<BridgeTxDetails | undefined> {
+        const bridgeTx = useTappletsStore.getState().pendingBridgeTx;
+        return bridgeTx;
     }
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
@@ -74,8 +79,6 @@ export class TappletSigner {
                 ...payload,
                 amount: payload.amount.toString(),
             });
-            const addTx = useTappletsStore.getState().addPendingTappletTx;
-            addTx(req);
             return true;
         } catch (error) {
             setStoreError(`Error sending transaction: ${error}`);
