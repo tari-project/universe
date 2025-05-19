@@ -77,7 +77,9 @@ jobs:
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
+
     steps:
+      - uses: actions/checkout@v4
       - name: Builds - Install dependencies (windows) [yq]
         if: ${{ startsWith(runner.os,'Windows') }}
         run: |
