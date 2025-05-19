@@ -109,30 +109,6 @@ export const TokenSeparator = styled.hr`
     margin: 0 20px;
 `;
 
-export const ContinueButton = styled.button`
-    text-align: center;
-    background-color: ${({ theme }) => theme.palette.primary.main};
-    color: white;
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    font-size: 16px;
-    padding: 14px 20px;
-    border: none;
-    border-radius: 50px;
-    width: 100%;
-    cursor: pointer;
-    transition: all 0.2s ease-in-out;
-    -webkit-transform: translateZ(0);
-
-    &:hover {
-        opacity: 0.8;
-    }
-
-    &:active {
-        background-color: #10101c;
-    }
-`;
-
 export const WalletAddress = styled.div`
     color: black;
     overflow: hidden;
