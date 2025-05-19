@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable i18next/no-literal-string */
 import { Button, CategoryLabel } from '../styles';
-import { useSwap } from '@app/hooks/swap/useSwapV2';
+import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
 
 import { useState } from 'react';
 
 export function SwapsGroup() {
-    const { addLiquidity, removeAllLiquidity } = useSwap();
+    const { addLiquidity, removeAllLiquidity } = useUniswapV2Interactions();
     const [xtmAmount, setXtmAmount] = useState('');
     const [ethAmount, setEthAmount] = useState('');
     const [loading, setLoading] = useState(false);

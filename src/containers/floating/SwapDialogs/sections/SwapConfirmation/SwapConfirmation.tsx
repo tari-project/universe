@@ -22,11 +22,11 @@ import { getCurrencyIcon } from '../../helpers/getIcon';
 import { ArrowIcon } from '../../icons/elements/ArrowIcon';
 import { StatusList } from '@app/components/transactions/components/StatusList/StatusList';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { AnimatePresence } from 'motion/react';
 import { useAccount } from 'wagmi';
 import { useMemo } from 'react';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
 import { useTranslation } from 'react-i18next';
+import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 
 interface Props {
     isOpen: boolean;
@@ -36,7 +36,7 @@ interface Props {
     transaction: {
         amount: string;
         targetAmount: string;
-        direction: 'input' | 'output';
+        direction: SwapDirectionType;
         slippage?: string | null;
         networkFee?: string | null;
         priceImpact?: string | null;
@@ -87,87 +87,79 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} noHeader>
-            <AnimatePresence mode="wait">
-                <div>
-                    <WalletConnectHeader>
-                        <span />
-                        <SelectedChain>
-                            {activeChainIcon}
-                            <SelectedChainInfo>
-                                <span className="address">{truncateMiddle(dataAcc.address || '', 6)}</span>
-                                <span className="chain">
-                                    {fromTokenDisplay?.symbol} {dataAcc.chain?.testnet ? '(TESTNET)' : 'MAINNET'}
-                                </span>
-                            </SelectedChainInfo>
-                        </SelectedChain>
-                    </WalletConnectHeader>
+            <div>
+                <WalletConnectHeader>
+                    <span />
+                    <SelectedChain>
+                        {activeChainIcon}
+                        <SelectedChainInfo>
+                            <span className="address">{truncateMiddle(dataAcc.address || '', 6)}</span>
+                            <span className="chain">
+                                {fromTokenDisplay?.symbol} {dataAcc.chain?.testnet ? '(TESTNET)' : 'MAINNET'}
+                            </span>
+                        </SelectedChainInfo>
+                    </SelectedChain>
+                </WalletConnectHeader>
 
-                    <SwapOption>
-                        <span> {t('swap.sell')} </span>
-                        <SwapOptionAmount>
-                            <SwapAmountInput
-                                disabled
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                value={amount}
-                            />
-                            <SwapOptionCurrency>
-                                {fromTokenDisplay?.symbol
-                                    ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
-                                    : null}
-                                <span>{fromTokenDisplay?.symbol}</span>
-                            </SwapOptionCurrency>
-                        </SwapOptionAmount>
-                        <span>{fromTokenDisplay?.balance}</span>
-                    </SwapOption>
-                    <SwapDirection>
-                        <SwapDirectionWrapper $direction={direction}>
-                            <ArrowIcon width={15} />
-                        </SwapDirectionWrapper>
-                    </SwapDirection>
-                    <SwapOption>
-                        <span> {t('swap.receive-estimated')} </span>
-                        <SwapOptionAmount>
-                            <SwapAmountInput
-                                disabled
-                                type="text"
-                                inputMode="decimal"
-                                placeholder="0.00"
-                                value={targetAmount}
-                            />
-                            <SwapOptionCurrency>
-                                {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
-                                <span>{'XTM'}</span>
-                            </SwapOptionCurrency>
-                        </SwapOptionAmount>
-                    </SwapOption>
+                <SwapOption>
+                    <span> {t('swap.sell')} </span>
+                    <SwapOptionAmount>
+                        <SwapAmountInput disabled type="text" inputMode="decimal" placeholder="0.00" value={amount} />
+                        <SwapOptionCurrency>
+                            {fromTokenDisplay?.symbol
+                                ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
+                                : null}
+                            <span>{fromTokenDisplay?.symbol}</span>
+                        </SwapOptionCurrency>
+                    </SwapOptionAmount>
+                    <span>{fromTokenDisplay?.balance}</span>
+                </SwapOption>
+                <SwapDirection>
+                    <SwapDirectionWrapper $direction={direction}>
+                        <ArrowIcon width={15} />
+                    </SwapDirectionWrapper>
+                </SwapDirection>
+                <SwapOption>
+                    <span> {t('swap.receive-estimated')} </span>
+                    <SwapOptionAmount>
+                        <SwapAmountInput
+                            disabled
+                            type="text"
+                            inputMode="decimal"
+                            placeholder="0.00"
+                            value={targetAmount}
+                        />
+                        <SwapOptionCurrency>
+                            {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
+                            <span>{'XTM'}</span>
+                        </SwapOptionCurrency>
+                    </SwapOptionAmount>
+                </SwapOption>
 
-                    <SwapDetails>
-                        {
-                            // <NewOutputWrapper>
-                            //     <NewOutputAmount>
-                            //         <SwapDetailsKey>{t('swap.new-output')}</SwapDetailsKey>
-                            //         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
-                            //     </NewOutputAmount>
-                            //     <WalletButton
-                            //         variant="success"
-                            //         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
-                            //         size="medium"
-                            //     >
-                            //         {t('swap.accept')}
-                            //     </WalletButton>
-                            // </NewOutputWrapper>
-                        }
+                <SwapDetails>
+                    {
+                        // <NewOutputWrapper>
+                        //     <NewOutputAmount>
+                        //         <SwapDetailsKey>{t('swap.new-output')}</SwapDetailsKey>
+                        //         <SwapDetailsValue>{1.074234}</SwapDetailsValue>
+                        //     </NewOutputAmount>
+                        //     <WalletButton
+                        //         variant="success"
+                        //         onClick={() => setWalletConnectModalStep(SwapStep.WalletContents)}
+                        //         size="medium"
+                        //     >
+                        //         {t('swap.accept')}
+                        //     </WalletButton>
+                        // </NewOutputWrapper>
+                    }
 
-                        <StatusList entries={items} />
-                    </SwapDetails>
+                    <StatusList entries={items} />
+                </SwapDetails>
 
-                    <WalletButton variant="primary" onClick={onConfirm} size="xl">
-                        {t('swap.approve-and-buy')}
-                    </WalletButton>
-                </div>
-            </AnimatePresence>
+                <WalletButton variant="primary" onClick={onConfirm} size="xl">
+                    {t('swap.approve-and-buy')}
+                </WalletButton>
+            </div>
         </TransactionModal>
     );
 };

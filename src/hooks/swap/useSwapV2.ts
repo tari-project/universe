@@ -1,7 +1,7 @@
 import { Token, WETH9, CurrencyAmount, TradeType, Ether, NativeCurrency } from '@uniswap/sdk-core';
 import { Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Contract, ethers, Signer as EthersSigner } from 'ethers';
+import { Contract, ethers, Signer as EthersSigner, TransactionResponse } from 'ethers';
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { Hash, encodeFunctionData, formatUnits, parseUnits } from 'viem';
 
@@ -21,16 +21,15 @@ import {
     SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
     SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
     SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
-    PUBLIC_RPC_URLS, // Added this
-} from './lib/constants'; // Adjust path as needed
-import { walletClientToSigner, formatNativeGasFee, formatGasFeeUSD } from './lib/utils'; // Adjust path
-import { TradeDetails, SwapField } from './lib/types'; // Adjust path
-import { useToastStore } from '@app/components/ToastStack/useToastStore'; // Adjust path
+    PUBLIC_RPC_URLS,
+} from './lib/constants';
+import { walletClientToSigner, formatNativeGasFee, formatGasFeeUSD } from './lib/utils';
+import { TradeDetails, SwapField, SwapDirection } from './lib/types';
+import { useToastStore } from '@app/components/ToastStack/useToastStore';
 
 export const useUniswapV2Interactions = () => {
-    // Renamed hook
     const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(null);
-    const [direction, setDirection] = useState<'input' | 'output'>('input');
+    const [direction, setDirection] = useState<SwapDirection>('toXtm');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isApproving, setIsApproving] = useState(false);
@@ -96,8 +95,8 @@ export const useUniswapV2Interactions = () => {
     }, [pairTokenAddress, currentChainId]);
 
     const { sdkToken0, sdkToken1 } = useMemo(() => {
-        const _sdkToken0 = direction === 'input' ? sdkPairToken : xtmToken;
-        const _sdkToken1 = direction === 'input' ? xtmToken : sdkPairToken;
+        const _sdkToken0 = direction === 'toXtm' ? sdkPairToken : xtmToken;
+        const _sdkToken1 = direction === 'toXtm' ? xtmToken : sdkPairToken;
         return { sdkToken0: _sdkToken0, sdkToken1: _sdkToken1 };
     }, [sdkPairToken, xtmToken, direction]);
 
@@ -119,7 +118,7 @@ export const useUniswapV2Interactions = () => {
             }
         }
         const xtmUiToken = xtmToken;
-        if (direction === 'input') {
+        if (direction === 'toXtm') {
             uiInputToken = selectedPairSideToken;
             uiOutputToken = xtmUiToken;
         } else {
@@ -139,7 +138,7 @@ export const useUniswapV2Interactions = () => {
             setIsFetchingPair(true);
             setError(null);
             try {
-                const orderedPairs = direction !== 'input' ? [sdkToken0, sdkToken1] : [sdkToken1, sdkToken0];
+                const orderedPairs = direction !== 'toXtm' ? [sdkToken0, sdkToken1] : [sdkToken1, sdkToken0];
                 const computedPairAddress = Pair.getAddress(orderedPairs[0], orderedPairs[1]);
                 const pairContract = new Contract(computedPairAddress, uniswapV2PairAbi, resolvedProvider);
                 const reservesData = await pairContract['getReserves']();
@@ -191,7 +190,7 @@ export const useUniswapV2Interactions = () => {
 
             try {
                 route = new Route([pair], sdkToken0, sdkToken1);
-                if (amountType === 'fromValue') {
+                if (amountType === 'ethTokenField') {
                     const currencyAmountIn = CurrencyAmount.fromRawAmount(sdkToken0, amountRaw);
                     trade = new Trade(route, currencyAmountIn, TradeType.EXACT_INPUT);
                 } else {
@@ -409,7 +408,7 @@ export const useUniswapV2Interactions = () => {
     );
 
     const executeSwap = useCallback(
-        async (tradeToExecute: Trade<Token, Token, TradeType>): Promise<string | null> => {
+        async (tradeToExecute: Trade<Token, Token, TradeType>): Promise<TransactionResponse | null> => {
             setError(null);
             setIsLoading(true);
             if (
@@ -473,7 +472,7 @@ export const useUniswapV2Interactions = () => {
 
                 const swapTxResponse = await routerContract[methodName](...methodArgs, txOptions);
                 setIsLoading(false);
-                return swapTxResponse.hash;
+                return swapTxResponse;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (error: any) {
                 console.error('Error executing swap transaction:', error);
@@ -501,19 +500,37 @@ export const useUniswapV2Interactions = () => {
 
     const getPaidTransactionFee = useCallback(
         async (txHash: Hash): Promise<string | null> => {
-            if (!publicClient || !txHash) return null;
+            if (!publicClient || !txHash) {
+                console.warn('getPaidTransactionFee: publicClient or txHash missing.');
+                return null;
+            }
+
             try {
                 const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
-                const tx = await publicClient.getTransaction({ hash: txHash });
-                if (receipt && tx && tx.gasPrice) {
+
+                if (receipt) {
                     const gasUsed = receipt.gasUsed;
-                    const gasPrice = tx.gasPrice || 0n;
-                    const totalFee = gasUsed * gasPrice;
-                    return formatUnits(totalFee, 18);
+                    const effectiveGasPrice = receipt.effectiveGasPrice;
+
+                    if (gasUsed !== undefined && effectiveGasPrice !== undefined) {
+                        const totalFeeInWei = gasUsed * effectiveGasPrice;
+                        const nativeCurrencyDecimals = publicClient.chain?.nativeCurrency.decimals || 18;
+                        const totalFeeInNative = formatUnits(totalFeeInWei, nativeCurrencyDecimals);
+                        return totalFeeInNative;
+                    } else {
+                        console.warn(
+                            'getPaidTransactionFee: gasUsed or effectiveGasPrice missing in receipt for tx:',
+                            txHash,
+                            receipt
+                        );
+                    }
+                } else {
+                    console.warn('getPaidTransactionFee: Receipt not found for tx:', txHash);
                 }
-            } catch (e) {
-                console.error('Failed to get transaction fee:', e);
+            } catch (error) {
+                console.error('Error fetching transaction details for fee calculation:', txHash, error);
             }
+
             return null;
         },
         [publicClient]

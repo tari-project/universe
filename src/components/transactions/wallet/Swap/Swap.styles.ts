@@ -1,3 +1,4 @@
+import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import styled, { css } from 'styled-components';
 
 export const SwapOption = styled.div`
@@ -94,7 +95,7 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
         `}
 `;
 
-export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' }>`
+export const SwapDirectionWrapper = styled.div<{ $direction: SwapDirectionType }>`
     display: flex;
     align-items: center;
     justify-content: center;
@@ -119,7 +120,7 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     background: ${({ theme }) => theme.palette.background.secondary};
 
     ${({ $direction }) =>
-        $direction === 'output' && // Only rotate when output is the input field now (direction='output')
+        $direction === 'fromXtm' &&
         css`
             svg {
                 transform: rotate(180deg);

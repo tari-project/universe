@@ -1,4 +1,5 @@
 import styled, { css } from 'styled-components';
+import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 
 export const WalletConnectHeader = styled.div`
     margin-bottom: 20px;
@@ -136,7 +137,7 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
         `}
 `;
 
-export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' }>`
+export const SwapDirectionWrapper = styled.div<{ $direction: SwapDirectionType }>`
     width: 40px;
     height: 40px;
     border-radius: 10px;
@@ -153,7 +154,7 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
     }
 
     ${({ $direction }) =>
-        $direction === 'output' &&
+        $direction === 'fromXtm' &&
         css`
             svg {
                 transform: rotate(180deg);

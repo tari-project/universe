@@ -1,7 +1,6 @@
 import { HeaderWrapper, StatusWrapper } from './SignApprovalMessage.styles';
 import Metamask from '../../icons/mm-fox';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
@@ -14,18 +13,16 @@ export const SignApprovalMessage = ({ isOpen, setIsOpen }: Props) => {
     return (
         // Prevent close on click outside just for this modal
         <TransactionModal show={isOpen} handleClose={() => setIsOpen?.(false)} noClose>
-            <AnimatePresence mode="wait">
-                <HeaderWrapper>
-                    <Metamask width="65" />
-                    <h3>{t('swap.sign-message')}</h3>
-                    <p>{t('swap.sign-message-text')}</p>
-                </HeaderWrapper>
-                <StatusWrapper>
-                    <Metamask width="24" />
-                    {t('swap.waiting-for-response')}
-                    <LoadingDots />
-                </StatusWrapper>
-            </AnimatePresence>
+            <HeaderWrapper>
+                <Metamask width="65" />
+                <h3>{t('swap.sign-message')}</h3>
+                <p>{t('swap.sign-message-text')}</p>
+            </HeaderWrapper>
+            <StatusWrapper>
+                <Metamask width="24" />
+                {t('swap.waiting-for-response')}
+                <LoadingDots />
+            </StatusWrapper>
         </TransactionModal>
     );
 };

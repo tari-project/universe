@@ -11,4 +11,5 @@ export interface TradeDetails {
     outputAmount?: CurrencyAmount<Token>;
 }
 
-export type SwapField = 'fromValue' | 'target';
+export type SwapField = 'ethTokenField' | 'wxtmField';
+export type SwapDirection = 'fromXtm' | 'toXtm';

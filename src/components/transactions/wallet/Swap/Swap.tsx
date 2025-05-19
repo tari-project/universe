@@ -55,7 +55,6 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
         targetAmount,
         uiDirection,
         transaction,
-        //displayPrice,
         setProcesingOpen,
         setFromAmount,
         setTargetAmount,
@@ -95,7 +94,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             </HeaderWrapper>
 
             <SwapOption>
-                <span>{uiDirection === 'input' ? t('swap.sell') : t('swap.receive-estimated')}</span>
+                <span>{uiDirection === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -121,7 +120,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             </SwapDirection>
 
             <SwapOption>
-                <span>{uiDirection === 'input' ? t('swap.receive-estimated') : t('swap.sell')}</span>
+                <span>{uiDirection === 'toXtm' ? t('swap.receive-estimated') : t('swap.sell')}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
@@ -144,7 +143,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                     onClick={() => setReviewSwap(true)}
                     size="xl"
                     disabled={Boolean(
-                        notEnoughBalance || !Number(uiDirection === 'input' ? fromAmount : targetAmount) || isLoading
+                        notEnoughBalance || !Number(uiDirection === 'toXtm' ? fromAmount : targetAmount) || isLoading
                     )}
                 >
                     {isLoading ? t('swap.loading') : t('swap.review-swap')}

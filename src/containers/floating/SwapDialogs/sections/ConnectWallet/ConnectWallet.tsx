@@ -14,7 +14,6 @@ import {
     LoadingCopy,
 } from './ConnectWallet.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { AnimatePresence } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
 
@@ -81,35 +80,33 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
-            <AnimatePresence mode="wait">
-                <ContentWrapper>
-                    <MMFox width="100" />
-                    <ConnectHeader>{t('swap.connect-wallet')}</ConnectHeader>
-                    <ConnectSubHeader>{t('swap.scan-qr-code')}</ConnectSubHeader>
-                    <QrWrapper>
-                        {qrCodeUri ? (
-                            <QRCode value={qrCodeUri} size={180} />
-                        ) : (
-                            <LoadingQrInner
-                                animate={{
-                                    backgroundPosition: ['-200%', '200%'],
-                                }}
-                                transition={{
-                                    repeat: Infinity,
-                                    duration: 2,
-                                    ease: 'linear',
-                                }}
-                            />
-                        )}
-                    </QrWrapper>
-                    <ConnectingProgress>
-                        <GreenDot />
-                        <MMFox width="20" />
-                        <LoadingCopy>{t('swap.connect-wallet-text')}</LoadingCopy>
-                        <LoadingDots />
-                    </ConnectingProgress>
-                </ContentWrapper>
-            </AnimatePresence>
+            <ContentWrapper>
+                <MMFox width="100" />
+                <ConnectHeader>{t('swap.connect-wallet')}</ConnectHeader>
+                <ConnectSubHeader>{t('swap.scan-qr-code')}</ConnectSubHeader>
+                <QrWrapper>
+                    {qrCodeUri ? (
+                        <QRCode value={qrCodeUri} size={180} />
+                    ) : (
+                        <LoadingQrInner
+                            animate={{
+                                backgroundPosition: ['-200%', '200%'],
+                            }}
+                            transition={{
+                                repeat: Infinity,
+                                duration: 2,
+                                ease: 'linear',
+                            }}
+                        />
+                    )}
+                </QrWrapper>
+                <ConnectingProgress>
+                    <GreenDot />
+                    <MMFox width="20" />
+                    <LoadingCopy>{t('swap.connect-wallet-text')}</LoadingCopy>
+                    <LoadingDots />
+                </ConnectingProgress>
+            </ContentWrapper>
         </TransactionModal>
     );
 };

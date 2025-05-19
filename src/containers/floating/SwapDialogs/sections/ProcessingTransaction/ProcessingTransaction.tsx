@@ -3,7 +3,6 @@ import { WalletButton } from '../../components/WalletButton/WalletButton';
 import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
-import { AnimatePresence } from 'motion/react';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
@@ -77,24 +76,22 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
 
     return (
         <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)}>
-            <AnimatePresence mode="wait">
-                <StatusHero icon={statusIcon} title={t('swap.your-xtm-is-on-the-way')}>
-                    <p>{t('swap.your-purchase-is-processing')}</p>
-                </StatusHero>
+            <StatusHero icon={statusIcon} title={t('swap.your-xtm-is-on-the-way')}>
+                <p>{t('swap.your-purchase-is-processing')}</p>
+            </StatusHero>
 
-                <ProcessingDetailsWrapper>
-                    <StatusList entries={statusItems} />
-                </ProcessingDetailsWrapper>
+            <ProcessingDetailsWrapper>
+                <StatusList entries={statusItems} />
+            </ProcessingDetailsWrapper>
 
-                <WalletButton
-                    variant="primary"
-                    size="xl"
-                    disabled={status === 'processingswap' || status === 'processingapproval'}
-                    onClick={() => setIsOpen(false)}
-                >
-                    {ctaMessage}
-                </WalletButton>
-            </AnimatePresence>
+            <WalletButton
+                variant="primary"
+                size="xl"
+                disabled={status === 'processingswap' || status === 'processingapproval'}
+                onClick={() => setIsOpen(false)}
+            >
+                {ctaMessage}
+            </WalletButton>
         </TransactionModal>
     );
 };
