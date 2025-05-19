@@ -12,8 +12,9 @@ const metadata = {
     icons: ['https://universe.tari.com/assets/tari-logo.png'],
 };
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const networks: any = [mainnet, sepolia];
+import type { Network } from '@reown/appkit';
+
+const networks: Network[] = [mainnet, sepolia];
 
 const wagmiAdapter = new WagmiAdapter({
     networks,
