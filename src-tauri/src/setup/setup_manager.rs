@@ -67,6 +67,16 @@ pub enum ExchangeModalStatus {
     Completed,
 }
 
+impl Display for ExchangeModalStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ExchangeModalStatus::None => write!(f, "None"),
+            ExchangeModalStatus::WaitForComplition => write!(f, "Wait For Completion"),
+            ExchangeModalStatus::Completed => write!(f, "Completed"),
+        }
+    }
+}
+
 impl ExchangeModalStatus {
     pub fn is_completed(&self) -> bool {
         matches!(self, ExchangeModalStatus::Completed) | matches!(self, ExchangeModalStatus::None)
@@ -277,12 +287,12 @@ impl SetupManager {
             .await
             .expect("Could not load or create internal wallet");
         let is_address_generated = internal_wallet.get_is_tari_address_generated();
-        let is_exchange_id_default =
-            in_memory_config.read().await.exchange_id == DEFAULT_EXCHANGE_ID;
-        if is_address_generated && !is_exchange_id_default {
-            let _unused = self
-                .exchange_modal_status
-                .send(ExchangeModalStatus::WaitForComplition);
+        let is_on_exchange_miner_build =
+            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        if is_on_exchange_miner_build && is_address_generated {
+            self.exchange_modal_status
+                .send_replace(ExchangeModalStatus::WaitForComplition);
         }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
@@ -397,6 +407,7 @@ impl SetupManager {
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
+                        && is_exchange_modal_completed
                         && !is_app_unlocked
                     {
                         SetupManager::get_instance()
@@ -440,7 +451,6 @@ impl SetupManager {
                     if is_app_unlocked
                         && is_wallet_unlocked
                         && is_mining_unlocked
-                        && is_exchange_modal_completed
                         && !is_initial_setup_finished
                     {
                         *SetupManager::get_instance()
