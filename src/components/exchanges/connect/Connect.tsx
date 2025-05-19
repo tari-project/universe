@@ -17,7 +17,6 @@ import { CheckIconWrapper } from '@app/components/transactions/components/TxInpu
 import CheckIcon from '@app/components/transactions/components/CheckIcon.tsx';
 import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
-import { setWalletAddress } from '@app/store';
 
 interface ConnectFormFields {
     address: string;

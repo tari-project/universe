@@ -42,7 +42,7 @@ export const importSeedWords = async (seedWords: string[]) => {
         useWalletStore.setState({ is_wallet_importing: true });
         await invoke('import_seed_words', { seedWords });
     } catch (error) {
-        console.error('Could not import seed words: ', error);
+        setError(`Could not import seed words: ${error}`, true);
     }
 };
 export const initialFetchTxs = () =>
