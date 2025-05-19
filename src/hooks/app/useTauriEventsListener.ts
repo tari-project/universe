@@ -23,8 +23,8 @@ import {
     handleRestartingPhases,
     handleShowRelesaeNotes,
     loadExternalDependencies,
+    handleCriticalProblemEvent,
     setCriticalError,
-    setCriticalProblemTest,
     setIsStuckOnOrphanChain,
     setNetworkStatus,
 } from '@app/store/actions/appStateStoreActions';
@@ -46,6 +46,7 @@ import {
     handleConfigWalletLoaded,
 } from '@app/store/actions/appConfigStoreActions';
 import { invoke } from '@tauri-apps/api/core';
+import { handleShowStagedSecurityModal } from '@app/store/actions/stagedSecurityActions';
 
 const LOG_EVENT_TYPES = ['LockMining', 'LockWallet', 'UnlockMining', 'UnlockWallet'];
 
@@ -145,7 +146,7 @@ const useTauriEventsListener = () => {
                             if (isMacAppFolderError) {
                                 setCriticalError(event.payload);
                             } else {
-                                setCriticalProblemTest(event.payload);
+                                handleCriticalProblemEvent(event.payload);
                             }
                             break;
                         }
@@ -182,6 +183,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'ConnectionStatus':
                             handleConnectionStatusChanged(event.payload);
+                            break;
+                        case 'ShowStageSecurityModal':
+                            handleShowStagedSecurityModal();
                             break;
                         default:
                             console.warn('Unknown event', JSON.stringify(event));

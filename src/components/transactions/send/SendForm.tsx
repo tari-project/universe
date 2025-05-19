@@ -12,6 +12,7 @@ import { FormField } from './FormField.tsx';
 import { BottomWrapper, FormFieldsWrapper } from './Send.styles';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import useDebouncedValue from '@app/hooks/helpers/useDebounce.ts';
+import { useWalletStore } from '@app/store/useWalletStore.ts';
 
 interface Props {
     isBack?: boolean;
@@ -22,16 +23,23 @@ export function SendForm({ isBack }: Props) {
 
     const [address, setAddress] = useState('');
     const debouncedAddress = useDebouncedValue(address, 350);
-    const [isAddressValid, setIsAddressValid] = useState(false);
     const [isAddressEmpty, setIsAddressEmpty] = useState(true);
+    const availableBalance = useWalletStore((s) => s.balance?.available_balance);
 
     const { isWalletScanning, numericAvailableBalance } = useTariBalance();
 
     const { control, formState, setError, setValue, clearErrors, getValues } = useFormContext<SendInputs>();
-    const { isSubmitting, isValid, errors } = formState;
+    const { isSubmitting, errors } = formState;
+    const isAddressValid = !errors.address;
+    const isAmountValid = !errors.amount;
+    const isValid = isAddressValid && isAmountValid;
 
     const validateAmount = async (amount: string) => {
         if (amount.length === 0) return;
+        if (Number(availableBalance) <= 0) {
+            console.error('Error in validateAmount: no available balance');
+            setError('amount', { message: t('send.error-invalid-amount') });
+        }
 
         try {
             await invoke('validate_minotari_amount', { amount });
@@ -48,13 +56,12 @@ export function SendForm({ isBack }: Props) {
 
             try {
                 await invoke('verify_address_for_send', { address });
-                setIsAddressValid(true);
+                clearErrors('address');
             } catch (_error) {
-                setIsAddressValid(false);
                 setError('address', { message: t('send.error-invalid-address') });
             }
         },
-        [setError, t]
+        [clearErrors, setError, t]
     );
 
     useEffect(() => {

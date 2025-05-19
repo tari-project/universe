@@ -19,7 +19,7 @@ import { ReceiveSVG } from '@app/assets/icons/receive.tsx';
 import { useAirdropStore, usePaperWalletStore } from '@app/store';
 import { Button } from '@app/components/elements/buttons/Button';
 import SyncTooltip from '@app/containers/navigation/components/Wallet/SyncTooltip/SyncTooltip.tsx';
-import { SyncButton, TabsTitle, TabsWarapper, Wrapper } from './wallet.styles.ts';
+import { SyncButton, TabsTitle, TabsWrapper, Wrapper } from './wallet.styles.ts';
 import { memo } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
@@ -35,6 +35,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const uiSendRecvEnabled = useAirdropStore((s) => s.uiSendRecvEnabled);
     const setShowPaperWalletModal = usePaperWalletStore((s) => s.setShowModal);
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
+    const availableBalance = useWalletStore((s) => s.balance?.available_balance);
     const displayAddress = truncateMiddle(walletAddress, 4);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
@@ -54,12 +55,12 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
             <WalletBalanceMarkup />
 
             {uiSendRecvEnabled && !isWalletScanning && (
-                <TabsWarapper>
+                <TabsWrapper>
                     <TabsTitle>{`${t('history.available-balance')}: ${formattedAvailableBalance} ${t('common:xtm')}`}</TabsTitle>
                     <SyncButton onClick={() => setShowPaperWalletModal(true)}>
                         {t('history.sync-with-phone')} <ArrowRight />
                     </SyncButton>
-                </TabsWarapper>
+                </TabsWrapper>
             )}
 
             <HistoryList />
@@ -71,7 +72,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
                             onClick={() => setSection('send')}
                             $isActive={section === 'send'}
                             aria-selected={section === 'send'}
-                            disabled={isWalletScanning}
+                            disabled={isWalletScanning || !availableBalance}
                         >
                             <NavButtonContent>
                                 <SendSVG />

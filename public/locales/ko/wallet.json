@@ -65,6 +65,6 @@
     "send": "보내기"
   },
   "tari": "Tari",
-  "wallet-is-scanning": "지갑 스캔 중..",
+  "wallet-is-scanning": "지갑 스캔 중...",
   "wallet-scanning-with-progress": "지갑 스캔 중: {{scanned}}/{{total}} ({{percent}}%)"
 }
