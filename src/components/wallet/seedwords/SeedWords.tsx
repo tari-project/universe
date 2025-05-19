@@ -46,7 +46,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
 
-        await importSeedWords(newSeedWords);
+        await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
     }, [isValid, newSeedWords]);
 
     const handleApply = (data: { seedWords: string }) => {
