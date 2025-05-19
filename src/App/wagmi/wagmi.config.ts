@@ -7,9 +7,9 @@ const projectId = 'c523cd3d3e0246530115c1dc2c016852';
 
 const metadata = {
     name: 'TariUniverse',
-    description: 'AppKit Example',
-    url: 'https://reown.com/appkit', // origin must match your domain & subdomain
-    icons: ['https://assets.reown.com/reown-profile-pic.png'],
+    description: 'Tari Universe Wallet',
+    url: 'https://universe.tari.com', // origin must match your domain & subdomain
+    icons: ['https://universe.tari.com/assets/tari-logo.png'],
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
