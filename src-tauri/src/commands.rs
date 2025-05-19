@@ -629,7 +629,7 @@ pub async fn set_tari_address(address: String, app_handle: tauri::AppHandle) -> 
 pub async fn confirm_exchange_address(
     address: String,
     app: tauri::AppHandle,
-) -> Result<(), String> {
+) -> Result<(), InvokeError> {
     let timer = Instant::now();
     let config_path = app
         .path()
@@ -649,9 +649,9 @@ pub async fn confirm_exchange_address(
     )
     .await;
     SetupManager::get_instance()
-        .init_exchange_modal_status()
+        .mark_exchange_modal_as_completed()
         .await
-        .map_err(|e| e.to_string())?;
+        .map_err(InvokeError::from_anyhow)?;
     if timer.elapsed() > MAX_ACCEPTABLE_COMMAND_TIME {
         warn!(target: LOG_TARGET, "set_exchange_address took too long: {:?}", timer.elapsed());
     }
