@@ -59,6 +59,30 @@ static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 
+#[derive(Clone, Default)]
+pub enum ExchangeModalStatus {
+    #[default]
+    None,
+    WaitForComplition,
+    Completed,
+}
+
+impl Display for ExchangeModalStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ExchangeModalStatus::None => write!(f, "None"),
+            ExchangeModalStatus::WaitForComplition => write!(f, "Wait For Completion"),
+            ExchangeModalStatus::Completed => write!(f, "Completed"),
+        }
+    }
+}
+
+impl ExchangeModalStatus {
+    pub fn is_completed(&self) -> bool {
+        matches!(self, ExchangeModalStatus::Completed) | matches!(self, ExchangeModalStatus::None)
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetupPhase {
     Core,
@@ -154,7 +178,7 @@ pub struct SetupManager {
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
-    exchange_modal_status: Sender<PhaseStatus>,
+    exchange_modal_status: Sender<ExchangeModalStatus>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
@@ -177,6 +201,7 @@ impl SetupManager {
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
 
         let _unused = state
             .telemetry_manager
@@ -254,6 +279,22 @@ impl SetupManager {
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
 
+        let config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+        let internal_wallet = InternalWallet::load_or_create(config_path)
+            .await
+            .expect("Could not load or create internal wallet");
+        let is_address_generated = internal_wallet.get_is_tari_address_generated();
+        let is_on_exchange_miner_build =
+            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        if is_on_exchange_miner_build && is_address_generated {
+            self.exchange_modal_status
+                .send_replace(ExchangeModalStatus::WaitForComplition);
+        }
+
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
@@ -316,38 +357,20 @@ impl SetupManager {
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
-        let state = app_handle.state::<UniverseAppState>();
-        let in_memory_config = state.in_memory_config.clone();
-        let required_statuses = {
-            let mut statuses = vec![
-                self.node_phase_status.subscribe(),
-                self.hardware_phase_status.subscribe(),
-            ];
-            let config_path = app_handle
-                .path()
-                .app_config_dir()
-                .expect("Could not get config dir");
-            let internal_wallet = InternalWallet::load_or_create(config_path)
-                .await
-                .expect("Could not load or create internal wallet");
-            let is_address_generated = internal_wallet.get_is_tari_address_generated();
-            let is_exchange_id_default =
-                in_memory_config.read().await.exchange_id == DEFAULT_EXCHANGE_ID;
-            if is_address_generated && !is_exchange_id_default {
-                statuses.push(self.exchange_modal_status.subscribe());
-            }
-            statuses
-        };
         let unknown_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .with_listeners_for_required_phases_statuses(required_statuses)
+            .with_listeners_for_required_phases_statuses(vec![
+                self.node_phase_status.subscribe(),
+                self.hardware_phase_status.subscribe(),
+            ])
             .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
             .await;
         unknown_phase_setup.setup().await;
     }
 
-    pub async fn init_exchange_modal_status(&self) -> Result<(), anyhow::Error> {
-        self.exchange_modal_status.send(PhaseStatus::Success)?;
+    pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
+        self.exchange_modal_status
+            .send(ExchangeModalStatus::Completed)?;
         Ok(())
     }
 
@@ -358,6 +381,7 @@ impl SetupManager {
         let mut node_phase_status_subscriber = self.node_phase_status.subscribe();
         let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
         let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+        let mut exchange_modal_status_subscriber = self.exchange_modal_status.subscribe();
 
         let cacellation_token = self.cancellation_token.lock().await.clone();
 
@@ -374,6 +398,7 @@ impl SetupManager {
                     let is_node_phase_succeeded = node_phase_status_subscriber.borrow().is_success();
                     let is_wallet_phase_succeeded = wallet_phase_status_subscriber.borrow().is_success();
                     let is_unknown_phase_succeeded = unknown_phase_status_subscriber.borrow().is_success();
+                    let is_exchange_modal_completed = exchange_modal_status_subscriber.borrow().is_completed();
 
                     info!(target: LOG_TARGET, "Checking unlock conditions: Core: {}, Hardware: {}, Node: {}, Wallet: {}, Unknown: {}",
                         is_core_phase_succeeded,
@@ -393,6 +418,7 @@ impl SetupManager {
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
+                        && is_exchange_modal_completed
                         && !is_app_unlocked
                     {
                         SetupManager::get_instance()
@@ -464,6 +490,7 @@ impl SetupManager {
                         _ = node_phase_status_subscriber.changed() => { continue; }
                         _ = wallet_phase_status_subscriber.changed() => { continue; }
                         _ = unknown_phase_status_subscriber.changed() => { continue; }
+                        _ = exchange_modal_status_subscriber.changed() => { continue; }
                     };
                 }
             });
