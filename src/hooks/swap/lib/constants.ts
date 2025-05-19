@@ -56,8 +56,8 @@ export const ENABLED_TOKEN_ADDRESSES = {
 };
 
 export const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
-    [ChainId.MAINNET]: 'https://rpc.ankr.com/eth',
-    [ChainId.SEPOLIA]: 'https://gateway.tenderly.co/public/sepolia', // Consider changing this if still problematic
+    [ChainId.MAINNET]: process.env.MAINNET_RPC_URL || 'https://rpc.ankr.com/eth',
+    [ChainId.SEPOLIA]: process.env.SEPOLIA_RPC_URL || 'https://gateway.tenderly.co/public/sepolia',
 };
 
 export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {

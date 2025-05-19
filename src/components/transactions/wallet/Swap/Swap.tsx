@@ -47,7 +47,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
         toTokenDisplay,
         reviewSwap,
         isLoading,
-        procesingOpen,
+        processingOpen,
         isProcessingApproval,
         isProcessingSwap,
         swapSuccess,
@@ -165,7 +165,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
 
             <ProcessingTransaction
                 status={isProcessingSwap ? 'processingswap' : swapSuccess ? 'success' : 'error'}
-                isOpen={procesingOpen && !isProcessingApproval}
+                isOpen={processingOpen && !isProcessingApproval}
                 setIsOpen={setProcesingOpen}
                 fees={transaction?.paidTransactionFee}
                 transactionId={transaction?.transactionId ?? undefined}

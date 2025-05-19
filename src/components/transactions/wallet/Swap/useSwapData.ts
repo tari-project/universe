@@ -56,7 +56,7 @@ export const useSwapData = () => {
 
     const [reviewSwap, setReviewSwap] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [procesingOpen, setProcesingOpen] = useState(false);
+    const [processingOpen, setProcessingOpen] = useState(false);
     const [isProcessingApproval, setIsProcessingApproval] = useState(false);
     const [isProcessingSwap, setIsProcessingSwap] = useState(false);
     const [swapSuccess, setSwapSuccess] = useState(false);
@@ -80,7 +80,6 @@ export const useSwapData = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
-        getPaidTransactionFee,
         error: useSwapError,
     } = useUniswapV2Interactions();
 
@@ -567,14 +566,14 @@ export const useSwapData = () => {
         const amountInWeiString = inputAmountToExecute.toString();
 
         setIsProcessingApproval(true);
-        setProcesingOpen(true);
+        setProcessingOpen(true);
         setReviewSwap(false);
         const fromToken = uiDirection === 'toXtm' ? swapEngineInputToken : swapEngineOutputToken;
         checkAndRequestApproval(fromToken as Token, amountInWeiString)
             .then((approved) => {
                 setIsProcessingApproval(false);
                 if (!approved) {
-                    setProcesingOpen(false);
+                    setProcessingOpen(false);
                     addToast({ title: 'Approval Required', text: 'Approval failed.', type: 'warning' });
                     return;
                 }
@@ -583,7 +582,7 @@ export const useSwapData = () => {
                     .then((result) => {
                         setIsProcessingSwap(false);
                         if (!result) {
-                            setProcesingOpen(false);
+                            setProcessingOpen(false);
                             addToast({ title: 'Swap Failed', text: 'Transaction failed.', type: 'error' });
                             return;
                         }
@@ -604,7 +603,7 @@ export const useSwapData = () => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .catch((e: any) => {
                         setIsProcessingSwap(false);
-                        setProcesingOpen(false);
+                        setProcessingOpen(false);
                         addToast({ title: 'Swap Error', text: e.message || 'Swap execution failed.', type: 'error' });
                     })
                     .finally(() => {
@@ -614,7 +613,7 @@ export const useSwapData = () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             .catch((e: any) => {
                 setIsProcessingApproval(false);
-                setProcesingOpen(false);
+                setProcessingOpen(false);
                 addToast({ title: 'Approval Error', text: e.message || 'Approval process failed.', type: 'error' });
             });
     };
@@ -681,8 +680,8 @@ export const useSwapData = () => {
         reviewSwap,
         setReviewSwap,
         isLoading: finalIsLoading,
-        procesingOpen,
-        setProcesingOpen,
+        processingOpen,
+        setProcesingOpen: setProcessingOpen,
         isProcessingApproval,
         isProcessingSwap,
         swapSuccess,
