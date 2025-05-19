@@ -41,7 +41,7 @@ impl TappletApiAdapter for BridgeTappletAdapter {
     fn get_tapplet_source_file(&self, app_handle: AppHandle) -> Result<PathBuf, Error> {
         let tapplet_source_file = app_handle
             .path()
-            .resolve("applets/bridge/bridge-v0.1.0.zip", BaseDirectory::Resource)?;
+            .resolve("tapplets/bridge/bridge-v0.1.0.zip", BaseDirectory::Resource)?;
 
         Ok(tapplet_source_file)
     }
