@@ -51,7 +51,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
     const activeChainIcon = useMemo(() => {
         if (!fromTokenDisplay?.symbol) return null;
         return getCurrencyIcon({
-            simbol: fromTokenDisplay.symbol.toLowerCase(),
+            symbol: fromTokenDisplay.symbol,
             width: 20,
         });
     }, [fromTokenDisplay?.symbol]);
@@ -71,17 +71,17 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         {
             label: t('swap.you-will-receive'),
             value: slippage,
-            helpText: t('swap.you-will-receive'),
+            // helpText: t('swap.you-will-receive'),
         },
         {
             label: t('swap.slippage-tolerance'),
             value: slippage,
-            helpText: t('swap.you-will-receive'),
+            // helpText: t('swap.you-will-receive'),
         },
         {
             label: t('swap.price-impact'),
             value: priceImpact,
-            helpText: t('swap.you-will-receive'),
+            // helpText: t('swap.you-will-receive'),
         },
     ];
 
@@ -113,7 +113,9 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                                 value={amount}
                             />
                             <SwapOptionCurrency>
-                                {getCurrencyIcon({ simbol: fromTokenDisplay?.symbol || '', width: 25 })}
+                                {fromTokenDisplay?.symbol
+                                    ? getCurrencyIcon({ symbol: fromTokenDisplay?.symbol, width: 25 })
+                                    : null}
                                 <span>{fromTokenDisplay?.symbol}</span>
                             </SwapOptionCurrency>
                         </SwapOptionAmount>
@@ -135,7 +137,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                                 value={targetAmount}
                             />
                             <SwapOptionCurrency>
-                                {getCurrencyIcon({ simbol: 'xtm', width: 25 })}
+                                {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
                                 <span>{'XTM'}</span>
                             </SwapOptionCurrency>
                         </SwapOptionAmount>

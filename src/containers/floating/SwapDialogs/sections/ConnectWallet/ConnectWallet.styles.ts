@@ -57,6 +57,7 @@ export const ConnectingProgress = styled.div`
     display: flex;
     align-items: center;
     margin-top: 10px;
+    justify-content: center;
 `;
 
 export const GreenDot = styled.div`

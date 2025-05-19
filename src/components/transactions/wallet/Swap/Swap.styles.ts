@@ -37,6 +37,7 @@ export const SwapOptionCurrency = styled.div<{ $clickable?: boolean }>`
     align-items: center;
     white-space: nowrap;
     border: 1px solid ${({ theme }) => theme.palette.divider};
+    color: ${({ theme }) => theme.palette.text.primary};
     span {
         color: ${({ theme }) => theme.palette.text.primary};
         font-family: Alliance No.1;
@@ -113,8 +114,6 @@ export const SwapDirectionWrapper = styled.div<{ $direction: 'input' | 'output' 
 
     width: 46px;
     height: 46px;
-    top: 96px;
-    left: 130px;
     border-radius: 23px;
     border-width: 4px;
     background: ${({ theme }) => theme.palette.background.secondary};

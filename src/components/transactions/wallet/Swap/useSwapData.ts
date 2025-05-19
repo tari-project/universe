@@ -11,9 +11,10 @@ import {
     EnabledTokens as EnabledTokensEnum,
 } from '@app/hooks/swap/useSwapV2';
 
+export type TokenSymbol = 'POL' | 'XTM' | 'WXTM' | 'DAI' | 'ETH';
 export interface SelectableTokenInfo {
     label: string;
-    symbol: string;
+    symbol: TokenSymbol;
     address: `0x${string}` | null;
     iconSymbol: string;
     definition: Token | NativeCurrency;
@@ -29,10 +30,8 @@ const formatDisplayBalanceForSelectable = (
     decimals: number,
     symbol: string
 ): string => {
-    const symbolDisplay = symbol.toLowerCase() === 'dai' ? 'wXTM' : symbol;
     if (rawBalance === undefined) return '0.000';
-    // Show more precision for balances in the list if desired
-    return `${parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5))} ${symbolDisplay}`;
+    return `${parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5))} ${symbol}`;
 };
 
 // Placeholder for fetching USD prices - REPLACE THIS
@@ -125,7 +124,7 @@ export const useSwapData = () => {
         }
         return {
             label: def?.name || def?.symbol || 'Token',
-            symbol: def?.symbol || balData?.symbol || '',
+            symbol: (def?.symbol || balData?.symbol || 'ETH').toUpperCase() as TokenSymbol,
             address: def?.isNative ? null : (def?.address as `0x${string}`) || null,
             iconSymbol: def?.symbol?.toLowerCase() || '',
             definition: def || Ether.onChain(currentChainId || ChainId.MAINNET),
@@ -166,7 +165,7 @@ export const useSwapData = () => {
         }
         return {
             label: def?.name || def?.symbol || 'Token',
-            symbol: def?.symbol || balData?.symbol || '',
+            symbol: (def?.symbol || balData?.symbol || 'ETH').toUpperCase() as TokenSymbol,
             address: def?.isNative ? null : (def?.address as `0x${string}`) || null,
             iconSymbol: def?.symbol?.toLowerCase() || '',
             definition: def || XTM_DEFINITIONS[currentChainId || ChainId.MAINNET]!,
@@ -198,7 +197,7 @@ export const useSwapData = () => {
 
         const nativeEth = Ether.onChain(currentChainId);
         if (nativeEth && (!xtmDef || !nativeEth.equals(xtmDef))) {
-            const symbol = nativeEth.symbol;
+            const symbol = nativeEth?.symbol?.toUpperCase() as TokenSymbol;
             const iconSymbol = nativeEth?.symbol?.toLowerCase();
             if (symbol && iconSymbol) {
                 tokens.push({
@@ -590,7 +589,7 @@ export const useSwapData = () => {
                         setSwapSuccess(true);
                         setTransactionId(hash);
 
-                        console.log('-------------------------Swap transaction hash:', hash);
+                        console.info('-------------------------Swap transaction hash:', hash);
                         getPaidTransactionFee(hash as `0x${string}`)
                             .then((fee) => setPaidTransactionFee(fee))
                             .catch((e) =>

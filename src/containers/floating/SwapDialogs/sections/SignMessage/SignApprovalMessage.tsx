@@ -12,7 +12,8 @@ interface Props {
 export const SignApprovalMessage = ({ isOpen, setIsOpen }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
     return (
-        <TransactionModal show={isOpen} handleClose={() => setIsOpen?.(false)}>
+        // Prevent close on click outside just for this modal
+        <TransactionModal show={isOpen} handleClose={() => setIsOpen?.(false)} noClose>
             <AnimatePresence mode="wait">
                 <HeaderWrapper>
                     <Metamask width="65" />

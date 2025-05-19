@@ -44,7 +44,7 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
             value: transactionId || <LoadingDots />,
         },
         {
-            label: 'Ethereum Txn',
+            label: t('swap.ethereum-txn'),
             value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
         },
         // {

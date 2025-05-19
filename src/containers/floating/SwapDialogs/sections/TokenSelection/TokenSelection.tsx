@@ -29,16 +29,23 @@ export const TokenSelection = ({ isOpen, setIsOpen, availableTokens, onSelectTok
                         exit={{ opacity: 0, y: 20 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <TokenList>
+                        <TokenList role="listbox" aria-label={t('swap.select-token')}>
                             {availableTokens.map((token) =>
                                 token.symbol.toLowerCase() === 'wxtm' ? null : (
                                     <TokenItem
                                         key={token.symbol + (token.address || 'native')}
                                         onClick={() => handleSelectToken(token)}
+                                        role="option"
+                                        tabIndex={0}
+                                        aria-selected="false"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                handleSelectToken(token);
+                                            }
+                                        }}
                                     >
                                         <TokenInfo>
-                                            {getCurrencyIcon({ simbol: token.symbol.toLowerCase() || '', width: 32 })}{' '}
-                                            {/* Increased icon size */}
+                                            {getCurrencyIcon({ symbol: token.symbol, width: 32 })}
                                             <TokenDetails>
                                                 <span className="name">{token.label}</span>
                                                 <span className="symbol">{token.symbol}</span>

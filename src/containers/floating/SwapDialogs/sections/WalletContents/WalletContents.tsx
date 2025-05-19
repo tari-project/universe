@@ -69,7 +69,7 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                                     <TokenItemLeft>
                                         <TokenIconWrapper>
                                             {getCurrencyIcon({
-                                                simbol: token.symbol.toLowerCase() || '',
+                                                symbol: token.symbol,
                                                 width: 32,
                                             })}
                                         </TokenIconWrapper>

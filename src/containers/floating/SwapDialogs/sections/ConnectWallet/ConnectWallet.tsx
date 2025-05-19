@@ -1,5 +1,6 @@
 import MMFox from '../../icons/mm-fox';
 import { useConnect } from 'wagmi';
+import { Provider } from 'ethers';
 import { useCallback, useEffect, useState } from 'react';
 import { QRCode } from 'react-qrcode-logo';
 import {
@@ -27,19 +28,35 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
         const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect');
 
         if (walletConnectConnector && isOpen) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const provider = (await walletConnectConnector.getProvider()) as any;
-            provider.on('display_uri', (uri: string) => {
-                setQrCodeUri(uri);
-            });
             try {
+                const provider = (await walletConnectConnector.getProvider()) as Provider;
+                const handleUri = async (uri: string) => {
+                    setQrCodeUri(uri);
+                };
+                provider.on('display_uri', (uri: string) => {
+                    handleUri(uri);
+                });
+                provider.on('disconnect', () => {
+                    setIsConnected(false);
+                    setQrCodeUri(null);
+                });
+                const cleanup = () => {
+                    provider.removeListener('display_uri', handleUri);
+                };
                 connect({ connector: walletConnectConnector });
-                setQrCodeUri(null); // Clear QR once connected
+                setQrCodeUri(null);
                 setIsConnected(true);
+                return cleanup;
             } catch (e) {
                 console.error('Connection failed:', e);
-                setQrCodeUri(null); // Clear QR on error
+                setQrCodeUri(null);
                 setIsConnected(false);
+                console.warn('Retrying connection in 3 seconds...');
+                setTimeout(() => {
+                    if (isOpen) {
+                        handleConnect();
+                    }
+                }, 3000);
             }
         } else {
             console.error('WalletConnect connector not found.');
@@ -48,7 +65,10 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
 
     useEffect(() => {
         if (!isConnected && !qrCodeUri) {
-            handleConnect();
+            const cleanup = handleConnect();
+            return () => {
+                cleanup.then((cleanupHandler) => cleanupHandler?.());
+            };
         }
     }, [handleConnect, isConnected, qrCodeUri]);
 
@@ -85,9 +105,8 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                     <ConnectingProgress>
                         <GreenDot />
                         <MMFox width="20" />
-                        <LoadingCopy>
-                            {t('swap.connect-wallet-text')} <LoadingDots />
-                        </LoadingCopy>
+                        <LoadingCopy>{t('swap.connect-wallet-text')}</LoadingCopy>
+                        <LoadingDots />
                     </ConnectingProgress>
                 </ContentWrapper>
             </AnimatePresence>

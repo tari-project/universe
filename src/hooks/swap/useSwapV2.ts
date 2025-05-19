@@ -20,6 +20,14 @@ import { Hash, WalletClient, encodeFunctionData, formatUnits as viemFormatUnits 
 import erc20Abi from './abi/erc20.json';
 import uniswapV2RouterAbi from './abi/UniswapV2Router02.json';
 import uniswapV2PairAbi from './abi/UniswapV2Pair.json';
+import {
+    SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
+    SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
+    SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
+    SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
+    SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
+    SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
+} from './abi/viemFunctionData';
 
 export interface TradeDetails {
     trade: Trade<Token, Token, TradeType> | null;
@@ -112,52 +120,6 @@ export async function walletClientToSigner(walletClient: WalletClient): Promise<
     }
 }
 
-// --- Router ABIs for viem's encodeFunctionData ---
-const SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM = [
-    {
-        type: 'function',
-        name: 'swapExactETHForTokens',
-        inputs: [
-            { name: 'amountOutMin', type: 'uint256' },
-            { name: 'path', type: 'address[]' },
-            { name: 'to', type: 'address' },
-            { name: 'deadline', type: 'uint256' },
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }],
-        stateMutability: 'payable',
-    },
-] as const;
-const SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM = [
-    {
-        type: 'function',
-        name: 'swapExactTokensForETH',
-        inputs: [
-            { name: 'amountIn', type: 'uint256' },
-            { name: 'amountOutMin', type: 'uint256' },
-            { name: 'path', type: 'address[]' },
-            { name: 'to', type: 'address' },
-            { name: 'deadline', type: 'uint256' },
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }],
-        stateMutability: 'nonpayable',
-    },
-] as const;
-const SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM = [
-    {
-        type: 'function',
-        name: 'swapExactTokensForTokens',
-        inputs: [
-            { name: 'amountIn', type: 'uint256' },
-            { name: 'amountOutMin', type: 'uint256' },
-            { name: 'path', type: 'address[]' },
-            { name: 'to', type: 'address' },
-            { name: 'deadline', type: 'uint256' },
-        ],
-        outputs: [{ name: 'amounts', type: 'uint256[]' }],
-        stateMutability: 'nonpayable',
-    },
-] as const;
-
 // --- Formatting Helpers for Gas Fees ---
 const formatNativeGasFee = (
     gasAmountWei: bigint | undefined,
@@ -214,18 +176,26 @@ export const useSwap = () => {
         }
     }, [currentChainId]);
 
-    const signerAsync = useMemo(async () => {
-        if (!walletClient) return null;
-        return walletClientToSigner(walletClient);
+    const [signer, setSigner] = useState<EthersSigner | null>(null);
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            if (!walletClient) return setSigner(null);
+            const s = await walletClientToSigner(walletClient);
+            if (!cancelled) setSigner(s);
+        })();
+        return () => {
+            cancelled = true;
+        };
     }, [walletClient]);
 
     const providerAsync = useMemo(async () => {
         if (walletClient) {
-            const signer = await signerAsync;
             if (signer?.provider) return signer.provider;
         }
         return publicRpcProvider;
-    }, [publicRpcProvider, signerAsync, walletClient]);
+    }, [publicRpcProvider, signer, walletClient]);
 
     const sdkPairToken = useMemo(() => {
         if (!currentChainId) return undefined;
@@ -365,58 +335,108 @@ export const useSwap = () => {
                     const amountIn = BigInt(trade.inputAmount.quotient.toString());
                     const amountOut = BigInt(trade.outputAmount.quotient.toString());
 
-                    // For exact input, amountOut is minimumOutput. For exact output, amountIn is maximumInput.
-                    const amountOutMinOrMax =
+                    // For exact input, amountOutMinOrMax is minimumOutput.
+                    // For exact output, amountOutMinOrMax is the exact amountOut.
+                    const amountOutParam = // Renamed for clarity
                         trade.tradeType === TradeType.EXACT_INPUT
-                            ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString())
-                            : amountOut; // For exact output, this is the exact amountOut
-                    const amountInOrMaxIn =
+                            ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString()) // This is amountOutMin
+                            : amountOut; // This is the exact amountOut for EXACT_OUTPUT trades
+
+                    // For exact input, amountInOrMaxIn is the exact amountIn.
+                    // For exact output, amountInOrMaxIn is maximumInput.
+                    const amountInParam = // Renamed for clarity
                         trade.tradeType === TradeType.EXACT_OUTPUT
-                            ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString())
-                            : amountIn; // For exact input, this is the exact amountIn
+                            ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString()) // This is amountInMax
+                            : amountIn; // This is the exact amountIn for EXACT_INPUT trades
 
                     let callData: `0x${string}`;
                     let valueToSend: bigint | undefined = undefined;
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     let swapAbiForViem: any;
+                    let functionName: string;
 
-                    const inputIsNativeForRouterEst = token0?.isNative;
-                    const outputIsNativeForRouterEst = token1?.isNative;
+                    const inputIsNative = token0?.isNative; // Assuming token0 is input, token1 is output
+                    const outputIsNative = token1?.isNative;
 
-                    if (inputIsNativeForRouterEst) {
-                        swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
-                        callData = encodeFunctionData({
-                            abi: swapAbiForViem,
-                            functionName: 'swapExactETHForTokens',
-                            args: [amountOutMinOrMax, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                        });
-                        valueToSend = BigInt(amountInOrMaxIn.toString());
-                    } else if (outputIsNativeForRouterEst) {
-                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
-                        callData = encodeFunctionData({
-                            abi: swapAbiForViem,
-                            functionName: 'swapExactTokensForETH',
-                            args: [
-                                amountInOrMaxIn,
-                                amountOutMinOrMax,
-                                path,
-                                accountAddress as `0x${string}`,
-                                BigInt(deadline),
-                            ],
-                        });
+                    if (trade.tradeType === TradeType.EXACT_INPUT) {
+                        if (inputIsNative) {
+                            swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
+                            functionName = 'swapExactETHForTokens';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                            });
+                            valueToSend = BigInt(amountInParam.toString());
+                        } else if (outputIsNative) {
+                            swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
+                            functionName = 'swapExactTokensForETH';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [
+                                    amountInParam,
+                                    amountOutParam,
+                                    path,
+                                    accountAddress as `0x${string}`,
+                                    BigInt(deadline),
+                                ],
+                            });
+                        } else {
+                            swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
+                            functionName = 'swapExactTokensForTokens';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [
+                                    amountInParam,
+                                    amountOutParam,
+                                    path,
+                                    accountAddress as `0x${string}`,
+                                    BigInt(deadline),
+                                ],
+                            });
+                        }
                     } else {
-                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
-                        callData = encodeFunctionData({
-                            abi: swapAbiForViem,
-                            functionName: 'swapExactTokensForTokens',
-                            args: [
-                                amountInOrMaxIn,
-                                amountOutMinOrMax,
-                                path,
-                                accountAddress as `0x${string}`,
-                                BigInt(deadline),
-                            ],
-                        });
+                        // TradeType.EXACT_OUTPUT
+                        if (inputIsNative) {
+                            swapAbiForViem = SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM;
+                            functionName = 'swapETHForExactTokens';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                            });
+                            valueToSend = BigInt(amountInParam.toString());
+                        } else if (outputIsNative) {
+                            swapAbiForViem = SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM;
+                            functionName = 'swapTokensForExactETH';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [
+                                    amountOutParam,
+                                    amountInParam,
+                                    path,
+                                    accountAddress as `0x${string}`,
+                                    BigInt(deadline),
+                                ],
+                            });
+                        } else {
+                            swapAbiForViem = SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM;
+                            functionName = 'swapTokensForExactTokens';
+                            callData = encodeFunctionData({
+                                abi: swapAbiForViem,
+                                functionName,
+                                args: [
+                                    amountOutParam,
+                                    amountInParam,
+                                    path,
+                                    accountAddress as `0x${string}`,
+                                    BigInt(deadline),
+                                ],
+                            });
+                        }
                     }
 
                     const estimatedGasLimit = await publicClient.estimateGas({
@@ -478,7 +498,7 @@ export const useSwap = () => {
 
     const checkAndRequestApproval = useCallback(
         async (amountToApproveRaw: string): Promise<boolean> => {
-            if (!signerAsync || !accountAddress || !sdkToken0 || !routerAddress || !currentChainId) {
+            if (!accountAddress || !sdkToken0 || !routerAddress || !currentChainId) {
                 setError('Approval prerequisites not met.');
                 return false;
             }
@@ -488,7 +508,6 @@ export const useSwap = () => {
 
             setIsApproving(true);
             setError(null);
-            const signer = await signerAsync;
             if (!signer) {
                 setError('Signer not available.');
                 setIsApproving(false);
@@ -515,7 +534,7 @@ export const useSwap = () => {
                 return false;
             }
         },
-        [signerAsync, accountAddress, sdkToken0, routerAddress, currentChainId]
+        [signer, accountAddress, sdkToken0, routerAddress, currentChainId]
     );
 
     const executeSwap = useCallback(
@@ -523,7 +542,7 @@ export const useSwap = () => {
             setError(null);
             setIsLoading(true);
             if (
-                !signerAsync ||
+                !signer ||
                 !accountAddress ||
                 !isConnected ||
                 !routerAddress ||
@@ -556,7 +575,6 @@ export const useSwap = () => {
                     }
                 }
 
-                const signer = await signerAsync;
                 if (!signer) {
                     setError('Signer became unavailable.');
                     setIsLoading(false);
@@ -604,7 +622,7 @@ export const useSwap = () => {
             }
         },
         [
-            signerAsync,
+            signer,
             accountAddress,
             isConnected,
             routerAddress,
@@ -641,7 +659,6 @@ export const useSwap = () => {
     }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
 
     // const addLiquidity = useCallback(async () => {
-    //     const signer = await signerAsync;
     //     const tokenA = new ethers.Contract('0xcBe79AB990E0Ab45Cb9148db7d434477E49b7374', erc20Abi, signer);
     //     await tokenA.approve(routerAddress, 1000000000000000000000n);
     //
@@ -655,7 +672,7 @@ export const useSwap = () => {
     //         Date.now() + 60 * 1000, // Deadline
     //         { value: 10000000000000000n } // ETH to send
     //     );
-    // }, [accountAddress, routerAddress, signerAsync]);
+    // }, [accountAddress, routerAddress, signer]);
 
     return {
         pairTokenAddress,
@@ -678,7 +695,7 @@ export const useSwap = () => {
         getPaidTransactionFee,
         //addLiquidity,
         isReady:
-            !!signerAsync &&
+            !!signer &&
             !!accountAddress &&
             isConnected &&
             !!sdkToken0 &&

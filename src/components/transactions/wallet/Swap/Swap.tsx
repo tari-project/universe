@@ -87,7 +87,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                 {fromTokenDisplay && connectedAccount.address ? (
                     <ConnectedWalletWrapper onClick={() => setOpenWallet(true)}>
                         <>
-                            {getCurrencyIcon({ simbol: fromTokenDisplay.symbol.toLowerCase() || 'eth', width: 20 })}
+                            {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || 'ETH', width: 20 })}
                             {truncateMiddle((connectedAccount?.address as `0x${string}`) || '', 6)}
                         </>
                     </ConnectedWalletWrapper>
@@ -106,7 +106,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         value={fromAmount}
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
-                        {getCurrencyIcon({ simbol: fromTokenDisplay.symbol.toLowerCase() || 'eth', width: 25 })}
+                        {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || 'ETH', width: 25 })}
                         <span>{fromTokenDisplay.symbol || 'ETH'}</span>
                         <Chevron />
                     </SwapOptionCurrency>
@@ -131,7 +131,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         value={targetAmount}
                     />
                     <SwapOptionCurrency>
-                        {getCurrencyIcon({ simbol: 'xtm', width: 25 })}
+                        {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
                         <span>{'wXTM'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
@@ -143,7 +143,9 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                     variant="primary"
                     onClick={() => setReviewSwap(true)}
                     size="xl"
-                    disabled={Boolean(notEnoughBalance || !Number(fromAmount) || isLoading)}
+                    disabled={Boolean(
+                        notEnoughBalance || !Number(uiDirection === 'input' ? fromAmount : targetAmount) || isLoading
+                    )}
                 >
                     {isLoading ? t('swap.loading') : t('swap.review-swap')}
                 </WalletButton>

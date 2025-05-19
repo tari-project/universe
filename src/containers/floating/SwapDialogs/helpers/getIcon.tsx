@@ -1,14 +1,15 @@
+import { TokenSymbol } from '@app/components/transactions/wallet/Swap/useSwapData';
 import EthereumIcon from '../icons/chains/ethereumIcon';
 import { PolygonIcon } from '../icons/chains/polygonIcon';
 import { TariIcon } from '../icons/chains/tariIcon';
 
 interface Props {
-    simbol: string;
+    symbol: TokenSymbol;
     width?: string | number;
     fill?: string;
 }
-export const getCurrencyIcon = ({ simbol, width, fill }: Props) => {
-    switch (simbol.toLowerCase()) {
+export const getCurrencyIcon = ({ symbol, width, fill }: Props) => {
+    switch (symbol.toLowerCase()) {
         case 'pol':
             return <PolygonIcon width={width} fill={fill} />;
         case 'xtm':
