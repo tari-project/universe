@@ -105,12 +105,19 @@ process_artifact() {
   local platform_key=$2
   local artifact_url=$3
 
-  # Extract the archive
-  echo "Processing $artifact_path for $platform_key..."
-  mkdir -p "$BASE_DIR/$platform_key"
-  echo "Extracting $artifact_path..."
-  sudo unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1  || sudo tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1
-  echo "Extracted to $BASE_DIR/$platform_key"
+  # Check if the artifact is already unzipped
+  if [[ -d "$artifact_path" ]]; then
+    echo "Artifact $artifact_path is already unzipped. Renaming to $platform_key..."
+    mv "$artifact_path" "$BASE_DIR/$platform_key"
+    echo "Renamed $artifact_path to $BASE_DIR/$platform_key"
+  else
+    # Extract the archive
+    echo "Processing $artifact_path for $platform_key..."
+    mkdir -p "$BASE_DIR/$platform_key"
+    echo "Extracting $artifact_path..."
+    unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1 || tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1
+    echo "Extracted to $BASE_DIR/$platform_key"
+  fi
 
   # Find the main file and its signature
   echo "Finding main file and signature for $platform_key..."
