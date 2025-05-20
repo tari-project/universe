@@ -161,6 +161,12 @@ echo "Signature file found: $signature_file"
     exit 1
   fi
 
+  # Move main file to root directory
+  echo "Moving main file to root directory..."
+  mv "$main_file" "$BASE_DIR"
+  echo "Main file moved to $BASE_DIR"
+  main_file=$(basename "$main_file")
+
   # Read the signature
   echo "Reading signature..."
   local signature=$(cat "$signature_file" | base64 -w 0)
