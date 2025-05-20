@@ -86,10 +86,10 @@ export function SendReview({
             label: t('send.transaction-description'),
             value: message,
         },
-        {
-            label: t('send.transaction-id'),
-            value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
-        },
+        // {
+        //     label: t('send.transaction-id'),
+        //     value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
+        // },
         // {
         //     label: t('send.tari-txn'),
         //     value: status === 'processing' ? <LoadingDots /> : `0x12345..12789`,

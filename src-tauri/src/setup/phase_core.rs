@@ -128,7 +128,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Core);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Core);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -142,7 +142,7 @@ impl SetupPhaseImpl for CoreSetupPhase {
                             error!(target: LOG_TARGET, "[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Core,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
-                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()))
+                            EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Core.get_critical_problem_title()), Some(SetupPhase::Core.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }
