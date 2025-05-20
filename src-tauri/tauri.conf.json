@@ -63,39 +63,11 @@
                     "application/octet-stream",
                     "base64"
                 ],
-                "script-src": ["'self'", "unsafe-eval", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
-                "object-src": ["'self'", "data:", "blob: ", "http://127.0.0.1:*", "http://localhost:*", "tauri:"],
-                "script-src-elem": [
-                    "'self'",
-                    "unsafe-inline",
-                    "unsafe-eval",
-                    "http://127.0.0.1:*",
-                    "http://localhost:*",
-                    "tauri:"
-                ],
-                "img-src": [
-                    "'self'",
-                    "data:",
-                    "blob:",
-                    "base64:",
-                    "https://*.twimg.com",
-                    "https://*.googleusercontent.com",
-                    "http://localhost:*",
-                    "http://127.0.0.1:*",
-                    "tauri:"
-                ],
-                "frame-src": [
-                    "'self'",
-                    "https:",
-                    "wss://ut.tari.com",
-                    "https://ut.tari.com",
-                    "tauri:",
-                    "tauri://localhost:*",
-                    "ipc:",
-                    "http://ipc.localhost",
-                    "http://localhost:*",
-                    "http://127.0.0.1:*"
-                ]
+                "script-src": "'self' 'unsafe-eval'",
+                "worker-src": "'self' blob: https://cdn.npmjs.com/@tari-project/tari-tower",
+                "img-src": "'self' data: blob: base64: https://*.twimg.com https://cdn.npmjs.com/@tari-project/tari-tower http://127.0.0.1 http://127.0.0.1/ http://127.0.0.1:* http://localhost http://localhost/ http://localhost:*",
+                "object-src": "'self' data: blob:",
+                "script-src-elem": "'self' 'unsafe-inline' 'unsafe-eval'"
             },
             "assetProtocol": {
                 "enable": true,
