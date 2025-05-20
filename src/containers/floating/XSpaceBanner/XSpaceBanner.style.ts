@@ -5,8 +5,8 @@ import styled, { css } from 'styled-components';
 
 export const BannerContent = styled(m.div)`
     position: fixed;
-    top: 86px;
-    right: 10px;
+    top: 16px;
+    right: 32px;
     z-index: 99999;
     display: flex;
     align-items: center;
@@ -42,10 +42,9 @@ export const IconContainer = styled(m.div)`
 
 export const DateLabel = styled(m.span)`
     color: #ffffffb2;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 11px;
-    leading-trim: Cap height;
     line-height: 17px;
     letter-spacing: 1%;
 `;
@@ -96,7 +95,7 @@ export const Title = styled(m.span)`
     max-width: 168px;
     min-width: 100px;
     width: 100%;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 12px;
     line-height: 17px;
@@ -114,10 +113,9 @@ export const LiveBadgeWrapper = styled(m.div)`
 `;
 
 export const LiveBadgeText = styled(m.div)`
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 10px;
-    leading-trim: Cap height;
     line-height: 17px;
     letter-spacing: 1%;
 `;
@@ -139,10 +137,9 @@ export const JoinSpaceWrapper = styled(m.div)`
     border-radius: 30px;
     border: 1px solid #ffffff33;
     padding: 0px 5px;
-    font-family: Poppins;
+    font-family: Poppins, sans-serif;
     font-weight: 600;
     font-size: 10px;
-    leading-trim: Cap height;
     line-height: 17px;
     letter-spacing: 1%;
 `;
