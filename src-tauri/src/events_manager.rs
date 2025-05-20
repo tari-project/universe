@@ -72,7 +72,7 @@ impl EventsManager {
                         } else {
                             None
                         };
-                        
+
                         EventsEmitter::emit_new_block_mined(
                             &app_clone,
                             block_height,
