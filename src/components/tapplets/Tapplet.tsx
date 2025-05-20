@@ -11,7 +11,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
     const provider = useTappletSignerStore((s) => s.tappletSigner);
     const runTransaction = useTappletSignerStore((s) => s.runTransaction);
 
-    // Memoize sendWindowSize to avoid re-creating on every render
     const sendWindowSize = useCallback(() => {
         if (tappletRef.current) {
             const height = tappletRef.current.offsetHeight;
@@ -25,7 +24,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         }
     }, [provider]);
 
-    // Memoize runTappletTx to keep stable reference
     const runTappletTx = useCallback(
         async (event: MessageEvent) => {
             await runTransaction(event);
@@ -33,7 +31,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         [runTransaction]
     );
 
-    // Memoize handleMessage to avoid stale closure and keep stable for event listener
     const handleMessage = useCallback(
         (event: MessageEvent) => {
             if (event.data.type === 'request-parent-size') {
@@ -49,7 +46,6 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
         window.addEventListener('resize', sendWindowSize);
         window.addEventListener('message', handleMessage);
 
-        // Initial send window size on mount in case iframe is already loaded
         sendWindowSize();
 
         return () => {
