@@ -108,24 +108,33 @@ process_artifact() {
   # Extract the archive
   echo "Processing $artifact_path for $platform_key..."
   mkdir -p "$BASE_DIR/$platform_key"
+  echo "Extracting $artifact_path..."
   tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1 || unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1
+  echo "Extracted to $BASE_DIR/$platform_key"
 
   # Find the main file and its signature
+  echo "Finding main file and signature for $platform_key..."
   local main_file=$(find "$BASE_DIR/$platform_key" -type f -name "*.AppImage" -o -name "*.msi" -o -name "*.tar.gz" | head -n 1)
+  echo "Main file found: $main_file"
   local signature_file=$(find "$BASE_DIR/$platform_key" -type f -name "*.sig" | head -n 1)
 
+echo "Signature file found: $signature_file"
   if [[ -z "$main_file" || -z "$signature_file" ]]; then
     echo "Error: Could not find main file or signature for $platform_key"
     exit 1
   fi
 
   # Move main file to root directory
+  echo "Moving main file to root directory..."
   mv "$main_file" "$BASE_DIR"
+  echo "Main file moved to $BASE_DIR"
   main_file=$(basename "$main_file")
 
   # Read the signature
+  echo "Reading signature..."
   local signature=$(cat "$signature_file" | base64 -w 0)
 
+echo "Signature read: $signature"
   # Update the JSON
   if [[ -n "$artifact_url" ]]; then
     jq --arg platform "$platform_key" \
@@ -141,12 +150,6 @@ process_artifact() {
        "$OUTPUT_FILE" > tmp.json && mv tmp.json "$OUTPUT_FILE"
   fi
 }
-
-# Optional URLs for each artifact (comma-separated)
-ARTIFACT_URLS=${ARTIFACT_URLS:-""}
-
-# Split URLs into an array if provided
-IFS=',' read -r -a URL_ARRAY <<< "$ARTIFACT_URLS"
 
 # Process each artifact with its corresponding URL (if provided)
 process_artifact "${ID}_${VERSION}_ubuntu-22.04-x64.zip" "ubuntu-22.04" "${URL_ARRAY[0]:-}"
