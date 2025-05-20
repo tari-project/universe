@@ -80,6 +80,9 @@ const CriticalProblemDialog = memo(function CriticalProblemDialog() {
                         <Typography variant="h4">
                             {t(criticalProblem?.title || 'common:installation-problem')}
                         </Typography>
+                        <Typography variant="p" style={{ color: '#e0344e' }}>
+                            {criticalProblem?.error_message}
+                        </Typography>
                         <Typography variant="p">
                             {t(criticalProblem?.description || 'common:installation-problem')}
                         </Typography>

@@ -1,11 +1,12 @@
-import { ApplicationsVersions, CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status';
+import { ApplicationsVersions, ExternalDependency, NetworkStatus } from '@app/types/app-status';
 import { create } from './create';
+import { CriticalProblemPayload } from '@app/types/events-payloads';
 
 interface AppState {
     error?: string;
-    criticalProblem?: Partial<CriticalProblem>;
+    criticalProblem?: Partial<CriticalProblemPayload>;
     isSettingsOpen: boolean;
-    criticalError?: Partial<CriticalProblem>;
+    criticalError?: Partial<CriticalProblemPayload>;
     externalDependencies: ExternalDependency[];
     missingExternalDependencies?: ExternalDependency[];
     issueReference?: string;
