@@ -50,7 +50,7 @@ jobs:
     needs: read-exchanges
     name: Building ${{ matrix.exchange.id }} | ${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
     outputs:
-      APP_VERSION: ${{ steps.build.outputs.appVersion }}
+      APP_VERSION: ${{ steps.set-env.outputs.APP_VERSION }}
     # best effort disabled by default
     continue-on-error: ${{ matrix.platforms.best_effort || false }}
     permissions:
@@ -93,6 +93,7 @@ jobs:
           sudo bash ./scripts/check-get-yq.sh
 
       - name: Set environment variables
+        id: set-env
         env:
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
           # Used for linux formatting
