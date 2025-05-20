@@ -468,6 +468,20 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
 
+      - name: Validate Zip File
+        run: |
+          if ! unzip -tq ${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64.zip; then
+            echo "Error: The zip file is corrupted or invalid."
+            exit 1
+          fi
+
+      - name: Verify Unzip Installation
+        run: |
+          if ! command -v unzip > /dev/null; then
+            echo "Error: unzip is not installed."
+            exit 1
+          fi
+
       - name: Run create-latest-json.sh
         shell: bash
         run: |
