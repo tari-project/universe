@@ -80,7 +80,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                 <HeaderItem>
                     <StepHeader>{t('swap.enter-amount')}</StepHeader>
                     <CurrentStep>
-                        {t('swap.swap:step')} <strong>{'1'}</strong> {'/2'}
+                        {t('swap.step')} <strong>{'1'}</strong> {'/2'}
                     </CurrentStep>
                 </HeaderItem>
                 {fromTokenDisplay && connectedAccount.address ? (
