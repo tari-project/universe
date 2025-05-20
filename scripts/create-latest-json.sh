@@ -109,7 +109,7 @@ process_artifact() {
   echo "Processing $artifact_path for $platform_key..."
   mkdir -p "$BASE_DIR/$platform_key"
   echo "Extracting $artifact_path..."
-  unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1  || tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1
+  sudo unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1  || sudo tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1
   echo "Extracted to $BASE_DIR/$platform_key"
 
   # Find the main file and its signature
