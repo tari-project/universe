@@ -479,7 +479,7 @@ jobs:
       - name: Validate Zip File
         continue-on-error: true
         run: |
-          if ! unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
+          if ! sudo unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
             echo "Error: The zip file is corrupted or invalid."
             exit 1
           fi
@@ -487,7 +487,7 @@ jobs:
       - name: Run create-latest-json.sh
         shell: bash
         run: |
-          set -x
+          sudo set -x
           sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
 
       - name: Upload msi artifact
