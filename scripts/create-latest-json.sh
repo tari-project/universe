@@ -99,17 +99,31 @@ cat <<EOF > "$OUTPUT_FILE"
 }
 EOF
 
-# Function to extract archives and update JSON
-process_artifact() {
+prepare_directory_files() {
   local artifact_path=$1
   local platform_key=$2
-  local artifact_url=$3
+
+  # Check if the directory already exists
+  if [[ -d "$BASE_DIR/$platform_key" ]]; then
+    echo "Directory $BASE_DIR/$platform_key already exists. Removing it..."
+    rm -rf "$BASE_DIR/$platform_key"
+  fi
+
+  # Check if the artifact file exists
+  if [[ ! -f "$artifact_path" ]]; then
+    echo "Error: Artifact file $artifact_path does not exist."
+    if [[ ! -f "${artifact_path}.zip" ]]; then
+      echo "Error: Artifact file $artifact_path.zip does not exist."
+      exit 1
+    else
+      artifact_path="$artifact_path.zip"
+    fi
+  fi
 
   # Check if the artifact is already unzipped
   if [[ -d "$artifact_path" ]]; then
-    echo "Artifact $artifact_path is already unzipped. Renaming to $platform_key..."
-    mv "$artifact_path" "$BASE_DIR/$platform_key"
-    echo "Renamed $artifact_path to $BASE_DIR/$platform_key"
+    echo "Artifact $artifact_path is already unzipped. Copying files..."
+    cp -r "$artifact_path"/* "$BASE_DIR/$platform_key"
   else
     # Extract the archive
     echo "Processing $artifact_path for $platform_key..."
@@ -117,6 +131,21 @@ process_artifact() {
     echo "Extracting $artifact_path..."
     unzip -o "$artifact_path" -d "$BASE_DIR/$platform_key" >/dev/null 2>&1 || tar -xvf "$artifact_path" -C "$BASE_DIR/$platform_key" >/dev/null 2>&1
     echo "Extracted to $BASE_DIR/$platform_key"
+  fi
+}
+
+# Function to extract archives and update JSON
+process_artifact() {
+  local artifact_path=$1
+  local platform_key=$2
+  local artifact_url=$3
+
+  # Prepare the directory and extract files
+  prepare_directory_files "$artifact_path" "$platform_key"
+  # Check if the directory was created successfully
+  if [[ ! -d "$BASE_DIR/$platform_key" ]]; then
+    echo "Error: Failed to create directory $BASE_DIR/$platform_key"
+    exit 1
   fi
 
   # Find the main file and its signature
@@ -130,12 +159,6 @@ echo "Signature file found: $signature_file"
     echo "Error: Could not find main file or signature for $platform_key"
     exit 1
   fi
-
-  # Move main file to root directory
-  echo "Moving main file to root directory..."
-  mv "$main_file" "$BASE_DIR"
-  echo "Main file moved to $BASE_DIR"
-  main_file=$(basename "$main_file")
 
   # Read the signature
   echo "Reading signature..."
