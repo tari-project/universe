@@ -217,7 +217,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         Err(e) => {
                             let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
                             error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
                         }
                     }
                 }
@@ -246,7 +245,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(err_msg, sentry::Level::Error);
                         }
                 },
                 _ = shutdown_signal.wait() => {
