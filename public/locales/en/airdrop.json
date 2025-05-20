@@ -36,6 +36,10 @@
     "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
     "title": "Earn Gems & make Tari Universe better"
   },
+  "push-notifications": {
+    "text": "Tari Universe would like to be able to send you notifications to your connected devices",
+    "title": "Allow Tari Universe to send notifications  "
+  },
   "permissionNoGems": {
     "text": "Tari Universe would like to use analytics to improve your experience.",
     "title": "Make Tari Universe better"

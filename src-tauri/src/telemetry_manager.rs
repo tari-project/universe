@@ -203,6 +203,34 @@ pub struct TelemetryData {
     pub wallet_view_key_hashed: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct NotificationData {
+    pub app_id: String,
+    pub network: Option<TelemetryNetwork>,
+    pub version: String,
+    pub is_mining_active: bool,
+    pub wallet_view_key_hashed: String,
+    pub is_orphan: bool,
+}
+
+impl From<TelemetryData> for NotificationData {
+    fn from(data: TelemetryData) -> Self {
+        Self {
+            app_id: data.app_id,
+            network: data.network,
+            version: data.version,
+            is_mining_active: data.is_mining_active,
+            wallet_view_key_hashed: data.wallet_view_key_hashed,
+            is_orphan: data
+                .extra_data
+                .get("is_orphan")
+                .unwrap_or(&"false".to_string())
+                == "true",
+        }
+    }
+}
+
 pub struct TelemetryManager {
     cpu_miner_status_watch_rx: watch::Receiver<CpuMinerStatus>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
@@ -783,6 +811,22 @@ async fn handle_telemetry_data(
                     error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
                 }
             }
+
+            let notification_data_response = tokio::select! {
+                response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
+                 =>response,
+                _ = shutdown_signal.wait() => {
+                    info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
+                    return;
+                }
+            };
+
+            match notification_data_response {
+                Ok(_) => {}
+                Err(e) => {
+                    warn!(target: LOG_TARGET,"notification data sending error {:?}", e.to_string());
+                }
+            }
         }
         Err(TelemetryManagerError::Cancelled) => {
             debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
@@ -824,6 +868,52 @@ async fn send_telemetry_data(
         let response_as_json: Result<Value, serde_json::Error> = serde_json::from_str(&response);
         return Err(anyhow::anyhow!(
             "Telemetry data sending error. Status {:?} response text: {:?}",
+            status.to_string(),
+            response_as_json.unwrap_or(response.into()),
+        )
+        .into());
+    }
+
+    debug!(target: LOG_TARGET,"Telemetry data sent");
+
+    if airdrop_access_token.is_some() {
+        let data: TelemetryDataResponse = response.json().await?;
+        return Ok(Some(data));
+    }
+    Ok(None)
+}
+
+async fn send_notification_data(
+    data: NotificationData,
+    airdrop_access_token: Option<String>,
+    airdrop_api_url: String,
+) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
+    let request = reqwest::Client::new();
+    let mut request_builder = request
+        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .header(
+            "User-Agent".to_string(),
+            format!("tari-universe/{}", data.version.clone()),
+        )
+        .json(&data);
+
+    if let Some(token) = airdrop_access_token.clone() {
+        request_builder = request_builder.header("Authorization", format!("Bearer {}", token));
+    }
+
+    let response = request_builder.send().await?;
+
+    if response.status() == 429 {
+        warn!(target: LOG_TARGET,"notification data rate limited by http {:?}", response.status());
+        return Ok(None);
+    }
+
+    if response.status() != 200 {
+        let status = response.status();
+        let response = response.text().await?;
+        let response_as_json: Result<Value, serde_json::Error> = serde_json::from_str(&response);
+        return Err(anyhow::anyhow!(
+            "notification data sending error. Status {:?} response text: {:?}",
             status.to_string(),
             response_as_json.unwrap_or(response.into()),
         )
