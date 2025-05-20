@@ -454,7 +454,6 @@ jobs:
           pattern: '${{ matrix.exchange.id }}*'
 
       - name: Delete artifacts
-        if: ${{ inputs.destination == 'aws' }}
         uses: geekyeggo/delete-artifact@v5
         with:
           name: '${{ matrix.exchange.id }}*'
@@ -474,6 +473,41 @@ jobs:
         run: |
           sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
 
+      - name: Upload msi artifact
+        id: upload-msi
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
+          path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
+
+      - name: Upload dmg artifact
+        id: upload-dmg
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
+          path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
+
+      - name: Upload app.tar.gz artifact
+        id: upload-tar
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tari Universe-${{ matrix.exchange.id }}.app.tar.gz
+          path: Tari Universe-${{ matrix.exchange.name }}.app.tar.gz
+
+      - name: Upload AppImage amd64 artifact
+        id: upload-amd64
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
+
+      - name: Upload AppImage aarch64 artifact
+        id: upload-aarch64
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
+
       - name: Reconstruct latest.json
         shell: bash
         run: |
@@ -483,5 +517,5 @@ jobs:
       - name: Upload latest.json
         uses: actions/upload-artifact@v4
         with:
-          name: latest.json
-          path: latest.json
+          name: latest-${{matrix.exchange.id}}.json
+          path: latest-${{matrix.exchange.id}}.json

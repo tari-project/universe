@@ -84,7 +84,7 @@ fi
 
 
 # Output JSON file
-OUTPUT_FILE="latest.json"
+OUTPUT_FILE="latest-{$ID}.json"
 
 # Base directory for extracted artifacts
 BASE_DIR=$(pwd)
