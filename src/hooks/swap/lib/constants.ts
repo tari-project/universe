@@ -56,8 +56,9 @@ export const ENABLED_TOKEN_ADDRESSES = {
 };
 
 export const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
-    [ChainId.MAINNET]: process.env.MAINNET_RPC_URL || 'https://rpc.ankr.com/eth',
-    [ChainId.SEPOLIA]: process.env.SEPOLIA_RPC_URL || 'https://gateway.tenderly.co/public/sepolia',
+    // TODO - have these on config
+    [ChainId.MAINNET]: 'https://rpc.ankr.com/eth',
+    [ChainId.SEPOLIA]: 'https://gateway.tenderly.co/public/sepolia',
 };
 
 export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
@@ -92,7 +93,7 @@ function initializeKnownSdkTokens() {
 }
 initializeKnownSdkTokens();
 
-export const DEFAULT_CHAIN_ID = process.env.NODE_ENV === 'development' ? ChainId.SEPOLIA : ChainId.MAINNET;
+export const DEFAULT_CHAIN_ID = ChainId.MAINNET;
 
 export const SLIPPAGE_TOLERANCE = new Percent('50', '10000'); // 0.5%
 export const DEADLINE_MINUTES = 20;

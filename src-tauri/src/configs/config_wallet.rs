@@ -54,8 +54,6 @@ pub struct ConfigWalletContent {
     monero_address_is_generated: bool,
     #[getset(get = "pub", set = "pub")]
     keyring_accessed: bool,
-    #[getset(get = "pub", set = "pub")]
-    swaps_enabled: Option<bool>,
 }
 
 impl Default for ConfigWalletContent {
@@ -66,7 +64,6 @@ impl Default for ConfigWalletContent {
             monero_address: "".to_string(),
             monero_address_is_generated: false,
             keyring_accessed: false,
-            swaps_enabled: None,
         }
     }
 }
@@ -194,7 +191,6 @@ impl ConfigImpl for ConfigWallet {
                 keyring_accessed: old_config.keyring_accessed(),
                 monero_address: old_config.monero_address().to_string(),
                 monero_address_is_generated: old_config.monero_address_is_generated(),
-                swaps_enabled: old_config.swaps_enabled(),
             };
             let _unused = Self::_save_config(self.content.clone());
         } else {

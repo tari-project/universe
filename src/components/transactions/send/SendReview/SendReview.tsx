@@ -6,7 +6,6 @@ import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 
 import ProcessingIcon from './icons/ProcessingIcon';
 import CompletedIcon from './icons/CompletedIcon';
-import LoadingDots from './icons/LoadingDots';
 import { useEffect } from 'react';
 import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 import { useWalletStore } from '@app/store';
