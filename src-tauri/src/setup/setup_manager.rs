@@ -63,7 +63,7 @@ static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
 pub enum ExchangeModalStatus {
     #[default]
     None,
-    WaitForComplition,
+    WaitForCompletion,
     Completed,
 }
 
@@ -71,7 +71,7 @@ impl Display for ExchangeModalStatus {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             ExchangeModalStatus::None => write!(f, "None"),
-            ExchangeModalStatus::WaitForComplition => write!(f, "Wait For Completion"),
+            ExchangeModalStatus::WaitForCompletion => write!(f, "Wait For Completion"),
             ExchangeModalStatus::Completed => write!(f, "Completed"),
         }
     }
@@ -292,7 +292,7 @@ impl SetupManager {
 
         if is_on_exchange_miner_build && is_address_generated {
             self.exchange_modal_status
-                .send_replace(ExchangeModalStatus::WaitForComplition);
+                .send_replace(ExchangeModalStatus::WaitForCompletion);
         }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");

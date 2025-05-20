@@ -633,6 +633,7 @@ async fn get_telemetry_data_inner(
     );
     extra_data.insert("upload_speed".to_string(), upload_speed.round().to_string());
     extra_data.insert("network_latency".to_string(), latency.round().to_string());
+    extra_data.insert("exchange_id".to_string(), exchange_id.to_string());
 
     let disks = Disks::new_with_refreshed_list();
     for (i, disk) in disks.list().iter().enumerate() {

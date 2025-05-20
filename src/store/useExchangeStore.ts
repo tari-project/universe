@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { ExchangeContent } from '@app/types/exchange.ts';
 import { useWalletStore } from '@app/store/useWalletStore.ts';
+import { useConfigBEInMemoryStore } from '@app/store/useAppConfigStore.ts';
 
 interface ExchangeStoreState {
     content?: ExchangeContent | null;
@@ -21,7 +22,8 @@ export const setExchangeContent = (content?: ExchangeContent | null) => {
 };
 
 export async function fetchExchangeContent(exchangeId: string) {
-    const endpoint = `https://rwa.y.at/miner/exchanges`;
+    const apiUrl = useConfigBEInMemoryStore.getState().airdropApiUrl;
+    const endpoint = `${apiUrl}/miner/exchanges`;
     try {
         const content = await fetch(`${endpoint}/${exchangeId}`);
         const xcContent = (await content.json()) as ExchangeContent;

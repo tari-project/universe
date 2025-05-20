@@ -74,6 +74,7 @@ export const Connect = () => {
             console.error('Error confirming exchange address:', e);
         }
     }
+
     return (
         <Wrapper>
             <ConnectForm onSubmit={handleSubmit(onSubmit)}>
@@ -86,6 +87,7 @@ export const Connect = () => {
                             onChange: handleAddressChange,
                         })}
                         onFocus={() => handleFocus(true)}
+                        $hasError={!!address.length && !addressIsValid}
                         value={isFocused ? address : displayAddress}
                         placeholder="Enter Address"
                     />
