@@ -71,6 +71,17 @@ set -euo pipefail
 
 # Input: Version of the release
 VERSION=$1
+ID=$2
+ARTIFACT_URLS=${3:-""}
+
+# Initialize an empty array for URLs
+URL_ARRAY=()
+
+# Split URLs into an array if provided
+if [[ -n "$ARTIFACT_URLS" ]]; then
+  IFS=',' read -r -a URL_ARRAY <<< "$ARTIFACT_URLS"
+fi
+
 
 # Output JSON file
 OUTPUT_FILE="latest.json"
@@ -92,6 +103,7 @@ EOF
 process_artifact() {
   local artifact_path=$1
   local platform_key=$2
+  local artifact_url=$3
 
   # Extract the archive
   echo "Processing $artifact_path for $platform_key..."
@@ -107,22 +119,49 @@ process_artifact() {
     exit 1
   fi
 
+  # Move main file to root directory
+  mv "$main_file" "$BASE_DIR"
+  main_file=$(basename "$main_file")
+
   # Read the signature
   local signature=$(cat "$signature_file" | base64 -w 0)
 
   # Update the JSON
-  jq --arg platform "$platform_key" \
-     --arg url "file://$main_file" \
-     --arg signature "$signature" \
-     '.platforms[$platform] = { "url": $url, "signature": $signature }' \
-     "$OUTPUT_FILE" > tmp.json && mv tmp.json "$OUTPUT_FILE"
+  if [[ -n "$artifact_url" ]]; then
+    jq --arg platform "$platform_key" \
+       --arg url "$artifact_url" \
+       --arg signature "$signature" \
+       '.platforms[$platform] = { "url": $url, "signature": $signature }' \
+       "$OUTPUT_FILE" > tmp.json && mv tmp.json "$OUTPUT_FILE"
+  else
+    jq --arg platform "$platform_key" \
+       --arg url "file://$main_file" \
+       --arg signature "$signature" \
+       '.platforms[$platform] = { "url": $url, "signature": $signature }' \
+       "$OUTPUT_FILE" > tmp.json && mv tmp.json "$OUTPUT_FILE"
+  fi
 }
 
-# Process each artifact
-process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_ubuntu-22.04-x64.tar.gz" "linux-x86_64"
-process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_ubuntu-24.04-arm.tar.gz" "linux-aarch64"
-process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_macos-latest.tar.gz" "darwin-aarch64"
-process_artifact "ff0f0a96-52db-42d8-a84e-b781ad0c7614_${VERSION}_windows-latest.zip" "windows-x86_64"
+# Optional URLs for each artifact (comma-separated)
+ARTIFACT_URLS=${ARTIFACT_URLS:-""}
+
+# Split URLs into an array if provided
+IFS=',' read -r -a URL_ARRAY <<< "$ARTIFACT_URLS"
+
+# Process each artifact with its corresponding URL (if provided)
+process_artifact "${ID}_${VERSION}_ubuntu-22.04-x64.zip" "ubuntu-22.04" "${URL_ARRAY[0]:-}"
+process_artifact "${ID}_${VERSION}_ubuntu-24.04-arm.zip" "ubuntu-24.04-arm" "${URL_ARRAY[1]:-}"
+process_artifact "${ID}_${VERSION}_macos-latest.zip" "macos-latest" "${URL_ARRAY[2]:-}"
+process_artifact "${ID}_${VERSION}_windows-latest.zip" "windows-latest" "${URL_ARRAY[3]:-}"
+
+# get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
+macos_dmg_file=$(find "$BASE_DIR/macos-latest/dmg" -type f -name "*.dmg" | head -n 1)
+if [[ -z "$macos_dmg_file" ]]; then
+  echo "Error: Could not find macOS dmg file"
+  exit 1
+fi
+mv "$macos_dmg_file" "$BASE_DIR"
+
 
 echo "Generated $OUTPUT_FILE:"
 cat "$OUTPUT_FILE"
