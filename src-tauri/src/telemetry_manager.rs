@@ -344,20 +344,20 @@ impl TelemetryManager {
 
         TasksTrackers::current().common.get_task_tracker().await.spawn(async move {
             loop {
-                let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
                 let airdrop_tokens = ConfigCore::content().await.airdrop_tokens().clone();
-
+                let allow_telemetry = *ConfigCore::content().await.allow_telemetry();
+                let allow_notifications = *ConfigCore::content().await.allow_notifications();
                 tokio::select! {
                     _ = interval.tick() => {
-                        debug!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
+                        info!(target: LOG_TARGET, "TelemetryManager::start_telemetry_process has  been started");
                         let airdrop_access_token = airdrop_tokens.map(|tokens| tokens.token);
-                        if allow_telemetry {
-                            let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
-                            let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
-                                &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
-                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                            handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone())).await;
-                        }
+                        let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
+                        let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
+                            &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
+                        let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
+                        handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, 
+                            app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
+
                     },
                     _ = shutdown_signal.wait() => {
                         info!(target: LOG_TARGET,"TelemetryManager::start_telemetry_process has been cancelled by app shutdown");
@@ -755,79 +755,87 @@ fn add_process_stats(
     );
 }
 
-async fn handle_telemetry_data(
-    telemetry: Result<TelemetryData, TelemetryManagerError>,
+async fn handle_data(
+    data: Result<TelemetryData, TelemetryManagerError>,
     airdrop_api_url: String,
     airdrop_access_token: Option<String>,
     app_handle: tauri::AppHandle,
     shutdown_signal: &mut ShutdownSignal,
+    allow_telemetry: bool,
+    allow_notifications: bool,
 ) {
-    match telemetry {
+    match data {
         Ok(telemetry) => {
-            let telemetry_response = tokio::select! {
-                response = retry_with_backoff(
-                    || {
-                        Box::pin(send_telemetry_data(
-                            telemetry.clone(),
-                            airdrop_access_token.clone(),
-                            airdrop_api_url.clone(),
-                        ))
-                    },
-                    3,
-                    2,
-                    "send_telemetry_data",
-                ) => response,
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
-                    return;
-                }
-            };
+            if allow_telemetry {
+                let telemetry_response = tokio::select! {
+                    response = retry_with_backoff(
+                        || {
+                            Box::pin(send_telemetry_data(
+                                telemetry.clone(),
+                                airdrop_access_token.clone(),
+                                airdrop_api_url.clone(),
+                            ))
+                        },
+                        3,
+                        2,
+                        "send_telemetry_data",
+                    ) => response,
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
+                        return;
+                    }
+                };
 
-            match telemetry_response {
-                Ok(response) => {
-                    if let Some(response_inner) = response {
-                        if let Some(user_points) = response_inner.user_points {
-                            debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
-                            let response_inner =
-                                response_inner.referral_count.unwrap_or(ReferralCount {
-                                    gems: 0.0,
-                                    count: 0,
-                                });
-                            let emit_data = TelemetryDataResponseEvent {
-                                base: user_points,
-                                referral_count: response_inner,
-                            };
+                match telemetry_response {
+                    Ok(response) => {
+                        if let Some(response_inner) = response {
+                            if let Some(user_points) = response_inner.user_points {
+                                debug!(target: LOG_TARGET,"emitting UserPoints event{:?}", user_points);
+                                let response_inner =
+                                    response_inner.referral_count.unwrap_or(ReferralCount {
+                                        gems: 0.0,
+                                        count: 0,
+                                    });
+                                let emit_data = TelemetryDataResponseEvent {
+                                    base: user_points,
+                                    referral_count: response_inner,
+                                };
 
-                            app_handle
-                                .emit("UserPoints", emit_data)
-                                .map_err(|e| {
-                                    error!("could not send user points as an event: {}", e)
-                                })
-                                .unwrap_or(());
+                                app_handle
+                                    .emit("UserPoints", emit_data)
+                                    .map_err(|e| {
+                                        error!("could not send user points as an event: {}", e)
+                                    })
+                                    .unwrap_or(());
+                            }
                         }
                     }
-                }
-                Err(e) => {
-                    error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
+                    Err(e) => {
+                        error!(target: LOG_TARGET,"Error sending telemetry data: {}", e);
+                    }
                 }
             }
 
-            let notification_data_response = tokio::select! {
-                response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
-                 =>response,
-                _ = shutdown_signal.wait() => {
-                    info!(target: LOG_TARGET, "Telemetry data sending cancelled by shutdown signal");
-                    return;
-                }
-            };
-
-            match notification_data_response {
-                Ok(_) => {}
-                Err(e) => {
-                    warn!(target: LOG_TARGET,"notification data sending error {:?}", e.to_string());
+            if allow_notifications {
+                let notification_data_response = tokio::select! {
+                    response = send_notification_data(telemetry.into(), airdrop_access_token, airdrop_api_url)
+                        =>response,
+                    _ = shutdown_signal.wait() => {
+                        info!(target: LOG_TARGET, "mining status notification data sending cancelled by shutdown signal");
+                        return;
+                    }
+                };
+                match notification_data_response {
+                    Ok(_) => {
+                          info!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
+                    }
+                    Err(e) => { 
+                        warn!(target: LOG_TARGET,"emitting mining status notification data sending error {:?}", e.to_string());
+                    }
                 }
             }
         }
+
         Err(TelemetryManagerError::Cancelled) => {
             debug!(target: LOG_TARGET, "Telemetry manager shutdown – no data sent");
         }
@@ -887,10 +895,11 @@ async fn send_notification_data(
     data: NotificationData,
     airdrop_access_token: Option<String>,
     airdrop_api_url: String,
-) -> Result<Option<TelemetryDataResponse>, TelemetryManagerError> {
+) -> Result<(), TelemetryManagerError> {
     let request = reqwest::Client::new();
+
     let mut request_builder = request
-        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .post(format!("{}/miner/notifications", airdrop_api_url)).timeout(Duration::from_secs(5))
         .header(
             "User-Agent".to_string(),
             format!("tari-universe/{}", data.version.clone()),
@@ -905,7 +914,7 @@ async fn send_notification_data(
 
     if response.status() == 429 {
         warn!(target: LOG_TARGET,"notification data rate limited by http {:?}", response.status());
-        return Ok(None);
+        return Ok(());
     }
 
     if response.status() != 200 {
@@ -920,11 +929,6 @@ async fn send_notification_data(
         .into());
     }
 
-    debug!(target: LOG_TARGET,"Telemetry data sent");
 
-    if airdrop_access_token.is_some() {
-        let data: TelemetryDataResponse = response.json().await?;
-        return Ok(Some(data));
-    }
-    Ok(None)
+    Ok(())
 }

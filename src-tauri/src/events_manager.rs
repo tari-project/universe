@@ -27,8 +27,10 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
+use crate::configs::config_core::ConfigCore;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
+use crate::configs::trait_config::ConfigImpl;
 use crate::events::ConnectionStatusPayload;
 #[cfg(target_os = "windows")]
 use crate::external_dependencies::RequiredExternalDependency;
@@ -80,7 +82,8 @@ impl EventsManager {
                             Some(balance),
                         )
                         .await;
-                        if coinbase_tx.is_some() {
+                        let allow_notifications = *ConfigCore::content().await.allow_notifications();
+                        if coinbase_tx.is_some() && allow_notifications {
                             send_new_block_mined(app_clone.clone(), block_height).await;
                         }
                     } else {
