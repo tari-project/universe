@@ -110,7 +110,7 @@ prepare_directory_files() {
   fi
 
   # Check if the artifact file exists
-  if [[ ! -f "$artifact_path" ]]; then
+  if [[ ! -d "$artifact_path" ]]; then
     echo "Error: Artifact file $artifact_path does not exist."
     if [[ ! -f "${artifact_path}.zip" ]]; then
       echo "Error: Artifact file $artifact_path.zip does not exist."
@@ -123,6 +123,7 @@ prepare_directory_files() {
   # Check if the artifact is already unzipped
   if [[ -d "$artifact_path" ]]; then
     echo "Artifact $artifact_path is already unzipped. Copying files..."
+    mkdir -p "$BASE_DIR/$platform_key"
     cp -r "$artifact_path"/* "$BASE_DIR/$platform_key"
   else
     # Extract the archive
