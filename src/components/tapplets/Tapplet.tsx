@@ -17,11 +17,13 @@ export const Tapplet: React.FC<TappletProps> = ({ source }) => {
             const height = tappletRef.current.offsetHeight;
             const width = tappletRef.current.offsetWidth;
             const tappletWindow = tappletRef.current.contentWindow;
+            // use "*" for targetOrigin to bypass strict origin checks for custom protocols
+            const targetOrigin = '*';
 
             provider?.setWindowSize(width, height);
-            provider?.sendWindowSizeMessage(tappletWindow, source);
+            provider?.sendWindowSizeMessage(tappletWindow, targetOrigin);
         }
-    }, [provider, source]);
+    }, [provider]);
 
     // Memoize runTappletTx to keep stable reference
     const runTappletTx = useCallback(
