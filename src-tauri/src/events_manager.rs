@@ -22,7 +22,7 @@
 
 use std::{collections::HashMap, time::Duration};
 
-use log::{error, warn};
+use log::error;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
@@ -263,22 +263,18 @@ impl EventsManager {
         let node_manager = &app.state::<UniverseAppState>().node_manager;
         let node_type = node_manager.get_node_type().await.ok();
         let node_identity = node_manager.get_identity().await.ok();
-        warn!(target: LOG_TARGET, "[ handle_node_type_update ] node identity: {:?}", &node_identity);
         let node_connection_address = node_manager
             .get_connection_details()
             .await
             .ok()
             .map(|(_, address)| address);
-        warn!(target: LOG_TARGET, "[ handle_node_type_update ] node connection address {:?}", &node_connection_address);
         let payload = NodeTypeUpdatePayload {
             node_type,
             node_identity,
             node_connection_address,
         };
 
-        warn!(target: LOG_TARGET, "[ handle_node_type_update ] node connection event emit");
         EventsEmitter::emit_node_type_update(app, payload).await;
-        warn!(target: LOG_TARGET, "[ handle_node_type_update ] node type update done");
     }
 
     pub async fn handle_config_core_loaded(app: &AppHandle, payload: ConfigCoreContent) {
