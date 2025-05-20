@@ -31,7 +31,7 @@ use crate::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
-    events::ConnectionStatusPayload,
+    events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
@@ -334,7 +334,18 @@ impl SetupManager {
         let state = app_handle.state::<UniverseAppState>();
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
-            self.unlock_wallet(app_handle).await;
+            self.unlock_wallet(app_handle.clone()).await;
+            EventsManager::handle_progress_tracker_update(
+                &app_handle,
+                ProgressEvents::Wallet,
+                "setup-wallet".to_string(),
+                "setup-wallet".to_string(),
+                60.0,
+                None,
+                true, // just enforce is_completed true
+            )
+            .await;
+
             return;
         }
         let wallet_phase_setup = PhaseBuilder::new()
