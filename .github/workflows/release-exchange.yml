@@ -28,6 +28,7 @@ permissions: {}
 
 env:
   TS_FEATURES: exchange-ci
+  NODE_OPTIONS: '--max_old_space_size=8192'
 
 jobs:
   read-exchanges:
@@ -466,7 +467,7 @@ jobs:
       - name: Run create-latest-json.sh
         shell: bash
         run: |
-          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
+          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" --verbose
           ls -la "${{ github.workspace }}"
 
       - name: Upload msi artifact
