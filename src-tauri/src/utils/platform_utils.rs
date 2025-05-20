@@ -95,7 +95,7 @@ impl PlatformUtils {
                 &app_handle,
                 Some("common:installation-problem".to_string()),
                 Some("common:not-installed-in-applications-directory".to_string()),
-                None,
+                None
             )
             .await;
             TasksTrackers::current().stop_all_processes().await;
