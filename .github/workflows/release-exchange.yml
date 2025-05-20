@@ -453,10 +453,10 @@ jobs:
         with:
           pattern: '${{ matrix.exchange.id }}*'
 
-      # - name: Delete artifacts
-      #   uses: geekyeggo/delete-artifact@v5
-      #   with:
-      #     name: '${{ matrix.exchange.id }}*'
+      - name: Delete artifacts
+        uses: geekyeggo/delete-artifact@v5
+        with:
+          name: '${{ matrix.exchange.id }}*'
 
       - name: Log downloaded artifact
         shell: bash
@@ -467,14 +467,6 @@ jobs:
       - name: Install unzip if missing
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
-
-      - name: Validate Zip File
-        continue-on-error: true
-        run: |
-          if ! unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
-            echo "Error: The zip file is corrupted or invalid."
-            exit 1
-          fi
 
       - name: Run create-latest-json.sh
         shell: bash
