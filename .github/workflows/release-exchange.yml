@@ -474,6 +474,7 @@ jobs:
           sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
 
       - name: Upload msi artifact
+        continue-on-error: true
         id: upload-msi
         uses: actions/upload-artifact@v4
         with:
@@ -481,6 +482,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
 
       - name: Upload exe artifact
+        continue-on-error: true
         id: upload-exe
         uses: actions/upload-artifact@v4
         with:
@@ -488,6 +490,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
 
       - name: Upload dmg artifact
+        continue-on-error: true
         id: upload-dmg
         uses: actions/upload-artifact@v4
         with:
@@ -495,6 +498,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
 
       - name: Upload app.tar.gz artifact
+        continue-on-error: true
         id: upload-tar
         uses: actions/upload-artifact@v4
         with:
@@ -502,6 +506,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}.app.tar.gz
 
       - name: Upload AppImage amd64 artifact
+        continue-on-error: true
         id: upload-amd64
         uses: actions/upload-artifact@v4
         with:
@@ -509,11 +514,27 @@ jobs:
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
 
       - name: Upload AppImage aarch64 artifact
+        continue-on-error: true
         id: upload-aarch64
         uses: actions/upload-artifact@v4
         with:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
+      - name: Upload rpm aarch64 artifact
+        continue-on-error: true
+        id: upload-rpm-aarch
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.rpm
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1_aarch64.rpm
+
+      - name: Upload rpm amd64 artifact
+        continue-on-error: true
+        id: upload-rpm-amd64
+        uses: actions/upload-artifact@v4
+        with:
+          name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
+          path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
 
       - name: Reconstruct latest.json
         shell: bash

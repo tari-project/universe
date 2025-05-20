@@ -99,6 +99,27 @@ cat <<EOF > "$OUTPUT_FILE"
 }
 EOF
 
+check_if_file_exists_and_move() {
+  local file_path=$1
+  local find_by=$2
+
+  # Check if the file exists
+if [[ ! -d "$file_path" ]]; then
+  echo "Error: Directory $file_path not found"
+  # Continue without exiting
+else
+  # Proceed to find the macOS DMG file
+  file=$(find "$file_path" -type f -name "$find_by" | head -n 1)
+  if [[ -z "$file" ]]; then
+    echo "Error: Could not find file in $file_path"
+    # Continue without exiting
+  else
+    echo "file found: $file"
+    mv "$file" "$BASE_DIR"
+  fi
+fi
+}
+
 prepare_directory_files() {
   local artifact_path=$1
   local platform_key=$2
@@ -114,7 +135,7 @@ prepare_directory_files() {
     echo "Error: Artifact file $artifact_path does not exist."
     if [[ ! -f "${artifact_path}.zip" ]]; then
       echo "Error: Artifact file $artifact_path.zip does not exist."
-      exit 1
+      return 1
     else
       artifact_path="$artifact_path.zip"
     fi
@@ -146,7 +167,7 @@ process_artifact() {
   # Check if the directory was created successfully
   if [[ ! -d "$BASE_DIR/$platform_key" ]]; then
     echo "Error: Failed to create directory $BASE_DIR/$platform_key"
-    exit 1
+    return 1
   fi
 
   # Find the main file and its signature
@@ -158,7 +179,7 @@ process_artifact() {
 echo "Signature file found: $signature_file"
   if [[ -z "$main_file" || -z "$signature_file" ]]; then
     echo "Error: Could not find main file or signature for $platform_key"
-    exit 1
+    return 1
   fi
 
   # Move main file to root directory
@@ -189,26 +210,54 @@ echo "Signature read: $signature"
 }
 
 # Process each artifact with its corresponding URL (if provided)
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64" "ubuntu-22.04" "${URL_ARRAY[0]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm" "ubuntu-24.04-arm" "${URL_ARRAY[1]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest" "macos-latest" "${URL_ARRAY[2]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_windows-latest" "windows-latest" "${URL_ARRAY[3]:-}"
-prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_x64_en-US" "windows-exe"
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64" "linux-x86_64" "${URL_ARRAY[0]:-}" || true
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm" "linux-aarch64" "${URL_ARRAY[1]:-}" || true
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest" "darwin-aarch64" "${URL_ARRAY[2]:-}" || true
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest" "darwin-x86_64" "${URL_ARRAY[2]:-}" || true
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_windows-latest" "windows-x86_64" "${URL_ARRAY[3]:-}" || true
+prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_x64_en-US" "windows-exe" || true
+prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64-rpm" "ubuntu-x64-rpm" || true
+prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm-rpm" "ubuntu-arm-rpm" || true
 
-# get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
-macos_dmg_file=$(find "$BASE_DIR/macos-latest/dmg" -type f -name "*.dmg" | head -n 1)
-if [[ -z "$macos_dmg_file" ]]; then
-  echo "Error: Could not find macOS dmg file"
-else
-  mv "$macos_dmg_file" "$BASE_DIR"
-fi
+#1eff0ada-8358-4511-99f8-9ec2820aa37e_1.0.10_ubuntu-22.04-x64-rpm
+#1eff0ada-8358-4511-99f8-9ec2820aa37e_1.0.10_ubuntu-24.04-arm-rpm
 
-windows_exe_file=$(find "$BASE_DIR/windows-exe" -type f -name "*en-US.exe" | head -n 1)
-if [[ -z "$windows_exe_file" ]]; then
-  echo "Error: Could not find Windows exe file"
-else
-  mv "$windows_exe_file" "$BASE_DIR"
-fi
+check_if_file_exists_and_move "$BASE_DIR/macos-latest/dmg" "*.dmg"
+check_if_file_exists_and_move "$BASE_DIR/windows-exe" "*en-US.exe"
+check_if_file_exists_and_move "$BASE_DIR/ubuntu-x64-rpm" "*.rpm"
+check_if_file_exists_and_move "$BASE_DIR/ubuntu-arm-rpm" "*.rpm"
+
+# # get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
+# # Check if the directory exists
+# if [[ ! -d "$BASE_DIR/macos-latest/dmg" ]]; then
+#   echo "Error: Directory $BASE_DIR/macos-latest/dmg not found"
+#   # Continue without exiting
+# else
+#   # Proceed to find the macOS DMG file
+#   macos_dmg_file=$(find "$BASE_DIR/macos-latest/dmg" -type f -name "*.dmg" | head -n 1)
+#   if [[ -z "$macos_dmg_file" ]]; then
+#     echo "Error: Could not find macOS DMG file in $BASE_DIR/macos-latest/dmg"
+#     # Continue without exiting
+#   else
+#     echo "macOS DMG file found: $macos_dmg_file"
+#     mv "$macos_dmg_file" "$BASE_DIR"
+#   fi
+# fi
+
+# if [[ ! -d "$BASE_DIR/windows-exe" ]]; then
+#   echo "Error: Directory $BASE_DIR/windows-exe not found"
+#   # Continue without exiting
+# else
+#   # Proceed to find the Windows exe file
+#   windows_exe_file=$(find "$BASE_DIR/windows-exe" -type f -name "*en-US.exe" | head -n 1)
+#   if [[ -z "$windows_exe_file" ]]; then
+#     echo "Error: Could not find Windows exe file in $BASE_DIR/windows-exe"
+#     # Continue without exiting
+#   else
+#     echo "Windows exe file found: $windows_exe_file"
+#     mv "$windows_exe_file" "$BASE_DIR"
+#   fi
+# fi
 
 
 echo "Generated $OUTPUT_FILE:"
