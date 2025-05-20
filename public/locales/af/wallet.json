@@ -94,7 +94,7 @@
     "total-fees": "Totale Fooie",
     "transaction-id": "Transaksie ID",
     "waiting-for-response": "Wag vir reaksie",
-    "you-will-receive": "Jy sal XTM ontvang in (Tari beursie adres)",
+    "you-will-receive": "Jy sal {{symbol}} ontvang in (Tari beursie adres)",
     "your-purchase-is-processing": "Jou aankoop word verwerk. Dit kan 'n paar minute neem.",
     "your-xtm-is-on-the-way": "Jou XTM is op pad!"
   },
@@ -104,6 +104,7 @@
     "send": "Stuur"
   },
   "tari": "Tari",
+  "wallet-connected": "Beursie gekoppel",
   "wallet-is-scanning": "Beursie skandeer...",
   "wallet-scanning-with-progress": "Beursie skandeer: {{scanned}}/{{total}} ({{percent}}%)"
 }

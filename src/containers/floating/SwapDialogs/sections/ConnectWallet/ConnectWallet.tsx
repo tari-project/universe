@@ -32,15 +32,21 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
                 const handleUri = async (uri: string) => {
                     setQrCodeUri(uri);
                 };
+
+                const handleDisconnect = () => {
+                    setIsConnected(false);
+                    setQrCodeUri(null);
+                };
+
                 provider.on('display_uri', (uri: string) => {
                     handleUri(uri);
                 });
-                provider.on('disconnect', () => {
-                    setIsConnected(false);
-                    setQrCodeUri(null);
-                });
+
+                provider.on('disconnect', handleDisconnect);
+
                 const cleanup = () => {
                     provider.removeListener('display_uri', handleUri);
+                    provider.removeListener('disconnect', handleDisconnect);
                 };
                 connect({ connector: walletConnectConnector });
                 setQrCodeUri(null);

@@ -22,7 +22,7 @@ export const SwapOptionAmount = styled.div`
     align-items: center;
     justify-content: space-between;
 
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
     font-family: Poppins, sans-serif;
     font-weight: 500;
     font-size: 36px;
@@ -91,7 +91,7 @@ export const SwapAmountInput = styled.input<{ $error?: boolean }>`
     ${({ $error }) =>
         $error &&
         css`
-            color: #d32f2f;
+            color: ${({ theme }) => theme.palette.error.main};
         `}
 `;
 

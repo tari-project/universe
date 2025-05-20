@@ -1,9 +1,9 @@
 import { Token, WETH9, CurrencyAmount, TradeType, Ether, NativeCurrency } from '@uniswap/sdk-core';
 import { Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
-import { Contract, ethers, Signer as EthersSigner, TransactionResponse } from 'ethers';
+import { Contract, ethers, Signer as EthersSigner, Provider, TransactionResponse } from 'ethers';
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { Hash, encodeFunctionData, formatUnits, parseUnits } from 'viem';
+import { encodeFunctionData, formatUnits, parseUnits } from 'viem';
 
 import {
     erc20Abi,
@@ -49,19 +49,9 @@ export const useUniswapV2Interactions = () => {
     const xtmToken = useMemo(() => (currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined), [currentChainId]);
     const nativeCurrencyPriceUSD = useMemo(() => 3000, []);
 
-    const publicRpcProvider = useMemo(() => {
-        if (!currentChainId || !PUBLIC_RPC_URLS[currentChainId]) return null;
-        if (accountAddress) return null;
-        try {
-            return new ethers.JsonRpcProvider(PUBLIC_RPC_URLS[currentChainId], currentChainId);
-        } catch (e) {
-            console.error('Error creating public JsonRpcProvider:', e);
-            return null;
-        }
-    }, [accountAddress, currentChainId]);
+    // ---------- Singer and Provider ----------
 
     const [signer, setSigner] = useState<EthersSigner | null>(null);
-
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -79,13 +69,23 @@ export const useUniswapV2Interactions = () => {
         };
     }, [walletClient]);
 
-    const providerAsync = useMemo(async () => {
-        if (walletClient && signer?.provider) {
-            return signer.provider;
+    const [provider, setProvider] = useState<Provider | null>(null);
+    const publicRpcProvider = useMemo(() => {
+        if (!currentChainId || !PUBLIC_RPC_URLS[currentChainId]) return null;
+        if (accountAddress) return null;
+        try {
+            return new ethers.JsonRpcProvider(PUBLIC_RPC_URLS[currentChainId], currentChainId);
+        } catch (e) {
+            console.error('Error creating public JsonRpcProvider:', e);
+            return null;
         }
-        return publicRpcProvider; // This might be null, handle appropriately in getPair
-    }, [publicRpcProvider, signer, walletClient]);
+    }, [accountAddress, currentChainId]);
 
+    useEffect(() => {
+        setProvider(walletClient && signer?.provider ? signer.provider : publicRpcProvider);
+    }, [walletClient, signer, publicRpcProvider]);
+
+    // ---------- Pair Token ----------
     const sdkPairToken = useMemo(() => {
         if (!currentChainId) return undefined;
         const currentWeth = WETH9[currentChainId];
@@ -128,10 +128,15 @@ export const useUniswapV2Interactions = () => {
         return { token0: uiInputToken, token1: uiOutputToken };
     }, [pairTokenAddress, xtmToken, direction, currentChainId]);
 
+    // ---------- Clear errors ----------
+    useEffect(() => {
+        setError(null);
+    }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
+
+    // ---------- Route and Pair ----------
     const getPair = useCallback(
         async (preview?: boolean): Promise<Pair | null> => {
-            const resolvedProvider = await providerAsync;
-            if (!sdkToken0 || !sdkToken1 || !resolvedProvider || sdkToken0.chainId !== sdkToken1.chainId) {
+            if (!sdkToken0 || !sdkToken1 || !provider || sdkToken0.chainId !== sdkToken1.chainId) {
                 if (!preview) setError('Invalid token setup or provider for pair.');
                 return null;
             }
@@ -140,7 +145,7 @@ export const useUniswapV2Interactions = () => {
             try {
                 const orderedPairs = direction !== 'toXtm' ? [sdkToken0, sdkToken1] : [sdkToken1, sdkToken0];
                 const computedPairAddress = Pair.getAddress(orderedPairs[0], orderedPairs[1]);
-                const pairContract = new Contract(computedPairAddress, uniswapV2PairAbi, resolvedProvider);
+                const pairContract = new Contract(computedPairAddress, uniswapV2PairAbi, provider);
                 const reservesData = await pairContract['getReserves']();
                 const [reserve0BigInt, reserve1BigInt] = [
                     BigInt(reservesData[0].toString()),
@@ -165,8 +170,10 @@ export const useUniswapV2Interactions = () => {
                 return null;
             }
         },
-        [sdkToken0, sdkToken1, providerAsync, direction, setError, setIsFetchingPair]
+        [sdkToken0, sdkToken1, provider, direction]
     );
+
+    // ---------- Trade Details ----------
 
     const getTradeDetails = useCallback(
         async (amountRaw: string, amountType: SwapField): Promise<TradeDetails> => {
@@ -373,6 +380,7 @@ export const useUniswapV2Interactions = () => {
         ]
     );
 
+    // ---------- Approval ----------
     const checkAndRequestApproval = useCallback(
         async (tokenToApprove: Token, amountToApproveRaw: string): Promise<boolean> => {
             // Added tokenToApprove
@@ -407,6 +415,7 @@ export const useUniswapV2Interactions = () => {
         [signer, accountAddress, routerAddress, currentChainId, setError, setIsApproving]
     );
 
+    // ---------- Swap Execution ----------
     const executeSwap = useCallback(
         async (tradeToExecute: Trade<Token, Token, TradeType>): Promise<TransactionResponse | null> => {
             setError(null);
@@ -498,48 +507,7 @@ export const useUniswapV2Interactions = () => {
         ]
     );
 
-    const getPaidTransactionFee = useCallback(
-        async (txHash: Hash): Promise<string | null> => {
-            if (!publicClient || !txHash) {
-                console.warn('getPaidTransactionFee: publicClient or txHash missing.');
-                return null;
-            }
-
-            try {
-                const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
-
-                if (receipt) {
-                    const gasUsed = receipt.gasUsed;
-                    const effectiveGasPrice = receipt.effectiveGasPrice;
-
-                    if (gasUsed !== undefined && effectiveGasPrice !== undefined) {
-                        const totalFeeInWei = gasUsed * effectiveGasPrice;
-                        const nativeCurrencyDecimals = publicClient.chain?.nativeCurrency.decimals || 18;
-                        const totalFeeInNative = formatUnits(totalFeeInWei, nativeCurrencyDecimals);
-                        return totalFeeInNative;
-                    } else {
-                        console.warn(
-                            'getPaidTransactionFee: gasUsed or effectiveGasPrice missing in receipt for tx:',
-                            txHash,
-                            receipt
-                        );
-                    }
-                } else {
-                    console.warn('getPaidTransactionFee: Receipt not found for tx:', txHash);
-                }
-            } catch (error) {
-                console.error('Error fetching transaction details for fee calculation:', txHash, error);
-            }
-
-            return null;
-        },
-        [publicClient]
-    );
-
-    useEffect(() => {
-        setError(null);
-    }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
-
+    // ---------- Admin ----------
     const addLiquidity = useCallback(
         async ({ xtmAmount, ethAmount }: { xtmAmount: number; ethAmount?: number }) => {
             if (!accountAddress || !signer || !currentChainId || !xtmToken || !routerAddress) {
@@ -763,7 +731,6 @@ export const useUniswapV2Interactions = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
-        getPaidTransactionFee,
         addLiquidity,
         removeAllLiquidity,
         isReady:

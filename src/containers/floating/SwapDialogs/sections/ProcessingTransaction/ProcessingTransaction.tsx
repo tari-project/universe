@@ -1,6 +1,5 @@
 import { ProcessingDetailsWrapper, StatusValue } from './ProcessingTransaction.styles';
 import { WalletButton } from '../../components/WalletButton/WalletButton';
-import { useAccount } from 'wagmi';
 import { truncateMiddle } from '@app/utils';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { useMemo } from 'react';
@@ -19,10 +18,10 @@ interface Props {
     fees?: string | null;
     setIsOpen: (isOpen: boolean) => void;
     transactionId?: string;
+    txBlockHash?: `0x${string}` | null;
 }
 
-export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId, fees }: Props) => {
-    const dataAcc = useAccount();
+export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId, fees, txBlockHash }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const statusItems: StatusListEntry[] = [
@@ -44,12 +43,8 @@ export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId
         },
         {
             label: t('swap.ethereum-txn'),
-            value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : <LoadingDots />,
+            value: status === 'success' ? truncateMiddle(txBlockHash || '', 5) : <LoadingDots />,
         },
-        // {
-        //     key: 'Tari Txn',
-        //     value: status === 'success' ? truncateMiddle(dataAcc.address || '', 5) : loadingDots,
-        // },
     ];
 
     const ctaMessage = useMemo(() => {

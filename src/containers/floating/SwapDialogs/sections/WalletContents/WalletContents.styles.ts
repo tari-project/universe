@@ -89,7 +89,6 @@ export const TokenSymbol = styled.span`
     font-family: 'Poppins', sans-serif;
     font-weight: 500;
     font-size: 13px;
-    color: ${({ theme }) => theme.palette.text.secondary};
     line-height: 1.3;
     text-transform: uppercase;
     color: ${({ theme }) => theme.palette.text.secondary};
@@ -110,7 +109,6 @@ export const TokenSeparator = styled.hr`
 `;
 
 export const WalletAddress = styled.div`
-    color: black;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

@@ -35,12 +35,9 @@ export const HeaderWrapper = styled.div`
 export const StatusWrapper = styled.div`
     margin: 20px auto;
     width: fit-content;
-    background: white;
+    background: ${({ theme }) => theme.palette.background.paper};
     border-radius: 60px;
-    padding-top: 10px;
-    padding-right: 20px;
-    padding-bottom: 10px;
-    padding-left: 20px;
+    padding: 10px 20px;
     gap: 15px;
 
     display: flex;
@@ -49,5 +46,5 @@ export const StatusWrapper = styled.div`
     font-family: Poppins;
     font-weight: 500;
     font-size: 14px;
-    color: black;
+    color: ${({ theme }) => theme.palette.text.primary};
 `;

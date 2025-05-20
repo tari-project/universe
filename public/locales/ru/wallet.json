@@ -94,7 +94,7 @@
     "total-fees": "Общая комиссия",
     "transaction-id": "ID Транзакции",
     "waiting-for-response": "Ожидание ответа",
-    "you-will-receive": "Вы получите XTM на (адрес кошелька Tari)",
+    "you-will-receive": "Вы получите {{symbol}} на (адрес кошелька Tari)",
     "your-purchase-is-processing": "Ваша покупка обрабатывается. Это может занять несколько минут.",
     "your-xtm-is-on-the-way": "Ваши XTM уже в пути!"
   },
@@ -104,6 +104,7 @@
     "send": "Отправить"
   },
   "tari": "Tari",
+  "wallet-connected": "Кошелек подключен",
   "wallet-is-scanning": "Кошелек сканируется...",
   "wallet-scanning-with-progress": "Кошелек сканируется: {{scanned}}/{{total}} ({{percent}}%)"
 }

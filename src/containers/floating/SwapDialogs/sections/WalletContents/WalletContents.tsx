@@ -32,7 +32,7 @@ interface Props {
 }
 
 export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) => {
-    const { t } = useTranslation(['common'], { useSuspense: false });
+    const { t } = useTranslation(['common', 'wallet'], { useSuspense: false });
     const { disconnect } = useDisconnect();
     const { address: accountAddress } = useAccount();
 
@@ -48,12 +48,16 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
     }, [setIsOpen]);
 
     return (
-        <TransactionModal show={isOpen} handleClose={() => setIsOpen(false)} title={'Wallet Connected'}>
+        <TransactionModal
+            show={isOpen}
+            handleClose={() => setIsOpen(false)}
+            title={t('wallet-connected', { ns: 'wallet' })}
+        >
             <AnimatePresence mode="wait">
                 <WalletContentsContainer>
                     <ConnectedWalletWrapper>
                         <WalletButton variant="error" onClick={handleDisconnect}>
-                            {t('disconnect')}
+                            {t('disconnect', { ns: 'common' })}
                         </WalletButton>
                         <StatusWrapper>
                             <ActiveDot />
@@ -79,8 +83,8 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                                         </TokenInfo>
                                     </TokenItemLeft>
                                     <TokenItemRight>
-                                        {token.usdValue && <span className="usd">{token.usdValue}</span>}
-                                        {token.balance && <span className="balance">{token.balance}</span>}
+                                        <span className="usd">{token.usdValue || '—'}</span>
+                                        <span className="balance">{token.balance || '—'}</span>
                                     </TokenItemRight>
                                 </TokenItem>
                                 {index < availableTokens.length - 1 && <TokenSeparator />}
@@ -89,7 +93,7 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                     </TokenList>
 
                     <WalletButton onClick={handleContinue} variant="primary" size="large">
-                        {t('continue')}
+                        {t('continue', { ns: 'common' })}
                     </WalletButton>
                 </WalletContentsContainer>
             </AnimatePresence>

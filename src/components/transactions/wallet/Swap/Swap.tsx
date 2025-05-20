@@ -51,20 +51,20 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
         isProcessingApproval,
         isProcessingSwap,
         swapSuccess,
-        fromAmount,
-        targetAmount,
+        ethTokenAmount,
+        wxtmAmount,
         uiDirection,
         transaction,
-        setProcesingOpen,
+        tokenSelectOpen,
+        selectableFromTokens,
+        setProcessingOpen,
         setFromAmount,
         setTargetAmount,
         setReviewSwap,
-        setUiDirection,
+        handleToggleUiDirection,
         handleConfirm,
-        tokenSelectOpen,
         setTokenSelectOpen,
         handleSelectFromToken,
-        selectableFromTokens,
     } = useSwapData();
 
     return (
@@ -102,7 +102,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setFromAmount(e.target.value)}
-                        value={fromAmount}
+                        value={ethTokenAmount}
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
                         {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || 'ETH', width: 25 })}
@@ -114,7 +114,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             </SwapOption>
 
             <SwapDirection>
-                <SwapDirectionWrapper $direction={uiDirection} onClick={setUiDirection}>
+                <SwapDirectionWrapper $direction={uiDirection} onClick={handleToggleUiDirection}>
                     <ArrowIcon width={15} />
                 </SwapDirectionWrapper>
             </SwapDirection>
@@ -127,7 +127,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setTargetAmount(e.target.value)}
-                        value={targetAmount}
+                        value={wxtmAmount}
                     />
                     <SwapOptionCurrency>
                         {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
@@ -143,7 +143,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                     onClick={() => setReviewSwap(true)}
                     size="xl"
                     disabled={Boolean(
-                        notEnoughBalance || !Number(uiDirection === 'toXtm' ? fromAmount : targetAmount) || isLoading
+                        notEnoughBalance || !Number(uiDirection === 'toXtm' ? ethTokenAmount : wxtmAmount) || isLoading
                     )}
                 >
                     {isLoading ? t('swap.loading') : t('swap.review-swap')}
@@ -156,7 +156,9 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             <ConnectWallet isOpen={reviewSwap && !connectedAccount.address} setIsOpen={setReviewSwap} />
 
             <SwapConfirmation
-                isOpen={Boolean(reviewSwap && connectedAccount.address && !notEnoughBalance && Number(fromAmount) > 0)}
+                isOpen={Boolean(
+                    reviewSwap && connectedAccount.address && !notEnoughBalance && Number(ethTokenAmount) > 0
+                )}
                 setIsOpen={setReviewSwap}
                 onConfirm={handleConfirm}
                 transaction={transaction}
@@ -166,8 +168,9 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             <ProcessingTransaction
                 status={isProcessingSwap ? 'processingswap' : swapSuccess ? 'success' : 'error'}
                 isOpen={processingOpen && !isProcessingApproval}
-                setIsOpen={setProcesingOpen}
+                setIsOpen={setProcessingOpen}
                 fees={transaction?.paidTransactionFee}
+                txBlockHash={transaction?.txBlockHash}
                 transactionId={transaction?.transactionId ?? undefined}
             />
 
@@ -180,7 +183,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
 
             <WalletContents isOpen={openWallet} setIsOpen={setOpenWallet} availableTokens={selectableFromTokens} />
 
-            <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcesingOpen} />
+            <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcessingOpen} />
             {/* ////////////////////////////////// */}
         </>
     );

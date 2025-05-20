@@ -49,8 +49,8 @@ export const useSwapData = () => {
     const connectedAccount = useAccount();
     const addToast = useToastStore((s) => s.addToast);
 
-    const [fromAmount, setFromAmount] = useState<string>('1');
-    const [targetAmount, setTargetAmount] = useState<string>('');
+    const [ethTokenAmount, setEthTokenAmount] = useState<string>('1');
+    const [wxtmAmount, setWxtmAmount] = useState<string>('');
     const [lastUpdatedField, setLastUpdatedField] = useState<SwapField>('ethTokenField');
     const [uiDirection, setUiDirection] = useState<SwapDirection>('toXtm');
 
@@ -67,6 +67,7 @@ export const useSwapData = () => {
     const [slippage, setSlippage] = useState<string | null>(null);
     const [transactionId, setTransactionId] = useState<string | null>(null);
     const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
+    const [txBlockHash, setTxBlockHash] = useState<`0x${string}` | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
 
@@ -177,14 +178,14 @@ export const useSwapData = () => {
     }, [rawToTokenBalanceData, toUiTokenDefinition, currentChainId, toTokenPrice]);
 
     const notEnoughBalance = useMemo(() => {
-        if (!fromTokenDisplay.rawBalance || !fromAmount || !fromTokenDisplay.decimals) return false;
+        if (!fromTokenDisplay.rawBalance || !ethTokenAmount || !fromTokenDisplay.decimals) return false;
         try {
-            const amountBigInt = viemParseUnits(fromAmount, fromTokenDisplay.decimals);
+            const amountBigInt = viemParseUnits(ethTokenAmount, fromTokenDisplay.decimals);
             return amountBigInt > fromTokenDisplay.rawBalance;
         } catch {
             return true;
         }
-    }, [fromTokenDisplay.rawBalance, fromAmount, fromTokenDisplay.decimals]);
+    }, [fromTokenDisplay.rawBalance, ethTokenAmount, fromTokenDisplay.decimals]);
 
     const baseSelectableTokensForList = useMemo((): Omit<
         SelectableTokenInfo,
@@ -345,13 +346,15 @@ export const useSwapData = () => {
         setPriceImpact(null);
         setNetworkFee(null);
         setSlippage(null);
-        if (lastUpdatedField === 'ethTokenField') {
-            if (targetAmount !== '') setTargetAmount('1');
-        } else {
-            if (fromAmount !== '') setFromAmount('1');
-        }
+        setTxBlockHash(null);
+        setTransactionId(null);
+        setPaidTransactionFee(null);
+        setSwapSuccess(false);
+        setIsProcessingApproval(false);
+        setIsProcessingSwap(false);
+        setEthTokenAmount('1');
         shouldCalculate.current = true;
-    }, [lastUpdatedField, fromAmount, targetAmount]);
+    }, []);
 
     const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
@@ -365,10 +368,10 @@ export const useSwapData = () => {
         const tradeOutputTokenSDK = sdkToken1;
 
         if (lastUpdatedField === 'ethTokenField') {
-            amountTypedByUserStr = fromAmount;
+            amountTypedByUserStr = ethTokenAmount;
             tokenUsedForParsingAmount = fromUiTokenDefinition;
         } else {
-            amountTypedByUserStr = targetAmount;
+            amountTypedByUserStr = wxtmAmount;
             tokenUsedForParsingAmount = toUiTokenDefinition;
         }
 
@@ -413,19 +416,19 @@ export const useSwapData = () => {
                 if (shouldCalculate.current) {
                     if (lastUpdatedField === 'ethTokenField') {
                         if (uiDirection === 'toXtm') {
-                            if (details.outputAmount) setTargetAmount(details.outputAmount.toSignificant(6));
-                            else if (targetAmount !== '') setTargetAmount('');
+                            if (details.outputAmount) setWxtmAmount(details.outputAmount.toSignificant(6));
+                            else if (wxtmAmount !== '') setWxtmAmount('');
                         } else {
-                            if (details.inputAmount) setTargetAmount(details.inputAmount.toSignificant(6));
-                            else if (targetAmount !== '') setTargetAmount('');
+                            if (details.inputAmount) setWxtmAmount(details.inputAmount.toSignificant(6));
+                            else if (wxtmAmount !== '') setWxtmAmount('');
                         }
                     } else {
                         if (uiDirection === 'toXtm') {
-                            if (details.inputAmount) setFromAmount(details.inputAmount.toSignificant(6));
-                            else if (fromAmount !== '') setFromAmount('');
+                            if (details.inputAmount) setEthTokenAmount(details.inputAmount.toSignificant(6));
+                            else if (ethTokenAmount !== '') setEthTokenAmount('');
                         } else {
-                            if (details.outputAmount) setFromAmount(details.outputAmount.toSignificant(6));
-                            else if (fromAmount !== '') setFromAmount('');
+                            if (details.outputAmount) setEthTokenAmount(details.outputAmount.toSignificant(6));
+                            else if (ethTokenAmount !== '') setEthTokenAmount('');
                         }
                     }
                 }
@@ -450,8 +453,8 @@ export const useSwapData = () => {
             shouldCalculate.current = false;
         }
     }, [
-        fromAmount,
-        targetAmount,
+        ethTokenAmount,
+        wxtmAmount,
         lastUpdatedField,
         uiDirection,
         sdkToken0,
@@ -476,7 +479,7 @@ export const useSwapData = () => {
         return () => {
             if (calcRef.current) clearTimeout(calcRef.current);
         };
-    }, [fromAmount, targetAmount, lastUpdatedField, uiDirection, debounceCalc]);
+    }, [ethTokenAmount, wxtmAmount, lastUpdatedField, uiDirection, debounceCalc]);
 
     const handleNumberInput = (value: string, field: SwapField) => {
         setReviewSwap(false);
@@ -487,12 +490,12 @@ export const useSwapData = () => {
 
         if (processedValue === '' || processedValue === '.' || processedValue === '0') {
             if (field === 'ethTokenField') {
-                setFromAmount(processedValue);
-                if (targetAmount !== '') setTargetAmount('');
+                setEthTokenAmount(processedValue);
+                if (wxtmAmount !== '') setWxtmAmount('');
             } else {
                 // field === 'target'
-                setTargetAmount(processedValue);
-                if (fromAmount !== '') setFromAmount('');
+                setWxtmAmount(processedValue);
+                if (ethTokenAmount !== '') setEthTokenAmount('');
             }
             setLastUpdatedField(field);
             shouldCalculate.current = false;
@@ -512,29 +515,29 @@ export const useSwapData = () => {
         if (parts[1] && parts[1].length > maxDecimals)
             processedValue = `${parts[0]}.${parts[1].substring(0, maxDecimals)}`;
 
-        if (field === 'ethTokenField') setFromAmount(processedValue);
-        else setTargetAmount(processedValue);
+        if (field === 'ethTokenField') setEthTokenAmount(processedValue);
+        else setWxtmAmount(processedValue);
         setLastUpdatedField(field);
         shouldCalculate.current = true;
         setIsLoading(true);
     };
 
-    const handleSetUiDirection = useCallback(() => {
+    const handleToggleUiDirection = useCallback(() => {
         const newUiDirection = uiDirection === 'toXtm' ? 'fromXtm' : 'toXtm';
         setUiDirection(newUiDirection);
         setSwapEngineDirection(newUiDirection);
 
-        if (lastUpdatedField === 'ethTokenField' && fromAmount && Number(fromAmount) > 0) {
+        if (lastUpdatedField === 'ethTokenField' && ethTokenAmount && Number(ethTokenAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
-        } else if (lastUpdatedField === 'wxtmField' && targetAmount && Number(targetAmount) > 0) {
+        } else if (lastUpdatedField === 'wxtmField' && wxtmAmount && Number(wxtmAmount) > 0) {
             shouldCalculate.current = true;
             setIsLoading(true);
-        } else if (fromAmount && Number(fromAmount) > 0) {
+        } else if (ethTokenAmount && Number(ethTokenAmount) > 0) {
             setLastUpdatedField('ethTokenField');
             shouldCalculate.current = true;
             setIsLoading(true);
-        } else if (targetAmount && Number(targetAmount) > 0) {
+        } else if (wxtmAmount && Number(wxtmAmount) > 0) {
             // Fallback
             setLastUpdatedField('wxtmField');
             shouldCalculate.current = true;
@@ -545,11 +548,11 @@ export const useSwapData = () => {
             setPriceImpact(null);
             setNetworkFee(null);
             setSlippage(null);
-            if (!(fromAmount && Number(fromAmount) > 0) && !(targetAmount && Number(targetAmount) > 0)) {
+            if (!(ethTokenAmount && Number(ethTokenAmount) > 0) && !(wxtmAmount && Number(wxtmAmount) > 0)) {
                 setIsLoading(false);
             }
         }
-    }, [uiDirection, setSwapEngineDirection, fromAmount, targetAmount, lastUpdatedField]);
+    }, [uiDirection, setSwapEngineDirection, ethTokenAmount, wxtmAmount, lastUpdatedField]);
 
     const handleConfirm = () => {
         setTransactionId(null);
@@ -588,6 +591,7 @@ export const useSwapData = () => {
                         }
                         setSwapSuccess(true);
                         setTransactionId(result.hash);
+                        setTxBlockHash(result.blockHash as `0x${string}`);
                         console.info('-------------------------Swap transaction:', result);
                         try {
                             const gasUsed = formatUnits(result.gasPrice, 18);
@@ -643,16 +647,27 @@ export const useSwapData = () => {
 
     const transactionForDisplay = useMemo(
         () => ({
-            amount: uiDirection === 'toXtm' ? fromAmount : targetAmount, // Amount user gives
-            targetAmount: uiDirection === 'toXtm' ? targetAmount : fromAmount, // Amount user gets
+            amount: uiDirection === 'toXtm' ? ethTokenAmount : wxtmAmount, // Amount user gives
+            targetAmount: uiDirection === 'toXtm' ? wxtmAmount : ethTokenAmount, // Amount user gets
             direction: uiDirection,
             slippage,
             networkFee,
             priceImpact,
             transactionId,
+            txBlockHash,
             paidTransactionFee,
         }),
-        [fromAmount, targetAmount, uiDirection, slippage, networkFee, priceImpact, transactionId, paidTransactionFee]
+        [
+            uiDirection,
+            ethTokenAmount,
+            wxtmAmount,
+            slippage,
+            networkFee,
+            priceImpact,
+            transactionId,
+            txBlockHash,
+            paidTransactionFee,
+        ]
     );
 
     const handleSelectFromToken = useCallback(
@@ -681,16 +696,13 @@ export const useSwapData = () => {
         setReviewSwap,
         isLoading: finalIsLoading,
         processingOpen,
-        setProcesingOpen: setProcessingOpen,
+        setProcessingOpen,
         isProcessingApproval,
         isProcessingSwap,
         swapSuccess,
-        fromAmount,
-        setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
-        targetAmount,
-        setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
+        ethTokenAmount,
+        wxtmAmount,
         uiDirection,
-        setUiDirection: handleSetUiDirection,
         handleConfirm,
         transaction: transactionForDisplay,
         useSwapError,
@@ -699,5 +711,8 @@ export const useSwapData = () => {
         tokenSelectOpen,
         setTokenSelectOpen,
         displayPrice,
+        handleToggleUiDirection,
+        setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
+        setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
     };
 };

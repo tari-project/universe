@@ -94,7 +94,7 @@
     "total-fees": "Całkowite opłaty",
     "transaction-id": "ID Transakcji",
     "waiting-for-response": "Oczekiwanie na odpowiedź",
-    "you-will-receive": "Otrzymasz XTM na (adres portfela Tari)",
+    "you-will-receive": "Otrzymasz {{symbol}} na (adres portfela Tari)",
     "your-purchase-is-processing": "Twoje zamówienie jest przetwarzane. Może to potrwać kilka minut.",
     "your-xtm-is-on-the-way": "Twoje XTM jest w drodze!"
   },
@@ -104,6 +104,7 @@
     "send": "Wyślij"
   },
   "tari": "Tari",
+  "wallet-connected": "Portfel połączony",
   "wallet-is-scanning": "Portfel skanuje...",
   "wallet-scanning-with-progress": "Portfel skanuje: {{scanned}}/{{total}} ({{percent}}%)"
 }

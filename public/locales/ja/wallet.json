@@ -94,7 +94,7 @@
     "total-fees": "合計手数料",
     "transaction-id": "取引ID",
     "waiting-for-response": "応答待機中",
-    "you-will-receive": "XTMを（Tariウォレットアドレス）で受け取ります",
+    "you-will-receive": "{{symbol}}を（Tariウォレットアドレス）で受け取ります",
     "your-purchase-is-processing": "購入処理中です。数分かかることがあります。",
     "your-xtm-is-on-the-way": "XTMが送金中です！"
   },
@@ -104,6 +104,7 @@
     "send": "送信"
   },
   "tari": "Tari",
+  "wallet-connected": "ウォレット接続済み",
   "wallet-is-scanning": "ウォレットをスキャン中...",
   "wallet-scanning-with-progress": "ウォレットをスキャン中: {{scanned}}/{{total}} ({{percent}}%)"
 }

@@ -56,32 +56,33 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         });
     }, [fromTokenDisplay?.symbol]);
 
+    const toSymbol = direction === 'toXtm' ? 'XTM' : (fromTokenDisplay?.symbol ?? '');
+
     const items = [
         {
             label: t('swap.network-fee'),
             value: networkFee,
-            valueRight: `${networkFee} XTM`,
-            helpText: `${networkFee} XTM`,
+            valueRight: `${networkFee} ${toSymbol}`,
+            helpText: `${networkFee} ${toSymbol}`,
         },
         {
             label: t('swap.network-cost'),
             value: priceImpact,
-            helpText: `${priceImpact} XTM`,
+            helpText: `${priceImpact} ${toSymbol}`,
         },
         {
-            label: t('swap.you-will-receive'),
-            value: slippage,
-            // helpText: t('swap.you-will-receive'),
+            label: t('swap.you-will-receive', {
+                toSymbol,
+            }),
+            value: direction === 'toXtm' ? targetAmount : amount,
         },
         {
             label: t('swap.slippage-tolerance'),
             value: slippage,
-            // helpText: t('swap.you-will-receive'),
         },
         {
             label: t('swap.price-impact'),
             value: priceImpact,
-            // helpText: t('swap.you-will-receive'),
         },
     ];
 

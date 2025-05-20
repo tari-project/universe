@@ -94,7 +94,7 @@
     "total-fees": "Toplam Ücretler",
     "transaction-id": "İşlem Kimliği",
     "waiting-for-response": "Yanıt bekleniyor",
-    "you-will-receive": "(Tari cüzdan adresi) adresine XTM alacaksınız",
+    "you-will-receive": "(Tari cüzdan adresi) adresine {{symbol}} alacaksınız",
     "your-purchase-is-processing": "Satın alma işleminiz devam ediyor. Bu işlem birkaç dakika sürebilir.",
     "your-xtm-is-on-the-way": "XTM'leriniz yolda!"
   },
@@ -104,6 +104,7 @@
     "send": "Gönder"
   },
   "tari": "Tari",
+  "wallet-connected": "Cüzdan Bağlandı",
   "wallet-is-scanning": "Cüzdan taranıyor...",
   "wallet-scanning-with-progress": "Cüzdan taranıyor: {{scanned}}/{{total}} ({{percent}}%)"
 }

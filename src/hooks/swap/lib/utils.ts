@@ -4,7 +4,18 @@ import { formatUnits as viemFormatUnits } from 'viem';
 
 export async function walletClientToSigner(walletClient: WalletClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;
-    if (!account || !chain || !transport) return null;
+    if (!account) {
+        console.warn('walletClientToSigner: Missing account');
+        return null;
+    }
+    if (!chain) {
+        console.warn('walletClientToSigner: Missing chain');
+        return null;
+    }
+    if (!transport) {
+        console.warn('walletClientToSigner: Missing transport');
+        return null;
+    }
     try {
         const network = { chainId: chain.id, name: chain.name, ensAddress: chain.contracts?.ensRegistry?.address };
         const provider = new BrowserProvider(transport, network);
@@ -35,5 +46,10 @@ export const formatGasFeeUSD = (
 ): string | null => {
     if (feeInNativeNum === undefined || nativePriceUSD === undefined) return null;
     const usdValue = feeInNativeNum * nativePriceUSD;
-    return `$${usdValue.toFixed(2)}`;
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+    }).format(usdValue);
 };

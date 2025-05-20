@@ -94,7 +94,7 @@
     "total-fees": "总费用",
     "transaction-id": "交易 ID",
     "waiting-for-response": "等待响应",
-    "you-will-receive": "您将在 (Tari 钱包地址) 收到 XTM",
+    "you-will-receive": "您将在 (Tari 钱包地址) 收到 {{symbol}}",
     "your-purchase-is-processing": "您的购买正在处理中。这可能需要几分钟。",
     "your-xtm-is-on-the-way": "您的 XTM 正在路上！"
   },
@@ -104,6 +104,7 @@
     "send": "发送"
   },
   "tari": "Tari",
+  "wallet-connected": "钱包已连接",
   "wallet-is-scanning": "钱包正在扫描...",
   "wallet-scanning-with-progress": "钱包正在扫描：{{scanned}}/{{total}} ({{percent}}%)"
 }

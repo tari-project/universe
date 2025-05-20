@@ -94,7 +94,7 @@
     "total-fees": "Total Biaya",
     "transaction-id": "ID Transaksi",
     "waiting-for-response": "Menunggu respons",
-    "you-will-receive": "Anda akan menerima XTM di (alamat dompet Tari)",
+    "you-will-receive": "Anda akan menerima {{symbol}} di (alamat dompet Tari)",
     "your-purchase-is-processing": "Pembelian Anda sedang diproses. Ini bisa memakan waktu beberapa menit.",
     "your-xtm-is-on-the-way": "XTM Anda sedang dalam perjalanan!"
   },
@@ -104,6 +104,7 @@
     "send": "Kirim"
   },
   "tari": "Tari",
+  "wallet-connected": "Dompet Terhubung",
   "wallet-is-scanning": "Dompet sedang memindai...",
   "wallet-scanning-with-progress": "Dompet sedang memindai: {{scanned}}/{{total}} ({{percent}}%)"
 }

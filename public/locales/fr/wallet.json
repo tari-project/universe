@@ -94,7 +94,7 @@
     "total-fees": "Frais totaux",
     "transaction-id": "ID de transaction",
     "waiting-for-response": "En attente de réponse",
-    "you-will-receive": "Vous recevrez XTM sur (adresse du portefeuille Tari)",
+    "you-will-receive": "Vous recevrez {{symbol}} sur (adresse du portefeuille Tari)",
     "your-purchase-is-processing": "Votre achat est en cours de traitement. Cela peut prendre quelques minutes.",
     "your-xtm-is-on-the-way": "Votre XTM est en route !"
   },
@@ -104,6 +104,7 @@
     "send": "Envoyer"
   },
   "tari": "Tari",
+  "wallet-connected": "Portefeuille connecté",
   "wallet-is-scanning": "Le portefeuille est en cours de scan...",
   "wallet-scanning-with-progress": "Le portefeuille est en cours de scan : {{scanned}}/{{total}} ({{percent}}%)"
 }

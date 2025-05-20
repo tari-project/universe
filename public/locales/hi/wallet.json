@@ -94,7 +94,7 @@
     "total-fees": "कुल शुल्क",
     "transaction-id": "लेन-देन आईडी",
     "waiting-for-response": "प्रतिक्रिया की प्रतीक्षा कर रहा है",
-    "you-will-receive": "आपको (तारी वॉलेट पता) पर XTM प्राप्त होगा",
+    "you-will-receive": "आपको (तारी वॉलेट पता) पर {{symbol}} प्राप्त होगा",
     "your-purchase-is-processing": "आपकी खरीदारी संसाधित हो रही है। इसमें कुछ मिनट लग सकते हैं।",
     "your-xtm-is-on-the-way": "आपका XTM रास्ते में है!"
   },
@@ -104,6 +104,7 @@
     "send": "भेजें"
   },
   "tari": "तारी",
+  "wallet-connected": "वॉलेट कनेक्टेड",
   "wallet-is-scanning": "वॉलेट स्कैन कर रहा है...",
   "wallet-scanning-with-progress": "वॉलेट स्कैन कर रहा है: {{scanned}}/{{total}} ({{percent}}%)"
 }
