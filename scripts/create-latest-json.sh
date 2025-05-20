@@ -152,10 +152,10 @@ echo "Signature read: $signature"
 }
 
 # Process each artifact with its corresponding URL (if provided)
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64" "ubuntu-22.04" "${URL_ARRAY[0]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm" "ubuntu-24.04-arm" "${URL_ARRAY[1]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest" "macos-latest" "${URL_ARRAY[2]:-}"
-process_artifact "${BASE_DIR}/${ID}_${VERSION}_windows-latest" "windows-latest" "${URL_ARRAY[3]:-}"
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64.zip" "ubuntu-22.04" "${URL_ARRAY[0]:-}"
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm.zip" "ubuntu-24.04-arm" "${URL_ARRAY[1]:-}"
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest.zip" "macos-latest" "${URL_ARRAY[2]:-}"
+process_artifact "${BASE_DIR}/${ID}_${VERSION}_windows-latest.zip" "windows-latest" "${URL_ARRAY[3]:-}"
 
 # get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
 macos_dmg_file=$(find "$BASE_DIR/macos-latest/dmg" -type f -name "*.dmg" | head -n 1)

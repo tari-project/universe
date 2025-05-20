@@ -453,10 +453,10 @@ jobs:
         with:
           pattern: '${{ matrix.exchange.id }}*'
 
-      - name: Delete artifacts
-        uses: geekyeggo/delete-artifact@v5
-        with:
-          name: '${{ matrix.exchange.id }}*'
+      # - name: Delete artifacts
+      #   uses: geekyeggo/delete-artifact@v5
+      #   with:
+      #     name: '${{ matrix.exchange.id }}*'
 
       - name: Log downloaded artifact
         shell: bash
@@ -468,18 +468,10 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
 
-      - name: Verify Unzip Installation
-        continue-on-error: true
-        run: |
-          if ! command -v unzip > /dev/null; then
-            echo "Error: unzip is not installed."
-            exit 1
-          fi
-
       - name: Validate Zip File
         continue-on-error: true
         run: |
-          if ! sudo unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
+          if ! unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
             echo "Error: The zip file is corrupted or invalid."
             exit 1
           fi
@@ -487,7 +479,6 @@ jobs:
       - name: Run create-latest-json.sh
         shell: bash
         run: |
-          sudo set -x
           sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
 
       - name: Upload msi artifact
