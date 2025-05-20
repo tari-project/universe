@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "ネットワークが安定するまでの約15日間、フォークやハッシュレートの変動が発生する可能性があります。",
+    "body-copy-highlight": "Tariは全く新しいです！",
+    "is-live": "がライブです"
   },
   "field-error-message": {
     "integers-only": "整数のみ許可されます",
@@ -36,9 +36,9 @@
     "title": "Tari Universeを再開しています"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "プルーフ・オブ・ワークネットワークの誕生は特別です。初期段階では、ネットワークが安定し、リズムを見つけるための時間が必要です。これを「ウォームアップフェーズ」と呼びます。\nTariネットワークの貢献者や初期サポーター（取引所やインフラパートナーなど）は、ウォームアップフェーズが約15日間続くと予想しています。その後、ネットワークはより安定した状態に移行します。\nウォームアップフェーズ中は、いくつかの癖が通常です。ブロック時間の変動、一時的な切断、同期の遅延、またはメインチェーンへの再接続を必要とする短命のフォークが発生することがあります。\nウォームアップフェーズは、報酬がブロックごとに最も高いので、マイニングに最適な時期です。Tariネットワークの初期の日々があなたにとって報われることを願っています。\nゲームを始めましょう。ブロックが永遠にあなたの味方でありますように！",
+    "subtitle": "これは具体的に何を意味しますか？",
+    "tag-line": "Tariメインネットへようこそ",
+    "title": "ウォームアップフェーズ"
   }
 }

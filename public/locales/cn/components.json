@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "在接下来的约15天内，随着网络的稳定，您可能会遇到分叉和算力波动。",
+    "body-copy-highlight": "Tari是全新的！",
+    "is-live": "已上线"
   },
   "field-error-message": {
     "integers-only": "只允许整数",
@@ -36,9 +36,9 @@
     "title": "恢复 Tari Universe"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "工作量证明网络的诞生是特别的。在早期，网络需要时间来稳定并找到其节奏。我们称之为“热身阶段”。\nTari网络的贡献者和早期支持者（如交易所和基础设施合作伙伴）预计热身阶段将持续约15天。之后，网络将过渡到更稳定的状态。\n在热身阶段，一些小问题是正常的。您可能会看到区块时间波动、临时断开连接、同步延迟，甚至是需要您的节点重新连接到主链的短暂分叉。\n热身阶段是挖矿的好时机，因为每个区块的奖励最高。我们希望Tari网络的早期阶段对您来说是有回报的。\n让游戏开始吧。愿区块永远对您有利！",
+    "subtitle": "这到底意味着什么？",
+    "tag-line": "欢迎来到Tari主网",
+    "title": "热身阶段"
   }
 }

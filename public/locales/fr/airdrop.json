@@ -17,7 +17,7 @@
   "giftReferralCode": "Gagne {{gems}} gemmes pour chaque ami que tu invites à rejoindre le Tari Universe. Une fois qu'ils auront connecté leur compte, tu recevras tes gemmes.",
   "giftReferralCodeHeader": "Réclame les <span>{{gems}}<image src='/assets/images/gem.png' alt=''/></span> gemmes de ton code de parrainage.",
   "invite": "Inviter",
-  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
+  "invite-friends-gems": "Pour chaque ami qui utilise votre lien d\"invitation, vous recevez 5 000 gemmes.",
   "inviteFriends": "Inviter des amis",
   "inviteFriendsText": "Copier le lien et le partager",
   "invitedAmount": "Tu as invité <span>{{count}}</span> ami(s)",
@@ -28,13 +28,13 @@
   "live": "en direct",
   "logged-in-as": "Connecté en tant que <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Récompenses Airdrop",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Invitez des amis pour gagner des gemmes",
   "loginButton": "Connecte-toi pour réclamer des gemmes",
   "logout": "Déconnexion",
   "nextTierBonus": "Invitez <strong>{{count}} ami(s)</strong> et gagnez {{bonusGems}} gemme(s) bonu(s)",
   "permission": {
     "setup": "Tari Universe souhaite utiliser des analyses pour <strong>améliorer votre expérience.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
+    "text": "Tari Universe souhaite utiliser des analyses pour améliorer votre expérience et vous récompenser avec des gemmes pour inviter des amis.",
     "title": "Gagne des gemmes et améliore le Tari Universe"
   },
   "permissionNoGems": {

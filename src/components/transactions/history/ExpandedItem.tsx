@@ -31,7 +31,7 @@ const ItemExpand = memo(function ItemExpand({ item, expanded, handleClose }: Pro
         payment_id: 'send.transaction-description',
     };
 
-    const hiddenKeys = ['direction', 'excess_sig'];
+    const hiddenKeys = ['direction', 'excess_sig', 'tx_id'];
 
     const capitalizeKey = (key: string): string => {
         return key

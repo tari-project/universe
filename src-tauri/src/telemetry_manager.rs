@@ -21,6 +21,7 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use crate::airdrop;
+use crate::airdrop::get_wallet_view_key_hashed;
 use crate::app_config::MiningMode;
 use crate::app_in_memory_config::AppInMemoryConfig;
 use crate::commands::CpuMinerStatus;
@@ -199,6 +200,7 @@ pub struct TelemetryData {
     pub download_speed: f64,
     pub upload_speed: f64,
     pub latency: f64,
+    pub wallet_view_key_hashed: String,
     pub exchange_id: String,
 }
 
@@ -325,10 +327,10 @@ impl TelemetryManager {
                         if allow_telemetry {
                             let airdrop_access_token_validated = airdrop::validate_jwt(airdrop_access_token).await;
                             let memory_config = in_memory_config_cloned.read().await;
-                            let airdrop_api_url = memory_config.airdrop_api_url.clone();
                             let exchange_id = memory_config.exchange_id.clone();
-                            let telemetry_data = get_telemetry_data(&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
+                            let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
                                 &tor_status, network, exchange_id, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
+                            let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
                             handle_telemetry_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone())).await;
                         }
                     },
@@ -344,7 +346,8 @@ impl TelemetryManager {
 }
 
 #[allow(clippy::too_many_arguments)]
-async fn get_telemetry_data(
+async fn cancellable_get_telemetry_data(
+    app_handle: tauri::AppHandle,
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
@@ -357,7 +360,7 @@ async fn get_telemetry_data(
     node_manager: &NodeManager,
     shutdown_signal: &mut ShutdownSignal,
 ) -> Result<TelemetryData, TelemetryManagerError> {
-    tokio::select! {result = get_telemetry_data_inner(cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager, exchange_id) => {
+    tokio::select! {result = get_telemetry_data_inner(app_handle.clone(),cpu_miner_status_watch_rx, gpu_latest_miner_stats, node_latest_status, p2pool_latest_status, tor_latest_status, network, started, stats_collector, node_manager, exchange_id) => {
             result
         }
         _ = shutdown_signal.wait() => {
@@ -369,6 +372,7 @@ async fn get_telemetry_data(
 #[allow(clippy::too_many_lines)]
 #[allow(clippy::too_many_arguments)]
 async fn get_telemetry_data_inner(
+    app_handle: tauri::AppHandle,
     cpu_miner_status_watch_rx: &watch::Receiver<CpuMinerStatus>,
     gpu_latest_miner_stats: &watch::Receiver<GpuMinerStatus>,
     node_latest_status: &watch::Receiver<BaseNodeStatus>,
@@ -387,6 +391,7 @@ async fn get_telemetry_data_inner(
         ..
     } = *node_latest_status.borrow();
 
+    let wallet_view_key_hashed = get_wallet_view_key_hashed(app_handle.clone()).await;
     let cpu_miner_status = cpu_miner_status_watch_rx.borrow().clone();
     let gpu_status = gpu_latest_miner_stats.borrow().clone();
     let config = ConfigCore::content().await;
@@ -681,6 +686,7 @@ async fn get_telemetry_data_inner(
         download_speed,
         upload_speed,
         latency,
+        wallet_view_key_hashed,
         exchange_id,
     };
     Ok(data)

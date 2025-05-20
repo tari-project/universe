@@ -22,7 +22,7 @@
 
 use crate::{
     binaries::{Binaries, BinaryResolver},
-    configs::{config_core::ConfigCore, trait_config::ConfigImpl},
+    configs::{config_core::ConfigCore, config_mining::ConfigMining, trait_config::ConfigImpl},
     events_manager::EventsManager,
     internal_wallet::InternalWallet,
     p2pool_manager::P2poolConfig,
@@ -66,6 +66,7 @@ pub struct UnknownSetupPhaseAppConfiguration {
     p2pool_stats_server_port: Option<u16>,
     mmproxy_monero_nodes: Vec<String>,
     mmproxy_use_monero_fail: bool,
+    squad_override: Option<String>,
 }
 
 pub struct UnknownSetupPhase {
@@ -116,12 +117,14 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         let p2pool_stats_server_port = *ConfigCore::content().await.p2pool_stats_server_port();
         let mmproxy_monero_nodes = ConfigCore::content().await.mmproxy_monero_nodes().clone();
         let mmproxy_use_monero_fail = *ConfigCore::content().await.mmproxy_use_monero_failover();
+        let squad_override = ConfigMining::content().await.squad_override().clone();
 
         Ok(UnknownSetupPhaseAppConfiguration {
             p2pool_enabled,
             mmproxy_use_monero_fail,
             mmproxy_monero_nodes,
             p2pool_stats_server_port,
+            squad_override,
         })
     }
 
@@ -145,7 +148,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                         error!(target: LOG_TARGET, "[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                         let error_message = format!("[ {} Phase ] Setup timed out", SetupPhase::Unknown);
                         sentry::capture_message(&error_message, sentry::Level::Error);
-                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                        EventsManager::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()),Some(error_message))
                         .await;
                     }
                 }
@@ -160,7 +163,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                             let error_message = format!("[ {} Phase ] Setup failed with error: {:?}", SetupPhase::Unknown,error);
                             sentry::capture_message(&error_message, sentry::Level::Error);
                             EventsManager
-                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()))
+                                ::handle_critical_problem(&self.app_handle, Some(SetupPhase::Unknown.get_critical_problem_title()), Some(SetupPhase::Unknown.get_critical_problem_description()),Some(error_message))
                                 .await;
                         }
                     }
@@ -226,6 +229,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
 
             let p2pool_config = P2poolConfig::builder()
                 .with_base_node(base_node_grpc_address.clone())
+                .with_squad_override(self.app_configuration.squad_override.clone())
                 .with_stats_server_port(self.app_configuration.p2pool_stats_server_port)
                 .with_cpu_benchmark_hashrate(Some(
                     state.cpu_miner.read().await.benchmarked_hashrate,

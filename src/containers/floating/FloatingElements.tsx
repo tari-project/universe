@@ -11,7 +11,6 @@ import AdminUI from '@app/components/AdminUI/AdminUI.tsx';
 import ToastStack from '@app/components/ToastStack/ToastStack.tsx';
 import CriticalProblemDialog from './CriticalProblemDialog/CriticalProblemDialog.tsx';
 import ShellOfSecrets from '../main/ShellOfSecrets/ShellOfSecrets.tsx';
-// eslint-disable-next-line
 import ReleaseNotesDialog from './ReleaseNotesDialog/ReleaseNotesDialog.tsx';
 import LudicrousCofirmationDialog from './LudicrousCofirmationDialog/LudicrousCofirmationDialog.tsx';
 import { memo } from 'react';
@@ -37,7 +36,7 @@ const FloatingElements = memo(function FloatingElements() {
             <ShellOfSecrets />
             <ToastStack />
             <CriticalProblemDialog />
-            {/*<ReleaseNotesDialog />*/}
+            <ReleaseNotesDialog />
             <ResumeApplicationModal />
             <XSpaceEventBanner />
             <CustomPowerLevelsDialogContainer />
