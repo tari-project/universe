@@ -609,9 +609,6 @@ export const useSwapData = () => {
                         setIsProcessingSwap(false);
                         setProcessingOpen(false);
                         addToast({ title: 'Swap Error', text: e.message || 'Swap execution failed.', type: 'error' });
-                    })
-                    .finally(() => {
-                        clearCalculatedDetails();
                     });
             })
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -712,6 +709,7 @@ export const useSwapData = () => {
         setTokenSelectOpen,
         displayPrice,
         handleToggleUiDirection,
+        clearCalculatedDetails,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
     };

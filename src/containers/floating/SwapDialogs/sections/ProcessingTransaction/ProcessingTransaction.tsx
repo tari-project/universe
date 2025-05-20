@@ -24,6 +24,8 @@ interface Props {
 export const ProcessingTransaction = ({ status, isOpen, setIsOpen, transactionId, fees, txBlockHash }: Props) => {
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
+    console.log('ProcessingTransaction', status);
+
     const statusItems: StatusListEntry[] = [
         {
             label: t('swap.status'),
