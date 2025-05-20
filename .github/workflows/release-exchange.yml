@@ -63,9 +63,9 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -74,10 +74,10 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -465,22 +465,22 @@ jobs:
       - name: Run create-latest-json.sh
         shell: bash
         run: |
-          sudo bash ./scripts/create-latest-json.sh "${{ steps.build.outputs.appVersion }}" "${{matrix.exchange.id}}"
+          sudo bash ./scripts/create-latest-json.sh "${{ steps.build.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
           ls -la "${{ github.workspace }}"
 
       - name: Upload msi artifact
         id: upload-msi
         uses: actions/upload-artifact@v4
         with:
-          name: Tari Universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
-          path: Tari Universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.appVersion }}_x64_en-US.msi
+          name: Tari Universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.APP_VERSION }}_x64_en-US.msi
+          path: Tari Universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.APP_VERSION }}_x64_en-US.msi
 
       - name: Upload dmg artifact
         id: upload-dmg
         uses: actions/upload-artifact@v4
         with:
-          name: Tari Universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.appVersion }}_universal.dmg
-          path: Tari Universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.appVersion }}_universal.dmg
+          name: Tari Universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.APP_VERSION }}_universal.dmg
+          path: Tari Universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.APP_VERSION }}_universal.dmg
 
       - name: Upload app.tar.gz artifact
         id: upload-tar
@@ -493,20 +493,20 @@ jobs:
         id: upload-amd64
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.appVersion }}_amd64.AppImage
-          path: tari_universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.appVersion }}_amd64.AppImage
+          name: tari_universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.APP_VERSION }}_amd64.AppImage
+          path: tari_universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.APP_VERSION }}_amd64.AppImage
 
       - name: Upload AppImage aarch64 artifact
         id: upload-aarch64
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.appVersion }}_aarch64.AppImage
-          path: tari_universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.appVersion }}_aarch64.AppImage
+          name: tari_universe-${{ matrix.exchange.id }}_${{ steps.build.outputs.APP_VERSION }}_aarch64.AppImage
+          path: tari_universe-${{ matrix.exchange.name }}_${{ steps.build.outputs.APP_VERSION }}_aarch64.AppImage
 
       - name: Reconstruct latest.json
         shell: bash
         run: |
-          sudo bash ./scripts/reconstruct-latest-json.sh "${{ steps.build.outputs.appVersion }}" "${{matrix.exchange.id}}" "${{ steps.upload-msi.outputs.artifact-url }},${{ steps.upload-dmg.outputs.artifact-url }},${{ steps.upload-tar.outputs.artifact-url }},${{ steps.upload-amd64.outputs.artifact-url }},${{ steps.upload-aarch64.outputs.artifact-url }}"
+          sudo bash ./scripts/reconstruct-latest-json.sh "${{ steps.build.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ steps.upload-msi.outputs.artifact-url }},${{ steps.upload-dmg.outputs.artifact-url }},${{ steps.upload-tar.outputs.artifact-url }},${{ steps.upload-amd64.outputs.artifact-url }},${{ steps.upload-aarch64.outputs.artifact-url }}"
           ls -la "${{ github.workspace }}"
 
       - name: Upload latest.json
