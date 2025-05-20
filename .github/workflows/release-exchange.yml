@@ -479,7 +479,7 @@ jobs:
       - name: Validate Zip File
         continue-on-error: true
         run: |
-          if ! unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64.zip; then
+          if ! unzip -tq ${{github.workspace}}/${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64; then
             echo "Error: The zip file is corrupted or invalid."
             exit 1
           fi
