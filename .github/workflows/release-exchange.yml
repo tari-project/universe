@@ -511,7 +511,7 @@ jobs:
       - name: Reconstruct latest.json
         shell: bash
         run: |
-          sudo bash ./scripts/reconstruct-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ steps.upload-msi.outputs.artifact-url }},${{ steps.upload-dmg.outputs.artifact-url }},${{ steps.upload-tar.outputs.artifact-url }},${{ steps.upload-amd64.outputs.artifact-url }},${{ steps.upload-aarch64.outputs.artifact-url }}"
+          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ steps.upload-msi.outputs.artifact-url }},${{ steps.upload-dmg.outputs.artifact-url }},${{ steps.upload-tar.outputs.artifact-url }},${{ steps.upload-amd64.outputs.artifact-url }},${{ steps.upload-aarch64.outputs.artifact-url }}"
           ls -la "${{ github.workspace }}"
 
       - name: Upload latest.json
