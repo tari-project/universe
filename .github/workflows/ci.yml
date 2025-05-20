@@ -29,6 +29,7 @@ jobs:
       - name: create empty dist dir
         run: |
           mkdir dist
+
       - name: install dependencies (linux)
         run: |
           sudo apt-get update
@@ -56,6 +57,7 @@ jobs:
       - name: cargo format
         working-directory: ./src-tauri
         run: |
+          rustup component add rustfmt
           cargo fmt --all -- --check
 
       - name: clippy lint
@@ -66,8 +68,10 @@ jobs:
           AIRDROP_TWITTER_AUTH_URL: http://localhost:3004/auth/twitter
           TELEMETRY_API_URL: http://localhost:3004
         run: |
+          rustup component add clippy
           cargo install cargo-lints
           cargo lints clippy --all-targets --all-features
+
       - name: cargo check
         working-directory: ./src-tauri
         run: |
@@ -115,12 +119,15 @@ jobs:
         with:
           node-version: lts/*
           cache: 'npm'
+
       - name: Install dependencies (node)
         run: npm ci
+
       - uses: dtolnay/rust-toolchain@stable
       - uses: swatinem/rust-cache@v2.7.5
         with:
           workspaces: './src-tauri -> target'
+
       - name: cargo tauri build
         working-directory: ./src-tauri
         run: |

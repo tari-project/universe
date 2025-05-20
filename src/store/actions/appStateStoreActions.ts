@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { useAppStateStore } from '../appStateStore.ts';
-import { CriticalProblem, ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
+import { ExternalDependency, NetworkStatus } from '@app/types/app-status.ts';
 import { addToast } from '@app/components/ToastStack/useToastStore.tsx';
 import { CriticalProblemPayload, ShowReleaseNotesPayload } from '@app/types/events-payloads.ts';
 import { setDialogToShow, useUIStore } from '../index.ts';
@@ -64,7 +64,7 @@ export const handleCriticalProblemEvent = (payload?: CriticalProblemPayload) => 
         setCriticalProblem(payload);
     }
 };
-export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblem>) =>
+export const setCriticalProblem = (criticalProblem?: Partial<CriticalProblemPayload>) =>
     useAppStateStore.setState({ criticalProblem });
 export const setError = (error: string | undefined, log = false) => {
     useAppStateStore.setState({ error });

@@ -1,6 +1,6 @@
 {
-  "connections": "connections",
-  "established": "Established",
+  "connections": "Verbindungen",
+  "established": "Etabliert",
   "listener-addresses": "Listener-Adressen",
   "miners": "Miner",
   "network-info": "Netzwerkinformationen",
@@ -10,7 +10,7 @@
   "p2pool-connection-info-more": "Verbindungsdetails",
   "p2pool-peers": "P2pool-Peers",
   "p2pool-stats": "Pool-Mining-Statistiken",
-  "pending": "Pending",
+  "pending": "Ausstehend",
   "randomx-stats": "RandomX-Statistiken",
   "sha3-stats": "SHA3-Statistiken",
   "tribe": "Stamm"
