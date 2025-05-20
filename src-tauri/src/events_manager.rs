@@ -26,8 +26,8 @@ use log::error;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
-use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::airdrop::send_new_block_mined;
+use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::ConnectionStatusPayload;
