@@ -1,10 +1,10 @@
 {
   "actions": {
-    "earn-gems": "Earn gems",
-    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
-    "earn-gems-cta": "Connect X Account",
-    "mode": "Customize Mode",
-    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+    "earn-gems": "Gagner des gemmes",
+    "earn-gems-copy": "Connectez votre compte social pour gagner des gemmes en invitant des amis",
+    "earn-gems-cta": "Connecter le compte X",
+    "mode": "Personnaliser le mode",
+    "mode-copy": "Saviez-vous que vous pouvez personnaliser l\"intensité de minage de votre machine ?"
   },
   "could-not-auto-update": "Nous n\"avons pas pu mettre à jour automatiquement Tari Universe vers {{version}} pendant que la machine était verrouillée ou en mode veille.",
   "dont-worry": "Ne t'inquiète pas, la prochaine fois, ça ne prendra pas autant de temps.",
@@ -13,8 +13,8 @@
   "no": "Non",
   "setting-up": "Mise en place de la machine à vérités de Tari...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Connexion au réseau Tari",
+    "subheader": "Synchronisation avec le réseau Tari"
   },
   "this-might-take-a-few-minutes": "Cela peut prendre quelques minutes",
   "title": {

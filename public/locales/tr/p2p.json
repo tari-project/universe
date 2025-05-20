@@ -1,6 +1,6 @@
 {
-  "connections": "connections",
-  "established": "Established",
+  "connections": "bağlantılar",
+  "established": "Kuruldu",
   "listener-addresses": "Dinleyici adresleri",
   "miners": "Madenciler",
   "network-info": "Ağ bilgisi",
@@ -10,7 +10,7 @@
   "p2pool-connection-info-more": "Bağlantı detayları",
   "p2pool-peers": "P2pool eşleri",
   "p2pool-stats": "Havuz madenciliği istatistikleri",
-  "pending": "Pending",
+  "pending": "Beklemede",
   "randomx-stats": "RandomX İstatistikleri",
   "sha3-stats": "SHA3 İstatistikleri",
   "tribe": "Kabile"
