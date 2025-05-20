@@ -464,6 +464,10 @@ jobs:
           echo "Downloaded artifact:"
           ls -la "${{ github.workspace }}"
 
+      - name: Install unzip if missing
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
+
       - name: Run create-latest-json.sh
         shell: bash
         run: |
