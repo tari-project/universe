@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "Вы можете столкнуться с форками и колебаниями хешрейта, пока сеть стабилизируется в течение следующих ~15 дней.",
+    "body-copy-highlight": "Tari совершенно новый!",
+    "is-live": "в эфире"
   },
   "field-error-message": {
     "integers-only": "Допускаются только целые числа",
@@ -36,9 +36,9 @@
     "title": "Возобновление Tari Universe"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "Рождение сети с доказательством работы — это особенное событие. В первые дни сети нужно время, чтобы стабилизироваться и найти свой ритм. Мы называем это \"фазой разогрева\".\nУчастники и ранние сторонники сети Tari (такие как биржи и инфраструктурные партнеры) ожидают, что фаза разогрева продлится около 15 дней. После этого сеть перейдет в более стабильное состояние.\nВо время фазы разогрева некоторые особенности являются нормальными. Вы можете заметить колебания времени блока, временные отключения, задержки синхронизации или даже кратковременные форки, требующие переподключения вашего узла к основной цепи.\nФаза разогрева — отличное время для майнинга, так как вознаграждения за блок наивысшие. Мы надеемся, что первые дни сети Tari будут для вас вознаграждающими.\nПусть игры начнутся. Пусть блоки всегда будут в вашу пользу!",
+    "subtitle": "Что это значит?",
+    "tag-line": "Добро пожаловать в основную сеть Tari",
+    "title": "Фаза разогрева"
   }
 }
