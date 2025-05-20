@@ -480,6 +480,13 @@ jobs:
           name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
 
+      - name: Upload exe artifact
+        id: upload-exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tari Universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
+          path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
+
       - name: Upload dmg artifact
         id: upload-dmg
         uses: actions/upload-artifact@v4

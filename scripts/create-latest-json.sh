@@ -84,7 +84,7 @@ fi
 
 
 # Output JSON file
-OUTPUT_FILE="latest-{$ID}.json"
+OUTPUT_FILE="latest-${ID}.json"
 
 # Base directory for extracted artifacts
 BASE_DIR=$(pwd)
@@ -193,14 +193,22 @@ process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-22.04-x64" "ubuntu-22.04" 
 process_artifact "${BASE_DIR}/${ID}_${VERSION}_ubuntu-24.04-arm" "ubuntu-24.04-arm" "${URL_ARRAY[1]:-}"
 process_artifact "${BASE_DIR}/${ID}_${VERSION}_macos-latest" "macos-latest" "${URL_ARRAY[2]:-}"
 process_artifact "${BASE_DIR}/${ID}_${VERSION}_windows-latest" "windows-latest" "${URL_ARRAY[3]:-}"
+prepare_directory_files "${BASE_DIR}/${ID}_${VERSION}_x64_en-US" "windows-exe"
 
 # get file from $BASE_DIR/macos-latest/dmg add its name to variable and move to root
 macos_dmg_file=$(find "$BASE_DIR/macos-latest/dmg" -type f -name "*.dmg" | head -n 1)
 if [[ -z "$macos_dmg_file" ]]; then
   echo "Error: Could not find macOS dmg file"
-  exit 1
+else
+  mv "$macos_dmg_file" "$BASE_DIR"
 fi
-mv "$macos_dmg_file" "$BASE_DIR"
+
+windows_exe_file=$(find "$BASE_DIR/windows-exe" -type f -name "*en-US.exe" | head -n 1)
+if [[ -z "$windows_exe_file" ]]; then
+  echo "Error: Could not find Windows exe file"
+else
+  mv "$windows_exe_file" "$BASE_DIR"
+fi
 
 
 echo "Generated $OUTPUT_FILE:"
