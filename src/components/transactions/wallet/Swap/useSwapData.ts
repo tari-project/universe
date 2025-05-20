@@ -356,6 +356,12 @@ export const useSwapData = () => {
         shouldCalculate.current = true;
     }, []);
 
+    useEffect(() => {
+        if (!processingOpen) {
+            clearCalculatedDetails();
+        }
+    }, [clearCalculatedDetails, processingOpen, swapSuccess]);
+
     const shouldCalculate = useRef(true);
     const calcRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -434,7 +440,6 @@ export const useSwapData = () => {
                 }
             } else {
                 // INSUFFICIENT LIQUIDITY OR NO TRADE FOUND
-                clearCalculatedDetails();
                 let errorMessage = 'Insufficient liquidity for this trade.';
                 if (details && details.route && !details.trade) {
                     errorMessage = 'A route was found, but there is insufficient liquidity to execute the trade.';
@@ -447,22 +452,21 @@ export const useSwapData = () => {
         } catch (e: any) {
             setIsLoading(false);
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
-            clearCalculatedDetails();
         } finally {
             setIsLoading(false);
             shouldCalculate.current = false;
         }
     }, [
-        ethTokenAmount,
-        wxtmAmount,
-        lastUpdatedField,
-        uiDirection,
         sdkToken0,
         sdkToken1,
+        lastUpdatedField,
+        uiDirection,
+        ethTokenAmount,
         fromUiTokenDefinition,
+        wxtmAmount,
         toUiTokenDefinition,
-        getTradeDetails,
         clearCalculatedDetails,
+        getTradeDetails,
         addToast,
     ]);
 
@@ -502,7 +506,6 @@ export const useSwapData = () => {
             setTradeDetails(null);
             setPriceImpact(null);
             setNetworkFee(null);
-            setSlippage(null);
             setIsLoading(false);
             if (calcRef.current) clearTimeout(calcRef.current);
             return;

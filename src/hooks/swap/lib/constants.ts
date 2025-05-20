@@ -58,7 +58,7 @@ export const ENABLED_TOKEN_ADDRESSES = {
 export const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
     // TODO - have these on config
     [ChainId.MAINNET]: 'https://rpc.ankr.com/eth',
-    [ChainId.SEPOLIA]: 'https://sepolia.drpc.org',
+    [ChainId.SEPOLIA]: 'https://ethereum-sepolia-rpc.publicnode.com',
 };
 
 export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {
@@ -93,7 +93,7 @@ function initializeKnownSdkTokens() {
 }
 initializeKnownSdkTokens();
 
-export const DEFAULT_CHAIN_ID = ChainId.MAINNET;
+export const DEFAULT_CHAIN_ID = window.location.host.startsWith('localhost:') ? ChainId.SEPOLIA : ChainId.MAINNET;
 
 export const SLIPPAGE_TOLERANCE = new Percent('50', '10000'); // 0.5%
 export const DEADLINE_MINUTES = 20;
