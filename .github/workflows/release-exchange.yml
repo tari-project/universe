@@ -584,15 +584,20 @@ jobs:
           path: latest-${{matrix.exchange.id}}.json
 
       - name: Upload latest.json [AWS]
+        id: upload-latest-to-aws
         if: ${{ inputs.destination == 'aws' }}
         shell: bash
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
           aws s3 cp latest-${{matrix.exchange.id}}.json s3://${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json --checksum-algorithm=CRC32
       - name: latest.json invalidation
         continue-on-error: true
-        if: ${{ inputs.destination == 'aws' }}
+        if: ${{ ( inputs.destination == 'aws' ) && ( steps.upload-latest-to-aws.outcome == 'success' ) }}
         env:
           BASE_TLD: ${{ secrets.BASE_TLD }}
           BASE_URL: ${{ secrets.BASE_URL }}
