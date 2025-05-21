@@ -64,9 +64,9 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles deb,appimage'
-          #   best_effort: true
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles deb,appimage'
+            best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -75,10 +75,10 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          # - platform: 'windows-latest'
-          #   args: '--bundles msi'
-          # - platform: 'macos-latest'
-          #   args: '--target universal-apple-darwin'
+          - platform: 'windows-latest'
+            args: '--bundles msi'
+          - platform: 'macos-latest'
+            args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -613,14 +613,14 @@ jobs:
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
 
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
 
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
 
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz"
-          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz.sig"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz.sig"
 
           ls -la "${{ github.workspace }}"
 
