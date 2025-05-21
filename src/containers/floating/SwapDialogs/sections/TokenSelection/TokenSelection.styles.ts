@@ -57,7 +57,8 @@ export const TokenValue = styled.div`
         font-size: 0.875rem;
         color: ${({ theme }) => theme.palette.text.secondary};
         border-radius: 100px;
-        background: ${({ theme }) => theme.palette.background.secondary};
+        background: ${({ theme }) => theme.palette.background.main};
+        border: 1px solid ${({ theme }) => theme.palette.divider};
         padding: 2px 6px;
         margin-top: 4px;
     }

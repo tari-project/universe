@@ -68,6 +68,7 @@ export const useSwapData = () => {
     const [transactionId, setTransactionId] = useState<string | null>(null);
     const [paidTransactionFee, setPaidTransactionFee] = useState<string | null>(null);
     const [txBlockHash, setTxBlockHash] = useState<`0x${string}` | null>(null);
+    const [swapError, setSwapError] = useState<string | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
 
@@ -81,6 +82,7 @@ export const useSwapData = () => {
         getTradeDetails,
         checkAndRequestApproval,
         executeSwap,
+        insufficientLiquidity,
         error: useSwapError,
     } = useUniswapV2Interactions();
 
@@ -181,11 +183,11 @@ export const useSwapData = () => {
         if (!fromTokenDisplay.rawBalance || !ethTokenAmount || !fromTokenDisplay.decimals) return false;
         try {
             const amountBigInt = viemParseUnits(ethTokenAmount, fromTokenDisplay.decimals);
-            return amountBigInt > fromTokenDisplay.rawBalance;
+            return amountBigInt > fromTokenDisplay.rawBalance && uiDirection === 'toXtm';
         } catch {
             return true;
         }
-    }, [fromTokenDisplay.rawBalance, ethTokenAmount, fromTokenDisplay.decimals]);
+    }, [fromTokenDisplay.rawBalance, fromTokenDisplay.decimals, ethTokenAmount, uiDirection]);
 
     const baseSelectableTokensForList = useMemo((): Omit<
         SelectableTokenInfo,
@@ -346,6 +348,7 @@ export const useSwapData = () => {
     ]);
 
     const clearCalculatedDetails = useCallback(() => {
+        setSwapError(null);
         setTradeDetails(null);
         setPriceImpact(null);
         setNetworkFee(null);
@@ -442,17 +445,7 @@ export const useSwapData = () => {
                         }
                     }
                 }
-            } else {
-                // INSUFFICIENT LIQUIDITY OR NO TRADE FOUND
-                let errorMessage = 'Insufficient liquidity for this trade.';
-                if (details && details.route && !details.trade) {
-                    errorMessage = 'A route was found, but there is insufficient liquidity to execute the trade.';
-                } else if (details && !details.route && !details.trade) {
-                    errorMessage = 'No trade route found between these tokens or insufficient liquidity.';
-                }
-                addToast({ title: 'Error', text: errorMessage, type: 'error' });
-            }
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {
             setIsLoading(false);
             addToast({ title: 'Calculation Error', text: e.message || 'Failed to get quote.', type: 'error' });
@@ -492,6 +485,7 @@ export const useSwapData = () => {
     const handleNumberInput = (value: string, field: SwapField) => {
         setReviewSwap(false);
         setTransactionId(null);
+        setSwapError(null);
         const currentUiTokenDef = field === 'ethTokenField' ? fromUiTokenDefinition : toUiTokenDefinition;
         const maxDecimals = currentUiTokenDef?.decimals ?? 18;
         let processedValue = value;
@@ -717,6 +711,8 @@ export const useSwapData = () => {
         displayPrice,
         handleToggleUiDirection,
         clearCalculatedDetails,
+        insufficientLiquidity,
+        error: swapError,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),
     };

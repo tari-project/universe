@@ -83,8 +83,8 @@ export const WalletContents = ({ isOpen, setIsOpen, availableTokens }: Props) =>
                                         </TokenInfo>
                                     </TokenItemLeft>
                                     <TokenItemRight>
-                                        <span className="usd">{token.usdValue || '—'}</span>
-                                        <span className="balance">{token.balance || '—'}</span>
+                                        {token.usdValue && <span className="usd">{token.usdValue}</span>}
+                                        <span className="balance">{token.balance || `0.000 ${token.symbol}`}</span>
                                     </TokenItemRight>
                                 </TokenItem>
                                 {index < availableTokens.length - 1 && <TokenSeparator />}

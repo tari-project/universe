@@ -1,5 +1,5 @@
 import { Token, WETH9, CurrencyAmount, TradeType, Ether, NativeCurrency } from '@uniswap/sdk-core';
-import { Pair, Route, Trade } from '@uniswap/v2-sdk';
+import { InsufficientReservesError, Pair, Route, Trade } from '@uniswap/v2-sdk';
 import { useAccount, usePublicClient, useWalletClient } from 'wagmi';
 import { Contract, ethers, Signer as EthersSigner, Provider, TransactionResponse } from 'ethers';
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -32,6 +32,7 @@ export const useUniswapV2Interactions = () => {
     const [direction, setDirection] = useState<SwapDirection>('toXtm');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [insufficientLiquidity, setInsufficientLiquidity] = useState(false);
     const [isApproving, setIsApproving] = useState(false);
     const [isFetchingPair, setIsFetchingPair] = useState(false);
     const addToast = useToastStore((s) => s.addToast);
@@ -131,6 +132,7 @@ export const useUniswapV2Interactions = () => {
     // ---------- Clear errors ----------
     useEffect(() => {
         setError(null);
+        setInsufficientLiquidity(false);
     }, [sdkToken0, sdkToken1, pairTokenAddress, direction, currentChainId]);
 
     // ---------- Route and Pair ----------
@@ -208,8 +210,12 @@ export const useUniswapV2Interactions = () => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } catch (e: any) {
                 console.error('Error creating trade object:', e);
-                if (e.message?.includes('LIQUIDITY')) setError('Insufficient liquidity for this trade.');
-                else setError(`Error calculating trade: ${e.message || 'Unknown error'}`);
+                if (e instanceof InsufficientReservesError) {
+                    setError('Insufficient liquidity for this trade.');
+                    setInsufficientLiquidity(true);
+                } else {
+                    setError(`Error calculating trade: ${e.message || 'Unknown error'}`);
+                }
                 return { trade: null, route, inputAmount: trade?.inputAmount, outputAmount: trade?.outputAmount };
             }
 
@@ -732,6 +738,7 @@ export const useUniswapV2Interactions = () => {
         checkAndRequestApproval,
         executeSwap,
         addLiquidity,
+        insufficientLiquidity,
         removeAllLiquidity,
         isReady:
             !!signer &&

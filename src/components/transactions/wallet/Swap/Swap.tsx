@@ -13,6 +13,8 @@ import {
     SwapOption,
     SwapOptionAmount,
     SwapOptionCurrency,
+    SwapErrorMessage,
+    SwapsContainer,
 } from './Swap.styles';
 import { useAccount } from 'wagmi';
 import { getCurrencyIcon } from '@app/containers/floating/SwapDialogs/helpers/getIcon';
@@ -27,7 +29,7 @@ import { Chevron } from '@app/assets/icons/Chevron';
 import { useSwapData } from './useSwapData';
 import { TokenSelection } from '@app/containers/floating/SwapDialogs/sections/TokenSelection/TokenSelection';
 import { truncateMiddle } from '@app/utils';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { WalletContents } from '@app/containers/floating/SwapDialogs/sections/WalletContents/WalletContents';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
@@ -57,6 +59,9 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
         transaction,
         tokenSelectOpen,
         selectableFromTokens,
+        error,
+        useSwapError,
+        insufficientLiquidity,
         setProcessingOpen,
         setFromAmount,
         setTargetAmount,
@@ -67,8 +72,15 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
         handleSelectFromToken,
     } = useSwapData();
 
+    const errorMsg = useSwapError || error;
+
+    const disabled = useMemo(() => {
+        const hasAmount = Number(ethTokenAmount || wxtmAmount);
+        return Boolean(isLoading || !hasAmount || insufficientLiquidity || notEnoughBalance);
+    }, [isLoading, notEnoughBalance, insufficientLiquidity, ethTokenAmount, wxtmAmount]);
+
     return (
-        <>
+        <SwapsContainer>
             <TabHeader $noBorder>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
@@ -136,16 +148,9 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay.balance}`}</span> : null}
             </SwapOption>
-
+            {errorMsg && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>}
             <SubmitButtonWrapper>
-                <WalletButton
-                    variant="primary"
-                    onClick={() => setReviewSwap(true)}
-                    size="xl"
-                    disabled={Boolean(
-                        notEnoughBalance || !Number(uiDirection === 'toXtm' ? ethTokenAmount : wxtmAmount) || isLoading
-                    )}
-                >
+                <WalletButton variant="primary" onClick={() => setReviewSwap(true)} size="xl" disabled={disabled}>
                     {isLoading ? t('swap.loading') : t('swap.review-swap')}
                 </WalletButton>
             </SubmitButtonWrapper>
@@ -185,6 +190,6 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
 
             <SignApprovalMessage isOpen={isProcessingApproval} setIsOpen={setProcessingOpen} />
             {/* ////////////////////////////////// */}
-        </>
+        </SwapsContainer>
     );
 };

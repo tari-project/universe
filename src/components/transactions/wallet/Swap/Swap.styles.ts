@@ -1,6 +1,13 @@
 import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import styled, { css } from 'styled-components';
 
+export const SwapsContainer = styled.div`
+    // width: 100%;
+    // position: absolute;
+    // bottom: 0;
+    // left: 0;
+`;
+
 export const SwapOption = styled.div`
     width: 100%;
     margin-top: 5px;
@@ -200,4 +207,16 @@ export const ConnectedWalletWrapper = styled.div`
 export const SubmitButtonWrapper = styled.div`
     width: 100%;
     margin-top: 20px;
+`;
+
+export const SwapErrorMessage = styled.div`
+    color: ${({ theme }) => theme.palette.error.main};
+    font-size: 12px;
+    font-family: Poppins, sans-serif;
+    margin-top: 10px;
+    margin-bottom: -10px;
+    min-height: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
