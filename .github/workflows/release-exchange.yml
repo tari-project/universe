@@ -597,7 +597,8 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          BASE_PATH: s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}/
+          BASE_PATH: s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}
+
         run: |
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
