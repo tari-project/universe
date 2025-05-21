@@ -99,6 +99,8 @@ jobs:
           AIRDROP_WEBSOCKET_CRYPTO_KEY: ${{ secrets.PROD_AIRDROP_WEBSOCKET_CRYPTO_KEY }}
           # Used for linux formatting
           OS_BINARY_NAME: ${{ runner.os == 'Linux' && 'tari_universe' || 'Tari Universe' }}
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
         shell: bash
         run: |
           #set -xueo pipefail
@@ -112,7 +114,7 @@ jobs:
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".plugins.updater.endpoints = [\"https://cdn-universe.tari.com/tari-project/universe/updater/latest-${{ matrix.exchange.id }}.json\"]" \
+          yq eval ".plugins.updater.endpoints = [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${TU_VERSION}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json\"]" \
             --output-format=json -i tauri.conf.json
           echo "APP_VERSION=${TU_VERSION}" >> $GITHUB_OUTPUT
 
@@ -474,6 +476,7 @@ jobs:
           sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}"
 
       - name: Upload msi artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-msi
         uses: actions/upload-artifact@v4
@@ -482,6 +485,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi
 
       - name: Upload exe artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-exe
         uses: actions/upload-artifact@v4
@@ -490,6 +494,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.exe
 
       - name: Upload dmg artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-dmg
         uses: actions/upload-artifact@v4
@@ -498,6 +503,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_universal.dmg
 
       - name: Upload app.tar.gz artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-tar
         uses: actions/upload-artifact@v4
@@ -506,6 +512,7 @@ jobs:
           path: Tari Universe-${{ matrix.exchange.name }}.app.tar.gz
 
       - name: Upload AppImage amd64 artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-amd64
         uses: actions/upload-artifact@v4
@@ -514,6 +521,7 @@ jobs:
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage
 
       - name: Upload AppImage aarch64 artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-aarch64
         uses: actions/upload-artifact@v4
@@ -521,6 +529,7 @@ jobs:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage
       - name: Upload rpm aarch64 artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-rpm-aarch
         uses: actions/upload-artifact@v4
@@ -529,6 +538,7 @@ jobs:
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1_aarch64.rpm
 
       - name: Upload rpm amd64 artifact
+        if: ${{ inputs.destination == 'github' }}
         continue-on-error: true
         id: upload-rpm-amd64
         uses: actions/upload-artifact@v4
@@ -536,14 +546,62 @@ jobs:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
 
+      - name: Construct binaries download urls [GitHub]
+        shell: bash
+        run: |
+          echo "MSI_URL=${{ steps.upload-msi.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "EXE_URL=${{ steps.upload-exe.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "DMG_URL=${{ steps.upload-dmg.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "TAR_URL=${{ steps.upload-tar.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "AMD64_URL=${{ steps.upload-amd64.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "AARCH64_URL=${{ steps.upload-aarch64.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "RPM_AARCH64_URL=${{ steps.upload-rpm-aarch.outputs.artifact-url }}" >> $GITHUB_ENV
+          echo "RPM_AMD64_URL=${{ steps.upload-rpm-amd64.outputs.artifact-url }}" >> $GITHUB_ENV
+
+        # https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md
+      - name: Construct binaries download urls [ AWS ]
+        env:
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+        shell: bash
+        run: |
+          echo "BASE_PATH=https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}" >> $GITHUB_ENV
+          echo "MSI_URL=${BASE_PATH}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
+          echo "AMD64_URL=${BASE_PATH}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
+          echo "AARCH64_URL=${BASE_PATH}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
+          echo "TAR_URL=${BASE_PATH}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz" >> $GITHUB_ENV
+
       - name: Reconstruct latest.json
         shell: bash
         run: |
-          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ steps.upload-msi.outputs.artifact-url }},${{ steps.upload-dmg.outputs.artifact-url }},${{ steps.upload-tar.outputs.artifact-url }},${{ steps.upload-amd64.outputs.artifact-url }},${{ steps.upload-aarch64.outputs.artifact-url }}"
+          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ env.AMD64_URL }},${{ env.AARCH64_URL }},${{ env.TAR_URL }},${{ env.MSI_URL }}"
           ls -la "${{ github.workspace }}"
 
-      - name: Upload latest.json
+      - name: Upload latest.json [GitHub]
+        if: ${{ inputs.destination == 'github' }}
         uses: actions/upload-artifact@v4
         with:
           name: latest-${{matrix.exchange.id}}.json
           path: latest-${{matrix.exchange.id}}.json
+
+      - name: Upload latest.json [AWS]
+        if: ${{ inputs.destination == 'aws' }}
+        shell: bash
+        env:
+          BASE_URL: ${{ secrets.BASE_URL }}
+        run: |
+          aws s3 cp latest-${{matrix.exchange.id}}.json s3://${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json --checksum-algorithm=CRC32
+      - name: latest.json invalidation
+        continue-on-error: true
+        if: ${{ inputs.destination == 'aws' }}
+        env:
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          CF_AUTHORIZATION_BEARER: ${{ secrets.CF_AUTHORIZATION_BEARER }}
+        run: |
+          curl --request POST \
+            --url https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache \
+            --header "Content-Type: application/json" \
+            --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
+            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json\"] }"
