@@ -39,8 +39,8 @@ export const EmojiAddressWrapper = styled.div`
     }
     span {
         font-size: 20px;
-        font-weight: 600;
-        letter-spacing: -1.6px;
+        font-weight: 800;
+        letter-spacing: 2px;
     }
 `;
 
