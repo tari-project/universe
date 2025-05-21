@@ -61,12 +61,12 @@ jobs:
       matrix:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
         platforms:
-          - platform: 'ubuntu-22.04'
-            args: '--bundles deb,appimage'
-            extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # - platform: 'ubuntu-22.04'
+          #   args: '--bundles deb,appimage'
+          #   extra: '-x64'
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -75,8 +75,8 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
@@ -389,7 +389,7 @@ jobs:
         run: |
           paths=$(echo '${{ steps.build.outputs.artifactPaths }}' | jq -c '.[]' | sed 's/"//g')
           for path in $paths; do
-            if [[ -f $path ]]; then
+            if [[ -f $path || -d $path ]]; then
               echo "Uploading $path"
               aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 
             fi
@@ -611,21 +611,25 @@ jobs:
 
           echo "Downloading artifacts from CDN"
 
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
-          echo "Downloading ubuntu-22.04-x64 artifacts"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
+          # echo "Downloaded ubuntu-22.04-x64 appimage"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
+          # echo "Downloaded ubuntu-22.04-x64 appimage.sig"
 
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
-          echo "Downloading ubuntu-24.04-arm artifacts"
-
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
-          echo "Downloading windows-latest artifacts"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
+          # echo "Downloaded ubuntu-24.04-arm appimage"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
+          # echo "Downloaded ubuntu-24.04-arm appimage.sig"
 
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}.app.tar.gz"
+          echo "Downloaded macos_latest app.tar.gz"
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}.app.tar.gz.sig"
-          echo "Downloading macos_latest artifacts"
+          echo "Downloaded macos_latest app.tar.gz.sig"
+
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
+          # echo "Downloaded windows-latest msi"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
+          # echo "Downloaded windows-latest msi.sig"
 
           ls -la "${{ github.workspace }}"
 
