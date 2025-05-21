@@ -27,7 +27,7 @@ export interface ActiveTapplet {
 export interface SendOneSidedRequest {
     amount: string;
     address: string;
-    paymentId: string;
+    paymentId?: string;
 }
 
 export interface BridgeTxDetails {

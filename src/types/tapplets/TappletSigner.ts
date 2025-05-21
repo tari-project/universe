@@ -69,15 +69,10 @@ export class TappletSigner {
 
     public async sendOneSided(req: SendOneSidedRequest): Promise<boolean> {
         try {
-            const payload = {
+            await invoke('send_one_sided_to_stealth_address', {
                 amount: req.amount,
                 destination: req.address,
                 paymentId: req.paymentId,
-            };
-
-            await invoke('send_one_sided_to_stealth_address', {
-                ...payload,
-                amount: payload.amount.toString(),
             });
             return true;
         } catch (error) {
@@ -86,7 +81,6 @@ export class TappletSigner {
         }
     }
 
-    // TODO tmp test
     public async getTariBalance(): Promise<WalletBalance> {
         const balance = await invoke('get_tari_wallet_balance');
         return balance;

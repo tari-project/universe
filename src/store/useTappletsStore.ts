@@ -1,5 +1,5 @@
 import { create } from './create.ts';
-import { ActiveTapplet, BridgeTxDetails, SendOneSidedRequest } from '@app/types/tapplets/tapplet.types.ts';
+import { ActiveTapplet, BridgeTxDetails } from '@app/types/tapplets/tapplet.types.ts';
 import { useTappletSignerStore } from './useTappletSignerStore.ts';
 import { invoke } from '@tauri-apps/api/core';
 import { FEATURES } from './consts.ts';
