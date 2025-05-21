@@ -363,14 +363,13 @@ jobs:
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: Builds - Upload assets [ GitHub ]
-        if: ${{( startsWith(inputs.destination, 'github' )) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Bundled Windows installer upload [ GitHub ]
-        if: ${{ startsWith(runner.os,'Windows') && ( startsWith(inputs.destination, 'github' ) ) }}
+        if: ${{ startsWith(runner.os,'Windows') }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
