@@ -389,10 +389,8 @@ jobs:
         run: |
           paths=$(echo '${{ steps.build.outputs.artifactPaths }}' | jq -c '.[]' | sed 's/"//g')
           for path in $paths; do
-            if [[ -f $path || -d $path ]]; then
               echo "Uploading $path"
               aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 
-            fi
           done
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) }}
