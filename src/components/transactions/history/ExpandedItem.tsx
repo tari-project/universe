@@ -55,6 +55,7 @@ const ItemExpand = memo(function ItemExpand({ item, expanded, handleClose }: Pro
         }, 300);
     }, [showHidden]);
 
+
     const entries = Object.entries(item)
         .filter(([key]) => showHidden || !hiddenKeys.includes(key))
         .map(([key, value]) => {

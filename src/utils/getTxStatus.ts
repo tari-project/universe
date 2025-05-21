@@ -1,9 +1,6 @@
-import { TransactionStatus, StatusMapped } from '@app/types/transactions.ts';
+import { TransactionStatus } from '@app/types/transactions.ts';
 
-export function getTxStatus(_status = 3) {
-    const bla = Object.keys(TransactionStatus);
-    const bla2 = Object.keys(StatusMapped);
-    const bla3 = bla[_status];
-    const bla4 = bla2[_status];
-    const bla5 = TransactionStatus[bla4];
+export function getTxStatusString(statusNumber: number): string {
+    const keyNamesOnly = Object.keys(TransactionStatus).filter((key) => isNaN(Number(key)));
+    return keyNamesOnly[statusNumber];
 }

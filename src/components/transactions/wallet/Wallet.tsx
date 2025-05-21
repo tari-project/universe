@@ -23,7 +23,6 @@ import { SyncButton, TabsTitle, TabsWrapper, Wrapper } from './wallet.styles.ts'
 import { memo } from 'react';
 import { useTariBalance } from '@app/hooks/wallet/useTariBalance.ts';
 import ArrowRight from './ArrowRight.tsx';
-import { getTxStatus } from '@app/utils/getTxStatus.ts';
 
 interface Props {
     section: string;
@@ -40,7 +39,6 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
     const displayAddress = truncateMiddle(walletAddress, 4);
 
     const { isWalletScanning, formattedAvailableBalance } = useTariBalance();
-    getTxStatus();
 
     return (
         <Wrapper>

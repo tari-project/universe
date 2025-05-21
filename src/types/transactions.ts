@@ -1,6 +1,10 @@
-// based on the enum from tari.rpc.rs - update this file if there are changes there!
+// based on the enums from tari.rpc.rs - update this file if there are changes there!
 
-// DO not change the order
+export enum TransactionDirection {
+    Inbound = 1,
+    Outbound = 2,
+}
+
 export enum TransactionStatus {
     Completed = 0,
     Broadcast = 1,
@@ -17,27 +21,4 @@ export enum TransactionStatus {
     CoinbaseUnconfirmed = 12,
     CoinbaseConfirmed = 13,
     CoinbaseNotInBlockChain = 14,
-}
-
-export enum StatusMapped {
-    Completed = 'Completed',
-    Broadcast = 'Broadcast',
-    MinedUnconfirmed = 'MinedUnconfirmed',
-    Imported = 'Imported',
-    Pending = 'Pending',
-    Coinbase = 'Coinbase',
-    MinedConfirmed = 'MinedConfirmed',
-    Rejected = 'Rejected',
-    OneSidedUnconfirmed = 'OneSidedUnconfirmed',
-    OneSidedConfirmed = 'OneSidedConfirmed',
-    Queued = 'Queued',
-    NotFound = 'NotFound',
-    CoinbaseUnconfirmed = 'CoinbaseUnconfirmed',
-    CoinbaseConfirmed = 'CoinbaseConfirmed',
-    CoinbaseNotInBlockChain = 'CoinbaseNotInBlockChain',
-}
-
-export enum TransactionDirection {
-    Inbound = 1,
-    Outbound = 2,
 }

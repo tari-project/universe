@@ -3,7 +3,6 @@ import { TransactionDirection as D, TransactionStatus as S } from '@app/types/tr
 import { TransationType } from '@app/components/transactions/types.ts';
 import i18n from 'i18next';
 import { useConfigUIStore } from '@app/store';
-import { getTxStatus } from '@app/utils/getTxStatus.ts';
 
 interface GetTitleArgs {
     itemType: TransationType;
@@ -11,11 +10,11 @@ interface GetTitleArgs {
     message?: string;
 }
 
+const MINED_TX = [S.MinedConfirmed, S.MinedConfirmed, S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
+const ONE_SIDED_TX = [S.OneSidedConfirmed, S.OneSidedUnconfirmed];
 function getItemType(item: TransactionInfo): TransationType {
-    const mined = [S.MinedConfirmed, S.MinedConfirmed, S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
-    const oneSided = [S.OneSidedConfirmed, S.OneSidedUnconfirmed];
-
-    const isMined = item.direction === D.Inbound && mined.includes(item.status) && !oneSided.includes(item.status);
+    const isMined =
+        item.direction === D.Inbound && MINED_TX.includes(item.status) && !ONE_SIDED_TX.includes(item.status);
 
     if (isMined) {
         return 'mined';
