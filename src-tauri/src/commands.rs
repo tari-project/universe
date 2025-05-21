@@ -921,6 +921,17 @@ pub async fn set_allow_telemetry(allow_telemetry: bool) -> Result<(), InvokeErro
 }
 
 #[tauri::command]
+pub async fn set_allow_notifications(allow_notifications: bool) -> Result<(), InvokeError> {
+    ConfigCore::update_field(
+        ConfigCoreContent::set_allow_notifications,
+        allow_notifications,
+    )
+    .await
+    .map_err(InvokeError::from_anyhow)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn send_data_telemetry_service(
     state: tauri::State<'_, UniverseAppState>,
     event_name: String,

@@ -7,6 +7,7 @@ export interface ConfigCore {
     is_p2pool_enabled: boolean;
     use_tor: boolean;
     allow_telemetry: boolean;
+    allow_notifications: boolean;
     last_binaries_update_timestamp?: string;
     anon_id: string;
     should_auto_launch: boolean;
