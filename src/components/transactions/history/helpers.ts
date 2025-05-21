@@ -3,6 +3,7 @@ import { TransactionDirection as D, TransactionStatus as S } from '@app/types/tr
 import { TransationType } from '@app/components/transactions/types.ts';
 import i18n from 'i18next';
 import { useConfigUIStore } from '@app/store';
+import { getTxStatus } from '@app/utils/getTxStatus.ts';
 
 interface GetTitleArgs {
     itemType: TransationType;

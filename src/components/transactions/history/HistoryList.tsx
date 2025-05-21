@@ -11,6 +11,7 @@ import ListLoadingAnimation from '@app/containers/navigation/components/Wallet/L
 import ItemExpand from './ExpandedItem.tsx';
 import { PlaceholderItem } from './ListItem.styles.ts';
 import { LoadingText } from '@app/containers/navigation/components/Wallet/ListLoadingAnimation/styles.ts';
+import { getTxStatus } from '@app/utils/getTxStatus.ts';
 
 const HistoryList = memo(function HistoryList() {
     const { t } = useTranslation('wallet');
