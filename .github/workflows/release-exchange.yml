@@ -74,9 +74,9 @@ jobs:
           # - platform: 'ubuntu-24.04-arm'
           #   args: '--bundles rpm'
           #   extra: '-rpm'
-          #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
+          # #   best_effort: true
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
@@ -387,11 +387,14 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           EXCHANGE_NAME: ${{ matrix.exchange.name }}
         run: |
-          paths=$(echo '${{ steps.build.outputs.artifactPaths }}' | jq -c '.[]' | sed 's/"//g')
-          for path in $paths; do
-              echo "Uploading \"$path\""
-              aws s3 cp "$path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 --recursive
-          done
+          paths=$(echo "$input" | sed -e 's/^\[//' -e 's/\]$//' | tr ',' '\n')
+          while IFS= read -r path; do
+            # Remove surrounding quotes and trim whitespace
+            clean_path=$(echo "$path" | sed -e 's/^"//' -e 's/"$//' | xargs)
+            echo "$clean_path"
+            aws s3 cp "$clean_path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 --recursive
+          done <<< "$paths
+
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) }}
         shell: pwsh
@@ -624,10 +627,10 @@ jobs:
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}.app.tar.gz.sig"
           echo "Downloaded macos_latest app.tar.gz.sig"
 
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
-          echo "Downloaded windows-latest msi"
-          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
-          echo "Downloaded windows-latest msi.sig"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
+          # echo "Downloaded windows-latest msi"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
+          # echo "Downloaded windows-latest msi.sig"
 
           ls -la "${{ github.workspace }}"
 
