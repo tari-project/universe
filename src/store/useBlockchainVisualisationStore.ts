@@ -97,9 +97,7 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
     const visualModeEnabled = useConfigUIStore.getState().visual_mode;
-    console.debug(`visualModeEnabled= `, visualModeEnabled);
     if (canAnimate && visualModeEnabled) {
-        console.debug(`??????= `);
         setMiningControlsEnabled(false);
         setAnimationState('fail');
         if (failTimeout) {
