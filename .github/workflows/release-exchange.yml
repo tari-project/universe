@@ -597,11 +597,11 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          BASE_TLD: ${{ secrets.BASE_TLD }}
-          BASE_URL: ${{ secrets.BASE_URL }}
-          BASE_PATH: https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}
+          BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
 
         run: |
+          echo "BASE_PATH: ${BASE_PATH}"
+          echo "Creating directories for artifacts"
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64
@@ -609,6 +609,7 @@ jobs:
 
           # Get artifacts from CDN
 
+          # echo "Downloading artifacts from CDN"
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
           curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
 
