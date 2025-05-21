@@ -557,18 +557,15 @@ jobs:
           echo "RPM_AARCH64_URL=${{ steps.upload-rpm-aarch.outputs.artifact-url }}" >> $GITHUB_ENV
           echo "RPM_AMD64_URL=${{ steps.upload-rpm-amd64.outputs.artifact-url }}" >> $GITHUB_ENV
 
-        # https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/CHANGELOG.md
       - name: Construct binaries download urls [ AWS ]
         env:
-          BASE_TLD: ${{ secrets.BASE_TLD }}
-          BASE_URL: ${{ secrets.BASE_URL }}
+          BASE_PATH: https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}
         shell: bash
         run: |
-          echo "BASE_PATH=https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}" >> $GITHUB_ENV
-          echo "MSI_URL=${BASE_PATH}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
-          echo "AMD64_URL=${BASE_PATH}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
-          echo "AARCH64_URL=${BASE_PATH}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
-          echo "TAR_URL=${BASE_PATH}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz" >> $GITHUB_ENV
+          echo "MSI_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
+          echo "AMD64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
+          echo "AARCH64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
+          echo "TAR_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz" >> $GITHUB_ENV
 
       - name: Reconstruct latest.json
         shell: bash
