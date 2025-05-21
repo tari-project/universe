@@ -55,6 +55,7 @@
                     "'self'",
                     "https:",
                     "wss://ut.tari.com",
+                    "wss://relay.walletconnect.org",
                     "tauri:",
                     "ipc:",
                     "http://ipc.localhost",
