@@ -61,6 +61,7 @@ pub struct ConfigMiningContent {
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
+    squad_override: Option<String>,
 }
 
 impl Default for ConfigMiningContent {
@@ -80,6 +81,7 @@ impl Default for ConfigMiningContent {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
+            squad_override: None,
         }
     }
 }
@@ -163,6 +165,7 @@ impl ConfigImpl for ConfigMining {
                 gpu_mining_enabled: old_config.gpu_mining_enabled(),
                 cpu_mining_enabled: old_config.cpu_mining_enabled(),
                 ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
+                ..Default::default()
             };
             let _unused = Self::_save_config(self.content.clone());
         } else {

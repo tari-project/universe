@@ -17,7 +17,7 @@
   "giftReferralCode": "Заработайте {{gems}} гемов за каждого друга, которого Вы пригласите в Tari Universe. Как только они подключат свой аккаунт, Вы получите свои гемы.",
   "giftReferralCodeHeader": "Получите Ваш реферальный код <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> гемов.",
   "invite": "Пригласить",
-  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
+  "invite-friends-gems": "За каждого друга, который использует вашу ссылку-приглашение, вы получаете 5,000 драгоценных камней.",
   "inviteFriends": "Пригласить друзей",
   "inviteFriendsText": "Скопируйте ссылку и поделитесь ею",
   "invitedAmount": "Вы пригласили <span>{{count}}</span> друзей",
@@ -28,13 +28,13 @@
   "live": "в реальном времени",
   "logged-in-as": "Вход выполнен как <strong>@{{twitter}}</strong>",
   "loggedInTitle": "Награды Airdrop",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Пригласите друзей, чтобы заработать драгоценные камни",
   "loginButton": "Войдите, чтобы получить гемы",
   "logout": "Выйти",
   "nextTierBonus": "Пригласите <strong>{{count}} друзей</strong> и получите {{bonusGems}} бонусных гемов",
   "permission": {
     "setup": "Tari Universe хотел бы использовать аналитику для <strong>улучшения Вашего опыта.</strong>",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
+    "text": "Tari Universe хотел бы использовать аналитику, чтобы улучшить ваш опыт и вознаградить вас драгоценными камнями за приглашение друзей.",
     "title": "Зарабатывайте гемы и улучшайте Tari Universe"
   },
   "permissionNoGems": {
