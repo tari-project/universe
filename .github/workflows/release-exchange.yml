@@ -387,13 +387,13 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           EXCHANGE_NAME: ${{ matrix.exchange.name }}
         run: |
-          paths=$(echo "$input" | sed -e 's/^\[//' -e 's/\]$//' | tr ',' '\n')
+          paths=$(echo "${{ steps.build.outputs.artifactPaths }}" | sed -e 's/^\[//' -e 's/\]$//' | tr ',' '\n')
           while IFS= read -r path; do
             # Remove surrounding quotes and trim whitespace
             clean_path=$(echo "$path" | sed -e 's/^"//' -e 's/"$//' | xargs)
             echo "$clean_path"
             aws s3 cp "$clean_path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 --recursive
-          done <<< "$paths
+          done <<< "$paths"
 
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
         if: ${{ ( startsWith(runner.os,'Windows') ) && ( startsWith(inputs.destination, 'aws' ) ) }}
