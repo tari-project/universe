@@ -10,7 +10,7 @@ interface WalletButtonProps {
 
 export const WalletButton = ({ children, onClick, variant, size, disabled }: WalletButtonProps) => {
     return (
-        <StyledButton onClick={onClick} $variant={variant} $size={size} $disabled={disabled}>
+        <StyledButton onClick={onClick} $variant={variant} $size={size} $disabled={disabled} disabled={disabled}>
             {children}
         </StyledButton>
     );

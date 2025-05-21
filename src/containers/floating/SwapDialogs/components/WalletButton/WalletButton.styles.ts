@@ -1,7 +1,6 @@
 import styled, { css } from 'styled-components';
 
 export const WalletActionButton = styled.button<{
-    $disabled?: boolean;
     $variant?: 'primary' | 'secondary' | 'error' | 'success';
     $size?: 'small' | 'medium' | 'large' | 'xl';
 }>`
@@ -87,10 +86,8 @@ export const WalletActionButton = styled.button<{
         }
     }}
 
-    ${({ $disabled }) =>
-        $disabled &&
-        css`
-            opacity: 0.5;
-            pointer-events: none;
-        `}
+    &[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+    }
 `;

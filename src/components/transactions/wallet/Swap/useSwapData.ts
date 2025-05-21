@@ -8,7 +8,7 @@ import {
     formatUnits,
 } from 'viem';
 import { Token, NativeCurrency, WETH9, Ether, ChainId } from '@uniswap/sdk-core';
-import { EnabledTokensEnum, XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
+import { DEFAULT_CHAIN_ID, EnabledTokensEnum, XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
 import { SwapDirection, SwapField, TradeDetails } from '@app/hooks/swap/lib/types';
 import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
 
@@ -191,11 +191,11 @@ export const useSwapData = () => {
         SelectableTokenInfo,
         'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'
     >[] => {
-        if (!currentChainId) return [];
-        const xtmDef = XTM_SDK_TOKEN[currentChainId];
+        const chainId = currentChainId || DEFAULT_CHAIN_ID;
+        const xtmDef = XTM_SDK_TOKEN[chainId];
         const tokens: Omit<SelectableTokenInfo, 'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'>[] = [];
 
-        const nativeEth = Ether.onChain(currentChainId);
+        const nativeEth = Ether.onChain(chainId);
         if (nativeEth && (!xtmDef || !nativeEth.equals(xtmDef))) {
             const symbol = nativeEth?.symbol?.toUpperCase() as TokenSymbol;
             const iconSymbol = nativeEth?.symbol?.toLowerCase();
@@ -216,7 +216,7 @@ export const useSwapData = () => {
 
             switch (tokenKey) {
                 case EnabledTokensEnum.WETH:
-                    tokenDefinitionFromEnum = WETH9[currentChainId];
+                    tokenDefinitionFromEnum = WETH9[chainId];
                     break;
                 case EnabledTokensEnum.WXTM:
                     tokenDefinitionFromEnum = xtmDef;
@@ -289,11 +289,13 @@ export const useSwapData = () => {
         return baseSelectableTokensForList
             .map((baseToken) => {
                 let rawBalance: bigint | undefined;
-                let balanceStr: string;
+                let balanceStr: string | undefined;
 
                 if (baseToken.address === null) {
                     rawBalance = nativeTokenBalanceDataForList?.value;
-                    balanceStr = formatDisplayBalanceForSelectable(rawBalance, baseToken.decimals, baseToken.symbol);
+                    balanceStr = rawBalance
+                        ? formatDisplayBalanceForSelectable(rawBalance, baseToken.decimals, baseToken.symbol)
+                        : undefined;
                 } else {
                     const contractIndex = selectableTokensContracts.findIndex(
                         (c) => c.address.toLowerCase() === baseToken.address?.toLowerCase()
@@ -303,7 +305,9 @@ export const useSwapData = () => {
                     if (balanceResult?.status === 'success') {
                         rawBalance = balanceResult.result as bigint;
                     }
-                    balanceStr = formatDisplayBalanceForSelectable(rawBalance, baseToken.decimals, baseToken.symbol);
+                    balanceStr = rawBalance
+                        ? formatDisplayBalanceForSelectable(rawBalance, baseToken.decimals, baseToken.symbol)
+                        : undefined;
                 }
 
                 const pricePerToken = tokenPrices[baseToken.symbol];
