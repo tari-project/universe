@@ -21,7 +21,11 @@
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 use serde::Deserialize;
-use std::fmt::Write as _;
+use std::{
+    fmt::Write as _,
+    panic::{catch_unwind, AssertUnwindSafe},
+    time::Duration,
+};
 use tari_common::configuration::Network;
 
 pub fn retry_on_panic<T, F>(mut f: F, max_retries: usize, retry_delay_ms: u64) -> Option<T>
