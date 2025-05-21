@@ -115,6 +115,11 @@ impl ConfigWallet {
                 .await;
             }
         }
+        {
+
+            let mut cpu_config = state.cpu_miner_config.write().await;
+            cpu_config.load_from_config_wallet(&ConfigWallet::content().await);
+        }
 
         match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {

@@ -62,6 +62,9 @@ pub struct ConfigMiningContent {
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
     squad_override: Option<String>,
+    cpu_mining_pool_url: Option<String>,
+    cpu_mining_pool_status_url: Option<String>,
+    gpu_mining_pool_url: Option<String>,
 }
 
 impl Default for ConfigMiningContent {
@@ -82,6 +85,9 @@ impl Default for ConfigMiningContent {
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
             squad_override: None,
+            cpu_mining_pool_url: None,
+            cpu_mining_pool_status_url: None,
+            gpu_mining_pool_url: None,
         }
     }
 }
@@ -98,13 +104,11 @@ impl ConfigMining {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
         config.handle_old_config_migration(old_config);
-        state
-            .cpu_miner_config
-            .write()
-            .await
-            .load_from_config_mining(config._get_content());
-
-        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
+        {
+            let mut cpu_config = state.cpu_miner_config.write().await;
+            cpu_config.load_from_config_mining(config._get_content());
+            }
+                        EventsManager::handle_config_mining_loaded(&app_handle, config.content.clone()).await;
     }
 }
 

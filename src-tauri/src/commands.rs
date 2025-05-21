@@ -51,7 +51,7 @@ use crate::utils::app_flow_utils::FrontendReadyChannel;
 use crate::wallet_adapter::TransactionInfo;
 use crate::wallet_manager::WalletManagerError;
 use crate::websocket_manager::WebsocketManagerStatusMessage;
-use crate::{airdrop, UniverseAppState, APPLICATION_FOLDER_ID};
+use crate::{airdrop, PoolStatus, UniverseAppState, APPLICATION_FOLDER_ID};
 
 use base64::prelude::*;
 use keyring::Entry;
@@ -85,6 +85,8 @@ pub struct MaxUsageLevels {
 
 pub enum CpuMinerConnection {
     BuiltInProxy,
+    Pool,
+    MergeMinedPool
 }
 
 #[derive(Debug, Serialize)]
@@ -124,6 +126,7 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
+    pub pool_status: Option<PoolStatus>
 }
 
 impl Default for CpuMinerStatus {
@@ -135,6 +138,7 @@ impl Default for CpuMinerStatus {
             connection: CpuMinerConnectionStatus {
                 is_connected: false,
             },
+            pool_status: None
         }
     }
 }
@@ -1400,21 +1404,14 @@ pub async fn start_mining<'r>(
     drop(cpu_miner);
 
     if cpu_mining_enabled && !cpu_miner_running {
-        let mm_proxy_port = state
-            .mm_proxy_manager
-            .get_monero_port()
-            .await
-            .map_err(|e| e.to_string())?;
-
-        {
             let cpu_miner_config = state.cpu_miner_config.read().await;
+            let mmproxy_manager = &state.mm_proxy_manager;;
             let mut cpu_miner = state.cpu_miner.write().await;
             let res = cpu_miner
                 .start(
                     TasksTrackers::current().hardware_phase.get_signal().await,
                     &cpu_miner_config,
-                    monero_address.to_string(),
-                    mm_proxy_port,
+                    mmproxy_manager,
                     app.path()
                         .app_local_data_dir()
                         .expect("Could not get data dir"),
@@ -1442,7 +1439,6 @@ pub async fn start_mining<'r>(
                     .ok();
                 return Err(e.to_string());
             }
-        }
     }
 
     let gpu_miner = state.gpu_miner.read().await;

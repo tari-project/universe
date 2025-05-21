@@ -228,6 +228,7 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .await?;
         drop(spend_wallet_manager);
 
+
         Ok(())
     }
 
