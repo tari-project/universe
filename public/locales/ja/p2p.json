@@ -1,6 +1,6 @@
 {
-  "connections": "connections",
-  "established": "Established",
+  "connections": "接続",
+  "established": "確立済み",
   "listener-addresses": "リスナーアドレス",
   "miners": "マイナー",
   "network-info": "ネットワーク情報",
@@ -10,7 +10,7 @@
   "p2pool-connection-info-more": "接続の詳細",
   "p2pool-peers": "P2Pool ピア",
   "p2pool-stats": "プールマイニングの統計",
-  "pending": "Pending",
+  "pending": "保留中",
   "randomx-stats": "RandomX 統計",
   "sha3-stats": "SHA3 統計",
   "tribe": "トライブ"

@@ -98,9 +98,9 @@ impl TelemetryService {
         self.version = app_version;
         let cancellation_token = self.cancellation_token.clone();
         let in_memory_config_cloned = self.in_memory_config.clone();
-        let in_memeory_config_guard = in_memory_config_cloned.read().await;
-        let telemetry_api_url = in_memeory_config_guard.telemetry_api_url.clone();
-        let exchange_id = in_memeory_config_guard.exchange_id.clone();
+        let in_memory_config_guard = in_memory_config_cloned.read().await;
+        let telemetry_api_url = in_memory_config_guard.telemetry_api_url.clone();
+        let exchange_id = in_memory_config_guard.exchange_id.clone();
         let version = self.version.clone();
         let (tx, mut rx) = mpsc::channel(128);
         self.tx_channel = Some(tx);

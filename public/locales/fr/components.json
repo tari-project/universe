@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "Vous pourriez rencontrer des forks et des fluctuations du taux de hachage alors que le réseau se stabilise au cours des ~15 prochains jours.",
+    "body-copy-highlight": "Tari est tout nouveau !",
+    "is-live": "est en direct"
   },
   "field-error-message": {
     "integers-only": "Seuls les entiers sont autorisés",
@@ -36,9 +36,9 @@
     "title": "Reprise de l\"Univers Tari"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "La naissance d\"un réseau de preuve de travail est spéciale. Au début, le réseau a besoin de temps pour se stabiliser et trouver son rythme. Nous appelons cela la \"phase de rodage.\"\nLes contributeurs et les premiers supporters du réseau Tari (comme les échanges et les partenaires d\"infrastructure) s\"attendent à ce que la phase de rodage dure environ 15 jours. Après cela, le réseau passera à un état plus stable.\nPendant la phase de rodage, certaines bizarreries sont normales. Vous pourriez voir des fluctuations du temps de bloc, des déconnexions temporaires, des retards de synchronisation, ou même des forks de courte durée qui nécessitent que votre nœud se reconnecte à la chaîne principale.\nLa phase de rodage est un excellent moment pour miner car les récompenses sont les plus élevées par bloc. Nous espérons que les premiers jours du réseau Tari seront enrichissants pour vous.\nQue les jeux commencent. Que les blocs soient toujours en votre faveur !",
+    "subtitle": "Qu\"est-ce que cela signifie exactement ?",
+    "tag-line": "Bienvenue sur le Mainnet de Tari",
+    "title": "Phase de rodage"
   }
 }

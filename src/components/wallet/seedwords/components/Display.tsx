@@ -21,7 +21,7 @@ const Display = memo(function Display({ words, onToggleClick, isLoading, isGener
     }
 
     const wordAmount = words?.length || 0;
-    const rowCount = isVisible ? (wordAmount % 5 === 0 ? 5 : 6) : 1;
+    const rowCount = isVisible && !isLoading ? (wordAmount % 5 === 0 ? 5 : 6) : 1;
 
     const wordMarkup = words?.map((word, i) => {
         const count = i + 1;

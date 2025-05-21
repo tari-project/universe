@@ -28,6 +28,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const isWalletImporting = useWalletStore((s) => s.is_wallet_importing);
 
     const [isEditView, setIsEditView] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
     const [newSeedWords, setNewSeedWords] = useState<string[]>();
     const [showConfirm, setShowConfirm] = useState(false);
     const [copyFetchLoading, setCopyFetchLoading] = useState(false);
@@ -44,16 +45,20 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
 
     const handleConfirmed = useCallback(async () => {
         if (!isValid || !newSeedWords) return;
-        await importSeedWords(newSeedWords);
+
+        await importSeedWords(newSeedWords).finally(() => setShowConfirm(false));
     }, [isValid, newSeedWords]);
+
     const handleApply = (data: { seedWords: string }) => {
         setNewSeedWords(data.seedWords.split(' '));
         setShowConfirm(true);
     };
 
     async function onToggleVisibility() {
+        setIsLoading(true);
         if (!seedWords?.length || !seedWordsFetched) {
             await getSeedWords();
+            setIsLoading(false);
         }
     }
     function onToggleEdit() {
@@ -63,7 +68,6 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
         methods.reset();
         onToggleEdit();
     }
-
     const handleCopyClick = useCallback(async () => {
         if (seedWords && seedWordsFetched) {
             copyToClipboard(seedWords.join(' '));
@@ -82,11 +86,11 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
     const displayCTAs = (
         <>
             {!isMonero ? (
-                <IconButton size="small" onClick={onToggleEdit}>
+                <IconButton size="small" onClick={onToggleEdit} type="button">
                     {isGenerated ? <IoPencil /> : <IoAddCircleOutline />}
                 </IconButton>
             ) : null}
-            <IconButton size="small" onClick={() => handleCopyClick()} disabled={disableCopy}>
+            <IconButton size="small" type="button" onClick={() => handleCopyClick()} disabled={disableCopy}>
                 {!isCopied ? copyFetchLoading ? <CircularProgress /> : <IoCopyOutline /> : <IoCheckmarkOutline />}
             </IconButton>
         </>
@@ -94,7 +98,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
 
     const editCTAs = (
         <>
-            <IconButton size="small" type="submit">
+            <IconButton size="small" type="submit" disabled={!isValid || !seedWords}>
                 <IoCheckmarkOutline />
             </IconButton>
             <IconButton size="small" type="reset">
@@ -115,7 +119,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                                 ) : (
                                     <Display
                                         words={seedWords}
-                                        isLoading={seedWordsFetching || copyFetchLoading}
+                                        isLoading={isLoading || seedWordsFetching || copyFetchLoading}
                                         onToggleClick={onToggleVisibility}
                                         isGenerated={isGenerated}
                                         isMonero={isMonero}
@@ -139,6 +143,7 @@ export default function SeedWords({ isMonero = false, isGenerated }: SeedWordsPr
                         <Typography variant="p" style={{ whiteSpace: 'pre', textAlign: 'center' }}>
                             {t('confirm-import-wallet-copy')}
                         </Typography>
+
                         {isWalletImporting ? (
                             <LoadingDots />
                         ) : (

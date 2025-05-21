@@ -1,10 +1,10 @@
 {
   "actions": {
-    "earn-gems": "Earn gems",
-    "earn-gems-copy": "Connect your social account to earn gems for inviting friends",
-    "earn-gems-cta": "Connect X Account",
-    "mode": "Customize Mode",
-    "mode-copy": "Did you know you can customize how hard you want your machine to mine?"
+    "earn-gems": "Dapatkan permata",
+    "earn-gems-copy": "Hubungkan akun sosial Anda untuk mendapatkan permata dengan mengundang teman",
+    "earn-gems-cta": "Hubungkan Akun X",
+    "mode": "Sesuaikan Mode",
+    "mode-copy": "Tahukah Anda bahwa Anda dapat menyesuaikan seberapa keras Anda ingin mesin Anda menambang?"
   },
   "could-not-auto-update": "Kami tidak dapat memperbarui Tari Universe ke {{version}} secara otomatis saat mesin terkunci atau dalam mode tidur.",
   "dont-worry": "Jangan khawatir, lain kali tidak akan memakan waktu lama",
@@ -13,8 +13,8 @@
   "no": "Tidak",
   "setting-up": "Menyiapkan mesin kebenaran Tari...",
   "sync": {
-    "header": "Connecting to the Tari network",
-    "subheader": "Syncing with the Tari network"
+    "header": "Menghubungkan ke jaringan Tari",
+    "subheader": "Menyinkronkan dengan jaringan Tari"
   },
   "this-might-take-a-few-minutes": "Ini mungkin memakan waktu beberapa menit",
   "title": {

@@ -24,6 +24,7 @@ export interface DetectedAvailableGpuEngines {
 export interface CriticalProblemPayload {
     title?: string;
     description?: string;
+    error_message?: string;
 }
 
 export interface ShowReleaseNotesPayload {

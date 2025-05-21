@@ -12,7 +12,6 @@ import { SendStatus } from '@app/components/transactions/send/SendModal.tsx';
 import { useWalletStore } from '@app/store';
 import { StatusHero } from '../../components/StatusHero/StatusHero';
 import { StatusList, StatusListEntry } from '../../components/StatusList/StatusList';
-import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
 
 interface Props {
     status: SendStatus;
@@ -87,10 +86,10 @@ export function SendReview({
             label: t('send.transaction-description'),
             value: message,
         },
-        {
-            label: t('send.transaction-id'),
-            value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
-        },
+        // {
+        //     label: t('send.transaction-id'),
+        //     value: status === 'processing' ? <LoadingDots /> : latestTx?.tx_id,
+        // },
         // {
         //     label: t('send.tari-txn'),
         //     value: status === 'processing' ? <LoadingDots /> : `0x12345..12789`,

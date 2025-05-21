@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { convertHexToRGBA } from '@app/utils';
 
 export const Wrapper = styled.div`
@@ -53,7 +53,7 @@ export const AddressInputLabel = styled.div`
     font-size: 12px;
     font-weight: 500;
 `;
-export const AddressInput = styled.input`
+export const AddressInput = styled.input<{ $hasError?: boolean }>`
     width: 100%;
     padding: 8px 34px 0 0;
     border-bottom: 1px solid ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.05)};
@@ -64,4 +64,13 @@ export const AddressInput = styled.input`
     &::placeholder {
         opacity: 0.4;
     }
+
+    ${({ $hasError, theme }) =>
+        $hasError &&
+        css`
+            border-bottom: 1px solid ${theme.palette.warning.primary || theme.colors.warning[500]};
+            &:focus {
+                border-bottom: 1px solid ${theme.palette.warning.primary || theme.colors.warning[500]};
+            }
+        `}
 `;

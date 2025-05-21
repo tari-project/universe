@@ -11,7 +11,6 @@ export default function Content({ data }: ContentProps) {
         <Container>
             <LogoContainer>
                 <LogoImg src={data.logo_img_url} alt={`${data.name} Logo`} />
-                {`TXC LOGO`}
             </LogoContainer>
             <ContentContainer>
                 <GradientText colors={[data.secondary_colour, data.primary_colour, data.secondary_colour]}>

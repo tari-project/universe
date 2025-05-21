@@ -9,9 +9,10 @@ const SEEDWORD_REGEX = /^(([a-zA-Z]+)\s){23}([a-zA-Z]+)$/;
 
 export const Edit = () => {
     const { t } = useTranslation('settings', { useSuspense: false });
-    const { register, setValue, formState } = useFormContext<{ seedWords: string }>();
+    const { register, setValue, formState, trigger } = useFormContext<{ seedWords: string }>();
 
     const registerOptions = {
+        required: true,
         pattern: {
             value: SEEDWORD_REGEX,
             message: t('invalid-seed-words'),
@@ -24,8 +25,10 @@ export const Edit = () => {
             const text = (e.originalEvent || e).clipboardData.getData('text/plain');
             const formattedSeedText = text.trim().replaceAll(', ', ' ').replaceAll(',', ' ').replaceAll('\n', ' ');
             setValue('seedWords', formattedSeedText);
+
+            trigger('seedWords');
         },
-        [setValue]
+        [setValue, trigger]
     );
 
     return (
