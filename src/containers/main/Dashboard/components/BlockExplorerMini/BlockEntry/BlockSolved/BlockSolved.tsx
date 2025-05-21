@@ -16,6 +16,7 @@ import {
 } from './styles';
 import { AnimatePresence } from 'motion/react';
 import { BlockData } from '../../useBlocks';
+import { formatBlockNumber, formatReward } from '../../utils/formatting';
 
 export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks }: BlockData) {
     const [isHovering, setIsHovering] = useState(false);
@@ -38,22 +39,17 @@ export default function BlockSolved({ id, minersSolved, reward, timeAgo, blocks 
                     <ContentWrapper>
                         <BlockTitle>
                             {`Block: #`}
-                            <strong>{id}</strong>
+                            <strong>{formatBlockNumber(id)}</strong>
                         </BlockTitle>
                         <MinersSolved>
                             <PeopleIcon />
-                            <span>
-                                {minersSolved}
-                                {` miners solved`}
-                            </span>
+                            {minersSolved} {minersSolved > 1 ? 'miners' : 'pool'}
+                            {` solved`}
                         </MinersSolved>
 
                         <MetaData>
                             <RewardPill $isHovering={isHovering}>
-                                <span>
-                                    {reward}
-                                    {` XTM`}
-                                </span>
+                                <span>{formatReward(reward || 0)} XTM</span>
                                 <AnimatePresence>
                                     {isHovering && (
                                         <RewardPillHoverBg

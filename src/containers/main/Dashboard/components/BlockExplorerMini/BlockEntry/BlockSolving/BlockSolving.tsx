@@ -1,27 +1,13 @@
-import { BlockData } from '../../useBlocks';
 import BlockTimer from './BlockTimer/BlockTimer';
 
 import { Inside, Wrapper, BoxWrapper, ContentWrapper, Title, VideoWrapper } from './styles';
 import BlockVideo from './BlockVideo/BlockVideo';
-import { useState, useEffect } from 'react';
-import { MetaData, RewardPill, TimeAgo } from '../BlockSolved/styles';
+import { MetaData, TimeAgo, BottomWrapper, RewardPillBlack } from '../BlockSolved/styles';
 import { AnimatePresence } from 'motion/react';
+import { formatReward, formatBlockNumber } from '../../utils/formatting';
+import { BlockData } from '../../useBlocks';
 
-interface Props extends BlockData {
-    isSolved?: boolean;
-}
-
-export default function BlockSolving({ id, minersSolved, timeAgo, reward }: Props) {
-    const [isSolved, setIsSolved] = useState(false);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIsSolved((prevState) => !prevState);
-        }, 6000);
-
-        return () => clearInterval(interval);
-    }, []);
-
+export default function BlockSolving({ id, minersSolved, timeAgo, reward, isSolved }: BlockData) {
     return (
         <Wrapper
             layout="position"
@@ -47,10 +33,22 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward }: Prop
                             </VideoWrapper>
                             <ContentWrapper $isSolved={isSolved}>
                                 <Title>
-                                    <strong>#{id}</strong>
-                                    {` block is being solved`}
+                                    <strong>#{formatBlockNumber(id)}</strong>
+                                    {` block`}
+                                    <br />
+                                    {`is being solved`}
                                 </Title>
-                                <BlockTimer time={`00:00`} />
+                                <BottomWrapper>
+                                    {reward && (
+                                        <RewardPillBlack $isSolved={isSolved}>
+                                            <span>
+                                                {formatReward(reward)}
+                                                {` XTM`}
+                                            </span>
+                                        </RewardPillBlack>
+                                    )}
+                                    <BlockTimer time={`00:00`} />
+                                </BottomWrapper>
                             </ContentWrapper>
                         </Inside>
                     </BoxWrapper>
@@ -70,18 +68,12 @@ export default function BlockSolving({ id, minersSolved, timeAgo, reward }: Prop
                             <ContentWrapper $isSolved={isSolved}>
                                 <Title>
                                     <strong>
-                                        {minersSolved}
-                                        {` miners`}
+                                        {minersSolved} {minersSolved > 1 ? 'miners' : 'pool'}
                                     </strong>
-                                    {` got rewarded `}
+                                    {` got rewarded`}
                                 </Title>
                                 <MetaData>
-                                    <RewardPill>
-                                        <span>
-                                            {reward}
-                                            {` XTM`}
-                                        </span>
-                                    </RewardPill>
+                                    <RewardPillBlack $isSolved={isSolved}>{reward} XTM</RewardPillBlack>
                                     {timeAgo && (
                                         <TimeAgo>
                                             {timeAgo}

@@ -92,14 +92,13 @@ export default function BlockScrollList({ data, containerRef }: Props) {
             >
                 <Suspense fallback={<div></div>}>
                     {data &&
-                        data.map(({ id, minersSolved, reward, timeAgo, isSolving, blocks }) => (
+                        data.map(({ id, minersSolved, reward, timeAgo, blocks }) => (
                             <BlockEntry
                                 key={id}
                                 id={id}
                                 minersSolved={minersSolved}
                                 reward={reward}
                                 timeAgo={timeAgo}
-                                isSolving={isSolving}
                                 blocks={blocks}
                             />
                         ))}

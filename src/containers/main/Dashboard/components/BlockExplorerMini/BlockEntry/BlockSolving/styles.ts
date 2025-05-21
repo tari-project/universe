@@ -76,8 +76,6 @@ export const ContentWrapper = styled.div<{ $isSolved?: boolean }>`
 
     width: 150px;
     height: 100%;
-    padding-right: 20px;
-    padding-left: 10px;
 
     background: linear-gradient(to right, #fccf5f, #ffb128);
 

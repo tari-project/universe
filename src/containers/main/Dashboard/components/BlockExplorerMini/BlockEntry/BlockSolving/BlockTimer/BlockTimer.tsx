@@ -1,13 +1,24 @@
 import { useEffect, useState } from 'react';
 import { Wrapper } from './styles';
+import { useBlocks } from '../../../useBlocks';
 
 interface Props {
     time: string;
 }
 
 export default function BlockTimer({ time }: Props) {
+    const { data } = useBlocks();
     const [currentTime, setCurrentTime] = useState(time);
     const [seconds, setSeconds] = useState(0);
+
+    useEffect(() => {
+        if (data && data[0]?.timeAgo) {
+            const startTime = new Date(data[0].timeAgo + ' UTC').getTime();
+            const now = Date.now();
+            const elapsedSeconds = Math.floor((now - startTime) / 1000);
+            setSeconds(elapsedSeconds);
+        }
+    }, [data]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -18,16 +29,13 @@ export default function BlockTimer({ time }: Props) {
     }, []);
 
     useEffect(() => {
-        const [initialMinutes, initialSeconds] = time.split(':').map(Number);
-
-        const totalSeconds = seconds + initialMinutes * 60 + initialSeconds;
-        const minutes = Math.floor(totalSeconds / 60);
-        const remainingSeconds = totalSeconds % 60;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
 
         const formattedTime = `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 
         setCurrentTime(formattedTime);
-    }, [seconds, time]);
+    }, [seconds]);
 
     return (
         <Wrapper>

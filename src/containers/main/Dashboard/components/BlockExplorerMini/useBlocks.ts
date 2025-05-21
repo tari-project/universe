@@ -14,25 +14,31 @@ interface Blocks {
     powAlgo: string;
 }
 
+interface Headers {
+    height: string;
+    timestamp: string;
+}
+
 interface BlocksStats {
     stats: Blocks[];
+    headers: Headers[];
 }
 
 export interface BlockData {
     id: string;
     minersSolved: number;
     reward?: number; // XTM reward amount
-    timeAgo?: string;
-    isSolving?: boolean;
+    timeAgo: string;
+    isSolved?: boolean;
     blocks?: number;
     isFirstEntry?: boolean;
 }
 
 async function fetchBlockStats(): Promise<BlocksStats> {
-    const response = await fetch(`${address}/stats/?json`);
+    const response = await fetch(`${address}/?json`);
 
     if (!response.ok) {
-        return { stats: [] };
+        throw new Error('Failed to fetch blocks');
     }
 
     return response.json();
@@ -47,12 +53,12 @@ export function useBlocks() {
                 id: block.height,
                 minersSolved: block.numCoinbases,
                 reward: parseInt(block.totalCoinbaseXtm.split('.')[0].replace(/,/g, ''), 10),
-                timeAgo: undefined, // Waiting for the API to provide this data
+                timeAgo: block.timestamp,
                 blocks: block.numOutputsNoCoinbases,
-                isSolving: true,
+                isSolved: false,
             }));
         },
         refetchOnWindowFocus: true,
-        refetchInterval: 5000,
+        refetchInterval: 30000,
     });
 }

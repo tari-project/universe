@@ -14,7 +14,7 @@ export const BoxWrapper = styled.div`
     border-radius: 100px;
 
     padding: 6px;
-    width: 250px;
+    width: 260px;
     height: 86px;
 `;
 
@@ -138,4 +138,26 @@ export const TimeAgo = styled.span`
     font-weight: 500;
     line-height: normal;
     opacity: 0.5;
+    white-space: nowrap;
+`;
+
+export const BottomWrapper = styled.div`
+    display: flex;
+    align-items: center;
+    gap: 4px;
+`;
+
+export const RewardPillBlack = styled.div<{ $isSolved?: boolean }>`
+    border-radius: 100px;
+    background: #000;
+    color: ${(props) => (props.$isSolved ? '#fff' : '#ffdd6c')};
+    font-family: Poppins, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 7px 0 7px;
+    white-space: nowrap;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 `;
