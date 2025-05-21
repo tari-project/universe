@@ -355,8 +355,7 @@ impl TelemetryManager {
                         let telemetry_data = cancellable_get_telemetry_data(app_handle.clone(),&cpu_miner_status_watch_rx, &gpu_status, &node_status, &p2pool_status,
                             &tor_status, network, uptime, &stats_collector, &node_manager, &mut (shutdown_signal.clone())).await;
                         let airdrop_api_url = in_memory_config_cloned.read().await.airdrop_api_url.clone();
-                        handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, 
-                            app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
+                        handle_data(telemetry_data, airdrop_api_url, airdrop_access_token_validated, app_handle.clone(), &mut (shutdown_signal.clone()), allow_telemetry, allow_notifications).await;
 
                     },
                     _ = shutdown_signal.wait() => {
@@ -827,9 +826,9 @@ async fn handle_data(
                 };
                 match notification_data_response {
                     Ok(_) => {
-                          info!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
+                        info!(target: LOG_TARGET,"successfully sent emitting mining status notification event");
                     }
-                    Err(e) => { 
+                    Err(e) => {
                         warn!(target: LOG_TARGET,"emitting mining status notification data sending error {:?}", e.to_string());
                     }
                 }
@@ -899,7 +898,8 @@ async fn send_notification_data(
     let request = reqwest::Client::new();
 
     let mut request_builder = request
-        .post(format!("{}/miner/notifications", airdrop_api_url)).timeout(Duration::from_secs(5))
+        .post(format!("{}/miner/notifications", airdrop_api_url))
+        .timeout(Duration::from_secs(5))
         .header(
             "User-Agent".to_string(),
             format!("tari-universe/{}", data.version.clone()),
@@ -928,7 +928,6 @@ async fn send_notification_data(
         )
         .into());
     }
-
 
     Ok(())
 }
