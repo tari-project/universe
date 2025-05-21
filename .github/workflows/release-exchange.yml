@@ -64,9 +64,9 @@ jobs:
           - platform: 'ubuntu-22.04'
             args: '--bundles deb,appimage'
             extra: '-x64'
-          - platform: 'ubuntu-24.04-arm'
-            args: '--bundles deb,appimage'
-            best_effort: true
+          # - platform: 'ubuntu-24.04-arm'
+          #   args: '--bundles deb,appimage'
+          #   best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -75,10 +75,10 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           #   best_effort: true
-          - platform: 'windows-latest'
-            args: '--bundles msi'
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
+          # - platform: 'windows-latest'
+          #   args: '--bundles msi'
+          # - platform: 'macos-latest'
+          #   args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
     steps:
       - uses: actions/checkout@v4
@@ -114,7 +114,7 @@ jobs:
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
           yq eval ".identifier = \"com.tari.universe.${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
-          yq eval ".plugins.updater.endpoints = [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${TU_VERSION}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json\"]" \
+          yq eval ".plugins.updater.endpoints = [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/latest-${{matrix.exchange.id}}.json\"]" \
             --output-format=json -i tauri.conf.json
           echo "APP_VERSION=${TU_VERSION}" >> $GITHUB_OUTPUT
 
@@ -363,13 +363,14 @@ jobs:
           echo "MSI_FILE=$MSI_FILE" >> $GITHUB_ENV
 
       - name: Builds - Upload assets [ GitHub ]
+        if: ${{ startsWith(inputs.destination, 'github') }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_${{ matrix.platforms.platform }}${{ matrix.platforms.extra }}
           path: "${{ join(fromJSON(steps.build.outputs.artifactPaths), '\n') }}"
 
       - name: Bundled Windows installer upload [ GitHub ]
-        if: ${{ startsWith(runner.os,'Windows') }}
+        if: ${{ startsWith(runner.os,'Windows') && ( startsWith(inputs.destination, 'github' )) }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.exchange.id}}_${{ steps.build.outputs.appVersion }}_x64_en-US
@@ -390,7 +391,7 @@ jobs:
           for path in $paths; do
             if [[ -f $path ]]; then
               echo "Uploading $path"
-              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.name }}/ --checksum-algorithm=CRC32 
+              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 
             fi
           done
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
@@ -409,7 +410,7 @@ jobs:
           foreach ($path in $filePaths) {
             if (Test-Path $path -PathType Leaf) {
               Write-Host "Uploading $path"
-              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.name }}/ --checksum-algorithm=CRC32 
+              aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 
             }
           }
           aws s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.name }}/" --checksum-algorithm=CRC32
@@ -438,8 +439,9 @@ jobs:
           sentry-cli debug-files check ./src-tauri/target/release/tari_universe.pdb
           sentry-cli debug-files upload --org tari-labs --project tari-universe ./src-tauri/target/release/tari_universe.pdb
 
-  updater-artifact:
-    name: Prepare updater artifact ${{ matrix.exchange.id }}
+  github-updater-artifact:
+    name: '[ Github ] Prepare updater artifact ${{ matrix.exchange.id }}'
+    if: ${{ inputs.destination == 'github' }}
     needs: [read-exchanges, builds]
     strategy:
       fail-fast: false
@@ -545,7 +547,7 @@ jobs:
           name: tari_universe-${{ matrix.exchange.id }}_${{ needs.builds.outputs.APP_VERSION }}_amd64.rpm
           path: tari_universe-${{ matrix.exchange.name }}_${{ needs.builds.outputs.APP_VERSION }}-1.x86_64.rpm
 
-      - name: Construct binaries download urls [GitHub]
+      - name: Construct binaries download urls
         shell: bash
         run: |
           echo "MSI_URL=${{ steps.upload-msi.outputs.artifact-url }}" >> $GITHUB_ENV
@@ -556,16 +558,6 @@ jobs:
           echo "AARCH64_URL=${{ steps.upload-aarch64.outputs.artifact-url }}" >> $GITHUB_ENV
           echo "RPM_AARCH64_URL=${{ steps.upload-rpm-aarch.outputs.artifact-url }}" >> $GITHUB_ENV
           echo "RPM_AMD64_URL=${{ steps.upload-rpm-amd64.outputs.artifact-url }}" >> $GITHUB_ENV
-
-      - name: Construct binaries download urls [ AWS ]
-        env:
-          BASE_PATH: https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}
-        shell: bash
-        run: |
-          echo "MSI_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
-          echo "AMD64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
-          echo "AARCH64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
-          echo "TAR_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz" >> $GITHUB_ENV
 
       - name: Reconstruct latest.json
         shell: bash
@@ -580,6 +572,64 @@ jobs:
           name: latest-${{matrix.exchange.id}}.json
           path: latest-${{matrix.exchange.id}}.json
 
+  aws-updater-artifact:
+    name: '[ AWS ] Prepare updater artifact ${{ matrix.exchange.id }}'
+    if: ${{ inputs.destination == 'aws' }}
+    needs: [read-exchanges, builds]
+    strategy:
+      fail-fast: false
+      matrix:
+        exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log root
+        shell: bash
+        run: |
+          echo "Downloaded artifact:"
+          ls -la "${{ github.workspace }}"
+
+      - name: Download artifacts from s3 bucket
+        shell: bash
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          BASE_PATH: s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}/
+        run: |
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm
+
+          aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest --recursive --exclude "*" --include "*.tar.gz"
+          aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest --recursive --exclude "*" --include "*.msi" --include "*.msi.sig"
+          aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64 --recursive --exclude "*" --include "*.AppImage" --include "*.AppImage.sig"
+          aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm --recursive --exclude "*" --include "*.AppImage" --include "*.AppImage.sig"
+
+          ls -la "${{ github.workspace }}"
+
+      - name: Construct binaries download urls [ AWS ]
+        env:
+          BASE_PATH: https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}
+        shell: bash
+        run: |
+          echo "MSI_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
+          echo "AMD64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
+          echo "AARCH64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
+          echo "TAR_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz" >> $GITHUB_ENV
+
+      - name: Install unzip if missing
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
+
+      - name: Run create-latest-json.sh
+        shell: bash
+        run: |
+          sudo bash ./scripts/create-latest-json.sh "${{ needs.builds.outputs.APP_VERSION }}" "${{matrix.exchange.id}}" "${{ env.AMD64_URL }},${{ env.AARCH64_URL }},${{ env.TAR_URL }},${{ env.MSI_URL }}"
+
       - name: Upload latest.json [AWS]
         id: upload-latest-to-aws
         if: ${{ inputs.destination == 'aws' }}
@@ -591,7 +641,7 @@ jobs:
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
         run: |
-          aws s3 cp latest-${{matrix.exchange.id}}.json s3://${{ secrets.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json --checksum-algorithm=CRC32
+          aws s3 cp latest-${{matrix.exchange.id}}.json s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/latest-${{matrix.exchange.id}}.json --checksum-algorithm=CRC32
       - name: latest.json invalidation
         continue-on-error: true
         if: ${{ ( inputs.destination == 'aws' ) && ( steps.upload-latest-to-aws.outcome == 'success' ) }}
@@ -605,4 +655,4 @@ jobs:
             --url https://api.cloudflare.com/client/v4/zones/${{ env.CF_ZONE_ID }}/purge_cache \
             --header "Content-Type: application/json" \
             --header "Authorization: Bearer ${{ env.CF_AUTHORIZATION_BEARER }}" \
-            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ needs.builds.outputs.APP_VERSION }}/${{ matrix.exchange.name }}/latest-${{matrix.exchange.id}}.json\"] }"
+            --data "{\"files\": [\"https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/latest-${{matrix.exchange.id}}.json\"] }"
