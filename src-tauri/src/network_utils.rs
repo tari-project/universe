@@ -24,6 +24,27 @@ use serde::Deserialize;
 use std::fmt::Write as _;
 use tari_common::configuration::Network;
 
+pub fn retry_on_panic<T, F>(mut f: F, max_retries: usize, retry_delay_ms: u64) -> Option<T>
+where
+    F: FnMut() -> T,
+{
+    for attempt in 0..max_retries {
+        let result = catch_unwind(AssertUnwindSafe(|| f()));
+        match result {
+            Ok(val) => return Some(val),
+            Err(_) => {
+                eprintln!(
+                    "Function panicked on attempt {}/{}",
+                    attempt + 1,
+                    max_retries
+                );
+                std::thread::sleep(Duration::from_millis(retry_delay_ms));
+            }
+        }
+    }
+    None
+}
+
 fn get_text_explore_blocks_url(network: Network, block_height: u64) -> String {
     match network {
         Network::MainNet => {
