@@ -12,7 +12,6 @@ import {
     ROUTER_ADDRESSES,
     XTM_SDK_TOKEN,
     KNOWN_SDK_TOKENS,
-    DEFAULT_CHAIN_ID,
     SLIPPAGE_TOLERANCE,
     DEADLINE_MINUTES,
     SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
@@ -26,6 +25,7 @@ import {
 import { walletClientToSigner, formatNativeGasFee, formatGasFeeUSD } from './lib/utils';
 import { TradeDetails, SwapField, SwapDirection } from './lib/types';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
+import { useConfigCoreStore } from '@app/store';
 
 export const useUniswapV2Interactions = () => {
     const [pairTokenAddress, setPairTokenAddress] = useState<`0x${string}` | null>(null);
@@ -40,7 +40,8 @@ export const useUniswapV2Interactions = () => {
     const { address: accountAddress, isConnected, chain } = useAccount();
     const { data: walletClient } = useWalletClient();
 
-    const currentChainId = useMemo(() => chain?.id || DEFAULT_CHAIN_ID, [chain]);
+    const defaultChainId = useConfigCoreStore((s) => s.default_chain);
+    const currentChainId = useMemo(() => chain?.id || defaultChainId, [chain?.id, defaultChainId]);
     const publicClient = usePublicClient({ chainId: currentChainId });
 
     const routerAddress = useMemo(
@@ -179,6 +180,7 @@ export const useUniswapV2Interactions = () => {
 
     const getTradeDetails = useCallback(
         async (amountRaw: string, amountType: SwapField): Promise<TradeDetails> => {
+            setInsufficientLiquidity(false);
             if (!publicClient || !currentChainId || !sdkToken0 || !sdkToken1 || !routerAddress) {
                 setError('Prerequisites for trade details not met.');
                 return { trade: null, route: null };
@@ -450,8 +452,7 @@ export const useUniswapV2Interactions = () => {
                 const inputIsNativeForRouter = token0?.isNative;
                 const outputIsNativeForRouter = token1?.isNative;
 
-                if (sdkToken0 && !sdkToken0.isNative) {
-                    // Use sdkToken0 for approval check
+                if (sdkToken0 && !sdkToken0.isNative && direction === 'toXtm') {
                     const approved = await checkAndRequestApproval(sdkToken0, amountIn.toString());
                     if (!approved) {
                         setIsLoading(false);
@@ -507,9 +508,8 @@ export const useUniswapV2Interactions = () => {
             sdkToken1,
             token0?.isNative,
             token1?.isNative,
+            direction,
             checkAndRequestApproval,
-            setError,
-            setIsLoading,
         ]
     );
 

@@ -7,10 +7,13 @@ import {
     erc20Abi as viemErc20Abi,
     formatUnits,
 } from 'viem';
-import { Token, NativeCurrency, WETH9, Ether, ChainId } from '@uniswap/sdk-core';
-import { DEFAULT_CHAIN_ID, EnabledTokensEnum, XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
+import { Token, NativeCurrency, WETH9, Ether } from '@uniswap/sdk-core';
+import { EnabledTokensEnum, XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
 import { SwapDirection, SwapField, TradeDetails } from '@app/hooks/swap/lib/types';
 import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
+import { useConfigCoreStore } from '@app/store';
+import { fetchTokenPriceUSD, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
+import { useTokenDisplayInfo } from './helpers/useTokenInfo';
 
 export type TokenSymbol = 'POL' | 'XTM' | 'WXTM' | 'DAI' | 'ETH';
 export interface SelectableTokenInfo {
@@ -25,25 +28,6 @@ export interface SelectableTokenInfo {
     decimals: number;
     pricePerTokenUSD?: number;
 }
-
-const formatDisplayBalanceForSelectable = (
-    rawBalance: bigint | undefined,
-    decimals: number,
-    symbol: string
-): string => {
-    if (rawBalance === undefined) return '0.000';
-    return `${parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5))} ${symbol}`;
-};
-
-// Placeholder for fetching USD prices - REPLACE THIS
-const fetchTokenPriceUSD = async (_tokenSymbol: string, _chainId: ChainId | undefined): Promise<number | undefined> => {
-    // MOCK IMPLEMENTATION - REPLACE WITH ACTUAL API/ORACLE CALL
-    // console.warn(`MOCK: Fetching price for ${tokenSymbol} on chain ${chainId}`);
-    // await new Promise((resolve) => setTimeout(resolve, 150)); // Simulate network delay
-    // if (tokenSymbol === 'ETH' || tokenSymbol === 'WETH') return 3000.0;
-    // if (tokenSymbol === 'wXTM') return 0.55;
-    return undefined;
-};
 
 export const useSwapData = () => {
     const connectedAccount = useAccount();
@@ -71,6 +55,7 @@ export const useSwapData = () => {
     const [swapError, setSwapError] = useState<string | null>(null);
 
     const [tradeDetails, setTradeDetails] = useState<TradeDetails | null>(null);
+    const defaultChainId = useConfigCoreStore((s) => s.default_chain);
 
     const {
         token0: swapEngineInputToken,
@@ -97,103 +82,71 @@ export const useSwapData = () => {
         [uiDirection, swapEngineInputToken, swapEngineOutputToken]
     );
 
-    const { data: rawFromTokenBalanceData, isLoading: isLoadingFromBalance } = useBalance({
-        address: connectedAccount.address,
-        token: fromUiTokenDefinition?.isNative ? undefined : (fromUiTokenDefinition?.address as `0x${string}`),
+    // const { data: rawFromTokenBalanceData, isLoading: isLoadingFromBalance } = useBalance({
+    //     address: connectedAccount.address,
+    //     token: fromUiTokenDefinition?.isNative ? undefined : (fromUiTokenDefinition?.address as `0x${string}`),
+    //     chainId: currentChainId,
+    // });
+
+    const {
+        tokenDisplayInfo: fromTokenDisplay,
+        isLoading: isLoadingFromBalance,
+        refetch: refetchFromToken,
+    } = useTokenDisplayInfo({
+        uiTokenDefinition: fromUiTokenDefinition as Token,
         chainId: currentChainId,
+        accountAddress: connectedAccount.address,
+        fallbackDefinition: currentChainId ? WETH9[currentChainId] : undefined,
     });
 
-    const [fromTokenPrice, setFromTokenPrice] = useState<number | undefined>();
-    useEffect(() => {
-        if (fromUiTokenDefinition?.symbol && currentChainId) {
-            fetchTokenPriceUSD(fromUiTokenDefinition.symbol, currentChainId).then(setFromTokenPrice);
-        }
-    }, [fromUiTokenDefinition, currentChainId]);
-
-    const fromTokenDisplay = useMemo((): SelectableTokenInfo => {
-        const def = fromUiTokenDefinition;
-        const balData = rawFromTokenBalanceData;
-        const decimals = def?.decimals || balData?.decimals || 18;
-        const balance = formatDisplayBalanceForSelectable(
-            balData?.value,
-            decimals,
-            def?.symbol || balData?.symbol || ''
-        );
-        let usdValStr: string | undefined;
-        if (balData?.value !== undefined && fromTokenPrice !== undefined) {
-            const numBal = parseFloat(viemFormatUnits(balData.value, decimals));
-            usdValStr = `$${(numBal * fromTokenPrice).toFixed(2)}`;
-        }
-        return {
-            label: def?.name || def?.symbol || 'Token',
-            symbol: (def?.symbol || balData?.symbol || 'ETH').toUpperCase() as TokenSymbol,
-            address: def?.isNative ? null : (def?.address as `0x${string}`) || null,
-            iconSymbol: def?.symbol?.toLowerCase() || '',
-            definition: def || Ether.onChain(currentChainId || ChainId.MAINNET),
-            balance,
-            rawBalance: balData?.value,
-            decimals,
-            pricePerTokenUSD: fromTokenPrice,
-            usdValue: usdValStr,
-        };
-    }, [rawFromTokenBalanceData, fromUiTokenDefinition, currentChainId, fromTokenPrice]);
-
-    const { data: rawToTokenBalanceData, isLoading: isLoadingToBalance } = useBalance({
-        address: connectedAccount.address,
-        token: toUiTokenDefinition?.isNative ? undefined : (toUiTokenDefinition?.address as `0x${string}`),
+    const {
+        tokenDisplayInfo: toTokenDisplay,
+        isLoading: isLoadingToBalance,
+        refetch: refetchToToken,
+    } = useTokenDisplayInfo({
+        uiTokenDefinition: toUiTokenDefinition as Token,
         chainId: currentChainId,
+        accountAddress: connectedAccount.address,
+        fallbackDefinition: currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined,
     });
 
-    const [toTokenPrice, setToTokenPrice] = useState<number | undefined>();
-    useEffect(() => {
-        if (toUiTokenDefinition?.symbol && currentChainId) {
-            fetchTokenPriceUSD(toUiTokenDefinition.symbol, currentChainId).then(setToTokenPrice);
-        }
-    }, [toUiTokenDefinition, currentChainId]);
-
-    const toTokenDisplay = useMemo((): SelectableTokenInfo => {
-        const def = toUiTokenDefinition;
-        const balData = rawToTokenBalanceData;
-        const decimals = def?.decimals || balData?.decimals || 18;
-        const balance = formatDisplayBalanceForSelectable(
-            balData?.value,
-            decimals,
-            def?.symbol || balData?.symbol || ''
-        );
-        let usdValStr: string | undefined;
-        if (balData?.value !== undefined && toTokenPrice !== undefined) {
-            const numBal = parseFloat(viemFormatUnits(balData.value, decimals));
-            usdValStr = `$${(numBal * toTokenPrice).toFixed(2)}`;
-        }
-        return {
-            label: def?.name || def?.symbol || 'Token',
-            symbol: (def?.symbol || balData?.symbol || 'ETH').toUpperCase() as TokenSymbol,
-            address: def?.isNative ? null : (def?.address as `0x${string}`) || null,
-            iconSymbol: def?.symbol?.toLowerCase() || '',
-            definition: def || XTM_SDK_TOKEN[currentChainId || ChainId.MAINNET]!,
-            balance,
-            rawBalance: balData?.value,
-            decimals,
-            pricePerTokenUSD: toTokenPrice,
-            usdValue: usdValStr,
-        };
-    }, [rawToTokenBalanceData, toUiTokenDefinition, currentChainId, toTokenPrice]);
+    const handleRefetchBalances = useCallback(async () => {
+        await Promise.all([refetchFromToken(), refetchToToken()]);
+    }, [refetchFromToken, refetchToToken]);
 
     const notEnoughBalance = useMemo(() => {
-        if (!fromTokenDisplay.rawBalance || !ethTokenAmount || !fromTokenDisplay.decimals) return false;
-        try {
-            const amountBigInt = viemParseUnits(ethTokenAmount, fromTokenDisplay.decimals);
-            return amountBigInt > fromTokenDisplay.rawBalance && uiDirection === 'toXtm';
-        } catch {
-            return true;
+        if (uiDirection === 'toXtm') {
+            if (!fromTokenDisplay?.rawBalance || !ethTokenAmount || !fromTokenDisplay.decimals) return false;
+            try {
+                const amountBigInt = viemParseUnits(ethTokenAmount, fromTokenDisplay.decimals);
+                return amountBigInt > fromTokenDisplay.rawBalance;
+            } catch {
+                return true;
+            }
+        } else {
+            if (!toTokenDisplay?.rawBalance || !wxtmAmount || !toTokenDisplay.decimals) return false;
+            try {
+                const amountBigInt = viemParseUnits(wxtmAmount, toTokenDisplay.decimals);
+                return amountBigInt > toTokenDisplay.rawBalance;
+            } catch {
+                return true;
+            }
         }
-    }, [fromTokenDisplay.rawBalance, fromTokenDisplay.decimals, ethTokenAmount, uiDirection]);
+    }, [
+        uiDirection,
+        fromTokenDisplay?.rawBalance,
+        fromTokenDisplay?.decimals,
+        ethTokenAmount,
+        toTokenDisplay?.rawBalance,
+        toTokenDisplay?.decimals,
+        wxtmAmount,
+    ]);
 
     const baseSelectableTokensForList = useMemo((): Omit<
         SelectableTokenInfo,
         'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'
     >[] => {
-        const chainId = currentChainId || DEFAULT_CHAIN_ID;
+        const chainId = currentChainId || defaultChainId;
         const xtmDef = XTM_SDK_TOKEN[chainId];
         const tokens: Omit<SelectableTokenInfo, 'balance' | 'usdValue' | 'rawBalance' | 'pricePerTokenUSD'>[] = [];
 
@@ -241,7 +194,7 @@ export const useSwapData = () => {
             }
         });
         return tokens;
-    }, [currentChainId]);
+    }, [currentChainId, defaultChainId]);
 
     const selectableTokensContracts = useMemo(() => {
         if (!connectedAccount.address || baseSelectableTokensForList.length === 0) return [];
@@ -359,7 +312,6 @@ export const useSwapData = () => {
         setSwapSuccess(false);
         setIsProcessingApproval(false);
         setIsProcessingSwap(false);
-        setEthTokenAmount('1');
         shouldCalculate.current = true;
     }, []);
 
@@ -572,8 +524,7 @@ export const useSwapData = () => {
         setIsProcessingApproval(true);
         setProcessingOpen(true);
         setReviewSwap(false);
-        const fromToken = uiDirection === 'toXtm' ? swapEngineInputToken : swapEngineOutputToken;
-        checkAndRequestApproval(fromToken as Token, amountInWeiString)
+        checkAndRequestApproval(swapEngineInputToken as Token, amountInWeiString)
             .then((approved) => {
                 setIsProcessingApproval(false);
                 if (!approved) {
@@ -604,6 +555,11 @@ export const useSwapData = () => {
                         } catch (e) {
                             console.error('Error calculating gas used:', e);
                         }
+                    })
+                    .then(() => {
+                        setTimeout(() => {
+                            handleRefetchBalances();
+                        }, 2000);
                     })
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     .catch((e: any) => {
@@ -712,6 +668,7 @@ export const useSwapData = () => {
         handleToggleUiDirection,
         clearCalculatedDetails,
         insufficientLiquidity,
+        handleRefetchBalances,
         error: swapError,
         setFromAmount: (val: string) => handleNumberInput(val, 'ethTokenField'),
         setTargetAmount: (val: string) => handleNumberInput(val, 'wxtmField'),

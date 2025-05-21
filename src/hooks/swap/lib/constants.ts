@@ -16,7 +16,6 @@ export {
     erc20Abi,
     uniswapV2RouterAbi,
     uniswapV2PairAbi,
-    // uniswapV2FactoryAbi,
     SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM,
     SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM,
     SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM,
@@ -52,7 +51,7 @@ export const ENABLED_TOKEN_ADDRESSES = {
 
 export const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
     // TODO - have these on config - Infura might be needed
-    [ChainId.MAINNET]: 'https://rpc.ankr.com/eth',
+    [ChainId.MAINNET]: 'https://ethereum.publicnode.com',
     [ChainId.SEPOLIA]: 'https://ethereum-sepolia-rpc.publicnode.com',
 };
 
@@ -86,8 +85,6 @@ function initializeKnownSdkTokens() {
     }
 }
 initializeKnownSdkTokens();
-
-export const DEFAULT_CHAIN_ID = window.location.host.startsWith('localhost:') ? ChainId.SEPOLIA : ChainId.MAINNET;
 
 export const SLIPPAGE_TOLERANCE = new Percent('50', '10000'); // 0.5%
 export const DEADLINE_MINUTES = 20;

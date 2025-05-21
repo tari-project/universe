@@ -1,6 +1,7 @@
 import { WalletClient } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
 import { formatUnits as viemFormatUnits } from 'viem';
+import { ChainId } from '@uniswap/sdk-core';
 
 export async function walletClientToSigner(walletClient: WalletClient): Promise<EthersSigner | null> {
     const { account, chain, transport } = walletClient;
@@ -52,4 +53,26 @@ export const formatGasFeeUSD = (
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
     }).format(usdValue);
+};
+
+// Placeholder for fetching USD prices - REPLACE THIS
+export const fetchTokenPriceUSD = async (
+    _tokenSymbol: string,
+    _chainId: ChainId | undefined
+): Promise<number | undefined> => {
+    // MOCK IMPLEMENTATION - REPLACE WITH ACTUAL API/ORACLE CALL
+    // console.warn(`MOCK: Fetching price for ${tokenSymbol} on chain ${chainId}`);
+    // await new Promise((resolve) => setTimeout(resolve, 150)); // Simulate network delay
+    // if (tokenSymbol === 'ETH' || tokenSymbol === 'WETH') return 3000.0;
+    // if (tokenSymbol === 'wXTM') return 0.55;
+    return undefined;
+};
+
+export const formatDisplayBalanceForSelectable = (
+    rawBalance: bigint | undefined,
+    decimals: number,
+    symbol: string
+): string => {
+    if (rawBalance === undefined) return '0.000';
+    return `${parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5))} ${symbol}`;
 };

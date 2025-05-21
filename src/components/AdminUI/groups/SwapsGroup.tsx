@@ -4,6 +4,9 @@ import { Button, CategoryLabel } from '../styles';
 import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
 
 import { useState } from 'react';
+import { ChainId } from '@uniswap/sdk-core';
+import { setDefaultChain } from '@app/store/actions/appConfigStoreActions';
+import { useConfigCoreStore } from '@app/store';
 
 export function SwapsGroup() {
     const { addLiquidity, removeAllLiquidity } = useUniswapV2Interactions();
@@ -11,6 +14,17 @@ export function SwapsGroup() {
     const [ethAmount, setEthAmount] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const defaultChain = useConfigCoreStore((s) => s.default_chain);
+
+    const handleToggleChain = () => {
+        if (defaultChain === ChainId.MAINNET) {
+            setDefaultChain(ChainId.SEPOLIA);
+        } else {
+            setDefaultChain(ChainId.MAINNET);
+        }
+        console.log('setDefaultChain', defaultChain);
+    };
 
     const isValidNumber = (val: string) => {
         if (val === '') return false;
@@ -48,8 +62,29 @@ export function SwapsGroup() {
 
     const disabled = loading || !isValidNumber(xtmAmount);
 
+    // Helper to get chain name
+    const getChainName = (chainId: number) => {
+        switch (chainId) {
+            case ChainId.MAINNET:
+                return 'Mainnet';
+            case ChainId.SEPOLIA:
+                return 'Sepolia';
+            default:
+                return `Chain ${chainId}`;
+        }
+    };
+
     return (
         <>
+            <CategoryLabel>Default Chain (when wallet is not connected)</CategoryLabel>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                <span style={{ fontSize: 14, color: '#fff' }}>
+                    Current Chain: <b>{getChainName(defaultChain)}</b>
+                </span>
+                <Button onClick={handleToggleChain} style={{ padding: '4px 12px' }}>
+                    Toggle Chain
+                </Button>
+            </div>
             <CategoryLabel>Add Liquidity on Uniswap for wXTM</CategoryLabel>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <input

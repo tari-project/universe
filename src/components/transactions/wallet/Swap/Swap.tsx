@@ -117,12 +117,12 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         value={ethTokenAmount}
                     />
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
-                        {getCurrencyIcon({ symbol: fromTokenDisplay.symbol || 'ETH', width: 25 })}
-                        <span>{fromTokenDisplay.symbol || 'ETH'}</span>
+                        {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || 'ETH', width: 25 })}
+                        <span>{fromTokenDisplay?.symbol || 'ETH'}</span>
                         <Chevron />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay.balance}`}</span> : null}
+                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
 
             <SwapDirection>
@@ -146,7 +146,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                         <span>{'wXTM'}</span>
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
-                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay.balance}`}</span> : null}
+                {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
             {errorMsg && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>}
             <SubmitButtonWrapper>
