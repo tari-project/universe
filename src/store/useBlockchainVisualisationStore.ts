@@ -10,6 +10,7 @@ import { setAnimationState } from '@tari-project/tari-tower';
 import { TransactionInfo, WalletBalance } from '@app/types/app-status.ts';
 import { setMiningControlsEnabled } from './actions/miningStoreActions.ts';
 import { refreshPendingTransactions, updateWalletScanningProgress, useWalletStore } from './useWalletStore.ts';
+import { useConfigUIStore } from '@app/store/useAppConfigStore.ts';
 
 const appWindow = getCurrentWindow();
 
@@ -68,9 +69,11 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     useBlockchainVisualisationStore.setState((curr) => ({ rewardCount: (curr.rewardCount || 0) + 1 }));
     if (canAnimate) {
         setMiningControlsEnabled(false);
-        const successTier = getSuccessTier(earnings);
-
-        setAnimationState(successTier);
+        const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+        if (visualModeEnabled) {
+            const successTier = getSuccessTier(earnings);
+            setAnimationState(successTier);
+        }
         useBlockchainVisualisationStore.setState({ earnings });
         if (winTimeout) {
             clearTimeout(winTimeout);
@@ -93,7 +96,10 @@ const handleWin = async (coinbase_transaction: TransactionInfo, balance: WalletB
     }
 };
 const handleFail = async (blockHeight: number, balance: WalletBalance, canAnimate: boolean) => {
-    if (canAnimate) {
+    const visualModeEnabled = useConfigUIStore.getState().visual_mode;
+    console.debug(`visualModeEnabled= `, visualModeEnabled);
+    if (canAnimate && visualModeEnabled) {
+        console.debug(`??????= `);
         setMiningControlsEnabled(false);
         setAnimationState('fail');
         if (failTimeout) {

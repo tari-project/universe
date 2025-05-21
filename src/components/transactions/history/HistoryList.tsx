@@ -52,22 +52,24 @@ const HistoryList = memo(function HistoryList() {
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {combinedTransactions?.map((tx, i) => {
-                        // only show "new" badge under these conditions:
-                        // there are new txs is general
-                        // it's only of the latest 3
-                        // its timestamp is later than the latest transaction on the very first fetch
-                        const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
-                        return (
-                            <HistoryListItem
-                                key={tx.tx_id}
-                                item={tx}
-                                index={i}
-                                itemIsNew={isNew}
-                                setDetailsItem={setDetailsItem}
-                            />
-                        );
-                    })}
+                    {combinedTransactions
+                        // ?.filter((tx) => !tx.mined_in_block_height)
+                        ?.map((tx, i) => {
+                            // only show "new" badge under these conditions:
+                            // there are new txs is general
+                            // it's only of the latest 3
+                            // its timestamp is later than the latest transaction on the very first fetch
+                            const isNew = hasNewTx && i <= 2 && initialTxTime ? tx.timestamp > initialTxTime : false;
+                            return (
+                                <HistoryListItem
+                                    key={tx.tx_id}
+                                    item={tx}
+                                    index={i}
+                                    itemIsNew={isNew}
+                                    setDetailsItem={setDetailsItem}
+                                />
+                            );
+                        })}
 
                     {/* fill the list with placeholders if there are less than 4 entries */}
                     {Array.from({ length: placeholdersNeeded }).map((_, index) => (
