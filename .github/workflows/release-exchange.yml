@@ -391,8 +391,19 @@ jobs:
           while IFS= read -r path; do
             # Remove surrounding quotes and trim whitespace
             clean_path=$(echo "$path" | sed -e 's/^"//' -e 's/"$//' | xargs)
-            echo "$clean_path"
-            aws s3 cp "$clean_path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 --recursive
+            if [ -e "$clean_path" ]; then
+              if [ -f "$clean_path" ]; then
+                echo "$clean_path is a file."
+                aws s3 cp "$clean_path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32
+              elif [ -d "$clean_path" ]; then
+                echo "$clean_path is a directory."
+                aws s3 cp "$clean_path" s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 --recursive
+              else
+                echo "$clean_path exists but is neither a file nor a directory."
+              fi
+            else
+              echo "$clean_path does not exist."
+            fi
           done <<< "$paths"
 
       - name: Builds - Upload assets [ AWS ] [ WINDOWS ]
