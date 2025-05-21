@@ -413,7 +413,7 @@ jobs:
               aws s3 cp $path s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/ --checksum-algorithm=CRC32 
             }
           }
-          aws s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${{ secrets.BASE_URL }}/exchanges/${{ steps.build.outputs.appVersion }}/${{ matrix.exchange.name }}/" --checksum-algorithm=CRC32
+          aws s3 cp "./tari-win-bundler/${{ env.TARI_UNIVERSE_BUNDLER_NAME }}.exe" "s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ steps.build.outputs.appVersion }}/" --checksum-algorithm=CRC32
 
       - name: Windows debug symbols - Upload asset
         if: startsWith(runner.os,'Windows')
@@ -590,25 +590,36 @@ jobs:
           echo "Downloaded artifact:"
           ls -la "${{ github.workspace }}"
 
-      - name: Download artifacts from s3 bucket
+      - name: Download artifacts from cdn
         shell: bash
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-          BASE_PATH: s3://${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}/
+          BASE_TLD: ${{ secrets.BASE_TLD }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          BASE_PATH: https://${{ env.BASE_TLD }}/${{ env.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}
 
         run: |
-          # mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest
-          # mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
           mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64
-          # mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm
 
-          # aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest --recursive --exclude "*" --include "*.tar.gz"
-          # aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest --recursive --exclude "*" --include "*.msi" --include "*.msi.sig"
-          aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64 --recursive --exclude "*" --include "*.AppImage" --include "*.AppImage.sig"
-          # aws s3 cp "${{ env.BASE_PATH }}" ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm --recursive --exclude "*" --include "*.AppImage" --include "*.AppImage.sig"
+          # Get artifacts from CDN
+
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
+
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
+
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
+
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz"
+          # curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos_latest" "${{ env.BASE_PATH }}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}.app.tar.gz.sig"
 
           ls -la "${{ github.workspace }}"
 
