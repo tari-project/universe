@@ -74,7 +74,7 @@ const HistoryListItem = memo(function ListItem({
     const isBroadCast = item.status === TransactionStatus.Broadcast;
     const isRejected = item.status === TransactionStatus.Rejected;
     const TEMP_title = isRejected || isBroadCast ? getTxStatusString(item.status) : undefined;
-
+    // TODO: should we show status stings as is? or group them? i.e pending/failed/complete
     const itemTitle =
         TEMP_title ?? getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
     const earningsFormatted = hideWalletBalance
