@@ -35,7 +35,6 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::{Duration, Instant};
-use tari_common_types::tari_address::TariAddress;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_shutdown::ShutdownSignal;
 use tokio::select;
@@ -47,7 +46,6 @@ const ECO_MODE_CPU_USAGE: u32 = 30;
 
 pub struct CpuMinerConfig {
     pub node_connection: CpuMinerConnection,
-    pub tari_address: TariAddress,
     pub eco_mode_xmrig_options: Vec<String>,
     pub ludicrous_mode_xmrig_options: Vec<String>,
     pub custom_mode_xmrig_options: Vec<String>,

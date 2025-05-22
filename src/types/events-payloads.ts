@@ -3,6 +3,7 @@ import { GpuDevice, TransactionInfo, WalletBalance } from './app-status';
 export interface WalletAddressUpdatePayload {
     tari_address_base58: string;
     tari_address_emoji: string;
+    is_tari_address_generated: boolean;
 }
 
 export interface NewBlockHeightPayload {
