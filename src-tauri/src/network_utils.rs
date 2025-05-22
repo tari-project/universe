@@ -28,6 +28,7 @@ use std::{
 };
 use tari_common::configuration::Network;
 
+#[allow(clippy::redundant_closure)]
 pub fn retry_on_panic<T, F>(mut f: F, max_retries: usize, retry_delay_ms: u64) -> Option<T>
 where
     F: FnMut() -> T,
