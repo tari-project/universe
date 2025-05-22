@@ -25,7 +25,7 @@ import { HeaderLabel, TabHeader } from '../../components/Tabs/tab.styles';
 import { SwapConfirmation } from '@app/containers/floating/SwapDialogs/sections/SwapConfirmation/SwapConfirmation';
 import { ProcessingTransaction } from '@app/containers/floating/SwapDialogs/sections/ProcessingTransaction/ProcessingTransaction';
 
-import { Chevron } from '@app/assets/icons/Chevron';
+import { ChevronSVG } from '@app/assets/icons/chevron';
 import { useSwapData } from './useSwapData';
 import { TokenSelection } from '@app/containers/floating/SwapDialogs/sections/TokenSelection/TokenSelection';
 import { truncateMiddle } from '@app/utils';
@@ -110,7 +110,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
-                        $error={notEnoughBalance}
+                        $error={uiDirection === 'toXtm' ? notEnoughBalance : false}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setFromAmount(e.target.value)}
@@ -119,7 +119,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
                         {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || 'ETH', width: 25 })}
                         <span>{fromTokenDisplay?.symbol || 'ETH'}</span>
-                        <Chevron />
+                        <ChevronSVG />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay?.balance}`}</span> : null}
@@ -136,6 +136,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                 <SwapOptionAmount>
                     <SwapAmountInput
                         type="text"
+                        $error={uiDirection === 'fromXtm' ? notEnoughBalance : false}
                         inputMode="decimal"
                         placeholder="0.00"
                         onChange={(e) => setTargetAmount(e.target.value)}

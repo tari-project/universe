@@ -3,6 +3,7 @@ import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import {
     AirdropTokens,
+    useConfigBEInMemoryStore,
     useConfigCoreStore,
     useConfigMiningStore,
     useConfigUIStore,
@@ -309,4 +310,15 @@ export const setWarmupSeen = (warmupSeen: boolean) => {
 
 export const setDefaultChain = (chain: ChainId) => {
     useConfigCoreStore.setState({ default_chain: chain });
+};
+
+export const fetchBackendInMemoryConfig = async () => {
+    try {
+        const res = await invoke('get_app_in_memory_config');
+        if (res) {
+            useConfigBEInMemoryStore.setState({ ...res });
+        }
+    } catch (e) {
+        console.error('Could not fetch backend in memory config', e);
+    }
 };

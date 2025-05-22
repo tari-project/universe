@@ -15,7 +15,7 @@ import {
 } from './ConnectWallet.styles';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { useTranslation } from 'react-i18next';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (isOpen: boolean) => void }) => {
     const { connect, connectors } = useConnect();
@@ -24,7 +24,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleConnect = useCallback(async () => {
-        const walletConnectConnector = connectors.find((c) => c.id === 'metaMask');
+        const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect');
 
         if (walletConnectConnector && isOpen) {
             try {

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { StatusList, StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList';
 import { StatusHero } from '@app/components/transactions/components/StatusHero/StatusHero';
 import ProcessingIcon from '@app/components/transactions/send/SendReview/icons/ProcessingIcon';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 import CompletedIcon from '@app/components/transactions/send/SendReview/icons/CompletedIcon';
 
 export type SwapStatus = 'processingapproval' | 'processingswap' | 'success' | 'error';

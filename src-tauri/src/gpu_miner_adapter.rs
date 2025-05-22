@@ -20,7 +20,8 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::app_config::GpuThreads;
+use crate::configs::config_mining::GpuThreads;
+use crate::configs::config_mining::MiningMode;
 use crate::gpu_miner::EngineType;
 use crate::gpu_status_file::GpuDevice;
 use crate::port_allocator::PortAllocator;
@@ -42,10 +43,7 @@ use tokio::sync::watch;
 #[cfg(target_os = "windows")]
 use crate::utils::windows_setup_utils::add_firewall_rule;
 
-use crate::{
-    app_config::MiningMode,
-    process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor},
-};
+use crate::process_adapter::{ProcessAdapter, ProcessInstance, StatusMonitor};
 
 const LOG_TARGET: &str = "tari::universe::gpu_miner_adapter";
 

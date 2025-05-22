@@ -2,7 +2,7 @@ import { HeaderWrapper, StatusWrapper } from './SignApprovalMessage.styles';
 import Metamask from '../../icons/mm-fox';
 import TransactionModal from '@app/components/TransactionModal/TransactionModal';
 import { useTranslation } from 'react-i18next';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots';
 
 interface Props {
     isOpen: boolean;
