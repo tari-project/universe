@@ -30,12 +30,6 @@ use tokio::sync::RwLock;
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<TestConfig>> = LazyLock::new(|| RwLock::new(TestConfig::new()));
-
-#[derive(Clone)]
-struct TestOldConfig {
-    some_test_string: String,
-    some_test_bool: bool,
-}
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 #[serde(rename_all = "snake_case")]
 #[serde(default)]
@@ -89,7 +83,6 @@ struct TestConfig {
 
 impl ConfigImpl for TestConfig {
     type Config = TestConfigContent;
-    type OldConfig = TestOldConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -120,25 +113,6 @@ impl ConfigImpl for TestConfig {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = TestConfigContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                some_test_string: old_config.some_test_string,
-                some_test_bool: old_config.some_test_bool,
-                some_test_int: 0,
-            };
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }
 
@@ -195,28 +169,6 @@ mod tests {
             !initial_value,
             *TestConfig::_load_config().unwrap().some_test_bool()
         );
-    }
-    #[tokio::test]
-    async fn test_migrate_old_config() {
-        let mut config = TestConfig::current().write().await;
-        before_each();
-
-        let old_config = TestOldConfig {
-            some_test_string: "test".to_string(),
-            some_test_bool: true,
-        };
-
-        config.handle_old_config_migration(Some(old_config.clone()));
-
-        assert_eq!(
-            &old_config.some_test_string,
-            config._get_content().some_test_string()
-        );
-        assert_eq!(
-            old_config.some_test_bool,
-            *config._get_content().some_test_bool()
-        );
-        assert_eq!(0, *config._get_content().some_test_int());
     }
 
     #[tokio::test]

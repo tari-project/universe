@@ -3,6 +3,7 @@ import i18next, { changeLanguage } from 'i18next';
 import { Language } from '@app/i18initializer.ts';
 import {
     AirdropTokens,
+    useConfigBEInMemoryStore,
     useConfigCoreStore,
     useConfigMiningStore,
     useConfigUIStore,
@@ -17,6 +18,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { ChainId } from '@uniswap/sdk-core';
 
 interface SetModeProps {
     mode: modeType;
@@ -304,4 +306,19 @@ export const setWarmupSeen = (warmupSeen: boolean) => {
             console.error('Could not set seen', e);
             setError('Could not change seen');
         });
+};
+
+export const setDefaultChain = (chain: ChainId) => {
+    useConfigCoreStore.setState({ default_chain: chain });
+};
+
+export const fetchBackendInMemoryConfig = async () => {
+    try {
+        const res = await invoke('get_app_in_memory_config');
+        if (res) {
+            useConfigBEInMemoryStore.setState({ ...res });
+        }
+    } catch (e) {
+        console.error('Could not fetch backend in memory config', e);
+    }
 };
