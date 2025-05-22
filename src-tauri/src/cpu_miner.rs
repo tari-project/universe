@@ -24,7 +24,8 @@ use crate::binaries::Binaries;
 use crate::commands::{CpuMinerConnection, CpuMinerConnectionStatus, CpuMinerStatus};
 use crate::configs::config_mining::{ConfigMiningContent, MiningMode};
 use crate::configs::config_wallet::ConfigWalletContent;
-use crate::pool_status_watcher::{self, SupportXmrStyleAdapter};
+use crate::internal_wallet::InternalWallet;
+use crate::pool_status_watcher::SupportXmrStyleAdapter;
 use crate::process_stats_collector::ProcessStatsCollectorBuilder;
 use crate::process_watcher::ProcessWatcher;
 use crate::tasks_tracker::TasksTrackers;
@@ -121,6 +122,7 @@ impl CpuMiner {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_lines)]
     pub async fn start(
         &mut self,
         app_shutdown: ShutdownSignal,
@@ -151,18 +153,18 @@ impl CpuMiner {
                             ));
                         }
                     };
-                let status_watch = if let Some(ref url) = cpu_miner_config.pool_status_url {
-                    Some(PoolStatusWatcher::new(
+
+                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
+                    PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
                         SupportXmrStyleAdapter {},
-                    ))
-                } else {
-                    None
-                };
+                    )
+                });
+
                 (
                     XmrigNodeConnection::Pool {
                         host_name: pool_address,
-                        port: port,
+                        port,
                         monero_address: cpu_miner_config.monero_address.clone(),
                     },
                     status_watch,
@@ -178,20 +180,23 @@ impl CpuMiner {
                         ));
                         }
                     };
-                let status_watch = if let Some(ref url) = cpu_miner_config.pool_status_url {
-                    Some(PoolStatusWatcher::new(
+                let status_watch = cpu_miner_config.pool_status_url.as_ref().map(|url| {
+                    PoolStatusWatcher::new(
                         url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
                         SupportXmrStyleAdapter {},
-                    ))
-                } else {
-                    None
-                };
+                    )
+                });
+
+                let tari_address = InternalWallet::load_or_create(config_path.clone())
+                    .await?
+                    .get_tari_address();
+
                 (
                     XmrigNodeConnection::MergeMinedPool {
                         host_name: pool_address,
-                        port: port,
+                        port,
                         monero_address: cpu_miner_config.monero_address.clone(),
-                        tari_address: cpu_miner_config.tari_address.to_base58(),
+                        tari_address: tari_address.to_base58(),
                     },
                     status_watch,
                 )
@@ -419,7 +424,7 @@ impl CpuMiner {
                                 //     .iter()
                                 //     .fold(0.0, |acc, x| acc + x.unwrap_or(0.0));
                                 let is_connected = xmrig_status.connection.uptime > 0;
-                                dbg!(&last_pool_status);
+                                // dbg!(&last_pool_status);
 
 
                                 CpuMinerStatus {

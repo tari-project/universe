@@ -33,7 +33,7 @@ use node::local_node_adapter::LocalNodeAdapter;
 use node::node_adapter::BaseNodeStatus;
 use node::node_manager::NodeType;
 use p2pool::models::Connections;
-use pool_status_watcher::{PoolStatus, PoolStatusWatcher, SupportXmrStyleAdapter};
+use pool_status_watcher::{PoolStatus, PoolStatusWatcher};
 use process_stats_collector::ProcessStatsCollectorBuilder;
 
 use node::remote_node_adapter::RemoteNodeAdapter;
@@ -41,14 +41,13 @@ use node::remote_node_adapter::RemoteNodeAdapter;
 use setup::setup_manager::SetupManager;
 use std::fs::{remove_dir_all, remove_file};
 use std::path::Path;
-use systemtray_manager::{SystemTrayData, SystemTrayManager};
+use systemtray_manager::SystemTrayManager;
 use tasks_tracker::TasksTrackers;
 use tauri_plugin_cli::CliExt;
 use telemetry_service::TelemetryService;
 use tokio::sync::watch::{self};
 use tor_control_client::TorStatus;
 use updates_manager::UpdatesManager;
-use utils::locks_utils::try_write_with_retry;
 use utils::system_status::SystemStatus;
 use wallet_adapter::WalletState;
 use websocket_events_manager::WebsocketEventsManager;
@@ -242,7 +241,6 @@ struct UniverseAppState {
     #[allow(dead_code)]
     wallet_state_watch_rx: Arc<watch::Receiver<Option<WalletState>>>,
     cpu_miner_status_watch_rx: Arc<watch::Receiver<CpuMinerStatus>>,
-    cpu_pool_status_rx: Arc<watch::Receiver<Option<PoolStatus>>>,
     gpu_latest_status: Arc<watch::Receiver<GpuMinerStatus>>,
     p2pool_latest_status: Arc<watch::Receiver<Option<P2poolStats>>>,
     is_getting_p2pool_connections: Arc<AtomicBool>,
@@ -272,7 +270,6 @@ struct UniverseAppState {
     websocket_manager_status_rx: Arc<watch::Receiver<WebsocketManagerStatusMessage>>,
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
-    cpu_pool_watcher: Arc<RwLock<Option<PoolStatusWatcher<SupportXmrStyleAdapter>>>>,
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -381,7 +378,6 @@ fn main() {
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
-    let (cpu_pool_status_tx, cpu_pool_status_rx) = watch::channel(None);
 
     let telemetry_manager: TelemetryManager = TelemetryManager::new(
         cpu_miner_status_watch_rx.clone(),
@@ -426,7 +422,6 @@ fn main() {
         node_status_watch_rx: Arc::new(base_node_watch_rx),
         wallet_state_watch_rx: Arc::new(wallet_state_watch_rx.clone()),
         cpu_miner_status_watch_rx: Arc::new(cpu_miner_status_watch_rx),
-        cpu_pool_status_rx: Arc::new(cpu_pool_status_rx),
         gpu_latest_status: Arc::new(gpu_status_rx),
         p2pool_latest_status: Arc::new(p2pool_stats_rx),
         is_setup_finished: Arc::new(RwLock::new(false)),
@@ -454,7 +449,6 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
-        cpu_pool_watcher: Arc::new(RwLock::new(None)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]

@@ -20,13 +20,9 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::time::Duration;
-
 use anyhow::Error;
-use log::error;
+use log::info;
 use serde::Serialize;
-use tari_shutdown::ShutdownSignal;
-use tokio::sync::watch;
 
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
@@ -89,7 +85,7 @@ pub struct SupportXmrStyleAdapter {}
 
 impl PoolApiAdapter for SupportXmrStyleAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
-        dbg!(data);
+        info!(target: LOG_TARGET, "Converting API data: {}", data);
         Ok(PoolStatus {
             accepted_shares: 0,
             unpaid: 0,

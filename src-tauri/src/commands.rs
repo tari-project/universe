@@ -86,6 +86,7 @@ pub struct MaxUsageLevels {
 pub enum CpuMinerConnection {
     BuiltInProxy,
     Pool,
+    #[allow(dead_code)]
     MergeMinedPool,
 }
 
@@ -1453,7 +1454,6 @@ pub async fn start_mining<'r>(
     let custom_cpu_usage = *ConfigMining::content().await.custom_max_cpu_usage();
     let custom_gpu_usage = ConfigMining::content().await.custom_max_gpu_usage().clone();
     let p2pool_enabled = *ConfigCore::content().await.is_p2pool_enabled();
-    let monero_address = ConfigWallet::content().await.monero_address().clone();
 
     let mut telemetry_id = state
         .telemetry_manager
