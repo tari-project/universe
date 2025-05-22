@@ -77,7 +77,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
 
                 <HistoryList />
 
-            {uiBridgeSwapsEnabled && <BridgeButton />}
+                {uiBridgeSwapsEnabled && <BridgeButton />}
                 {uiSendRecvEnabled ? (
                     <>
                         {swapUiEnabled ? (
@@ -134,6 +134,7 @@ const Wallet = memo(function Wallet({ section, setSection }: Props) {
         setShowPaperWalletModal,
         swapUiEnabled,
         t,
+        uiBridgeSwapsEnabled,
         uiSendRecvEnabled,
         walletAddress,
     ]);
