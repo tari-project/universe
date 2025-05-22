@@ -73,6 +73,7 @@ pub struct HardwareSetupPhase {
     app_configuration: HardwareSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
     setup_features: SetupFeaturesList,
 }
 

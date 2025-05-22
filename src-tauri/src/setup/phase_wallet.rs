@@ -74,6 +74,7 @@ pub struct WalletSetupPhase {
     app_configuration: WalletSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    #[allow(dead_code)]
     setup_features: SetupFeaturesList,
 }
 

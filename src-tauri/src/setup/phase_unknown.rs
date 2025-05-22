@@ -181,6 +181,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         });
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
         let mut progress_stepper = self.progress_stepper.lock().await;

@@ -78,10 +78,6 @@ impl Display for SetupFeature {
 pub struct SetupFeaturesList(Vec<SetupFeature>);
 
 impl SetupFeaturesList {
-    pub fn new() -> Self {
-        Self(vec![])
-    }
-
     pub fn add_feature(&mut self, feature: SetupFeature) {
         if !self.0.contains(&feature) {
             self.0.push(feature);
