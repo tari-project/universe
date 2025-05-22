@@ -235,9 +235,8 @@ impl SetupPhaseImpl for WalletSetupPhase {
             .resolve_step(ProgressPlans::Wallet(ProgressSetupWalletPlan::SetupBridge))
             .await;
 
-        let app_handle = self.get_app_handle().clone();
         tapplet_resolver
-            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone(), app_handle)
+            .initialize_tapplet_timeout(Tapplets::Bridge, progress.clone(), rx.clone())
             .await?;
 
         Ok(())

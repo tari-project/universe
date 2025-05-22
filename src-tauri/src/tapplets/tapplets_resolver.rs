@@ -28,7 +28,6 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::LazyLock;
 use std::time::Duration;
-use tauri::AppHandle;
 use tauri_plugin_sentry::sentry;
 use tokio::sync::watch::Receiver;
 use tokio::sync::{Mutex, RwLock};
@@ -44,7 +43,6 @@ static INSTANCE: LazyLock<RwLock<TappletResolver>> =
 
 #[async_trait]
 pub trait TappletApiAdapter: Send + Sync + 'static {
-    fn get_tapplet_source_file(&self, app_handle: AppHandle) -> Result<PathBuf, Error>;
     fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error>;
 }
 
@@ -91,8 +89,19 @@ impl TappletResolver {
             )
         })?;
 
-        // should return /.cache/com.tari.universe.alpha/tapplets/bridge/<network>/out
-        Ok(dest_dir.join(TAPPLET_SOURCE_DIR))
+        let ver = manager
+            .lock()
+            .await
+            .select_highest_local_version()
+            .ok_or_else(|| anyhow!("No version found for tapplet {}", tapplet.name()))?;
+
+        // should return /.cache/com.tari.universe.alpha/tapplets/bridge/<network>/<ver>/package/out
+        let tapp_path = dest_dir
+            .join(ver.to_string())
+            .join("package")
+            .join(TAPPLET_SOURCE_DIR);
+
+        Ok(tapp_path)
     }
 
     pub async fn initialize_tapplet_timeout(
@@ -100,11 +109,10 @@ impl TappletResolver {
         tapplet: Tapplets,
         progress_tracker: ProgressTracker,
         timeout_channel: Receiver<String>,
-        app_handle: AppHandle,
     ) -> Result<(), Error> {
         match timeout(
             Duration::from_secs(60 * 5),
-            self.initialize_tapplet(tapplet, progress_tracker.clone(), app_handle),
+            self.initialize_tapplet(tapplet, progress_tracker.clone()),
         )
         .await
         {
@@ -123,17 +131,16 @@ impl TappletResolver {
         &self,
         tapplet: Tapplets,
         progress_tracker: ProgressTracker,
-        app_handle: AppHandle,
     ) -> Result<(), Error> {
-        let manager = self
+        let mut manager = self
             .managers
             .get(&tapplet)
             .ok_or_else(|| anyhow!("Couldn't find manager for tapplet: {}", tapplet.name()))?
             .lock()
             .await;
-
+        let ver = manager.select_highest_local_version();
         manager
-            .extract_tapplet(progress_tracker, app_handle)
+            .download_version_with_retries(ver, progress_tracker.clone())
             .await?;
 
         Ok(())

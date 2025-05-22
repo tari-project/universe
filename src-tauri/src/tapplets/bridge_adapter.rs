@@ -26,7 +26,6 @@ use anyhow::Error;
 use async_trait::async_trait;
 use log::error;
 use tari_common::configuration::Network;
-use tauri::{path::BaseDirectory, AppHandle, Manager};
 
 use crate::APPLICATION_FOLDER_ID;
 
@@ -38,13 +37,6 @@ pub struct BridgeTappletAdapter {}
 
 #[async_trait]
 impl TappletApiAdapter for BridgeTappletAdapter {
-    fn get_tapplet_source_file(&self, app_handle: AppHandle) -> Result<PathBuf, Error> {
-        let tapplet_source_file = app_handle
-            .path()
-            .resolve("resources/bridge-v0.1.0.zip", BaseDirectory::Resource)?;
-
-        Ok(tapplet_source_file)
-    }
     fn get_tapplet_dest_dir(&self) -> Result<PathBuf, Error> {
         let cache_path =
             dirs::cache_dir().ok_or_else(|| anyhow::anyhow!("Failed to get cache directory"))?;
