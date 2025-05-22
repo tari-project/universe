@@ -27,10 +27,13 @@ const txStates = {
 };
 
 export function getTxTypeByStatus(transaction: TransactionInfo): TransationType {
+    if (txTypes.mined.includes(transaction.status)) {
+        return 'mined';
+    }
     if (txTypes.oneSided.includes(transaction.status)) {
         return transaction.direction === TransactionDirection.Inbound ? 'received' : 'sent';
     }
-    return txTypes.mined.includes(transaction.status) ? 'mined' : 'unknown';
+    return 'unknown';
 }
 
 export function getTxStatusTitleKey(transaction: TransactionInfo): string | undefined {
@@ -45,18 +48,22 @@ export function getTxTitle(transaction: TransactionInfo): string {
     const txMessage = transaction.payment_id;
     const statusTitleKey = getTxStatusTitleKey(transaction);
     const statusTitle = i18n.t(`common:${statusTitleKey}`);
-    const typeTitle = i18n.t(`common:${itemType}`);
-    console.debug(`itemType= `, itemType);
+    const typeTitle =
+        itemType === 'unknown' ? TransactionDirection[transaction.direction] : i18n.t(`common:${itemType}`);
+
     if (itemType === 'mined' && transaction.mined_in_block_height) {
         return `${i18n.t('sidebar:block')} #${transaction.mined_in_block_height}`;
     }
 
     if (txMessage && !txMessage.includes('<No message>')) {
+        if (statusTitleKey !== 'complete') {
+            return `${txMessage} | ${statusTitle}`;
+        }
         return txMessage;
     }
-    console.debug(`statusTitleKey= `, statusTitleKey);
+
     if (statusTitleKey !== 'complete') {
         return `${typeTitle} | ${statusTitle}`;
     }
-    return i18n.t(`common:${statusTitleKey ?? itemType}`);
+    return i18n.t(`common:${itemType}`);
 }

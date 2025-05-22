@@ -6,7 +6,7 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
-import { getTxStatusTitleKey, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
+import { getTxStatusTitleKey, getTxTitle } from '@app/utils/getTxStatus.ts';
 
 type Key = keyof TransactionInfo;
 type Entry = {
@@ -44,6 +44,9 @@ function parseValues({
     if (key === 'timestamp') {
         return { value: formatTimeStamp(value) };
     }
+    if (key === 'payment_id') {
+        return { value: getTxTitle(transaction) };
+    }
     if (key === 'status') {
         const tKey = getTxStatusTitleKey(transaction);
         return { value: i18n.t(`common:${tKey}`), valueRight: value };
@@ -63,12 +66,7 @@ function parseValues({
 }
 
 export function getListEntries(item: TransactionInfo, showHidden = false) {
-    const entries = Object.entries(item).filter(
-        ([key]) =>
-            showHidden ||
-            !HIDDEN_KEYS.includes(key) ||
-            (key === 'mined_in_block_height' && getTxTypeByStatus(item) !== 'mined')
-    );
+    const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
     return entries.map(([key, _value]) => {
         const { value, ...rest } = parseValues({ key: key as Key, value: _value, transaction: item });
         return {
