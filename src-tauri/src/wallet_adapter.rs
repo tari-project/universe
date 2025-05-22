@@ -132,8 +132,8 @@ impl WalletAdapter {
             let tx = message.transaction.ok_or_else(|| {
                 WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
             })?;
-            if tx.status == 14 || tx.status == 7 {
-                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN and REJECTED
+            if tx.status == 14 {
+                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
                 continue;
             }
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
