@@ -87,8 +87,8 @@ const ModeSelect = memo(function ModeSelect({ variant = 'primary' }: ModeSelectP
     }
 
     return (
-        <TileItem $unpadded>
-            <Typography style={{ padding: `0 15px` }}>{t('mode')}</Typography>
+        <TileItem>
+            <Typography>{t('mode')}</Typography>
             {selectMarkup}
         </TileItem>
     );

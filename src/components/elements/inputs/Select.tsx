@@ -95,7 +95,7 @@ export function Select({
     ) : (
         <>
             <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
-                <Typography style={isBordered ? undefined : { padding: `0 0 0 15px` }}>{selectedLabel}</Typography>
+                <Typography>{selectedLabel}</Typography>
                 {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
             </SelectedOption>
         </>

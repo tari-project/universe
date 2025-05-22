@@ -9,26 +9,27 @@ export const MinerContainer = styled.div`
 `;
 
 export const TileContainer = styled.div`
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    display: flex;
+    justify-content: stretch;
+    align-items: stretch;
+    flex-wrap: wrap;
     gap: 6px;
 `;
 
 export const TileItem = styled.div<{ $unpadded?: boolean }>`
-    height: 61px;
-    padding: ${({ $unpadded }) => ($unpadded ? '' : '9px 15px')};
-
+    padding: 8px;
     background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
-
+    width: calc(33% - 12px);
+    flex-grow: 1;
     display: flex;
     flex-direction: column;
     justify-content: center;
     gap: 3px;
-
+    height: 60px;
     color: ${({ theme }) => theme.palette.text.accent};
-    font-family: Poppins, sans-serif;
     font-size: 12px;
     font-weight: 500;
     position: relative;
