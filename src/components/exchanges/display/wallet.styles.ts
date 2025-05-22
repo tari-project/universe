@@ -1,10 +1,11 @@
 import styled, { css } from 'styled-components';
 import * as m from 'motion/react-m';
+import { convertHexToRGBA } from '@app/utils';
 
 export const WalletDisplayWrapper = styled.div`
-    background-color: ${({ theme }) => theme.palette.background.splash};
+    background-color: ${({ theme }) => theme.palette.background.paper};
     border-radius: 20px;
-    padding: 15px;
+    padding: 15px 15px 0 15px;
     display: flex;
     flex-direction: column;
 `;
@@ -27,23 +28,27 @@ export const ImgWrapper = styled.div<{ $isLogo?: boolean; $border?: boolean }>`
     align-items: center;
     justify-content: center;
     color: ${({ theme }) => theme.palette.text.primary};
+    box-shadow: -2px 1px 32px -7px ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.1)};
+
     img,
     svg {
         display: flex;
-        width: 100%;
-        max-width: 30px;
+        max-width: 100%;
     }
 
     ${({ $isLogo }) =>
         $isLogo &&
         css`
-            background-color: ${({ theme }) => theme.colors.greyscale[100]};
+            background-color: ${({ theme }) => theme.colors.greyscale[50]};
+            img {
+                max-width: 26px;
+            }
         `}
 
     ${({ $border }) =>
         $border &&
         css`
-            border: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[50]};
+            border: 1px solid ${({ theme }) => theme.colorsAlpha.greyscaleAlpha[10]};
         `}
 `;
 
@@ -69,13 +74,13 @@ export const AddressWrapper = styled(m.div)<{ $isOpen: boolean }>`
 `;
 
 export const AddressDisplay = styled.div`
-    border-radius: 20px;
-    color: ${({ theme }) => theme.palette.text.contrast};
-    background: ${({ theme }) => theme.colors.greyscale[100]};
-    box-shadow: 0 4px 74px 0 rgba(0, 0, 0, 0.15);
-    backdrop-filter: blur(27px);
-    padding: 10px;
-    margin: 10px 0 0;
+    border-radius: 24px;
+    font-weight: 900;
+    white-space: nowrap;
+    background-color: ${({ theme }) => theme.palette.background.default};
+    letter-spacing: 0.1rem;
+    padding: 10px 0;
+    margin: 10px 0 15px;
     align-items: center;
     justify-content: center;
     display: flex;
