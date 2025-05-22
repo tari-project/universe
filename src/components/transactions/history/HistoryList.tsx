@@ -53,7 +53,7 @@ const HistoryList = memo(function HistoryList() {
                 scrollableTarget="list"
             >
                 <ListItemWrapper>
-                    {combinedTransactions.map((tx, i) => {
+                    {combinedTransactions?.map((tx, i) => {
                         // only show "new" badge under these conditions:
                         // there are new txs is general
                         // it's only of the latest 3

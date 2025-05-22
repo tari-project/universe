@@ -29,7 +29,7 @@ const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, o
     // if the transaction is Outbound, the value is negative
 
     const isPositiveValue = direction === TransactionDirection.Inbound;
-    const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
+    const displayTitle = title.length > 26 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
             <Content>
