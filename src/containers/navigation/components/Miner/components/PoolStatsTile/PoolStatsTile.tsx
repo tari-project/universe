@@ -13,11 +13,11 @@ import {
     ExpandedWrapper,
     TriggerWrapper,
 } from './styles';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 import { Typography } from '@app/components/elements/Typography.tsx';
 import QuestionMarkSvg from '@app/components/svgs/QuestionMarkSvg.tsx';
 import { useState } from 'react';
-import { autoUpdate, offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
+import { offset, safePolygon, useFloating, useHover, useInteractions } from '@floating-ui/react';
 
 import { AnimatePresence } from 'motion/react';
 
@@ -32,9 +32,9 @@ const variants = {
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
-    const _miningTime = useMiningStore((s) => s.miningTime);
+    const miningTime = useMiningStore((s) => s.miningTime);
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
-    const loading = !pool_status?.balance && !pool_status?.unpaid && !pool_status;
+    const loading = !pool_status?.balance && !pool_status?.unpaid && !!pool_status;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
 
@@ -69,10 +69,14 @@ export const PoolStatsTile = () => {
                         <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                             <QuestionMarkSvg />
                         </TriggerWrapper>
-                        <Timer>
-                            <TimerDot />
-                            <Typography>{`3:47:12`}</Typography>
-                        </Timer>
+                        {miningTime ? (
+                            <Timer>
+                                <TimerDot />
+                                <Typography>{miningTime}</Typography>
+                            </Timer>
+                        ) : (
+                            <div />
+                        )}
                         <AnimatePresence mode="sync">
                             {expanded && (
                                 <ExpandedWrapper
@@ -84,7 +88,17 @@ export const PoolStatsTile = () => {
                                     animate="visible"
                                     exit="hidden"
                                 >
-                                    <div>HIIII</div>
+                                    <Typography variant="h6">{t('stats.tile-heading')}</Typography>
+                                    <Typography variant="p">
+                                        <Trans
+                                            i18nKey="stats.tooltip-copy"
+                                            ns="p2p"
+                                            values={{ amount: balanceFMT, time: miningTime }}
+                                            components={{ strong: <strong /> }}
+                                        />
+
+                                        {t('stats.tooltip-copy')}
+                                    </Typography>
                                 </ExpandedWrapper>
                             )}
                         </AnimatePresence>

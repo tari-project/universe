@@ -27,6 +27,7 @@ export const Wrapper = styled.div<{ $isLoading?: boolean }>`
 export const LeftContent = styled.div`
     display: flex;
     gap: 4px;
+    justify-content: space-between;
     flex-direction: column;
 `;
 export const RightContent = styled.div`
@@ -76,17 +77,19 @@ export const Timer = styled.div`
     background-color: ${({ theme }) => theme.palette.contrast};
     padding: 2px 7px;
     border-radius: 50px;
+    line-height: 1;
+    font-weight: 500;
 `;
 
 export const TriggerWrapper = styled(m.div)`
     width: 14px;
     height: 14px;
-    background: ${({ theme }) => convertHexToRGBA(theme.palette.contrast, 0.9)};
+    background: ${({ theme }) => theme.palette.contrast};
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 100%;
-    color: ${({ theme }) => theme.palette.text.contrast};
+    color: ${({ theme }) => theme.palette.base};
 `;
 
 export const ExpandedWrapper = styled(m.div)`

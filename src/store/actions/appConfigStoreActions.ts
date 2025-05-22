@@ -297,17 +297,6 @@ export const setNodeType = async (nodeType: NodeType) => {
     });
 };
 
-export const setWarmupSeen = (warmupSeen: boolean) => {
-    invoke('set_warmup_seen', { warmupSeen })
-        .then(() => {
-            useConfigUIStore.setState({ warmup_seen: warmupSeen });
-        })
-        .catch((e) => {
-            console.error('Could not set seen', e);
-            setError('Could not change seen');
-        });
-};
-
 export const setDefaultChain = (chain: ChainId) => {
     useConfigCoreStore.setState({ default_chain: chain });
 };

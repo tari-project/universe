@@ -15,7 +15,8 @@
   "sha3-stats": "SHA3 Stats",
   "stats": {
     "tile-heading": "Earnings in Progress",
-    "tile-loading": "Pool is warming up"
+    "tile-loading": "Pool is warming up",
+    "tooltip-copy": "Rewards are pending until you reach <strong>{{amount}} XTM</strong> and the <strong>{{time}}</strong> hold is complete. They’ll then move to your available balance."
   },
   "tribe": "Tribe"
 }
