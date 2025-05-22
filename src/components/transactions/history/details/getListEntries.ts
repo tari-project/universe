@@ -6,7 +6,7 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
-import { getTxStatusTitle, getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
+import { getTxStatusTitleKey, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 
 type Key = keyof TransactionInfo;
 type Entry = {
@@ -45,10 +45,8 @@ function parseValues({
         return { value: formatTimeStamp(value) };
     }
     if (key === 'status') {
-        return { value: getTxStatusTitle(transaction), valueRight: value };
-    }
-    if (key === 'payment_id') {
-        console.debug(`value= `, value);
+        const tKey = getTxStatusTitleKey(transaction);
+        return { value: i18n.t(`common:${tKey}`), valueRight: value };
     }
     if (key === 'amount') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;

@@ -26,11 +26,6 @@ const txStates = {
     failed: [TransactionStatus.Rejected, TransactionStatus.NotFound],
 };
 
-export function getTxStatusString(statusNumber: number): string {
-    const keyNamesOnly = Object.keys(TransactionStatus).filter((key) => isNaN(Number(key)));
-    return keyNamesOnly[statusNumber];
-}
-
 export function getTxTypeByStatus(transaction: TransactionInfo): TransationType {
     if (txTypes.oneSided.includes(transaction.status)) {
         return transaction.direction === TransactionDirection.Inbound ? 'received' : 'sent';
@@ -38,17 +33,12 @@ export function getTxTypeByStatus(transaction: TransactionInfo): TransationType 
     return txTypes.mined.includes(transaction.status) ? 'mined' : 'unknown';
 }
 
-export function getTxStatusTitle(transaction: TransactionInfo): string | undefined {
-    const txTranslationKey = Object.keys(txStates).find((key) => {
+export function getTxStatusTitleKey(transaction: TransactionInfo): string | undefined {
+    return Object.keys(txStates).find((key) => {
         if (txStates[key].includes(transaction.status)) {
             return key;
         }
     });
-    console.debug(txTranslationKey);
-
-    if (txTranslationKey) {
-        return i18n.t(`common:${txTranslationKey}`);
-    }
 }
 export function getTxTitle(transaction: TransactionInfo): string {
     const itemType = getTxTypeByStatus(transaction);
@@ -62,5 +52,9 @@ export function getTxTitle(transaction: TransactionInfo): string {
         return txMessage;
     }
 
-    return getTxStatusTitle(transaction) || i18n.t(`common:${itemType}`);
+    const statusTitleKey = getTxStatusTitleKey(transaction);
+    if (statusTitleKey === 'complete') {
+        return i18n.t(`common:${itemType ?? statusTitleKey}`);
+    }
+    return i18n.t(`common:${statusTitleKey ?? itemType}`);
 }
