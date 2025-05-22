@@ -37,19 +37,16 @@ use chrono::{NaiveDateTime, TimeZone, Utc};
 use log::{error, info, warn};
 use minotari_node_grpc_client::BaseNodeGrpcClient;
 use serde::Serialize;
-use serde_json::json;
 use std::collections::HashMap;
 use std::fmt::Write as _;
 use std::sync::atomic::AtomicU64;
-use std::sync::{Arc, Once};
+use std::sync::Arc;
 use tari_common::configuration::Network;
 use tari_core::transactions::tari_amount::MicroMinotari;
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::ShutdownSignal;
 use tari_utilities::hex::Hex;
 use tari_utilities::ByteArray;
-use tauri_plugin_sentry::sentry;
-use tauri_plugin_sentry::sentry::protocol::Event;
 use tokio::sync::watch;
 use tokio::time::timeout;
 
@@ -309,12 +306,7 @@ impl NodeAdapterService {
     }
 
     pub async fn check_if_is_orphan_chain(&self) -> Result<bool, anyhow::Error> {
-        static REPORT_TO_SENTRY: Once = Once::new();
-        let BaseNodeStatus {
-            is_synced,
-            block_height: local_tip,
-            ..
-        } = self.get_network_state().await?;
+        let BaseNodeStatus { is_synced, .. } = self.get_network_state().await?;
         if !is_synced {
             info!(target: LOG_TARGET, "Node is not synced, skipping orphan chain check");
             return Ok(false);
@@ -345,31 +337,6 @@ impl NodeAdapterService {
                 if let Some(local_block) = local_block {
                     error!(target: LOG_TARGET, "Local block at height: {} and hash: {}", local_block.0, local_block.1);
                 }
-                REPORT_TO_SENTRY.call_once(|| {
-                    let error_msg = "Orphan chain detected".to_string();
-                    let mut extra = vec![
-                        ("block_scan_block_height", block_scan_block.0.to_string()),
-                        ("block_scan_block_hash", block_scan_block.1.clone()),
-                        ("block_scan_tip_height", block_scan_tip.to_string()),
-                        ("local_tip_height", local_tip.to_string()),
-                    ];
-
-                    if let Some(local_block) = local_block {
-                        extra.push(("local_block_height", local_block.0.to_string()));
-                        extra.push(("local_block_hash", local_block.1.clone()));
-                    };
-                    let extra = extra
-                        .into_iter()
-                        .map(|(k, v)| (k.to_string(), json!(v)))
-                        .collect::<Vec<_>>();
-                    sentry::capture_event(Event {
-                        message: Some(error_msg),
-                        level: sentry::Level::Error,
-                        culprit: Some("orphan-chain".to_string()),
-                        extra: extra.into_iter().collect(),
-                        ..Default::default()
-                    });
-                });
                 return Ok(true);
             }
         }
