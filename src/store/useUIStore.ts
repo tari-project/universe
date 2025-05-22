@@ -34,6 +34,7 @@ interface UIStoreState {
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
     towerSidebarOffset: number;
+    blockBubblesEnabled: boolean;
 }
 const preferredTheme = window.matchMedia?.('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 
@@ -54,6 +55,7 @@ const initialState: UIStoreState = {
     showResumeAppModal: false,
     seedlessUI: false,
     towerSidebarOffset: sidebarTowerOffset,
+    blockBubblesEnabled: false,
 };
 
 export const useUIStore = create<UIStoreState>()(() => ({
