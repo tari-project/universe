@@ -151,7 +151,11 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             {errorMsg && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>}
             <SubmitButtonWrapper>
                 <WalletButton variant="primary" onClick={() => setReviewSwap(true)} size="xl" disabled={disabled}>
-                    {isLoading ? t('swap.loading') : t('swap.review-swap')}
+                    {connectedAccount.address
+                        ? isLoading
+                            ? t('swap.loading')
+                            : t('swap.review-swap')
+                        : t('swap.connect-wallet')}
                 </WalletButton>
             </SubmitButtonWrapper>
 
