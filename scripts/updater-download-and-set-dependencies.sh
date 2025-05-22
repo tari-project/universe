@@ -12,6 +12,12 @@ AWS_ENDPOINT_URL="${AWS_ENDPOINT_URL}"
 AWS_DEFAULT_REGION="${AWS_DEFAULT_REGION}"
 BASE_PATH="${BASE_PATH}"
 
+echo "Environment variables set:"
+echo "EXCHANGE_ID: ${EXCHANGE_ID}"
+echo "EXCHANGE_NAME: ${EXCHANGE_NAME}"
+echo "APP_VERSION: ${APP_VERSION}"
+echo "BASE_PATH: ${BASE_PATH}"
+
 # Step 1: Download artifacts from CDN
 echo "Creating directories for artifacts"
 mkdir -p ./${EXCHANGE_ID}_${APP_VERSION}_macos-latest
@@ -47,5 +53,10 @@ export MSI_URL="${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_e
 export AARCH64_URL="${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage"
 export AMD64_URL="${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage"
 export TAR_URL="${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}.app.tar.gz"
+
+echo "::set-output MSI_URL=${MSI_URL}"
+echo "::set-output AMD64_URL=${AMD64_URL}"
+echo "::set-output AARCH64_URL=${AARCH64_URL}"
+echo "::set-output TAR_URL=${TAR_URL}"
 
 echo "Binaries download URLs constructed and exported."
