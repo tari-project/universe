@@ -24,7 +24,7 @@ export const ConnectWallet = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpe
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const handleConnect = useCallback(async () => {
-        const walletConnectConnector = connectors.find((c) => c.id === 'walletConnect');
+        const walletConnectConnector = connectors.find((c) => c.id === 'metaMask');
 
         if (walletConnectConnector && isOpen) {
             try {

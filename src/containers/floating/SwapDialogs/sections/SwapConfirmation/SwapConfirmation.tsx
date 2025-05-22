@@ -44,7 +44,7 @@ interface Props {
     };
 }
 export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fromTokenDisplay }: Props) => {
-    const { amount, targetAmount, direction, slippage, priceImpact } = transaction;
+    const { amount, targetAmount, direction, slippage, networkFee } = transaction;
     const { t } = useTranslation(['wallet'], { useSuspense: false });
 
     const dataAcc = useAccount();
@@ -67,8 +67,8 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         // },
         {
             label: t('swap.network-cost'),
-            value: priceImpact,
-            helpText: `${priceImpact} ${toSymbol}`,
+            value: networkFee,
+            helpText: `${networkFee}`,
         },
         {
             label: t('swap.you-will-receive').replace('{{symbol}}', toSymbol),
@@ -78,10 +78,10 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
             label: t('swap.slippage-tolerance'),
             value: slippage,
         },
-        {
-            label: t('swap.price-impact'),
-            value: priceImpact,
-        },
+        // {
+        //     label: t('swap.price-impact'),
+        //     value: priceImpact,
+        // },
     ];
 
     return (

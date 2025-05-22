@@ -49,10 +49,10 @@ export const ENABLED_TOKEN_ADDRESSES = {
     },
 };
 
-export const PUBLIC_RPC_URLS: Partial<Record<ChainId, string>> = {
+export const RPC_URLS: Partial<Record<ChainId, string>> = {
     // TODO - have these on config - Infura might be needed
-    [ChainId.MAINNET]: 'https://ethereum.publicnode.com',
-    [ChainId.SEPOLIA]: 'https://ethereum-sepolia-rpc.publicnode.com',
+    [ChainId.MAINNET]: 'https://rwa.y.at/miner/rpc/mainnet',
+    [ChainId.SEPOLIA]: 'https://rwa.y.at/miner/rpc/sepolia',
 };
 
 export const XTM_SDK_TOKEN: Partial<Record<ChainId, Token>> = {

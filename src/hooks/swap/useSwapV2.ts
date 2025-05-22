@@ -20,7 +20,7 @@ import {
     SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM,
     SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM,
     SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
-    PUBLIC_RPC_URLS,
+    RPC_URLS,
 } from './lib/constants';
 import { walletClientToSigner, formatNativeGasFee, formatGasFeeUSD } from './lib/utils';
 import { TradeDetails, SwapField, SwapDirection } from './lib/types';
@@ -73,10 +73,10 @@ export const useUniswapV2Interactions = () => {
 
     const [provider, setProvider] = useState<Provider | null>(null);
     const publicRpcProvider = useMemo(() => {
-        if (!currentChainId || !PUBLIC_RPC_URLS[currentChainId]) return null;
+        if (!currentChainId || !RPC_URLS[currentChainId]) return null;
         if (accountAddress) return null;
         try {
-            return new ethers.JsonRpcProvider(PUBLIC_RPC_URLS[currentChainId], currentChainId);
+            return new ethers.JsonRpcProvider(RPC_URLS[currentChainId], currentChainId);
         } catch (e) {
             console.error('Error creating public JsonRpcProvider:', e);
             return null;
