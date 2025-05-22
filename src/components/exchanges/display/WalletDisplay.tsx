@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
+import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function WalletDisplay() {
     const data = useExchangeStore((s) => s.content);
@@ -27,7 +28,7 @@ export default function WalletDisplay() {
                     <ImgWrapper $isLogo>
                         <img src={data.logo_img_url} alt={`${data.name} logo`} />
                     </ImgWrapper>
-                    <p>{data.name}</p>
+                    <Typography variant="h5">{data.name}</Typography>
                 </XCInfo>
                 <OpenButton
                     onClick={() => setOpen(!open)}
