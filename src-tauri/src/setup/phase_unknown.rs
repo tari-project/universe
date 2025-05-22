@@ -232,6 +232,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 .with_cpu_benchmark_hashrate(Some(
                     state.cpu_miner.read().await.benchmarked_hashrate,
                 ))
+                .with_randomx_disabled(
+                    self.setup_features
+                        .is_feature_enabled(SetupFeature::CentralizedPool),
+                )
                 .build()?;
             state
                 .p2pool_manager
