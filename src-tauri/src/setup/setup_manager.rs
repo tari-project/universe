@@ -26,13 +26,15 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
+    app_in_memory_config::DEFAULT_EXCHANGE_ID,
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
-    events::ConnectionStatusPayload,
+    events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
     initialize_frontend_updates,
+    internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
     tasks_tracker::TasksTrackers,
     utils::system_status::SystemStatus,
@@ -56,6 +58,30 @@ use tokio_util::sync::CancellationToken;
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
+
+#[derive(Clone, Default)]
+pub enum ExchangeModalStatus {
+    #[default]
+    None,
+    WaitForCompletion,
+    Completed,
+}
+
+impl Display for ExchangeModalStatus {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            ExchangeModalStatus::None => write!(f, "None"),
+            ExchangeModalStatus::WaitForCompletion => write!(f, "Wait For Completion"),
+            ExchangeModalStatus::Completed => write!(f, "Completed"),
+        }
+    }
+}
+
+impl ExchangeModalStatus {
+    pub fn is_completed(&self) -> bool {
+        matches!(self, ExchangeModalStatus::Completed) | matches!(self, ExchangeModalStatus::None)
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetupPhase {
@@ -146,13 +172,13 @@ impl PhaseStatus {
 }
 
 #[derive(Default)]
-
 pub struct SetupManager {
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
     wallet_phase_status: Sender<PhaseStatus>,
     unknown_phase_status: Sender<PhaseStatus>,
+    exchange_modal_status: Sender<ExchangeModalStatus>,
     is_app_unlocked: Mutex<bool>,
     is_wallet_unlocked: Mutex<bool>,
     is_mining_unlocked: Mutex<bool>,
@@ -175,6 +201,7 @@ impl SetupManager {
     async fn pre_setup(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Pre Setup");
         let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
 
         let _unused = state
             .telemetry_manager
@@ -199,13 +226,6 @@ impl SetupManager {
             .write()
             .await
             .init(app_version.to_string(), telemetry_id.clone())
-            .await;
-
-        let old_config_content = state
-            .config
-            .write()
-            .await
-            .initialize_for_migration(app_handle.clone())
             .await;
 
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
@@ -242,15 +262,31 @@ impl SetupManager {
         });
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigCore::initialize(app_handle.clone()).await;
+        ConfigWallet::initialize(app_handle.clone()).await;
+        ConfigMining::initialize(app_handle.clone()).await;
+        ConfigUI::initialize(app_handle.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
         state.node_manager.set_node_type(node_type).await;
         EventsManager::handle_node_type_update(&app_handle).await;
+
+        let config_path = app_handle
+            .path()
+            .app_config_dir()
+            .expect("Could not get config dir");
+        let internal_wallet = InternalWallet::load_or_create(config_path)
+            .await
+            .expect("Could not load or create internal wallet");
+        let is_address_generated = internal_wallet.get_is_tari_address_generated();
+        let is_on_exchange_miner_build =
+            in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID;
+
+        if is_on_exchange_miner_build && is_address_generated {
+            self.exchange_modal_status
+                .send_replace(ExchangeModalStatus::WaitForCompletion);
+        }
 
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
@@ -288,6 +324,23 @@ impl SetupManager {
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let state = app_handle.state::<UniverseAppState>();
+        let in_memory_config = state.in_memory_config.clone();
+        if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
+            self.unlock_wallet(app_handle.clone()).await;
+            EventsManager::handle_progress_tracker_update(
+                &app_handle,
+                ProgressEvents::Wallet,
+                "setup-wallet".to_string(),
+                "setup-wallet".to_string(),
+                60.0,
+                None,
+                true, // just enforce is_completed true
+            )
+            .await;
+
+            return;
+        }
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
@@ -308,6 +361,12 @@ impl SetupManager {
         unknown_phase_setup.setup().await;
     }
 
+    pub async fn mark_exchange_modal_as_completed(&self) -> Result<(), anyhow::Error> {
+        self.exchange_modal_status
+            .send(ExchangeModalStatus::Completed)?;
+        Ok(())
+    }
+
     #[allow(clippy::too_many_lines)]
     async fn wait_for_unlock_conditions(&self, app_handle: AppHandle) {
         let mut core_phase_status_subscriber = self.core_phase_status.subscribe();
@@ -315,6 +374,7 @@ impl SetupManager {
         let mut node_phase_status_subscriber = self.node_phase_status.subscribe();
         let mut wallet_phase_status_subscriber = self.wallet_phase_status.subscribe();
         let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
+        let mut exchange_modal_status_subscriber = self.exchange_modal_status.subscribe();
 
         let cacellation_token = self.cancellation_token.lock().await.clone();
 
@@ -331,6 +391,7 @@ impl SetupManager {
                     let is_node_phase_succeeded = node_phase_status_subscriber.borrow().is_success();
                     let is_wallet_phase_succeeded = wallet_phase_status_subscriber.borrow().is_success();
                     let is_unknown_phase_succeeded = unknown_phase_status_subscriber.borrow().is_success();
+                    let is_exchange_modal_completed = exchange_modal_status_subscriber.borrow().is_completed();
 
                     info!(target: LOG_TARGET, "Checking unlock conditions: Core: {}, Hardware: {}, Node: {}, Wallet: {}, Unknown: {}",
                         is_core_phase_succeeded,
@@ -350,6 +411,7 @@ impl SetupManager {
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
+                        && is_exchange_modal_completed
                         && !is_app_unlocked
                     {
                         SetupManager::get_instance()
@@ -421,12 +483,13 @@ impl SetupManager {
                         _ = node_phase_status_subscriber.changed() => { continue; }
                         _ = wallet_phase_status_subscriber.changed() => { continue; }
                         _ = unknown_phase_status_subscriber.changed() => { continue; }
+                        _ = exchange_modal_status_subscriber.changed() => { continue; }
                     };
                 }
             });
     }
 
-    async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
+    pub async fn shutdown_phases(&self, app_handle: AppHandle, phases: Vec<SetupPhase>) {
         // We are cancelling the wait_for_unlock_conditions listener to avoid it from triggering
         // As we are shutting down the phases one by one which could lead to unwanted unlocks
         self.cancellation_token.lock().await.cancel();

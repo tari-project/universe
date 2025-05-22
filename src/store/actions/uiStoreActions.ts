@@ -91,6 +91,8 @@ export const setSidebarOpen = (sidebarOpen: boolean) =>
         sidebarOpen,
         towerSidebarOffset: sidebarOpen ? sidebarTowerOffset + SB_WIDTH : sidebarTowerOffset,
     });
+
+export const setSeedlessUI = (seedlessUI: boolean) => useUIStore.setState({ seedlessUI });
 export const handleCloseSplashscreen = () => useUIStore.setState({ showSplashscreen: false });
 export const handleAskForRestart = () => {
     setDialogToShow('restart');
