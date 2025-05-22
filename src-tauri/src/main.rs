@@ -300,7 +300,6 @@ struct UniverseAppState {
     websocket_manager: Arc<RwLock<WebsocketManager>>,
     websocket_event_manager: Arc<RwLock<WebsocketEventsManager>>,
     cpu_pool_watcher: Arc<RwLock<Option<PoolStatusWatcher<SupportXmrStyleAdapter>>>>,
-
 }
 
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
@@ -373,7 +372,6 @@ fn main() {
     let (p2pool_stats_tx, p2pool_stats_rx) = watch::channel(None);
     let p2pool_manager = P2poolManager::new(p2pool_stats_tx, &mut stats_collector);
 
-    
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
         tari_address: TariAddress::default(),
@@ -385,7 +383,7 @@ fn main() {
         pool_host_name: None,
         pool_port: None,
         monero_address: "".to_string(),
-        pool_status_url: None
+        pool_status_url: None,
     }));
 
     let app_in_memory_config =
@@ -487,7 +485,7 @@ fn main() {
         websocket_manager_status_rx: Arc::new(websocket_manager_status_rx.clone()),
         websocket_manager,
         websocket_event_manager: Arc::new(RwLock::new(websocket_events_manager)),
-        cpu_pool_watcher: Arc::new(RwLock::new(None))
+        cpu_pool_watcher: Arc::new(RwLock::new(None)),
     };
     let app_state_clone = app_state.clone();
     #[allow(deprecated, reason = "This is a temporary fix until the new tauri API is released")]
