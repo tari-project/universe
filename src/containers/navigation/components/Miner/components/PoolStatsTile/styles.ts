@@ -1,15 +1,19 @@
 import styled from 'styled-components';
 import { Typography } from '@app/components/elements/Typography.tsx';
+import { convertHexToRGBA } from '@app/utils';
 
-export const Wrapper = styled.div`
+const bg = '#188750';
+const bg_loading = '#CC7A1C';
+export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     height: 60px;
     padding: 0 15px;
     width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    box-shadow: 0 -4px 10px -5px rgba(24, 135, 80, 0.05);
-    background: linear-gradient(99deg, rgba(24, 135, 80, 0.3) -50%, transparent 8%, rgba(24, 135, 80, 0.3) 190%);
+    box-shadow: 0 -4px 10px -5px ${({ $isLoading }) => convertHexToRGBA($isLoading ? bg_loading : bg, 0.05)};
+    background: ${({ $isLoading }) =>
+        `linear-gradient(99deg,  ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.1)} -50%, transparent 8%, ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.3)} 190%)`};
     color: ${({ theme }) => theme.palette.text.accent};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     font-size: 12px;

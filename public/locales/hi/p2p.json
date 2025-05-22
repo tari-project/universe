@@ -13,5 +13,9 @@
   "pending": "लंबित",
   "randomx-stats": "RandomX सांख्यिकी",
   "sha3-stats": "SHA3 सांख्यिकी",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up"
+  },
   "tribe": "जनजाति"
 }

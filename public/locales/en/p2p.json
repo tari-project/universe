@@ -13,5 +13,9 @@
   "pending": "Pending",
   "randomx-stats": "RandomX Stats",
   "sha3-stats": "SHA3 Stats",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up"
+  },
   "tribe": "Tribe"
 }

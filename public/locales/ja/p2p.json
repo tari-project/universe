@@ -13,5 +13,9 @@
   "pending": "保留中",
   "randomx-stats": "RandomX 統計",
   "sha3-stats": "SHA3 統計",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up"
+  },
   "tribe": "トライブ"
 }

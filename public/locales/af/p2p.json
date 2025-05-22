@@ -13,5 +13,9 @@
   "pending": "Hangende",
   "randomx-stats": "RandomX Statistieke",
   "sha3-stats": "SHA3 Statistieke",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up"
+  },
   "tribe": "Stam"
 }
