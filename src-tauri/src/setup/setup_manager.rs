@@ -398,6 +398,7 @@ impl SetupManager {
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
         let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
+        // TODO: Add option to disable specific phases and handle it properly on frontend
         let in_memory_config = state.in_memory_config.clone();
         if in_memory_config.read().await.exchange_id != DEFAULT_EXCHANGE_ID {
             self.unlock_wallet(app_handle.clone()).await;
