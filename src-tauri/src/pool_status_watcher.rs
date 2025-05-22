@@ -30,7 +30,7 @@ use tokio::sync::watch;
 
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
-pub(crate) struct PoolStatus{
+pub(crate) struct PoolStatus {
     pub accepted_shares: u32,
     pub unpaid: u64,
     pub balance: u64,
@@ -41,7 +41,6 @@ pub(crate) trait PoolApiAdapter: Clone {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error>;
 }
 
-
 #[derive(Clone, Debug)]
 pub(crate) struct PoolStatusWatcher<T: Clone> {
     pub url: String,
@@ -50,12 +49,11 @@ pub(crate) struct PoolStatusWatcher<T: Clone> {
 
 impl<T: Clone> PoolStatusWatcher<T> {
     pub fn new(url: String, adapter: T) -> Self {
-        Self { url,  adapter }
+        Self { url, adapter }
     }
 }
 
 impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
-
     pub async fn get_pool_status(&self) -> Result<PoolStatus, Error> {
         let response = reqwest::get(&self.url).await?;
         let data = response.text().await?;
@@ -87,11 +85,9 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
 }
 
 #[derive(Clone, Debug)]
-pub struct SupportXmrStyleAdapter {
+pub struct SupportXmrStyleAdapter {}
 
-}
-
-impl PoolApiAdapter for SupportXmrStyleAdapter{
+impl PoolApiAdapter for SupportXmrStyleAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
         dbg!(data);
         Ok(PoolStatus {

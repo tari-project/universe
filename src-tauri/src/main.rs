@@ -169,8 +169,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
         let app_state = move_app.state::<UniverseAppState>().clone();
 
         let mut node_status_watch_rx = (*app_state.node_status_watch_rx).clone();
-        let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
-        let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
         let mut shutdown_signal = TasksTrackers::current().common.get_signal().await;
 
         let init_node_status = *node_status_watch_rx.borrow();
@@ -194,35 +192,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         latest_updated_block_height = node_status.block_height;
                     }
                 },
-                _ = gpu_status_watch_rx.changed() => {
-                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-
-                    let _ = EventsManager::handle_gpu_mining_update(&move_app, gpu_status).await;
-                },
-                _ = cpu_miner_status_watch_rx.changed() => {
-                    let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
-                    let _ = EventsManager::handle_cpu_mining_update(&move_app, cpu_status.clone()).await;
-
-                    // Update systemtray data
-                    let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
-                    let systray_data = SystemTrayData {
-                        cpu_hashrate: cpu_status.hash_rate,
-                        gpu_hashrate: gpu_status.hash_rate,
-                        estimated_earning: (cpu_status.estimated_earnings
-                            + gpu_status.estimated_earnings) as f64,
-                    };
-
-                    match try_write_with_retry(&app_state.systemtray_manager, 6).await {
-                        Ok(mut sm) => {
-                            sm.update_tray(systray_data);
-                        },
-                        Err(e) => {
-                            let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
-                            error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(&err_msg, sentry::Level::Error);
-                        }
-                    }
-                }
                 _ = shutdown_signal.wait() => {
                     break;
                 },

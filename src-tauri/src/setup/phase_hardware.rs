@@ -35,8 +35,10 @@ use crate::{
         ProgressStepper,
     },
     setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    systemtray_manager::SystemTrayData,
     tasks_tracker::TasksTrackers,
-    UniverseAppState,
+    utils::locks_utils::try_write_with_retry,
+    GpuMinerStatus, UniverseAppState,
 };
 use anyhow::Error;
 use log::{error, info, warn};
@@ -243,6 +245,50 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             .await
             .resolve_step(ProgressPlans::Hardware(ProgressSetupHardwarePlan::Done))
             .await;
+
+        let app_handle_clone = self.app_handle.clone();
+        TasksTrackers::current().hardware_phase.get_task_tracker().await.spawn(async move {
+            let app_state = app_handle_clone.state::<UniverseAppState>().clone();
+            let mut gpu_status_watch_rx = (*app_state.gpu_latest_status).clone();
+            let mut cpu_miner_status_watch_rx = (*app_state.cpu_miner_status_watch_rx).clone();
+            let mut shutdown_signal = TasksTrackers::current().hardware_phase.get_signal().await;
+
+            loop {
+                select! {
+                    _ = gpu_status_watch_rx.changed() => {
+                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                        let _ = EventsManager::handle_gpu_mining_update(&app_handle_clone, gpu_status).await;
+                    },
+                    _ = cpu_miner_status_watch_rx.changed() => {
+                        let cpu_status = cpu_miner_status_watch_rx.borrow().clone();
+                        let _ = EventsManager::handle_cpu_mining_update(&app_handle_clone, cpu_status.clone()).await;
+
+                        // Update systemtray data
+                        let gpu_status: GpuMinerStatus = gpu_status_watch_rx.borrow().clone();
+                        let systray_data = SystemTrayData {
+                            cpu_hashrate: cpu_status.hash_rate,
+                            gpu_hashrate: gpu_status.hash_rate,
+                            estimated_earning: (cpu_status.estimated_earnings
+                                + gpu_status.estimated_earnings) as f64,
+                        };
+
+                        match try_write_with_retry(&app_state.systemtray_manager, 6).await {
+                            Ok(mut sm) => {
+                                sm.update_tray(systray_data);
+                            },
+                            Err(e) => {
+                                let err_msg = format!("Failed to acquire systemtray_manager write lock: {}", e);
+                                error!(target: LOG_TARGET, "{}", err_msg);
+                                sentry::capture_message(&err_msg, sentry::Level::Error);
+                            }
+                        }
+                    }
+                    _ = shutdown_signal.wait() => {
+                        break;
+                    },
+                }
+            }
+        });
 
         EventsManager::handle_hardware_phase_finished(&self.app_handle, true).await;
         Ok(())

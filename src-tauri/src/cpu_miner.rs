@@ -59,7 +59,7 @@ pub struct CpuMinerConfig {
     pub monero_address: String,
     pub pool_host_name: Option<String>,
     pub pool_port: Option<u16>,
-    pub pool_status_url: Option<String>
+    pub pool_status_url: Option<String>,
 }
 
 impl CpuMinerConfig {
@@ -70,7 +70,7 @@ impl CpuMinerConfig {
         self.eco_mode_xmrig_options = config_mining_content.eco_mode_cpu_options().clone();
         self.ludicrous_mode_xmrig_options =
             config_mining_content.ludicrous_mode_cpu_options().clone();
-    if let Some(ref pool_url) = config_mining_content.cpu_mining_pool_url() {
+        if let Some(ref pool_url) = config_mining_content.cpu_mining_pool_url() {
             let parts = pool_url.split(':').collect::<Vec<_>>();
             if parts.len() == 2 {
                 if let Ok(port) = parts[1].parse::<u16>() {
@@ -87,7 +87,7 @@ impl CpuMinerConfig {
             self.pool_host_name = None;
         }
 
-        self.pool_status_url =config_mining_content.cpu_mining_pool_status_url().clone();
+        self.pool_status_url = config_mining_content.cpu_mining_pool_status_url().clone();
     }
 
     pub fn load_from_config_wallet(&mut self, config_wallet_content: &ConfigWalletContent) {
@@ -103,7 +103,6 @@ pub(crate) struct CpuMiner {
     pub benchmarked_hashrate: u64,
     pool_status_watcher: Option<PoolStatusWatcher<SupportXmrStyleAdapter>>,
 }
-
 
 impl CpuMiner {
     pub fn new(
@@ -137,57 +136,68 @@ impl CpuMiner {
         custom_cpu_threads: Option<u32>,
     ) -> Result<(), anyhow::Error> {
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
-            CpuMinerConnection::BuiltInProxy => {
-                (XmrigNodeConnection::LocalMmproxy {
+            CpuMinerConnection::BuiltInProxy => (
+                XmrigNodeConnection::LocalMmproxy {
                     host_name: "127.0.0.1".to_string(),
-                    port: mm_proxy_manager.get_monero_port().await?, 
+                    port: mm_proxy_manager.get_monero_port().await?,
                     monero_address: cpu_miner_config.monero_address.clone(),
-                }, None)
-            }
-            ,
+                },
+                None,
+            ),
             CpuMinerConnection::Pool { .. } => {
-                let (pool_address, port) = match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
-                    (Some(ref host_name), Some(port)) => (host_name.clone(), port),
-                    _ => {
-                        return Err(anyhow::anyhow!(
-                            "Pool host name and port must be provided for Pool connection"
-                        ));
-                    }
-                };
+                let (pool_address, port) =
+                    match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
+                        (Some(ref host_name), Some(port)) => (host_name.clone(), port),
+                        _ => {
+                            return Err(anyhow::anyhow!(
+                                "Pool host name and port must be provided for Pool connection"
+                            ));
+                        }
+                    };
                 let status_watch = if let Some(ref url) = cpu_miner_config.pool_status_url {
-                    Some(PoolStatusWatcher::new(url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address), SupportXmrStyleAdapter{}))
+                    Some(PoolStatusWatcher::new(
+                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
+                        SupportXmrStyleAdapter {},
+                    ))
                 } else {
                     None
                 };
-                (XmrigNodeConnection::Pool {
-                    host_name: pool_address,
-                    port: port,
-                    monero_address: cpu_miner_config.monero_address.clone(),
-                }, status_watch)
-            },
+                (
+                    XmrigNodeConnection::Pool {
+                        host_name: pool_address,
+                        port: port,
+                        monero_address: cpu_miner_config.monero_address.clone(),
+                    },
+                    status_watch,
+                )
+            }
             CpuMinerConnection::MergeMinedPool { .. } => {
-                let (pool_address, port) = match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
-                    (Some(ref host_name), Some(port)) => (host_name.clone(), port),
-                    _ => {
-                        return Err(anyhow::anyhow!(
+                let (pool_address, port) =
+                    match (&cpu_miner_config.pool_host_name, cpu_miner_config.pool_port) {
+                        (Some(ref host_name), Some(port)) => (host_name.clone(), port),
+                        _ => {
+                            return Err(anyhow::anyhow!(
                             "Pool host name and port must be provided for MergeMinedPool connection"
                         ));
-                    }
-                };
-                   let status_watch = if let Some(ref url) = cpu_miner_config.pool_status_url {
-                    Some(PoolStatusWatcher::new(url.replace(
-                        "%MONERO_ADDRESS%",
-                        &cpu_miner_config.monero_address
-                    ), SupportXmrStyleAdapter{}))
+                        }
+                    };
+                let status_watch = if let Some(ref url) = cpu_miner_config.pool_status_url {
+                    Some(PoolStatusWatcher::new(
+                        url.replace("%MONERO_ADDRESS%", &cpu_miner_config.monero_address),
+                        SupportXmrStyleAdapter {},
+                    ))
                 } else {
                     None
                 };
-                (XmrigNodeConnection::MergeMinedPool {
-                    host_name: pool_address,
-                    port: port,
-                    monero_address: cpu_miner_config.monero_address.clone(),
-                    tari_address: cpu_miner_config.tari_address.to_base58()
-                }, status_watch)
+                (
+                    XmrigNodeConnection::MergeMinedPool {
+                        host_name: pool_address,
+                        port: port,
+                        monero_address: cpu_miner_config.monero_address.clone(),
+                        tari_address: cpu_miner_config.tari_address.to_base58(),
+                    },
+                    status_watch,
+                )
             }
         };
         self.pool_status_watcher = pool_watcher;
@@ -220,7 +230,7 @@ impl CpuMiner {
         };
         {
             let mut lock = self.watcher.write().await;
-        
+
             lock.adapter.node_connection = Some(xmrig_node_connection);
             lock.adapter.cpu_threads = Some(cpu_max_percentage);
             lock.adapter.extra_options = match mode {

@@ -86,7 +86,7 @@ pub struct MaxUsageLevels {
 pub enum CpuMinerConnection {
     BuiltInProxy,
     Pool,
-    MergeMinedPool
+    MergeMinedPool,
 }
 
 #[derive(Debug, Serialize)]
@@ -126,7 +126,7 @@ pub struct CpuMinerStatus {
     pub hash_rate: f64,
     pub estimated_earnings: u64,
     pub connection: CpuMinerConnectionStatus,
-    pub pool_status: Option<PoolStatus>
+    pub pool_status: Option<PoolStatus>,
 }
 
 impl Default for CpuMinerStatus {
@@ -138,7 +138,7 @@ impl Default for CpuMinerStatus {
             connection: CpuMinerConnectionStatus {
                 is_connected: false,
             },
-            pool_status: None
+            pool_status: None,
         }
     }
 }
@@ -1404,41 +1404,41 @@ pub async fn start_mining<'r>(
     drop(cpu_miner);
 
     if cpu_mining_enabled && !cpu_miner_running {
-            let cpu_miner_config = state.cpu_miner_config.read().await;
-            let mmproxy_manager = &state.mm_proxy_manager;;
-            let mut cpu_miner = state.cpu_miner.write().await;
-            let res = cpu_miner
-                .start(
-                    TasksTrackers::current().hardware_phase.get_signal().await,
-                    &cpu_miner_config,
-                    mmproxy_manager,
-                    app.path()
-                        .app_local_data_dir()
-                        .expect("Could not get data dir"),
-                    app.path()
-                        .app_config_dir()
-                        .expect("Could not get config dir"),
-                    app.path().app_log_dir().expect("Could not get log dir"),
-                    mode,
-                    custom_cpu_usage,
-                )
-                .await;
-            drop(cpu_miner_config);
+        let cpu_miner_config = state.cpu_miner_config.read().await;
+        let mmproxy_manager = &state.mm_proxy_manager;
+        let mut cpu_miner = state.cpu_miner.write().await;
+        let res = cpu_miner
+            .start(
+                TasksTrackers::current().hardware_phase.get_signal().await,
+                &cpu_miner_config,
+                mmproxy_manager,
+                app.path()
+                    .app_local_data_dir()
+                    .expect("Could not get data dir"),
+                app.path()
+                    .app_config_dir()
+                    .expect("Could not get config dir"),
+                app.path().app_log_dir().expect("Could not get log dir"),
+                mode,
+                custom_cpu_usage,
+            )
+            .await;
+        drop(cpu_miner_config);
 
-            if let Err(e) = res {
-                let err_msg = format!("Could not start CPU mining: {}", e);
-                error!(target: LOG_TARGET, "{}", err_msg);
-                sentry::capture_message(&err_msg, sentry::Level::Error);
-                cpu_miner
-                    .stop()
-                    .await
-                    .inspect_err(|e| {
-                        let stop_err = format!("Error stopping CPU miner: {}", e);
-                        error!(target: LOG_TARGET, "{}", stop_err);
-                    })
-                    .ok();
-                return Err(e.to_string());
-            }
+        if let Err(e) = res {
+            let err_msg = format!("Could not start CPU mining: {}", e);
+            error!(target: LOG_TARGET, "{}", err_msg);
+            sentry::capture_message(&err_msg, sentry::Level::Error);
+            cpu_miner
+                .stop()
+                .await
+                .inspect_err(|e| {
+                    let stop_err = format!("Error stopping CPU miner: {}", e);
+                    error!(target: LOG_TARGET, "{}", stop_err);
+                })
+                .ok();
+            return Err(e.to_string());
+        }
     }
 
     let gpu_miner = state.gpu_miner.read().await;

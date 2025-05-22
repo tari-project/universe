@@ -49,13 +49,55 @@ use std::{
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex},
+    sync::{watch::Sender, Mutex, RwLock},
 };
 use tokio_util::sync::CancellationToken;
 
 static LOG_TARGET: &str = "tari::universe::setup_manager";
 
 static INSTANCE: LazyLock<SetupManager> = LazyLock::new(SetupManager::new);
+
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum SetupFeature {
+    ExchangeMiner,
+    CentralizedPool,
+}
+
+impl Display for SetupFeature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            SetupFeature::ExchangeMiner => write!(f, "Exchange Miner"),
+            SetupFeature::CentralizedPool => write!(f, "Centralized Pool"),
+        }
+    }
+}
+
+#[derive(Clone, Default, PartialEq, Eq, Debug)]
+pub struct SetupFeaturesList(Vec<SetupFeature>);
+
+impl SetupFeaturesList {
+    pub fn new() -> Self {
+        Self(vec![])
+    }
+
+    pub fn add_feature(&mut self, feature: SetupFeature) {
+        if !self.0.contains(&feature) {
+            self.0.push(feature);
+        }
+    }
+
+    pub fn get_features(&self) -> Vec<SetupFeature> {
+        self.0.clone()
+    }
+
+    pub fn is_feature_enabled(&self, feature: SetupFeature) -> bool {
+        self.0.contains(&feature)
+    }
+
+    pub fn is_feature_disabled(&self, feature: SetupFeature) -> bool {
+        !self.0.contains(&feature)
+    }
+}
 
 #[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, Debug)]
 pub enum SetupPhase {
@@ -148,6 +190,7 @@ impl PhaseStatus {
 #[derive(Default)]
 
 pub struct SetupManager {
+    features: RwLock<SetupFeaturesList>,
     core_phase_status: Sender<PhaseStatus>,
     hardware_phase_status: Sender<PhaseStatus>,
     node_phase_status: Sender<PhaseStatus>,
@@ -255,6 +298,20 @@ impl SetupManager {
         info!(target: LOG_TARGET, "Pre Setup Finished");
     }
 
+    pub async fn resolve_setup_features(&self) -> Result<(), anyhow::Error> {
+        let mut features = self.features.write().await;
+        let cpu_mining_pool_url = ConfigMining::content().await.cpu_mining_pool_url().clone();
+        let cpu_mining_pool_status_url = ConfigMining::content()
+            .await
+            .cpu_mining_pool_status_url()
+            .clone();
+
+        if cpu_mining_pool_url.is_some() && cpu_mining_pool_status_url.is_some() {
+            features.add_feature(SetupFeature::CentralizedPool);
+        }
+        Ok(())
+    }
+
     async fn setup_core_phase(&self, app_handle: AppHandle) {
         let core_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
@@ -317,6 +374,8 @@ impl SetupManager {
         let mut unknown_phase_status_subscriber = self.unknown_phase_status.subscribe();
 
         let cacellation_token = self.cancellation_token.lock().await.clone();
+        let setup_features = self.features.read().await.clone();
+        info!(target: LOG_TARGET, "Features: {:?}", setup_features.get_features());
 
         TasksTrackers::current()
             .common
@@ -346,12 +405,17 @@ impl SetupManager {
                     let is_mining_unlocked =
                         *SetupManager::get_instance().is_mining_unlocked.lock().await;
 
+                    // ============= DEFAULT UNLOCK CONDITIONS =============
+
                     if is_core_phase_succeeded
                         && is_hardware_phase_succeeded
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
                         && !is_app_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
+                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_app(app_handle.clone())
                             .await;
@@ -362,7 +426,10 @@ impl SetupManager {
                         && is_node_phase_succeeded
                         && is_unknown_phase_succeeded
                         && !is_mining_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
+                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_mining(app_handle.clone())
                             .await;
@@ -373,11 +440,59 @@ impl SetupManager {
                         && is_wallet_phase_succeeded
                         && is_unknown_phase_succeeded
                         && !is_wallet_unlocked
+                        && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
+                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_wallet(app_handle.clone())
                             .await;
                     }
+
+                    // ============= ######################### =============
+
+                    // ============= CENTRALIZED POOL UNLOCK CONDITIONS =============
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && !is_app_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        info!(target: LOG_TARGET, "PIZDA");
+                        SetupManager::get_instance()
+                            .unlock_app(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_core_phase_succeeded
+                        && is_hardware_phase_succeeded
+                        && !is_mining_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        info!(target: LOG_TARGET, "PIZDA");
+                        SetupManager::get_instance()
+                            .unlock_mining(app_handle.clone())
+                            .await;
+                    }
+
+                    if is_core_phase_succeeded
+                        && is_node_phase_succeeded
+                        && is_wallet_phase_succeeded
+                        && is_unknown_phase_succeeded
+                        && !is_wallet_unlocked
+                        && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
+                        && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
+                    {
+                        info!(target: LOG_TARGET, "PIZDA");
+                        SetupManager::get_instance()
+                            .unlock_wallet(app_handle.clone())
+                            .await;
+                    }
+
+                    // ============= ######################### =============
+
 
                     let is_app_unlocked =
                         *SetupManager::get_instance().is_app_unlocked.lock().await;
@@ -574,7 +689,13 @@ impl SetupManager {
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
         self.pre_setup(app_handle.clone()).await;
+        let _unused = self.resolve_setup_features()
+            .await
+            .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
         *self.app_handle.lock().await = Some(app_handle.clone());
+
+        let features = self.features.read().await.clone();
+        info!(target: LOG_TARGET, "Setup Features: {:?}", features.get_features());
 
         self.wait_for_unlock_conditions(app_handle.clone()).await;
 
