@@ -32,7 +32,6 @@ use tokio::sync::watch::{Receiver, Sender};
 use tokio::task::spawn_blocking;
 
 use crate::events_manager::EventsManager;
-use crate::network_utils::retry_on_panic;
 
 const LOG_TARGET: &str = "tari::universe::network_status";
 const SPEED_TEST_TIMEOUT: Duration = Duration::from_secs(60);
@@ -108,60 +107,50 @@ impl NetworkStatus {
         let mut upload_speed = 0.0;
         let mut latency = 0.0;
 
-        match spawn_blocking(|| {
-            retry_on_panic(
-                || {
+        for _ in 0..3 {
+            match spawn_blocking(|| {
+                {
                     test_download(
                         &reqwest::blocking::Client::new(),
                         NETWORK_DOWNLOAD_SPEED_PAYLOAD_TEST,
                         OutputFormat::None,
                     )
-                },
-                3,
-                500,
-            )
-        })
-        .await
-        {
-            Ok(res) => match res {
-                Some(speed) => download_speed = speed,
-                None => error!(target: LOG_TARGET, "Download speed test timeouted 3 times"),
-            },
-            Err(e) => error!(target: LOG_TARGET, "Failed to perform download speed test: {:?}", e),
-        };
+                }
+            })
+            .await
+            {
+                Ok(speed) => {
+                    download_speed = speed;
+                    break;
+                }
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Failed to perform download speed test: {:?}", e)
+                }
+            };
+        }
 
-        match spawn_blocking(|| {
-            retry_on_panic(
-                || {
-                    test_upload(
-                        &reqwest::blocking::Client::new(),
-                        NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
-                        OutputFormat::None,
-                    )
-                },
-                3,
-                500,
-            )
-        })
-        .await
-        {
-            Ok(res) => match res {
-                Some(speed) => upload_speed = speed,
-                None => error!(target: LOG_TARGET, "Upload speed test timeouted 3 times"),
-            },
-            Err(e) => error!(target: LOG_TARGET, "Failed to perform upload speed test: {:?}", e),
-        };
+        for _ in 0..3 {
+            match spawn_blocking(|| {
+                test_upload(
+                    &reqwest::blocking::Client::new(),
+                    NETWORK_UPLOAD_SPEED_PAYLOAD_TEST,
+                    OutputFormat::None,
+                )
+            })
+            .await
+            {
+                Ok(speed) => upload_speed = speed,
+                Err(e) => {
+                    error!(target: LOG_TARGET, "Failed to perform upload speed test: {:?}", e)
+                }
+            };
+        }
 
-        match spawn_blocking(|| {
-            retry_on_panic(|| test_latency(&reqwest::blocking::Client::new()), 3, 500)
-        })
-        .await
-        {
-            Ok(res) => match res {
-                Some(lat) => latency = lat,
-                None => error!(target: LOG_TARGET, "Latenecy test timeouted 3 times"),
-            },
-            Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {:?}", e),
+        for _ in 0..3 {
+            match spawn_blocking(|| test_latency(&reqwest::blocking::Client::new())).await {
+                Ok(lat) => latency = lat,
+                Err(e) => error!(target: LOG_TARGET, "Failed to perform latency test: {:?}", e),
+            }
         }
 
         Ok((download_speed, upload_speed, latency))
@@ -187,11 +176,9 @@ impl NetworkStatus {
             Ok(Err(error_message)) => {
                 let error_message =
                     format!("Failed to perform network speed test: {:?}", error_message);
-                sentry::capture_message(&error_message, sentry::Level::Error);
                 error!(target: LOG_TARGET, "Failed to perform network speed test: {:?}", error_message);
             }
             Err(_) => {
-                sentry::capture_message("Network speed test timed out", sentry::Level::Error);
                 error!(target: LOG_TARGET, "Network speed test timed out");
             }
         }
