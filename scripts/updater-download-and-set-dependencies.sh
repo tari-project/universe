@@ -21,25 +21,25 @@ mkdir -p ./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-24.04-arm
 
 echo "Downloading artifacts from CDN"
 
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-22.04-x64" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage"
-echo "Downloaded ubuntu-22.04-x64 appimage"
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-22.04-x64" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage.sig"
-echo "Downloaded ubuntu-22.04-x64 appimage.sig"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-22.04-x64" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage"
+# echo "Downloaded ubuntu-22.04-x64 appimage"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-22.04-x64" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage.sig"
+# echo "Downloaded ubuntu-22.04-x64 appimage.sig"
 
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-24.04-arm" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage"
-echo "Downloaded ubuntu-24.04-arm appimage"
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-24.04-arm" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage.sig"
-echo "Downloaded ubuntu-24.04-arm appimage.sig"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-24.04-arm" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage"
+# echo "Downloaded ubuntu-24.04-arm appimage"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_ubuntu-24.04-arm" "${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage.sig"
+# echo "Downloaded ubuntu-24.04-arm appimage.sig"
 
 curl -s --location --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_macos-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}.app.tar.gz.sig" --output "Tari Universe-${EXCHANGE_NAME}.app.tar.gz.sig"
 echo "Downloaded macos_latest app.tar.gz.sig"
 curl -s --location --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_macos-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}.app.tar.gz" --output "Tari Universe-${EXCHANGE_NAME}.app.tar.gz"
 echo "Downloaded macos_latest app.tar.gz"
 
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_windows-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi" --output "Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi"
-echo "Downloaded windows-latest msi"
-curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_windows-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi.sig" --output "Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi.sig"
-echo "Downloaded windows-latest msi.sig"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_windows-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi" --output "Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi"
+# echo "Downloaded windows-latest msi"
+# curl -s --location --remote-name --output-dir "./${EXCHANGE_ID}_${APP_VERSION}_windows-latest" "${BASE_PATH}/Tari%20Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi.sig" --output "Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi.sig"
+# echo "Downloaded windows-latest msi.sig"
 
 # Step 2: Construct binaries download URLs
 echo "MSI_URL=${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi" >> $GITHUB_ENV
