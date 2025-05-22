@@ -5,13 +5,19 @@ import { startMining, stopMining } from './miningStoreActions';
 import {
     fetchApplicationsVersionsWithRetry,
     initialFetchTxs,
+    setWalletAddress,
     TOWER_CANVAS_ID,
+    useConfigBEInMemoryStore,
     useConfigMiningStore,
     useConfigUIStore,
     useMiningStore,
     useUIStore,
 } from '@app/store';
 import { ProgressTrackerUpdatePayload } from '@app/hooks/app/useProgressEventsListener';
+
+import { WalletAddress } from '@app/types/app-status.ts';
+import { setSeedlessUI } from '@app/store/actions/uiStoreActions.ts';
+import { fetchExchangeContent, useExchangeStore } from '@app/store/useExchangeStore.ts';
 
 export const handleAppUnlocked = async () => {
     useSetupStore.setState({ appUnlocked: true });
@@ -38,6 +44,21 @@ export const handleWalletUnlocked = () => {
     useSetupStore.setState({ walletUnlocked: true });
     // moved initialFetchTxs here so we don't call it constantly on sidebar open/close
     initialFetchTxs();
+};
+export const handleWalletUpdate = async (addressPayload: WalletAddress) => {
+    const addressIsGenerated = addressPayload.is_tari_address_generated;
+    const xcID = useConfigBEInMemoryStore.getState().exchangeId;
+
+    setWalletAddress(addressPayload);
+    setSeedlessUI(!addressIsGenerated);
+
+    if (xcID) {
+        const currentID = useExchangeStore.getState().content?.exchange_id;
+        const canFetchXCContent = xcID && currentID !== xcID && xcID !== 'universal';
+        if (canFetchXCContent) {
+            await fetchExchangeContent(xcID);
+        }
+    }
 };
 export const handleMiningUnlocked = async () => {
     useSetupStore.setState({ miningUnlocked: true });
@@ -85,5 +106,3 @@ export const updateWalletSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload
 export const updateUnknownSetupPhaseInfo = (payload: ProgressTrackerUpdatePayload | undefined) => {
     useSetupStore.setState({ unknown_phase_setup_payload: payload });
 };
-
-// await setSetupComplete();

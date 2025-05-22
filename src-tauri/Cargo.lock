@@ -7939,6 +7939,7 @@ dependencies = [
  "cfspeedtest",
  "chrono",
  "console-subscriber",
+ "const_format",
  "der",
  "device_query",
  "dirs 5.0.1",

@@ -69,8 +69,9 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::time;
 use utils::logging_utils::setup_logging;
 
-use app_config::AppConfig;
 use app_in_memory_config::AppInMemoryConfig;
+#[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
+use app_in_memory_config::EXCHANGE_ID;
 
 use progress_tracker_old::ProgressTracker;
 use telemetry_manager::TelemetryManager;
@@ -92,7 +93,6 @@ use crate::wallet_manager::WalletManager;
 
 mod ab_test_selector;
 mod airdrop;
-mod app_config;
 mod app_in_memory_config;
 mod auto_launcher;
 mod binaries;
@@ -153,7 +153,11 @@ mod xmrig_adapter;
 
 const LOG_TARGET: &str = "tari::universe::main";
 const RESTART_EXIT_CODE: i32 = i32::MAX;
-#[cfg(not(any(feature = "release-ci", feature = "release-ci-beta")))]
+#[cfg(not(any(
+    feature = "release-ci",
+    feature = "release-ci-beta",
+    feature = "exchange-ci"
+)))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.alpha";
 #[cfg(all(feature = "release-ci", feature = "release-ci-beta"))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
@@ -161,6 +165,8 @@ const APPLICATION_FOLDER_ID: &str = "com.tari.universe.other";
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe";
 #[cfg(all(feature = "release-ci-beta", not(feature = "release-ci")))]
 const APPLICATION_FOLDER_ID: &str = "com.tari.universe.beta";
+#[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
+const APPLICATION_FOLDER_ID: &str = const_format::formatcp!("com.tari.universe.{}", EXCHANGE_ID);
 
 #[allow(clippy::too_many_lines)]
 async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyhow::Error> {
@@ -217,7 +223,6 @@ async fn initialize_frontend_updates(app: &tauri::AppHandle) -> Result<(), anyho
                         } else {
                             let err_msg = "Error getting connected peers";
                             error!(target: LOG_TARGET, "{}", err_msg);
-                            sentry::capture_message(err_msg, sentry::Level::Error);
                         }
                 },
                 _ = shutdown_signal.wait() => {
@@ -245,7 +250,6 @@ struct UniverseAppState {
     is_getting_coinbase_history: Arc<AtomicBool>,
     #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
-    config: Arc<RwLock<AppConfig>>,
     in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
@@ -343,7 +347,6 @@ fn main() {
 
     let cpu_config = Arc::new(RwLock::new(CpuMinerConfig {
         node_connection: CpuMinerConnection::BuiltInProxy,
-        tari_address: TariAddress::default(),
         eco_mode_xmrig_options: vec![],
         ludicrous_mode_xmrig_options: vec![],
         custom_mode_xmrig_options: vec![],
@@ -375,8 +378,6 @@ fn main() {
         .into(),
     );
 
-    let app_config_raw = AppConfig::new();
-    let app_config = Arc::new(RwLock::new(app_config_raw.clone()));
     let (tor_watch_tx, tor_watch_rx) = watch::channel(TorStatus::default());
     let tor_manager = TorManager::new(tor_watch_tx, &mut stats_collector);
     let mm_proxy_manager = MmProxyManager::new(&mut stats_collector);
@@ -431,7 +432,6 @@ fn main() {
         is_setup_finished: Arc::new(RwLock::new(false)),
         is_getting_transactions_history: Arc::new(AtomicBool::new(false)),
         is_getting_coinbase_history: Arc::new(AtomicBool::new(false)),
-        config: app_config.clone(),
         in_memory_config: app_in_memory_config.clone(),
         tari_address: Arc::new(RwLock::new(TariAddress::default())),
         cpu_miner: cpu_miner.clone(),
@@ -600,6 +600,8 @@ fn main() {
             commands::set_mode,
             commands::set_monero_address,
             commands::set_monerod_config,
+            commands::set_tari_address,
+            commands::confirm_exchange_address,
             commands::set_p2pool_enabled,
             commands::set_show_experimental_settings,
             commands::set_should_always_use_system_language,
