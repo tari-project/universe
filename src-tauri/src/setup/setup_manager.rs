@@ -415,7 +415,6 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_app(app_handle.clone())
                             .await;
@@ -429,7 +428,6 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_mining(app_handle.clone())
                             .await;
@@ -443,7 +441,6 @@ impl SetupManager {
                         && setup_features.is_feature_disabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "DUPA");
                         SetupManager::get_instance()
                             .unlock_wallet(app_handle.clone())
                             .await;
@@ -459,7 +456,6 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "PIZDA");
                         SetupManager::get_instance()
                             .unlock_app(app_handle.clone())
                             .await;
@@ -471,7 +467,6 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "PIZDA");
                         SetupManager::get_instance()
                             .unlock_mining(app_handle.clone())
                             .await;
@@ -485,7 +480,6 @@ impl SetupManager {
                         && setup_features.is_feature_enabled(SetupFeature::CentralizedPool)
                         && setup_features.is_feature_disabled(SetupFeature::ExchangeMiner)
                     {
-                        info!(target: LOG_TARGET, "PIZDA");
                         SetupManager::get_instance()
                             .unlock_wallet(app_handle.clone())
                             .await;
@@ -693,9 +687,6 @@ impl SetupManager {
             .await
             .inspect_err(|e| error!(target: LOG_TARGET, "Failed to set setup features during start_setup: {}", e));
         *self.app_handle.lock().await = Some(app_handle.clone());
-
-        let features = self.features.read().await.clone();
-        info!(target: LOG_TARGET, "Setup Features: {:?}", features.get_features());
 
         self.wait_for_unlock_conditions(app_handle.clone()).await;
 
