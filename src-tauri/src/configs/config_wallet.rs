@@ -117,7 +117,6 @@ impl ConfigWallet {
 
         match InternalWallet::load_or_create(old_config_path.clone()).await {
             Ok(wallet) => {
-                state.cpu_miner_config.write().await.tari_address = wallet.get_tari_address();
                 state
                     .wallet_manager
                     .set_view_private_key_and_spend_key(
@@ -127,7 +126,12 @@ impl ConfigWallet {
                     .await;
                 let tari_address = wallet.get_tari_address();
                 *state.tari_address.write().await = tari_address.clone();
-                EventsEmitter::emit_wallet_address_update(&app_handle, tari_address).await;
+                EventsEmitter::emit_wallet_address_update(
+                    &app_handle,
+                    tari_address,
+                    wallet.get_is_tari_address_generated(),
+                )
+                .await;
             }
             Err(e) => {
                 error!(target: LOG_TARGET, "Error loading internal wallet: {:?}", e);

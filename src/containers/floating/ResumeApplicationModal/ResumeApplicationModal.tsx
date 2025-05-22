@@ -16,7 +16,6 @@ const ResumeApplicationModal = memo(function ResumeApplicationModal() {
     const nodePhaseInfoPayload = useSetupStore((state) => state.node_phase_setup_payload);
     const unknownPhaseInfoPayload = useSetupStore((state) => state.unknown_phase_setup_payload);
     const walletPhaseInfoPayload = useSetupStore((state) => state.wallet_phase_setup_payload);
-
     const showModal = useUIStore((state) => state.showResumeAppModal) && connectionStatus === 'connected';
 
     const currentPhaseToShow = useMemo(() => {
