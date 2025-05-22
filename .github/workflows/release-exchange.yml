@@ -615,6 +615,10 @@ jobs:
           BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
         run: |
           sudo bash ./scripts/updater-download-and-set-dependencies.sh
+          echo "MSI_URL=${MSI_URL}" >> $GITHUB_ENV
+          echo "AMD64_URL=${AMD64_URL}" >> $GITHUB_ENV
+          echo "AARCH64_URL=${AARCH64_URL}" >> $GITHUB_ENV
+          echo "TAR_URL=${TAR_URL}" >> $GITHUB_ENV
 
       - name: Run create-latest-json.sh
         shell: bash

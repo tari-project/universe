@@ -42,10 +42,6 @@ echo "Downloaded macos_latest app.tar.gz"
 # echo "Downloaded windows-latest msi.sig"
 
 # Step 2: Construct binaries download URLs
-echo "MSI_URL=${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi" >> $GITHUB_ENV
-echo "AMD64_URL=${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_amd64.AppImage" >> $GITHUB_ENV
-echo "AARCH64_URL=${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage" >> $GITHUB_ENV
-echo "TAR_URL=${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}.app.tar.gz" >> $GITHUB_ENV
 
 export MSI_URL="${BASE_PATH}/Tari Universe-${EXCHANGE_NAME}_${APP_VERSION}_x64_en-US.msi"
 export AARCH64_URL="${BASE_PATH}/tari_universe-${EXCHANGE_NAME}_${APP_VERSION}_aarch64.AppImage"
