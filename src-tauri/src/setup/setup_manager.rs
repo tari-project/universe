@@ -201,13 +201,6 @@ impl SetupManager {
             .init(app_version.to_string(), telemetry_id.clone())
             .await;
 
-        let old_config_content = state
-            .config
-            .write()
-            .await
-            .initialize_for_migration(app_handle.clone())
-            .await;
-
         let mut websocket_events_manager_guard = state.websocket_event_manager.write().await;
         websocket_events_manager_guard.set_app_handle(app_handle.clone());
         drop(websocket_events_manager_guard);
@@ -242,10 +235,10 @@ impl SetupManager {
         });
         EventsManager::handle_node_type_update(&app_handle).await;
 
-        ConfigCore::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigWallet::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigMining::initialize(app_handle.clone(), old_config_content.clone()).await;
-        ConfigUI::initialize(app_handle.clone(), old_config_content.clone()).await;
+        ConfigCore::initialize(app_handle.clone()).await;
+        ConfigWallet::initialize(app_handle.clone()).await;
+        ConfigMining::initialize(app_handle.clone()).await;
+        ConfigUI::initialize(app_handle.clone()).await;
 
         let node_type = ConfigCore::content().await.node_type().clone();
         info!(target: LOG_TARGET, "Retrieved initial node type: {:?}", node_type);
