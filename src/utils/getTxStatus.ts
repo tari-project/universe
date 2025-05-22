@@ -21,6 +21,7 @@ const txStates = {
         TransactionStatus.Broadcast,
         TransactionStatus.Coinbase,
         TransactionStatus.Queued,
+        TransactionStatus.OneSidedUnconfirmed,
     ],
     failed: [TransactionStatus.Rejected, TransactionStatus.NotFound, TransactionStatus.CoinbaseNotInBlockChain],
     complete: [TransactionStatus.Imported, TransactionStatus.OneSidedConfirmed, ...txTypes.mined],
