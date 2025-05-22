@@ -3,7 +3,7 @@ import {
     SettingsGroupWrapper,
 } from '@app/containers/floating/Settings/components/SettingsGroup.styles';
 import { useCallback, useState } from 'react';
-import { Stack } from '@app/components/elements/Stack.tsx';
+
 import { Typography } from '@app/components/elements/Typography.tsx';
 import { IconButton } from '@app/components/elements/buttons/IconButton';
 import { IoCopyOutline, IoCheckmarkOutline } from 'react-icons/io5';
@@ -14,6 +14,10 @@ import { useWalletStore } from '@app/store/useWalletStore';
 
 import { useCopyToClipboard } from '@app/hooks';
 import { useTranslation } from 'react-i18next';
+import { setGeneratedTariAddress } from '@app/store/actions/walletStoreActions';
+import { invoke } from '@tauri-apps/api/core';
+import AddressEditor from '../components/AddressEditor';
+import { CTASArea, InputArea, WalletSettingsGrid } from '@app/containers/floating/Settings/sections/wallet/styles.ts';
 
 const Dot = styled.div`
     width: 4px;
@@ -73,8 +77,6 @@ const WalletAddressMarkup = () => {
     const walletAddress = useWalletStore((state) => state.tari_address_base58);
     const walletAddressEmoji = useWalletStore((state) => state.tari_address_emoji);
 
-    if (!walletAddress) return null;
-
     function condenseEmojiAddress(emojiAddress: string | undefined) {
         const regex = emojiRegex();
         if (!emojiAddress) {
@@ -104,38 +106,51 @@ const WalletAddressMarkup = () => {
         }
     }
 
+    const validateAddress = useCallback(async (value: string) => {
+        try {
+            await invoke('verify_address_for_send', { address: value });
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }, []);
+    const validationRules = {
+        validate: async (value) => {
+            const isValid = await validateAddress(value);
+
+            return isValid || 'Invalid address format';
+        },
+    };
+
     return (
         <SettingsGroupWrapper>
             <SettingsGroupTitle>
                 <Typography variant="h6">{t('tari-wallet-address')}</Typography>
             </SettingsGroupTitle>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" gap={10}>
-                <AddressContainer>
-                    <Typography>{walletAddress}</Typography>
-                </AddressContainer>
-                <CopyToClipboard text={walletAddress} />
-            </Stack>
-            <Stack direction="row" justifyContent="stretch" alignItems={isCondensed ? 'center' : 'flex-start'} gap={10}>
-                <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
-                    <AddressInner>
-                        <Typography
-                            style={{
-                                color: '#b6b7c3',
-                                display: 'flex',
-                                lineHeight: '1.6',
-                            }}
-                        >
-                            {isCondensed ? condenseEmojiAddress(walletAddressEmoji) : walletAddressEmoji}
-                        </Typography>
-                    </AddressInner>
-                </AddressContainer>
-                <Stack direction="row" gap={4}>
+            <AddressEditor initialAddress={walletAddress} onApply={setGeneratedTariAddress} rules={validationRules} />
+            <WalletSettingsGrid>
+                <InputArea>
+                    <AddressContainer style={{ height: isCondensed ? '40px' : 'auto' }}>
+                        <AddressInner>
+                            <Typography
+                                style={{
+                                    color: '#b6b7c3',
+                                    display: 'flex',
+                                    lineHeight: '1.6',
+                                }}
+                            >
+                                {isCondensed ? condenseEmojiAddress(walletAddressEmoji) : walletAddressEmoji}
+                            </Typography>
+                        </AddressInner>
+                    </AddressContainer>
+                </InputArea>
+                <CTASArea>
                     <IconButton size="small" onClick={() => setIsCondensed(!isCondensed)}>
                         {isCondensed ? <BsArrowsExpandVertical /> : <BsArrowsCollapseVertical />}
                     </IconButton>
                     <CopyToClipboard text={walletAddressEmoji} />
-                </Stack>
-            </Stack>
+                </CTASArea>
+            </WalletSettingsGrid>
         </SettingsGroupWrapper>
     );
 };
