@@ -132,8 +132,8 @@ impl WalletAdapter {
             let tx = message.transaction.ok_or_else(|| {
                 WalletStatusMonitorError::UnknownError(anyhow::anyhow!("Transaction not found"))
             })?;
-            if tx.status == 14 || tx.status == 7 {
-                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN and REJECTED
+            if tx.status == 14 {
+                // Remove TRANSACTION_STATUS_COINBASE_NOT_IN_BLOCK_CHAIN
                 continue;
             }
             let source_address = TariAddress::from_bytes(&tx.source_address)?;
@@ -356,10 +356,6 @@ impl ProcessAdapter for WalletAdapter {
         let mut args: Vec<String> = vec![
             "-b".to_string(),
             formatted_working_dir,
-            "--view-private-key".to_string(),
-            self.view_private_key.clone(),
-            "--spend-key".to_string(),
-            self.spend_key.clone(),
             "--non-interactive-mode".to_string(),
             format!(
                 "--log-config={}",
@@ -466,6 +462,14 @@ impl ProcessAdapter for WalletAdapter {
         envs.insert(
             "MINOTARI_WALLET_PASSWORD".to_string(),
             "asjhfahjajhdfvarehnavrahuyg28397823yauifh24@@$@84y8".to_string(),
+        );
+        envs.insert(
+            "MINOTARI_WALLET_VIEW_PRIVATE_KEY".to_string(),
+            self.view_private_key.clone(),
+        );
+        envs.insert(
+            "MINOTARI_WALLET_SPEND_KEY".to_string(),
+            self.spend_key.clone(),
         );
 
         Ok((

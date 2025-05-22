@@ -1,8 +1,8 @@
 {
   "banner": {
-    "body-copy": "You may experience forks and hash rate fluctuations as the network settles over the next ~15 days.",
-    "body-copy-highlight": "Tari is brand new!",
-    "is-live": "is live"
+    "body-copy": "Sie könnten Forks und Hashrate-Schwankungen erleben, während sich das Netzwerk in den nächsten ~15 Tagen stabilisiert.",
+    "body-copy-highlight": "Tari ist brandneu!",
+    "is-live": "ist live"
   },
   "field-error-message": {
     "integers-only": "Nur Ganzzahlen erlaubt",
@@ -36,9 +36,9 @@
     "title": "Tari Universe wird fortgesetzt"
   },
   "warmupDialog": {
-    "copy": "The birth of a proof-of-work network is special. In the early days, the network needs time to stabilize and find its rhythm. We call this the \"warm-up phase.\"\nContributors and early supporters of the Tari network (like exchanges and infrastructure partners) expect the warm-up phase to last about 15 days. After that, the network will transition to a more stable state.\nDuring the warm-up phase, some quirks are normal. You might see block time fluctuations, temporary disconnections, syncing delays, or even short-lived forks that require your node to reconnect to the main chain.\nThe warm-up phase is a great time to mine because rewards are highest per block. We hope the early days of the Tari network are rewarding for you.\nLet the games begin. May the blocks be forever in your favor!",
-    "subtitle": "What does this mean exactly?",
-    "tag-line": "Welcome to Tari Mainnet",
-    "title": "Warm up phase"
+    "copy": "Die Geburt eines Proof-of-Work-Netzwerks ist etwas Besonderes. In den ersten Tagen benötigt das Netzwerk Zeit, um sich zu stabilisieren und seinen Rhythmus zu finden. Wir nennen dies die \"Aufwärmphase\".\nMitwirkende und frühe Unterstützer des Tari-Netzwerks (wie Börsen und Infrastrukturpartner) erwarten, dass die Aufwärmphase etwa 15 Tage dauert. Danach wird das Netzwerk in einen stabileren Zustand übergehen.\nWährend der Aufwärmphase sind einige Eigenheiten normal. Sie könnten Schwankungen der Blockzeit, vorübergehende Verbindungsabbrüche, Synchronisierungsverzögerungen oder sogar kurzlebige Forks sehen, die erfordern, dass Ihr Knoten sich wieder mit der Hauptkette verbindet.\nDie Aufwärmphase ist eine großartige Zeit zum Minen, da die Belohnungen pro Block am höchsten sind. Wir hoffen, dass die frühen Tage des Tari-Netzwerks für Sie lohnend sind.\nMöge das Spiel beginnen. Mögen die Blöcke immer zu Ihren Gunsten sein!",
+    "subtitle": "Was bedeutet das genau?",
+    "tag-line": "Willkommen im Tari Mainnet",
+    "title": "Aufwärmphase"
   }
 }

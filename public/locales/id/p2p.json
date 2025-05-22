@@ -1,6 +1,6 @@
 {
-  "connections": "connections",
-  "established": "Established",
+  "connections": "koneksi",
+  "established": "Ditetapkan",
   "listener-addresses": "Alamat pendengar",
   "miners": "Penambang",
   "network-info": "Info jaringan",
@@ -10,7 +10,7 @@
   "p2pool-connection-info-more": "Detail koneksi",
   "p2pool-peers": "Rekan P2pool",
   "p2pool-stats": "Statistik penambangan pool",
-  "pending": "Pending",
+  "pending": "Tertunda",
   "randomx-stats": "Statistik RandomX",
   "sha3-stats": "Statistik SHA3",
   "tribe": "Suku"

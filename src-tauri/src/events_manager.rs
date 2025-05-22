@@ -27,6 +27,7 @@ use tari_core::transactions::tari_amount::MicroMinotari;
 use tauri::{AppHandle, Manager};
 
 use crate::airdrop::send_new_block_mined;
+use crate::app_in_memory_config::DEFAULT_EXCHANGE_ID;
 use crate::configs::config_mining::ConfigMiningContent;
 use crate::configs::config_wallet::ConfigWalletContent;
 use crate::events::ConnectionStatusPayload;
@@ -52,8 +53,13 @@ pub struct EventsManager;
 
 impl EventsManager {
     pub async fn handle_new_block_height(app: &AppHandle, block_height: u64) {
+        let state = app.state::<UniverseAppState>();
+        let in_memoery_config = state.in_memory_config.read().await;
+        if in_memoery_config.exchange_id.eq(DEFAULT_EXCHANGE_ID) {
+            return;
+        }
         let app_clone = app.clone();
-        let wallet_manager = app.state::<UniverseAppState>().wallet_manager.clone();
+        let wallet_manager = state.wallet_manager.clone();
 
         TasksTrackers::current().wallet_phase.get_task_tracker().await.spawn(async move {
             // Use a short timeout for processing new blocks
@@ -72,7 +78,7 @@ impl EventsManager {
                         } else {
                             None
                         };
-                        
+
                         EventsEmitter::emit_new_block_mined(
                             &app_clone,
                             block_height,
@@ -173,9 +179,17 @@ impl EventsManager {
         app: &AppHandle,
         title: Option<String>,
         description: Option<String>,
+        error_message: Option<String>,
     ) {
-        EventsEmitter::emit_critical_problem(app, CriticalProblemPayload { title, description })
-            .await;
+        EventsEmitter::emit_critical_problem(
+            app,
+            CriticalProblemPayload {
+                title,
+                description,
+                error_message,
+            },
+        )
+        .await;
     }
 
     #[cfg(target_os = "windows")]

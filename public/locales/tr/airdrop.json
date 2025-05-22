@@ -17,7 +17,7 @@
   "giftReferralCode": "Tari Universe\"e davet ettiğiniz her arkadaş için {{gems}} taş kazanın. Onlar hesaplarını bağladığında taşlarınız verilecektir.",
   "giftReferralCodeHeader": "Referans kodunuzu talep edin <span>{{gems}}<image src=\"/assets/images/gem.png\" alt=\"\"/></span> taş.",
   "invite": "Davet Et",
-  "invite-friends-gems": "For every friend that uses your invite link, you receive 5,000 gems.",
+  "invite-friends-gems": "Davet bağlantınızı kullanan her arkadaşınız için 5.000 mücevher kazanırsınız.",
   "inviteFriends": "Arkadaşları Davet Et",
   "inviteFriendsText": "Bağlantıyı kopyalayın ve paylaşın",
   "invitedAmount": "<span>{{count}}</span> arkadaş davet ettiniz",
@@ -28,13 +28,13 @@
   "live": "canlı",
   "logged-in-as": "<strong>@{{twitter}}</strong> olarak giriş yapıldı",
   "loggedInTitle": "Airdrop Ödülleri",
-  "loggedOutTitle": "Invite Friends to Earn Gems",
+  "loggedOutTitle": "Mücevher Kazanmak İçin Arkadaşlarını Davet Et",
   "loginButton": "Mücevherleri talep etmek için giriş yapın",
   "logout": "Çıkış",
   "nextTierBonus": "<strong>{{count}} arkadaş</strong> davet et ve {{bonusGems}} bonus taş kazan",
   "permission": {
     "setup": "Tari Universe, deneyiminizi <strong>iyileştirmek</strong> için analizleri kullanmak istiyor.",
-    "text": "Tari Universe would like to use analytics to improve your experience and reward you with gems for inviting friends.",
+    "text": "Tari Universe, deneyiminizi geliştirmek ve arkadaşlarınızı davet ettiğiniz için size mücevherlerle ödüllendirmek amacıyla analitik kullanmak istiyor.",
     "title": "Mücevherler kazanın ve Tari Universe'ü daha iyi hale getirin"
   },
   "permissionNoGems": {

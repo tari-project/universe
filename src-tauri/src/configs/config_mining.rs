@@ -20,12 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use crate::{
-    app_config::{GpuThreads, MiningMode},
-    events_manager::EventsManager,
-    gpu_miner::EngineType,
-    UniverseAppState,
-};
+use crate::{events_manager::EventsManager, gpu_miner::EngineType, UniverseAppState};
 use std::{sync::LazyLock, time::SystemTime};
 
 use getset::{Getters, Setters};
@@ -33,12 +28,34 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager};
 use tokio::sync::RwLock;
 
-use crate::AppConfig;
-
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
 
 static INSTANCE: LazyLock<RwLock<ConfigMining>> =
     LazyLock::new(|| RwLock::new(ConfigMining::new()));
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
+pub enum MiningMode {
+    Eco,
+    Ludicrous,
+    Custom,
+}
+
+impl MiningMode {
+    pub fn from_str(s: &str) -> Option<MiningMode> {
+        match s {
+            "Eco" => Some(MiningMode::Eco),
+            "Ludicrous" => Some(MiningMode::Ludicrous),
+            "Custom" => Some(MiningMode::Custom),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GpuThreads {
+    pub gpu_name: String,
+    pub max_gpu_threads: u32,
+}
 
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
@@ -61,6 +78,7 @@ pub struct ConfigMiningContent {
     gpu_mining_enabled: bool,
     cpu_mining_enabled: bool,
     gpu_engine: EngineType,
+    squad_override: Option<String>,
 }
 
 impl Default for ConfigMiningContent {
@@ -80,6 +98,7 @@ impl Default for ConfigMiningContent {
             gpu_mining_enabled: true,
             cpu_mining_enabled: true,
             gpu_engine: EngineType::OpenCL,
+            squad_override: None,
         }
     }
 }
@@ -91,11 +110,10 @@ pub struct ConfigMining {
 }
 
 impl ConfigMining {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let state = app_handle.state::<UniverseAppState>();
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
-        config.handle_old_config_migration(old_config);
         state
             .cpu_miner_config
             .write()
@@ -108,7 +126,6 @@ impl ConfigMining {
 
 impl ConfigImpl for ConfigMining {
     type Config = ConfigMiningContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -139,34 +156,5 @@ impl ConfigImpl for ConfigMining {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigMiningContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                mode: old_config.mode(),
-                custom_max_cpu_usage: old_config.custom_cpu_usage(),
-                custom_max_gpu_usage: old_config.custom_gpu_usage(),
-                mine_on_app_start: old_config.mine_on_app_start(),
-                custom_mode_cpu_options: old_config.custom_mode_cpu_options().clone(),
-                eco_mode_cpu_options: old_config.eco_mode_cpu_options().clone(),
-                eco_mode_cpu_threads: old_config.eco_mode_cpu_threads(),
-                gpu_engine: old_config.gpu_engine(),
-                ludicrous_mode_cpu_options: old_config.ludicrous_mode_cpu_options().clone(),
-                gpu_mining_enabled: old_config.gpu_mining_enabled(),
-                cpu_mining_enabled: old_config.cpu_mining_enabled(),
-                ludicrous_mode_cpu_threads: old_config.ludicrous_mode_cpu_threads(),
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

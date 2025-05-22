@@ -64,13 +64,10 @@ export interface ExternalDependency {
     status: ExternalDependencyStatus;
 }
 
-export interface CriticalProblem {
-    title: string;
-    description: string;
-}
 export interface WalletAddress {
     tari_address_base58: string;
     tari_address_emoji: string;
+    is_tari_address_generated: boolean;
 }
 
 export interface TransactionInfo {
