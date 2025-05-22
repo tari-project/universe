@@ -29,6 +29,7 @@ interface UIStoreState {
     adminShow?: AdminShow;
     connectionStatus?: CONNECTION_STATUS;
     isReconnecting?: boolean;
+    seedlessUI?: boolean;
     showSplashscreen: boolean;
     hideWalletBalance: boolean;
     showResumeAppModal: boolean;
@@ -52,6 +53,7 @@ const initialState: UIStoreState = {
     hideWalletBalance: false,
     showWarmup: false,
     showResumeAppModal: false,
+    seedlessUI: false,
     towerSidebarOffset: sidebarTowerOffset,
     showTapplet: false,
 };

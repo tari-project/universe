@@ -13,6 +13,7 @@ import { Language } from '@app/i18initializer';
 import { PaperWalletDetails } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '@app/store/types.ts';
 import { SignData } from '@app/types/ws.ts';
+import { ConfigBackendInMemory } from '@app/types/configs.ts';
 import { ActiveTapplet } from '@app/types/tapplets/tapplet.types';
 
 declare module '@tauri-apps/api/core' {
@@ -119,6 +120,9 @@ declare module '@tauri-apps/api/core' {
     function invoke(param: 'trigger_phases_restart'): Promise<void>;
     function invoke(param: 'set_node_type', payload: { nodeType: NodeType }): Promise<void>;
     function invoke(param: 'set_warmup_seen', payload: { warmupSeen: boolean }): Promise<void>;
+    function invoke(param: 'set_tari_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'confirm_exchange_address', payload: { address: string }): Promise<void>;
+    function invoke(param: 'get_app_in_memory_config'): Promise<ConfigBackendInMemory>;
     function invoke(param: 'launch_builtin_tapplet'): Promise<ActiveTapplet>;
     function invoke(param: 'get_tari_wallet_address'): Promise<string>;
     function invoke(param: 'get_tari_wallet_balance'): Promise<WalletBalance>;
