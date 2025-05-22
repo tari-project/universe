@@ -145,6 +145,10 @@ impl WalletManager {
         process_watcher.adapter.spend_key = spend_key;
     }
 
+    pub async fn get_view_private_key(&self) -> String {
+        self.watcher.read().await.adapter.view_private_key.clone()
+    }
+
     pub fn is_initial_scan_completed(&self) -> bool {
         self.initial_scan_completed
             .load(std::sync::atomic::Ordering::Relaxed)
