@@ -313,22 +313,33 @@ impl SetupManager {
     }
 
     async fn setup_core_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let core_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .build::<CoreSetupPhase>(app_handle.clone(), self.core_phase_status.clone())
+            .build::<CoreSetupPhase>(
+                app_handle.clone(),
+                self.core_phase_status.clone(),
+                setup_features,
+            )
             .await;
         core_phase_setup.setup().await;
     }
 
     async fn setup_hardware_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let hardware_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
-            .build::<HardwareSetupPhase>(app_handle.clone(), self.hardware_phase_status.clone())
+            .build::<HardwareSetupPhase>(
+                app_handle.clone(),
+                self.hardware_phase_status.clone(),
+                setup_features,
+            )
             .await;
         hardware_phase_setup.setup().await;
     }
 
     async fn setup_node_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let state = app_handle.state::<UniverseAppState>();
         let is_local_node = state.node_manager.is_local_current().await.unwrap_or(true);
         let timeout_duration = if is_local_node {
@@ -339,28 +350,42 @@ impl SetupManager {
 
         let node_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(timeout_duration)
-            .build::<NodeSetupPhase>(app_handle.clone(), self.node_phase_status.clone())
+            .build::<NodeSetupPhase>(
+                app_handle.clone(),
+                self.node_phase_status.clone(),
+                setup_features,
+            )
             .await;
         node_phase_setup.setup().await;
     }
 
     async fn setup_wallet_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let wallet_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![self.node_phase_status.subscribe()])
-            .build::<WalletSetupPhase>(app_handle.clone(), self.wallet_phase_status.clone())
+            .build::<WalletSetupPhase>(
+                app_handle.clone(),
+                self.wallet_phase_status.clone(),
+                setup_features,
+            )
             .await;
         wallet_phase_setup.setup().await;
     }
 
     async fn setup_unknown_phase(&self, app_handle: AppHandle) {
+        let setup_features = self.features.read().await.clone();
         let unknown_phase_setup = PhaseBuilder::new()
             .with_setup_timeout_duration(Duration::from_secs(60 * 10)) // 10 minutes
             .with_listeners_for_required_phases_statuses(vec![
                 self.node_phase_status.subscribe(),
                 self.hardware_phase_status.subscribe(),
             ])
-            .build::<UnknownSetupPhase>(app_handle.clone(), self.unknown_phase_status.clone())
+            .build::<UnknownSetupPhase>(
+                app_handle.clone(),
+                self.unknown_phase_status.clone(),
+                setup_features,
+            )
             .await;
         unknown_phase_setup.setup().await;
     }

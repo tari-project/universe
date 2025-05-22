@@ -53,7 +53,7 @@ use tokio::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -73,6 +73,7 @@ pub struct HardwareSetupPhase {
     app_configuration: HardwareSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for HardwareSetupPhase {
@@ -82,6 +83,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -89,6 +91,7 @@ impl SetupPhaseImpl for HardwareSetupPhase {
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 
