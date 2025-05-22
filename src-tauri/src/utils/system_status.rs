@@ -20,7 +20,7 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-use std::sync::LazyLock;
+use std::{panic, sync::LazyLock};
 
 use anyhow::Error;
 use log::{error, info};
@@ -48,8 +48,13 @@ impl SystemStatus {
 
     pub fn start_listener(&self) -> PowerMonitor {
         let power_monitor = PowerMonitor::new();
-        let _unused = power_monitor.start_listening().inspect_err(|e| {
-            error!(target: LOG_TARGET, "Failed to start power monitor: {:?}", e);
+        let _unused = panic::catch_unwind(|| {
+            let _unused = power_monitor.start_listening().inspect_err(|e| {
+                error!(target: LOG_TARGET, "Failed to start power monitor: {:?}", e);
+            });
+        })
+        .inspect_err(|e| {
+            error!(target: LOG_TARGET, "Failed to get system bus: {:?}", e);
         });
 
         power_monitor
