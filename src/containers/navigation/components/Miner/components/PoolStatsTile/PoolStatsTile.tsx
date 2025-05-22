@@ -34,16 +34,16 @@ export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const miningTime = useMiningStore((s) => s.miningTime);
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
-    const loading = !pool_status?.balance && !pool_status?.unpaid && !!pool_status;
+    const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
     const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
 
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(true);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
         placement: 'right-start',
-        middleware: [offset(10)],
+        middleware: [offset({ mainAxis: 5 })],
     });
 
     const hover = useHover(context, {
@@ -88,7 +88,7 @@ export const PoolStatsTile = () => {
                                     animate="visible"
                                     exit="hidden"
                                 >
-                                    <Typography variant="h6">{t('stats.tile-heading')}</Typography>
+                                    <Typography variant="h5">{t('stats.tile-heading')}</Typography>
                                     <Typography variant="p">
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
@@ -96,8 +96,6 @@ export const PoolStatsTile = () => {
                                             values={{ amount: balanceFMT, time: miningTime }}
                                             components={{ strong: <strong /> }}
                                         />
-
-                                        {t('stats.tooltip-copy')}
                                     </Typography>
                                 </ExpandedWrapper>
                             )}

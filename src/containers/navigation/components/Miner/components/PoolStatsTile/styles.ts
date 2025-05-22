@@ -94,12 +94,16 @@ export const TriggerWrapper = styled(m.div)`
 
 export const ExpandedWrapper = styled(m.div)`
     display: flex;
-    background-color: ${({ theme }) => theme.palette.background.paper};
+    background-color: ${({ theme }) => theme.palette.background.default};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     box-shadow: 2px 8px 8px 0 rgba(0, 0, 0, 0.04);
     flex-direction: column;
     gap: 8px;
-    width: 216px;
-    padding: 20px 12px;
-    z-index: 2;
+    width: 300px;
+    padding: 20px;
+
+    h5,
+    strong {
+        color: ${({ theme }) => theme.palette.text.primary};
+    }
 `;
