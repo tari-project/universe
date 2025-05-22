@@ -614,7 +614,7 @@ jobs:
           AWS_DEFAULT_REGION: '${{ secrets.AWS_DEFAULT_REGION }}'
           BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
         run: |
-          sudo bash .scripts/updater-download-and-set-dependencies.sh
+          sudo bash ./scripts/updater-download-and-set-dependencies.sh
 
       - name: Run create-latest-json.sh
         shell: bash
