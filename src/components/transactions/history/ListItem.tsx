@@ -2,7 +2,7 @@ import { memo, useRef, useState } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { formatNumber, FormatPreset, truncateMiddle } from '@app/utils';
 import { BaseItemProps, HistoryListItemProps } from '../types.ts';
-import { formatTimeStamp, getItemTitle, getItemType } from './helpers.ts';
+import { formatTimeStamp } from './helpers.ts';
 import ItemHover from './HoveredItem';
 import {
     ContentWrapper,
@@ -19,8 +19,8 @@ import {
 import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
-import { TransactionStatus } from '@app/types/transactions.ts';
-import { getTxStatusString } from '@app/utils/getTxStatus.ts';
+
+import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 
 const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
@@ -66,17 +66,13 @@ const HistoryListItem = memo(function ListItem({
 
     const ref = useRef<HTMLDivElement>(null);
 
-    const itemType = getItemType(item);
+    const itemType = getTxTypeByStatus(item);
 
     const isMined = itemType === 'mined';
 
     const [hovering, setHovering] = useState(false);
-    const isBroadCast = item.status === TransactionStatus.Broadcast;
-    const isRejected = item.status === TransactionStatus.Rejected;
-    const TEMP_title = isRejected || isBroadCast ? getTxStatusString(item.status) : undefined;
-    // TODO: should we show status stings as is? or group them? i.e pending/failed/complete
-    const itemTitle =
-        TEMP_title ?? getItemTitle({ itemType, blockHeight: item.mined_in_block_height, message: item.payment_id });
+
+    const itemTitle = getTxTitle(item);
     const earningsFormatted = hideWalletBalance
         ? `***`
         : formatNumber(item.amount, FormatPreset.XTM_COMPACT).toLowerCase();

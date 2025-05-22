@@ -10,7 +10,7 @@ interface GetTitleArgs {
     message?: string;
 }
 
-const MINED_TX = [S.MinedConfirmed, S.MinedConfirmed, S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
+const MINED_TX = [S.MinedConfirmed, S.MinedUnconfirmed, S.CoinbaseConfirmed, S.CoinbaseUnconfirmed];
 const ONE_SIDED_TX = [S.OneSidedConfirmed, S.OneSidedUnconfirmed];
 function getItemType(item: TransactionInfo): TransationType {
     const isMined =
