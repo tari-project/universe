@@ -22,7 +22,7 @@
 
 use anyhow::Error;
 use log::info;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 const LOG_TARGET: &str = "tari::universe::pool_status_watcher";
 #[derive(Clone, Debug, Serialize)]
@@ -80,17 +80,39 @@ impl<T: PoolApiAdapter + Send + Sync + 'static> PoolStatusWatcher<T> {
     // }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PoolStatusResponseBody {
+    pub hash: u32,
+    pub identifier: String,
+    #[serde(rename = "lastHash")]
+    pub last_hash: u32,
+    #[serde(rename = "totalHashes")]
+    pub total_hashes: u32,
+    #[serde(rename = "validShares")]
+    pub valid_shares: u32,
+    #[serde(rename = "invalidShares")]
+    pub invalid_shares: u32,
+    pub expiry: u64,
+    #[serde(rename = "amtPaid")]
+    pub amt_paid: u64,
+    #[serde(rename = "amtDue")]
+    pub amt_due: u64,
+    #[serde(rename = "txnCount")]
+    pub txn_count: u32,
+}
+
 #[derive(Clone, Debug)]
 pub struct SupportXmrStyleAdapter {}
 
 impl PoolApiAdapter for SupportXmrStyleAdapter {
     fn convert_api_data(&self, data: &str) -> Result<PoolStatus, Error> {
-        info!(target: LOG_TARGET, "Converting API data: {}", data);
-        Ok(PoolStatus {
-            accepted_shares: 0,
-            unpaid: 0,
-            balance: 0,
+        let response: PoolStatusResponseBody = serde_json::from_str(data)?;
+        let pool_status = PoolStatus {
+            accepted_shares: response.valid_shares,
+            unpaid: response.amt_due,
+            balance: response.amt_paid + response.amt_due,
             min_payout: 0,
-        })
+        };
+        Ok(pool_status)
     }
 }
