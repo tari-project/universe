@@ -22,8 +22,8 @@ const txStates = {
         TransactionStatus.Coinbase,
         TransactionStatus.Queued,
     ],
-    complete: [TransactionStatus.Imported, ...txTypes.mined, ...txTypes.oneSided],
-    failed: [TransactionStatus.Rejected, TransactionStatus.NotFound],
+    failed: [TransactionStatus.Rejected, TransactionStatus.NotFound, TransactionStatus.CoinbaseNotInBlockChain],
+    complete: [TransactionStatus.Imported, TransactionStatus.OneSidedConfirmed, ...txTypes.mined],
 };
 
 export function getTxTypeByStatus(transaction: TransactionInfo): TransationType {
@@ -43,7 +43,10 @@ export function getTxStatusTitleKey(transaction: TransactionInfo): string | unde
 export function getTxTitle(transaction: TransactionInfo): string {
     const itemType = getTxTypeByStatus(transaction);
     const txMessage = transaction.payment_id;
-
+    const statusTitleKey = getTxStatusTitleKey(transaction);
+    const statusTitle = i18n.t(`common:${statusTitleKey}`);
+    const typeTitle = i18n.t(`common:${itemType}`);
+    console.debug(`itemType= `, itemType);
     if (itemType === 'mined' && transaction.mined_in_block_height) {
         return `${i18n.t('sidebar:block')} #${transaction.mined_in_block_height}`;
     }
@@ -51,10 +54,9 @@ export function getTxTitle(transaction: TransactionInfo): string {
     if (txMessage && !txMessage.includes('<No message>')) {
         return txMessage;
     }
-
-    const statusTitleKey = getTxStatusTitleKey(transaction);
-    if (statusTitleKey === 'complete') {
-        return i18n.t(`common:${itemType ?? statusTitleKey}`);
+    console.debug(`statusTitleKey= `, statusTitleKey);
+    if (statusTitleKey !== 'complete') {
+        return `${typeTitle} | ${statusTitle}`;
     }
     return i18n.t(`common:${statusTitleKey ?? itemType}`);
 }
