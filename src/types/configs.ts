@@ -22,6 +22,8 @@ export interface ConfigCore {
     };
     remote_base_node_address: string;
     node_type?: NodeType;
+    swaps_enabled?: boolean;
+    default_chain: number;
 }
 export interface ConfigWallet {
     created_at: string;

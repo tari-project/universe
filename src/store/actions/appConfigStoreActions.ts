@@ -18,6 +18,7 @@ import { GpuThreads } from '@app/types/app-status.ts';
 import { displayMode, modeType } from '../types';
 import { ConfigCore, ConfigMining, ConfigUI, ConfigWallet } from '@app/types/configs.ts';
 import { NodeType, updateNodeType as updateNodeTypeForNodeStore } from '../useNodeStore.ts';
+import { ChainId } from '@uniswap/sdk-core';
 
 interface SetModeProps {
     mode: modeType;
@@ -294,6 +295,10 @@ export const setNodeType = async (nodeType: NodeType) => {
         useConfigCoreStore.setState({ node_type: previousNodeType });
         updateNodeTypeForNodeStore(nodeType);
     });
+};
+
+export const setDefaultChain = (chain: ChainId) => {
+    useConfigCoreStore.setState({ default_chain: chain });
 };
 
 export const fetchBackendInMemoryConfig = async () => {
