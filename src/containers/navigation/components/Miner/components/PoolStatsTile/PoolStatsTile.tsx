@@ -1,8 +1,8 @@
-import { LeftContent, RightContent, Wrapper, Title, BalanceVal, Values, MinPayoutVal } from './styles';
 import { useMiningMetricsStore } from '@app/store';
-import LoadingDots from '@app/components/transactions/send/SendReview/icons/LoadingDots.tsx';
 import { formatNumber, FormatPreset } from '@app/utils';
-import { TileItem } from '@app/containers/navigation/components/Miner/styles.ts';
+import LoadingDots from '@app/components/elements/loaders/LoadingDots.tsx';
+import { LeftContent, RightContent, Wrapper, Title, BalanceVal, Values, MinPayoutVal } from './styles';
+
 export const PoolStatsTile = () => {
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const loading = !pool_status?.balance && !pool_status?.unpaid && !pool_status;
