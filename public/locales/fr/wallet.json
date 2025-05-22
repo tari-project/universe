@@ -66,6 +66,7 @@
     "back-button": "Retour",
     "balance": "Solde",
     "buy-tari": "Acheter Tari",
+    "buy-tari-wxtm": "Acheter Tari (wXTM)",
     "completed": "Terminé",
     "connect-not-supported": "Connecteur WalletConnect non trouvé.",
     "connect-wallet": "Connecter à MetaMask",

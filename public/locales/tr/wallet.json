@@ -66,6 +66,7 @@
     "back-button": "Geri",
     "balance": "Bakiye",
     "buy-tari": "Tari Satın Al",
+    "buy-tari-wxtm": "Tari (wXTM) Satın Al",
     "completed": "Tamamlandı",
     "connect-not-supported": "WalletConnect bağlayıcısı bulunamadı.",
     "connect-wallet": "MetaMask'e Bağlan",

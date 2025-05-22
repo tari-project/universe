@@ -33,12 +33,9 @@ import { useMemo, useState } from 'react';
 import { WalletContents } from '@app/containers/floating/SwapDialogs/sections/WalletContents/WalletContents';
 import { SignApprovalMessage } from '@app/containers/floating/SwapDialogs/sections/SignMessage/SignApprovalMessage';
 import { useTranslation } from 'react-i18next';
+import { setIsSwapping } from '@app/store/actions/walletStoreActions';
 
-interface Props {
-    setSwapUiVisible: (isVisible: boolean) => void;
-}
-
-export const Swap = ({ setSwapUiVisible }: Props) => {
+export const Swap = () => {
     const [openWallet, setOpenWallet] = useState(false);
     const connectedAccount = useAccount();
     const { t } = useTranslation(['wallet'], { useSuspense: false });
@@ -84,7 +81,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
             <TabHeader $noBorder>
                 <SectionHeaderWrapper>
                     <HeaderLabel>{t('swap.buy-tari')}</HeaderLabel>
-                    <BackButton onClick={() => setSwapUiVisible(false)}>{t('swap.back-button')}</BackButton>
+                    <BackButton onClick={() => setIsSwapping(false)}>{t('swap.back-button')}</BackButton>
                 </SectionHeaderWrapper>
             </TabHeader>
 
@@ -119,7 +116,7 @@ export const Swap = ({ setSwapUiVisible }: Props) => {
                     <SwapOptionCurrency $clickable={true} onClick={() => setTokenSelectOpen(true)}>
                         {getCurrencyIcon({ symbol: fromTokenDisplay?.symbol || 'ETH', width: 25 })}
                         <span>{fromTokenDisplay?.symbol || 'ETH'}</span>
-                        <ChevronSVG />
+                        <ChevronSVG width={18} />
                     </SwapOptionCurrency>
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${fromTokenDisplay?.balance}`}</span> : null}

@@ -1,12 +1,7 @@
 import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import styled, { css } from 'styled-components';
 
-export const SwapsContainer = styled.div`
-    // width: 100%;
-    // position: absolute;
-    // bottom: 0;
-    // left: 0;
-`;
+export const SwapsContainer = styled.div``;
 
 export const SwapOption = styled.div`
     width: 100%;
@@ -38,8 +33,8 @@ export const SwapOptionAmount = styled.div`
 export const SwapOptionCurrency = styled.div<{ $clickable?: boolean }>`
     border-radius: 60px;
     gap: 6px;
-    padding: 3px;
-    padding-right: 10px;
+    height: 35px;
+    padding-inline: 6px;
     background: ${({ theme }) => theme.palette.background.paper};
     display: inline-flex;
     align-items: center;
@@ -155,7 +150,7 @@ export const BackButton = styled.button`
 `;
 
 export const HeaderWrapper = styled.div`
-    padding: 10px;
+    padding-bottom: 10px;
     width: 100%;
     display: flex;
     justify-content: space-between;

@@ -66,6 +66,7 @@
     "back-button": "戻る",
     "balance": "残高",
     "buy-tari": "Tariを購入",
+    "buy-tari-wxtm": "Tari (wXTM) を購入",
     "completed": "完了",
     "connect-not-supported": "WalletConnectコネクタが見つかりません。",
     "connect-wallet": "MetaMaskに接続",

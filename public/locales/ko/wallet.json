@@ -66,6 +66,7 @@
     "back-button": "뒤로",
     "balance": "잔액",
     "buy-tari": "Tari 구매",
+    "buy-tari-wxtm": "Tari (wXTM) 구매",
     "completed": "완료됨",
     "connect-not-supported": "WalletConnect 커넥터를 찾을 수 없습니다.",
     "connect-wallet": "MetaMask에 연결",

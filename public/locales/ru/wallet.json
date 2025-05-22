@@ -66,6 +66,7 @@
     "back-button": "Назад",
     "balance": "Баланс",
     "buy-tari": "Купить Tari",
+    "buy-tari-wxtm": "Купить Tari (wXTM)",
     "completed": "Завершено",
     "connect-not-supported": "Коннектор WalletConnect не найден.",
     "connect-wallet": "Подключиться к MetaMask",

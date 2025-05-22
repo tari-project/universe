@@ -66,6 +66,7 @@
     "back-button": "Kembali",
     "balance": "Saldo",
     "buy-tari": "Beli Tari",
+    "buy-tari-wxtm": "Beli Tari (wXTM)",
     "completed": "Selesai",
     "connect-not-supported": "Konektor WalletConnect tidak ditemukan.",
     "connect-wallet": "Hubungkan ke MetaMask",

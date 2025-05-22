@@ -1,5 +1,6 @@
 import { convertHexToRGBA } from '@app/utils';
 import styled from 'styled-components';
+import { m } from 'motion/react';
 
 export const Wrapper = styled.div`
     display: flex;
@@ -82,3 +83,6 @@ export const SyncButton = styled.button`
         }
     }
 `;
+
+export const WalletWrapper = styled(m.div)``;
+export const SwapsWrapper = styled(m.div)``;

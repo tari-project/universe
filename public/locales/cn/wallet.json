@@ -66,6 +66,7 @@
     "back-button": "返回",
     "balance": "余额",
     "buy-tari": "购买 Tari",
+    "buy-tari-wxtm": "购买 Tari (wXTM)",
     "completed": "已完成",
     "connect-not-supported": "未找到 WalletConnect 连接器。",
     "connect-wallet": "连接到 MetaMask",
