@@ -30,7 +30,7 @@ use tokio::sync::RwLock;
 
 use crate::{
     events_emitter::EventsEmitter, events_manager::EventsManager, internal_wallet::InternalWallet,
-    utils::wallet_utils::create_monereo_address, AppConfig, UniverseAppState,
+    utils::wallet_utils::create_monereo_address, UniverseAppState,
 };
 
 use super::trait_config::{ConfigContentImpl, ConfigImpl};
@@ -92,7 +92,7 @@ pub struct ConfigWallet {
 }
 
 impl ConfigWallet {
-    pub async fn initialize(app_handle: AppHandle, old_config: Option<AppConfig>) {
+    pub async fn initialize(app_handle: AppHandle) {
         let mut config = Self::current().write().await;
         let state = app_handle.state::<UniverseAppState>();
         let old_config_path = app_handle
@@ -100,7 +100,6 @@ impl ConfigWallet {
             .app_config_dir()
             .expect("Could not get config dir");
 
-        config.handle_old_config_migration(old_config);
         config.load_app_handle(app_handle.clone()).await;
         drop(config);
 
@@ -149,7 +148,6 @@ impl ConfigWallet {
 
 impl ConfigImpl for ConfigWallet {
     type Config = ConfigWalletContent;
-    type OldConfig = AppConfig;
 
     fn current() -> &'static RwLock<Self> {
         &INSTANCE
@@ -180,25 +178,5 @@ impl ConfigImpl for ConfigWallet {
 
     fn _get_content_mut(&mut self) -> &mut Self::Config {
         &mut self.content
-    }
-
-    fn handle_old_config_migration(&mut self, old_config: Option<Self::OldConfig>) {
-        if self.content.was_config_migrated {
-            return;
-        }
-
-        if old_config.is_some() {
-            let old_config = old_config.expect("Old config should be present");
-            self.content = ConfigWalletContent {
-                was_config_migrated: true,
-                created_at: SystemTime::now(),
-                keyring_accessed: old_config.keyring_accessed(),
-                monero_address: old_config.monero_address().to_string(),
-                monero_address_is_generated: old_config.monero_address_is_generated(),
-            };
-            let _unused = Self::_save_config(self.content.clone());
-        } else {
-            self.content.set_was_config_migrated(true);
-        }
     }
 }

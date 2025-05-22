@@ -45,6 +45,7 @@ jobs:
         run: |
           ALL_EXCHANGES_NAMES=$(echo ${ALL_EXCHANGES_NAMES} | jq -r fromjson)
           EXCHANGES_NAMES=$(echo "${ALL_EXCHANGES_NAMES}" | jq -c .exchanges)
+          EXCHANGES_NAMES=$(echo "${ALL_EXCHANGES_NAMES}" | jq -c .exchanges)
           echo "EXCHANGES_NAMES=${EXCHANGES_NAMES}" >> $GITHUB_OUTPUT
 
   builds:
@@ -106,10 +107,13 @@ jobs:
           #set -xueo pipefail
           echo "TARI_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "TARI_TARGET_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
+          echo "TARI_TARGET_NETWORK=${{ inputs.network }}" >> $GITHUB_ENV
           echo "AIRDROP_WEBSOCKET_CRYPTO_KEY=${{ env.AIRDROP_WEBSOCKET_CRYPTO_KEY }}" >> $GITHUB_ENV
           cd "${GITHUB_WORKSPACE}/src-tauri"
           TU_VERSION=$(jq -r .version tauri.conf.json)
           # Don't mess with the double quotes and inner escaped quotes
+          yq eval ".productName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
+          yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".productName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".mainBinaryName = \"${{ env.OS_BINARY_NAME }}-${{matrix.exchange.name}}\"" --output-format=json -i tauri.conf.json
           yq eval ".app.windows[0].title = \"Tari Universe v${TU_VERSION} - ${{ matrix.exchange.name }}\"" --output-format=json -i tauri.conf.json
@@ -264,6 +268,9 @@ jobs:
           export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe-${{matrix.exchange.name}}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
           export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{matrix.exchange.name}}"
           export TARI_UNIVERSE_UPGRADE_CODE=${{ matrix.exchange.id}}
+          export TARI_UNIVERSE_BUNDLER_NAME="Tari Universe-${{matrix.exchange.name}}_${{ env.TARI_UNIVERSE_APP_VERSION }}_x64_en-US"
+          export TARI_UNIVERSE_EXECUTABLE_AND_FOLDER_NAME="Tari Universe ${{matrix.exchange.name}}"
+          export TARI_UNIVERSE_UPGRADE_CODE=${{ matrix.exchange.id}}
           export TARI_UNIVERSE_INSTALLER_NAME="${TARI_UNIVERSE_BUNDLER_NAME}.msi"
           echo "TARI_UNIVERSE_INSTALLER_NAME is ${TARI_UNIVERSE_INSTALLER_NAME}"
           echo "TARI_UNIVERSE_INSTALLER_NAME=${TARI_UNIVERSE_INSTALLER_NAME}" >> $GITHUB_ENV
@@ -379,6 +386,9 @@ jobs:
       - name: Builds - Upload assets [ AWS ] [ NOT WINDOWS ]
         if: ${{( startsWith(inputs.destination, 'aws' )) && ( matrix.platforms.platform != 'windows-latest' ) }}
         shell: bash
+      - name: Builds - Upload assets [ AWS ] [ NOT WINDOWS ]
+        if: ${{( startsWith(inputs.destination, 'aws' )) && ( matrix.platforms.platform != 'windows-latest' ) }}
+        shell: bash
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -431,6 +441,7 @@ jobs:
         if: startsWith(runner.os,'Windows')
         uses: actions/upload-artifact@v4
         with:
+          name: tari_universe_${{ matrix.exchange.name }}.pdb
           name: tari_universe_${{ matrix.exchange.name }}.pdb
           path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
 
