@@ -7,11 +7,11 @@ import {
     WalletDisplayWrapper,
     XCInfo,
 } from './wallet.styles.ts';
-import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { useState } from 'react';
 import { useExchangeStore } from '@app/store/useExchangeStore.ts';
 import { useWalletStore } from '@app/store';
 import { truncateMiddle } from '@app/utils';
+import { ChevronSVG } from '@app/assets/icons/chevron.tsx';
 import { Typography } from '@app/components/elements/Typography.tsx';
 
 export default function WalletDisplay() {
