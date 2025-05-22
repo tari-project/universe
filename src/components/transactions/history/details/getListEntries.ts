@@ -6,7 +6,7 @@ import { formatNumber, FormatPreset } from '@app/utils';
 import { StatusListEntry } from '@app/components/transactions/components/StatusList/StatusList.tsx';
 import { Network } from '@app/utils/network.ts';
 import { useMiningStore } from '@app/store';
-import { getTxStatusString } from '@app/utils/getTxStatus.ts';
+import { getTxStatusTitle, getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
 
 type Key = keyof TransactionInfo;
 type Entry = {
@@ -35,13 +35,20 @@ function getLabel(key: string): string {
     return key in keyTranslations ? i18n.t(keyTranslations[key]) : capitalizeKey(key);
 }
 
-function parseValues({ key, value }: Entry): Partial<StatusListEntry> & { value: ReactNode } {
+function parseValues({
+    key,
+    value,
+    transaction,
+}: Entry & { transaction: TransactionInfo }): Partial<StatusListEntry> & { value: ReactNode } {
     const rest: Partial<StatusListEntry> = {};
     if (key === 'timestamp') {
         return { value: formatTimeStamp(value) };
     }
     if (key === 'status') {
-        return { value: getTxStatusString(value) };
+        return { value: getTxStatusTitle(transaction), valueRight: value };
+    }
+    if (key === 'payment_id') {
+        console.debug(`value= `, value);
     }
     if (key === 'amount') {
         const preset = value.toString().length > 5 ? FormatPreset.XTM_LONG : FormatPreset.XTM_DECIMALS;
@@ -58,9 +65,14 @@ function parseValues({ key, value }: Entry): Partial<StatusListEntry> & { value:
 }
 
 export function getListEntries(item: TransactionInfo, showHidden = false) {
-    const entries = Object.entries(item).filter(([key]) => showHidden || !HIDDEN_KEYS.includes(key));
+    const entries = Object.entries(item).filter(
+        ([key]) =>
+            showHidden ||
+            !HIDDEN_KEYS.includes(key) ||
+            (key === 'mined_in_block_height' && getTxTypeByStatus(item) !== 'mined')
+    );
     return entries.map(([key, _value]) => {
-        const { value, ...rest } = parseValues({ key: key as Key, value: _value });
+        const { value, ...rest } = parseValues({ key: key as Key, value: _value, transaction: item });
         return {
             label: getLabel(key),
             value,

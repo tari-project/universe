@@ -5,28 +5,30 @@ import { BaseItemProps, HistoryListItemProps } from '../types.ts';
 import { formatTimeStamp } from './helpers.ts';
 import ItemHover from './HoveredItem';
 import {
+    BlockInfoWrapper,
+    Chip,
+    Content,
     ContentWrapper,
+    CurrencyText,
     ItemWrapper,
     TimeWrapper,
     TitleWrapper,
     ValueChangeWrapper,
     ValueWrapper,
-    CurrencyText,
-    Chip,
-    BlockInfoWrapper,
-    Content,
 } from './ListItem.styles.ts';
 import { useUIStore } from '@app/store';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@app/components/elements/buttons/Button.tsx';
 
 import { getTxTitle, getTxTypeByStatus } from '@app/utils/getTxStatus.ts';
+import { TransactionDirection } from '@app/types/transactions.ts';
 
-const BaseItem = memo(function BaseItem({ title, time, value, type, chip, onClick }: BaseItemProps) {
+const BaseItem = memo(function BaseItem({ title, time, value, direction, chip, onClick }: BaseItemProps) {
     // note re. isPositiveValue:
     // amounts in the tx response are always positive numbers but
-    // if the transaction type is 'sent' it must be displayed as a negative amount, with a leading `-`
-    const isPositiveValue = type !== 'sent';
+    // if the transaction is Outbound, the value is negative
+
+    const isPositiveValue = direction === TransactionDirection.Inbound;
     const displayTitle = title.length > 30 ? truncateMiddle(title, 8) : title;
     return (
         <ContentWrapper onClick={onClick}>
@@ -83,7 +85,7 @@ const HistoryListItem = memo(function ListItem({
             title={itemTitle}
             time={itemTime}
             value={earningsFormatted}
-            type={itemType}
+            direction={item.direction}
             status={item?.status}
             chip={itemIsNew ? t('new') : ''}
         />

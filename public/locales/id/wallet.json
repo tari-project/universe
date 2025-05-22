@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "Saldo",
+    "broadcast": "Broadcasting",
     "completed": "Selesai",
     "completed-amount-sent": "telah dikirim ke",
-    "completed-text": "Transfer Anda sekarang selesai.",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "Anda Selesai!",
     "cta-confirm": "Konfirmasi",
     "cta-review": "Tinjau",

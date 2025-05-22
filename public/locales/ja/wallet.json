@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "残高",
+    "broadcast": "Broadcasting",
     "completed": "完了",
     "completed-amount-sent": "に送信されました",
-    "completed-text": "転送が完了しました。",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "完了しました！",
     "cta-confirm": "確認",
     "cta-review": "確認",

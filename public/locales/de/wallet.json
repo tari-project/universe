@@ -20,9 +20,10 @@
   },
   "send": {
     "balance": "Guthaben",
+    "broadcast": "Broadcasting",
     "completed": "Abgeschlossen",
     "completed-amount-sent": "wurde gesendet an",
-    "completed-text": "Ihre Überweisung ist nun abgeschlossen.",
+    "completed-text": "Your transfer submission is now complete and will be broadcast.",
     "completed-title": "Sie sind fertig!",
     "cta-confirm": "Bestätigen",
     "cta-review": "Überprüfen",
