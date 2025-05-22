@@ -4,7 +4,8 @@ export const MinerContainer = styled.div`
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 10px;
+    gap: 6px;
+    box-sizing: border-box;
 `;
 
 export const TileContainer = styled.div`
@@ -26,7 +27,7 @@ export const TileItem = styled.div<{ $unpadded?: boolean }>`
     justify-content: center;
     gap: 3px;
 
-    color: ${({ theme }) => theme.palette.text.secondary};
+    color: ${({ theme }) => theme.palette.text.accent};
     font-family: Poppins, sans-serif;
     font-size: 12px;
     font-weight: 500;

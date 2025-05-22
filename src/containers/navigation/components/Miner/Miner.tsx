@@ -14,6 +14,7 @@ import { ExpandableTile } from './components/ExpandableTile.tsx';
 import { ExpandableTileItem, ExpandedContentTile } from './components/ExpandableTile.styles.ts';
 import { MinerContainer, TileContainer, Unit } from './styles.ts';
 import { useConfigMiningStore } from '@app/store/useAppConfigStore.ts';
+import { PoolStatsTile } from '@app/containers/navigation/components/Miner/components/PoolStatsTile/PoolStatsTile.tsx';
 
 export default function Miner() {
     const theme = useTheme();
@@ -120,6 +121,7 @@ export default function Miner() {
                     </ExpandedContentTile>
                 </ExpandableTile>
             </TileContainer>
+            <PoolStatsTile />
         </MinerContainer>
     );
 }

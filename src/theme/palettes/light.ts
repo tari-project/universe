@@ -53,7 +53,7 @@ const lightPalette: ThemePalette = {
             main: c.tariPurple[600],
             primary: '#000000',
             secondary: '#797979',
-            accent: 'rgba(0,0,0,0.6)',
+            accent: 'rgba(0,0,0,0.5)',
             disabled: c.grey[400],
             contrast: '#FFFFFF',
             shadow: colorsAlpha.greyscaleAlpha[80],
