@@ -15,6 +15,7 @@ interface PendingTransaction {
 interface WalletStoreState {
     tari_address_base58: string;
     tari_address_emoji: string;
+    is_tari_address_generated: boolean | null;
     balance?: WalletBalance;
     calculated_balance?: number;
     coinbase_transactions: TransactionInfo[];
@@ -37,6 +38,7 @@ interface WalletStoreState {
 const initialState: WalletStoreState = {
     tari_address_base58: '',
     tari_address_emoji: '',
+    is_tari_address_generated: null,
     coinbase_transactions: [],
     transactions: [],
     pending_transactions: [],
