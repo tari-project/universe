@@ -62,12 +62,12 @@ jobs:
       matrix:
         exchange: ${{ fromJson(needs.read-exchanges.outputs.EXCHANGES_NAMES) }}
         platforms:
-          # - platform: 'ubuntu-22.04'
-          #   args: '--bundles deb,appimage'
-          #   extra: '-x64'
-          # - platform: 'ubuntu-24.04-arm'
-          #   args: '--bundles deb,appimage'
-          #   best_effort: true
+          - platform: 'ubuntu-22.04'
+            args: '--bundles deb,appimage'
+            extra: '-x64'
+          - platform: 'ubuntu-24.04-arm'
+            args: '--bundles deb,appimage'
+            best_effort: true
           # - platform: 'ubuntu-22.04'
           #   args: '--bundles rpm'
           #   extra: '-x64-rpm'
@@ -76,8 +76,8 @@ jobs:
           #   args: '--bundles rpm'
           #   extra: '-rpm'
           # #   best_effort: true
-          # - platform: 'windows-latest'
-          #   args: '--bundles msi'
+          - platform: 'windows-latest'
+            args: '--bundles msi'
           - platform: 'macos-latest'
             args: '--target universal-apple-darwin'
     runs-on: ${{ matrix.platforms.platform }}
@@ -386,9 +386,6 @@ jobs:
       - name: Builds - Upload assets [ AWS ] [ NOT WINDOWS ]
         if: ${{( startsWith(inputs.destination, 'aws' )) && ( matrix.platforms.platform != 'windows-latest' ) }}
         shell: bash
-      - name: Builds - Upload assets [ AWS ] [ NOT WINDOWS ]
-        if: ${{( startsWith(inputs.destination, 'aws' )) && ( matrix.platforms.platform != 'windows-latest' ) }}
-        shell: bash
         env:
           BASE_URL: ${{ secrets.BASE_URL }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -441,7 +438,6 @@ jobs:
         if: startsWith(runner.os,'Windows')
         uses: actions/upload-artifact@v4
         with:
-          name: tari_universe_${{ matrix.exchange.name }}.pdb
           name: tari_universe_${{ matrix.exchange.name }}.pdb
           path: '${{ github.workspace }}/src-tauri/target/release/tari_universe.pdb'
 
@@ -611,21 +607,61 @@ jobs:
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
 
-      - name: Prepeare updater dependencies
+      - name: Download artifacts from cdn
         shell: bash
         env:
-          EXCHANGE_ID: '${{ matrix.exchange.id }}'
-          EXCHANGE_NAME: '${{ matrix.exchange.name }}'
-          APP_VERSION: '${{ needs.builds.outputs.APP_VERSION }}'
-          BASE_TLD: '${{ secrets.BASE_TLD }}'
-          BASE_URL: '${{ secrets.BASE_URL }}'
-          AWS_ACCESS_KEY_ID: '${{ secrets.AWS_ACCESS_KEY_ID }}'
-          AWS_SECRET_ACCESS_KEY: '${{ secrets.AWS_SECRET_ACCESS_KEY }}'
-          AWS_ENDPOINT_URL: '${{ secrets.AWS_ENDPOINT_URL }}'
-          AWS_DEFAULT_REGION: '${{ secrets.AWS_DEFAULT_REGION }}'
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL: ${{ secrets.AWS_ENDPOINT_URL }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
+
         run: |
-          sudo bash ./scripts/updater-download-and-set-dependencies.sh
+          echo "BASE_PATH: ${BASE_PATH}"
+          echo "Creating directories for artifacts"
+
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos-latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64
+          mkdir -p ./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm
+
+          # Get artifacts from CDN
+          echo "Downloading artifacts from CDN"
+
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage"
+          echo "Downloaded ubuntu-22.04-x64 appimage"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-22.04-x64" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage.sig"
+          echo "Downloaded ubuntu-22.04-x64 appimage.sig"
+
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage"
+          echo "Downloaded ubuntu-24.04-arm appimage"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_ubuntu-24.04-arm" "${{ env.BASE_PATH }}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage.sig"
+          echo "Downloaded ubuntu-24.04-arm appimage.sig"
+
+          curl --location --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos-latest" "${{ env.BASE_PATH }}/Tari%20Universe-${{matrix.exchange.name}}.app.tar.gz.sig" --output "Tari Universe-${{matrix.exchange.name}}.app.tar.gz.sig"
+          echo "Downloaded macos_latest app.tar.gz.sig"
+          curl --location --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos-latest" "${{ env.BASE_PATH }}/Tari%20Universe-${{matrix.exchange.name}}.app.tar.gz" --output "Tari Universe-${{matrix.exchange.name}}.app.tar.gz"
+          echo "Downloaded macos_latest app.tar.gz"
+
+          ls -la "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_macos-latest"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari%20Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" --output "Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi"
+          echo "Downloaded windows-latest msi"
+          curl -s --location --remote-name --output-dir "./${{matrix.exchange.id}}_${{ needs.builds.outputs.APP_VERSION }}_windows-latest" "${{ env.BASE_PATH }}/Tari%20Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig" --output "Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi.sig"
+          echo "Downloaded windows-latest msi.sig"
+
+          ls -la "${{ github.workspace }}"
+      - name: Construct binaries download urls [ AWS ]
+        env:
+          BASE_PATH: 'https://${{ secrets.BASE_TLD }}/${{ secrets.BASE_URL }}/exchanges/${{ matrix.exchange.id }}/${{ needs.builds.outputs.APP_VERSION }}'
+        shell: bash
+        run: |
+          echo "MSI_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_x64_en-US.msi" >> $GITHUB_ENV
+          echo "AMD64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_amd64.AppImage" >> $GITHUB_ENV
+          echo "AARCH64_URL=${{env.BASE_PATH}}/tari_universe-${{matrix.exchange.name}}_${{ needs.builds.outputs.APP_VERSION }}_aarch64.AppImage" >> $GITHUB_ENV
+          echo "TAR_URL=${{env.BASE_PATH}}/Tari Universe-${{matrix.exchange.name}}.app.tar.gz" >> $GITHUB_ENV
+      - name: Install unzip if missing
+        run: |
+          sudo apt-get update && sudo apt-get install -y unzip
 
       - name: Run create-latest-json.sh
         shell: bash
