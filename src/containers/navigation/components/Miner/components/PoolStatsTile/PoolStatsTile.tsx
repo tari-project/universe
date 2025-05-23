@@ -35,7 +35,7 @@ export const PoolStatsTile = () => {
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
 
-    const [expanded, setExpanded] = useState(true);
+    const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
         onOpenChange: setExpanded,
