@@ -27,10 +27,12 @@ use crate::process_adapter::{
 use crate::tasks_tracker::TasksTrackers;
 use crate::utils::file_utils::convert_to_string;
 use crate::utils::logging_utils::setup_logging;
+use crate::wallet_manager::WalletManager;
 use crate::{internal_wallet::InternalWallet, process_adapter::HealthStatus};
 use anyhow::Error;
 use log::info;
-use std::collections::HashMap;
+use sentry::protocol::Event;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
@@ -39,6 +41,7 @@ use tari_core::transactions::tari_amount::{MicroMinotari, Minotari};
 use tari_crypto::ristretto::RistrettoPublicKey;
 use tari_shutdown::{Shutdown, ShutdownSignal};
 use tari_utilities::hex::Hex;
+use tauri_plugin_sentry::sentry;
 use tonic::async_trait;
 // TODO: Ensure we actually need this
 // #[cfg(target_os = "windows")]
@@ -107,68 +110,224 @@ impl SpendWalletAdapter {
         _amount: String,
         destination: String,
         payment_id: Option<String>,
+        view_wallet_manager: &WalletManager,
     ) -> Result<(), Error> {
         let seed_words = self.get_seed_words(self.get_config_dir()).await?;
         let t_amount = Minotari::from_str(_amount.as_str())?;
         let converted_amount = MicroMinotari::from(t_amount);
         let amount = converted_amount.to_string();
-        let commands = vec![
-            ExecutionCommand::new("recovery")
-                .with_extra_args(vec!["--recovery".to_string()])
-                .with_extra_envs(HashMap::from([(
-                    "MINOTARI_WALLET_SEED_WORDS".to_string(),
-                    seed_words.clone(),
-                )])),
-            ExecutionCommand::new("sync").with_extra_args(vec!["sync".to_string()]),
-            ExecutionCommand::new("send-one-sided").with_extra_args({
-                let mut args = vec!["send-one-sided-to-stealth-address".to_string()];
-                if let Some(id) = payment_id {
-                    args.extend(vec!["--payment-id".to_string(), id]);
-                }
-                args.extend(vec![amount, destination]);
-                args
-            }),
-        ];
 
-        for command in commands {
-            let (mut instance, _monitor) = self.spawn(
-                self.get_data_dir(),
-                self.get_config_dir(),
-                self.get_log_dir(),
-                self.get_wallet_binary(),
-                // TODO: Check if this is correct
-                false,
-            )?;
+        self.execute_recovery_command(&seed_words).await?;
+        self.execute_sync_command().await?;
+        let tx_id = self
+            .execute_send_one_sided_command(&amount, &destination, payment_id)
+            .await?;
 
-            instance.startup_spec.args.extend(command.extra_args);
-            instance
-                .startup_spec
-                .envs
-                .get_or_insert_with(HashMap::new)
-                .extend(command.extra_envs);
-
-            instance
-                .start(
-                    TasksTrackers::current()
-                        .wallet_phase
-                        .get_task_tracker()
-                        .await,
-                )
+        if let Some(tx_id) = tx_id {
+            let exported_tx_path = self.export_transaction(&tx_id).await?;
+            view_wallet_manager
+                .import_transaction(exported_tx_path)
                 .await?;
-            let exit_code = instance.wait().await?;
-
-            if exit_code != 0 {
-                let _unused = self.erase_related_data().await;
-                return Err(anyhow::anyhow!(
-                    "Command '{}' failed with exit code: {}",
-                    command.name,
-                    exit_code
-                ));
-            }
+        } else {
+            return Err(anyhow::anyhow!("Failed to extract Transaction ID"));
         }
 
         self.erase_related_data().await?;
         Ok(())
+    }
+
+    async fn execute_recovery_command(
+        &self,
+        seed_words: &str,
+    ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
+        let base_node_public_key = self.get_base_node_public_key_hex();
+        let base_node_address = self.get_base_node_address();
+        let command = ExecutionCommand::new("recovery")
+            .with_extra_args(vec![
+                "-p".to_string(),
+                format!(
+                    "wallet.custom_base_node={}::{}",
+                    base_node_public_key, base_node_address
+                ),
+                "--recovery".to_string(),
+            ])
+            .with_extra_envs(HashMap::from([(
+                "MINOTARI_WALLET_SEED_WORDS".to_string(),
+                seed_words.to_string(),
+            )]));
+
+        self.execute_command(command).await
+    }
+
+    async fn execute_sync_command(&self) -> Result<(i32, Vec<String>, Vec<String>), Error> {
+        let base_node_public_key = self.get_base_node_public_key_hex();
+        let base_node_address = self.get_base_node_address();
+        let command = ExecutionCommand::new("sync").with_extra_args(vec![
+            "-p".to_string(),
+            format!(
+                "wallet.custom_base_node={}::{}",
+                base_node_public_key, base_node_address
+            ),
+            "sync".to_string(),
+        ]);
+
+        self.execute_command(command).await
+    }
+
+    async fn execute_send_one_sided_command(
+        &self,
+        amount: &str,
+        destination: &str,
+        payment_id: Option<String>,
+    ) -> Result<Option<String>, Error> {
+        // Allocate an unused port to ensure the transaction is not successfully broadcasted.
+        // This is intentional as we want to export the transaction to the view wallet instead.
+        let fake_base_node_public_key = self.get_base_node_public_key_hex();
+        let fake_base_node_address = format!(
+            "/ip4/127.0.0.1/tcp/{:?}",
+            PortAllocator::new().assign_port_with_fallback()
+        );
+        let mut args = vec![
+            "-p".to_string(),
+            format!(
+                "wallet.custom_base_node={}::{}",
+                fake_base_node_public_key, fake_base_node_address
+            ),
+            "send-one-sided-to-stealth-address".to_string(),
+        ];
+        if let Some(id) = payment_id {
+            args.extend(vec!["--payment-id".to_string(), id]);
+        }
+        args.extend(vec![amount.to_string(), destination.to_string()]);
+
+        let command = ExecutionCommand::new("send-one-sided").with_extra_args(args);
+
+        let (_exit_code, stdout_lines, _stderr_lines) = self.execute_command(command).await?;
+        let tx_id = stdout_lines
+            .iter()
+            .find(|line| line.starts_with("Transaction ID:"))
+            .and_then(|line| line.split("Transaction ID: ").nth(1))
+            .map(|id| id.trim());
+
+        Ok(tx_id.map(|id| id.to_string()))
+    }
+
+    pub async fn export_transaction(&self, tx_id: &str) -> Result<PathBuf, Error> {
+        let fake_base_node_public_key = self.get_base_node_public_key_hex();
+        let fake_base_node_address = format!(
+            "/ip4/127.0.0.1/tcp/{:?}",
+            PortAllocator::new().assign_port_with_fallback()
+        );
+        let output_path = self.get_working_dir().join(format!("tx-{}.json", tx_id));
+
+        let command = ExecutionCommand::new("export-tx").with_extra_args(vec![
+            "-p".to_string(),
+            format!(
+                "wallet.custom_base_node={}::{}",
+                fake_base_node_public_key, fake_base_node_address
+            ),
+            "export-tx".to_string(),
+            "-o".to_string(),
+            output_path.to_string_lossy().to_string(),
+            tx_id.to_string(),
+        ]);
+
+        let (exit_code, _stdout_lines, _stderr_lines) = self.execute_command(command).await?;
+
+        if exit_code != 0 {
+            return Err(anyhow::anyhow!(
+                "Failed to export transaction with ID {}. Exit code: {}",
+                tx_id,
+                exit_code
+            ));
+        }
+
+        Ok(output_path)
+    }
+
+    async fn execute_command(
+        &self,
+        command: ExecutionCommand,
+    ) -> Result<(i32, Vec<String>, Vec<String>), Error> {
+        let (mut instance, _monitor) = self.spawn(
+            self.get_data_dir(),
+            self.get_config_dir(),
+            self.get_log_dir(),
+            self.get_wallet_binary(),
+            false,
+        )?;
+
+        instance
+            .startup_spec
+            .args
+            .extend(command.extra_args.clone());
+        instance
+            .startup_spec
+            .envs
+            .get_or_insert_with(HashMap::new)
+            .extend(command.extra_envs);
+
+        let (exit_code, stdout_lines, stderr_lines) = instance
+            .start_and_wait_for_output(
+                TasksTrackers::current()
+                    .wallet_phase
+                    .get_task_tracker()
+                    .await,
+            )
+            .await?;
+
+        if exit_code != 0 {
+            sentry::capture_event(Event {
+                level: sentry::Level::Error,
+                culprit: Some("SpendWallet::ExecuteCommand".to_string()),
+                message: Some(format!(
+                    "Command '{}' failed with exit code: {}",
+                    command.name, exit_code
+                )),
+                extra: BTreeMap::from([
+                    (
+                        "exit_code".to_string(),
+                        serde_json::Value::String(exit_code.to_string()),
+                    ),
+                    (
+                        "stdout_lines".to_string(),
+                        serde_json::Value::String(stdout_lines.join("\n")),
+                    ),
+                    (
+                        "stderr_lines".to_string(),
+                        serde_json::Value::String(stderr_lines.join("\n")),
+                    ),
+                    (
+                        "command".to_string(),
+                        serde_json::Value::String(command.name.clone()),
+                    ),
+                    (
+                        "extra_args".to_string(),
+                        serde_json::Value::String(format!("{:?}", command.extra_args)),
+                    ),
+                ]),
+                ..Default::default()
+            });
+
+            log::error!(
+                target: LOG_TARGET,
+                "Command '{}' failed with exit code: {}. Details: {{ stdout_lines: {:?}, stderr_lines: {:?}, extra_args: {:?} }}",
+                command.name,
+                exit_code,
+                stdout_lines.join("\n"),
+                stderr_lines.join("\n"),
+                command.extra_args
+            );
+
+            return Err(anyhow::anyhow!(
+                "Command '{}' failed with exit code: {}",
+                command.name,
+                exit_code
+            ));
+        }
+        let _unused = self.erase_related_data().await;
+
+        Ok((exit_code, stdout_lines, stderr_lines))
     }
 
     async fn erase_related_data(&self) -> Result<(), Error> {
@@ -198,17 +357,6 @@ impl SpendWalletAdapter {
                 convert_to_string(self.get_log_config_file())?
             ),
             "-p".to_string(),
-            format!(
-                "wallet.custom_base_node={}::{}",
-                self.base_node_public_key
-                    .as_ref()
-                    .map(|k| k.to_hex())
-                    .expect("Base node public key not set"),
-                self.base_node_address
-                    .as_ref()
-                    .expect("Base node address not set")
-            ),
-            "-p".to_string(),
             "wallet.p2p.transport.type=tcp".to_string(),
             "-p".to_string(),
             format!(
@@ -225,6 +373,19 @@ impl SpendWalletAdapter {
         ];
 
         Ok(shared_args)
+    }
+
+    fn get_base_node_public_key_hex(&self) -> String {
+        self.base_node_public_key
+            .as_ref()
+            .map(|k| k.to_hex())
+            .expect("Base node public key not set")
+    }
+
+    fn get_base_node_address(&self) -> &str {
+        self.base_node_address
+            .as_ref()
+            .expect("Base node address not set")
     }
 
     async fn get_seed_words(&self, config_path: PathBuf) -> Result<String, Error> {
