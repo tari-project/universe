@@ -38,6 +38,7 @@ import {
     handleWalletLocked,
     handleWalletUnlocked,
     handleWalletUpdate,
+    setInitialSetupFinished,
 } from '@app/store/actions/setupStoreActions';
 import { setBackgroundNodeState, setNodeStoreState } from '@app/store/useNodeStore';
 import {
@@ -88,7 +89,9 @@ const useTauriEventsListener = () => {
                             break;
                         case 'WalletPhaseFinished':
                             break;
-
+                        case 'InitialSetupFinished':
+                            setInitialSetupFinished(true);
+                            break;
                         case 'UnlockApp':
                             await handleAppUnlocked();
                             break;

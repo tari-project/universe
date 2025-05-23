@@ -111,6 +111,10 @@ export type BackendStateUpdateEvent =
           payload: boolean;
       }
     | {
+          event_type: 'InitialSetupFinished';
+          payload: undefined;
+      }
+    | {
           event_type: 'UnlockApp';
           payload: undefined;
       }
