@@ -86,8 +86,14 @@ impl SpendWalletManager {
         self.adapter.base_node_address = Some(public_address.clone());
         info!(target: LOG_TARGET, "[send_one_sided_to_stealth_address] with node {:?}:{:?}", public_key, public_address);
 
-        self.adapter
+        let res = self
+            .adapter
             .send_one_sided_to_stealth_address(amount, destination, payment_id, view_wallet_manager)
-            .await
+            .await;
+        if res.is_err() {
+            self.adapter.erase_related_data().await?;
+        }
+
+        res
     }
 }
