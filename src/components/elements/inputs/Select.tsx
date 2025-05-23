@@ -96,7 +96,9 @@ export function Select({
         <>
             <SelectedOption $isBordered={isBordered} $forceHeight={forceHeight}>
                 <Typography>{selectedLabel}</Typography>
-                {selectedIcon ? <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} /> : null}
+                {selectedIcon && variant !== 'primary' ? (
+                    <img src={selectedIcon} alt={`Selected option: ${selectedLabel} icon `} />
+                ) : null}
             </SelectedOption>
         </>
     );
