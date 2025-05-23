@@ -15,7 +15,7 @@ export const Wrapper = styled.div<{ $isLoading?: boolean }>`
     border: 1px solid ${({ $isLoading }) => convertHexToRGBA($isLoading ? bg_loading : bg, 0.15)};
     box-shadow: 0 4px 12px -5px ${({ $isLoading }) => convertHexToRGBA($isLoading ? bg_loading : bg, 0.05)};
     background: ${({ $isLoading, theme }) =>
-        `linear-gradient(99deg,  ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.3)} -33%, ${theme.palette.background.paper} 10%, ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.2)} 190%)`};
+        `linear-gradient(99deg,  ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.3)} -33%, ${theme.palette.background.default} 10%, ${convertHexToRGBA($isLoading ? bg_loading : bg, 0.2)} 190%)`};
     color: ${({ theme }) => theme.palette.text.accent};
     border-radius: ${({ theme }) => theme.shape.borderRadius.app};
     font-size: 12px;
@@ -54,12 +54,6 @@ export const BalanceVal = styled(Typography)`
     color: ${({ theme }) => theme.palette.text.primary};
     vertical-align: bottom;
     letter-spacing: -0.4px;
-`;
-
-export const MinPayoutVal = styled(Typography)`
-    font-size: 10px;
-    letter-spacing: -0.4px;
-    vertical-align: bottom;
 `;
 
 export const TimerDot = styled.div`

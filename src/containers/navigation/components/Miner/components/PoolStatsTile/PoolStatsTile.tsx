@@ -7,7 +7,6 @@ import {
     Title,
     BalanceVal,
     Values,
-    MinPayoutVal,
     Timer,
     TimerDot,
     ExpandedWrapper,
@@ -36,7 +35,6 @@ export const PoolStatsTile = () => {
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
-    const unpaidFMT = formatNumber(pool_status?.unpaid || 0, FormatPreset.XTM_COMPACT);
 
     const [expanded, setExpanded] = useState(true);
     const { refs, context, floatingStyles } = useFloating({
@@ -51,7 +49,6 @@ export const PoolStatsTile = () => {
         handleClose: safePolygon(),
     });
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
-
     return !pool_status ? null : (
         <Wrapper $isLoading={loading}>
             {loading ? (
@@ -62,7 +59,6 @@ export const PoolStatsTile = () => {
                         <Title>{t('stats.tile-heading')}</Title>
                         <Values>
                             <BalanceVal>{`${balanceFMT} XTM`}</BalanceVal>
-                            <MinPayoutVal>{`/${unpaidFMT} XTM`}</MinPayoutVal>
                         </Values>
                     </LeftContent>
                     <RightContent>
@@ -93,7 +89,7 @@ export const PoolStatsTile = () => {
                                         <Trans
                                             i18nKey="stats.tooltip-copy"
                                             ns="p2p"
-                                            values={{ amount: balanceFMT, time: miningTime }}
+                                            values={{ amount: `2 XTM`, duration: `~6 hrs` }}
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>
