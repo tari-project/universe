@@ -329,7 +329,6 @@ impl SpendWalletAdapter {
                 exit_code
             ));
         }
-        let _unused = self.erase_related_data().await;
 
         Ok((exit_code, stdout_lines, stderr_lines))
     }
