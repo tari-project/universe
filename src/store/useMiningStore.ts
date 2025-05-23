@@ -10,6 +10,7 @@ interface MiningStoreState {
     isExcludingGpuDevices: boolean;
     counter: number;
     miningTime: number;
+    sessionMiningTime: number;
     customLevelsDialogOpen: boolean;
     maxAvailableThreads?: MaxConsumptionLevels;
     network?: Network;
@@ -22,6 +23,7 @@ const initialState: MiningStoreState = {
     maxAvailableThreads: undefined,
     counter: 0,
     miningTime: 0,
+    sessionMiningTime: 0,
     hashrateReady: false,
     miningInitiated: false,
     isChangingMode: false,
