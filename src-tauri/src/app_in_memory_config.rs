@@ -20,11 +20,15 @@
 // WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
 // USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+use std::ops::Deref;
+
 use anyhow::anyhow;
 use der::{self, asn1::BitString, oid::ObjectIdentifier, Encode};
 use ring::signature::{Ed25519KeyPair, KeyPair};
 use ring_compat::pkcs8::{spki::AlgorithmIdentifier, SubjectPublicKeyInfo};
 use serde::{Deserialize, Serialize};
+
+use crate::exchange_miner::ExchangeMiner;
 
 #[cfg(feature = "airdrop-env")]
 const AIRDROP_BASE_URL: &str =
@@ -38,7 +42,8 @@ const AIRDROP_API_BASE_URL: &str = std::env!(
 const TELEMETRY_API_URL: &str =
     std::env!("TELEMETRY_API_URL", "TELEMETRY_API_URL env var not defined");
 
-pub const DEFAULT_EXCHANGE_ID: &str = "universal";
+pub const DEFAULT_EXCHANGE_ID: &str = "classic";
+pub const UNIVERSAL_EXCHANGE_ID: &str = "universal";
 pub const EXCHANGE_ID: &str = match option_env!("EXCHANGE_ID") {
     Some(val) => val,
     None => DEFAULT_EXCHANGE_ID,
@@ -138,5 +143,31 @@ impl AppInMemoryConfig {
             feature = "telemetry-env",
         )))]
         AppInMemoryConfig::default()
+    }
+}
+
+pub enum MinerType {
+    Classic,
+    Universal,
+    ExchangeMode,
+}
+pub struct DynamicMemoryConfig {
+    in_memory_config: AppInMemoryConfig,
+    miner_type: MinerType,
+}
+
+impl DynamicMemoryConfig {
+    pub fn init() -> Self {
+        todo!();
+    }
+    pub fn init_universal(exchange_miner: ExchangeMiner) -> Self {
+        todo!();
+    }
+}
+
+impl Deref for DynamicMemoryConfig {
+    type Target = AppInMemoryConfig;
+    fn deref(&self) -> &Self::Target {
+        &self.in_memory_config
     }
 }

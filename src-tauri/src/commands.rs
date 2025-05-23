@@ -193,6 +193,11 @@ pub async fn close_splashscreen(app: tauri::AppHandle) {
 }
 
 #[tauri::command]
+pub async fn user_selected_exchange() -> Result<(), anyhow::Error> {
+    todo!()
+}
+
+#[tauri::command]
 pub async fn frontend_ready(app: tauri::AppHandle) {
     static FRONTEND_READY_CALLED: std::sync::atomic::AtomicBool =
         std::sync::atomic::AtomicBool::new(false);

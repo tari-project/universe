@@ -26,13 +26,14 @@ use super::{
     trait_setup_phase::SetupPhaseImpl, utils::phase_builder::PhaseBuilder,
 };
 use crate::{
-    app_in_memory_config::DEFAULT_EXCHANGE_ID,
+    app_in_memory_config::{DynamicMemoryConfig, DEFAULT_EXCHANGE_ID},
     configs::{
         config_core::ConfigCore, config_mining::ConfigMining, config_ui::ConfigUI,
         config_wallet::ConfigWallet, trait_config::ConfigImpl,
     },
     events::{ConnectionStatusPayload, ProgressEvents},
     events_manager::EventsManager,
+    exchange_miner::{ExchangeMiner, ExchangeMinerManager},
     initialize_frontend_updates,
     internal_wallet::InternalWallet,
     release_notes::ReleaseNotes,
@@ -51,7 +52,7 @@ use std::{
 use tauri::{AppHandle, Listener, Manager};
 use tokio::{
     select,
-    sync::{watch::Sender, Mutex},
+    sync::{watch::Sender, Mutex, RwLock},
 };
 use tokio_util::sync::CancellationToken;
 
@@ -643,6 +644,7 @@ impl SetupManager {
     }
 
     pub async fn start_setup(&self, app_handle: AppHandle) {
+        self.select_exchange_miner(app_handle.clone()).await;
         self.pre_setup(app_handle.clone()).await;
         *self.app_handle.lock().await = Some(app_handle.clone());
 
@@ -653,6 +655,18 @@ impl SetupManager {
         self.setup_node_phase(app_handle.clone()).await;
         self.setup_wallet_phase(app_handle.clone()).await;
         self.setup_unknown_phase(app_handle.clone()).await;
+    }
+
+    pub async fn user_selected_exchange(&self) -> ExchangeMiner {
+        todo!()
+    }
+
+    pub async fn select_exchange_miner(&self, app_handle: AppHandle) {
+        let selected_miner = self.user_selected_exchange().await;
+        let state = app_handle.state::<UniverseAppState>();
+        let mut config = state.in_memory_config.write().await;
+        let new_config = DynamicMemoryConfig::init_universal(selected_miner);
+        *config = new_config;
     }
 
     pub async fn handle_switch_to_local_node(&self) {

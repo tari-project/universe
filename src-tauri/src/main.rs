@@ -69,7 +69,7 @@ use tokio::time;
 use utils::logging_utils::setup_logging;
 
 use app_config::AppConfig;
-use app_in_memory_config::AppInMemoryConfig;
+use app_in_memory_config::DynamicMemoryConfig;
 #[cfg(all(feature = "exchange-ci", not(feature = "release-ci")))]
 use app_in_memory_config::EXCHANGE_ID;
 
@@ -106,6 +106,7 @@ mod download_utils;
 mod events;
 mod events_emitter;
 mod events_manager;
+mod exchange_miner;
 mod external_dependencies;
 mod feedback;
 mod github;
@@ -946,7 +947,7 @@ struct UniverseAppState {
     #[allow(dead_code)]
     is_setup_finished: Arc<RwLock<bool>>,
     config: Arc<RwLock<AppConfig>>,
-    in_memory_config: Arc<RwLock<AppInMemoryConfig>>,
+    in_memory_config: Arc<RwLock<DynamicMemoryConfig>>,
     tari_address: Arc<RwLock<TariAddress>>,
     cpu_miner: Arc<RwLock<CpuMiner>>,
     gpu_miner: Arc<RwLock<GpuMiner>>,
@@ -1049,8 +1050,9 @@ fn main() {
         ludicrous_mode_cpu_percentage: None,
     }));
 
-    let app_in_memory_config =
-        Arc::new(RwLock::new(app_in_memory_config::AppInMemoryConfig::init()));
+    let app_in_memory_config = Arc::new(RwLock::new(
+        app_in_memory_config::DynamicMemoryConfig::init(),
+    ));
 
     let cpu_miner: Arc<RwLock<CpuMiner>> = Arc::new(
         CpuMiner::new(
