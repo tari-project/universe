@@ -56,6 +56,7 @@ pub enum EventType {
     HardwarePhaseFinished,
     NodePhaseFinished,
     UnknownPhaseFinished,
+    InitialSetupFinished,
     UnlockApp,
     UnlockWallet,
     UnlockMining,
@@ -70,6 +71,7 @@ pub enum EventType {
     InitWalletScanningProgress,
     ConnectionStatus,
     ShowStageSecurityModal,
+    MiningTime,
 }
 
 #[derive(Clone, Debug, Serialize)]

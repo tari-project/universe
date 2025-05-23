@@ -246,6 +246,11 @@ impl EventsManager {
     pub async fn handle_unknown_phase_finished(app: &AppHandle, status: bool) {
         EventsEmitter::emit_unknown_phase_finished(app, status).await;
     }
+
+    pub async fn handle_initial_setup_finished(app: &AppHandle) {
+        EventsEmitter::emit_initial_setup_finished(app).await;
+    }
+
     pub async fn handle_unlock_app(app: &AppHandle) {
         EventsEmitter::emit_unlock_app(app).await;
     }

@@ -329,8 +329,8 @@ impl BinaryManager {
     }
 
     fn check_if_version_meet_requirements(&self, version: &Version) -> bool {
-        info!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
-        info!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
+        debug!(target: LOG_TARGET,"Checking if version meets requirements: {:?}", version);
+        debug!(target: LOG_TARGET,"Version requirements: {:?}", self.version_requirements);
         let is_meet_semver = self.version_requirements.matches(version);
         let did_meet_network_prerelease = self
             .network_prerelease_prefix

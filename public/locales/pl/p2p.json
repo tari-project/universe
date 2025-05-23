@@ -13,5 +13,11 @@
   "pending": "Oczekujące",
   "randomx-stats": "Statystyki RandomX",
   "sha3-stats": "Statystyki SHA3",
+  "stats": {
+    "tile-heading": "Earnings in Progress",
+    "tile-loading": "Pool is warming up",
+    "tooltip-copy": "Earnings are “In Progress” until you earn a minimum of <strong>{{amount}}</strong> and <strong>{{duration}}</strong> have passed.",
+    "tooltip-tile-heading": "Rewards threshold"
+  },
   "tribe": "Plemie"
 }
