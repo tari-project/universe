@@ -5,13 +5,13 @@ import { TransationType } from '@app/components/transactions/types.ts';
 import { TransactionInfo } from '@app/types/app-status.ts';
 
 const txTypes = {
-    oneSided: [TransactionStatus.OneSidedConfirmed, TransactionStatus.OneSidedUnconfirmed],
-    mined: [
+    oneSided: [
+        TransactionStatus.OneSidedConfirmed,
+        TransactionStatus.OneSidedUnconfirmed,
         TransactionStatus.MinedConfirmed,
         TransactionStatus.MinedUnconfirmed,
-        TransactionStatus.CoinbaseConfirmed,
-        TransactionStatus.CoinbaseUnconfirmed,
     ],
+    mined: [TransactionStatus.CoinbaseConfirmed, TransactionStatus.CoinbaseUnconfirmed],
 };
 
 const txStates = {
