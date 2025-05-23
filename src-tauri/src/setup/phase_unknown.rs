@@ -32,7 +32,10 @@ use crate::{
         progress_stepper::ProgressStepperBuilder,
         ProgressStepper,
     },
-    setup::{setup_manager::SetupPhase, utils::conditional_sleeper},
+    setup::{
+        setup_manager::{SetupFeature, SetupPhase},
+        utils::conditional_sleeper,
+    },
     tasks_tracker::TasksTrackers,
     StartConfig, UniverseAppState,
 };
@@ -49,7 +52,7 @@ use tokio::{
 };
 
 use super::{
-    setup_manager::PhaseStatus,
+    setup_manager::{PhaseStatus, SetupFeaturesList},
     trait_setup_phase::{SetupConfiguration, SetupPhaseImpl},
 };
 
@@ -75,6 +78,7 @@ pub struct UnknownSetupPhase {
     app_configuration: UnknownSetupPhaseAppConfiguration,
     setup_configuration: SetupConfiguration,
     status_sender: Sender<PhaseStatus>,
+    setup_features: SetupFeaturesList,
 }
 
 impl SetupPhaseImpl for UnknownSetupPhase {
@@ -84,6 +88,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         app_handle: AppHandle,
         status_sender: Sender<PhaseStatus>,
         configuration: SetupConfiguration,
+        setup_features: SetupFeaturesList,
     ) -> Self {
         Self {
             app_handle: app_handle.clone(),
@@ -91,6 +96,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             app_configuration: Self::load_app_configuration().await.unwrap_or_default(),
             setup_configuration: configuration,
             status_sender,
+            setup_features,
         }
     }
 
@@ -175,6 +181,7 @@ impl SetupPhaseImpl for UnknownSetupPhase {
         });
     }
 
+    #[allow(clippy::too_many_lines)]
     async fn setup_inner(&self) -> Result<(), Error> {
         info!(target: LOG_TARGET, "[ {} Phase ] Starting setup inner", SetupPhase::Unknown);
         let mut progress_stepper = self.progress_stepper.lock().await;
@@ -234,6 +241,10 @@ impl SetupPhaseImpl for UnknownSetupPhase {
                 .with_cpu_benchmark_hashrate(Some(
                     state.cpu_miner.read().await.benchmarked_hashrate,
                 ))
+                .with_randomx_disabled(
+                    self.setup_features
+                        .is_feature_enabled(SetupFeature::CentralizedPool),
+                )
                 .build()?;
             state
                 .p2pool_manager
@@ -248,32 +259,40 @@ impl SetupPhaseImpl for UnknownSetupPhase {
             progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::P2Pool));
         }
 
-        progress_stepper
-            .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
-            .await;
+        if self
+            .setup_features
+            .is_feature_disabled(SetupFeature::CentralizedPool)
+        {
+            progress_stepper
+                .resolve_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy))
+                .await;
 
-        let use_local_p2pool_node = state.node_manager.is_local_current().await.unwrap_or(false);
-        let p2pool_node_grpc_address = state
-            .p2pool_manager
-            .get_grpc_address(use_local_p2pool_node)
-            .await;
-        state
-            .mm_proxy_manager
-            .start(StartConfig {
-                base_node_grpc_address,
-                p2pool_node_grpc_address,
-                base_path: data_dir.clone(),
-                config_path: config_dir.clone(),
-                log_path: log_dir.clone(),
-                tari_address,
-                coinbase_extra: telemetry_id,
-                p2pool_enabled: self.app_configuration.p2pool_enabled,
-                monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
-                use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
-            })
-            .await?;
+            let use_local_p2pool_node =
+                state.node_manager.is_local_current().await.unwrap_or(false);
+            let p2pool_node_grpc_address = state
+                .p2pool_manager
+                .get_grpc_address(use_local_p2pool_node)
+                .await;
+            state
+                .mm_proxy_manager
+                .start(StartConfig {
+                    base_node_grpc_address,
+                    p2pool_node_grpc_address,
+                    base_path: data_dir.clone(),
+                    config_path: config_dir.clone(),
+                    log_path: log_dir.clone(),
+                    tari_address,
+                    coinbase_extra: telemetry_id,
+                    p2pool_enabled: self.app_configuration.p2pool_enabled,
+                    monero_nodes: self.app_configuration.mmproxy_monero_nodes.clone(),
+                    use_monero_fail: self.app_configuration.mmproxy_use_monero_fail,
+                })
+                .await?;
 
-        state.mm_proxy_manager.wait_ready().await?;
+            state.mm_proxy_manager.wait_ready().await?;
+        } else {
+            progress_stepper.skip_step(ProgressPlans::Unknown(ProgressSetupUnknownPlan::MMProxy));
+        }
 
         Ok(())
     }
