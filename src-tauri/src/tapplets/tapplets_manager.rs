@@ -289,7 +289,7 @@ impl TappletManager {
         debug!(target: LOG_TARGET,"Selecting highest local version for tapplet: {:?}", self.tapplet_name);
 
         // TODO implement the same solution as for binaries
-        let selected_local_version = Some(Version::new(0, 1, 1));
+        let selected_local_version = Some(Version::new(0, 1, 2));
 
         debug!(target: LOG_TARGET,"Selected local version: {:?}", selected_local_version);
         selected_local_version.clone()
