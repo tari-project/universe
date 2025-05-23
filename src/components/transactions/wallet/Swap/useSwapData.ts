@@ -17,7 +17,7 @@ import {
 import { SwapField, TradeDetails } from '@app/hooks/swap/lib/types';
 import { useUniswapV2Interactions } from '@app/hooks/swap/useSwapV2';
 import { useConfigCoreStore } from '@app/store';
-import { fetchTokenPriceUSD, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
+import { fetchTokenPriceUSD, formatAmountSmartly, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
 import { useTokenDisplayInfo } from './helpers/useTokenInfo';
 
 export type TokenSymbol = EnabledTokensEnum;
@@ -394,21 +394,36 @@ export const useSwapData = () => {
                 if (shouldCalculate.current) {
                     if (lastUpdatedField === 'ethTokenField') {
                         if (direction === 'toXtm') {
-                            if (details.outputAmount) setWxtmAmount(details.outputAmount.toSignificant(6));
-                            else if (wxtmAmount !== '') setWxtmAmount('');
+                            if (details.outputAmount) {
+                                setWxtmAmount(formatAmountSmartly(details.outputAmount));
+                            } else if (wxtmAmount !== '') {
+                                setWxtmAmount('');
+                            }
                         } else {
-                            if (details.inputAmount) setWxtmAmount(details.inputAmount.toSignificant(6));
-                            else if (wxtmAmount !== '') setWxtmAmount('');
+                            if (details.inputAmount) {
+                                setWxtmAmount(formatAmountSmartly(details.inputAmount));
+                            } else if (wxtmAmount !== '') {
+                                setWxtmAmount('');
+                            }
                         }
                     } else {
+                        // lastUpdatedField === 'wxtmField'
                         if (direction === 'toXtm') {
-                            if (details.inputAmount) setEthTokenAmount(details.inputAmount.toSignificant(6));
-                            else if (ethTokenAmount !== '') setEthTokenAmount('');
+                            if (details.inputAmount) {
+                                setEthTokenAmount(formatAmountSmartly(details.inputAmount));
+                            } else if (ethTokenAmount !== '') {
+                                setEthTokenAmount('');
+                            }
                         } else {
-                            if (details.outputAmount) setEthTokenAmount(details.outputAmount.toSignificant(6));
-                            else if (ethTokenAmount !== '') setEthTokenAmount('');
+                            if (details.outputAmount) {
+                                setEthTokenAmount(formatAmountSmartly(details.outputAmount));
+                            } else if (ethTokenAmount !== '') {
+                                setEthTokenAmount('');
+                            }
                         }
                     }
+
+                    setNetworkFee(details.estimatedGasFeeNative || null);
                 }
             } // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (e: any) {

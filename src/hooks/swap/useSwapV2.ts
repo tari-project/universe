@@ -22,7 +22,7 @@ import {
     SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM,
     RPC_URLS,
 } from './lib/constants';
-import { walletClientToSigner, formatNativeGasFee, formatGasFeeUSD, retryAsync } from './lib/utils';
+import { walletClientToSigner, formatNativeGasFee, retryAsync } from './lib/utils';
 import { TradeDetails, SwapField, SwapDirection } from './lib/types';
 import { useToastStore } from '@app/components/ToastStack/useToastStore';
 import { useConfigCoreStore } from '@app/store';
@@ -52,7 +52,6 @@ export const useUniswapV2Interactions = () => {
         () => (currentChainId ? XTM_SDK_TOKEN[currentChainId] : undefined),
         [currentChainId]
     );
-    const nativeCurrencyPriceUSD = useMemo(() => 3000, []);
 
     const [signer, setSigner] = useState<EthersSigner | null>(null);
     useEffect(() => {
@@ -239,161 +238,112 @@ export const useUniswapV2Interactions = () => {
             let estimatedGasFeeUSDStr: string | null = null;
 
             if (isConnected && accountAddress) {
-                try {
-                    const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
-                    const path = route.path.map((t) => t.address as `0x${string}`);
-                    const amountIn = BigInt(trade.inputAmount.quotient.toString());
-                    const amountOut = BigInt(trade.outputAmount.quotient.toString());
-                    const amountOutParam =
-                        trade.tradeType === TradeType.EXACT_INPUT
-                            ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString())
-                            : amountOut;
-                    const amountInParam =
-                        trade.tradeType === TradeType.EXACT_OUTPUT
-                            ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString())
-                            : amountIn;
+                const deadline = Math.floor(Date.now() / 1000) + DEADLINE_MINUTES * 60;
+                const path = route.path.map((t) => t.address as `0x${string}`);
+                const amountIn = BigInt(trade.inputAmount.quotient.toString());
+                const amountOut = BigInt(trade.outputAmount.quotient.toString());
+                const amountOutParam =
+                    trade.tradeType === TradeType.EXACT_INPUT
+                        ? BigInt(trade.minimumAmountOut(SLIPPAGE_TOLERANCE).quotient.toString())
+                        : amountOut;
+                const amountInParam =
+                    trade.tradeType === TradeType.EXACT_OUTPUT
+                        ? BigInt(trade.maximumAmountIn(SLIPPAGE_TOLERANCE).quotient.toString())
+                        : amountIn;
 
-                    let callData: `0x${string}`;
-                    let valueToSend: bigint | undefined = undefined;
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    let swapAbiForViem: any;
-                    let functionName: string;
+                let callData: `0x${string}`;
+                let valueToSend: bigint | undefined = undefined;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                let swapAbiForViem: any;
+                let functionName: string;
 
-                    const inputIsNative = token0?.isNative;
-                    const outputIsNative = token1?.isNative;
+                const inputIsNative = token0?.isNative;
+                const outputIsNative = token1?.isNative;
 
-                    if (trade.tradeType === TradeType.EXACT_INPUT) {
-                        if (inputIsNative) {
-                            swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
-                            functionName = 'swapExactETHForTokens';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                            });
-                            valueToSend = amountInParam;
-                        } else if (outputIsNative) {
-                            swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
-                            functionName = 'swapExactTokensForETH';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [
-                                    amountInParam,
-                                    amountOutParam,
-                                    path,
-                                    accountAddress as `0x${string}`,
-                                    BigInt(deadline),
-                                ],
-                            });
-                        } else {
-                            swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
-                            functionName = 'swapExactTokensForTokens';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [
-                                    amountInParam,
-                                    amountOutParam,
-                                    path,
-                                    accountAddress as `0x${string}`,
-                                    BigInt(deadline),
-                                ],
-                            });
-                        }
+                if (trade.tradeType === TradeType.EXACT_INPUT) {
+                    if (inputIsNative) {
+                        swapAbiForViem = SWAP_EXACT_ETH_FOR_TOKENS_ABI_VIEM;
+                        functionName = 'swapExactETHForTokens';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                        });
+                        valueToSend = amountInParam;
+                    } else if (outputIsNative) {
+                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_ETH_ABI_VIEM;
+                        functionName = 'swapExactTokensForETH';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [
+                                amountInParam,
+                                amountOutParam,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
                     } else {
-                        // EXACT_OUTPUT
-                        if (inputIsNative) {
-                            swapAbiForViem = SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM;
-                            functionName = 'swapETHForExactTokens';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
-                            });
-                            valueToSend = amountInParam;
-                        } else if (outputIsNative) {
-                            swapAbiForViem = SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM;
-                            functionName = 'swapTokensForExactETH';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [
-                                    amountOutParam,
-                                    amountInParam,
-                                    path,
-                                    accountAddress as `0x${string}`,
-                                    BigInt(deadline),
-                                ],
-                            });
-                        } else {
-                            swapAbiForViem = SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM;
-                            functionName = 'swapTokensForExactTokens';
-                            callData = encodeFunctionData({
-                                abi: swapAbiForViem,
-                                functionName,
-                                args: [
-                                    amountOutParam,
-                                    amountInParam,
-                                    path,
-                                    accountAddress as `0x${string}`,
-                                    BigInt(deadline),
-                                ],
-                            });
-                        }
+                        swapAbiForViem = SWAP_EXACT_TOKENS_FOR_TOKENS_ABI_VIEM;
+                        functionName = 'swapExactTokensForTokens';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [
+                                amountInParam,
+                                amountOutParam,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
                     }
-
-                    const estimateGasParams = {
-                        account: accountAddress as `0x${string}`,
-                        to: routerAddress,
-                        data: callData,
-                        value: valueToSend,
-                    };
-                    const estimateGasFn = () => publicClient.estimateGas(estimateGasParams);
-                    const getGasPriceFn = () => publicClient.getGasPrice();
-                    const gasContext = 'getTradeDetails.gasEstimation';
-
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const onGasRetry = (ctx: string, gasErr: any, attempt: number, max: number) => {
-                        console.warn(
-                            `[${ctx}] Attempt ${attempt}/${max} failed:`,
-                            gasErr.shortMessage || gasErr.message
-                        );
-                    };
-
-                    const estimatedGasLimit = await retryAsync(
-                        gasContext + '.estimateGasLimit',
-                        estimateGasFn,
-                        3,
-                        500,
-                        onGasRetry
-                    );
-                    const gasPrice = await retryAsync(gasContext + '.getGasPrice', getGasPriceFn, 3, 500, onGasRetry);
-
-                    if (estimatedGasLimit && gasPrice) {
-                        const estimatedTotalGasCostNative = estimatedGasLimit * gasPrice;
-                        estimatedGasFeeNativeStr = formatNativeGasFee(
-                            estimatedTotalGasCostNative,
-                            publicClient.chain.nativeCurrency.decimals,
-                            publicClient.chain.nativeCurrency.symbol
-                        );
-                        if (nativeCurrencyPriceUSD) {
-                            const feeInNativeNum = parseFloat(
-                                formatUnits(estimatedTotalGasCostNative, publicClient.chain.nativeCurrency.decimals)
-                            );
-                            estimatedGasFeeUSDStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
-                        }
+                } else {
+                    // EXACT_OUTPUT
+                    if (inputIsNative) {
+                        swapAbiForViem = SWAP_ETH_FOR_EXACT_TOKENS_ABI_VIEM;
+                        functionName = 'swapETHForExactTokens';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [amountOutParam, path, accountAddress as `0x${string}`, BigInt(deadline)],
+                        });
+                        valueToSend = amountInParam;
+                    } else if (outputIsNative) {
+                        swapAbiForViem = SWAP_TOKENS_FOR_EXACT_ETH_ABI_VIEM;
+                        functionName = 'swapTokensForExactETH';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [
+                                amountOutParam,
+                                amountInParam,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
+                    } else {
+                        swapAbiForViem = SWAP_TOKENS_FOR_EXACT_TOKENS_ABI_VIEM;
+                        functionName = 'swapTokensForExactTokens';
+                        callData = encodeFunctionData({
+                            abi: swapAbiForViem,
+                            functionName,
+                            args: [
+                                amountOutParam,
+                                amountInParam,
+                                path,
+                                accountAddress as `0x${string}`,
+                                BigInt(deadline),
+                            ],
+                        });
                     }
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                } catch (gasError: any) {
-                    console.warn(
-                        'Could not estimate gas for the swap preview after retries:',
-                        gasError.shortMessage || gasError.message
-                    );
-                    // Optionally clear gas fee strings or set a specific error message for gas estimation failure
-                    estimatedGasFeeNativeStr = null;
-                    estimatedGasFeeUSDStr = null;
                 }
+
+                const currentGasPrice = await publicClient.getGasPrice(); // Retry getting this
+                estimatedGasFeeNativeStr = formatNativeGasFee(currentGasPrice);
+                estimatedGasFeeUSDStr = null; // Not supported for swaps
             }
 
             return {
@@ -411,14 +361,13 @@ export const useUniswapV2Interactions = () => {
             currentChainId,
             sdkToken0,
             sdkToken1,
-            token0, // UI specific
-            token1, // UI specific
+            token0,
+            token1,
             routerAddress,
             getPair,
             isConnected,
             accountAddress,
             error,
-            nativeCurrencyPriceUSD,
             setError,
             setInsufficientLiquidity,
         ]

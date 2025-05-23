@@ -1,4 +1,4 @@
-import { WalletClient } from 'viem';
+import { PublicClient, WalletClient } from 'viem';
 import { BrowserProvider, Signer as EthersSigner } from 'ethers';
 import { formatUnits as viemFormatUnits } from 'viem';
 import { ChainId } from '@uniswap/sdk-core';
@@ -27,15 +27,14 @@ export async function walletClientToSigner(walletClient: WalletClient): Promise<
     }
 }
 
-export const formatNativeGasFee = (
-    gasAmountWei: bigint | undefined,
-    nativeDecimals = 18,
-    nativeSymbol = 'ETH'
-): string | null => {
+export const formatNativeGasFee = (gasAmountWei: bigint | undefined): string | null => {
+    const nativeDecimals = 18;
+    const nativeSymbol = 'ETH';
     if (gasAmountWei === undefined) return null;
     try {
+        console.info('Gas amount wei:', gasAmountWei.toString());
         const formatted = viemFormatUnits(gasAmountWei, nativeDecimals);
-        return `${parseFloat(formatted).toFixed(5)} ${nativeSymbol}`;
+        return `${formatted} ${nativeSymbol}`;
     } catch {
         return null;
     }
@@ -68,16 +67,86 @@ export const fetchTokenPriceUSD = async (
     return undefined;
 };
 
+interface FormatBalanceOptions {
+    /** Minimum number of decimal places to display. Default: 2. */
+    minimumFractionDigits?: number;
+    /** Maximum number of decimal places to display. Default: 4. Will be capped by token's actual decimals. */
+    maximumFractionDigits?: number;
+    /**
+     * Numbers smaller than this (but not 0) will be displayed as "< X".
+     * Example: 0.00001 will display numbers like 0.0000001 as "< 0.00001".
+     * Set to 0 or undefined to disable. Default: 0.000001.
+     */
+    displayThresholdMinVal?: number;
+    /** Locale for formatting. Defaults to undefined (user's current locale). */
+    locale?: string;
+}
+
 export const formatDisplayBalanceForSelectable = (
     rawBalance: bigint | undefined,
     decimals: number,
-    symbol: string
+    symbol: string,
+    options?: FormatBalanceOptions
 ): string => {
-    if (rawBalance === undefined) return '0.000';
-    const balance = parseFloat(viemFormatUnits(rawBalance, decimals)).toFixed(Math.min(decimals, 5));
-    return `${parseFloat(balance)} ${symbol}`;
-};
+    const {
+        minimumFractionDigits = 2,
+        maximumFractionDigits = 4, // A common default for crypto display, adjust as needed
+        displayThresholdMinVal = 0.000001,
+        locale = undefined, // Uses browser/environment default
+    } = options || {};
 
+    if (rawBalance === undefined) {
+        // Format "0" according to minimumFractionDigits
+        const zeroFormatter = new Intl.NumberFormat(locale, {
+            minimumFractionDigits: minimumFractionDigits,
+            maximumFractionDigits: minimumFractionDigits, // Ensure it's exactly min digits for zero
+            useGrouping: true,
+        });
+        return `${zeroFormatter.format(0)} ${symbol}`;
+    }
+
+    const formattedUnitsStr = viemFormatUnits(rawBalance, decimals);
+    const numericValue = parseFloat(formattedUnitsStr);
+
+    if (isNaN(numericValue)) {
+        // Should not happen if viemFormatUnits works correctly
+        const fallbackFormatter = new Intl.NumberFormat(locale, {
+            minimumFractionDigits: minimumFractionDigits,
+            maximumFractionDigits: minimumFractionDigits,
+            useGrouping: true,
+        });
+        return `${fallbackFormatter.format(0)} ${symbol}`;
+    }
+
+    // Handle very small, non-zero numbers
+    if (displayThresholdMinVal > 0 && numericValue > 0 && numericValue < displayThresholdMinVal) {
+        const thresholdStr = displayThresholdMinVal.toString();
+        // Create a string like "< 0.00001"
+        const numFracDigitsInThreshold = thresholdStr.includes('.') ? thresholdStr.split('.')[1].length : 0;
+
+        let displayThresholdFormatted: string;
+        if (numFracDigitsInThreshold > 0) {
+            displayThresholdFormatted = `0.${'0'.repeat(numFracDigitsInThreshold - 1)}1`;
+        } else {
+            // Fallback for thresholds like 1, 10 (though not typical for minVal)
+            displayThresholdFormatted = displayThresholdMinVal.toString();
+        }
+        return `< ${displayThresholdFormatted} ${symbol}`;
+    }
+
+    // Ensure maximumFractionDigits does not exceed token's actual decimals
+    // And that minimum is not greater than maximum
+    const actualMaxFractionDigits = Math.min(maximumFractionDigits, decimals);
+    const actualMinFractionDigits = Math.min(minimumFractionDigits, actualMaxFractionDigits);
+
+    const formatter = new Intl.NumberFormat(locale, {
+        minimumFractionDigits: actualMinFractionDigits,
+        maximumFractionDigits: actualMaxFractionDigits,
+        useGrouping: true, // This adds thousands separators
+    });
+
+    return `${formatter.format(numericValue)} ${symbol}`;
+};
 // ========== RETRY HELPER FUNCTION ==========
 /**
  * Retries an async function a specified number of times with a delay.
@@ -119,5 +188,195 @@ export async function retryAsync<T>(
                 await new Promise((resolve) => setTimeout(resolve, delayMs));
             }
         }
+    }
+}
+
+import { CurrencyAmount, Token, NativeCurrency } from '@uniswap/sdk-core'; // Ensure this import is available
+
+/**
+ * Formats a CurrencyAmount for display with different precision based on its value.
+ * - Big numbers (>= bigNumberThreshold) are formatted with a fixed number of decimals.
+ * - Small numbers (< bigNumberThreshold but >= displayThreshold) are formatted with a number of significant digits.
+ * - Very small numbers (< displayThreshold) are displayed as "< X".
+ *
+ * @param amount The CurrencyAmount to format.
+ * @param options Formatting options.
+ * @param options.significantDigitsForSmall How many significant digits for small numbers (Default: 4).
+ * @param options.fixedDecimalsForBig How many fixed decimal places for big numbers (Default: 2).
+ * @param options.bigNumberThreshold Threshold to consider a number "big" (Default: 1.0).
+ * @param options.displayThresholdMinVal Numbers smaller than this (but not 0) are shown as "< X" (Default: 0.000001).
+ * @returns A string representing the formatted amount.
+ */
+export function formatAmountSmartly(
+    amount: CurrencyAmount<Token | NativeCurrency> | undefined,
+    options?: {
+        significantDigitsForSmall?: number;
+        fixedDecimalsForBig?: number;
+        bigNumberThreshold?: number;
+        displayThresholdMinVal?: number;
+    }
+): string {
+    if (!amount) {
+        return '';
+    }
+
+    const {
+        significantDigitsForSmall = 6,
+        fixedDecimalsForBig = 4,
+        bigNumberThreshold = 100.0,
+        displayThresholdMinVal = 0.000001,
+    } = options || {};
+
+    const valueStr = amount.toExact();
+    const valueNum = parseFloat(valueStr);
+
+    if (isNaN(valueNum)) {
+        // This should ideally not happen with a valid CurrencyAmount
+        return '';
+    }
+
+    if (valueNum === 0) {
+        // Explicitly format zero to the 'big number' decimal style, e.g., "0.00"
+        return amount.toFixed(fixedDecimalsForBig);
+    }
+
+    const absValueNum = Math.abs(valueNum);
+
+    // Handle very small, non-zero numbers
+    if (absValueNum < displayThresholdMinVal) {
+        const displayThresholdStr = displayThresholdMinVal.toString();
+        // Create a string like "< 0.000001"
+        const numFracDigitsInThreshold = displayThresholdStr.includes('.')
+            ? displayThresholdStr.split('.')[1].length
+            : 0;
+
+        if (numFracDigitsInThreshold > 0) {
+            // Construct the "< 0.0...01" string
+            return `< 0.${'0'.repeat(numFracDigitsInThreshold - 1)}1`;
+        }
+        // Fallback for thresholds like 1, 10 (though not typical for minVal)
+        return `< ${displayThresholdMinVal}`;
+    }
+
+    // Handle "big" numbers
+    if (absValueNum >= bigNumberThreshold) {
+        return amount.toFixed(fixedDecimalsForBig);
+    }
+
+    // Handle "small" numbers (but not "very small")
+    // These are >= displayThresholdMinVal and < bigNumberThreshold
+    // toSignificant is generally good here and shouldn't produce 'e' notation for this range.
+    return amount.toSignificant(significantDigitsForSmall);
+}
+
+export interface EstimatedGasFees {
+    estimatedGasFeeNative: string | null;
+    estimatedGasFeeUSD: string | null;
+    gasLimit: bigint | null;
+    gasPrice: bigint | null;
+    error?: string; // Optional error message if estimation fails
+}
+
+interface EstimateTransactionGasFeesParams {
+    publicClient: PublicClient;
+    accountAddress: `0x${string}`;
+    toAddress: `0x${string}`;
+    callData: `0x${string}`;
+    valueToSend?: bigint;
+    nativeCurrencyPriceUSD?: number;
+    nativeCurrencyDecimals: number;
+    nativeCurrencySymbol: string;
+    retryMaxAttempts?: number;
+    retryDelayMs?: number;
+}
+
+export async function estimateTransactionGasFees(params: EstimateTransactionGasFeesParams): Promise<EstimatedGasFees> {
+    const {
+        publicClient,
+        accountAddress,
+        toAddress,
+        callData,
+        valueToSend,
+        nativeCurrencyPriceUSD,
+        nativeCurrencyDecimals,
+        nativeCurrencySymbol,
+        retryMaxAttempts = 3, // Default max attempts
+        retryDelayMs = 500, // Default delay
+    } = params;
+
+    let estimatedGasLimitBI: bigint | null = null;
+    let gasPriceBI: bigint | null = null;
+
+    try {
+        const estimateGasCallParams = {
+            account: accountAddress,
+            to: toAddress,
+            data: callData,
+            value: valueToSend,
+        };
+
+        const estimateGasLimitFn = () => publicClient.estimateGas(estimateGasCallParams);
+        const getGasPriceFn = () => publicClient.getGasPrice();
+        const gasContext = 'estimateTransactionGasFees';
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const onRetryCb = (ctx: string, err: any, attempt: number, max: number) => {
+            console.warn(`[${ctx}] Attempt ${attempt}/${max} failed:`, err.shortMessage || err.message || err);
+        };
+
+        estimatedGasLimitBI = await retryAsync(
+            `${gasContext}.estimateGasLimit`,
+            estimateGasLimitFn,
+            retryMaxAttempts,
+            retryDelayMs,
+            onRetryCb
+        );
+
+        gasPriceBI = await retryAsync(
+            `${gasContext}.getGasPrice`,
+            getGasPriceFn,
+            retryMaxAttempts,
+            retryDelayMs,
+            onRetryCb
+        );
+
+        if (estimatedGasLimitBI && gasPriceBI) {
+            const estimatedTotalGasCostNative = estimatedGasLimitBI * gasPriceBI;
+            const nativeFeeStr = formatNativeGasFee(
+                estimatedTotalGasCostNative,
+                nativeCurrencyDecimals,
+                nativeCurrencySymbol
+            );
+            let usdFeeStr: string | null = null;
+            if (nativeCurrencyPriceUSD) {
+                const feeInNativeNum = parseFloat(viemFormatUnits(estimatedTotalGasCostNative, nativeCurrencyDecimals));
+                usdFeeStr = formatGasFeeUSD(feeInNativeNum, nativeCurrencyPriceUSD);
+            }
+            return {
+                estimatedGasFeeNative: nativeFeeStr,
+                estimatedGasFeeUSD: usdFeeStr,
+                gasLimit: estimatedGasLimitBI,
+                gasPrice: gasPriceBI,
+            };
+        }
+        // This case (one null, one not) should ideally not happen if retryAsync re-throws
+        return {
+            estimatedGasFeeNative: null,
+            estimatedGasFeeUSD: null,
+            gasLimit: estimatedGasLimitBI, // Could be null
+            gasPrice: gasPriceBI, // Could be null
+            error: 'Gas estimation partially succeeded or one component failed silently.',
+        };
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (gasError: any) {
+        const errorMessage = gasError.shortMessage || gasError.message || 'Unknown gas estimation error';
+        console.warn('Gas estimation failed after all retries in estimateTransactionGasFees:', errorMessage);
+        return {
+            estimatedGasFeeNative: null,
+            estimatedGasFeeUSD: null,
+            gasLimit: null,
+            gasPrice: null,
+            error: errorMessage,
+        };
     }
 }

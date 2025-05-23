@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { useBalance } from 'wagmi'; // Assuming wagmi for useBalance
-import { Ether, Token } from '@uniswap/sdk-core'; // Or your SDK types
+import { useBalance } from 'wagmi';
+import { Ether, Token } from '@uniswap/sdk-core';
 import { XTM_SDK_TOKEN } from '@app/hooks/swap/lib/constants';
 import { fetchTokenPriceUSD, formatDisplayBalanceForSelectable } from '@app/hooks/swap/lib/utils';
 import { formatUnits } from 'viem';
@@ -44,8 +44,6 @@ export function useTokenDisplayInfo({
         token: uiTokenDefinition?.isNative ? undefined : (uiTokenDefinition?.address as `0x${string}`),
         chainId: chainId,
     });
-
-    console.log('uiTokenDefinition', uiTokenDefinition);
 
     const fetchPrice = useCallback(async () => {
         if (uiTokenDefinition?.symbol && chainId) {

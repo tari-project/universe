@@ -1,15 +1,13 @@
 import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
 import styled, { css } from 'styled-components';
 
-export const SwapsContainer = styled.div``;
-
-export const SwapOption = styled.div`
+export const SwapOption = styled.div<{ $paddingBottom?: number }>`
     width: 100%;
     margin-top: 5px;
     padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
     background: ${({ theme }) => theme.palette.background.main};
     border-radius: 20px;
 
@@ -17,7 +15,14 @@ export const SwapOption = styled.div`
         color: ${({ theme }) => theme.palette.text.secondary};
         font-size: 10px;
     }
+    ${({ $paddingBottom }) =>
+        $paddingBottom &&
+        css`
+            padding-bottom: ${$paddingBottom}px;
+        `}
 `;
+
+export const SwapsContainer = styled.div``;
 
 export const SwapOptionAmount = styled.div`
     display: flex;

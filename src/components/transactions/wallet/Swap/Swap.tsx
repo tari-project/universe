@@ -104,7 +104,7 @@ export const Swap = () => {
                 ) : null}
             </HeaderWrapper>
 
-            <SwapOption>
+            <SwapOption $paddingBottom={25}>
                 <span>{uiDirection === 'toXtm' ? t('swap.sell') : t('swap.receive-estimated')}</span>
                 <SwapOptionAmount>
                     <SwapAmountInput
@@ -150,7 +150,7 @@ export const Swap = () => {
                 </SwapOptionAmount>
                 {connectedAccount.address ? <span>{`${t('swap.balance')}: ${toTokenDisplay?.balance}`}</span> : null}
             </SwapOption>
-            {errorMsg && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>}
+            {errorMsg && disabled && <SwapErrorMessage> {errorMsg} </SwapErrorMessage>}
             <SubmitButtonWrapper>
                 <WalletButton variant="primary" onClick={() => setReviewSwap(true)} size="xl" disabled={disabled}>
                     {connectedAccount.address

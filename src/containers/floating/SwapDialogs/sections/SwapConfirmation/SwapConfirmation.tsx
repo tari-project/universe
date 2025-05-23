@@ -27,6 +27,7 @@ import { useMemo } from 'react';
 import { SelectableTokenInfo } from '@app/components/transactions/wallet/Swap/useSwapData';
 import { useTranslation } from 'react-i18next';
 import { SwapDirection as SwapDirectionType } from '@app/hooks/swap/lib/types';
+import { EnabledTokensEnum } from '@app/hooks/swap/lib/constants';
 
 interface Props {
     isOpen: boolean;
@@ -56,7 +57,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
         });
     }, [fromTokenDisplay?.symbol]);
 
-    const toSymbol = direction === 'toXtm' ? 'XTM' : (fromTokenDisplay?.symbol ?? '');
+    // const toSymbol = direction === 'toXtm' ? 'XTM' : (fromTokenDisplay?.symbol ?? '');
 
     const items = [
         // {
@@ -70,10 +71,10 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
             value: networkFee,
             helpText: `${networkFee}`,
         },
-        {
-            label: t('swap.you-will-receive').replace('{{symbol}}', toSymbol),
-            value: direction === 'toXtm' ? targetAmount : amount,
-        },
+        // {
+        //     label: t('swap.you-will-receive').replace('{{symbol}}', toSymbol),
+        //     value: direction === 'toXtm' ? targetAmount : amount,
+        // },
         {
             label: t('swap.slippage-tolerance'),
             value: slippage,
@@ -129,7 +130,7 @@ export const SwapConfirmation = ({ isOpen, setIsOpen, transaction, onConfirm, fr
                             value={targetAmount}
                         />
                         <SwapOptionCurrency>
-                            {getCurrencyIcon({ symbol: 'XTM', width: 25 })}
+                            {getCurrencyIcon({ symbol: EnabledTokensEnum.WXTM, width: 25 })}
                             <span>{'XTM'}</span>
                         </SwapOptionCurrency>
                     </SwapOptionAmount>
