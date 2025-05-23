@@ -136,10 +136,6 @@ impl CpuMiner {
         custom_cpu_threads: Option<u32>,
         tari_address : &TariAddress
     ) -> Result<(), anyhow::Error> {
-        let tari_address = InternalWallet::load_or_create(config_path.clone())
-            .await?
-            .get_tari_address()
-            .to_base58();
         let (xmrig_node_connection, pool_watcher) = match cpu_miner_config.node_connection {
             CpuMinerConnection::BuiltInProxy => (
                 XmrigNodeConnection::LocalMmproxy {
@@ -194,12 +190,7 @@ impl CpuMiner {
                     )
                 });
 
-                let tari_address = InternalWallet::load_or_create(config_path.clone())
-                    .await?
-                    .get_tari_address();
-
-                (
-                    XmrigNodeConnection::MergeMinedPool {
+                (    XmrigNodeConnection::MergeMinedPool {
                         host_name: pool_address,
                         port,
                         monero_address: cpu_miner_config.monero_address.clone(),
