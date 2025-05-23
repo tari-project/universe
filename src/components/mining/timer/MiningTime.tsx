@@ -25,7 +25,6 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     const _minutes = isMini && minutes === '0' ? '00' : minutes;
 
     const renderHours = hoursString && parseInt(hoursString) > 0;
-    const renderMinutes = renderHours || (minutes && parseInt(minutes) > 0);
     const daysMarkup = daysString?.length ? daysString : null;
 
     const hourMarkup = renderHours ? (
@@ -35,14 +34,14 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
         </>
     ) : null;
 
-    const minuteMarkup = renderMinutes ? (
+    const minuteMarkup = (
         <>
             {_minutes?.split('').map((c, i) => <SpacedNum key={`min-${i}-${c}`}>{c}</SpacedNum>)}
             <TimerUnitWrapper $variant={variant}>{isMini ? ':' : `m`}</TimerUnitWrapper>
         </>
-    ) : null;
+    );
 
-    // TODO: dedup from block time/make reusable spaced counter?
+    // TODO: dedupe from block time/make reusable spaced counter?
 
     const markup = (
         <TimerTextWrapper $variant={variant}>
@@ -54,7 +53,7 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
         </TimerTextWrapper>
     );
 
-    if (!renderMinutes && !renderHours && (!seconds || parseInt(seconds) === 0)) return null;
+    if (!minutes && !renderHours && (!seconds || parseInt(seconds) === 0)) return null;
     if (variant === 'mini') {
         return (
             <MiniWrapper>
