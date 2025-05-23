@@ -124,21 +124,40 @@ impl ConfigMining {
         let mut config = Self::current().write().await;
         config.load_app_handle(app_handle.clone()).await;
 
+        // TODO: Remove this when the migration is done
+        // Can be removed before merging to main
+        let old_cpu_mining_pool_url: Option<String> = Some("pool.supportxmr.com:3333".to_string());
+        let old_cpu_mining_pool_status_url: Option<String> =
+            Some("https://www.supportxmr.com/api/miner/%MONERO_ADDRESS%/stats".to_string());
+
         // force the default values for the pool urls in case they are not set
         let is_cpu_mining_pool_url_not_set = config.content.cpu_mining_pool_url.is_none();
-        if is_cpu_mining_pool_url_not_set {
+        let is_old_cpu_mining_pool_url = config
+            .content
+            .cpu_mining_pool_url
+            .eq(&old_cpu_mining_pool_url);
+        if is_cpu_mining_pool_url_not_set || is_old_cpu_mining_pool_url {
             config.content.cpu_mining_pool_url = ConfigMiningContent::default().cpu_mining_pool_url;
         }
 
         // force the default values for the pool urls in case they are not set
         let is_cpu_mining_pool_status_url_not_set =
             config.content.cpu_mining_pool_status_url.is_none();
-        if is_cpu_mining_pool_status_url_not_set {
+        let is_old_cpu_mining_pool_status_url = config
+            .content
+            .cpu_mining_pool_status_url
+            .eq(&old_cpu_mining_pool_status_url);
+
+        if is_cpu_mining_pool_status_url_not_set || is_old_cpu_mining_pool_status_url {
             config.content.cpu_mining_pool_status_url =
                 ConfigMiningContent::default().cpu_mining_pool_status_url;
         }
         // update json file to reflect the default values
-        if is_cpu_mining_pool_url_not_set || is_cpu_mining_pool_status_url_not_set {
+        if is_cpu_mining_pool_url_not_set
+            || is_cpu_mining_pool_status_url_not_set
+            || is_old_cpu_mining_pool_url
+            || is_old_cpu_mining_pool_status_url
+        {
             let _unused = ConfigMining::_save_config(config.content.clone()).inspect_err(
             |error| {
                 warn!(target: crate::LOG_TARGET, "[{}] [save_config] error: {:?}", Self::_get_name(), error);
