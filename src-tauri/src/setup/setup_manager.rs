@@ -754,6 +754,7 @@ impl SetupManager {
 
     async fn handle_setup_finished(&self, app_handle: AppHandle) {
         info!(target: LOG_TARGET, "Setup Finished");
+        EventsManager::handle_initial_setup_finished(&app_handle).await;
         let _unused = initialize_frontend_updates(&app_handle).await;
     }
 

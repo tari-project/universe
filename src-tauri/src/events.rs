@@ -56,6 +56,7 @@ pub enum EventType {
     HardwarePhaseFinished,
     NodePhaseFinished,
     UnknownPhaseFinished,
+    InitialSetupFinished,
     UnlockApp,
     UnlockWallet,
     UnlockMining,
