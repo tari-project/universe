@@ -22,6 +22,8 @@ export const InsideHolder = styled.div`
     display: flex;
     align-items: center;
     position: relative;
+
+    padding-right: 60px;
 `;
 
 export const StickyEntryWrapper = styled.div`
