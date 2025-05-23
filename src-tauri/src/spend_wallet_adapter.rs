@@ -120,9 +120,6 @@ impl SpendWalletAdapter {
         self.execute_recovery_command(&seed_words).await?;
         self.execute_sync_command().await?;
 
-        // We don't want to successfully broadcast
-        let _unused = self.clear_peer_db().await?;
-
         let tx_id = self
             .execute_send_one_sided_command(&amount, &destination, payment_id)
             .await?;
@@ -331,15 +328,6 @@ impl SpendWalletAdapter {
         }
 
         Ok((exit_code, stdout_lines, stderr_lines))
-    }
-
-    pub async fn clear_peer_db(&self) -> Result<(), Error> {
-        let working_dir = self.get_working_dir();
-        let peer_data_folder = working_dir
-            .join(Network::get_current_or_user_setting_or_default().to_string())
-            .join("peer_db");
-        std::fs::remove_dir_all(peer_data_folder)?;
-        Ok(())
     }
 
     pub async fn erase_related_data(&self) -> Result<(), Error> {
