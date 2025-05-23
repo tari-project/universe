@@ -37,6 +37,7 @@ export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
     const { daysString, hoursString, minutes, seconds } = useMiningTime();
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
+    const isMining = useMiningMetricsStore((s) => s.cpu_mining_status.is_mining || s.gpu_mining_status.is_mining);
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
     console.debug(pool_status);
@@ -53,7 +54,7 @@ export const PoolStatsTile = () => {
         handleClose: safePolygon(),
     });
     const { getReferenceProps, getFloatingProps } = useInteractions([hover]);
-    return !pool_status ? null : (
+    return !pool_status || !isMining ? null : (
         <Wrapper $isLoading={loading}>
             {loading ? (
                 <Title style={{ textAlign: 'center' }}>{`${t('stats.tile-loading')}...`}</Title>
