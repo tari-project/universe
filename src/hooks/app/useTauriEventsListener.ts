@@ -138,7 +138,6 @@ const useTauriEventsListener = () => {
                             handleConfigWalletLoaded(event.payload);
                             break;
                         case 'ConfigMiningLoaded':
-                            console.debug(`ConfigMiningLoaded= `, event.payload);
                             handleConfigMiningLoaded(event.payload);
                             break;
                         case 'ConfigUILoaded':
@@ -203,7 +202,6 @@ const useTauriEventsListener = () => {
                             handleShowStagedSecurityModal();
                             break;
                         case 'MiningTime':
-                            console.debug(`MiningTime= `, event.payload);
                             handleMiningTimeUpdate(event.payload);
                             break;
                         default:

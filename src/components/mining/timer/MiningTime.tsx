@@ -11,12 +11,14 @@ import {
     HeadingSection,
     TimerUnitWrapper,
 } from './styles.ts';
+import { useTranslation } from 'react-i18next';
 
 interface MiningTimeProps {
     variant?: MiningTimeVariant;
     timing: Partial<TimeSince>;
 }
 export const MiningTime = memo(function MiningTime({ variant = 'primary', timing }: MiningTimeProps) {
+    const { t } = useTranslation('common');
     const isMini = variant === 'mini';
     const { daysString, hoursString, minutes, seconds } = timing;
 
@@ -64,7 +66,7 @@ export const MiningTime = memo(function MiningTime({ variant = 'primary', timing
     return (
         <Wrapper>
             <HeadingSection>
-                <Heading>{`Time mining`}</Heading>
+                <Heading>{t('time-mining')}</Heading>
                 <TimerDot />
             </HeadingSection>
             {markup}

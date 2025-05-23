@@ -39,7 +39,7 @@ export const PoolStatsTile = () => {
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
-
+    console.debug(pool_status);
     const [expanded, setExpanded] = useState(false);
     const { refs, context, floatingStyles } = useFloating({
         open: expanded,
@@ -95,7 +95,7 @@ export const PoolStatsTile = () => {
                                             <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
                                         </TooltipChip>
                                         <TooltipChip>
-                                            <TooltipChipHeading>{`Rewards threshold`}</TooltipChipHeading>
+                                            <TooltipChipHeading>{t('stats.tooltip-tile-heading')}</TooltipChipHeading>
                                             <TooltipChipText>{REWARD_THRESHOLD}</TooltipChipText>
                                         </TooltipChip>
                                     </TooltipChipWrapper>
