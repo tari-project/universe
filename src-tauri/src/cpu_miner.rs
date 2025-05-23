@@ -307,7 +307,7 @@ impl CpuMiner {
                             Some(xmrig_status) => {
                                 let hash_rate = xmrig_status.hashrate.total[0].unwrap_or_default();
                                 let estimated_earnings =
-                                    estimate_earning(node_status.randomx_network_hashrate, hash_rate, node_status.block_reward);
+                                    estimate_earning(node_status.monero_randomx_network_hashrate, hash_rate, node_status.block_reward);
 
                                 // // UNUSED, commented for now
                                 // let hasrate_sum = xmrig_status
