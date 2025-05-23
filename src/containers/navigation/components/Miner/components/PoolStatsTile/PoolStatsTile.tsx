@@ -18,6 +18,7 @@ import { offset, safePolygon, useFloating, useHover, useInteractions } from '@fl
 
 import { AnimatePresence } from 'motion/react';
 import { MiningTime } from '@app/components/mining/timer/MiningTime.tsx';
+import { useMiningTime } from '@app/hooks/mining/useMiningTime.ts';
 
 const variants = {
     hidden: {
@@ -30,14 +31,14 @@ const variants = {
 
 export const PoolStatsTile = () => {
     const { t } = useTranslation('p2p');
-
+    const { daysString, hoursString, minutes, seconds } = useMiningTime();
     const pool_status = useMiningMetricsStore((s) => s.cpu_mining_status.pool_status);
     const loading = !!pool_status && !pool_status?.balance && !pool_status?.unpaid;
     const balanceFMT = formatNumber(pool_status?.balance || 0, FormatPreset.XTM_COMPACT);
 
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(true);
     const { refs, context, floatingStyles } = useFloating({
-        open: expanded,
+        open: true,
         onOpenChange: setExpanded,
         placement: 'right',
         middleware: [offset({ mainAxis: 30 })],
@@ -64,7 +65,7 @@ export const PoolStatsTile = () => {
                         <TriggerWrapper ref={refs.setReference} {...getReferenceProps()}>
                             <QuestionMarkSvg />
                         </TriggerWrapper>
-                        <MiningTime variant="mini" />
+                        <MiningTime timing={{ daysString, hoursString, minutes, seconds }} variant="mini" />
                         <AnimatePresence mode="sync">
                             {expanded && (
                                 <ExpandedWrapper
@@ -85,6 +86,7 @@ export const PoolStatsTile = () => {
                                             components={{ strong: <strong /> }}
                                         />
                                     </Typography>
+                                    <MiningTime timing={{ daysString, hoursString, minutes, seconds }} />
                                 </ExpandedWrapper>
                             )}
                         </AnimatePresence>
